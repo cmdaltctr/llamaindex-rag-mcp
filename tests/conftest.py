@@ -68,9 +68,9 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     produces deterministic embeddings based on text hashing.
 
     Note: The mock must be applied AFTER module imports because
-    ``ingestion.py`` and ``retrieval.py`` set ``Settings.embed_model``
-    at import time.  The ``mcp_server`` fixture re-applies this mock
-    after importing those modules.
+    ``config.py`` sets ``Settings.embed_model`` at import time.
+    The ``mcp_server`` fixture re-applies this mock after importing
+    those modules.
     """
     _patch_embed_model._mock = MockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
@@ -80,16 +80,10 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
 def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set deterministic environment variables for every test.
 
-    Also monkeypatches module-level constants in ingestion.py and
-    retrieval.py so that both modules always agree on the same
-    collection name and persist directory, regardless of import order.
-
-    Without this, module-level ``os.getenv()`` calls are evaluated at
-    first import — which may happen *before* env vars are set (e.g. when
-    test_ingestion.py imports ingestion at collection time) or *after*
-    (e.g. when the mcp_server fixture triggers a late import of
-    retrieval.py).  The resulting mismatch causes ingest to write to one
-    collection while search reads from another.
+    Monkeypatches the shared ``config`` module's constants so that
+    both ``ingestion.py`` and ``retrieval.py`` (which import from
+    config) always agree on the same collection name and persist
+    directory.
 
     We only patch modules that are *already* loaded (via ``sys.modules``)
     to avoid triggering side-effectful module-level code (e.g.
@@ -107,6 +101,15 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
 
+    # Patch the shared config module if already loaded — this covers
+    # both ingestion and retrieval since they import from config.
+    config_mod = sys.modules.get("rag_mcp.config")
+    if config_mod is not None:
+        monkeypatch.setattr(config_mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
+        monkeypatch.setattr(config_mod, "COLLECTION_NAME", _TEST_COLLECTION)
+
+    # Also patch the leaf modules for backward compatibility in case
+    # any test imports them before config is loaded.
     for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):
         mod = sys.modules.get(mod_name)
         if mod is not None:
@@ -124,13 +127,13 @@ def mcp_server():
     The ChromaDB and embedding patches are applied via autouse fixtures
     above, so the server uses in-memory ChromaDB and mock embeddings.
 
-    Re-applies MockEmbedding after import because ``ingestion.py`` and
-    ``retrieval.py`` overwrite ``Settings.embed_model`` at import time.
+    Re-applies MockEmbedding after import because ``config.py``
+    sets ``Settings.embed_model = OllamaEmbedding(...)`` at import time.
     """
     from rag_mcp.server import mcp
 
-    # Importing server.py triggers ingestion.py and retrieval.py which
-    # set Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.
+    # Importing server.py triggers config.py which sets
+    # Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.
     Settings.embed_model = _patch_embed_model._mock
 
     return mcp

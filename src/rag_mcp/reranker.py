@@ -205,9 +205,9 @@ class CrossEncoderReranker:
                 None,
                 {k: v for k, v in encoded.items()},
             )
-            # outputs[0] shape: (batch_size, 1) → squeeze to (batch_size,)
-            import numpy as np
-            logits = outputs[0].squeeze(-1)
+            # outputs[0] shape: (batch_size, 1) or (batch_size,) → flatten
+            import numpy as np  # lightweight; always available with onnxruntime
+            logits = np.asarray(outputs[0]).flatten()
 
             # Normalise raw logits to (0, 1) via sigmoid.
             scores: list[float] = [_sigmoid(float(v)) for v in logits]

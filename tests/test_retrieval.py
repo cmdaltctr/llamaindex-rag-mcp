@@ -105,6 +105,62 @@ async def test_rerank_enabled_sets_flag(
             assert "reranked" in r
 
 
+# ── Threshold scaling with reranker ────────────────────────────────────────
+
+
+class TestThresholdScaling:
+    """Tests for score-aware threshold scaling.
+
+    When the reranker is active, sigmoid-normalised scores occupy a much
+    lower range than cosine similarity.  The search() function should
+    scale the threshold down by 30× automatically to avoid over-filtering.
+    """
+
+    def test_no_rerank_threshold_unchanged(self) -> None:
+        """Without reranking, the threshold must not be scaled."""
+        from rag_mcp.retrieval import _effective_threshold
+
+        assert _effective_threshold(0.3, rerank=False) == 0.3
+
+    def test_rerank_threshold_scaled_down(self) -> None:
+        """With reranking, the threshold must be scaled down 30×."""
+        from rag_mcp.retrieval import _effective_threshold
+
+        assert _effective_threshold(0.3, rerank=True) == pytest.approx(0.01)
+
+    def test_zero_threshold_stays_zero_no_rerank(self) -> None:
+        """Zero threshold (no filtering) must stay zero without rerank."""
+        from rag_mcp.retrieval import _effective_threshold
+
+        assert _effective_threshold(0.0, rerank=False) == 0.0
+
+    def test_zero_threshold_stays_zero_with_rerank(self) -> None:
+        """Zero threshold (no filtering) must stay zero with rerank."""
+        from rag_mcp.retrieval import _effective_threshold
+
+        assert _effective_threshold(0.0, rerank=True) == 0.0
+
+    def test_moderate_threshold_with_rerank(self) -> None:
+        """A moderate threshold (0.5) should become ~0.0167 with rerank."""
+        from rag_mcp.retrieval import _effective_threshold
+
+        assert _effective_threshold(0.5, rerank=True) == pytest.approx(
+            0.5 / 30
+        )
+
+    def test_colosseum_score_survives_threshold(self) -> None:
+        """The Colosseum query (score 0.015) must survive threshold 0.3.
+
+        This was the motivating case: the reranker correctly identified
+        the Colosseum chunk but gave it a low sigmoid score (0.015).
+        With 30× scaling, threshold 0.3 → 0.01, so 0.015 passes.
+        """
+        from rag_mcp.retrieval import _effective_threshold
+
+        threshold = _effective_threshold(0.3, rerank=True)
+        assert 0.015 >= threshold  # Colosseum score should pass
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 

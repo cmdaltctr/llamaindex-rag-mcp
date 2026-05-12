@@ -2,34 +2,43 @@
 
 from __future__ import annotations
 
-import os
-
 import chromadb
-from dotenv import load_dotenv
-from llama_index.core import Settings, VectorStoreIndex
-from llama_index.embeddings.ollama import OllamaEmbedding
+from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
+from .config import CHROMA_PERSIST_DIR, COLLECTION_NAME, RERANK_ENABLED, SIMILARITY_THRESHOLD, TOP_K
 from .reranker import CrossEncoderReranker
 
-load_dotenv()
 
-# ── Embedding model (local via Ollama) ──────────────────────────────────
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBED_MODEL_NAME = os.getenv("EMBED_MODEL", "nomic-embed-text")
+def _effective_threshold(
+    similarity_threshold: float,
+    rerank: bool,
+) -> float:
+    """Compute the effective score threshold, accounting for reranker scores.
 
-Settings.embed_model = OllamaEmbedding(
-    model_name=EMBED_MODEL_NAME,
-    base_url=OLLAMA_BASE_URL,
-    embed_batch_size=10,
-)
-# ────────────────────────────────────────────────────────────────────────
+    Cross-encoder sigmoid scores occupy a different range than cosine
+    similarity.  Valid reranker results can score as low as 0.01–0.05,
+    while cosine similarity rarely goes below 0.3 for relevant matches.
 
-CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
-TOP_K = int(os.getenv("TOP_K", "5"))
-RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
+    When reranking is active, the threshold is scaled down by 30× so
+    that a ``similarity_threshold=0.3`` becomes 0.01 — roughly equivalent
+    to "keep anything the reranker considers a match, filter clear noise".
+
+    The 30× factor was calibrated from experiment data:
+    - Strong reranker matches: 0.79–1.0
+    - Weak but correct matches: 0.015 (Colosseum query)
+    - Clear noise: < 0.003
+
+    Args:
+        similarity_threshold: User-supplied threshold (0.0 = no filtering).
+        rerank: Whether the cross-encoder reranker is active.
+
+    Returns:
+        The effective threshold to apply to scores.
+    """
+    if similarity_threshold <= 0.0:
+        return 0.0
+    return similarity_threshold / 30 if rerank else similarity_threshold
 
 
 def search(
@@ -44,7 +53,10 @@ def search(
         query: Free-text search query.
         top_k: Maximum number of chunks to return (default from env or 5).
         similarity_threshold: Minimum score to include a result
-            (0.0 = no filtering, default from env).
+            (0.0 = no filtering, default from env).  When ``rerank``
+            is True the threshold is scaled down by 30× because
+            cross-encoder sigmoid scores occupy a lower range than
+            cosine similarity.  For example, 0.3 becomes 0.01.
         rerank: If True, re-score results with the cross-encoder
             reranker for better precision (default from env).
 
@@ -102,8 +114,16 @@ def search(
             r["reranked"] = r.pop("_reranked", False)
 
     # Filter by similarity threshold (applies after reranking).
-    if similarity_threshold > 0.0:
-        results = [r for r in results if r["score"] >= similarity_threshold]
+    #
+    # Reranker scores are sigmoid-normalised and occupy a different range
+    # than cosine similarity.  A cosine threshold of 0.3 is a weak match,
+    # but the reranker may assign a valid result only 0.015 (sigmoid).
+    # Scale the threshold down by 30× when reranking to avoid over-filtering.
+    effective_threshold = _effective_threshold(similarity_threshold, rerank)
+    if effective_threshold > 0.0:
+        results = [
+            r for r in results if r["score"] >= effective_threshold
+        ]
 
     results.sort(key=lambda r: r["score"], reverse=True)
     return results

@@ -1,5 +1,9 @@
 # LlamaIndex RAG MCP Server
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Requires Ollama](https://img.shields.io/badge/requires-Ollama-000000?logo=ollama)](https://ollama.com)
+
 A standalone [MCP](https://modelcontextprotocol.io) server for document retrieval
 using LlamaIndex and ChromaDB — powered by **local embeddings via Ollama**.
 No API keys, no recurring costs, runs entirely on your machine.
@@ -18,8 +22,31 @@ No API keys, no recurring costs, runs entirely on your machine.
 |-----------|------|---------|-------------|
 | `query` | string | *(required)* | Natural language search query |
 | `top_k` | int | `5` | Maximum number of chunks to return |
-| `similarity_threshold` | float | `0.0` | Minimum relevance score (0.0 = no filtering) |
+| `similarity_threshold` | float | `0.0` | Minimum relevance score (0.0 = no filtering). When `rerank=True`, the threshold is automatically scaled down by 30x because cross-encoder scores occupy a lower range. |
 | `rerank` | bool | `false` | Re-score results with cross-encoder for better precision |
+
+---
+
+## Configuration
+
+All configuration is centralised in `src/rag_mcp/config.py` — the single source of
+truth for the embedding model, paths, and defaults. Both `ingestion.py` and
+`retrieval.py` import from this module so there is no configuration drift.
+
+Environment variables are loaded from a `.env` file (copy from `.env.example`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `CHROMA_PERSIST_DIR` | `./chroma_db` | ChromaDB on-disk storage path |
+| `COLLECTION_NAME` | `documents` | ChromaDB collection name |
+| `CHUNK_SIZE` | `512` | Text splitter chunk size (characters) |
+| `CHUNK_OVERLAP` | `64` | Chunk overlap (characters) |
+| `TOP_K` | `5` | Default number of search results |
+| `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | ONNX reranker model ID |
+| `RERANK_ENABLED` | `false` | Default rerank behaviour |
+| `SIMILARITY_THRESHOLD` | `0.0` | Minimum score to include a result |
 
 ---
 
@@ -130,7 +157,7 @@ compare:
 
 | Model | Params | Dims | Context | MTEB | Pull command | Use case |
 |-------|--------|------|---------|------|-------------|----------|
-| **nomic-embed-text** ★ | 137M | 768 | 8,192 | 62.4 | `ollama pull nomic-embed-text` | **Default** — matches OpenAI ada-003 quality, 8K context, free |
+| **nomic-embed-text** (recommended) | 137M | 768 | 8,192 | 62.4 | `ollama pull nomic-embed-text` | **Default** — matches OpenAI ada-003 quality, 8K context, free |
 | mxbai-embed-large | 334M | 1,024 | 512 | 64.7 | `ollama pull mxbai-embed-large` | Highest accuracy for short chunks (MTEB 64.7) |
 | all-minilm | 23M | 384 | 256 | ~58 | `ollama pull all-minilm` | Blazing fast (~5-15ms/embed), tiny footprint |
 
@@ -157,12 +184,12 @@ rm -rf chroma_db
 
 ## Register in OpenChamber
 
-### Method A — Via UI (recommended)
+### Method A -- Via UI (recommended)
 
-1. Open **OpenChamber → Settings → MCP**
+1. Open **OpenChamber -> Settings -> MCP**
 2. Click **"+ New MCP Server"**
 3. Name: `rag-docs`
-4. Transport: **Local · stdio**
+4. Transport: **Local / stdio**
 5. Command (one token per line):
    ```
    uv
@@ -201,13 +228,7 @@ projects) or `<project>/.opencode/opencode.json` (project-scoped):
 }
 ```
 
-Then refresh in **OpenChamber → Settings → MCP**.
-
-### For OpenChamber (this project)
-
-I've already registered the server in your global `~/.opencode/opencode.json`
-so it's available in every project. Open Settings → MCP to verify it shows
-as **Connected** (green).
+Then refresh in **OpenChamber -> Settings -> MCP**.
 
 ---
 
@@ -287,7 +308,7 @@ doing if you have many projects and don't want to duplicate setup.
 
 ## Recommended custom agent prompt
 
-If you create a dedicated agent in OpenChamber → Settings → Agents, use this
+If you create a dedicated agent in OpenChamber -> Settings -> Agents, use this
 system prompt:
 
 > You have access to a document RAG system via MCP tools:
@@ -303,25 +324,44 @@ system prompt:
 
 The server includes an optional **cross-encoder reranker** that re-scores vector
 search results for significantly better retrieval precision. It uses
-`Xenova/ms-marco-MiniLM-L-6-v2` — a 23MB ONNX model that runs locally via
-`sentence-transformers`. No API keys needed.
+`cross-encoder/ms-marco-MiniLM-L-6-v2` — a ~23MB quantised ONNX model that runs
+locally via **pure ONNX Runtime**. No PyTorch, no `sentence-transformers`, no API
+keys needed.
 
 ### How it works
 
 Without the reranker, search works like this:
 
 ```
-query → embed → cosine similarity → return top_k
+query -> embed -> cosine similarity -> return top_k
 ```
 
 With the reranker enabled:
 
 ```
-query → embed → cosine similarity (top_k × 2) → cross-encoder re-score → return top_k
+query -> embed -> cosine similarity (top_k * 2) -> cross-encoder re-score -> return top_k
 ```
 
 The cross-encoder evaluates each (query, document) pair jointly, which is slower
-but much more accurate than bi-encoder cosine similarity alone.
+but much more accurate than bi-encoder cosine similarity alone. The vector search
+fetches `top_k * 2` candidates so the reranker has a meaningful pool to re-score.
+
+### Threshold auto-scaling
+
+Cross-encoder sigmoid scores occupy a much lower range than cosine similarity.
+Valid reranker results can score as low as 0.015, while cosine similarity rarely
+goes below 0.3 for relevant matches.
+
+When `rerank=True`, the `similarity_threshold` is **automatically scaled down by
+30x** so that a user-supplied value of 0.3 becomes 0.01. Users always supply a
+single threshold in cosine-similarity terms; the system handles the conversion
+transparently.
+
+This was calibrated from experiment data:
+
+- Strong reranker matches: 0.79-1.0
+- Weak but correct matches: 0.015 (Colosseum query)
+- Clear noise: < 0.003
 
 ### Enabling the reranker
 
@@ -345,8 +385,10 @@ SIMILARITY_THRESHOLD=0.3
 ### First-run download
 
 The first time you call `search_documents` with `rerank=True`, the model
-(~23MB) downloads from HuggingFace and caches in `~/.cache/huggingface/`.
-Subsequent calls use the cached model (singleton pattern).
+(~23MB quantised ONNX) downloads from HuggingFace Hub and caches in
+`~/.cache/huggingface/`. On macOS ARM64, the quantised
+`model_qint8_arm64.onnx` variant is used automatically. Subsequent calls use
+the cached model (singleton pattern — loaded once, reused across calls).
 
 ### When to use reranking
 
@@ -362,7 +404,36 @@ Subsequent calls use the cached model (singleton pattern).
 If the reranker model fails to load (no internet for first download, corrupt
 cache, etc.), the server **gracefully falls back** to un-reranked vector search
 results. You'll see a warning in stderr logs. The server never crashes due to
-reranker issues.
+reranker issues. The next call will retry loading automatically.
+
+---
+
+## Testing
+
+```bash
+# Run all fast tests (no Ollama, no ONNX download, no disk I/O)
+uv run pytest -m "not slow" -v
+
+# Run with coverage report
+uv run pytest -m "not slow" --cov=rag_mcp --cov-report=term-missing
+
+# Run E2E stdio smoke test (requires `uv run rag-mcp` to work)
+uv run pytest -m slow -v
+
+# Run a single test file
+uv run pytest tests/test_reranker.py -v
+```
+
+The test suite (43 tests, 97% coverage) uses mock embeddings and an in-memory
+ChromaDB client so no external services are needed for fast tests.
+
+| File | Tests | Coverage area |
+|------|-------|---------------|
+| `tests/test_reranker.py` | 23 | Sigmoid, ONNX variant, singleton, fallback, mock inference, model loading |
+| `tests/test_ingestion.py` | 4 | Path validation, empty dir, list empty |
+| `tests/test_mcp_tools.py` | 5 | Tool discovery, ingest, search, list, param validation |
+| `tests/test_retrieval.py` | 11 | Empty store, threshold, rerank flag, threshold scaling (6 tests) |
+| `tests/test_e2e_stdio.py` | 1 | JSON-RPC handshake over stdio subprocess |
 
 ---
 
@@ -370,8 +441,14 @@ reranker issues.
 
 - [ ] `ollama ps` shows nomic-embed-text loaded (or whatever model you chose)
 - [ ] `uv run rag-mcp` starts without errors and waits on stdin
-- [ ] MCP Inspector can discover & call all three tools
+- [ ] MCP Inspector can discover and call all three tools
 - [ ] OpenChamber shows `rag-docs` as **Connected** (green)
-- [ ] "What documents do you have access to?" → calls `list_indexed_documents`
-- [ ] "Please index /path/to/file.pdf" → calls `ingest_documents`
-- [ ] Question about PDF content → calls `search_documents` and cites the source
+- [ ] "What documents do you have access to?" calls `list_indexed_documents`
+- [ ] "Please index /path/to/file.pdf" calls `ingest_documents`
+- [ ] Question about PDF content calls `search_documents` and cites the source
+
+---
+
+## License
+
+[MIT](./LICENSE) — Copyright (c) 2026 Muhammad Aizat Bin Md Hawari.

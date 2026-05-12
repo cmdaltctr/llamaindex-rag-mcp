@@ -1,0 +1,675 @@
+{
+  "summaries": [
+    {
+      "label": "Vector Search (no reranker)",
+      "total_queries": 8,
+      "source_accuracy": 0.875,
+      "answer_accuracy": 0.875,
+      "avg_score": 0.514,
+      "avg_latency_ms": 28.6
+    },
+    {
+      "label": "Vector Search + Reranker",
+      "total_queries": 8,
+      "source_accuracy": 1.0,
+      "answer_accuracy": 1.0,
+      "avg_score": 0.8366,
+      "avg_latency_ms": 351.8
+    },
+    {
+      "label": "Vector + threshold=0.3",
+      "total_queries": 8,
+      "source_accuracy": 0.875,
+      "answer_accuracy": 0.875,
+      "avg_score": 0.514,
+      "avg_latency_ms": 26.8
+    },
+    {
+      "label": "Full Pipeline (rerank + threshold)",
+      "total_queries": 8,
+      "source_accuracy": 0.875,
+      "answer_accuracy": 0.875,
+      "avg_score": 0.833,
+      "avg_latency_ms": 71.4
+    }
+  ],
+  "detailed_results": {
+    "vector_only": [
+      {
+        "query": "What is the capital of France?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.567480470451761,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 43.1,
+        "all_scores": [
+          0.567480470451761,
+          0.5630547039595607,
+          0.39625573571052386,
+          0.39163396430036634,
+          0.32964555515855076
+        ]
+      },
+      {
+        "query": "Which city has the Eiffel Tower?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.4806722782403073,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 25.4,
+        "all_scores": [
+          0.4806722782403073,
+          0.4756011267715166,
+          0.4179910988839603,
+          0.41313531709518586,
+          0.3559949187482178
+        ]
+      },
+      {
+        "query": "Tell me about Python programming",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.4909215101102619,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 22.7,
+        "all_scores": [
+          0.4909215101102619,
+          0.4622571307496243,
+          0.36931813591229895,
+          0.3645408546860528,
+          0.34624327910288893
+        ]
+      },
+      {
+        "query": "What is JavaScript used for?",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.42903823933872687,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 23.7,
+        "all_scores": [
+          0.42903823933872687,
+          0.4228399068169075,
+          0.3804407527243546,
+          0.37330952034901516,
+          0.3251098550298155
+        ]
+      },
+      {
+        "query": "What is the capital of Germany?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.567480470451761,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 35.2,
+        "all_scores": [
+          0.567480470451761,
+          0.5630547039595607,
+          0.39625573571052386,
+          0.39163396430036634,
+          0.32964555515855076
+        ]
+      },
+      {
+        "query": "What is the Colosseum?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.45464807936167617,
+        "source_correct": false,
+        "answer_correct": false,
+        "latency_ms": 28.3,
+        "all_scores": [
+          0.45464807936167617,
+          0.44810508001490434,
+          0.4164299075142044,
+          0.4104130675754259,
+          0.36569013555462976
+        ]
+      },
+      {
+        "query": "Tell me about machine learning libraries",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.5436077772526332,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 22.0,
+        "all_scores": [
+          0.5436077772526332,
+          0.44493833514562114,
+          0.4055074053897378,
+          0.4035014530887703,
+          0.39321603884155176
+        ]
+      },
+      {
+        "query": "What runs on the server with Node.js?",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.5780541922435478,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 28.6,
+        "all_scores": [
+          0.5780541922435478,
+          0.4841146748511684,
+          0.42933613647508867,
+          0.4153111349606721,
+          0.4034280093609338
+        ]
+      }
+    ],
+    "vector_plus_reranker": [
+      {
+        "query": "What is the capital of France?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+        "top_score": 0.9998841159125909,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 2195.7,
+        "all_scores": [
+          0.9998841159125909,
+          0.9998841159125909,
+          0.9990199581092319,
+          0.9990199581092319,
+          0.0002979746518816913
+        ]
+      },
+      {
+        "query": "Which city has the Eiffel Tower?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.7949961727351142,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 99.0,
+        "all_scores": [
+          0.7949961727351142,
+          0.7949961727351142,
+          0.002564879942573442,
+          0.002564879942573442,
+          0.00036948446727665053
+        ]
+      },
+      {
+        "query": "Tell me about Python programming",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.9978769318231202,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 78.6,
+        "all_scores": [
+          0.9978769318231202,
+          0.9978769318231202,
+          0.0002555167778787784,
+          0.0002555167778787784,
+          8.564758912996515e-05
+        ]
+      },
+      {
+        "query": "What is JavaScript used for?",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.9998471592462176,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 91.1,
+        "all_scores": [
+          0.9998471592462176,
+          0.9998471592462176,
+          0.003505318467455375,
+          0.003505318467455375,
+          0.0002629410804162091
+        ]
+      },
+      {
+        "query": "What is the capital of Germany?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+        "top_score": 0.998938241006211,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 89.8,
+        "all_scores": [
+          0.998938241006211,
+          0.998938241006211,
+          0.9966723526958763,
+          0.9966723526958763,
+          0.0001750693731147857
+        ]
+      },
+      {
+        "query": "What is the Colosseum?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.015289187299232098,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 86.1,
+        "all_scores": [
+          0.015289187299232098,
+          0.015289187299232098,
+          0.0002335846324713205,
+          0.0002335846324713205,
+          2.4995462160052223e-05
+        ]
+      },
+      {
+        "query": "Tell me about machine learning libraries",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.8864862101252555,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 83.0,
+        "all_scores": [
+          0.8864862101252555,
+          0.8864862101252555,
+          8.141879580636076e-05,
+          8.141879580636076e-05,
+          1.3011247380285949e-05
+        ]
+      },
+      {
+        "query": "What runs on the server with Node.js?",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.0,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.999298255403476,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 91.4,
+        "all_scores": [
+          0.999298255403476,
+          0.999298255403476,
+          0.000333545139453278,
+          0.000333545139453278,
+          2.046595781248529e-05
+        ]
+      }
+    ],
+    "vector_plus_threshold": [
+      {
+        "query": "What is the capital of France?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.567480470451761,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 30.9,
+        "all_scores": [
+          0.567480470451761,
+          0.567480470451761,
+          0.567480470451761,
+          0.5630547039595607,
+          0.5630547039595607
+        ]
+      },
+      {
+        "query": "Which city has the Eiffel Tower?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.4806722782403073,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 27.2,
+        "all_scores": [
+          0.4806722782403073,
+          0.4806722782403073,
+          0.4806722782403073,
+          0.4756011267715166,
+          0.4756011267715166
+        ]
+      },
+      {
+        "query": "Tell me about Python programming",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.4909215101102619,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 23.4,
+        "all_scores": [
+          0.4909215101102619,
+          0.4909215101102619,
+          0.4909215101102619,
+          0.4622571307496243,
+          0.4622571307496243
+        ]
+      },
+      {
+        "query": "What is JavaScript used for?",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.42903823933872687,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 24.5,
+        "all_scores": [
+          0.42903823933872687,
+          0.42903823933872687,
+          0.42903823933872687,
+          0.4228399068169075,
+          0.4228399068169075
+        ]
+      },
+      {
+        "query": "What is the capital of Germany?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.567480470451761,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 31.5,
+        "all_scores": [
+          0.567480470451761,
+          0.567480470451761,
+          0.567480470451761,
+          0.5630547039595607,
+          0.5630547039595607
+        ]
+      },
+      {
+        "query": "What is the Colosseum?",
+        "category": "geography",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.45464807936167617,
+        "source_correct": false,
+        "answer_correct": false,
+        "latency_ms": 22.8,
+        "all_scores": [
+          0.45464807936167617,
+          0.45464807936167617,
+          0.45464807936167617,
+          0.44810508001490434,
+          0.44810508001490434
+        ]
+      },
+      {
+        "query": "Tell me about machine learning libraries",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.5436077772526332,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 25.0,
+        "all_scores": [
+          0.5436077772526332,
+          0.5436077772526332,
+          0.5436077772526332,
+          0.44493833514562114,
+          0.44493833514562114
+        ]
+      },
+      {
+        "query": "What runs on the server with Node.js?",
+        "category": "programming",
+        "rerank": false,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.5780541922435478,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 28.8,
+        "all_scores": [
+          0.5780541922435478,
+          0.5780541922435478,
+          0.5780541922435478,
+          0.4841146748511684,
+          0.4841146748511684
+        ]
+      }
+    ],
+    "full_pipeline": [
+      {
+        "query": "What is the capital of France?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+        "top_score": 0.9998850039198127,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 59.8,
+        "all_scores": [
+          0.9998850039198127,
+          0.9998850039198127,
+          0.9998850039198127,
+          0.9998850039198127,
+          0.9988289346347826
+        ]
+      },
+      {
+        "query": "Which city has the Eiffel Tower?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 4,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+        "top_score": 0.7951506047766803,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 71.7,
+        "all_scores": [
+          0.7951506047766803,
+          0.7951506047766803,
+          0.7951506047766803,
+          0.7951506047766803
+        ]
+      },
+      {
+        "query": "Tell me about Python programming",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 4,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.9979119174565206,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 64.7,
+        "all_scores": [
+          0.9979119174565206,
+          0.9979119174565206,
+          0.9979119174565206,
+          0.9979119174565206
+        ]
+      },
+      {
+        "query": "What is JavaScript used for?",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 4,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.9998546595876696,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 67.9,
+        "all_scores": [
+          0.9998546595876696,
+          0.9998546595876696,
+          0.9998546595876696,
+          0.9998546595876696
+        ]
+      },
+      {
+        "query": "What is the capital of Germany?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 5,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+        "top_score": 0.9990533934209719,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 80.5,
+        "all_scores": [
+          0.9990533934209719,
+          0.9990533934209719,
+          0.9990533934209719,
+          0.9990533934209719,
+          0.9971018208878643
+        ]
+      },
+      {
+        "query": "What is the Colosseum?",
+        "category": "geography",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 0,
+        "top_source": "",
+        "top_score": 0.0,
+        "source_correct": false,
+        "answer_correct": false,
+        "latency_ms": 70.5,
+        "all_scores": []
+      },
+      {
+        "query": "Tell me about machine learning libraries",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 4,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+        "top_score": 0.8727849222355366,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 87.0,
+        "all_scores": [
+          0.8727849222355366,
+          0.8727849222355366,
+          0.8727849222355366,
+          0.8727849222355366
+        ]
+      },
+      {
+        "query": "What runs on the server with Node.js?",
+        "category": "programming",
+        "rerank": true,
+        "similarity_threshold": 0.3,
+        "top_k": 5,
+        "num_results": 4,
+        "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/javascript.txt",
+        "top_score": 0.9993276285909551,
+        "source_correct": true,
+        "answer_correct": true,
+        "latency_ms": 69.0,
+        "all_scores": [
+          0.9993276285909551,
+          0.9993276285909551,
+          0.9993276285909551,
+          0.9993276285909551
+        ]
+      }
+    ]
+  }
+}

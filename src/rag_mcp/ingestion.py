@@ -1,35 +1,19 @@
 """Document loading, chunking, and indexing into ChromaDB."""
 
-import os
 from pathlib import Path
 
 import chromadb
-from dotenv import load_dotenv
-from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
+from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-load_dotenv()
-
-# ── Embedding model (local via Ollama) ──────────────────────────────────
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBED_MODEL_NAME = os.getenv("EMBED_MODEL", "nomic-embed-text")
-
-Settings.embed_model = OllamaEmbedding(
-    model_name=EMBED_MODEL_NAME,
-    base_url=OLLAMA_BASE_URL,
-    embed_batch_size=10,
+from .config import (
+    CHUNK_OVERLAP,
+    CHUNK_SIZE,
+    CHROMA_PERSIST_DIR,
+    COLLECTION_NAME,
+    SUPPORTED_EXTENSIONS,
 )
-# ────────────────────────────────────────────────────────────────────────
-
-CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "64"))
-
-# File extensions we know how to handle
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
 
 
 def _get_chroma_collection():

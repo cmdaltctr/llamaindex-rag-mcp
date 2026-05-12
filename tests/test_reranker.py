@@ -241,3 +241,197 @@ class TestCrossEncoderRerankerMockedInference:
         out = reranker.rerank("query", results, top_k=3)
         scores = [r["score"] for r in out]
         assert scores == sorted(scores, reverse=True)
+
+    def test_rerank_single_result_batch_of_one(self) -> None:
+        """A single input result must produce a single output (batch-1 edge case).
+
+        ONNX may return shape (1,) or (1, 1) for batch size 1.  The squeeze
+        must handle both without error.
+        """
+        reranker = CrossEncoderReranker()
+
+        mock_session = MagicMock()
+        # Shape (1, 1) — single pair, logit = 5.0 → sigmoid ≈ 0.993
+        mock_session.run.return_value = [np.array([[5.0]])]
+
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2, 3]]),
+            "attention_mask": np.array([[1, 1, 1]]),
+        }
+
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+
+        results = [{"text": "only result", "score": 0.4}]
+        out = reranker.rerank("query", results, top_k=5)
+
+        assert len(out) == 1
+        assert 0.99 < out[0]["score"] < 1.0
+        assert out[0]["_reranked"] is True
+
+    def test_rerank_top_k_truncation(self) -> None:
+        """Results must be truncated to top_k even when there are more."""
+        reranker = CrossEncoderReranker()
+
+        mock_session = MagicMock()
+        # 5 logits → 5 reranked results
+        mock_session.run.return_value = [
+            np.array([[4.0], [3.0], [2.0], [1.0], [0.0]])
+        ]
+
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+
+        results = [
+            {"text": f"doc {i}", "score": 0.1} for i in range(5)
+        ]
+        out = reranker.rerank("query", results, top_k=2)
+
+        assert len(out) == 2
+        # Best score first (logit 4.0 → sigmoid ≈ 0.98)
+        assert out[0]["score"] > out[1]["score"]
+
+    def test_rerank_inference_failure_returns_originals(self) -> None:
+        """When ONNX inference throws, return original results un-reranked."""
+        reranker = CrossEncoderReranker()
+
+        mock_session = MagicMock()
+        mock_session.run.side_effect = RuntimeError("ONNX engine crashed")
+
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+
+        results = [
+            {"text": "first", "score": 0.9},
+            {"text": "second", "score": 0.7},
+        ]
+        out = reranker.rerank("query", results, top_k=5)
+
+        assert len(out) == 2
+        assert all(r["_reranked"] is False for r in out)
+        # Original scores preserved
+        assert out[0]["score"] == 0.9
+        assert out[1]["score"] == 0.7
+
+    def test_rerank_handles_unexpected_output_shape(self) -> None:
+        """ONNX returning a 1-D array (instead of 2-D) should still work.
+
+        squeeze(-1) on shape (3,) is a no-op, so the code still works.
+        """
+        reranker = CrossEncoderReranker()
+
+        mock_session = MagicMock()
+        # 1-D array instead of 2-D — tests squeeze(-1) on already-flat data
+        mock_session.run.return_value = [np.array([2.0, -1.0, 0.5])]
+
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+
+        results = [
+            {"text": "a", "score": 0.5},
+            {"text": "b", "score": 0.5},
+            {"text": "c", "score": 0.5},
+        ]
+        out = reranker.rerank("query", results, top_k=3)
+
+        assert len(out) == 3
+        for r in out:
+            assert 0.0 < r["score"] < 1.0
+            assert r["_reranked"] is True
+        # Must be sorted descending
+        scores = [r["score"] for r in out]
+        assert scores == sorted(scores, reverse=True)
+
+
+# ── Model loading tests ─────────────────────────────────────────────────────
+
+
+class TestCrossEncoderRerankerModelLoading:
+    """Tests for _load_model() behaviour: retry, failure, and skip paths."""
+
+    def setup_method(self) -> None:
+        """Reset the singleton before each test."""
+        CrossEncoderReranker._instance = None
+
+    def teardown_method(self) -> None:
+        """Reset the singleton after each test."""
+        CrossEncoderReranker._instance = None
+
+    def test_load_model_skips_when_already_loaded(self) -> None:
+        """_load_model() must return immediately if _loaded is True."""
+        reranker = CrossEncoderReranker()
+        reranker._loaded = True
+        reranker._load_attempted = True
+
+        # Should not attempt any imports or file I/O.
+        reranker._load_model()
+        assert reranker._loaded is True
+
+    def test_load_model_failure_sets_error(self) -> None:
+        """Failed model load must set _load_error and keep _loaded=False."""
+        reranker = CrossEncoderReranker()
+
+        with patch.dict("sys.modules", {}):
+            # Patch onnxruntime import to raise
+            with patch(
+                "builtins.__import__",
+                side_effect=ImportError("no onnxruntime"),
+            ):
+                reranker._load_model()
+
+        assert reranker._loaded is False
+        assert reranker._load_attempted is True
+        assert reranker._load_error is not None
+
+    def test_load_model_retry_after_failure(self) -> None:
+        """After a failed load, next call must retry (transient recovery)."""
+        reranker = CrossEncoderReranker()
+        reranker._loaded = False
+        reranker._load_attempted = True
+        reranker._load_error = "previous failure"
+
+        # Patch the heavy imports inside _load_model to simulate success
+        mock_session = MagicMock()
+        mock_tokenizer_cls = MagicMock()
+
+        with patch("rag_mcp.reranker._select_onnx_variant", return_value="onnx/model.onnx"):
+            with patch(
+                "huggingface_hub.hf_hub_download",
+                return_value="/fake/model.onnx",
+            ):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained",
+                    return_value=mock_tokenizer_cls,
+                ):
+                    with patch(
+                        "onnxruntime.InferenceSession",
+                        return_value=mock_session,
+                    ):
+                        reranker._load_model()
+
+        assert reranker._loaded is True
+        assert reranker._load_error is None
+        assert reranker._session is mock_session

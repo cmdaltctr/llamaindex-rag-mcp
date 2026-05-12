@@ -33,6 +33,11 @@ rag-mcp/
 ├── .env.example                 ← Config template (copy to .env)
 ├── README.md                    ← Setup + usage + OpenChamber registration
 ├── uv.lock                      ← Locked deps (auto-generated)
+├── experiments/                 ← Experiment scripts and findings
+│   ├── experiments.md
+│   ├── experiment_results.json
+│   ├── review.md
+│   └── run_experiments.py
 ├── openspec/                    ← OpenSpec spec-driven development
 │   ├── changes/
 │   │   └── <change-name>/
@@ -45,9 +50,10 @@ rag-mcp/
 └── src/
     └── rag_mcp/
         ├── __init__.py          ← Package marker + version
+        ├── config.py            ← Shared env vars, Settings.embed_model, constants
         ├── server.py            ← FastMCP instance + tool registration
         ├── ingestion.py         ← Document loading, chunking, ChromaDB indexing
-        ├── retrieval.py         ← Semantic search + reranker integration
+        ├── retrieval.py         ← Semantic search + threshold scaling + reranker
         └── reranker.py          ← Cross-encoder reranker (ONNX)
 ```
 
@@ -93,10 +99,13 @@ rag-mcp/
 
 ### Settings Pattern
 
-Use LlamaIndex's global `Settings` object for shared configuration, set once at
-module import time:
+LlamaIndex's global `Settings` object is configured in a single shared module
+(``config.py``).  Both ``ingestion.py`` and ``retrieval.py`` import their
+constants and embedding model from ``config.py`` — never set
+``Settings.embed_model`` independently:
 
 ```python
+# config.py — single source of truth
 from llama_index.core import Settings
 from llama_index.embeddings.ollama import OllamaEmbedding
 
@@ -107,8 +116,8 @@ Settings.embed_model = OllamaEmbedding(
 )
 ```
 
-Both `ingestion.py` and `retrieval.py` independently set `Settings.embed_model`
-because either may be imported first. Keep them in sync.
+This eliminates the previous duplication where each module independently set
+``Settings.embed_model`` at import time, which risked configuration drift.
 
 ## Dependencies
 
@@ -194,6 +203,25 @@ work with. If `top_k=5`, we fetch 10 candidates from vector search, then the
 reranker picks the best 5. This gives the reranker a meaningful pool without
 blowing up latency.
 
+### Why threshold scaling (÷30) with reranker?
+
+Cross-encoder sigmoid scores occupy a much lower range than cosine similarity.
+Valid reranker results can score as low as 0.015 (the Colosseum query from
+experiments), while cosine similarity rarely goes below 0.3 for relevant
+matches. Without scaling, a user-supplied `similarity_threshold=0.3` would
+filter out all reranker results.
+
+The `_effective_threshold()` function in `retrieval.py` automatically scales
+the threshold down by 30× when reranking is active (0.3 → 0.01). This was
+calibrated from experiment data:
+
+- Strong reranker matches: 0.79–1.0
+- Weak but correct matches: 0.015 (Colosseum query)
+- Clear noise: < 0.003
+
+Users supply a single threshold in cosine-similarity terms; the system handles
+the conversion transparently.
+
 ## What to Avoid
 
 ### ❌ Hard no's
@@ -206,13 +234,15 @@ blowing up latency.
   required.
 - **No hardcoded paths or secrets** — everything configurable via `.env`.
 - **No modifying `server.py` to import embedding models directly** — the server
-  delegates to `ingestion.py` and `retrieval.py` which own the embedding config.
+  delegates to `ingestion.py` and `retrieval.py` which import config from
+  `config.py`.
 
 ### ⚠️ Avoid these patterns
 
 - **Tight coupling between ingestion and retrieval** — they share config
-  (chunk size, embed model) through env vars and `Settings`, but they should
-  be independently importable and testable.
+  through the centralised ``config.py`` module, but they should remain
+  independently importable and testable. Do not add cross-imports between
+  ``ingestion.py`` and ``retrieval.py``.
 - **Mixing embedding models** — the same model must be used for indexing and
   querying. ChromaDB locks vector dimension at collection creation.
 - **Ignoring chunk size tuning** — the default 512/64 is a starting point.
@@ -259,30 +289,32 @@ uv run pytest tests/test_reranker.py -v
 The test suite uses:
 - **EphemeralClient** patched via `conftest.py` — no `chroma_db/` directory created
 - **MockEmbedding** (384-dim) — no Ollama server required
-- **Module-level constant patching** — ensures `ingestion.py` and `retrieval.py`
-  use the same collection name regardless of import order
+- **Shared config patching** — `conftest.py` patches `rag_mcp.config` constants
+  so that both `ingestion.py` and `retrieval.py` (which import from config)
+  always agree on collection name and persist directory
 - **`@pytest.mark.slow`** — E2E stdio test excluded by default
 
 | File | Tests | Coverage area |
 |------|-------|---------------|
-| `tests/test_reranker.py` | 16 | Sigmoid, ONNX variant, singleton, fallback, mock inference |
+| `tests/test_reranker.py` | 23 | Sigmoid, ONNX variant, singleton, fallback, mock inference, model loading |
 | `tests/test_ingestion.py` | 4 | Path validation, empty dir, list empty |
 | `tests/test_mcp_tools.py` | 5 | Tool discovery, ingest, search, list, param validation |
-| `tests/test_retrieval.py` | 5 | Empty store, threshold, rerank flag, default search |
+| `tests/test_retrieval.py` | 11 | Empty store, threshold, rerank flag, threshold scaling (6 tests) |
 | `tests/test_e2e_stdio.py` | 1 | JSON-RPC handshake over stdio subprocess |
 
 **Key caveat**: `conftest.py` monkeypatches both `chromadb.PersistentClient` and
 `chromadb.EphemeralClient` to return a shared singleton `EphemeralClient`, AND
-monkeypatches the module-level constants (`CHROMA_PERSIST_DIR`, `COLLECTION_NAME`)
-in both `rag_mcp.ingestion` and `rag_mcp.retrieval` via `sys.modules`. This
-ensures consistent collection naming regardless of when each module is first
-imported relative to the `_isolate_env` fixture.
+monkeypatches the module-level constants in `rag_mcp.config` (the shared config
+module). It also patches `rag_mcp.ingestion` and `rag_mcp.retrieval` via
+`sys.modules` for backward compatibility. This ensures consistent collection
+naming regardless of when each module is first imported relative to the
+`_isolate_env` fixture.
 
 ### Before committing
 
 - Run `uv sync` to verify dependencies resolve
 - Run `uv run pytest -m "not slow" -v` — all fast tests must pass
-- Run `uv run pytest -m "not slow" --cov=rag_mcp` — coverage must stay ≥ 90%
+- Run `uv run pytest -m "not slow" --cov=rag_mcp` — coverage must stay ≥ 95%
 - Update `.env.example` if new config options were added
 - Update `README.md` if tool interfaces changed
 - Ensure `openspec validate <change-id>` passes if working on an OpenSpec change
