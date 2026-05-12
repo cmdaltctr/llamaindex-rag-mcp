@@ -306,6 +306,94 @@ doing if you have many projects and don't want to duplicate setup.
 
 ---
 
+## AI agent quickstart
+
+If you are an AI agent (e.g. Claude, GPT, Cursor, Windsurf) setting this server
+up for a user, follow these steps in order:
+
+### 1. Install prerequisites
+
+```bash
+# Install uv (Python package manager) if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install and start Ollama if not already running
+# macOS:
+brew install ollama
+# Linux:
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Start Ollama server (background)
+ollama serve &
+
+# Pull the embedding model
+ollama pull nomic-embed-text
+```
+
+### 2. Install the server
+
+```bash
+cd /path/to/llamaindex-rag-mcp
+cp .env.example .env
+uv sync
+```
+
+### 3. Verify it works
+
+```bash
+uv run rag-mcp
+# Should start silently (waiting for MCP on stdin). Ctrl-C to stop.
+```
+
+### 4. Enable the reranker (recommended)
+
+The reranker significantly improves search precision. To enable it:
+
+1. Edit `.env` and set:
+   ```
+   RERANK_ENABLED=true
+   ```
+
+2. Trigger the first download by running any search with `rerank=True`:
+   > "Search my documents for [topic], use reranking"
+
+   The ~23MB ONNX model downloads from HuggingFace Hub on first use (~7s cold
+   start). It caches in `~/.cache/huggingface/` — no repeat downloads.
+
+3. No internet required after the first download. If the download fails, the
+   server gracefully falls back to un-reranked results (no crash).
+
+### 5. Register in your MCP host
+
+Add to `~/.opencode/opencode.json` (or equivalent for your MCP client):
+
+```json
+{
+  "mcp": {
+    "rag-docs": {
+      "type": "local",
+      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "rag-mcp"],
+      "environment": {
+        "EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_BASE_URL": "http://localhost:11434",
+        "CHROMA_PERSIST_DIR": "/absolute/path/to/llamaindex-rag-mcp/chroma_db"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+### 6. Ingest documents and search
+
+Once connected, use the MCP tools:
+
+- **Ingest**: `"Index the file /path/to/document.pdf"`
+- **Search**: `"Search my documents for information about X"`
+- **List**: `"What documents do you have access to?"`
+
+---
+
 ## Recommended custom agent prompt
 
 If you create a dedicated agent in OpenChamber -> Settings -> Agents, use this
@@ -451,4 +539,4 @@ ChromaDB client so no external services are needed for fast tests.
 
 ## License
 
-[MIT](./LICENSE) — Copyright (c) 2026 Muhammad Aizat Bin Md Hawari.
+[MIT](./LICENSE)
