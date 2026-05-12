@@ -1,0 +1,1 @@
+Python is a popular programming language for data science and machine learning. It has a rich ecosystem of libraries including NumPy, pandas, and scikit-learn.

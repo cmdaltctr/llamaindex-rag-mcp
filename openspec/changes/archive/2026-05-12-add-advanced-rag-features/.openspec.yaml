@@ -1,0 +1,11 @@
+schema: spec-driven
+id: add-advanced-rag-features
+created: 2026-05-11
+status: proposed
+why: |
+  The current RAG server only supports basic vector search, which lacks
+  precision tuning. Adding a cross-encoder reranker and configurable
+  similarity threshold will improve retrieval quality significantly
+  with no external API calls — everything runs locally via ONNX.
+capabilities:
+  - reranking

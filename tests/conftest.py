@@ -1,0 +1,182 @@
+"""Shared test fixtures for the RAG MCP server test suite.
+
+Provides:
+- EphemeralClient monkeypatch (no disk I/O for ChromaDB)
+- Mock embedding model (no Ollama server required)
+- FastMCP server instance fixture
+- Helper context manager for in-memory MCP client sessions
+"""
+
+from __future__ import annotations
+
+import os
+from contextlib import asynccontextmanager
+from pathlib import Path
+from unittest.mock import patch
+
+import chromadb
+import pytest
+from llama_index.core import Settings
+from llama_index.core.embeddings import MockEmbedding
+from mcp import ClientSession
+from mcp.shared.memory import create_connected_server_and_client_session
+
+# ── Constants ──────────────────────────────────────────────────────────────
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+# ── Session-scoped patches ─────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace PersistentClient with a singleton EphemeralClient globally.
+
+    This ensures no ``chroma_db/`` directory is created on disk and each
+    test gets a fresh in-memory vector store that is shared across all
+    calls within the same test (so ingest and search use the same store).
+
+    A wrapper function is used because PersistentClient accepts a ``path``
+    kwarg that EphemeralClient does not.
+
+    NOTE: ChromaDB's EphemeralClient shares in-memory state across
+    instances (same default tenant/database).  We delete all existing
+    collections so each test starts with a truly empty store.
+    """
+    _original_ephemeral = chromadb.EphemeralClient
+    _shared_client = _original_ephemeral()
+
+    # Clear any leftover data from previous tests.  EphemeralClient
+    # instances share the same in-memory backend, so a new instance
+    # still sees collections created by earlier tests.
+    for coll in _shared_client.list_collections():
+        _shared_client.delete_collection(coll.name)
+
+    def _ephemeral_singleton(**kwargs):
+        """Return a shared EphemeralClient, ignoring the ``path`` argument."""
+        return _shared_client
+
+    monkeypatch.setattr(chromadb, "PersistentClient", _ephemeral_singleton)
+    monkeypatch.setattr(chromadb, "EphemeralClient", _ephemeral_singleton)
+
+
+@pytest.fixture(autouse=True)
+def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace OllamaEmbedding with MockEmbedding globally.
+
+    Tests should run without a running Ollama server. MockEmbedding
+    produces deterministic embeddings based on text hashing.
+
+    Note: The mock must be applied AFTER module imports because
+    ``ingestion.py`` and ``retrieval.py`` set ``Settings.embed_model``
+    at import time.  The ``mcp_server`` fixture re-applies this mock
+    after importing those modules.
+    """
+    _patch_embed_model._mock = MockEmbedding(embed_dim=384)
+    Settings.embed_model = _patch_embed_model._mock
+
+
+@pytest.fixture(autouse=True)
+def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Set deterministic environment variables for every test.
+
+    Also monkeypatches module-level constants in ingestion.py and
+    retrieval.py so that both modules always agree on the same
+    collection name and persist directory, regardless of import order.
+
+    Without this, module-level ``os.getenv()`` calls are evaluated at
+    first import — which may happen *before* env vars are set (e.g. when
+    test_ingestion.py imports ingestion at collection time) or *after*
+    (e.g. when the mcp_server fixture triggers a late import of
+    retrieval.py).  The resulting mismatch causes ingest to write to one
+    collection while search reads from another.
+
+    We only patch modules that are *already* loaded (via ``sys.modules``)
+    to avoid triggering side-effectful module-level code (e.g.
+    ``Settings.embed_model = OllamaEmbedding(...)``) during fixture
+    setup.  Modules not yet loaded will pick up the env vars at their
+    first import.
+    """
+    import sys
+
+    _TEST_PERSIST_DIR = "/tmp/test_chroma_rag_mcp"
+    _TEST_COLLECTION = "test_documents"
+
+    monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
+    monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
+
+    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):
+        mod = sys.modules.get(mod_name)
+        if mod is not None:
+            monkeypatch.setattr(mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
+            monkeypatch.setattr(mod, "COLLECTION_NAME", _TEST_COLLECTION)
+
+
+# ── FastMCP server fixture ─────────────────────────────────────────────────
+
+
+@pytest.fixture
+def mcp_server():
+    """Return the real FastMCP server instance from rag_mcp.server.
+
+    The ChromaDB and embedding patches are applied via autouse fixtures
+    above, so the server uses in-memory ChromaDB and mock embeddings.
+
+    Re-applies MockEmbedding after import because ``ingestion.py`` and
+    ``retrieval.py`` overwrite ``Settings.embed_model`` at import time.
+    """
+    from rag_mcp.server import mcp
+
+    # Importing server.py triggers ingestion.py and retrieval.py which
+    # set Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.
+    Settings.embed_model = _patch_embed_model._mock
+
+    return mcp
+
+
+@asynccontextmanager
+async def connected_client(mcp_server):
+    """Create an in-memory MCP ClientSession connected to the server.
+
+    This is an async context manager, not a fixture, to avoid teardown
+    issues with pytest-asyncio and anyio task groups.
+    """
+    async with create_connected_server_and_client_session(
+        mcp_server
+    ) as session:
+        yield session
+
+
+# ── Fixture file paths ─────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def fixtures_dir() -> Path:
+    """Return the path to the test fixtures directory."""
+    return FIXTURES_DIR
+
+
+@pytest.fixture
+def sample_txt(fixtures_dir: Path) -> Path:
+    """Return path to the sample text fixture."""
+    return fixtures_dir / "sample.txt"
+
+
+@pytest.fixture
+def sample_md(fixtures_dir: Path) -> Path:
+    """Return path to the sample markdown fixture."""
+    return fixtures_dir / "sample.md"
+
+
+@pytest.fixture
+def empty_txt(fixtures_dir: Path) -> Path:
+    """Return path to the empty text fixture."""
+    return fixtures_dir / "empty.txt"
+
+
+@pytest.fixture
+def dir_with_docs(fixtures_dir: Path) -> Path:
+    """Return path to the directory containing multiple documents."""
+    return fixtures_dir / "dir_with_docs"
