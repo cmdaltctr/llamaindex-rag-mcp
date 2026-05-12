@@ -267,13 +267,13 @@ mkdir -p .opencode rag-store
       "type": "local",
       "command": [
         "uv", "run", "--project",
-        "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp",
+        "/absolute/path/to/llamaindex-rag-mcp",
         "rag-mcp"
       ],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
-        "CHROMA_PERSIST_DIR": "/Users/aizat/Development/PROJECTS/my-project/rag-store/chroma_db"
+        "CHROMA_PERSIST_DIR": "/absolute/path/to/my-project/rag-store/chroma_db"
       },
       "enabled": true
     }
