@@ -29,6 +29,9 @@ coverage.xml
 *.swo
 *~
 
+# Generated knowledge graph artifacts
+graphify-out/
+
 # OS
 .DS_Store
 Thumbs.db
