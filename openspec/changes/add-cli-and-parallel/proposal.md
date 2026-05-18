@@ -1,8 +1,9 @@
 # Proposal: CLI Interface & Parallel Ingestion
 
 **Change ID**: `add-cli-and-parallel`
-**Status**: proposed
+**Status**: in_progress — implementation complete, automated tests in progress
 **Created**: 2026-05-18
+**Last updated**: 2026-05-18 (testing plan added)
 
 ## Summary
 
@@ -86,6 +87,25 @@ and fully backward-compatible.
 8. All existing tests pass without modification
 9. New command-line entry point has test coverage
 10. `--help` output is clear and discoverable
+11. CLI integration tests cover all three commands (`ingest`, `search`, `list`) via `CliRunner`
+12. JSON output mode is tested on all commands
+13. Progress reporting (Rich + plain-text) has automated coverage
+14. Concurrent write lock and semaphore throttling are tested with actual threads
+15. Path resolution (`expanduser`, `resolve`) has test coverage
+16. SIGINT handler logic is tested (shutdown flag, exit code 130, interrupt message)
+17. `_sanitise_display_name` has isolated unit tests
+
+## Artifacts
+
+| Document | Purpose |
+|----------|---------|
+| `proposal.md` | This document — motivation, scope, success criteria |
+| `design.md` | Architecture decisions, component design, data flow |
+| `risks.md` | Security assessment with 10 findings, mitigations, and dependency audit |
+| `testing.plan.md` | Comprehensive test gap analysis, test design, and implementation plan |
+| `tasks.md` | Phased implementation checklist (Phases 1–8) |
+| `specs/cli/spec.md` | CLI capability requirements (SHALL/MUST with scenarios) |
+| `specs/parallel-ingestion/spec.md` | Parallel ingestion capability requirements |
 
 ## Risks
 
