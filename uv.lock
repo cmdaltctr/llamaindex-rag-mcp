@@ -3044,6 +3044,7 @@ dependencies = [
     { name = "onnxruntime" },
     { name = "python-dotenv" },
     { name = "transformers" },
+    { name = "typer" },
 ]
 
 [package.dev-dependencies]
@@ -3065,6 +3066,7 @@ requires-dist = [
     { name = "onnxruntime", specifier = ">=1.17.0,<1.26.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "transformers", specifier = ">=4.40.0" },
+    { name = "typer", specifier = ">=0.25.1" },
 ]
 
 [package.metadata.requires-dev]

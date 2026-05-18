@@ -15,10 +15,11 @@ dependencies = [
     "onnxruntime>=1.17.0,<1.26.0",
     "transformers>=4.40.0",
     "huggingface-hub>=0.20.0",
+    "typer>=0.25.1",
 ]
 
 [project.scripts]
-rag-mcp = "rag_mcp.server:main"
+rag-mcp = "rag_mcp.cli:run_cli"
 
 [build-system]
 requires = ["hatchling"]
