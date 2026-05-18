@@ -43,6 +43,9 @@ Environment variables are loaded from a `.env` file (copy from `.env.example`):
 | `COLLECTION_NAME` | `documents` | ChromaDB collection name |
 | `CHUNK_SIZE` | `512` | Text splitter chunk size (characters) |
 | `CHUNK_OVERLAP` | `64` | Chunk overlap (characters) |
+| `EMBED_BATCH_SIZE` | `100` | Embedding batch size per Ollama API call |
+| `INGEST_WORKERS` | `4` | Parallel file readers for directory ingestion |
+| `EMBED_CONCURRENCY` | `2` | Max concurrent Ollama embedding requests |
 | `TOP_K` | `5` | Default number of search results |
 | `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | ONNX reranker model ID |
 | `RERANK_ENABLED` | `false` | Default rerank behaviour |
@@ -99,6 +102,75 @@ To inspect the tools with the MCP Inspector:
 
 ```bash
 npx @modelcontextprotocol/inspector uv run rag-mcp
+```
+
+---
+
+## CLI usage
+
+The `rag-mcp` command doubles as a CLI tool. With no arguments it starts the
+MCP stdio server (backward compatible). With subcommands it operates directly
+from the terminal.
+
+### Ingest a file or directory
+
+```bash
+# Index a single file
+rag-mcp ingest ~/Documents/research/paper.pdf
+
+# Index an entire directory (parallel by default, 4 workers)
+rag-mcp ingest /path/to/zotero/storage/
+
+# Customise parallelism and chunking
+rag-mcp ingest /path/to/docs/ --workers 8 --chunk-size 1024 --chunk-overlap 128
+
+# Machine-readable output for scripts
+rag-mcp ingest /path/to/docs/ --json
+```
+
+Progress bars appear automatically in TTY terminals (Rich). In non-TTY
+contexts (pipes, CI) plain text is emitted to stderr. Press Ctrl+C once for
+graceful shutdown (finishes current file, skips the rest); press again to
+force quit.
+
+### Search indexed documents
+
+```bash
+# Basic semantic search
+rag-mcp search "quantum entanglement"
+
+# With reranking and threshold
+rag-mcp search "machine learning" --rerank --threshold 0.3 --top-k 10
+
+# JSON output for scripting
+rag-mcp search "climate change" --json
+```
+
+### List indexed documents
+
+```bash
+# Human-readable table
+rag-mcp list
+
+# JSON output
+rag-mcp list --json
+```
+
+### Shell completion
+
+```bash
+# Install completion for your current shell
+rag-mcp --install-completion
+
+# Or just show the completion script
+rag-mcp --show-completion
+```
+
+### Global options
+
+```bash
+rag-mcp --version     # Show version
+rag-mcp --help        # Show help
 ```
 
 ---
