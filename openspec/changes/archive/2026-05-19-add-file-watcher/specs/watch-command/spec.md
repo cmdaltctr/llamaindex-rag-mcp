@@ -1,0 +1,141 @@
+# Specification: watch-command
+
+## ADDED Requirements
+
+### Requirement: CLI subcommand `rag-mcp watch`
+
+The system SHALL provide a `rag-mcp watch <path>` CLI subcommand that monitors a directory tree for supported document files and auto-ingests them into the ChromaDB index using the existing `ingest_path()` pipeline.
+
+#### Scenario: Basic watch starts and waits
+- **WHEN** the user runs `rag-mcp watch /path/to/docs`
+- **THEN** the process SHALL block and monitor `/path/to/docs` for file system events
+- **THEN** the process SHALL output a message like `Watching /path/to/docs for document changes…` to stderr
+
+#### Scenario: Watch rejects non-existent path
+- **WHEN** the user runs `rag-mcp watch /nonexistent/path`
+- **THEN** the process SHALL print an error message to stderr and exit with a non-zero status code
+
+### Requirement: File event filtering
+
+The watcher SHALL only respond to file system events for files with supported extensions (`.pdf`, `.docx`, `.pptx`, `.txt`, `.md`, `.html`, `.csv` as defined by `SUPPORTED_EXTENSIONS` in `config.py`). The watcher SHALL ignore hidden files (names starting with `.`), temporary files (`~$*`, `*.tmp`, `*.part`), and `.git` directories.
+
+#### Scenario: Ignores unsupported file types
+- **WHEN** an unsupported file (e.g. `.png`, `.mp4`, `.DS_Store`) is created in the watched directory
+- **THEN** the watcher SHALL NOT attempt to ingest it
+
+#### Scenario: Ignores hidden and temp files
+- **WHEN** a hidden file (e.g. `.gitkeep`) or a temporary file (e.g. `~$doc.docx`) is created or modified
+- **THEN** the watcher SHALL NOT attempt to ingest it
+
+### Requirement: Recursive directory watching
+
+The watcher SHALL watch the given path recursively, monitoring all subdirectories by default.
+
+#### Scenario: Detects files in subdirectories
+- **WHEN** a supported file is created in a subdirectory of the watched path
+- **THEN** the watcher SHALL detect the event and trigger ingestion
+
+#### Scenario: Zotero storage structure
+- **WHEN** Zotero creates a new paper in `storage/<hash>/<filename>.pdf`
+- **THEN** the watcher SHALL detect the new PDF and trigger ingestion
+
+### Requirement: Event debouncing
+
+The watcher SHALL debounce file system events to avoid triggering ingestion during active writes (e.g. streaming writes, fragmented downloads). For each file path, a timer SHALL be reset on each new event and the ingestion SHALL only fire after a quiet period with no further events for that file. The default debounce interval SHALL be 2 seconds. The user SHALL be able to override this with a `--debounce <seconds>` flag.
+
+#### Scenario: Debounces rapid successive events
+- **WHEN** a file receives multiple `modified` events within the debounce window (e.g. during a streaming write)
+- **THEN** the watcher SHALL wait until no new events arrive for the debounce interval before triggering ingestion
+- **THEN** the watcher SHALL trigger ingestion exactly once
+
+#### Scenario: Custom debounce interval
+- **WHEN** the user runs `rag-mcp watch /path --debounce 5`
+- **THEN** the watcher SHALL use a 5-second debounce interval
+
+### Requirement: Content-hash deduplication
+
+The watcher SHALL compute a SHA-256 hash of each file before ingesting and store it in an in-memory cache. If a file event fires for a file whose content hash matches the cached hash, the watcher SHALL skip ingestion. The cache SHALL be ephemeral (lost on watcher restart — no persistent storage). On ingestion failure, the hash SHALL NOT be updated in the cache, so the next `modified` event for that file triggers a fresh attempt.
+
+#### Scenario: Skips unchanged content
+- **WHEN** a `modified` event fires for a file whose content has not actually changed
+- **THEN** the watcher SHALL skip ingestion and log a debug message
+
+#### Scenario: Ingests genuinely changed content
+- **WHEN** a `modified` event fires for a file whose content has genuinely changed (different hash)
+- **THEN** the watcher SHALL proceed with ingestion and update the cached hash
+
+### Requirement: Ingestion via `ingest_path()`
+
+When the watcher determines that a file needs ingestion, it SHALL call `ingestion.ingest_path()` with the single file path as the argument, using default chunking settings (no workers override, no progress callback).
+
+#### Scenario: Single-file ingestion on event
+- **WHEN** the watcher decides to ingest a file
+- **THEN** the watcher SHALL call `ingest_path()` with that file's path
+- **THEN** the watcher SHALL log the outcome (success with chunk count, or failure) to stderr at INFO level
+
+### Requirement: Graceful shutdown
+
+The watcher SHALL handle SIGINT (Ctrl+C) with a watcher-owned shutdown sequence. It SHALL NOT rely on `_shutdown_requested` as its primary shutdown mechanism (because `ingest_path()` unconditionally clears it). The shutdown sequence SHALL be: (1) cancel all pending `threading.Timer` callbacks to prevent new `ingest_path()` calls, (2) wait for any in-flight `ingest_path()` to complete naturally, (3) set `_shutdown_requested` as belt-and-suspenders for the in-flight call, (4) stop the watchdog `Observer`, (5) exit cleanly with status 0.
+
+#### Scenario: Ctrl+C stops the watcher
+- **WHEN** the user presses Ctrl+C while the watcher is running and no ingestion is in progress
+- **THEN** the watcher SHALL cancel all pending debounce timers
+- **THEN** the watcher SHALL stop the observer
+- **THEN** the watcher SHALL log a shutdown message to stderr and exit with status 0
+
+#### Scenario: Ctrl+C during in-flight ingestion
+- **WHEN** the user presses Ctrl+C while an `ingest_path()` call is in progress
+- **THEN** the watcher SHALL allow the in-flight ingestion to complete before stopping the observer
+- **THEN** the watcher SHALL NOT start new ingestions (all pending timers cancelled)
+- **THEN** the watcher SHALL exit with status 0 after the in-flight ingestion finishes
+
+#### Scenario: Ctrl+C during debounce window
+- **WHEN** the user presses Ctrl+C while a debounce timer is pending for a file
+- **THEN** the watcher SHALL cancel the pending timer
+- **THEN** the watcher SHALL NOT ingest the file
+- **THEN** the watcher SHALL stop the observer and exit
+
+### Requirement: Logging
+
+The watcher SHALL log significant events to stderr at appropriate log levels:
+- INFO: ingestion start, success with chunk count, shutdown
+- WARNING: ingestion failure (except `FileNotFoundError` — see below), unexpected file system errors
+- CRITICAL: N consecutive `ConnectionError` failures (default 5), indicating Ollama may be unreachable
+- DEBUG: skipped files (unsupported extension, unchanged hash), debounce timer resets, file-not-found-during-debounce
+
+#### Scenario: Watch logs to stderr
+- **WHEN** a file is successfully ingested
+- **THEN** the watcher SHALL output an INFO-level log like `Auto-ingested <filename> — <N> chunk(s)`
+
+#### Scenario: Logs ingestion failure
+- **WHEN** `ingest_path()` fails with an error (e.g. corrupt PDF, ChromaDB issue)
+- **THEN** the watcher SHALL log a WARNING-level message with the filename and error details
+
+### Requirement: Ingestion failure handling
+
+When `ingest_path()` fails for a file, the watcher SHALL NOT update the cached hash, so the next `modified` event for that file triggers a fresh attempt. The watcher SHALL track consecutive failures. If the last 5 consecutive failures are all `ConnectionError` (indicating Ollama is unreachable), the watcher SHALL log a CRITICAL-level message recommending the user check Ollama and restart the watcher. Autonomous retry loops SHALL NOT be implemented in v1.
+
+#### Scenario: File ingestion failure keeps hash unchanged
+- **WHEN** `ingest_path()` fails for a file (e.g. corrupt PDF)
+- **THEN** the watcher SHALL NOT update the file's cached hash
+- **THEN** a subsequent `modified` event for the same file SHALL trigger a fresh ingestion attempt
+
+#### Scenario: Consecutive ConnectionError triggers critical alert
+- **WHEN** the watcher experiences 5 consecutive `ConnectionError` failures from `ingest_path()`
+- **THEN** the watcher SHALL log a CRITICAL-level message indicating Ollama may be unreachable
+- **THEN** the watcher SHALL continue running (not auto-exit) so it can recover when Ollama restarts
+
+#### Scenario: File deleted during debounce window
+- **WHEN** a file event triggers a debounce timer, but the file is deleted before the timer fires
+- **THEN** the watcher SHALL catch the resulting `FileNotFoundError` from `ingest_path()`
+- **THEN** the watcher SHALL log a DEBUG-level message (not WARNING — it's a normal race condition)
+- **THEN** the watcher SHALL remove the file's entry from the hash cache and pending timer tracking
+
+### Requirement: Ingestion throttling
+
+To prevent thread explosion under batch file events (e.g. copying hundreds of files into the watched directory), the watcher SHALL limit concurrent calls to `ingest_path()` using a `threading.BoundedSemaphore(2)`. The semaphore ensures at most 2 ingestions run simultaneously, while excess events queue naturally behind their debounce timers.
+
+#### Scenario: Batch file creation is throttled
+- **WHEN** 100 supported files are created simultaneously in the watched directory
+- **THEN** the watcher SHALL NOT call `ingest_path()` for more than 2 files concurrently
+- **THEN** remaining files SHALL be ingested as the semaphore permits

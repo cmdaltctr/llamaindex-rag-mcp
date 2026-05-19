@@ -383,8 +383,10 @@ def _embed_and_write_concurrent(
         progress_callback: Optional callable for progress updates.
 
     Raises:
-        RuntimeError: If any embedding batch fails — no data is written
-            to ChromaDB (all-or-nothing semantics).
+        ConnectionError: If any embedding batch fails due to Ollama
+            connectivity issues — no data is written to ChromaDB.
+        RuntimeError: If any non-connection embedding batch fails —
+            no data is written to ChromaDB (all-or-nothing semantics).
     """
     batch_size = max(1, EMBED_BATCH_SIZE)
     node_batches: list[list] = [
@@ -418,10 +420,21 @@ def _embed_and_write_concurrent(
             pool.submit(_embed_batch, i, batch): i
             for i, batch in enumerate(node_batches)
         }
+        has_connection_error = False
         for future in as_completed(futures):
             batch_idx = futures[future]
             try:
                 future.result()
+            except ConnectionError as exc:
+                has_connection_error = True
+                batch_errors.append(
+                    f"Batch {batch_idx} failed (connection): {exc}"
+                )
+                logger.error(
+                    "Embedding batch %d failed (connection): %s",
+                    batch_idx,
+                    exc,
+                )
             except Exception as exc:
                 batch_errors.append(
                     f"Batch {batch_idx} failed: {exc}"
@@ -430,6 +443,11 @@ def _embed_and_write_concurrent(
 
     # All-or-nothing: if any batch failed, abort without writing.
     if batch_errors:
+        if has_connection_error:
+            raise ConnectionError(
+                f"Embedding failed for {len(batch_errors)} batch(es). "
+                "No data written to ChromaDB."
+            )
         raise RuntimeError(
             f"Embedding failed for {len(batch_errors)} batch(es). "
             "No data written to ChromaDB."
@@ -482,7 +500,11 @@ def ingest_path(
           ``error``
         - ``warnings``: (optional) List of error strings
 
-        On error: ``{"status": "error", "message": "...", "file_details": []}``
+        On error, also includes:
+        - ``error_type``: One of ``"file"`` (path/extension errors or all files
+          failed), ``"connection"`` (Ollama connectivity failure), or
+          ``"embedding"`` (non-connection embedding failure)
+        - ``message``: Human-readable error description
     """
     # Reset shutdown flag for fresh run
     _shutdown_requested.clear()
@@ -492,6 +514,7 @@ def ingest_path(
     if not path_obj.exists():
         return {
             "status": "error",
+            "error_type": "file",
             "message": f"Path not found: {path}",
             "file_details": [],
         }
@@ -500,6 +523,7 @@ def ingest_path(
     if path_obj.is_file() and path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
         return {
             "status": "error",
+            "error_type": "file",
             "message": (
                 f"Unsupported file extension: {path_obj.suffix}. "
                 f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
@@ -544,9 +568,17 @@ def ingest_path(
                 files_to_index, _chunk_size, _chunk_overlap,
                 progress_callback,
             )
+    except ConnectionError as exc:
+        return {
+            "status": "error",
+            "error_type": "connection",
+            "message": str(exc),
+            "file_details": file_details + skipped_details,
+        }
     except RuntimeError as exc:
         return {
             "status": "error",
+            "error_type": "embedding",
             "message": str(exc),
             "file_details": file_details + skipped_details,
         }
@@ -554,12 +586,25 @@ def ingest_path(
     # Merge skipped files into file_details for a complete picture
     all_details = file_details + skipped_details
 
-    result = {
-        "status": "ok" if files_idx > 0 else "error",
-        "files_indexed": files_idx,
-        "chunks_created": chunks,
-        "file_details": all_details,
-    }
+    if files_idx > 0:
+        result: dict = {
+            "status": "ok",
+            "files_indexed": files_idx,
+            "chunks_created": chunks,
+            "file_details": all_details,
+        }
+    else:
+        result = {
+            "status": "error",
+            "error_type": "file",
+            "message": (
+                f"All {len(files_to_index)} file(s) failed to index. "
+                "See file_details for per-file errors."
+            ),
+            "files_indexed": 0,
+            "chunks_created": 0,
+            "file_details": all_details,
+        }
     if errors:
         result["warnings"] = errors
 

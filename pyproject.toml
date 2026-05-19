@@ -16,6 +16,8 @@ dependencies = [
     "transformers>=4.40.0",
     "huggingface-hub>=0.20.0",
     "typer>=0.25.1",
+    # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
+    "watchdog>=4.0.0",
 ]
 
 [project.scripts]

@@ -156,6 +156,40 @@ rag-mcp list
 rag-mcp list --json
 ```
 
+### Watch a directory for auto-ingestion
+
+```bash
+# Watch Zotero storage for new/changed papers
+rag-mcp watch ~/Zotero/storage/
+
+# Custom debounce interval (default: 2 seconds)
+rag-mcp watch /path/to/docs/ --debounce 5
+
+# Verbose mode (DEBUG-level logging)
+rag-mcp watch /path/to/docs/ --verbose
+```
+
+The watcher monitors a directory tree for supported document files and
+auto-ingests them as they appear or change. It includes:
+
+- **SHA-256 content-hash deduplication** — unchanged files are skipped
+- **Per-file debouncing** — rapid writes (e.g. streaming downloads) are
+  coalesced into a single ingestion
+- **Ingestion throttling** — at most 2 concurrent ingestions to avoid
+  overwhelming the embedding pipeline
+- **Consecutive-error detection** — logs a CRITICAL alert after 5
+  consecutive connection failures (Ollama unreachable)
+- **Graceful shutdown** — Ctrl+C cancels pending work and waits for
+  in-flight ingestion to complete
+
+> **Cold-start gap:** The watcher only detects changes after it starts.
+> Run `rag-mcp ingest <path>` before starting the watcher to catch up
+> on existing files.
+
+> **Concurrency warning:** Do NOT run `rag-mcp watch` and
+> `rag-mcp ingest` (or the MCP server) simultaneously on the same
+> ChromaDB — two processes do not share the internal write lock.
+
 ### Shell completion
 
 ```bash
@@ -584,11 +618,12 @@ uv run pytest -m slow -v
 uv run pytest tests/test_reranker.py -v
 ```
 
-The test suite (43 tests, 97% coverage) uses mock embeddings and an in-memory
+The test suite (178 tests) uses mock embeddings and an in-memory
 ChromaDB client so no external services are needed for fast tests.
 
 | File | Tests | Coverage area |
 |------|-------|---------------|
+| `tests/test_watcher.py` | 31 | File watcher: debounce, hash dedup, throttling, shutdown, error handling |
 | `tests/test_reranker.py` | 23 | Sigmoid, ONNX variant, singleton, fallback, mock inference, model loading |
 | `tests/test_ingestion.py` | 4 | Path validation, empty dir, list empty |
 | `tests/test_mcp_tools.py` | 5 | Tool discovery, ingest, search, list, param validation |

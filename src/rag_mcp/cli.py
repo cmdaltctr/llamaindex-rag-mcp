@@ -1,14 +1,15 @@
 """Command-line interface for the RAG MCP server.
 
-Provides ``rag-mcp ingest``, ``rag-mcp search``, and ``rag-mcp list``
-subcommands.  When invoked with no arguments, the MCP stdio server starts
-instead (backwards compatible).
+Provides ``rag-mcp ingest``, ``rag-mcp search``, ``rag-mcp list``,
+and ``rag-mcp watch`` subcommands.  When invoked with no arguments,
+the MCP stdio server starts instead (backwards compatible).
 
 Usage::
 
     rag-mcp ingest /path/to/docs/
     rag-mcp search "quantum computing"
     rag-mcp list
+    rag-mcp watch /path/to/docs/
 """
 
 from __future__ import annotations
@@ -846,6 +847,52 @@ def benchmark(
         table.add_row("Vector Dim", str(vector_dim))
 
     console.print(table)
+
+
+@app.command()
+def watch(
+    path: str = typer.Argument(
+        ...,
+        help="Directory to watch recursively for document changes.",
+    ),
+    debounce: float = typer.Option(
+        2.0,
+        "--debounce",
+        "-d",
+        help=(
+            "Debounce interval in seconds (minimum 0.5). "
+            "Controls how long to wait after the last file event "
+            "before triggering ingestion."
+        ),
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable DEBUG-level logging for the watcher.",
+    ),
+) -> None:
+    """Watch a directory for new/changed documents and auto-ingest them.
+
+    Monitors the given directory tree for supported document files and
+    auto-ingests them into the ChromaDB index.  Includes SHA-256
+    content-hash deduplication, per-file debouncing, ingestion
+    throttling, and consecutive-error detection.
+
+    \b
+    IMPORTANT:
+    • The watcher only detects changes after it starts.  Run
+      ``rag-mcp ingest <path>`` first to catch up on existing files.
+    • Do NOT run ``rag-mcp watch`` and ``rag-mcp ingest`` (or the MCP
+      server) simultaneously on the same ChromaDB — two processes do
+      not share the internal write lock.
+    """
+    from .watcher import watch_directory
+
+    try:
+        watch_directory(path, debounce=debounce, verbose=verbose)
+    except SystemExit as exc:
+        raise typer.Exit(code=exc.code if exc.code else 1)
 
 
 def run_cli() -> None:
