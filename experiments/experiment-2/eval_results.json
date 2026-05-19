@@ -1,0 +1,1281 @@
+{
+  "experiment": "embedding-model-retrieval-quality",
+  "models_tested": [
+    {
+      "name": "nomic-embed-text",
+      "label": "nomic-embed-text (768-dim)"
+    },
+    {
+      "name": "qwen3-embedding:0.6b",
+      "label": "qwen3-embedding:0.6b (1024-dim)"
+    },
+    {
+      "name": "qwen3-embedding:8b",
+      "label": "qwen3-embedding:8b (4096-dim)"
+    }
+  ],
+  "reranking_enabled": false,
+  "num_queries": 17,
+  "corpus_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus",
+  "summaries": [
+    {
+      "model_name": "nomic-embed-text",
+      "label": "nomic-embed-text (768-dim)",
+      "hit_rate_at_1": 0.9412,
+      "hit_rate_at_3": 0.9412,
+      "hit_rate_at_5": 0.9412,
+      "mrr": 0.9412,
+      "avg_latency_ms": 36.2
+    },
+    {
+      "model_name": "qwen3-embedding:0.6b",
+      "label": "qwen3-embedding:0.6b (1024-dim)",
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 104.3
+    },
+    {
+      "model_name": "qwen3-embedding:8b",
+      "label": "qwen3-embedding:8b (4096-dim)",
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 259.2
+    }
+  ],
+  "detailed_results": {
+    "nomic-embed-text": [
+      {
+        "query": "How does pretraining training data force models to hallucinate?",
+        "expected_source": "hallucinate",
+        "expected_answer": "statistical objectives",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.6322372181265608,
+          0.6039206909460331,
+          0.584584413601744,
+          0.5623784600368016,
+          0.5623621023349517
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 59.3
+      },
+      {
+        "query": "Does optimising for cross-entropy loss make models less trustworthy?",
+        "expected_source": "hallucinate",
+        "expected_answer": "cross-entropy loss",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.5955369573826393,
+          0.5584544755834654,
+          0.5348025576981735,
+          0.48544587385376353,
+          0.477685235050132
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 28.9
+      },
+      {
+        "query": "How does coding improve mathematical problem-solving skills in children?",
+        "expected_source": "coding",
+        "expected_answer": "mathematical concepts",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.7287662402498226,
+          0.70803449277868,
+          0.685801749142734,
+          0.6841259230369381,
+          0.6749198562455618
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 31.4
+      },
+      {
+        "query": "Does coding also improve social skills and collaboration?",
+        "expected_source": "coding",
+        "expected_answer": "peer support",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.7291038305343943,
+          0.6679948947031759,
+          0.5931640881600191,
+          0.5709120481138097,
+          0.5605541964584956
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 31.8
+      },
+      {
+        "query": "Does seating arrangement really impact how children collaborate?",
+        "expected_source": "coding",
+        "expected_answer": "sit beside each other",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.42657557679245506,
+          0.42144419264314315,
+          0.41652384136390846,
+          0.41588345628028617,
+          0.4158375751392317
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 33.6
+      },
+      {
+        "query": "How does handwriting's brain connectivity benefit memory and learning processes?",
+        "expected_source": "handwriting",
+        "expected_answer": "theta and alpha",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.7457470906978497,
+          0.7299621958328371,
+          0.7112353746996367,
+          0.699055234162301,
+          0.6979762481677991
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 59.2
+      },
+      {
+        "query": "What are the specific brain regions involved in handwriting hubs?",
+        "expected_source": "handwriting",
+        "expected_answer": "parietal and central",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.6571012868986874,
+          0.6481797730956299,
+          0.6417507085943434,
+          0.6282991292668988,
+          0.6147431819330036
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 38.2
+      },
+      {
+        "query": "Does using a digital pen activate the same brain regions as handwriting?",
+        "expected_source": "handwriting",
+        "expected_answer": "digital pen",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.7067789119211376,
+          0.698567630277403,
+          0.6976389116116937,
+          0.6426252701970557,
+          0.6273358983265654
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 34.3
+      },
+      {
+        "query": "What are the primary differences between the local and remote versions?",
+        "expected_source": "paper-search",
+        "expected_answer": "Cloudflare Workers",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.3985271344884774,
+          0.3980540444398274,
+          0.38343429955395875,
+          0.37407944062919507,
+          0.3665961733289017
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 36.7
+      },
+      {
+        "query": "Which academic sources are supported by the search_papers tool?",
+        "expected_source": "paper-search",
+        "expected_answer": "arXiv",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.6542095784488812,
+          0.5389582584533734,
+          0.525386692986683,
+          0.502589949114332,
+          0.4469306981153748
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 38.8
+      },
+      {
+        "query": "Tell me more about the literature-review prompt.",
+        "expected_source": "paper-search",
+        "expected_answer": "literature-review",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.4685894491653959,
+          0.46570658210047733,
+          0.46095352674640794,
+          0.4563203457282477,
+          0.4464787006963684
+        ],
+        "hit_rank": null,
+        "hit_at_1": false,
+        "hit_at_3": false,
+        "hit_at_5": false,
+        "latency_ms": 28.9
+      },
+      {
+        "query": "How does semantic search outperform traditional text matching in codebases?",
+        "expected_source": "grep-ai",
+        "expected_answer": "vector embeddings",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.4644649193902648,
+          0.4632634562266429,
+          0.45666720794824567,
+          0.45369432434634616,
+          0.44780793251585416
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 31.1
+      },
+      {
+        "query": "How does grepai help reduce AI agent input tokens?",
+        "expected_source": "grep-ai",
+        "expected_answer": "relevant context",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.6336350010641839,
+          0.5464069685534524,
+          0.5124401511878729,
+          0.43395311510809526,
+          0.4172917944952423
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 31.9
+      },
+      {
+        "query": "Can I use grepai completely offline with Ollama?",
+        "expected_source": "grep-ai",
+        "expected_answer": "100% local",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.5310571191504411,
+          0.4979043526462158,
+          0.4778877157113523,
+          0.4541938268105028,
+          0.3867445549698198
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 34.2
+      },
+      {
+        "query": "How does al-Ghazali view the role of human reason?",
+        "expected_source": "Ghazali",
+        "expected_answer": "negate",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5436210944521689,
+          0.5345611460742645,
+          0.5166004301513085,
+          0.5155341348861052,
+          0.50390163412591
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 37.9
+      },
+      {
+        "query": "Why was al-Ghazali sceptical of natural philosophy and physics?",
+        "expected_source": "Ghazali",
+        "expected_answer": "limited and broken",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5685800517547086,
+          0.5663466582985127,
+          0.5301018546028914,
+          0.49760588737299866,
+          0.48705180320773206
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 29.2
+      },
+      {
+        "query": "How did al-Ghazali's views differ from his teacher Juwayni?",
+        "expected_source": "Ghazali",
+        "expected_answer": "Juwayni",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5747035723264997,
+          0.5362244566705164,
+          0.5361443672126571,
+          0.525558423863379,
+          0.5165033527751223
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 29.5
+      }
+    ],
+    "qwen3-embedding:0.6b": [
+      {
+        "query": "How does pretraining training data force models to hallucinate?",
+        "expected_source": "hallucinate",
+        "expected_answer": "statistical objectives",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.5643261404072203,
+          0.5344713655763932,
+          0.5343568201672735,
+          0.49723130876168403,
+          0.48803210498953453
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 129.8
+      },
+      {
+        "query": "Does optimising for cross-entropy loss make models less trustworthy?",
+        "expected_source": "hallucinate",
+        "expected_answer": "cross-entropy loss",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.4456997498488072,
+          0.4352519831799296,
+          0.41529291606841195,
+          0.41133879348871927,
+          0.4080870841294255
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 94.9
+      },
+      {
+        "query": "How does coding improve mathematical problem-solving skills in children?",
+        "expected_source": "coding",
+        "expected_answer": "mathematical concepts",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.5666420405870072,
+          0.5095065089866045,
+          0.49716202159262673,
+          0.4917562217208305,
+          0.4788729774289241
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 117.8
+      },
+      {
+        "query": "Does coding also improve social skills and collaboration?",
+        "expected_source": "coding",
+        "expected_answer": "peer support",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.5096089537677975,
+          0.45251640666401105,
+          0.41937950178336625,
+          0.40493304696428595,
+          0.40389903625176604
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 95.2
+      },
+      {
+        "query": "Does seating arrangement really impact how children collaborate?",
+        "expected_source": "coding",
+        "expected_answer": "sit beside each other",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.34322990733938524,
+          0.32641085860132596,
+          0.3182698667613782,
+          0.30643028426375024,
+          0.2961188794318471
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 96.4
+      },
+      {
+        "query": "How does handwriting's brain connectivity benefit memory and learning processes?",
+        "expected_source": "handwriting",
+        "expected_answer": "theta and alpha",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.6618283464586112,
+          0.6079540063401712,
+          0.6018922120634408,
+          0.5939125728188579,
+          0.5920210569029845
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 105.7
+      },
+      {
+        "query": "What are the specific brain regions involved in handwriting hubs?",
+        "expected_source": "handwriting",
+        "expected_answer": "parietal and central",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.5641385474248464,
+          0.5293752536164117,
+          0.5175560738526327,
+          0.5127052789612916,
+          0.5032314914164352
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 105.0
+      },
+      {
+        "query": "Does using a digital pen activate the same brain regions as handwriting?",
+        "expected_source": "handwriting",
+        "expected_answer": "digital pen",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.599477941371444,
+          0.5458367331988832,
+          0.5431567728818287,
+          0.5204255907582948,
+          0.5182834117527154
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 106.7
+      },
+      {
+        "query": "What are the primary differences between the local and remote versions?",
+        "expected_source": "paper-search",
+        "expected_answer": "Cloudflare Workers",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md"
+        ],
+        "top_k_scores": [
+          0.3094447676861178,
+          0.306278871055132,
+          0.3050768382033147,
+          0.28657048259479384,
+          0.28223586835311465
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 100.4
+      },
+      {
+        "query": "Which academic sources are supported by the search_papers tool?",
+        "expected_source": "paper-search",
+        "expected_answer": "arXiv",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.5880149659316155,
+          0.5841687686241882,
+          0.5689431296592674,
+          0.40205354376056207,
+          0.3690277655667775
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 115.8
+      },
+      {
+        "query": "Tell me more about the literature-review prompt.",
+        "expected_source": "paper-search",
+        "expected_answer": "literature-review",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.37999733201975894,
+          0.355303386672554,
+          0.3500287181298877,
+          0.3462362623533851,
+          0.32504192265878684
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 99.5
+      },
+      {
+        "query": "How does semantic search outperform traditional text matching in codebases?",
+        "expected_source": "grep-ai",
+        "expected_answer": "vector embeddings",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.562066471979652,
+          0.5475336270448303,
+          0.5402779040502086,
+          0.40771193911009374,
+          0.4057430842279407
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 100.1
+      },
+      {
+        "query": "How does grepai help reduce AI agent input tokens?",
+        "expected_source": "grep-ai",
+        "expected_answer": "relevant context",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.5988248366181299,
+          0.575461552605398,
+          0.4934739055143507,
+          0.4443797423094934,
+          0.42987269329949745
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 101.2
+      },
+      {
+        "query": "Can I use grepai completely offline with Ollama?",
+        "expected_source": "grep-ai",
+        "expected_answer": "100% local",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.4511907056870893,
+          0.41651505278514434,
+          0.3996484758814359,
+          0.39133449218650257,
+          0.37660760348703304
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 102.3
+      },
+      {
+        "query": "How does al-Ghazali view the role of human reason?",
+        "expected_source": "Ghazali",
+        "expected_answer": "negate",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.4933519434803951,
+          0.4822266582545442,
+          0.48172627336783536,
+          0.4485258663502496,
+          0.44743067465745523
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 108.9
+      },
+      {
+        "query": "Why was al-Ghazali sceptical of natural philosophy and physics?",
+        "expected_source": "Ghazali",
+        "expected_answer": "limited and broken",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.47720577521636204,
+          0.42680358077015634,
+          0.41025668399164156,
+          0.3873003633666681,
+          0.37632341238931966
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 95.7
+      },
+      {
+        "query": "How did al-Ghazali's views differ from his teacher Juwayni?",
+        "expected_source": "Ghazali",
+        "expected_answer": "Juwayni",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5365757643131792,
+          0.4812044367794766,
+          0.41557688494939526,
+          0.411917867529038,
+          0.40091675576115804
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 98.2
+      }
+    ],
+    "qwen3-embedding:8b": [
+      {
+        "query": "How does pretraining training data force models to hallucinate?",
+        "expected_source": "hallucinate",
+        "expected_answer": "statistical objectives",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.577894103355877,
+          0.5713053206549732,
+          0.5508253784181084,
+          0.5378114179958756,
+          0.5332984064285646
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 310.5
+      },
+      {
+        "query": "Does optimising for cross-entropy loss make models less trustworthy?",
+        "expected_source": "hallucinate",
+        "expected_answer": "cross-entropy loss",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.4909303178111402,
+          0.48234118375938734,
+          0.4761250033147796,
+          0.4485121251691262,
+          0.4474359818092686
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 258.6
+      },
+      {
+        "query": "How does coding improve mathematical problem-solving skills in children?",
+        "expected_source": "coding",
+        "expected_answer": "mathematical concepts",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.6500550961631029,
+          0.6058655378305098,
+          0.576120218350003,
+          0.5760108232785086,
+          0.5665295826710735
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 254.0
+      },
+      {
+        "query": "Does coding also improve social skills and collaboration?",
+        "expected_source": "coding",
+        "expected_answer": "peer support",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.6450331007479404,
+          0.5384525363248773,
+          0.49252556131407954,
+          0.4862376549563163,
+          0.47418094536626165
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 248.0
+      },
+      {
+        "query": "Does seating arrangement really impact how children collaborate?",
+        "expected_source": "coding",
+        "expected_answer": "sit beside each other",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+        ],
+        "top_k_scores": [
+          0.37752428603521887,
+          0.37452249638204754,
+          0.3518702703147296,
+          0.3495179394028389,
+          0.34410704190658536
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 250.9
+      },
+      {
+        "query": "How does handwriting's brain connectivity benefit memory and learning processes?",
+        "expected_source": "handwriting",
+        "expected_answer": "theta and alpha",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.7061663516053858,
+          0.6869812862588336,
+          0.6647388331929849,
+          0.624134094461662,
+          0.6143762164672399
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 251.6
+      },
+      {
+        "query": "What are the specific brain regions involved in handwriting hubs?",
+        "expected_source": "handwriting",
+        "expected_answer": "parietal and central",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.5914393862593867,
+          0.5506511350488655,
+          0.5087557044175893,
+          0.5031421144501496,
+          0.5015880588068392
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 250.3
+      },
+      {
+        "query": "Does using a digital pen activate the same brain regions as handwriting?",
+        "expected_source": "handwriting",
+        "expected_answer": "digital pen",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+        ],
+        "top_k_scores": [
+          0.6264036206181687,
+          0.5878665195521314,
+          0.5725486325653704,
+          0.5663548950399069,
+          0.5496863110863206
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 255.4
+      },
+      {
+        "query": "What are the primary differences between the local and remote versions?",
+        "expected_source": "paper-search",
+        "expected_answer": "Cloudflare Workers",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.3401894692993946,
+          0.321387334897778,
+          0.31545899373594666,
+          0.31258182510194193,
+          0.31064419803372945
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 253.2
+      },
+      {
+        "query": "Which academic sources are supported by the search_papers tool?",
+        "expected_source": "paper-search",
+        "expected_answer": "arXiv",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.8898129722858581,
+          0.7418514141683898,
+          0.6104243518262735,
+          0.4538595287185523,
+          0.4522006468566754
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 305.0
+      },
+      {
+        "query": "Tell me more about the literature-review prompt.",
+        "expected_source": "paper-search",
+        "expected_answer": "literature-review",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.4469335485130328,
+          0.42775408972902274,
+          0.3782080713578055,
+          0.3663800012293971,
+          0.34841578748505886
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 251.4
+      },
+      {
+        "query": "How does semantic search outperform traditional text matching in codebases?",
+        "expected_source": "grep-ai",
+        "expected_answer": "vector embeddings",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/paper-search-mcp-cf-README.md"
+        ],
+        "top_k_scores": [
+          0.6558829362188872,
+          0.6325199322207281,
+          0.6287970683972449,
+          0.413168020102384,
+          0.39537903673621677
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 250.4
+      },
+      {
+        "query": "How does grepai help reduce AI agent input tokens?",
+        "expected_source": "grep-ai",
+        "expected_answer": "relevant context",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.5723881237399974,
+          0.5426528684640402,
+          0.4975382976848687,
+          0.4696162498613334,
+          0.4299428019274643
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 250.6
+      },
+      {
+        "query": "Can I use grepai completely offline with Ollama?",
+        "expected_source": "grep-ai",
+        "expected_answer": "100% local",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/grep-ai-README.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+        ],
+        "top_k_scores": [
+          0.5013511513237489,
+          0.46587860413763554,
+          0.4484823451436571,
+          0.4287741293904102,
+          0.4012571863859532
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 248.5
+      },
+      {
+        "query": "How does al-Ghazali view the role of human reason?",
+        "expected_source": "Ghazali",
+        "expected_answer": "negate",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.538902846685273,
+          0.5168048972654946,
+          0.5164804792844581,
+          0.5088327337241185,
+          0.49708189996940616
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 253.9
+      },
+      {
+        "query": "Why was al-Ghazali sceptical of natural philosophy and physics?",
+        "expected_source": "Ghazali",
+        "expected_answer": "limited and broken",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5593852413503795,
+          0.488721360129012,
+          0.46832695177444705,
+          0.4549038316287396,
+          0.4385393066143261
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 255.0
+      },
+      {
+        "query": "How did al-Ghazali's views differ from his teacher Juwayni?",
+        "expected_source": "Ghazali",
+        "expected_answer": "Juwayni",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/experiment-2/corpus/Ghazali-Mustasfa.pdf"
+        ],
+        "top_k_scores": [
+          0.5384221759993744,
+          0.5020119677059633,
+          0.4784021630110591,
+          0.45929422971455236,
+          0.4458424043209463
+        ],
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "latency_ms": 258.3
+      }
+    ]
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "_instructions": [
+    "Your own queries derived from 6 documents in corpus/.",
+    "Each query has:",
+    "  - query (str): Your search question.",
+    "  - expected_source (str): A substring of the document filename that uniquely identifies it.",
+    "  - expected_answer (str): A short phrase that MUST appear in the returned chunk.",
+    "  - _notes (str): Your own annotation — not used by the script."
+  ],
+  "queries": [
+    {
+      "query": "How does pretraining training data force models to hallucinate?",
+      "expected_source": "hallucinate",
+      "expected_answer": "statistical objectives",
+      "_notes": "Easy — keywords from title"
+    },
+    {
+      "query": "Does optimising for cross-entropy loss make models less trustworthy?",
+      "expected_source": "hallucinate",
+      "expected_answer": "cross-entropy loss",
+      "_notes": "Medium — specific technical term"
+    },
+    {
+      "query": "How does coding improve mathematical problem-solving skills in children?",
+      "expected_source": "coding",
+      "expected_answer": "mathematical concepts",
+      "_notes": "Easy — keywords from title"
+    },
+    {
+      "query": "Does coding also improve social skills and collaboration?",
+      "expected_source": "coding",
+      "expected_answer": "peer support",
+      "_notes": "Hard — not obvious from title, requires reading the paper"
+    },
+    {
+      "query": "Does seating arrangement really impact how children collaborate?",
+      "expected_source": "coding",
+      "expected_answer": "sit beside each other",
+      "_notes": "Hard — specific finding buried in the paper"
+    },
+    {
+      "query": "How does handwriting's brain connectivity benefit memory and learning processes?",
+      "expected_source": "handwriting",
+      "expected_answer": "theta and alpha",
+      "_notes": "Medium — paraphrased, uses synonyms of title terms"
+    },
+    {
+      "query": "What are the specific brain regions involved in handwriting hubs?",
+      "expected_source": "handwriting",
+      "expected_answer": "parietal and central",
+      "_notes": "Easy — directly discussed in the paper"
+    },
+    {
+      "query": "Does using a digital pen activate the same brain regions as handwriting?",
+      "expected_source": "handwriting",
+      "expected_answer": "digital pen",
+      "_notes": "Hard — conceptual follow-up, not obvious from title"
+    },
+    {
+      "query": "What are the primary differences between the local and remote versions?",
+      "expected_source": "paper-search",
+      "expected_answer": "Cloudflare Workers",
+      "_notes": "Easy — README directly compares them"
+    },
+    {
+      "query": "Which academic sources are supported by the search_papers tool?",
+      "expected_source": "paper-search",
+      "expected_answer": "arXiv",
+      "_notes": "Easy — list directly in the README"
+    },
+    {
+      "query": "Tell me more about the literature-review prompt.",
+      "expected_source": "paper-search",
+      "expected_answer": "literature-review",
+      "_notes": "Medium — named feature in the README"
+    },
+    {
+      "query": "How does semantic search outperform traditional text matching in codebases?",
+      "expected_source": "grep-ai",
+      "expected_answer": "vector embeddings",
+      "_notes": "Easy — from the README title and first paragraph"
+    },
+    {
+      "query": "How does grepai help reduce AI agent input tokens?",
+      "expected_source": "grep-ai",
+      "expected_answer": "relevant context",
+      "_notes": "Medium — specific benefit described in the README"
+    },
+    {
+      "query": "Can I use grepai completely offline with Ollama?",
+      "expected_source": "grep-ai",
+      "expected_answer": "100% local",
+      "_notes": "Easy — directly stated in the README"
+    },
+    {
+      "query": "How does al-Ghazali view the role of human reason?",
+      "expected_source": "Ghazali",
+      "expected_answer": "negate",
+      "_notes": "Hard — conceptual question about Islamic legal theory"
+    },
+    {
+      "query": "Why was al-Ghazali sceptical of natural philosophy and physics?",
+      "expected_source": "Ghazali",
+      "expected_answer": "limited and broken",
+      "_notes": "Medium — quoted phrase from his critique"
+    },
+    {
+      "query": "How did al-Ghazali's views differ from his teacher Juwayni?",
+      "expected_source": "Ghazali",
+      "expected_answer": "Juwayni",
+      "_notes": "Hard — comparative question requiring understanding of both scholars' positions"
+    }
+  ]
+}
