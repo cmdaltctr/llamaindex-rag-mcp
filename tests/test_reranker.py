@@ -9,6 +9,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import builtins
 import math
 from unittest.mock import MagicMock, patch
 
@@ -394,13 +395,17 @@ class TestCrossEncoderRerankerModelLoading:
         """Failed model load must set _load_error and keep _loaded=False."""
         reranker = CrossEncoderReranker()
 
-        with patch.dict("sys.modules", {}):
-            # Patch onnxruntime import to raise
-            with patch(
-                "builtins.__import__",
-                side_effect=ImportError("no onnxruntime"),
-            ):
-                reranker._load_model()
+        # Use a selective mock that only blocks onnxruntime imports,
+        # allowing RichHandler and other logging internals to work.
+        real_import = builtins.__import__
+
+        def _selective_import(name, *args, **kwargs):
+            if name == "onnxruntime":
+                raise ImportError("no onnxruntime")
+            return real_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=_selective_import):
+            reranker._load_model()
 
         assert reranker._loaded is False
         assert reranker._load_attempted is True

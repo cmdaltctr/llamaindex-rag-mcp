@@ -35,14 +35,15 @@ class TestGatherSupportedFiles:
 
     def test_single_file(self, sample_txt: Path) -> None:
         """Supported file is discovered."""
-        files = _gather_supported_files(sample_txt)
+        files, skipped = _gather_supported_files(sample_txt)
         assert files == [sample_txt]
+        assert skipped == []
 
     def test_unsupported_file(self, tmp_path: Path) -> None:
-        """Unsupported extension is excluded."""
+        """Unsupported extension is excluded and tracked as skipped."""
         bad = tmp_path / "test.xyz"
         bad.write_text("content")
-        files = _gather_supported_files(bad)
+        files, skipped = _gather_supported_files(bad)
         assert files == []
 
     def test_directory_with_mixed_files(self, tmp_path: Path) -> None:
@@ -53,11 +54,15 @@ class TestGatherSupportedFiles:
         (tmp_path / "sub").mkdir()
         (tmp_path / "sub" / "nested.pdf").write_text("not real pdf")
 
-        files = _gather_supported_files(tmp_path)
+        files, skipped = _gather_supported_files(tmp_path)
         names = {f.name for f in files}
         assert "good.txt" in names
         assert "also_good.md" in names
         assert "bad.xyz" not in names
+
+        # Verify skipped files are tracked
+        skipped_names = {s["file"] for s in skipped}
+        assert "bad.xyz" in skipped_names
 
 
 # ── _read_and_chunk_file ─────────────────────────────────────────────────

@@ -14,6 +14,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest.mock import patch
 
+# ── IMPORTANT: EMBED_MODEL for test collection ─────────────────────────
+# config.py now requires EMBED_MODEL (no hardcoded fallback), and test
+# files import rag_mcp modules at module level (before fixtures run).
+# This setdefault ensures tests can be collected without a .env file.
+os.environ.setdefault("EMBED_MODEL", "nomic-embed-text")
+# ────────────────────────────────────────────────────────────────────────
+
 import chromadb
 import pytest
 from llama_index.core import Settings
@@ -183,3 +190,15 @@ def empty_txt(fixtures_dir: Path) -> Path:
 def dir_with_docs(fixtures_dir: Path) -> Path:
     """Return path to the directory containing multiple documents."""
     return fixtures_dir / "dir_with_docs"
+
+
+@pytest.fixture
+def pdf_dir(fixtures_dir: Path) -> Path:
+    """Return path to the directory containing 5 PDF fixtures."""
+    return fixtures_dir / "pdf_dir"
+
+
+@pytest.fixture
+def corrupt_dir(fixtures_dir: Path) -> Path:
+    """Return path to the directory with a corrupt PDF and a good TXT."""
+    return fixtures_dir / "corrupt_dir"

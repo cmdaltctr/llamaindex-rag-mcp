@@ -1,0 +1,1 @@
+This is a valid text document with enough content for chunking purposes.
