@@ -18,8 +18,21 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 load_dotenv()
 
 # ── Embedding model (local via Ollama) ──────────────────────────────────
+# The model name MUST come from a .env file or ENV var — there is no
+# hardcoded fallback.  Create or edit .env in the project root:
+#
+#   EMBED_MODEL=qwen3-embedding:8b
+#
+# See .env.example for more options.
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBED_MODEL_NAME = os.getenv("EMBED_MODEL", "nomic-embed-text")
+EMBED_MODEL_NAME = os.getenv("EMBED_MODEL")
+if not EMBED_MODEL_NAME:
+    raise ValueError(
+        "EMBED_MODEL environment variable is required. "
+        "Set it in a .env file:\n\n"
+        "    EMBED_MODEL=qwen3-embedding:8b\n\n"
+        "See .env.example for alternatives."
+    )
 
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))
 

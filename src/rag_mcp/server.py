@@ -88,6 +88,16 @@ def list_indexed_documents() -> list[dict]:
 
 def main() -> None:
     """Start the MCP server on stdio transport."""
+    import logging
+    import sys
+
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stderr,
+        force=True,
+    )
     mcp.run(transport="stdio")
 
 

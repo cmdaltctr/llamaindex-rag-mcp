@@ -2,7 +2,7 @@
 
 Provides ``rag-mcp ingest``, ``rag-mcp search``, and ``rag-mcp list``
 subcommands.  When invoked with no arguments, the MCP stdio server starts
-instead (backward compatible).
+instead (backwards compatible).
 
 Usage::
 
@@ -14,16 +14,20 @@ Usage::
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import signal
+import subprocess
 import sys
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
 
 import typer
 from rich.console import Console
+from rich.logging import RichHandler
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -36,7 +40,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from .config import INGEST_WORKERS
+from .config import INGEST_WORKERS, SUPPORTED_EXTENSIONS
 
 app = typer.Typer(
     name="rag-mcp",
@@ -66,6 +70,121 @@ def _print_ollama_error(detail: str, json_output: bool = False) -> None:
         typer.echo(json.dumps({"status": "error", "message": msg}))
     else:
         console.print(f"[red]Error:[/red] {msg}")
+
+
+def _detect_gpu_acceleration() -> None:
+    """Check Ollama runner type and log GPU acceleration status.
+
+    Only runs when ``LOG_LEVEL=DEBUG``.  Inspects ``ollama ps --format json``
+    to determine whether the embedding model is running on Metal GPU or
+    CPU-only.  Never raises — logs a warning on any failure.
+    """
+    from .config import EMBED_MODEL_NAME
+
+    logger = logging.getLogger(__name__)
+    try:
+        result = subprocess.run(
+            ["ollama", "ps", "--format", "json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            logger.debug(
+                "Could not determine Ollama runner — ollama ps exited %d",
+                result.returncode,
+            )
+            return
+
+        import json as _json
+
+        data = _json.loads(result.stdout)
+        models = data.get("models", [])
+        for model_info in models:
+            name = model_info.get("name", "")
+            if EMBED_MODEL_NAME in name:
+                runner = model_info.get("details", {}).get(
+                    "format", ""
+                ) or model_info.get("details", {}).get("runner", "")
+                vram = model_info.get("size", "")
+                if "metal" in runner.lower() or "gpu" in runner.lower():
+                    logger.debug(
+                        "Ollama running %s on Metal GPU — VRAM: %s",
+                        name,
+                        vram,
+                    )
+                else:
+                    logger.warning(
+                        "Ollama running %s on CPU — consider enabling "
+                        "Metal for faster embeddings",
+                        name,
+                    )
+                return
+
+        logger.debug(
+            "Could not determine Ollama runner — %s not found in "
+            "running models",
+            EMBED_MODEL_NAME,
+        )
+    except FileNotFoundError:
+        logger.debug(
+            "Could not determine Ollama runner — ollama CLI not found"
+        )
+    except subprocess.TimeoutExpired:
+        logger.debug(
+            "Could not determine Ollama runner — ollama ps timed out"
+        )
+    except Exception as exc:
+        logger.debug(
+            "Could not determine Ollama runner — %s", exc
+        )
+
+
+def _setup_logging() -> None:
+    """Configure Python logging for rag_mcp modules.
+
+    All output goes to stderr to keep stdout clean for the MCP protocol.
+    Controlled by LOG_LEVEL env var (default: INFO).
+
+    Uses ``RichHandler`` for coloured, timestamped output when running
+    interactively.  Falls back to plain format for the MCP server to
+    avoid flooding the host's stderr capture.
+    """
+    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_level = getattr(logging, level, logging.INFO)
+
+    # RichHandler for coloured output (CLI mode).
+    # The MCP server (server.py) configures its own basic WARNING logger
+    # so this only affects CLI usage.
+    handler = RichHandler(
+        level=log_level,
+        console=Console(stderr=True),
+        show_time=True,
+        show_path=False,
+        markup=False,
+    )
+    logging.basicConfig(
+        level=log_level,
+        format="%(name)s: %(message)s",
+        datefmt="[%X]",
+        handlers=[handler],
+        force=True,
+    )
+
+    # Log model configuration at INFO (task 1.3).
+    from .config import EMBED_BATCH_SIZE, EMBED_CONCURRENCY, EMBED_MODEL_NAME
+
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Embedding model: %s | batch_size: %d | concurrency: %d",
+        EMBED_MODEL_NAME,
+        EMBED_BATCH_SIZE,
+        EMBED_CONCURRENCY,
+    )
+
+    # GPU detection at DEBUG level (task 1.2).
+    if log_level <= logging.DEBUG:
+        _detect_gpu_acceleration()
 
 
 def _sanitise_display_name(name: str) -> str:
@@ -183,6 +302,117 @@ def _make_plain_callback() -> Callable[[str, int, int], None]:
     return on_progress
 
 
+def _write_report(
+    report_path: str,
+    result: dict,
+    ingest_kwargs: dict,
+    input_path: str,
+) -> None:
+    """Write an ingestion report to a file.
+
+    Format is JSON if the path ends in ``.json``, otherwise Markdown.
+
+    Args:
+        report_path: Destination file path.
+        result: The result dict from ``ingest_path()``.
+        ingest_kwargs: The kwargs passed to ``ingest_path()``.
+        input_path: The original input path argument.
+    """
+    from .config import (
+        CHUNK_OVERLAP,
+        CHUNK_SIZE,
+        EMBED_BATCH_SIZE,
+        EMBED_CONCURRENCY,
+        EMBED_MODEL_NAME,
+    )
+
+    report_file = Path(report_path).expanduser().resolve()
+
+    # Warn if overwriting
+    if report_file.exists():
+        logger = logging.getLogger(__name__)
+        logger.warning("Overwriting existing report: %s", report_path)
+
+    file_details = result.get("file_details", [])
+    total_files = len(file_details)
+    indexed = sum(1 for f in file_details if f["status"] == "indexed")
+    failed = sum(1 for f in file_details if f["status"] == "failed")
+    skipped = sum(1 for f in file_details if f["status"] == "skipped")
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    config_info = {
+        "model": EMBED_MODEL_NAME,
+        "batch_size": EMBED_BATCH_SIZE,
+        "concurrency": EMBED_CONCURRENCY,
+        "workers": ingest_kwargs.get("workers", 1),
+        "chunk_size": ingest_kwargs.get("chunk_size", CHUNK_SIZE),
+        "chunk_overlap": ingest_kwargs.get("chunk_overlap", CHUNK_OVERLAP),
+    }
+
+    summary = {
+        "total": total_files,
+        "indexed": indexed,
+        "failed": failed,
+        "skipped": skipped,
+        "chunks": result.get("chunks_created", 0),
+    }
+
+    if report_file.suffix.lower() == ".json":
+        report_data = {
+            "timestamp": timestamp,
+            "config": config_info,
+            "input_path": str(input_path),
+            "summary": summary,
+            "files": file_details,
+        }
+        report_file.write_text(
+            json.dumps(report_data, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        lines = [
+            f"# Ingestion Report",
+            f"",
+            f"**Timestamp**: {timestamp}",
+            f"**Input**: `{input_path}`",
+            f"",
+            f"## Summary",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Total files | {summary['total']} |",
+            f"| Indexed | {summary['indexed']} |",
+            f"| Failed | {summary['failed']} |",
+            f"| Skipped | {summary['skipped']} |",
+            f"| Total chunks | {summary['chunks']} |",
+            f"",
+            f"## Configuration",
+            f"",
+            f"| Setting | Value |",
+            f"|---------|-------|",
+            f"| Model | {config_info['model']} |",
+            f"| Batch size | {config_info['batch_size']} |",
+            f"| Concurrency | {config_info['concurrency']} |",
+            f"| Workers | {config_info['workers']} |",
+            f"| Chunk size | {config_info['chunk_size']} |",
+            f"| Chunk overlap | {config_info['chunk_overlap']} |",
+            f"",
+            f"## Per-File Details",
+            f"",
+            f"| File | Status | Chunks | Error |",
+            f"|------|--------|--------|-------|",
+        ]
+        for fd in file_details:
+            error = fd.get("error", "")
+            lines.append(
+                f"| {fd['file']} | {fd['status']} | "
+                f"{fd['chunks']} | {error} |"
+            )
+        lines.append("")
+        report_file.write_text("\n".join(lines), encoding="utf-8")
+
+
 @app.command()
 def ingest(
     path: str = typer.Argument(..., help="Path to a file or directory to ingest."),
@@ -209,6 +439,15 @@ def ingest(
         False,
         "--json",
         help="Output results as JSON.",
+    ),
+    report: Optional[str] = typer.Option(
+        None,
+        "--report",
+        "-r",
+        help=(
+            "Write an ingestion report to this path. "
+            "Format: JSON if path ends in .json, otherwise Markdown."
+        ),
     ),
 ) -> None:
     """Index a file or directory into the RAG vector store."""
@@ -330,6 +569,19 @@ def ingest(
             f"{chunks} chunk(s) created."
         )
 
+    # Write report if requested
+    if report:
+        try:
+            _write_report(report, result, ingest_kwargs, path)
+            if not json_output:
+                console.print(
+                    f"[dim]Report written to {report}[/dim]"
+                )
+        except OSError as exc:
+            console.print(
+                f"[red]Warning:[/red] Failed to write report: {exc}"
+            )
+
 
 @app.command()
 def search(
@@ -436,6 +688,167 @@ def list_cmd(
     )
 
 
+@app.command()
+def benchmark(
+    text: Optional[str] = typer.Option(
+        None,
+        "--text",
+        "-t",
+        help="Inline text to embed for benchmarking.",
+    ),
+    file: Optional[str] = typer.Option(
+        None,
+        "--file",
+        "-f",
+        help="Path to a file to read, chunk, and embed.",
+    ),
+    iterations: int = typer.Option(
+        3,
+        "--iterations",
+        "-n",
+        help="Number of benchmark iterations (default 3).",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output results as JSON.",
+    ),
+) -> None:
+    """Benchmark embedding throughput (no ChromaDB writes).
+
+    Measures end-to-end embedding speed for the current EMBED_MODEL.
+    Accepts either inline ``--text`` or a ``--file`` path.  Results are
+    printed to stderr as a Rich table (or JSON with ``--json``).
+    """
+    import time
+
+    from llama_index.core import Settings as LISettings
+    from llama_index.core.node_parser import SentenceSplitter
+
+    from .config import (
+        CHUNK_OVERLAP,
+        CHUNK_SIZE,
+        EMBED_BATCH_SIZE,
+        EMBED_CONCURRENCY,
+        EMBED_MODEL_NAME,
+    )
+
+    if not text and not file:
+        console.print(
+            "[red]Error:[/red] Provide either --text or --file for "
+            "benchmark input."
+        )
+        raise typer.Exit(code=1)
+
+    if text and file:
+        console.print(
+            "[red]Error:[/red] Provide either --text or --file, not both."
+        )
+        raise typer.Exit(code=1)
+
+    # Gather texts to embed.
+    chunks: list[str] = []
+
+    if file:
+        file_path = Path(file).expanduser().resolve()
+        if not file_path.exists():
+            console.print(f"[red]Error:[/red] File not found: {file}")
+            raise typer.Exit(code=1)
+        if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            console.print(
+                f"[red]Error:[/red] Unsupported file extension: "
+                f"{file_path.suffix}"
+            )
+            raise typer.Exit(code=1)
+
+        from .ingestion import _read_and_chunk_file
+
+        nodes = _read_and_chunk_file(
+            file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+        )
+        chunks = [n.get_content() for n in nodes]
+    else:
+        # Split inline text into chunks using the same splitter.
+        splitter = SentenceSplitter(
+            chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+        )
+        from llama_index.core import Document
+
+        doc = Document(text=text)
+        nodes = splitter.get_nodes_from_documents([doc])
+        chunks = [n.get_content() for n in nodes]
+
+    if not chunks:
+        console.print("[yellow]No chunks produced from input.[/yellow]")
+        raise typer.Exit(code=1)
+
+    embed_model = LISettings.embed_model
+    model_name = EMBED_MODEL_NAME
+
+    # Warm up: single embedding to ensure the model is loaded.
+    console.print(
+        f"[dim]Warming up {model_name} with 1 chunk…[/dim]"
+    )
+    try:
+        embed_model.get_text_embedding(chunks[0])
+    except Exception as exc:
+        _print_ollama_error(str(exc), json_output)
+        raise typer.Exit(code=1)
+
+    # Run benchmark iterations.
+    timings: list[float] = []
+    vector_dim: int | None = None
+
+    for i in range(iterations):
+        start = time.perf_counter()
+        try:
+            embeddings = embed_model.get_text_embedding_batch(chunks)
+        except Exception as exc:
+            _print_ollama_error(str(exc), json_output)
+            raise typer.Exit(code=1)
+        elapsed = time.perf_counter() - start
+        timings.append(elapsed)
+
+        if embeddings and vector_dim is None:
+            vector_dim = len(embeddings[0])
+
+    avg_time = sum(timings) / len(timings)
+    total_chunks = len(chunks)
+    throughput = total_chunks / avg_time
+
+    result = {
+        "model": model_name,
+        "chunks": total_chunks,
+        "batch_size": EMBED_BATCH_SIZE,
+        "concurrency": EMBED_CONCURRENCY,
+        "iterations": iterations,
+        "avg_time_sec": round(avg_time, 4),
+        "chunks_per_sec": round(throughput, 2),
+        "vector_dim": vector_dim,
+    }
+
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+        return
+
+    table = Table(title="Embedding Benchmark Results")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="cyan")
+
+    table.add_row("Model", model_name)
+    table.add_row("Chunks", str(total_chunks))
+    table.add_row("Batch Size", str(EMBED_BATCH_SIZE))
+    table.add_row("Concurrency", str(EMBED_CONCURRENCY))
+    table.add_row("Iterations", str(iterations))
+    table.add_row("Avg Time (s)", f"{avg_time:.4f}")
+    table.add_row("Chunks/sec", f"{throughput:.2f}")
+    if vector_dim is not None:
+        table.add_row("Vector Dim", str(vector_dim))
+
+    console.print(table)
+
+
 def run_cli() -> None:
     """Entry point for CLI mode — delegates to the Typer app."""
+    _setup_logging()
     app()
