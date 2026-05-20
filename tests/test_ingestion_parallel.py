@@ -22,7 +22,7 @@ from rag_mcp.ingestion import (
     _shutdown_requested,
     _write_lock,
     _embed_semaphore,
-    ingest_path,
+    ingest_path_async,
     list_documents,
 )
 
@@ -100,65 +100,56 @@ class TestReadAndChunkFile:
 class TestIngestPathWithWorkers:
     """Tests for parallel vs sequential ingestion."""
 
-    def test_sequential_ingest(self, dir_with_docs: Path) -> None:
+    async def test_sequential_ingest(self, dir_with_docs: Path) -> None:
         """Sequential ingestion (workers=1) works."""
-        result = ingest_path(str(dir_with_docs), workers=1)
+        result = await ingest_path_async(str(dir_with_docs), workers=1)
         assert result["status"] == "ok"
         assert result["files_indexed"] > 0
         assert result["chunks_created"] > 0
 
-    def test_parallel_ingest(self, dir_with_docs: Path) -> None:
-        """Parallel ingestion (workers=4) works."""
-        result = ingest_path(str(dir_with_docs), workers=4)
+    async def test_parallel_ingest(self, dir_with_docs: Path) -> None:
+        """Parallel ingestion (workers=4) works via async path."""
+        result = await ingest_path_async(str(dir_with_docs), workers=4)
         assert result["status"] == "ok"
         assert result["files_indexed"] > 0
         assert result["chunks_created"] > 0
 
-    def test_parallel_produces_same_chunk_count(
+    async def test_parallel_produces_same_chunk_count(
         self, dir_with_docs: Path
     ) -> None:
-        """Parallel and sequential produce the same chunk count."""
-        # Sequential
-        r1 = ingest_path(str(dir_with_docs), workers=1)
-        # Clear for parallel test — need fresh collection
-        # Note: With EphemeralClient, we can just re-ingest
-        r2 = ingest_path(str(dir_with_docs), workers=4)
-        # Both should have same file and chunk counts
+        """Sequential produces consistent chunk count."""
+        r1 = await ingest_path_async(str(dir_with_docs), workers=1)
+        r2 = await ingest_path_async(str(dir_with_docs), workers=4)
         assert r1["files_indexed"] == r2["files_indexed"]
         assert r1["chunks_created"] == r2["chunks_created"]
 
-    def test_workers_clamped_to_one(self, sample_txt: Path) -> None:
+    async def test_workers_clamped_to_one(self, sample_txt: Path) -> None:
         """Workers < 1 is clamped to 1."""
-        result = ingest_path(str(sample_txt), workers=0)
+        result = await ingest_path_async(str(sample_txt), workers=0)
         assert result["status"] == "ok"
 
-        result = ingest_path(str(sample_txt), workers=-5)
+        result = await ingest_path_async(str(sample_txt), workers=-5)
         assert result["status"] == "ok"
 
 
 class TestErrorIsolation:
     """Tests for per-file error handling."""
 
-    def test_corrupt_file_skipped(self, tmp_path: Path) -> None:
+    async def test_corrupt_file_skipped(self, tmp_path: Path) -> None:
         """Corrupt files are skipped, valid files indexed."""
-        # Create a valid file
         good = tmp_path / "good.txt"
         good.write_text("This is valid content.")
 
-        # Create a "corrupt" file by using a PDF extension with
-        # non-PDF content (will still be read by SimpleDirectoryReader
-        # but let's test the error path with a truly invalid file)
         bad = tmp_path / "bad.pdf"
         bad.write_bytes(b"NOT A REAL PDF" * 100)
 
-        result = ingest_path(str(tmp_path), workers=1)
-        # At least the good file should be indexed
+        result = await ingest_path_async(str(tmp_path), workers=1)
         assert result["status"] == "ok"
         assert result["files_indexed"] >= 1
 
-    def test_nonexistent_path_returns_error(self) -> None:
+    async def test_nonexistent_path_returns_error(self) -> None:
         """Non-existent path returns error dict."""
-        result = ingest_path("/nonexistent/path")
+        result = await ingest_path_async("/nonexistent/path")
         assert result["status"] == "error"
         assert "not found" in result["message"].lower()
 
@@ -219,7 +210,7 @@ class TestConcurrencyPrimitives:
 
         assert max_concurrent <= EMBED_CONCURRENCY
 
-    def test_parallel_shutdown_early_exit(self, tmp_path: Path) -> None:
+    async def test_parallel_shutdown_early_exit(self, tmp_path: Path) -> None:
         """Shutdown flag set mid-parallel causes early exit with fewer files."""
         for i in range(5):
             (tmp_path / f"doc_{i}.txt").write_text(
@@ -232,7 +223,7 @@ class TestConcurrencyPrimitives:
                 _shutdown_requested.set()
 
         try:
-            result = ingest_path(
+            result = await ingest_path_async(
                 str(tmp_path),
                 workers=4,
                 progress_callback=_signal_midway,

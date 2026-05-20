@@ -11,7 +11,7 @@ import signal
 import sys
 from io import StringIO
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -405,7 +405,10 @@ class TestProgressReporting:
 
     def test_rich_progress_callback_structure(self) -> None:
         """Rich progress callback creates and updates tasks correctly."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        import asyncio
+        from unittest.mock import AsyncMock
+
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
@@ -416,7 +419,7 @@ class TestProgressReporting:
 
             _run_ingest_with_rich_progress("/fake", {"workers": 1})
 
-            # ingest_path should have been called with a progress_callback
+            # ingest_path_async should have been called with a progress_callback
             assert mock_ingest.called
             call_kwargs = mock_ingest.call_args
             assert "progress_callback" in call_kwargs.kwargs
@@ -444,7 +447,7 @@ class TestIngestErrorHandling:
     @patch("rag_mcp.cli.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -454,7 +457,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception with 'ollama' in message triggers Ollama error."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("ollama service unavailable")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -464,7 +467,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception with 'embed' in message triggers Ollama error."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("embed operation failed")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -474,7 +477,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("Something went wrong")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -487,7 +490,7 @@ class TestIngestErrorHandling:
         from rag_mcp.ingestion import _shutdown_requested
 
         # Simulate: ingest succeeds but shutdown was requested
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -509,7 +512,7 @@ class TestIngestErrorHandling:
         """Interrupt during ingest with --json outputs JSON with interrupted flag."""
         from rag_mcp.ingestion import _shutdown_requested
 
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -533,7 +536,7 @@ class TestIngestErrorHandling:
         """Interrupt message mentions chunks written before interruption."""
         from rag_mcp.ingestion import _shutdown_requested
 
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -552,7 +555,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(
                 app, ["ingest", "/fake/path", "--json"]
@@ -623,7 +626,7 @@ class TestRichProgressCallbackInternals:
 
         captured_callbacks: list[tuple[str, int, int]] = []
 
-        def fake_ingest(
+        async def fake_ingest(
             path: str,
             progress_callback: object = None,
             **kwargs: object,
@@ -636,7 +639,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("read", 3, 3)
             return {"status": "ok", "files_indexed": 3, "chunks_created": 9}
 
-        with patch("rag_mcp.ingestion.ingest_path", side_effect=fake_ingest):
+        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {"workers": 1})
 
         assert result["status"] == "ok"
@@ -645,7 +648,7 @@ class TestRichProgressCallbackInternals:
         """embed_start phase completes read bar and creates embed bar."""
         from rag_mcp.cli import _run_ingest_with_rich_progress
 
-        def fake_ingest(
+        async def fake_ingest(
             path: str,
             progress_callback: object = None,
             **kwargs: object,
@@ -656,7 +659,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 5, 5)
             return {"status": "ok", "files_indexed": 2, "chunks_created": 5}
 
-        with patch("rag_mcp.ingestion.ingest_path", side_effect=fake_ingest):
+        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 5
@@ -667,7 +670,7 @@ class TestRichProgressCallbackInternals:
         """embed_start forces read bar to 100% if not yet complete."""
         from rag_mcp.cli import _run_ingest_with_rich_progress
 
-        def fake_ingest(
+        async def fake_ingest(
             path: str,
             progress_callback: object = None,
             **kwargs: object,
@@ -678,7 +681,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 4, 4)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 4}
 
-        with patch("rag_mcp.ingestion.ingest_path", side_effect=fake_ingest):
+        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
@@ -687,7 +690,7 @@ class TestRichProgressCallbackInternals:
         """embed phase updates the embed task progress."""
         from rag_mcp.cli import _run_ingest_with_rich_progress
 
-        def fake_ingest(
+        async def fake_ingest(
             path: str,
             progress_callback: object = None,
             **kwargs: object,
@@ -698,7 +701,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 10, 10)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 10}
 
-        with patch("rag_mcp.ingestion.ingest_path", side_effect=fake_ingest):
+        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 10
@@ -717,7 +720,7 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -764,7 +767,7 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.ingestion.ingest_path") as mock_ingest:
+        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -805,13 +808,13 @@ class TestConsoleIsTerminal:
         """When console.is_terminal is True, Rich progress is used."""
         with (
             patch("rag_mcp.cli.console") as mock_console,
-            patch("rag_mcp.ingestion.ingest_path") as mock_ingest,
+            patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
         ):
             mock_console.is_terminal = True
             mock_console.print = MagicMock()
 
-            # ingest_path called via _run_ingest_with_rich_progress
-            # which calls ingest_path with progress_callback
+            # ingest_path_async called via _run_ingest_with_rich_progress
+            # which calls ingest_path_async with progress_callback
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
@@ -820,7 +823,7 @@ class TestConsoleIsTerminal:
 
             result = runner.invoke(app, ["ingest", "/fake"])
             assert result.exit_code == 0
-            # ingest_path should have been called with progress_callback
+            # ingest_path_async should have been called with progress_callback
             call_kwargs = mock_ingest.call_args
             assert "progress_callback" in call_kwargs.kwargs
 
@@ -831,13 +834,13 @@ class TestConsoleIsTerminal:
 class TestFileDetails:
     """Tests for per-file tracking in ingest_path results."""
 
-    def test_single_file_has_file_details(
+    async def test_single_file_has_file_details(
         self, sample_txt: Path
     ) -> None:
         """Single file ingest returns file_details with one indexed entry."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
-        result = ingest_path(str(sample_txt))
+        result = await ingest_path_async(str(sample_txt))
         assert result["status"] == "ok"
         assert "file_details" in result
         assert len(result["file_details"]) == 1
@@ -846,13 +849,13 @@ class TestFileDetails:
         assert fd["chunks"] > 0
         assert fd["file"] == sample_txt.name
 
-    def test_folder_has_file_details(
+    async def test_folder_has_file_details(
         self, dir_with_docs: Path
     ) -> None:
         """Folder ingest returns file_details for each file."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
-        result = ingest_path(str(dir_with_docs))
+        result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
         assert "file_details" in result
         assert len(result["file_details"]) >= 2
@@ -860,13 +863,13 @@ class TestFileDetails:
             assert fd["status"] == "indexed"
             assert fd["chunks"] > 0
 
-    def test_corrupt_file_has_failed_status(
+    async def test_corrupt_file_has_failed_status(
         self, corrupt_dir: Path
     ) -> None:
         """Corrupt file in folder has status 'failed' with error message."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
-        result = ingest_path(str(corrupt_dir))
+        result = await ingest_path_async(str(corrupt_dir))
         assert "file_details" in result
 
         # Find the file_details entries for each file.
@@ -1109,16 +1112,16 @@ class TestPartialFailureReport:
 class TestPerFileLogging:
     """Tests for structured per-file INFO-level logging."""
 
-    def test_per_file_logging_on_folder(
+    async def test_per_file_logging_on_folder(
         self, dir_with_docs: Path
     ) -> None:
         """Folder ingest produces per-file INFO log lines."""
         import logging
 
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
         with patch("rag_mcp.ingestion.logger") as mock_logger:
-            result = ingest_path(str(dir_with_docs))
+            result = await ingest_path_async(str(dir_with_docs))
             assert result["status"] == "ok"
 
             # Verify info() was called for each file
@@ -1133,14 +1136,14 @@ class TestPerFileLogging:
                 found = any(filename in c for c in info_calls)
                 assert found, f"No info log for {filename}"
 
-    def test_warning_logged_for_failure(
+    async def test_warning_logged_for_failure(
         self, corrupt_dir: Path
     ) -> None:
         """Failed files produce WARNING-level log lines."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
         with patch("rag_mcp.ingestion.logger") as mock_logger:
-            result = ingest_path(str(corrupt_dir))
+            result = await ingest_path_async(str(corrupt_dir))
             assert result["status"] == "ok"
             # The corrupt.pdf should at minimum appear in warnings
             warning_calls = [
@@ -1158,7 +1161,7 @@ class TestPerFileLogging:
 class TestUnsupportedFileExclusion:
     """Tests for tracking of unsupported files in file_details."""
 
-    def test_unsupported_file_not_in_file_details(
+    async def test_unsupported_file_not_in_file_details(
         self, tmp_path: Path
     ) -> None:
         """Files with unsupported extensions are tracked as skipped."""
@@ -1168,9 +1171,9 @@ class TestUnsupportedFileExclusion:
         bad_file = tmp_path / "not_supported.xyz"
         bad_file.write_text("This file should be skipped.")
 
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
-        result = ingest_path(str(tmp_path))
+        result = await ingest_path_async(str(tmp_path))
         assert "file_details" in result
 
         file_names = {fd["file"] for fd in result["file_details"]}

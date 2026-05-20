@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -166,529 +167,18 @@ def _read_and_chunk_file(
     nodes = splitter.get_nodes_from_documents(documents)
 
     # Attach extracted metadata to every node.
+    # ChromaDB rejects non-scalar metadata values (list/dict), so flatten
+    # any list values (e.g. ``keywords``) into comma-separated strings.
     if doc_metadata:
+        flat_metadata = {
+            k: ", ".join(str(x) for x in v) if isinstance(v, list) else v
+            for k, v in doc_metadata.items()
+        }
         for node in nodes:
-            node.metadata.update(doc_metadata)
+            node.metadata.update(flat_metadata)
 
     return nodes
 
-
-def _ingest_sequential(
-    files: list[Path],
-    chunk_size: int,
-    chunk_overlap: int,
-    progress_callback: Callable | None = None,
-    collection_name: str = "documents",
-) -> tuple[int, int, list[str], list[dict]]:
-    """Ingest files sequentially (single-threaded).
-
-    Args:
-        files: List of file paths to ingest.
-        chunk_size: Maximum characters per chunk.
-        chunk_overlap: Overlap between chunks.
-        progress_callback: Optional callable for progress updates.
-        collection_name: ChromaDB collection to write to.
-
-    Returns:
-        Tuple of (files_indexed, chunks_created, errors, file_details).
-        file_details contains per-file dicts with keys: file, status, chunks, error.
-    """
-    all_nodes = []
-    files_indexed = 0
-    errors: list[str] = []
-    file_details: list[dict] = []
-
-    for i, file_path in enumerate(files):
-        if _shutdown_requested.is_set():
-            break
-        try:
-            nodes = _read_and_chunk_file(
-                file_path,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            )
-            all_nodes.extend(nodes)
-            files_indexed += 1
-            file_details.append(_make_file_detail(
-                file_name=file_path.name,
-                status="indexed",
-                chunks=len(nodes),
-            ))
-            logger.info(
-                "✓ %s — %d chunk(s)", file_path.name, len(nodes)
-            )
-        except Exception as exc:
-            errors.append(f"{file_path.name}: {exc}")
-            file_details.append(_make_file_detail(
-                file_name=file_path.name,
-                status="failed",
-                chunks=0,
-                error=str(exc),
-            ))
-            logger.warning("✗ %s — %s", file_path.name, exc)
-
-        if progress_callback:
-            progress_callback("read", i + 1, len(files))
-
-    # Embed and write to ChromaDB
-    chunks_created = _embed_and_write(
-        all_nodes, progress_callback, collection_name=collection_name
-    )
-    return files_indexed, chunks_created, errors, file_details
-
-
-def _ingest_parallel(
-    files: list[Path],
-    workers: int,
-    chunk_size: int,
-    chunk_overlap: int,
-    progress_callback: Callable | None = None,
-    collection_name: str = "documents",
-) -> tuple[int, int, list[str], list[dict]]:
-    """Ingest files using ThreadPoolExecutor for concurrent reading.
-
-    Two-phase pattern:
-      Phase 1 (parallel): Read and chunk files concurrently.
-      Phase 2 (serial): Embed and write to ChromaDB in one batch.
-
-    Args:
-        files: List of file paths to ingest.
-        workers: Number of parallel file readers.
-        chunk_size: Maximum characters per chunk.
-        chunk_overlap: Overlap between chunks.
-        progress_callback: Optional callable for progress updates.
-        collection_name: ChromaDB collection to write to.
-
-    Returns:
-        Tuple of (files_indexed, chunks_created, errors, file_details).
-        file_details contains per-file dicts with keys: file, status, chunks, error.
-    """
-    all_nodes: list = []
-    files_indexed = 0
-    errors: list[str] = []
-    file_details: list[dict] = []
-    completed = 0
-
-    def _process_file(file_path: Path) -> list:
-        """Worker function: read and chunk a single file."""
-        if _shutdown_requested.is_set():
-            return []
-        return _read_and_chunk_file(
-            file_path,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-        )
-
-    def _handle_future(
-        future,
-        file_path: Path,
-    ) -> tuple[int, int]:
-        """Process a completed future and update tracking collections.
-
-        Args:
-            future: Completed future from the thread pool.
-            file_path: Path of the file that was processed.
-
-        Returns:
-            Tuple of (files_added, errors_added).
-        """
-        try:
-            nodes = future.result()
-            all_nodes.extend(nodes)
-            file_details.append(_make_file_detail(
-                file_name=file_path.name,
-                status="indexed",
-                chunks=len(nodes),
-            ))
-            logger.info("✓ %s — %d chunk(s)", file_path.name, len(nodes))
-            return 1, 0
-        except Exception as exc:
-            errors.append(f"{file_path.name}: {exc}")
-            file_details.append(_make_file_detail(
-                file_name=file_path.name,
-                status="failed",
-                chunks=0,
-                error=str(exc),
-            ))
-            logger.warning("✗ %s — %s", file_path.name, exc)
-            return 0, 1
-
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        future_to_file = {
-            pool.submit(_process_file, f): f for f in files
-        }
-
-        for future in as_completed(future_to_file):
-            file_path = future_to_file[future]
-            if _shutdown_requested.is_set():
-                pool.shutdown(wait=False, cancel_futures=True)
-                break
-
-            completed += 1
-            f_added, e_added = _handle_future(future, file_path)
-            files_indexed += f_added
-            # errors already appended inside _handle_future
-
-            if progress_callback:
-                progress_callback("read", completed, len(files))
-
-    # Serial embed + write phase
-    chunks_created = _embed_and_write(
-        all_nodes, progress_callback, collection_name=collection_name
-    )
-    return files_indexed, chunks_created, errors, file_details
-
-
-def _embed_and_write(
-    nodes: list,
-    progress_callback: Callable | None = None,
-    collection_name: str = "documents",
-) -> int:
-    """Embed nodes and write to ChromaDB.
-
-    When ``EMBED_CONCURRENCY <= 1``, uses the original ``VectorStoreIndex``
-    path (sequential, backwards compatible).  When ``EMBED_CONCURRENCY > 1``,
-    splits nodes into batches of ``EMBED_BATCH_SIZE``, embeds them
-    concurrently via ``ThreadPoolExecutor``, and writes to ChromaDB only
-    after all batches succeed (all-or-nothing).
-
-    If the shutdown flag is set before embedding begins, returns 0
-    immediately to avoid partial writes.
-
-    Args:
-        nodes: List of LlamaIndex Node objects.
-        progress_callback: Optional callable for progress updates.
-        collection_name: ChromaDB collection to write to.
-
-    Returns:
-        Number of chunks written.
-    """
-    if not nodes:
-        return 0
-
-    # Bail out before starting the expensive embedding work.
-    if _shutdown_requested.is_set():
-        return 0
-
-    # Notify caller that embedding is about to begin.
-    if progress_callback:
-        progress_callback("embed_start", 0, len(nodes))
-
-    with _write_lock:
-        # Re-check inside the lock in case SIGINT arrived while
-        # we were waiting for the lock.
-        if _shutdown_requested.is_set():
-            return 0
-
-        collection = _get_chroma_collection(collection_name)
-        vector_store = ChromaVectorStore(chroma_collection=collection)
-        storage_context = StorageContext.from_defaults(
-            vector_store=vector_store
-        )
-
-        if EMBED_CONCURRENCY <= 1:
-            # Sequential path: original VectorStoreIndex behaviour.
-            with _embed_semaphore:
-                logger.info(
-                    "Embedding %d chunks via %s (sequential)...",
-                    len(nodes),
-                    Settings.embed_model.model_name,
-                )
-                VectorStoreIndex(
-                    nodes,
-                    storage_context=storage_context,
-                    show_progress=False,
-                )
-                logger.info(
-                    "Successfully stored %d chunks in ChromaDB", len(nodes)
-                )
-        else:
-            # Concurrent path: embed batches in parallel, write once.
-            _embed_and_write_concurrent(
-                nodes, collection, progress_callback
-            )
-
-        if progress_callback:
-            progress_callback("embed", len(nodes), len(nodes))
-
-    return len(nodes)
-
-
-def _embed_and_write_concurrent(
-    nodes: list,
-    collection: chromadb.Collection,
-    progress_callback: Callable | None = None,
-) -> None:
-    """Embed nodes concurrently and write all results to ChromaDB.
-
-    Splits nodes into batches of ``EMBED_BATCH_SIZE`` and dispatches
-    them across ``EMBED_CONCURRENCY`` workers.  If any batch fails,
-    no data is written to ChromaDB (all-or-nothing).
-
-    Args:
-        nodes: List of LlamaIndex Node objects.
-        collection: ChromaDB collection to write to.
-        progress_callback: Optional callable for progress updates.
-
-    Raises:
-        ConnectionError: If any embedding batch fails due to Ollama
-            connectivity issues — no data is written to ChromaDB.
-        RuntimeError: If any non-connection embedding batch fails —
-            no data is written to ChromaDB (all-or-nothing semantics).
-    """
-    batch_size = max(1, EMBED_BATCH_SIZE)
-    node_batches: list[list] = [
-        nodes[i : i + batch_size]
-        for i in range(0, len(nodes), batch_size)
-    ]
-
-    logger.info(
-        "Embedding %d chunks via %s (concurrent, %d batch(es), "
-        "%d worker(s))...",
-        len(nodes),
-        Settings.embed_model.model_name,
-        len(node_batches),
-        EMBED_CONCURRENCY,
-    )
-
-    # Collect embeddings for each batch.
-    all_embeddings: list[list[float]] = [None] * len(nodes)
-    batch_errors: list[str] = []
-
-    def _embed_batch(batch_idx: int, batch: list) -> None:
-        """Embed a single batch and store results."""
-        texts = [n.get_content() for n in batch]
-        embeddings = Settings.embed_model.get_text_embedding_batch(texts)
-        start = batch_idx * batch_size
-        for j, emb in enumerate(embeddings):
-            all_embeddings[start + j] = emb
-
-    with ThreadPoolExecutor(max_workers=EMBED_CONCURRENCY) as pool:
-        futures = {
-            pool.submit(_embed_batch, i, batch): i
-            for i, batch in enumerate(node_batches)
-        }
-        has_connection_error = False
-        for future in as_completed(futures):
-            batch_idx = futures[future]
-            try:
-                future.result()
-            except ConnectionError as exc:
-                has_connection_error = True
-                batch_errors.append(
-                    f"Batch {batch_idx} failed (connection): {exc}"
-                )
-                logger.error(
-                    "Embedding batch %d failed (connection): %s",
-                    batch_idx,
-                    exc,
-                )
-            except Exception as exc:
-                batch_errors.append(
-                    f"Batch {batch_idx} failed: {exc}"
-                )
-                logger.error("Embedding batch %d failed: %s", batch_idx, exc)
-
-    # All-or-nothing: if any batch failed, abort without writing.
-    if batch_errors:
-        if has_connection_error:
-            raise ConnectionError(
-                f"Embedding failed for {len(batch_errors)} batch(es). "
-                "No data written to ChromaDB."
-            )
-        raise RuntimeError(
-            f"Embedding failed for {len(batch_errors)} batch(es). "
-            "No data written to ChromaDB."
-        )
-
-    # Write all nodes with their embeddings to ChromaDB in one go.
-    # Build the VectorStoreIndex with pre-embedded nodes so the
-    # embedding step is skipped.
-    for node, emb in zip(nodes, all_embeddings):
-        node.embedding = emb
-
-    vector_store = ChromaVectorStore(chroma_collection=collection)
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-    VectorStoreIndex(
-        nodes,
-        storage_context=storage_context,
-        show_progress=False,
-    )
-    logger.info(
-        "Successfully stored %d chunks in ChromaDB (concurrent)", len(nodes)
-    )
-
-
-def ingest_path(
-    path: str,
-    workers: int = 1,
-    chunk_size: int | None = None,
-    chunk_overlap: int | None = None,
-    progress_callback: Callable | None = None,
-    collection_name: str = "documents",
-) -> dict:
-    """Index a single file or an entire directory into the RAG vector store.
-
-    Args:
-        path: Absolute or relative path to a file or directory.
-        workers: Number of parallel file readers (default 1 = sequential).
-        chunk_size: Override CHUNK_SIZE for this ingestion.
-        chunk_overlap: Override CHUNK_OVERLAP for this ingestion.
-        progress_callback: Optional callable ``(phase, current, total)``
-            for progress reporting.  *phase* is one of ``"read"``,
-            ``"embed_start"``, or ``"embed"``.
-        collection_name: Name of the ChromaDB collection to write to
-            (default ``"documents"`` for backward compatibility).
-
-    Returns:
-        A dict with keys:
-        - ``status``: ``"ok"`` or ``"error"``
-        - ``files_indexed``: Number of files successfully indexed
-        - ``chunks_created``: Total chunks written to ChromaDB
-        - ``collection``: Name of the collection used
-        - ``file_details``: List of per-file dicts with keys ``file``,
-          ``status`` (indexed/failed/skipped), ``chunks``, and optional
-          ``error``
-        - ``warnings``: (optional) List of error strings
-
-        On error, also includes:
-        - ``error_type``: One of ``"file"`` (path/extension errors or all files
-          failed), ``"connection"`` (Ollama connectivity failure), or
-          ``"embedding"`` (non-connection embedding failure)
-        - ``message``: Human-readable error description
-    """
-    # Reset shutdown flag for fresh run
-    _shutdown_requested.clear()
-
-    # Resolve path
-    path_obj = Path(path).expanduser().resolve()
-    if not path_obj.exists():
-        return {
-            "status": "error",
-            "error_type": "file",
-            "message": f"Path not found: {path}",
-            "file_details": [],
-            "collection": collection_name,
-            "chunks_removed": 0,
-        }
-
-    # Single-file unsupported extension check (backwards compatible)
-    if path_obj.is_file() and path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
-        return {
-            "status": "error",
-            "error_type": "file",
-            "message": (
-                f"Unsupported file extension: {path_obj.suffix}. "
-                f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
-            ),
-            "file_details": [],
-            "collection": collection_name,
-            "chunks_removed": 0,
-        }
-
-    # Apply chunk overrides
-    _chunk_size = chunk_size if chunk_size is not None else CHUNK_SIZE
-    _chunk_overlap = (
-        chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP
-    )
-
-    # Gather supported files (and track skipped unsupported files)
-    files_to_index, skipped_details = _gather_supported_files(path_obj)
-    if not files_to_index:
-        result: dict = {
-            "status": "ok",
-            "files_indexed": 0,
-            "chunks_created": 0,
-            "chunks_removed": 0,
-            "file_details": skipped_details,
-            "collection": collection_name,
-        }
-        return result
-
-    # Delete old chunks for upsert semantics (delete-before-read).
-    # Re-ingesting a file replaces old chunks rather than appending duplicates.
-    # This runs single-threaded before the parallel read phase to avoid
-    # concurrent ChromaDB access issues.
-    chunks_removed_total = 0
-    for _f in files_to_index:
-        if _shutdown_requested.is_set():
-            break
-        _del_result = remove_document(
-            str(_f), collection_name=collection_name
-        )
-        if _del_result.get("status") == "ok":
-            chunks_removed_total += _del_result.get("chunks_removed", 0)
-
-    # Single file — always sequential
-    if len(files_to_index) == 1:
-        workers = 1
-
-    # Clamp workers
-    workers = max(1, workers)
-
-    # Choose ingestion strategy
-    file_details: list[dict] = []
-    try:
-        if workers > 1:
-            files_idx, chunks, errors, file_details = _ingest_parallel(
-                files_to_index, workers, _chunk_size, _chunk_overlap,
-                progress_callback, collection_name=collection_name,
-            )
-        else:
-            files_idx, chunks, errors, file_details = _ingest_sequential(
-                files_to_index, _chunk_size, _chunk_overlap,
-                progress_callback, collection_name=collection_name,
-            )
-    except ConnectionError as exc:
-        return {
-            "status": "error",
-            "error_type": "connection",
-            "message": str(exc),
-            "file_details": file_details + skipped_details,
-            "collection": collection_name,
-            "chunks_removed": chunks_removed_total,
-        }
-    except RuntimeError as exc:
-        return {
-            "status": "error",
-            "error_type": "embedding",
-            "message": str(exc),
-            "file_details": file_details + skipped_details,
-            "collection": collection_name,
-            "chunks_removed": chunks_removed_total,
-        }
-
-    # Merge skipped files into file_details for a complete picture
-    all_details = file_details + skipped_details
-
-    if files_idx > 0:
-        result: dict = {
-            "status": "ok",
-            "files_indexed": files_idx,
-            "chunks_created": chunks,
-            "chunks_removed": chunks_removed_total,
-            "collection": collection_name,
-            "file_details": all_details,
-        }
-    else:
-        result = {
-            "status": "error",
-            "error_type": "file",
-            "message": (
-                f"All {len(files_to_index)} file(s) failed to index. "
-                "See file_details for per-file errors."
-            ),
-            "files_indexed": 0,
-            "chunks_created": 0,
-            "chunks_removed": chunks_removed_total,
-            "collection": collection_name,
-            "file_details": all_details,
-        }
-    if errors:
-        result["warnings"] = errors
-
-    return result
 
 
 def list_documents(collection_name: str = "documents") -> list[dict]:
@@ -727,6 +217,303 @@ def list_documents(collection_name: str = "documents") -> list[dict]:
         {"source": src, "chunks": cnt}
         for src, cnt in sorted(source_counts.items())
     ]
+
+
+# ── Async ingestion path ───────────────────────────────────────────────────
+
+
+async def _read_and_chunk_file_async(
+    file_path: Path,
+    chunk_size: int = CHUNK_SIZE,
+    chunk_overlap: int = CHUNK_OVERLAP,
+) -> list:
+    """Async version of ``_read_and_chunk_file``.
+
+    Reads the file via ``asyncio.to_thread`` (sync file readers stay sync),
+    calls ``extract_metadata_async`` for non-blocking metadata extraction,
+    and returns chunked nodes with metadata attached.
+
+    Args:
+        file_path: Path to the document file.
+        chunk_size: Maximum characters per chunk.
+        chunk_overlap: Overlap between chunks.
+
+    Returns:
+        List of LlamaIndex Node objects, each with metadata attached.
+
+    Raises:
+        Exception: If the file cannot be read or parsed.
+    """
+    def _read_sync() -> list:
+        reader = SimpleDirectoryReader(
+            input_files=[str(file_path)],
+            filename_as_id=True,
+        )
+        return reader.load_data()
+
+    documents = await asyncio.to_thread(_read_sync)
+
+    from .metadata_extractor import extract_metadata_async
+
+    if documents:
+        file_text = "\n".join(
+            d.get_content()
+            for d in documents
+            if hasattr(d, "get_content")
+        )
+        doc_metadata = await extract_metadata_async(file_text, file_path.name)
+    else:
+        doc_metadata = {}
+        logger.debug(
+            "No documents loaded from %s — skipping metadata extraction",
+            file_path.name,
+        )
+
+    splitter = SentenceSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+    nodes = splitter.get_nodes_from_documents(documents)
+
+    if doc_metadata:
+        flat_metadata = {
+            k: ", ".join(str(x) for x in v) if isinstance(v, list) else v
+            for k, v in doc_metadata.items()
+        }
+        for node in nodes:
+            node.metadata.update(flat_metadata)
+
+    return nodes
+
+
+async def _embed_and_write_async(
+    nodes: list,
+    progress_callback: Callable | None = None,
+    collection_name: str = "documents",
+) -> int:
+    """Async version of embed and write to ChromaDB.
+
+    Wraps ChromaDB sync calls in ``asyncio.to_thread`` to yield the
+    event loop during writes.
+
+    Args:
+        nodes: List of LlamaIndex Node objects.
+        progress_callback: Optional callable for progress updates.
+        collection_name: ChromaDB collection to write to.
+
+    Returns:
+        Number of chunks written.
+    """
+    if not nodes:
+        return 0
+
+    if _shutdown_requested.is_set():
+        return 0
+
+    if progress_callback:
+        progress_callback("embed_start", 0, len(nodes))
+
+    def _write_sync() -> int:
+        with _write_lock:
+            if _shutdown_requested.is_set():
+                return 0
+
+            collection = _get_chroma_collection(collection_name)
+            vector_store = ChromaVectorStore(chroma_collection=collection)
+            storage_context = StorageContext.from_defaults(
+                vector_store=vector_store
+            )
+
+            with _embed_semaphore:
+                logger.info(
+                    "Embedding %d chunks via %s...",
+                    len(nodes),
+                    Settings.embed_model.model_name,
+                )
+                VectorStoreIndex(
+                    nodes,
+                    storage_context=storage_context,
+                    show_progress=False,
+                )
+                logger.info(
+                    "Successfully stored %d chunks in ChromaDB", len(nodes)
+                )
+            return len(nodes)
+
+    chunks_written = await asyncio.to_thread(_write_sync)
+
+    if progress_callback:
+        progress_callback("embed", chunks_written, chunks_written)
+
+    return chunks_written
+
+
+async def ingest_path_async(
+    path: str,
+    workers: int = 1,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
+    progress_callback: Callable | None = None,
+    collection_name: str = "documents",
+) -> dict:
+    """Async ingestion entry point — indexes files into ChromaDB.
+
+    Yields the event loop during file I/O, metadata extraction, and
+    ChromaDB writes so the MCP server remains responsive.
+
+    Args:
+        path: Absolute or relative path to a file or directory.
+        workers: Unused (kept for API compatibility).
+        chunk_size: Override CHUNK_SIZE for this ingestion.
+        chunk_overlap: Override CHUNK_OVERLAP for this ingestion.
+        progress_callback: Optional callable ``(phase, current, total)``.
+        collection_name: Name of the ChromaDB collection to write to.
+
+    Returns:
+        Same dict shape as the former sync ``ingest_path()``.
+    """
+    _shutdown_requested.clear()
+
+    path_obj = Path(path).expanduser().resolve()
+    if not path_obj.exists():
+        return {
+            "status": "error",
+            "error_type": "file",
+            "message": f"Path not found: {path}",
+            "file_details": [],
+            "collection": collection_name,
+            "chunks_removed": 0,
+        }
+
+    if path_obj.is_file() and path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
+        return {
+            "status": "error",
+            "error_type": "file",
+            "message": (
+                f"Unsupported file extension: {path_obj.suffix}. "
+                f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+            ),
+            "file_details": [],
+            "collection": collection_name,
+            "chunks_removed": 0,
+        }
+
+    _chunk_size = chunk_size if chunk_size is not None else CHUNK_SIZE
+    _chunk_overlap = (
+        chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP
+    )
+
+    files_to_index, skipped_details = _gather_supported_files(path_obj)
+    if not files_to_index:
+        return {
+            "status": "ok",
+            "files_indexed": 0,
+            "chunks_created": 0,
+            "chunks_removed": 0,
+            "file_details": skipped_details,
+            "collection": collection_name,
+        }
+
+    # Delete old chunks for upsert semantics (via to_thread).
+    chunks_removed_total = 0
+    for _f in files_to_index:
+        if _shutdown_requested.is_set():
+            break
+        _del_result = await asyncio.to_thread(
+            remove_document, str(_f), collection_name
+        )
+        if _del_result.get("status") == "ok":
+            chunks_removed_total += _del_result.get("chunks_removed", 0)
+
+    # Process files sequentially (one at a time per design).
+    all_nodes: list = []
+    files_indexed = 0
+    errors: list[str] = []
+    file_details: list[dict] = []
+
+    for i, file_path in enumerate(files_to_index):
+        if _shutdown_requested.is_set():
+            break
+        try:
+            nodes = await _read_and_chunk_file_async(
+                file_path,
+                chunk_size=_chunk_size,
+                chunk_overlap=_chunk_overlap,
+            )
+            all_nodes.extend(nodes)
+            files_indexed += 1
+            file_details.append(_make_file_detail(
+                file_name=file_path.name,
+                status="indexed",
+                chunks=len(nodes),
+            ))
+            logger.info("✓ %s — %d chunk(s)", file_path.name, len(nodes))
+        except Exception as exc:
+            errors.append(f"{file_path.name}: {exc}")
+            file_details.append(_make_file_detail(
+                file_name=file_path.name,
+                status="failed",
+                chunks=0,
+                error=str(exc),
+            ))
+            logger.warning("✗ %s — %s", file_path.name, exc)
+
+        if progress_callback:
+            progress_callback("read", i + 1, len(files_to_index))
+
+    # Embed and write to ChromaDB (async, yields the loop).
+    try:
+        chunks_created = await _embed_and_write_async(
+            all_nodes, progress_callback, collection_name=collection_name
+        )
+    except ConnectionError as exc:
+        return {
+            "status": "error",
+            "error_type": "connection",
+            "message": str(exc),
+            "file_details": file_details + skipped_details,
+            "collection": collection_name,
+            "chunks_removed": chunks_removed_total,
+        }
+    except RuntimeError as exc:
+        return {
+            "status": "error",
+            "error_type": "embedding",
+            "message": str(exc),
+            "file_details": file_details + skipped_details,
+            "collection": collection_name,
+            "chunks_removed": chunks_removed_total,
+        }
+
+    all_details = file_details + skipped_details
+
+    if files_indexed > 0:
+        result: dict = {
+            "status": "ok",
+            "files_indexed": files_indexed,
+            "chunks_created": chunks_created,
+            "chunks_removed": chunks_removed_total,
+            "collection": collection_name,
+            "file_details": all_details,
+        }
+    else:
+        result = {
+            "status": "error",
+            "error_type": "file",
+            "message": (
+                f"All {len(files_to_index)} file(s) failed to index. "
+                "See file_details for per-file errors."
+            ),
+            "files_indexed": 0,
+            "chunks_created": 0,
+            "chunks_removed": chunks_removed_total,
+            "collection": collection_name,
+            "file_details": all_details,
+        }
+    if errors:
+        result["warnings"] = errors
+
+    return result
 
 
 # ── Deletion functions ─────────────────────────────────────────────────────

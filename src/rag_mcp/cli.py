@@ -233,7 +233,9 @@ def _run_ingest_with_rich_progress(
 
     Both bars include elapsed time and ETA via Rich columns.
     """
-    from .ingestion import ingest_path
+    import asyncio
+
+    from .ingestion import ingest_path_async
 
     with Progress(
         SpinnerColumn(),
@@ -271,8 +273,10 @@ def _run_ingest_with_rich_progress(
                 if embed_task_id is not None:
                     progress.update(embed_task_id, completed=total)
 
-        return ingest_path(
-            path, progress_callback=on_progress, **ingest_kwargs
+        return asyncio.run(
+            ingest_path_async(
+                path, progress_callback=on_progress, **ingest_kwargs
+            )
         )
 
 
@@ -458,7 +462,9 @@ def ingest(
     ),
 ) -> None:
     """Index a file or directory into the RAG vector store."""
-    from .ingestion import _shutdown_requested, ingest_path
+    import asyncio
+
+    from .ingestion import _shutdown_requested, ingest_path_async
 
     # Clamp workers
     if workers is None:
@@ -503,16 +509,18 @@ def ingest(
         # TTY mode: Rich dual progress bars.
         # Non-TTY (piped/CI): plain-text lines to stderr.
         if json_output:
-            result = ingest_path(path, **ingest_kwargs)
+            result = asyncio.run(ingest_path_async(path, **ingest_kwargs))
         elif console.is_terminal:
             result = _run_ingest_with_rich_progress(
                 path, ingest_kwargs
             )
         else:
-            result = ingest_path(
-                path,
-                progress_callback=_make_plain_callback(),
-                **ingest_kwargs,
+            result = asyncio.run(
+                ingest_path_async(
+                    path,
+                    progress_callback=_make_plain_callback(),
+                    **ingest_kwargs,
+                )
             )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)

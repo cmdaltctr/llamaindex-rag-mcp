@@ -2,7 +2,7 @@
 
 Monitors a directory tree for new and modified documents and
 auto-ingests them into the ChromaDB index using the existing
-``ingest_path()`` pipeline.  Includes SHA-256 content-hash
+``ingest_path_async()`` pipeline.  Includes SHA-256 content-hash
 deduplication, per-file debouncing, ingestion throttling,
 consecutive-error detection, and graceful shutdown on SIGINT.
 
@@ -14,6 +14,7 @@ Usage::
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import signal
@@ -56,6 +57,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         max_concurrent: int = MAX_CONCURRENT_INGESTS,
         watch_root: Path | None = None,
         collection_name: str = "documents",
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None:
         # Build patterns from SUPPORTED_EXTENSIONS (e.g. ["*.pdf", "*.docx", ...])
         patterns = [f"*{ext}" for ext in SUPPORTED_EXTENSIONS]
@@ -77,6 +79,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         self.debounce_seconds = debounce_seconds
         self._watch_root = watch_root  # caller already resolves
         self._collection_name = collection_name
+        self._loop = loop  # MCP event loop for run_coroutine_threadsafe
         self._timers: dict[str, threading.Timer] = {}
         # NOTE: Hash-cache race condition (acceptable for v1) — with
         # BoundedSemaphore(2), two threads can concurrently compute the
@@ -204,7 +207,9 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         """Perform the actual ingestion after debounce completes.
 
         Checks content hash for deduplication, acquires the
-        semaphore for throttling, and calls ``ingest_path()``.
+        semaphore for throttling, and dispatches ``ingest_path_async()``
+        via ``run_coroutine_threadsafe`` if a loop is available,
+        otherwise falls back to sync ``ingest_path()``.
         """
         if self._shutdown_requested.is_set():
             return
@@ -219,9 +224,6 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                 _ = resolved.relative_to(self._watch_root)
                 # Reuse the resolved path for subsequent operations to
                 # prevent TOCTOU races (symlink swap between check and use).
-                # The debounce timer provides a ≥0.5s window where a symlink
-                # could be swapped, so we must use the resolved path
-                # throughout the rest of _do_ingest().
                 path = resolved
                 file_path = str(resolved)
             except ValueError:
@@ -280,78 +282,12 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
             try:
                 logger.info("Auto-ingesting %s…", file_path)
-                from .ingestion import ingest_path
 
-                result = ingest_path(file_path, collection_name=self._collection_name)
-
-                if result.get("status") == "error":
-                    error_msg = result.get("message", "unknown error")
-                    # Branch on error_type from ingestion.py's explicit contract
-                    # rather than fragile string-matching on the message.
-                    if result.get("error_type") == "connection":
-                        raise ConnectionError(error_msg)
-                    raise RuntimeError(error_msg)
-
-                chunks = result.get("chunks_created", 0)
-                logger.info(
-                    "Auto-ingested %s — %d chunk(s)", file_path, chunks
-                )
-                # Success: update hash cache (with eviction if needed)
-                # and reset error counter.
-                if (
-                    file_path not in self._hash_cache
-                    and len(self._hash_cache) >= MAX_HASH_CACHE_ENTRIES
-                ):
-                    # Evict oldest entry (Python 3.7+ dicts preserve
-                    # insertion order).
-                    oldest = next(iter(self._hash_cache))
-                    del self._hash_cache[oldest]
-                self._hash_cache[file_path] = current_hash
-                with self._error_counter_lock:
-                    self._consecutive_errors = 0
-
-            except ConnectionError as exc:
-                with self._error_counter_lock:
-                    self._consecutive_errors += 1
-                    current_errors = self._consecutive_errors
-                logger.warning(
-                    "Ingestion failed (ConnectionError) for %s: %s "
-                    "[%d consecutive]",
-                    file_path,
-                    exc,
-                    current_errors,
-                )
-                if current_errors >= CONSECUTIVE_ERROR_THRESHOLD:
-                    logger.critical(
-                        "%d consecutive ConnectionError failures — "
-                        "Ollama may be unreachable. Check that Ollama "
-                        "is running and restart the watcher.",
-                        current_errors,
-                    )
-
-            except RuntimeError as exc:
-                # Non-connection failures (embedding, file errors)
-                # reset the connection-error counter.
-                with self._error_counter_lock:
-                    self._consecutive_errors = 0
-                logger.warning(
-                    "Ingestion failed for %s: %s", file_path, exc
-                )
-
-            except FileNotFoundError:
-                # File was deleted during debounce — normal race condition
-                logger.debug(
-                    "File not found during ingestion (deleted): %s",
-                    file_path,
-                )
-                with self._timers_lock:
-                    self._hash_cache.pop(file_path, None)
-                    self._timers.pop(file_path, None)
-
-            except Exception as exc:
-                logger.warning(
-                    "Ingestion failed for %s: %s", file_path, exc
-                )
+                # Dispatch via async loop if available (MCP server context).
+                if self._loop is not None and self._loop.is_running():
+                    self._dispatch_async_ingest(file_path, current_hash)
+                else:
+                    self._dispatch_sync_ingest(file_path, current_hash)
 
             finally:
                 with self._in_flight_lock:
@@ -361,7 +297,114 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         with self._timers_lock:
             self._timers.pop(file_path, None)
 
-    # ── Graceful shutdown ────────────────────────────────────────────────
+    def _dispatch_async_ingest(self, file_path: str, current_hash: str) -> None:
+        """Submit ingest_path_async to the MCP event loop.
+
+        Uses ``run_coroutine_threadsafe`` and attaches a done callback
+        that logs exceptions at WARNING level.
+        """
+        from .ingestion import ingest_path_async
+
+        future = asyncio.run_coroutine_threadsafe(
+            ingest_path_async(file_path, collection_name=self._collection_name),
+            self._loop,
+        )
+
+        def _on_done(fut: asyncio.futures.Future) -> None:
+            try:
+                result = fut.result()
+                if result.get("status") == "error":
+                    error_msg = result.get("message", "unknown error")
+                    if result.get("error_type") == "connection":
+                        self._handle_connection_error(
+                            file_path, ConnectionError(error_msg)
+                        )
+                    else:
+                        self._handle_runtime_error(
+                            file_path, RuntimeError(error_msg)
+                        )
+                else:
+                    chunks = result.get("chunks_created", 0)
+                    logger.info(
+                        "Auto-ingested %s — %d chunk(s)", file_path, chunks
+                    )
+                    self._update_hash_cache(file_path, current_hash)
+                    with self._error_counter_lock:
+                        self._consecutive_errors = 0
+            except Exception as exc:
+                logger.warning(
+                    "Async ingestion failed for %s: %s", file_path, exc
+                )
+
+        future.add_done_callback(_on_done)
+
+    def _dispatch_sync_ingest(self, file_path: str, current_hash: str) -> None:
+        """Run ingestion via asyncio.run (CLI watcher context, no event loop)."""
+        from .ingestion import ingest_path_async
+
+        try:
+            result = asyncio.run(
+                ingest_path_async(file_path, collection_name=self._collection_name)
+            )
+
+            if result.get("status") == "error":
+                error_msg = result.get("message", "unknown error")
+                if result.get("error_type") == "connection":
+                    raise ConnectionError(error_msg)
+                raise RuntimeError(error_msg)
+
+            chunks = result.get("chunks_created", 0)
+            logger.info("Auto-ingested %s — %d chunk(s)", file_path, chunks)
+            self._update_hash_cache(file_path, current_hash)
+            with self._error_counter_lock:
+                self._consecutive_errors = 0
+
+        except ConnectionError as exc:
+            self._handle_connection_error(file_path, exc)
+        except RuntimeError as exc:
+            self._handle_runtime_error(file_path, exc)
+        except FileNotFoundError:
+            logger.debug(
+                "File not found during ingestion (deleted): %s", file_path
+            )
+            with self._timers_lock:
+                self._hash_cache.pop(file_path, None)
+                self._timers.pop(file_path, None)
+        except Exception as exc:
+            logger.warning("Ingestion failed for %s: %s", file_path, exc)
+
+    def _update_hash_cache(self, file_path: str, current_hash: str) -> None:
+        """Update hash cache with eviction if at capacity."""
+        if (
+            file_path not in self._hash_cache
+            and len(self._hash_cache) >= MAX_HASH_CACHE_ENTRIES
+        ):
+            oldest = next(iter(self._hash_cache))
+            del self._hash_cache[oldest]
+        self._hash_cache[file_path] = current_hash
+
+    def _handle_connection_error(self, file_path: str, exc: Exception) -> None:
+        """Handle ConnectionError with consecutive-error tracking."""
+        with self._error_counter_lock:
+            self._consecutive_errors += 1
+            current_errors = self._consecutive_errors
+        logger.warning(
+            "Ingestion failed (ConnectionError) for %s: %s [%d consecutive]",
+            file_path, exc, current_errors,
+        )
+        if current_errors >= CONSECUTIVE_ERROR_THRESHOLD:
+            logger.critical(
+                "%d consecutive ConnectionError failures — "
+                "Ollama may be unreachable. Check that Ollama "
+                "is running and restart the watcher.",
+                current_errors,
+            )
+
+    def _handle_runtime_error(self, file_path: str, exc: Exception) -> None:
+        """Handle RuntimeError (non-connection failures)."""
+        with self._error_counter_lock:
+            self._consecutive_errors = 0
+        logger.warning("Ingestion failed for %s: %s", file_path, exc)
 
     def stop(self) -> None:
         """Cancel all pending timers, wait for in-flight, then signal done.

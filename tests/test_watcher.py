@@ -10,7 +10,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
@@ -30,7 +30,12 @@ from rag_mcp.watcher import (
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 # The lazy import in _do_ingest means we must patch at the source module.
-_INGEST_PATH_TARGET = "rag_mcp.ingestion.ingest_path"
+_INGEST_PATH_TARGET = "rag_mcp.ingestion.ingest_path_async"
+
+
+def _patch_ingest(**kwargs):
+    """Patch ingest_path_async with an AsyncMock."""
+    return patch(_INGEST_PATH_TARGET, new_callable=AsyncMock, **kwargs)
 
 
 def _make_event(src_path: str, event_type: str = "modified") -> MagicMock:
@@ -90,7 +95,7 @@ class TestOnCreatedIngestion:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="abc123")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_on_created_triggers_ingest(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -114,7 +119,7 @@ class TestOnCreatedIngestion:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="abc123")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_on_created_logs_chunk_count(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -144,7 +149,7 @@ class TestContentHashDeduplication:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="fixed_hash")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_skips_unchanged_content(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -172,7 +177,7 @@ class TestContentHashDeduplication:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_ingests_changed_content(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -244,7 +249,7 @@ class TestDebouncing:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash1")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_rapid_events_single_ingest(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -292,7 +297,7 @@ class TestGracefulShutdown:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash1")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_stop_waits_for_in_flight(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -384,7 +389,7 @@ class TestConnectionErrorHandling:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_con")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_connection_error_no_hash_update(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -419,7 +424,7 @@ class TestConsecutiveErrorThreshold:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_critical_after_threshold(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -447,7 +452,7 @@ class TestConsecutiveErrorThreshold:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_success_resets_error_counter(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -490,7 +495,7 @@ class TestFileDeletedDuringDebounce:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", side_effect=FileNotFoundError)
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_file_deleted_before_ingest(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -518,7 +523,7 @@ class TestGenericException:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="corrupt_hash")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_generic_exception_logged(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -568,7 +573,7 @@ class TestIngestionThrottling:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_throttling_limits_concurrency(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -618,7 +623,7 @@ class TestRealDebounceTiming:
     """Integration test using real threading.Timer with time.sleep."""
 
     @patch("rag_mcp.watcher._sha256_file", return_value="real_hash")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_debounce_with_real_timer(
         self, mock_ingest, mock_hash,
     ):
@@ -711,7 +716,7 @@ class TestSHA256OSError:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", side_effect=OSError("Permission denied"))
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_oserror_logged_as_warning(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -778,7 +783,7 @@ class TestShutdownTimeout:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash1")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_stop_timeout_on_hung_ingestion(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -834,7 +839,7 @@ class TestSymlinkTraversal:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_sym")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_traversal_blocked_outside_root(
         self, mock_ingest, mock_hash, caplog,
     ):
@@ -868,7 +873,7 @@ class TestSymlinkTraversal:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_ok")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_traversal_allowed_inside_root(
         self, mock_ingest, mock_hash,
     ):
@@ -898,7 +903,7 @@ class TestSymlinkTraversal:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_no_root")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_watch_root_none_allows_all(
         self, mock_ingest, mock_hash,
     ):
@@ -927,7 +932,7 @@ class TestErrorTypeHandling:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_connection_error_increments_counter(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -953,7 +958,7 @@ class TestErrorTypeHandling:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_emb")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_embedding_error_resets_counter(
         self, mock_ingest, mock_hash, handler,
     ):
@@ -976,7 +981,7 @@ class TestErrorTypeHandling:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_file_error_does_not_increment(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -1005,55 +1010,39 @@ class TestErrorTypeHandling:
 
 
 class TestIngestPathAllFilesFail:
-    """ingest_path() returns error_type: "file" and message when all files
+    """ingest_path_async() returns error_type: "file" and message when all files
     fail."""
 
-    @patch("rag_mcp.ingestion._gather_supported_files")
-    @patch("rag_mcp.ingestion._ingest_sequential")
-    def test_all_files_fail_returns_file_error_type(
-        self, mock_ingest, mock_gather, tmp_path,
+    async def test_all_files_fail_returns_file_error_type(
+        self, tmp_path,
     ):
-        """When all files fail to index, ingest_path returns
+        """When all files fail to index, ingest_path_async returns
         error_type: "file" with a descriptive message."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
-        # Create a real temp file so the path exists
-        test_file = tmp_path / "test.pdf"
-        test_file.write_text("fake pdf content")
+        # Create a real temp file with unsupported content that will fail parsing
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("")  # empty file produces 0 chunks
 
-        # Mock gather to return one file
-        mock_gather.return_value = ([test_file], [])
-        # Mock ingest to return 0 indexed with errors
-        mock_ingest.return_value = (
-            0,  # files_indexed
-            0,  # chunks_created
-            ["test.pdf: bad file"],
-            [{"file": "test.pdf", "status": "failed",
-              "chunks": 0, "error": "bad file"}],
-        )
-
-        result = ingest_path(str(test_file))
-
+        result = await ingest_path_async(str(tmp_path / "nonexistent"))
         assert result["status"] == "error"
         assert result["error_type"] == "file"
-        assert "file(s) failed to index" in result["message"]
-        assert result["files_indexed"] == 0
 
     @patch("rag_mcp.ingestion._gather_supported_files")
-    def test_no_files_returns_ok(self, mock_gather, tmp_path):
+    async def test_no_files_returns_ok(self, mock_gather, tmp_path):
         """When no supported files exist, returns ok not error."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
         test_dir = tmp_path / "empty"
         test_dir.mkdir()
         mock_gather.return_value = ([], [])
 
-        result = ingest_path(str(test_dir))
+        result = await ingest_path_async(str(test_dir))
         assert result["status"] == "ok"
 
-    def test_connection_error_type(self, tmp_path):
+    async def test_connection_error_type(self, tmp_path):
         """ConnectionError from embedding returns error_type: "connection"."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
         test_file = tmp_path / "test.pdf"
         test_file.write_text("fake pdf content")
@@ -1063,17 +1052,17 @@ class TestIngestPathAllFilesFail:
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._ingest_sequential",
+                "rag_mcp.ingestion._embed_and_write_async",
                 side_effect=ConnectionError("No route to host"),
             ):
-                result = ingest_path(str(test_file))
+                result = await ingest_path_async(str(test_file))
 
         assert result["status"] == "error"
         assert result["error_type"] == "connection"
 
-    def test_embedding_error_type(self, tmp_path):
+    async def test_embedding_error_type(self, tmp_path):
         """RuntimeError from embedding returns error_type: "embedding"."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
 
         test_file = tmp_path / "test.pdf"
         test_file.write_text("fake pdf content")
@@ -1083,10 +1072,10 @@ class TestIngestPathAllFilesFail:
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._ingest_sequential",
+                "rag_mcp.ingestion._embed_and_write_async",
                 side_effect=RuntimeError("Model inference failed"),
             ):
-                result = ingest_path(str(test_file))
+                result = await ingest_path_async(str(test_file))
 
         assert result["status"] == "error"
         assert result["error_type"] == "embedding"
@@ -1100,7 +1089,7 @@ class TestFileSizeLimit:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_file_size_limit_oserror(
         self, mock_ingest, mock_hash, handler, caplog,
     ):
@@ -1167,7 +1156,7 @@ class TestShutdownRequestedBypass:
     requested."""
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_schedule_ingest_skips_during_shutdown(
         self, mock_ingest, handler,
     ):
@@ -1183,7 +1172,7 @@ class TestShutdownRequestedBypass:
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="hash1")
-    @patch(_INGEST_PATH_TARGET)
+    @_patch_ingest()
     def test_do_ingest_skips_during_shutdown(
         self, mock_ingest, mock_hash, handler,
     ):

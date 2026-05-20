@@ -15,7 +15,7 @@ Tools
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-from .ingestion import ingest_path, list_documents as _list_documents
+from .ingestion import ingest_path_async, list_documents as _list_documents
 from .retrieval import search
 
 # Load .env from the working directory (project root when run via `uv run`)
@@ -34,9 +34,9 @@ mcp = FastMCP("rag-mcp", log_level="WARNING")
         "DOCX, PPTX, TXT, Markdown, HTML, CSV."
     )
 )
-def ingest_documents(path: str, collection: str = "documents") -> dict:
+async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store."""
-    return ingest_path(path, collection_name=collection)
+    return await ingest_path_async(path, collection_name=collection)
 
 
 # ── Tool 2: Search ----------------------------------------------------------

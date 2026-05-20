@@ -184,14 +184,14 @@ def _extract_result(result):
 class TestCollectionAwareSearch:
     """Tests for collection-aware search and filtering."""
 
-    def test_search_named_collection(self, sample_txt, sample_md):
+    async def test_search_named_collection(self, sample_txt, sample_md):
         """Search must return results only from the specified collection."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
 
         # Ingest into two different collections
-        ingest_path(str(sample_txt), collection_name="research")
-        ingest_path(str(sample_md), collection_name="code")
+        await ingest_path_async(str(sample_txt), collection_name="research")
+        await ingest_path_async(str(sample_md), collection_name="code")
 
         # Search "research" only
         results = search("test", collection_name="research")
@@ -212,12 +212,12 @@ class TestCollectionAwareSearch:
         results_empty = search("test", collection_name="nonexistent")
         assert results_empty == []
 
-    def test_default_collection_search(self, sample_txt):
+    async def test_default_collection_search(self, sample_txt):
         """Search without collection_name must use 'documents'."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
 
-        ingest_path(str(sample_txt))
+        await ingest_path_async(str(sample_txt))
 
         results = search("sample text")
         assert isinstance(results, list)
@@ -226,25 +226,22 @@ class TestCollectionAwareSearch:
 class TestMetadataFiltering:
     """Tests for metadata filter in search."""
 
-    def test_filter_by_category(self, tmp_path, monkeypatch):
+    async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        # Enable keyword extraction
         import rag_mcp.metadata_extractor as _me
         monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
         monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
 
-        # Create and ingest an AI-related file
         ai_file = tmp_path / "ai_content.txt"
         ai_file.write_text(
             "The transformer model uses attention heads. Deep learning "
             "neural networks train on large datasets. LLMs use embeddings."
         )
-        ingest_path(str(ai_file), collection_name="filtered")
+        await ingest_path_async(str(ai_file), collection_name="filtered")
 
-        # Search with category filter
         results = search(
             "attention transformer",
             collection_name="filtered",
@@ -252,7 +249,6 @@ class TestMetadataFiltering:
         )
         assert isinstance(results, list)
 
-        # Search with mismatched filter — should return nothing
         results_mismatch = search(
             "attention transformer",
             collection_name="filtered",
@@ -260,18 +256,18 @@ class TestMetadataFiltering:
         )
         assert results_mismatch == []
 
-    def test_no_filter_returns_all(self, tmp_path, monkeypatch):
+    async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
         import rag_mcp.metadata_extractor as _me
         monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
         monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
 
         ai_file = tmp_path / "ai.txt"
         ai_file.write_text("attention transformer neural network deep learning")
-        ingest_path(str(ai_file), collection_name="no_filter")
+        await ingest_path_async(str(ai_file), collection_name="no_filter")
 
         results = search("attention", collection_name="no_filter")
         assert len(results) > 0
@@ -280,14 +276,13 @@ class TestMetadataFiltering:
 class TestListCollections:
     """Tests for list_collections() function."""
 
-    def test_list_collections_with_data(self, sample_txt, sample_md):
+    async def test_list_collections_with_data(self, sample_txt, sample_md):
         """list_collections must return collection names and counts."""
-        from rag_mcp.ingestion import ingest_path
+        from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import list_collections
 
-        # Ingest into two collections
-        ingest_path(str(sample_txt), collection_name="research")
-        ingest_path(str(sample_md), collection_name="code")
+        await ingest_path_async(str(sample_txt), collection_name="research")
+        await ingest_path_async(str(sample_md), collection_name="code")
 
         collections = list_collections()
 
