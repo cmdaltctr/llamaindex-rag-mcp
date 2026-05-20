@@ -1,10 +1,14 @@
 """File system watcher for automatic document ingestion.
 
 Monitors a directory tree for new and modified documents and
-auto-ingests them into the ChromaDB index using the existing
-``ingest_path_async()`` pipeline.  Includes SHA-256 content-hash
-deduplication, per-file debouncing, ingestion throttling,
-consecutive-error detection, and graceful shutdown on SIGINT.
+auto-ingests them into the ChromaDB index using ``ingest_path_async()``
+via ``asyncio.run()``.  Includes SHA-256 content-hash deduplication,
+per-file debouncing, ingestion throttling, consecutive-error detection,
+and graceful shutdown on SIGINT.
+
+The watcher runs as a standalone CLI process (``rag-mcp watch``), not
+inside the MCP server loop.  All ingestion is dispatched through
+``asyncio.run(ingest_path_async(...))`` from the watcher thread.
 
 Usage::
 
@@ -57,7 +61,6 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         max_concurrent: int = MAX_CONCURRENT_INGESTS,
         watch_root: Path | None = None,
         collection_name: str = "documents",
-        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None:
         # Build patterns from SUPPORTED_EXTENSIONS (e.g. ["*.pdf", "*.docx", ...])
         patterns = [f"*{ext}" for ext in SUPPORTED_EXTENSIONS]
@@ -79,7 +82,6 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         self.debounce_seconds = debounce_seconds
         self._watch_root = watch_root  # caller already resolves
         self._collection_name = collection_name
-        self._loop = loop  # MCP event loop for run_coroutine_threadsafe
         self._timers: dict[str, threading.Timer] = {}
         # NOTE: Hash-cache race condition (acceptable for v1) — with
         # BoundedSemaphore(2), two threads can concurrently compute the
@@ -283,11 +285,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
             try:
                 logger.info("Auto-ingesting %s…", file_path)
 
-                # Dispatch via async loop if available (MCP server context).
-                if self._loop is not None and self._loop.is_running():
-                    self._dispatch_async_ingest(file_path, current_hash)
-                else:
-                    self._dispatch_sync_ingest(file_path, current_hash)
+                self._dispatch_ingest(file_path, current_hash)
 
             finally:
                 with self._in_flight_lock:
@@ -297,49 +295,9 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         with self._timers_lock:
             self._timers.pop(file_path, None)
 
-    def _dispatch_async_ingest(self, file_path: str, current_hash: str) -> None:
-        """Submit ingest_path_async to the MCP event loop.
 
-        Uses ``run_coroutine_threadsafe`` and attaches a done callback
-        that logs exceptions at WARNING level.
-        """
-        from .ingestion import ingest_path_async
-
-        future = asyncio.run_coroutine_threadsafe(
-            ingest_path_async(file_path, collection_name=self._collection_name),
-            self._loop,
-        )
-
-        def _on_done(fut: asyncio.futures.Future) -> None:
-            try:
-                result = fut.result()
-                if result.get("status") == "error":
-                    error_msg = result.get("message", "unknown error")
-                    if result.get("error_type") == "connection":
-                        self._handle_connection_error(
-                            file_path, ConnectionError(error_msg)
-                        )
-                    else:
-                        self._handle_runtime_error(
-                            file_path, RuntimeError(error_msg)
-                        )
-                else:
-                    chunks = result.get("chunks_created", 0)
-                    logger.info(
-                        "Auto-ingested %s — %d chunk(s)", file_path, chunks
-                    )
-                    self._update_hash_cache(file_path, current_hash)
-                    with self._error_counter_lock:
-                        self._consecutive_errors = 0
-            except Exception as exc:
-                logger.warning(
-                    "Async ingestion failed for %s: %s", file_path, exc
-                )
-
-        future.add_done_callback(_on_done)
-
-    def _dispatch_sync_ingest(self, file_path: str, current_hash: str) -> None:
-        """Run ingestion via asyncio.run (CLI watcher context, no event loop)."""
+    def _dispatch_ingest(self, file_path: str, current_hash: str) -> None:
+        """Run ingestion via asyncio.run from the watcher thread."""
         from .ingestion import ingest_path_async
 
         try:

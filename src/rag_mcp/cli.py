@@ -797,10 +797,14 @@ def benchmark(
             )
             raise typer.Exit(code=1)
 
-        from .ingestion import _read_and_chunk_file
+        import asyncio
 
-        nodes = _read_and_chunk_file(
-            file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+        from .ingestion import _read_and_chunk_file_async
+
+        nodes = asyncio.run(
+            _read_and_chunk_file_async(
+                file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+            )
         )
         chunks = [n.get_content() for n in nodes]
     else:

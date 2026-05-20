@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable
 
@@ -113,72 +112,6 @@ def _gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
             logger.info("⏭ %s — unsupported extension %s", f.name, f.suffix)
 
     return files, skipped
-
-
-def _read_and_chunk_file(
-    file_path: Path,
-    chunk_size: int = CHUNK_SIZE,
-    chunk_overlap: int = CHUNK_OVERLAP,
-) -> list:
-    """Read a single file, extract metadata, and split into LlamaIndex nodes.
-
-    After loading and chunking, calls ``extract_metadata()`` once on the
-    full document text and attaches the resulting metadata dict to every
-    node's ``.metadata`` field.
-
-    Args:
-        file_path: Path to the document file.
-        chunk_size: Maximum characters per chunk.
-        chunk_overlap: Overlap between chunks.
-
-    Returns:
-        List of LlamaIndex Node objects, each with metadata attached.
-
-    Raises:
-        Exception: If the file cannot be read or parsed.
-    """
-    reader = SimpleDirectoryReader(
-        input_files=[str(file_path)],
-        filename_as_id=True,
-    )
-    documents = reader.load_data()
-
-    # Extract metadata once per file and attach to all chunks.
-    from .metadata_extractor import extract_metadata
-
-    if documents:
-        file_text = "\n".join(
-            d.get_content()
-            for d in documents
-            if hasattr(d, "get_content")
-        )
-        doc_metadata = extract_metadata(file_text, file_path.name)
-    else:
-        doc_metadata = {}
-        logger.debug(
-            "No documents loaded from %s — skipping metadata extraction",
-            file_path.name,
-        )
-
-    splitter = SentenceSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
-    nodes = splitter.get_nodes_from_documents(documents)
-
-    # Attach extracted metadata to every node.
-    # ChromaDB rejects non-scalar metadata values (list/dict), so flatten
-    # any list values (e.g. ``keywords``) into comma-separated strings.
-    if doc_metadata:
-        flat_metadata = {
-            k: ", ".join(str(x) for x in v) if isinstance(v, list) else v
-            for k, v in doc_metadata.items()
-        }
-        for node in nodes:
-            node.metadata.update(flat_metadata)
-
-    return nodes
-
 
 
 def list_documents(collection_name: str = "documents") -> list[dict]:

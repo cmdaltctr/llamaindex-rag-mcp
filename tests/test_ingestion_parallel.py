@@ -10,6 +10,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import asyncio
 import threading
 import time
 from pathlib import Path
@@ -17,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from rag_mcp.ingestion import (
-    _read_and_chunk_file,
+    _read_and_chunk_file_async,
     _gather_supported_files,
     _shutdown_requested,
     _write_lock,
@@ -73,25 +74,25 @@ class TestReadAndChunkFile:
 
     def test_read_txt_file(self, sample_txt: Path) -> None:
         """Reads a .txt file and returns nodes."""
-        nodes = _read_and_chunk_file(sample_txt)
+        nodes = asyncio.run(_read_and_chunk_file_async(sample_txt))
         assert len(nodes) > 0
         assert all(n.text for n in nodes)
 
     def test_read_md_file(self, sample_md: Path) -> None:
         """Reads a .md file and returns nodes."""
-        nodes = _read_and_chunk_file(sample_md)
+        nodes = asyncio.run(_read_and_chunk_file_async(sample_md))
         assert len(nodes) > 0
 
     def test_custom_chunk_size(self, sample_txt: Path) -> None:
         """Smaller chunk_size produces more nodes."""
-        nodes_default = _read_and_chunk_file(sample_txt, chunk_size=512)
-        nodes_small = _read_and_chunk_file(sample_txt, chunk_size=64)
+        nodes_default = asyncio.run(_read_and_chunk_file_async(sample_txt, chunk_size=512))
+        nodes_small = asyncio.run(_read_and_chunk_file_async(sample_txt, chunk_size=64))
         assert len(nodes_small) >= len(nodes_default)
 
     def test_nonexistent_file_raises(self, tmp_path: Path) -> None:
         """Reading a non-existent file raises an exception."""
         with pytest.raises(Exception):
-            _read_and_chunk_file(tmp_path / "nonexistent.txt")
+            asyncio.run(_read_and_chunk_file_async(tmp_path / "nonexistent.txt"))
 
 
 # ── Parallel vs Sequential ───────────────────────────────────────────────

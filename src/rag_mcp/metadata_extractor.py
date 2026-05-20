@@ -471,180 +471,11 @@ def _extract_keyword(text: str) -> dict:
     return {"category": best_category}
 
 
-def _extract_ollama(text: str) -> dict:
-    """Classify text using a local Ollama chat model with hybrid taxonomy.
 
-    Queries ChromaDB for existing categories, merges them with seed
-    categories from keyword mode rules, and includes them in the prompt.
-    The model is instructed to prefer existing labels but may propose a
-    new concise label if nothing fits.  Returns a dict with
-    ``category``, ``keywords``, and ``summary``.
-
-    Sends the first 3000 characters of *text* to Ollama's
-    ``/api/generate`` endpoint.  Falls back to
-    ``{"category": "uncategorised", "keywords": [], "summary": ""}``
-    on any error.
-
-    Args:
-        text: The full document text (only the first 3000 chars are sent).
-
-    Returns:
-        A dict, e.g.
-        ``{"category": "ai", "keywords": ["transformer", "attention"],
-        "summary": "This document discusses ..."}``
-    """
-    fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
-    try:
-        # Use urllib.request (stdlib) to avoid adding a new dependency.
-        import urllib.request
-
-        prompt = _build_ollama_prompt(text)
-
-        data = json.dumps({
-            "model": OLLAMA_CLASSIFY_MODEL,
-            "prompt": prompt,
-            "stream": False,
-        }).encode("utf-8")
-
-        url = f"{OLLAMA_BASE_URL}/api/generate"
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-        )
-
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-            raw = body.get("response", "").strip()
-
-        # Try JSON parse first; fall back to raw-text-as-category.
-        result = _parse_ollama_json_response(raw)
-
-        logger.info(
-            "Ollama classified document as: %s (keywords=%d, summary=%d chars)",
-            result["category"],
-            len(result.get("keywords", [])),
-            len(result.get("summary", "")),
-        )
-        return result
-
-    except Exception as exc:
-        logger.warning(
-            "Ollama classification failed — falling back to uncategorised: %s",
-            exc,
-        )
-        return fallback
+# NOTE: Sync _extract_ollama removed — use _extract_ollama_async instead.
 
 
-def _extract_llamaindex(text: str, file_name: str) -> dict:
-    """Extract metadata using LlamaIndex's ``IngestionPipeline``.
-
-    Uses ``TitleExtractor``, ``KeywordExtractor``, and ``SummaryExtractor``
-    transformations run per-chunk (per node).  Configures ``Settings.llm``
-    lazily via Ollama on first use.  Falls back to keyword mode if the
-    ``llama-index-llms-ollama`` package is not installed or if extraction
-    fails.
-
-    Args:
-        text: The full document text.
-        file_name: Name of the file being processed.
-
-    Returns:
-        A dict with ``category``, ``keywords``, ``summary``, and
-        optionally ``document_title``.  Falls back to keyword mode dict
-        on failure.
-    """
-    # ── Lazy Settings.llm initialisation ───────────────────────────────
-    try:
-        from llama_index.llms.ollama import Ollama  # noqa: F811
-    except ImportError:
-        logger.warning(
-            "llama-index-llms-ollama not installed — "
-            "falling back to keyword mode"
-        )
-        return _extract_keyword(text)
-
-    try:
-        from llama_index.core import Document
-        from llama_index.core.ingestion import IngestionPipeline
-        from llama_index.core.node_parser import SentenceSplitter
-        from llama_index.core.extractors import (
-            KeywordExtractor,
-            SummaryExtractor,
-            TitleExtractor,
-        )
-
-        # Create a local Ollama LLM instance — passed directly to each
-        # extractor to avoid relying on Settings.llm (which defaults to
-        # OpenAI, not None).  ``request_timeout`` is generous because
-        # multiple ingest workers can hammer Ollama in parallel and the
-        # smaller classify model still needs time under contention.
-        llm = Ollama(
-            model=OLLAMA_CLASSIFY_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            request_timeout=180.0,
-        )
-
-        # ── Cap text to avoid excessive LLM calls ──────────────────────
-        max_chunks = _get_max_chunks()
-        from .config import CHUNK_SIZE, CHUNK_OVERLAP
-        capped_text = text[:max_chunks * CHUNK_SIZE]
-
-        # Create a single Document for the pipeline.
-        doc = Document(text=capped_text, metadata={"file_name": file_name})
-
-        # ── Build extraction pipeline ──────────────────────────────────
-        # SentenceSplitter splits the document into nodes (chunks) so
-        # extractors run per-chunk, giving finer-grained metadata.
-        # Each extractor receives the LLM explicitly to bypass the
-        # Settings.llm default (which points to OpenAI).
-        pipeline = IngestionPipeline(
-            transformations=[
-                SentenceSplitter(
-                    chunk_size=CHUNK_SIZE,
-                    chunk_overlap=CHUNK_OVERLAP,
-                ),
-                TitleExtractor(nodes=5, llm=llm),
-                KeywordExtractor(keywords=10, llm=llm),
-                SummaryExtractor(summaries=["self"], llm=llm),
-            ],
-        )
-
-        # Run pipeline on the capped document.
-        #
-        # ``IngestionPipeline.run()`` is a sync facade over an async core
-        # and trips LlamaIndex's nested-loop guard whenever any earlier
-        # call in this thread has touched ``asyncio.get_event_loop()``
-        # (e.g. ``SimpleDirectoryReader``, ``Ollama`` LLM init, or the
-        # MCP/watcher event loop).  Sniffing for a running loop with
-        # ``asyncio.get_running_loop()`` is unreliable because the
-        # offending loop reference may exist without being "running".
-        #
-        # Bulletproof approach: always run the async variant
-        # (``pipeline.arun()``) inside ``asyncio.run()`` from a brand-new
-        # worker thread.  A fresh thread has no event loop attached, so
-        # ``asyncio.run()`` creates a clean one for us — guaranteed.
-        import asyncio
-        import concurrent.futures
-
-        def _run_pipeline_in_fresh_loop() -> list:
-            return asyncio.run(pipeline.arun(documents=[doc]))
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            enriched_nodes = executor.submit(_run_pipeline_in_fresh_loop).result()
-
-        # ── Aggregate metadata across enriched nodes ───────────────────
-        return _aggregate_llamaindex_metadata(enriched_nodes)
-
-    except Exception as exc:
-        logger.warning(
-            "LlamaIndex metadata extraction failed: %s: %s — "
-            "falling back to keyword mode",
-            type(exc).__name__,
-            exc,
-            exc_info=logger.isEnabledFor(logging.DEBUG),
-        )
-        return _extract_keyword(text)
+# NOTE: Sync _extract_llamaindex removed — use _extract_llamaindex_async instead.
 
 
 def _get_max_chunks() -> int:
@@ -681,7 +512,7 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
         if not meta:
             continue
 
-        # Collect keywords from all nodes — strip any "Keywords:" prefix
+        # Collect keywords from all nodes - strip any "Keywords:" prefix
         # the LLM may have emitted before splitting on commas, then strip
         # any per-keyword label prefix (LLMs sometimes embed sub-labels
         # like ``Title:`` or ``Summary:`` mid-list).
@@ -707,7 +538,7 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
             if isinstance(t, str) and t.strip():
                 title = _strip_llm_prefix(t.strip())
 
-    # Derive category from the first keyword that normalises cleanly —
+    # Derive category from the first keyword that normalises cleanly -
     # keywords are short by design (1-3 words each).  Skip keywords that
     # are too long or contain markdown noise (e.g. table syntax) and
     # fall through to subsequent ones.  As a final fallback, try the
@@ -734,9 +565,6 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
         category, len(result.get("keywords", [])), len(summary),
     )
     return result
-
-
-# ── Async extraction functions ──────────────────────────────────────────
 
 
 async def _extract_keyword_async(text: str) -> dict:
@@ -842,7 +670,7 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         llm = Ollama(
             model=OLLAMA_CLASSIFY_MODEL,
             base_url=OLLAMA_BASE_URL,
-            request_timeout=60.0,
+            request_timeout=180.0,
         )
 
         max_chunks = _get_max_chunks()
@@ -910,38 +738,6 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
         return await _extract_keyword_async(file_text)
 
 
-# ── Public API ──────────────────────────────────────────────────────────
 
-
-def extract_metadata(file_text: str, file_name: str = "") -> dict:
-    """Extract metadata from document text using the configured mode.
-
-    Dispatches to the appropriate extraction function based on the
-    ``METADATA_EXTRACTION_MODE`` environment variable.
-
-    Args:
-        file_text: The full text content of the document.
-        file_name: Name of the file (used by llamaindex mode, reserved).
-
-    Returns:
-        A dict of metadata key-value pairs.  The ``"category"`` key is
-        always present (unless mode is ``"disabled"``, which returns
-        ``{}``).  The ``"ollama"`` mode additionally returns
-        ``"keywords"`` (list of strings) and ``"summary"`` (string).
-    """
-    mode = METADATA_EXTRACTION_MODE.lower()
-
-    if mode == "disabled":
-        return _extract_disabled()
-    elif mode == "keyword":
-        return _extract_keyword(file_text)
-    elif mode == "ollama":
-        return _extract_ollama(file_text)
-    elif mode == "llamaindex":
-        return _extract_llamaindex(file_text, file_name)
-    else:
-        logger.warning(
-            "Unknown METADATA_EXTRACTION_MODE '%s' — falling back to keyword",
-            METADATA_EXTRACTION_MODE,
-        )
-        return _extract_keyword(file_text)
+# NOTE: Sync extract_metadata removed — use extract_metadata_async instead.
+# The public API section is now just the async dispatch.
