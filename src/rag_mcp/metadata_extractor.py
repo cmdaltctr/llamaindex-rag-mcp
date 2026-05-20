@@ -12,7 +12,14 @@ Modes
   (queries ChromaDB for existing categories, prefers reuse, allows new labels).
 - ``"llamaindex"`` — LlamaIndex IngestionPipeline with TitleExtractor,
   KeywordExtractor, and SummaryExtractor (per-chunk enrichment via Ollama).
-  Falls back to keyword mode if ``llama-index-llms-ollama`` is not installed.
+  Falls back to ollama mode if ``llama-index-llms-ollama`` is not installed,
+  then to keyword mode if Ollama is also unreachable.
+
+Degradation ladder
+------------------
+``llamaindex`` (richest — per-chunk extractors) →
+``ollama`` (middle — per-file Ollama classification) →
+``keyword`` (last resort — regex only, no Ollama required)
 """
 
 from __future__ import annotations
@@ -108,20 +115,23 @@ def _truncate_summary(summary: str) -> str:
 
 
 def _strip_llm_prefix(text: str) -> str:
-    """Strip LLM-emitted labels like ``**Title:**`` or ``keywords:`` from text.
+    """Strip LLM-emitted labels and markdown formatting from extracted text.
 
     LlamaIndex's extractor prompts often produce outputs that begin with
     a literal label (``**Title:** Foo``, ``Keywords: a, b, c``,
-    ``**Summary:** ...``) rather than the bare value.  This helper
-    removes those prefixes — including any markdown bold markers — so
-    downstream code can treat the text as a clean value.
+    ``**Summary:** ...``) rather than the bare value.  The LLM may also
+    wrap the entire value in markdown bold markers (``** "value" **``) or
+    append an explanation paragraph after a double newline.
+
+    This helper removes those artefacts so downstream code can treat the
+    text as a clean value.
 
     Args:
         text: Raw text from an extractor's metadata field.
 
     Returns:
-        Text with the leading label stripped, or the original text
-        if no recognised label was present.
+        Text with labels, bold markers, and trailing explanations stripped,
+        or the original text if no recognised noise was present.
     """
     if not text:
         return text
@@ -131,6 +141,15 @@ def _strip_llm_prefix(text: str) -> str:
         text,
         flags=re.IGNORECASE,
     )
+    # Truncate at the first double-newline — LLMs often append an
+    # explanation paragraph (e.g. "This title encapsulates...").
+    if "\n\n" in cleaned:
+        cleaned = cleaned[:cleaned.index("\n\n")]
+    # Strip surrounding markdown bold markers (one or more ** groups) and quotes.
+    cleaned = cleaned.strip()
+    cleaned = re.sub(r"^(?:\*{1,2}\s*)+", "", cleaned)
+    cleaned = re.sub(r"(?:\s*\*{1,2})+$", "", cleaned)
+    cleaned = cleaned.strip('"\'')
     return cleaned.strip()
 # ── Default keyword rules ──────────────────────────────────────────────
 # Each rule maps a regex pattern (case-insensitive) to a category label.
@@ -653,9 +672,9 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
     except ImportError:
         logger.warning(
             "llama-index-llms-ollama not installed — "
-            "falling back to keyword mode"
+            "falling back to ollama mode"
         )
-        return _extract_keyword(text)
+        return await _extract_ollama_async(text)
 
     try:
         from llama_index.core import Document
@@ -699,12 +718,12 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
     except Exception as exc:
         logger.warning(
             "LlamaIndex async metadata extraction failed: %s: %s — "
-            "falling back to keyword mode",
+            "falling back to ollama mode",
             type(exc).__name__,
             exc,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
-        return _extract_keyword(text)
+        return await _extract_ollama_async(text)
 
 
 async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:

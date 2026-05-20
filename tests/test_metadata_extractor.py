@@ -180,13 +180,13 @@ class TestLlamaindexStub:
     """Tests for the LlamaIndex metadata extraction — updated from stub to real.
 
     When ``llama-index-llms-ollama`` is not installed, the mode falls back
-    to keyword.  This test verifies correct fallback behaviour.
+    to ollama mode (not keyword).  This test verifies correct fallback behaviour.
     """
 
-    def test_llamaindex_falls_back_to_keyword_when_not_installed(
+    def test_llamaindex_falls_back_to_ollama_when_not_installed(
         self, monkeypatch, caplog,
     ) -> None:
-        """Llamaindex mode must fall back to keyword when LLM package missing."""
+        """Llamaindex mode must fall back to ollama mode when LLM package missing."""
         _set_mode(monkeypatch, "llamaindex")
 
         # Force the import to fail (the package is installed in the dev venv,
@@ -201,20 +201,37 @@ class TestLlamaindexStub:
 
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
+        # Mock _extract_ollama_async so we don't need a live Ollama instance.
+        async def _fake_ollama(text: str) -> dict:
+            return {"category": "biology", "keywords": ["protein", "deep_learning"], "summary": "A biology paper."}
+
+        monkeypatch.setattr(
+            "rag_mcp.metadata_extractor._extract_ollama_async",
+            _fake_ollama,
+        )
+
         from rag_mcp.metadata_extractor import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The protein folding problem was solved by deep learning.",
             file_name="biology_paper.pdf",
         ))
-        # Falls back to keyword mode — "deep learning" and "protein" match AI and Biology
-        assert result["category"] == "AI"
+        # Falls back to ollama mode — returns ollama-shaped output
+        assert result["category"] == "biology"
+        assert "keywords" in result
+        assert "summary" in result
 
         # Must log a WARNING about the package not being installed
         assert any(
             r.levelno == logging.WARNING
             and "not installed" in r.message.lower()
             for r in caplog.records
+        )
+        # Warning must mention ollama mode, not keyword mode
+        assert any(
+            "ollama mode" in r.message.lower()
+            for r in caplog.records
+            if r.levelno == logging.WARNING
         )
 
 
@@ -696,8 +713,8 @@ class TestLlamaindexExtraction:
         node.metadata = metadata
         return node
 
-    def test_import_error_falls_back_to_keyword(self, monkeypatch, caplog) -> None:
-        """Missing llama-index-llms-ollama → WARNING + keyword fallback."""
+    def test_import_error_falls_back_to_ollama(self, monkeypatch, caplog) -> None:
+        """Missing llama-index-llms-ollama → WARNING + ollama fallback."""
         # Simulate ImportError by removing the package from sys.modules
         import sys
         monkeypatch.setitem(sys.modules, "llama_index.llms.ollama", None)
@@ -712,20 +729,36 @@ class TestLlamaindexExtraction:
 
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
+        # Mock _extract_ollama_async so we don't need a live Ollama instance.
+        async def _fake_ollama(text: str) -> dict:
+            return {"category": "ai", "keywords": ["deep_learning", "neural"], "summary": "An AI paper."}
+
+        monkeypatch.setattr(
+            "rag_mcp.metadata_extractor._extract_ollama_async",
+            _fake_ollama,
+        )
+
         from rag_mcp.metadata_extractor import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "deep learning neural networks",
             file_name="test.pdf",
         ))
-        # Should fall back to keyword mode
-        assert result["category"] == "AI"
+        # Should fall back to ollama mode — returns ollama-shaped output
+        assert result["category"] == "ai"
+        assert "keywords" in result
+        assert "summary" in result
 
-        # Must log a WARNING
+        # Must log a WARNING mentioning ollama mode
         assert any(
             r.levelno == logging.WARNING
             and "not installed" in r.message.lower()
             for r in caplog.records
+        )
+        assert any(
+            "ollama mode" in r.message.lower()
+            for r in caplog.records
+            if r.levelno == logging.WARNING
         )
 
     def test_successful_extraction(self, monkeypatch, caplog) -> None:
@@ -797,8 +830,8 @@ class TestLlamaindexExtraction:
         assert result["keywords"] == []
         assert result["summary"] == ""
 
-    def test_extraction_failure_falls_back_to_keyword(self, monkeypatch, caplog) -> None:
-        """Pipeline raises exception → WARNING + keyword fallback."""
+    def test_extraction_failure_falls_back_to_ollama(self, monkeypatch, caplog) -> None:
+        """Pipeline raises exception → WARNING + ollama fallback."""
         import sys
         from unittest.mock import MagicMock
 
@@ -816,12 +849,21 @@ class TestLlamaindexExtraction:
         sys.modules["llama_index.core.extractors"] = mock_extractors
         sys.modules["llama_index.core.node_parser"] = MagicMock()
 
-        # Make pipeline.run() raise
+        # Make pipeline.arun() raise
         mock_pipeline = MagicMock()
-        mock_pipeline.run.side_effect = RuntimeError("Ollama timeout")
+        mock_pipeline.arun.side_effect = RuntimeError("Ollama timeout")
         mock_ingestion = MagicMock()
         mock_ingestion.IngestionPipeline = MagicMock(return_value=mock_pipeline)
         sys.modules["llama_index.core.ingestion"] = mock_ingestion
+
+        # Mock _extract_ollama_async so we don't need a live Ollama instance.
+        async def _fake_ollama(text: str) -> dict:
+            return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
+
+        monkeypatch.setattr(
+            "rag_mcp.metadata_extractor._extract_ollama_async",
+            _fake_ollama,
+        )
 
         from rag_mcp.metadata_extractor import extract_metadata_async
 
@@ -829,13 +871,63 @@ class TestLlamaindexExtraction:
             "transformer attention neural network",
             file_name="paper.pdf",
         ))
-        # Falls back to keyword
-        assert result["category"] == "AI"
+        # Falls back to ollama mode — returns ollama-shaped output
+        assert result["category"] == "ai"
+        assert "keywords" in result
+        assert "summary" in result
 
-        # Must log a WARNING
+        # Must log a WARNING mentioning ollama mode
         assert any(
             r.levelno == logging.WARNING
-            and "falling back to keyword" in r.message.lower()
+            and "falling back to ollama mode" in r.message.lower()
+            for r in caplog.records
+        )
+
+    def test_double_degradation_llamaindex_and_ollama_both_fail(
+        self, monkeypatch, caplog,
+    ) -> None:
+        """llamaindex fails (ImportError) AND ollama fails → uncategorised fallback.
+
+        Validates the full degradation ladder:
+        llamaindex → ollama → uncategorised (keyword not reached).
+        """
+        import builtins
+        original_import = builtins.__import__
+
+        def _fake_import(name, *args, **kwargs):
+            if name == "llama_index.llms.ollama":
+                raise ImportError("No module named 'llama_index.llms.ollama'")
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr("builtins.__import__", _fake_import)
+
+        # Make _extract_ollama_async also fail — simulates Ollama unreachable.
+        async def _failing_ollama(text: str) -> dict:
+            # _extract_ollama_async catches its own exceptions and returns this.
+            return {"category": "uncategorised", "keywords": [], "summary": ""}
+
+        monkeypatch.setattr(
+            "rag_mcp.metadata_extractor._extract_ollama_async",
+            _failing_ollama,
+        )
+
+        _set_mode(monkeypatch, "llamaindex")
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async(
+            "transformer attention neural network",
+            file_name="paper.pdf",
+        ))
+
+        # Both llamaindex and ollama failed — final result is uncategorised
+        assert result["category"] == "uncategorised"
+        assert result["keywords"] == []
+        assert result["summary"] == ""
+
+        # llamaindex must have logged a WARNING about falling back to ollama
+        assert any(
+            r.levelno == logging.WARNING
+            and "ollama mode" in r.message.lower()
             for r in caplog.records
         )
 
@@ -867,3 +959,180 @@ class TestLlamaindexExtraction:
 
         # Verify the function was called with the full text
         assert captured_text_len[0] == 5000
+
+
+# ── Coverage gap tests ─────────────────────────────────────────────────────
+
+
+class TestCoverageGaps:
+    """Targeted tests for defensive branches not covered by the main test classes."""
+
+    # ── _strip_llm_prefix: empty string guard (line 134) ──────────────────
+
+    def test_strip_llm_prefix_empty_string(self) -> None:
+        """Empty string input must be returned unchanged."""
+        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        assert _strip_llm_prefix("") == ""
+        assert _strip_llm_prefix(None) is None  # type: ignore[arg-type]
+
+    def test_strip_llm_prefix_bold_markers(self) -> None:
+        """Surrounding ** bold markers must be stripped."""
+        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        assert _strip_llm_prefix('** "Hallucinations in Language Models" **') == "Hallucinations in Language Models"
+        assert _strip_llm_prefix("**Deep Learning Review**") == "Deep Learning Review"
+        assert _strip_llm_prefix("* Single asterisk *") == "Single asterisk"
+
+    def test_strip_llm_prefix_trailing_explanation(self) -> None:
+        """Text after a double-newline must be truncated."""
+        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        raw = '** "Hallucinations in Language Models"  \n\nThis title encapsulates the key themes.'
+        assert _strip_llm_prefix(raw) == "Hallucinations in Language Models"
+
+    def test_strip_llm_prefix_combined_label_and_bold(self) -> None:
+        """Label prefix + bold markers + trailing explanation all stripped."""
+        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        raw = '**Title:** ** "Deep Learning Review" **\n\nThis covers the main topics.'
+        assert _strip_llm_prefix(raw) == "Deep Learning Review"
+
+    def test_strip_llm_prefix_plain_text_unchanged(self) -> None:
+        """Plain text without any LLM noise must pass through unchanged."""
+        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        assert _strip_llm_prefix("A normal title") == "A normal title"
+
+    # ── _normalise_category: invalid char rejection (lines 95-100) ────────
+
+    def test_normalise_category_invalid_chars_rejected(self) -> None:
+        """Labels with non-[a-z0-9_-] chars must return 'uncategorised'."""
+        from rag_mcp.metadata_extractor import _normalise_category
+        # Starts with a digit — invalid
+        assert _normalise_category("4._[pubmed_api]") == "uncategorised"
+        # Contains slash
+        assert _normalise_category("keywords:_/think") == "uncategorised"
+
+    # ── _load_keyword_rules: empty rules list (line 190) ──────────────────
+
+    def test_load_keyword_rules_empty_list(self, monkeypatch) -> None:
+        """An empty JSON array must be accepted and returned as-is."""
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        from rag_mcp.metadata_extractor import _load_keyword_rules
+        result = _load_keyword_rules()
+        assert result == []
+
+    def test_load_keyword_rules_missing_keys(self, monkeypatch) -> None:
+        """Rules missing 'pattern' or 'category' keys must fall back to defaults."""
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", '[{"pattern": "foo"}]')
+        from rag_mcp.metadata_extractor import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
+        result = _load_keyword_rules()
+        assert result == _DEFAULT_KEYWORD_RULES
+
+    # ── _extract_keyword: empty rules guard (line 453) ────────────────────
+
+    def test_extract_keyword_empty_rules(self, monkeypatch) -> None:
+        """Empty rules list must return uncategorised immediately."""
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        from rag_mcp.metadata_extractor import _extract_keyword
+        result = _extract_keyword("transformer attention neural network")
+        assert result == {"category": "uncategorised"}
+
+    # ── _extract_keyword: invalid regex pattern (lines 463-469) ──────────
+
+    def test_extract_keyword_invalid_regex_skipped(self, monkeypatch, caplog) -> None:
+        """A rule with an invalid regex pattern must be skipped with a WARNING."""
+        import rag_mcp.metadata_extractor as _me
+        bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", bad_rules)
+        from rag_mcp.metadata_extractor import _extract_keyword
+        result = _extract_keyword("neural network transformer")
+        # The valid rule still fires
+        assert result["category"] == "AI"
+        assert any("invalid regex" in r.message.lower() for r in caplog.records)
+
+    # ── _gather_existing_categories: per-collection exception (lines 287-293) ─
+
+    def test_gather_existing_categories_collection_error_skipped(self, monkeypatch) -> None:
+        """A collection that raises during get() must be skipped gracefully."""
+        from unittest.mock import MagicMock
+        import rag_mcp.metadata_extractor as _me
+
+        bad_col = MagicMock()
+        bad_col.name = "bad_collection"
+        bad_col.get.side_effect = RuntimeError("collection locked")
+
+        good_col = MagicMock()
+        good_col.name = "good_collection"
+        good_col.get.return_value = {"metadatas": [{"category": "biology"}]}
+
+        mock_client = MagicMock()
+        mock_client.list_collections.return_value = [bad_col, good_col]
+        monkeypatch.setattr(_me, "_chroma_client", mock_client)
+
+        from rag_mcp.metadata_extractor import _gather_existing_categories
+        result = _gather_existing_categories()
+        # bad_col skipped, good_col processed
+        assert "biology" in result
+
+    # ── _build_ollama_prompt: empty merged taxonomy (line 338) ────────────
+
+    def test_build_ollama_prompt_empty_merged_taxonomy(self, monkeypatch) -> None:
+        """With empty custom rules and empty ChromaDB, prompt uses only uncategorised."""
+        import rag_mcp.metadata_extractor as _me
+        # Empty custom rules → no seed categories
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        # Empty ChromaDB → no existing categories
+        monkeypatch.setattr(_me, "_chroma_client", None)
+        mock_client = __import__("unittest.mock", fromlist=["MagicMock"]).MagicMock()
+        mock_client.list_collections.return_value = []
+        monkeypatch.setattr(_me, "_chroma_client", mock_client)
+
+        from rag_mcp.metadata_extractor import _build_ollama_prompt
+        prompt = _build_ollama_prompt("some document text")
+        assert "uncategorised" in prompt
+        assert "EXISTING CATEGORIES" in prompt
+
+    # ── _parse_ollama_json_response: edge cases (lines 389, 406, 416) ─────
+
+    def test_parse_ollama_json_non_list_keywords(self) -> None:
+        """Non-list keywords field must be treated as empty list."""
+        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        raw = json.dumps({"category": "ai", "keywords": "not_a_list", "summary": "test"})
+        result = _parse_ollama_json_response(raw)
+        assert result["keywords"] == []
+
+    def test_parse_ollama_json_empty_summary(self) -> None:
+        """Empty summary field must produce empty string."""
+        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        raw = json.dumps({"category": "ai", "keywords": [], "summary": ""})
+        result = _parse_ollama_json_response(raw)
+        assert result["summary"] == ""
+
+    def test_parse_ollama_json_non_dict_response(self) -> None:
+        """A JSON array (not object) must fall back to raw text as category."""
+        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        raw = json.dumps(["not", "a", "dict"])
+        result = _parse_ollama_json_response(raw)
+        assert result["category"] == "uncategorised"
+        assert result["keywords"] == []
+
+    # ── _aggregate_llamaindex_metadata: title-derived category (line 560) ─
+
+    def test_aggregate_llamaindex_title_fallback_category(self) -> None:
+        """When all keywords are invalid, category falls back to first 2 words of title."""
+        from unittest.mock import MagicMock
+        from rag_mcp.metadata_extractor import _aggregate_llamaindex_metadata
+
+        node = MagicMock()
+        # Keywords that all fail normalisation:
+        # - "4pubmed" starts with a digit → rejected
+        # - "this_is_a_four_word_keyword" exceeds 3-word limit → rejected
+        node.metadata = {
+            "excerpt_keywords": "4pubmed, this_is_a_four_word_keyword",
+            "section_summary": "A paper about deep learning.",
+            "document_title": "Deep Learning Review",
+        }
+        result = _aggregate_llamaindex_metadata([node])
+        # All keywords fail → falls back to first 2 words of title
+        assert result["category"] == "deep_learning"
+        assert result.get("document_title") == "Deep Learning Review"

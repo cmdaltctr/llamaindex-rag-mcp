@@ -20,6 +20,8 @@ dependencies = [
     "watchdog>=4.0.0",
     # Async HTTP client for Ollama metadata extraction (non-blocking)
     "httpx>=0.27.0",
+    # LlamaIndex LLM integration for llamaindex metadata extraction mode
+    "llama-index-llms-ollama>=0.4.0",
 ]
 
 [project.scripts]
@@ -52,9 +54,3 @@ dev = [
     "pytest-cov>=7.1.0",
 ]
 
-[project.optional-dependencies]
-# Optional extras for LlamaIndex-based metadata extraction (Stage 2).
-# Install with: uv sync --extra metadata
-metadata = [
-    "llama-index-llms-ollama>=0.4.0",
-]
