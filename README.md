@@ -12,9 +12,10 @@ No API keys, no recurring costs, runs entirely on your machine.
 
 | Tool | Description |
 |------|-------------|
-| `ingest_documents` | Index a file or directory (PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV) |
-| `search_documents` | Semantic similarity search with optional reranking and threshold filtering |
-| `list_indexed_documents` | Show what's currently in the store |
+| `ingest_documents` | Index a file or directory (PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV). Optionally specify a target collection. |
+| `search_documents` | Semantic similarity search with optional reranking, threshold filtering, collection scoping, and metadata filtering |
+| `list_indexed_documents` | Show what's currently indexed. Optionally scope to a specific collection. |
+| `delete_documents` | Remove documents by file path, metadata filter, or drop an entire collection |
 
 ### `search_documents` parameters
 
@@ -24,6 +25,34 @@ No API keys, no recurring costs, runs entirely on your machine.
 | `top_k` | int | `5` | Maximum number of chunks to return |
 | `similarity_threshold` | float | `0.0` | Minimum relevance score (0.0 = no filtering). When `rerank=True`, the threshold is automatically scaled down by 30x because cross-encoder scores occupy a lower range. |
 | `rerank` | bool | `false` | Re-score results with cross-encoder for better precision |
+| `collection` | string | `"documents"` | ChromaDB collection to search (optional — scopes results to a single collection) |
+| `metadata_filter` | dict | `null` | Optional ChromaDB `where` clause to filter results by metadata fields, e.g. `{"category": "AI"}`. Applied server-side — only matching chunks are fetched. |
+
+### `ingest_documents` parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `path` | string | *(required)* | Path to a file or directory to ingest |
+| `collection` | string | `"documents"` | ChromaDB collection to store documents in |
+
+### `list_indexed_documents` parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `collection` | string | `"documents"` | ChromaDB collection to list documents from |
+
+### `list_collections` parameters
+
+No parameters. Returns a list of `{"name": str, "document_count": int, "chunk_count": int}`.
+
+### `delete_documents` parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `path` | string | `null` | Source file path whose chunks to delete |
+| `metadata_filter` | dict | `null` | ChromaDB `where` clause to match chunks (e.g. `{"category": "uncategorised"}`) |
+| `collection` | string | `"documents"` | ChromaDB collection to operate on. When provided without `path` or `metadata_filter`, the entire collection is dropped. |
+| `dry_run` | bool | `false` | If `true`, preview what would be deleted without modifying ChromaDB |
 
 ---
 
@@ -50,6 +79,9 @@ Environment variables are loaded from a `.env` file (copy from `.env.example`):
 | `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | ONNX reranker model ID |
 | `RERANK_ENABLED` | `false` | Default rerank behaviour |
 | `SIMILARITY_THRESHOLD` | `0.0` | Minimum score to include a result |
+| `METADATA_EXTRACTION_MODE` | `keyword` | How document metadata is extracted: `disabled`, `keyword`, `ollama`, or `llamaindex` |
+| `METADATA_KEYWORD_RULES` | *(uses built-in)* | Optional JSON string of `[{"pattern": "regex", "category": "name"}, ...]` overriding default keyword rules |
+| `OLLAMA_CLASSIFY_MODEL` | `qwen3:0.6b` | Chat model for Ollama-based classification (only when `METADATA_EXTRACTION_MODE=ollama`) |
 
 ---
 
@@ -112,6 +144,40 @@ The `rag-mcp` command doubles as a CLI tool. With no arguments it starts the
 MCP stdio server (backward compatible). With subcommands it operates directly
 from the terminal.
 
+### All CLI subcommands
+
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| `rag-mcp` | — | Start the MCP stdio server (no arguments) |
+| `rag-mcp ingest <path>` | — | Index a file or directory into the vector store |
+| `rag-mcp search <query>` | — | Search indexed documents for semantically relevant chunks |
+| `rag-mcp list` | — | Show indexed documents with chunk counts |
+| `rag-mcp list-collections` | — | Show all ChromaDB collections with document and chunk counts |
+| `rag-mcp watch <dir>` | — | Watch a directory for new/changed documents and auto-ingest them |
+| `rag-mcp delete` | — | Delete documents by file path, metadata filter, or drop a collection |
+| `rag-mcp benchmark` | — | Benchmark embedding throughput (no ChromaDB writes) |
+| `rag-mcp --version` | — | Show version |
+| `rag-mcp --help` | — | Show help |
+| `rag-mcp --install-completion` | — | Install shell completion |
+
+### Common flags across subcommands
+
+| Flag | Applies to | Description |
+|------|-----------|-------------|
+| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete` | ChromaDB collection name (default `"documents"`) |
+| `--json` | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON |
+| `--workers`, `-w` | `ingest` | Number of parallel file readers |
+| `--chunk-size` | `ingest` | Override chunk size |
+| `--chunk-overlap` | `ingest` | Override chunk overlap |
+| `--top-k`, `-k` | `search` | Max results to return |
+| `--threshold`, `-t` | `search` | Minimum similarity score |
+| `--rerank` | `search` | Re-score with cross-encoder reranker |
+| `--debounce`, `-d` | `watch` | Debounce interval in seconds |
+| `--verbose`, `-v` | `watch` | Enable DEBUG-level logging |
+| `--report`, `-r` | `ingest` | Write ingestion report to a file |
+| `--dry-run` | `delete` | Preview deletion without modifying ChromaDB |
+| `--yes`, `-y` | `delete` | Skip confirmation prompt for collection deletion |
+
 ### Ingest a file or directory
 
 ```bash
@@ -120,6 +186,9 @@ rag-mcp ingest ~/Documents/research/paper.pdf
 
 # Index an entire directory (parallel by default, 4 workers)
 rag-mcp ingest /path/to/zotero/storage/
+
+# Ingest into a named collection (creates it automatically)
+rag-mcp ingest /path/to/research/papers/ --collection research
 
 # Customise parallelism and chunking
 rag-mcp ingest /path/to/docs/ --workers 8 --chunk-size 1024 --chunk-overlap 128
@@ -139,8 +208,15 @@ force quit.
 # Basic semantic search
 rag-mcp search "quantum entanglement"
 
+# Search a specific collection only
+rag-mcp search "transformer architecture" --collection research
+
 # With reranking and threshold
 rag-mcp search "machine learning" --rerank --threshold 0.3 --top-k 10
+
+# Search with metadata filter (requires metadata extraction — MCP tool only)
+# CLI search does not support --metadata-filter; use the search_documents MCP tool
+# for metadata-filtered queries via the MCP client.
 
 # JSON output for scripting
 rag-mcp search "climate change" --json
@@ -152,15 +228,63 @@ rag-mcp search "climate change" --json
 # Human-readable table
 rag-mcp list
 
+# List documents from a specific collection
+rag-mcp list --collection research
+
 # JSON output
 rag-mcp list --json
 ```
+
+### List available collections
+
+```bash
+# Show all ChromaDB collections with document and chunk counts
+rag-mcp list-collections
+
+# JSON output
+rag-mcp list-collections --json
+```
+
+### Delete documents
+
+```bash
+# Delete all chunks for a specific file
+rag-mcp delete --path /path/to/file.pdf
+
+# Delete chunks matching a metadata filter
+rag-mcp delete --metadata '{"category":"uncategorised"}'
+
+# Delete from a specific collection (by path)
+rag-mcp delete --path /path/to/file.pdf --collection research
+
+# Preview what would be deleted (dry-run)
+rag-mcp delete --path /path/to/file.pdf --dry-run
+
+# Drop an entire collection (requires confirmation)
+rag-mcp delete --collection research
+
+# Drop a collection without confirmation
+rag-mcp delete --collection research --yes
+
+# JSON output for scripting
+rag-mcp delete --path /path/to/file.pdf --json
+
+# Dry-run with JSON
+rag-mcp delete --collection research --dry-run --json
+```
+
+The three modes (`--path`, `--metadata`, `--collection`) are mutually exclusive.
+Only `--collection` requires a confirmation prompt (it permanently drops the
+collection). Pass `--yes` or `--dry-run` to skip the prompt.
 
 ### Watch a directory for auto-ingestion
 
 ```bash
 # Watch Zotero storage for new/changed papers
 rag-mcp watch ~/Zotero/storage/
+
+# Watch and route into a specific collection
+rag-mcp watch ~/Zotero/storage/ --collection research
 
 # Custom debounce interval (default: 2 seconds)
 rag-mcp watch /path/to/docs/ --debounce 5
@@ -190,21 +314,59 @@ auto-ingests them as they appear or change. It includes:
 > `rag-mcp ingest` (or the MCP server) simultaneously on the same
 > ChromaDB — two processes do not share the internal write lock.
 
+### Auto-categorisation and metadata extraction
+
+During ingestion, the server can automatically categorise documents and store
+the result as ChromaDB metadata on every chunk. This happens once per file
+(before chunking) so it has minimal overhead.
+
+The categorisation mode is controlled by `METADATA_EXTRACTION_MODE` in `.env`:
+
+| Mode | What happens | Dependencies | Speed |
+|------|-------------|-------------|-------|
+| `keyword` (default) | Regex pattern matching against built-in rules covering AI, Philosophy, Biology, Marketing, and Programming | None (`re` from stdlib) | Instant |
+| `disabled` | No metadata extraction | None | N/A |
+| `ollama` | Chat model classification via local Ollama (uses `OLLAMA_CLASSIFY_MODEL`, default `qwen3:0.6b`) | Ollama running with a chat model | ~2s per file |
+| `llamaindex` | Stubbed for future LlamaIndex MetadataExtractor integration — falls back to keyword mode | None (stubbed) | Same as keyword |
+
+**Default keyword rules** (built-in):
+
+| Category | Keywords matched (case-insensitive regex) |
+|----------|------------------------------------------|
+| AI | `attention`, `transformer`, `token`, `embedding`, `llm`, `rag`, `neural`, `deep learning` |
+| Philosophy | `mantiq`, `logic`, `reasoning`, `ontology`, `epistemology`, `ghazali`, `usul` |
+| Biology | `crispr`, `genome`, `protein`, `cell`, `biology`, `cancer`, `gene` |
+| Marketing | `marketing`, `seo`, `campaign`, `brand`, `pricing`, `funnel`, `conversion` |
+| Programming | `javascript`, `python`, `rust`, `api`, `frontend`, `backend`, `compiler` |
+
+If no keywords match, the category is `"uncategorised"`. You can override the
+rules entirely by setting `METADATA_KEYWORD_RULES` in `.env` to a JSON string:
+
+```bash
+# In .env — custom rules for motorsport and sport content
+METADATA_KEYWORD_RULES='[{"pattern": "f1|grand.?prix|motorsport", "category": "Motorsport"}, {"pattern": "football|goal|stadium", "category": "Sport"}]'
+```
+
+To filter search results by category, use the `metadata_filter` parameter on
+the `search_documents` MCP tool:
+
+```json
+{
+  "query": "deep learning architectures",
+  "collection": "research",
+  "metadata_filter": {"category": "AI"}
+}
+```
+
+The filter is applied **server-side** via ChromaDB's native `where` clause —
+only matching chunks leave the vector store. This is more efficient than
+fetching everything and filtering client-side.
+
 ### Shell completion
 
 ```bash
-# Install completion for your current shell
-rag-mcp --install-completion
-
-# Or just show the completion script
-rag-mcp --show-completion
-```
-
-### Global options
-
-```bash
-rag-mcp --version     # Show version
-rag-mcp --help        # Show help
+rag-mcp --install-completion   # Install for current shell
+rag-mcp --show-completion      # Show completion script
 ```
 
 ---
@@ -403,12 +565,32 @@ Remove `rag-docs` from `~/.opencode/opencode.json` entirely and only set it up
 per project. The MCP server only spins up when you're inside a project with an
 `opencode.json`. Cleaner, but you have to configure each project.
 
-### Option 4: Multi-tenant with namespace (code change required)
+### Option 4: Multi-tenant with ChromaDB collections (built-in)
 
-Add an optional `namespace` parameter to `ingest_documents` that gets stored
-in each chunk's ChromaDB metadata. At search time, filter by namespace. This
-lets one ChromaDB serve all projects while keeping results isolated. Worth
-doing if you have many projects and don't want to duplicate setup.
+The server supports **named collections** in ChromaDB. You can ingest different
+projects into different collections within the same ChromaDB, and search each
+collection independently. This avoids duplicating the `chroma_db` directory or
+environment config per project.
+
+```bash
+# Ingest project-specific content into named collections
+rag-mcp ingest /path/to/project-a/docs/ --collection project-a
+rag-mcp ingest /path/to/project-b/docs/ --collection project-b
+
+# Search only the relevant collection
+rag-mcp search "quantum computing" --collection project-a
+
+# List all collections
+rag-mcp list-collections
+```
+
+All MCP tools accept an optional `collection` parameter. The new `list_collections`
+tool shows what collections are available and how many documents are in each.
+
+> **No setup required**: Collections are created automatically on first ingest.
+> They share the same embedding model from `config.py`, so vector dimensions are
+> always consistent. Every new collection adds a new table inside the same SQLite
+> database — no need to manage multiple directories or environment configs.
 
 ---
 
@@ -497,6 +679,9 @@ Once connected, use the MCP tools:
 - **Ingest**: `"Index the file /path/to/document.pdf"`
 - **Search**: `"Search my documents for information about X"`
 - **List**: `"What documents do you have access to?"`
+- **Collections**: `"What collections are available?"`
+- **Delete**: `"Delete the chunks for /path/to/file.pdf"`
+- **Drop collection**: `"Drop the collection named research"`
 
 ---
 
@@ -507,9 +692,16 @@ system prompt:
 
 > You have access to a document RAG system via MCP tools:
 > - Use `ingest_documents` when the user asks you to index or load a file/folder.
+>   You can specify a `collection` to isolate content (defaults to "documents").
 > - Use `search_documents` **before** answering any question that might be
 >   answered by the user's documents. Always search before saying you don't know.
-> - Use `list_indexed_documents` when the user asks what documents are available.
+>   Scope to a specific `collection` when relevant. Use `metadata_filter` to
+>   filter by auto-detected categories (e.g. `{"category": "AI"}`).
+> - Use `list_indexed_documents` when the user asks what documents are available
+>   in a specific collection.
+> - Use `list_collections` to show all available collections and their sizes.
+> - Use `delete_documents` to remove documents by file path, by metadata filter,
+>   or to drop an entire collection. Always confirm before dropping a collection.
 > Always cite the source file and page when quoting from retrieved chunks.
 
 ---
@@ -618,16 +810,20 @@ uv run pytest -m slow -v
 uv run pytest tests/test_reranker.py -v
 ```
 
-The test suite (178 tests) uses mock embeddings and an in-memory
+The test suite (263 tests — 261 fast, 2 slow) uses mock embeddings and an in-memory
 ChromaDB client so no external services are needed for fast tests.
 
 | File | Tests | Coverage area |
 |------|-------|---------------|
-| `tests/test_watcher.py` | 31 | File watcher: debounce, hash dedup, throttling, shutdown, error handling |
+| `tests/test_watcher.py` | 39 | File watcher: debounce, hash dedup, throttling, shutdown, error handling, on_deleted |
 | `tests/test_reranker.py` | 23 | Sigmoid, ONNX variant, singleton, fallback, mock inference, model loading |
-| `tests/test_ingestion.py` | 4 | Path validation, empty dir, list empty |
-| `tests/test_mcp_tools.py` | 5 | Tool discovery, ingest, search, list, param validation |
-| `tests/test_retrieval.py` | 11 | Empty store, threshold, rerank flag, threshold scaling (6 tests) |
+| `tests/test_cli.py` | 93 | CLI validation, formatting, edge cases, delete subcommand |
+| `tests/test_metadata_extractor.py` | 13 | Keyword, disabled, custom rules, llamaindex stub, unknown mode fallback |
+| `tests/test_ingestion.py` | 20 | Path validation, empty dir, list empty, collection routing, metadata attachment, delete functions, upsert |
+| `tests/test_retrieval.py` | 17 | Empty store, threshold, rerank flag, threshold scaling, collection search, metadata filter, list collections |
+| `tests/test_mcp_tools.py` | 19 | Tool discovery, ingest, search, list, list_collections, collection params, backward compat, delete_documents |
+| `tests/test_signal_handling.py` | 13 | SIGINT, shutdown flag, workers clamping, lock recheck |
+| `tests/test_ingestion_parallel.py` | 21 | Concurrent ingestion, all-or-nothing semantics |
 | `tests/test_e2e_stdio.py` | 1 | JSON-RPC handshake over stdio subprocess |
 
 ---
@@ -636,11 +832,16 @@ ChromaDB client so no external services are needed for fast tests.
 
 - [ ] `ollama ps` shows nomic-embed-text loaded (or whatever model you chose)
 - [ ] `uv run rag-mcp` starts without errors and waits on stdin
-- [ ] MCP Inspector can discover and call all three tools
+- [ ] MCP Inspector can discover and call all five tools
 - [ ] OpenChamber shows `rag-docs` as **Connected** (green)
 - [ ] "What documents do you have access to?" calls `list_indexed_documents`
-- [ ] "Please index /path/to/file.pdf" calls `ingest_documents`
+- [ ] "What collections are available?" calls `list_collections`
+- [ ] "Please index /path/to/file.pdf into the research collection" calls `ingest_documents` with `collection`
 - [ ] Question about PDF content calls `search_documents` and cites the source
+- [ ] "Delete the chunks for /path/to/file.pdf" calls `delete_documents` with `path`
+- [ ] "Drop the collection research" calls `delete_documents` with `collection`
+- [ ] `rag-mcp delete --dry-run --collection research` previews without deleting
+- [ ] `rag-mcp delete --collection research --yes` drops without confirmation
 
 ---
 

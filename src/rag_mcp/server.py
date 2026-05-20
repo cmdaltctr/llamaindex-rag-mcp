@@ -8,6 +8,8 @@ Tools
 - ingest_documents       – index a file / directory into the RAG store
 - search_documents       – semantic search over the indexed documents
 - list_indexed_documents – show what's currently in the store
+- list_collections       – list all ChromaDB collections with counts
+- delete_documents       – remove documents by path, metadata filter, or drop collection
 """
 
 from dotenv import load_dotenv
@@ -27,13 +29,14 @@ mcp = FastMCP("rag-mcp", log_level="WARNING")
 @mcp.tool(
     description=(
         "Index one or more documents or a directory into the RAG store. "
-        "Accepts a file path or directory path. Supported formats: PDF, "
+        "Accepts a file path or directory path. Optionally specify a "
+        "target ChromaDB collection. Supported formats: PDF, "
         "DOCX, PPTX, TXT, Markdown, HTML, CSV."
     )
 )
-def ingest_documents(path: str) -> dict:
+def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store."""
-    return ingest_path(path)
+    return ingest_path(path, collection_name=collection)
 
 
 # ── Tool 2: Search ----------------------------------------------------------
@@ -44,7 +47,8 @@ def ingest_documents(path: str) -> dict:
         "Returns the most relevant text chunks with their source file "
         "and relevance score. Optionally re-score results with a "
         "cross-encoder reranker for better precision, or filter by "
-        "a minimum similarity threshold."
+        "a minimum similarity threshold. Accepts an optional "
+        "collection name to scope the search."
     )
 )
 def search_documents(
@@ -52,6 +56,7 @@ def search_documents(
     top_k: int = 5,
     similarity_threshold: float = 0.0,
     rerank: bool = False,
+    collection: str = "documents",
 ) -> list[dict]:
     """Search indexed documents for semantically relevant chunks.
 
@@ -62,12 +67,15 @@ def search_documents(
             result. 0.0 means no filtering (default).
         rerank: If True, re-score results with the cross-encoder
             reranker for better precision (default False).
+        collection: Name of the ChromaDB collection to search
+            (default "documents").
     """
     return search(
         query,
         top_k=top_k,
         similarity_threshold=similarity_threshold,
         rerank=rerank,
+        collection_name=collection,
     )
 
 
@@ -76,15 +84,146 @@ def search_documents(
 @mcp.tool(
     description=(
         "List all documents currently indexed in the RAG store, "
-        "with their source paths and chunk counts."
+        "with their source paths and chunk counts. Optionally "
+        "scope to a specific ChromaDB collection."
     )
 )
-def list_indexed_documents() -> list[dict]:
+def list_indexed_documents(collection: str = "documents") -> list[dict]:
     """List all documents that have been indexed so far."""
-    return _list_documents()
+    return _list_documents(collection_name=collection)
 
 
-# ── Entry point --------------------------------------------------------------
+# ── Tool 4: List collections -------------------------------------------------
+
+@mcp.tool(
+    description=(
+        "List all available ChromaDB collections with their document "
+        "and chunk counts."
+    )
+)
+def list_collections() -> list[dict]:
+    """List all ChromaDB collections with counts."""
+    from .retrieval import list_collections as _list_collections
+
+    return _list_collections()
+
+
+# ── Tool 5: Delete documents -------------------------------------------------
+
+
+@mcp.tool(
+    description=(
+        "Remove documents from the RAG store. Accepts an optional "
+        "path (delete chunks for a specific file), metadata_filter "
+        "(delete chunks matching a metadata filter as a JSON object), "
+        "or collection (delete an entire collection — when provided "
+        "without path or metadata_filter, the collection itself is "
+        "dropped). Use dry_run=true to preview without modifying data."
+    )
+)
+def delete_documents(
+    path: str | None = None,
+    metadata_filter: dict | None = None,
+    collection: str = "documents",
+    dry_run: bool = False,
+) -> dict:
+    """Remove documents from the RAG vector store.
+
+    Args:
+        path: Source file path whose chunks to delete. When omitted and
+            no ``metadata_filter`` is given, the collection itself is
+            dropped.
+        metadata_filter: ChromaDB ``where`` clause as a dict
+            (e.g. ``{"category": "uncategorised"}``). Must be a non-empty
+            dict.
+        collection: Name of the ChromaDB collection to operate on
+            (default ``"documents"``).
+        dry_run: If True, preview what would be deleted without
+            modifying ChromaDB (default False).
+
+    Returns:
+        A dict summarising the operation: ``status``, ``mode``,
+        ``collection``, and relevant counts.
+    """
+    from .ingestion import (
+        remove_document,
+        remove_by_metadata,
+        remove_collection,
+    )
+    import chromadb
+    from .config import CHROMA_PERSIST_DIR
+
+    # Determine operation mode
+    if path is not None:
+        # Mode: delete by file path
+        if dry_run:
+            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+            try:
+                coll = db.get_collection(collection)
+                matching = coll.get(
+                    where={"file_path": str(path)}, include=[]
+                )
+                count = len(matching.get("ids", []))
+            except Exception:
+                count = 0
+            return {
+                "status": "ok",
+                "dry_run": True,
+                "mode": "path",
+                "collection": collection,
+                "would_delete": count,
+            }
+        result = remove_document(str(path), collection_name=collection)
+        result["mode"] = "path"
+        return result
+
+    if metadata_filter is not None:
+        # Mode: delete by metadata filter
+        if not metadata_filter:
+            return {
+                "status": "error",
+                "message": "metadata_filter must be a non-empty dict.",
+            }
+
+        if dry_run:
+            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+            try:
+                coll = db.get_collection(collection)
+                matching = coll.get(where=metadata_filter, include=[])
+                count = len(matching.get("ids", []))
+            except Exception:
+                count = 0
+            return {
+                "status": "ok",
+                "dry_run": True,
+                "mode": "metadata",
+                "collection": collection,
+                "would_delete": count,
+            }
+        result = remove_by_metadata(
+            metadata_filter, collection_name=collection
+        )
+        result["mode"] = "metadata"
+        return result
+
+    # Mode: delete by collection (drop) — no path or metadata_filter given
+    if dry_run:
+        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        try:
+            coll = db.get_collection(collection)
+            count = coll.count()
+        except Exception:
+            count = 0
+        return {
+            "status": "ok",
+            "dry_run": True,
+            "mode": "collection",
+            "collection": collection,
+            "would_delete": count,
+        }
+    result = remove_collection(collection)
+    result["mode"] = "collection"
+    return result
 
 def main() -> None:
     """Start the MCP server on stdio transport."""

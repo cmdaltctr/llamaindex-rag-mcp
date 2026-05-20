@@ -57,5 +57,19 @@ TOP_K = int(os.getenv("TOP_K", "5"))
 RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
 
+# ── Metadata extraction ─────────────────────────────────────────────────
+# Controls how document metadata (e.g., category) is extracted during
+# ingestion.  Allowed values: "disabled", "keyword", "ollama", "llamaindex".
+METADATA_EXTRACTION_MODE = os.getenv("METADATA_EXTRACTION_MODE", "keyword")
+
+# Optional JSON string of [{"pattern": "regex", "category": "name"}, ...]
+# overriding the built-in default keyword rules.  Falls back to defaults
+# on parse error (WARNING logged).
+METADATA_KEYWORD_RULES = os.getenv("METADATA_KEYWORD_RULES", None)
+
+# Chat model used for Ollama-based classification (only when
+# METADATA_EXTRACTION_MODE is "ollama").
+OLLAMA_CLASSIFY_MODEL = os.getenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
+
 # ── File extensions we know how to handle ───────────────────────────────
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}

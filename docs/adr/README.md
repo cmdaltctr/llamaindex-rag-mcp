@@ -17,6 +17,8 @@ development of the LlamaIndex RAG MCP Server.
 | [008](./008-cli-folder-embed-progress.md) | CLI Folder Embedding with Progress and Reports | 2026-05-19 | Accepted |
 | [009](./009-switch-to-qwen3-embedding-0-6b.md) | Switch to `qwen3-embedding:0.6b` as the Default Embedding Model | 2026-05-19 | Accepted |
 | [010](./010-file-watcher-auto-ingestion.md) | File Watcher for Automatic Document Ingestion | 2026-05-19 | Accepted |
+| [011](./011-multi-collection-and-metadata-extraction.md) | Multi-Collection Support and Metadata Extraction | 2026-05-19 | Accepted |
+| [012](./012-document-deletion.md) | Document Deletion | 2026-05-20 | Accepted |
 
 ## Convention
 

@@ -107,6 +107,9 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
+    monkeypatch.setenv("METADATA_EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
+    monkeypatch.setenv("METADATA_KEYWORD_RULES", "")
+    monkeypatch.setenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 
     # Patch the shared config module if already loaded — this covers
     # both ingestion and retrieval since they import from config.
@@ -114,6 +117,9 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     if config_mod is not None:
         monkeypatch.setattr(config_mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
         monkeypatch.setattr(config_mod, "COLLECTION_NAME", _TEST_COLLECTION)
+        monkeypatch.setattr(config_mod, "METADATA_EXTRACTION_MODE", "disabled")
+        monkeypatch.setattr(config_mod, "METADATA_KEYWORD_RULES", None)
+        monkeypatch.setattr(config_mod, "OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 
     # Also patch the leaf modules for backward compatibility in case
     # any test imports them before config is loaded.
@@ -121,7 +127,10 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
         mod = sys.modules.get(mod_name)
         if mod is not None:
             monkeypatch.setattr(mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
-            monkeypatch.setattr(mod, "COLLECTION_NAME", _TEST_COLLECTION)
+            # COLLECTION_NAME may not be imported by all modules
+            # (e.g. retrieval.py uses a parameter default instead).
+            if hasattr(mod, "COLLECTION_NAME"):
+                monkeypatch.setattr(mod, "COLLECTION_NAME", _TEST_COLLECTION)
 
 
 # ── FastMCP server fixture ─────────────────────────────────────────────────

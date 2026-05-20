@@ -15,7 +15,7 @@ import pytest
 
 @pytest.mark.slow
 def test_stdio_server_lists_tools() -> None:
-    """Launch the server over stdio and verify the three tools are present."""
+    """Launch the server over stdio and verify all tools are present."""
     proc = subprocess.Popen(
         ["uv", "run", "rag-mcp"],
         stdin=subprocess.PIPE,
@@ -50,6 +50,8 @@ def test_stdio_server_lists_tools() -> None:
             "ingest_documents",
             "search_documents",
             "list_indexed_documents",
+            "list_collections",
+            "delete_documents",
         }
     finally:
         proc.terminate()

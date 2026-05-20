@@ -436,6 +436,12 @@ def ingest(
         "--chunk-overlap",
         help="Override CHUNK_OVERLAP for this ingestion.",
     ),
+    collection: str = typer.Option(
+        "documents",
+        "--collection",
+        "-c",
+        help="ChromaDB collection to ingest into.",
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
@@ -461,7 +467,7 @@ def ingest(
         workers = 1
 
     # Build kwargs for overrides
-    ingest_kwargs: dict = {"workers": workers}
+    ingest_kwargs: dict = {"workers": workers, "collection_name": collection}
     if chunk_size is not None:
         ingest_kwargs["chunk_size"] = chunk_size
     if chunk_overlap is not None:
@@ -565,10 +571,18 @@ def ingest(
     else:
         files = result.get("files_indexed", 0)
         chunks = result.get("chunks_created", 0)
-        console.print(
-            f"[green]✓[/green] Indexed {files} file(s), "
-            f"{chunks} chunk(s) created."
-        )
+        removed = result.get("chunks_removed", 0)
+        if removed > 0:
+            console.print(
+                f"[green]✓[/green] Indexed {files} file(s), "
+                f"{chunks} chunk(s) created, "
+                f"{removed} chunk(s) replaced."
+            )
+        else:
+            console.print(
+                f"[green]✓[/green] Indexed {files} file(s), "
+                f"{chunks} chunk(s) created."
+            )
 
     # Write report if requested
     if report:
@@ -594,6 +608,12 @@ def search(
     rerank: bool = typer.Option(
         False, "--rerank", help="Re-score with cross-encoder reranker."
     ),
+    collection: str = typer.Option(
+        "documents",
+        "--collection",
+        "-c",
+        help="ChromaDB collection to search.",
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
@@ -609,6 +629,7 @@ def search(
             top_k=top_k,
             similarity_threshold=threshold,
             rerank=rerank,
+            collection_name=collection,
         )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
@@ -650,6 +671,12 @@ def search(
 
 @app.command(name="list")
 def list_cmd(
+    collection: str = typer.Option(
+        "documents",
+        "--collection",
+        "-c",
+        help="ChromaDB collection to list documents from.",
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
@@ -659,7 +686,7 @@ def list_cmd(
     """List all indexed documents with their chunk counts."""
     from .ingestion import list_documents
 
-    docs = list_documents()
+    docs = list_documents(collection_name=collection)
 
     if not docs:
         if json_output:
@@ -865,6 +892,12 @@ def watch(
             "before triggering ingestion."
         ),
     ),
+    collection: str = typer.Option(
+        "documents",
+        "--collection",
+        "-c",
+        help="ChromaDB collection to route auto-ingested files into.",
+    ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -890,9 +923,277 @@ def watch(
     from .watcher import watch_directory
 
     try:
-        watch_directory(path, debounce=debounce, verbose=verbose)
+        watch_directory(
+            path, debounce=debounce, verbose=verbose,
+            collection_name=collection,
+        )
     except SystemExit as exc:
         raise typer.Exit(code=exc.code if exc.code else 1)
+
+
+@app.command(name="list-collections")
+def list_collections_cmd(
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output results as JSON.",
+    ),
+) -> None:
+    """List all ChromaDB collections with document and chunk counts."""
+    from .retrieval import list_collections
+
+    collections = list_collections()
+
+    if not collections:
+        if json_output:
+            typer.echo("[]")
+        else:
+            console.print("[yellow]No collections found.[/yellow]")
+        return
+
+    if json_output:
+        typer.echo(json.dumps(collections, indent=2))
+        return
+
+    table = Table(title="ChromaDB Collections")
+    table.add_column("Name", style="green")
+    table.add_column("Documents", style="cyan", justify="right")
+    table.add_column("Chunks", style="cyan", justify="right")
+
+    total_docs = 0
+    total_chunks = 0
+    for coll in collections:
+        total_docs += coll["document_count"]
+        total_chunks += coll["chunk_count"]
+        table.add_row(
+            coll["name"],
+            str(coll["document_count"]),
+            str(coll["chunk_count"]),
+        )
+
+    console.print(table)
+    console.print(
+        f"\n[bold]{len(collections)} collection(s), "
+        f"{total_docs} document(s), {total_chunks} chunk(s) total.[/bold]"
+    )
+
+
+# ── Delete subcommand ─────────────────────────────────────────────────────
+
+
+@app.command()
+def delete(
+    path: Optional[str] = typer.Option(
+        None,
+        "--path",
+        "-p",
+        help="Source file path to delete chunks for.",
+    ),
+    metadata: Optional[str] = typer.Option(
+        None,
+        "--metadata",
+        "-m",
+        help=(
+            "JSON string of metadata filter (e.g. "
+            '{\\"category\\":\\"uncategorised\\"}).'
+        ),
+    ),
+    collection: Optional[str] = typer.Option(
+        None,
+        "--collection",
+        "-c",
+        help=(
+            "ChromaDB collection to operate on. When used without "
+            "--path or --metadata, the entire collection is dropped."
+        ),
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview what would be deleted without modifying ChromaDB.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation prompt for collection deletion.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output results as JSON.",
+    ),
+) -> None:
+    """Delete documents from the RAG vector store.
+
+    Removes chunks by source file path (--path), by metadata filter
+    (--metadata), or drops an entire collection (--collection without
+    --path or --metadata). Each mode is mutually exclusive — provide
+    exactly one.
+
+    Only --collection requires a confirmation prompt. Pass --yes to skip it.
+    """
+    # ── Validate: exactly one of --path, --metadata, --collection ────────
+    flags_provided = sum(1 for f in [path, metadata, collection] if f is not None)
+    if flags_provided == 0:
+        console.print(
+            "[red]Error:[/red] Provide one of: --path, --metadata, "
+            "--collection."
+        )
+        raise typer.Exit(code=1)
+    if flags_provided > 1:
+        console.print(
+            "[red]Error:[/red] Flags --path, --metadata, and --collection "
+            "are mutually exclusive."
+        )
+        raise typer.Exit(code=1)
+
+    # Resolve collection name
+    coll_name = "documents" if collection is None else collection
+
+    from .ingestion import remove_document, remove_by_metadata, remove_collection
+
+    # ── Mode: delete by path ────────────────────────────────────────────
+    if path is not None:
+        file_path = str(Path(path).expanduser().resolve())
+        if dry_run:
+            # Preview without deleting
+            import chromadb
+            from .config import CHROMA_PERSIST_DIR
+
+            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+            try:
+                coll = db.get_collection(coll_name)
+                where = {"file_path": file_path}
+                matching = coll.get(where=where, include=[])
+                count = len(matching.get("ids", []))
+            except Exception:
+                count = 0
+
+            result = {
+                "status": "ok",
+                "dry_run": True,
+                "mode": "path",
+                "collection": coll_name,
+                "path": file_path,
+                "would_delete": count,
+            }
+        else:
+            result = remove_document(file_path, collection_name=coll_name)
+            result["mode"] = "path"
+            result["path"] = file_path
+
+    # ── Mode: delete by metadata ────────────────────────────────────────
+    elif metadata is not None:
+        try:
+            metadata_filter = json.loads(metadata)
+        except json.JSONDecodeError as exc:
+            console.print(
+                f"[red]Error:[/red] Invalid JSON for --metadata: {exc}"
+            )
+            raise typer.Exit(code=1)
+
+        if not isinstance(metadata_filter, dict):
+            console.print(
+                "[red]Error:[/red] --metadata must be a JSON object "
+                "(e.g. '{\"category\":\"uncategorised\"}')."
+            )
+            raise typer.Exit(code=1)
+
+        if dry_run:
+            import chromadb
+            from .config import CHROMA_PERSIST_DIR
+
+            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+            try:
+                coll = db.get_collection(coll_name)
+                matching = coll.get(where=metadata_filter, include=[])
+                count = len(matching.get("ids", []))
+            except Exception:
+                count = 0
+
+            result = {
+                "status": "ok",
+                "dry_run": True,
+                "mode": "metadata",
+                "collection": coll_name,
+                "metadata_filter": metadata_filter,
+                "would_delete": count,
+            }
+        else:
+            result = remove_by_metadata(
+                metadata_filter, collection_name=coll_name
+            )
+            result["mode"] = "metadata"
+            result["metadata_filter"] = metadata_filter
+
+    # ── Mode: delete by collection (drop) ───────────────────────────────
+    else:  # collection is not None
+        # Collection drop requires confirmation unless --yes is passed
+        if not dry_run and not yes:
+            from rich.prompt import Confirm
+
+            confirmed = Confirm.ask(
+                f"Delete entire collection '[bold]{coll_name}[/bold]'? "
+                "This cannot be undone.",
+                default=False,
+            )
+            if not confirmed:
+                console.print("[yellow]Cancelled.[/yellow]")
+                raise typer.Exit(code=0)
+
+        if dry_run:
+            import chromadb
+            from .config import CHROMA_PERSIST_DIR
+
+            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+            try:
+                coll = db.get_collection(coll_name)
+                count = coll.count()
+            except Exception:
+                count = 0
+
+            result = {
+                "status": "ok",
+                "dry_run": True,
+                "mode": "collection",
+                "collection": coll_name,
+                "would_delete": count,
+            }
+        else:
+            result = remove_collection(coll_name)
+            result["mode"] = "collection"
+
+    # ── Display results ─────────────────────────────────────────────────
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+        return
+
+    if result.get("status") == "error":
+        console.print(
+            f"[red]Error:[/red] {result.get('message', 'Unknown error')}"
+        )
+        raise typer.Exit(code=1)
+
+    if dry_run:
+        mode_label = result.get("mode", "unknown")
+        would = result.get("would_delete", 0)
+        console.print(
+            f"[yellow]Dry run:[/yellow] Would delete [bold]{would}[/bold] "
+            f"chunk(s) by {mode_label}."
+        )
+        return
+
+    if result.get("mode") == "collection":
+        console.print(
+            f"[green]✓[/green] Collection '[bold]{coll_name}[/bold]' "
+            "deleted."
+        )
+    else:
+        removed = result.get("chunks_removed", 0)
+        console.print(
+            f"[green]✓[/green] Removed [bold]{removed}[/bold] chunk(s)."
+        )
 
 
 def run_cli() -> None:

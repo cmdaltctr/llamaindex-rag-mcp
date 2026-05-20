@@ -45,8 +45,22 @@ uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
    it works standalone. Don't "fix" this without checking for circular import risks
    (config.py runs `OllamaEmbedding(...)` at import time).
 
-7. **Settings.embed_model executes at import time** in `config.py`. Tests must apply
-   `MockEmbedding` before importing any module that imports from `rag_mcp.config`.
+7. **Deletion functions live in `ingestion.py`** (`remove_document`, `remove_by_metadata`,
+   `remove_collection`). They use direct ChromaDB ``collection.delete(where=...)`` API,
+   not LlamaIndex abstractions.
+
+8. **Re-ingestion is upsert, not append.** `ingest_path()` calls `remove_document()` for
+   each file before reading/chunking. Old chunks are always replaced.
+
+9. **The `delete` CLI subcommand takes exactly one of `--path`, `--metadata`, `--collection`.**
+   `--collection` drops the entire collection (requires confirmation unless `--yes`).
+   `--dry-run` previews without modifying ChromaDB. JSON output via `--json`.
+
+10. **`delete_documents` MCP tool** — `path` (by file), `metadata_filter` (by filter), or
+    `collection` alone (drop collection). All params optional. `dry_run` previews.
+
+11. **Watcher `on_deleted` is immediate** (no debounce). Cancels pending ingest timers,
+    clears hash cache, calls `remove_document()`. Deletion is idempotent.
 
 ## MCP Conventions
 
@@ -56,6 +70,29 @@ uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
   FastMCP auto-generates JSON Schema. Use `Annotated[type, Field(description="...")]`
   from pydantic for richer descriptions.
 - **Tool handlers return `dict` or `list`**, never raise exceptions.
+
+### Multi-Collection Support
+
+- **Don't use `COLLECTION_NAME` from config.py in retrieval.py.** Use the `collection_name` parameter
+  (default `"documents"`) passed to `search()` instead. The same applies to new ingestion code.
+- **All collection parameters default to `"documents"`** — backward compatibility with the original
+  single-collection design is maintained.
+- **`list_collections()` lives in retrieval.py**, not ingestion.py. It uses `PersistentClient` directly.
+- **ChromaDB collections share the same embedding dimension** — all use the embed model from `config.py`.
+  Never create a collection with a different embedding model without handling dimension mismatch.
+
+### Metadata Extraction
+
+- **`METADATA_EXTRACTION_MODE=keyword` is the default.** It uses regex rules from
+  `metadata_extractor.py` — zero additional dependencies.
+- **Ollama mode uses `OLLAMA_CLASSIFY_MODEL`** (default `qwen3:0.6b`) via the `/api/generate` endpoint.
+  It sends only the first 2000 characters of the document for efficiency.
+- **`metadata_extractor.py` imports `config.py`** for its constants, but the module is otherwise
+  self-contained. It does NOT import any LlamaIndex modules (the llamaindex mode is a stub).
+- **Metadata is attached in `_read_and_chunk_file()`** — one `extract_metadata()` call per file,
+  result attached to all chunks. Tests must set `METADATA_EXTRACTION_MODE` on the
+  `rag_mcp.metadata_extractor` module (not just `config.py`) because the extractor copies
+  values at import time.
 
 ## Test Gotchas
 
@@ -107,3 +144,5 @@ Changes live in `openspec/changes/<change-id>/`. Active specs are in `openspec/s
 | Experiment data | `experiments/experiment-1/` |
 | OpenSpec specs | `openspec/specs/` and `openspec/changes/` |
 | Reranker model | `cross-encoder/ms-marco-MiniLM-L-6-v2` via HuggingFace Hub |
+| Metadata extraction | `rag_mcp/metadata_extractor.py` (keyword/Ollama/llamaindex modes) |
+| Multi-collection logic | `ingestion.py` (`_get_chroma_collection`), `retrieval.py` (`list_collections`) |

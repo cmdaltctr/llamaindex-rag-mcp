@@ -108,7 +108,9 @@ class TestOnCreatedIngestion:
         assert timer is not None
         timer.fire()
 
-        mock_ingest.assert_called_once_with("/tmp/test.pdf")
+        mock_ingest.assert_called_once_with(
+            "/tmp/test.pdf", collection_name="documents"
+        )
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.watcher._sha256_file", return_value="abc123")
@@ -297,7 +299,7 @@ class TestGracefulShutdown:
         """stop() waits for in-flight ingest_path() to complete."""
         barrier = threading.Barrier(2, timeout=5)
 
-        def slow_ingest(path):
+        def slow_ingest(path, **kwargs):
             barrier.wait()
             return {"status": "ok", "chunks_created": 1, "file_details": []}
 
@@ -577,7 +579,7 @@ class TestIngestionThrottling:
         max_active = 0
         lock = threading.Lock()
 
-        def track_ingest(path):
+        def track_ingest(path, **kwargs):
             nonlocal active_count, max_active
             with lock:
                 active_count += 1
@@ -787,7 +789,7 @@ class TestShutdownTimeout:
         ingest_started = threading.Event()
         keep_blocking = threading.Event()
 
-        def hung_ingest(path):
+        def hung_ingest(path, **kwargs):
             ingest_started.set()
             keep_blocking.wait()  # blocks forever unless released
             return {"status": "ok", "chunks_created": 1, "file_details": []}
@@ -1199,3 +1201,148 @@ class TestShutdownRequestedBypass:
 
         # ingest_path should NOT be called
         mock_ingest.assert_not_called()
+
+
+# ── on_deleted watcher tests ─────────────────────────────────────────────
+
+
+class TestOnDeletedHandler:
+    """Tests for the on_deleted event handler."""
+
+    _REMOVE_DOC_TARGET = "rag_mcp.ingestion.remove_document"
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_removes_vectors(
+        self, mock_remove, handler,
+    ):
+        """on_deleted must call remove_document and log success."""
+        mock_remove.return_value = {
+            "status": "ok",
+            "chunks_removed": 8,
+            "collection": "documents",
+        }
+        event = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event)
+
+        # remove_document must be called
+        mock_remove.assert_called_once_with(
+            "/tmp/paper.pdf", collection_name="documents"
+        )
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_cancels_pending_timer(
+        self, mock_remove, handler,
+    ):
+        """on_deleted must cancel any pending ingest timer."""
+        mock_remove.return_value = {
+            "status": "ok", "chunks_removed": 0, "collection": "documents",
+        }
+
+        # First, schedule an ingest
+        event_create = _make_event("/tmp/paper.pdf", "created")
+        handler.on_created(event_create)
+        assert "/tmp/paper.pdf" in handler._timers
+
+        # Now delete it
+        event_delete = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event_delete)
+
+        # Timer should be cancelled and removed
+        assert "/tmp/paper.pdf" not in handler._timers
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_clears_hash_cache(
+        self, mock_remove, handler,
+    ):
+        """on_deleted must clear hash cache entry for deleted file."""
+        mock_remove.return_value = {
+            "status": "ok", "chunks_removed": 0, "collection": "documents",
+        }
+
+        # Pre-populate hash cache
+        handler._hash_cache["/tmp/paper.pdf"] = "somehash"
+
+        event = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event)
+
+        # Hash cache should be cleared
+        assert "/tmp/paper.pdf" not in handler._hash_cache
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_uses_handler_collection(
+        self, mock_remove,
+    ):
+        """on_deleted must use the handler's configured collection."""
+        mock_remove.return_value = {
+            "status": "ok", "chunks_removed": 3, "collection": "research",
+        }
+        handler = DocumentIngestHandler(collection_name="research")
+        event = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event)
+
+        mock_remove.assert_called_once_with(
+            "/tmp/paper.pdf", collection_name="research"
+        )
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_no_chunks_logs_info(
+        self, mock_remove, handler,
+    ):
+        """on_deleted with no indexed chunks must not raise error."""
+        mock_remove.return_value = {
+            "status": "ok", "chunks_removed": 0, "collection": "documents",
+        }
+
+        event = _make_event("/tmp/ghost.pdf", "deleted")
+        handler.on_deleted(event)
+
+        # Should complete without error
+        mock_remove.assert_called_once()
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_logs_warning_on_failure(
+        self, mock_remove, handler,
+    ):
+        """on_deleted must not crash when remove_document fails."""
+        mock_remove.return_value = {
+            "status": "error",
+            "message": "Collection does not exist",
+            "chunks_removed": 0,
+        }
+
+        event = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event)
+
+        # Should complete without raising
+        mock_remove.assert_called_once()
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    @patch(_REMOVE_DOC_TARGET)
+    def test_on_deleted_shutdown_bypass(
+        self, mock_remove, handler,
+    ):
+        """on_deleted must skip work during shutdown."""
+        handler._shutdown_requested.set()
+
+        event = _make_event("/tmp/paper.pdf", "deleted")
+        handler.on_deleted(event)
+
+        mock_remove.assert_not_called()
+
+    @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
+    def test_on_deleted_ignores_unsupported_files(self, handler):
+        """Unsupported files are filtered by PatternMatchingEventHandler."""
+        from watchdog.utils.patterns import match_any_paths
+        # .png should not match handler patterns
+        matched = match_any_paths(
+            ["image.png"],
+            included_patterns=handler.patterns,
+            case_sensitive=False,
+        )
+        assert not matched

@@ -43,6 +43,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
     Attributes:
         debounce_seconds: Quiet period before triggering ingestion.
+        _collection_name: ChromaDB collection to route into (default "documents").
         _timers: Per-file debounce timers.
         _hash_cache: Per-file SHA-256 content hashes.
         _ingest_semaphore: Limits concurrent ingest_path() calls.
@@ -54,6 +55,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         debounce_seconds: float = DEFAULT_DEBOUNCE_SECONDS,
         max_concurrent: int = MAX_CONCURRENT_INGESTS,
         watch_root: Path | None = None,
+        collection_name: str = "documents",
     ) -> None:
         # Build patterns from SUPPORTED_EXTENSIONS (e.g. ["*.pdf", "*.docx", ...])
         patterns = [f"*{ext}" for ext in SUPPORTED_EXTENSIONS]
@@ -74,6 +76,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
         self.debounce_seconds = debounce_seconds
         self._watch_root = watch_root  # caller already resolves
+        self._collection_name = collection_name
         self._timers: dict[str, threading.Timer] = {}
         # NOTE: Hash-cache race condition (acceptable for v1) — with
         # BoundedSemaphore(2), two threads can concurrently compute the
@@ -101,6 +104,74 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
     def on_modified(self, event) -> None:  # type: ignore[override]
         """Route file modification events to debounced ingest."""
         self._schedule_ingest(event.src_path)
+
+    def on_deleted(self, event) -> None:  # type: ignore[override]
+        """Remove vectors when a supported file is deleted.
+
+        Cancels any pending ingest timer for the deleted file, clears
+        the hash cache entry, and removes the file's chunks from
+        ChromaDB.  Deletion is immediate (no debouncing) — the
+        ``on_deleted`` event fires only once per file deletion.
+        """
+        self._do_delete(event.src_path)
+
+    # ── Deletion handler ────────────────────────────────────────────────
+
+    def _do_delete(self, file_path: str) -> None:
+        """Delete vectors for a file path and clean up pending state.
+
+        Cancels any pending ingest timer, clears the hash cache entry,
+        and calls ``remove_document()`` on the ChromaDB collection.
+        Idempotent — safe to call even if the file was never ingested.
+        """
+        if self._shutdown_requested.is_set():
+            return
+
+        # Cancel any pending ingest timer for this file
+        with self._timers_lock:
+            old_timer = self._timers.pop(file_path, None)
+            if old_timer is not None:
+                old_timer.cancel()
+                logger.debug(
+                    "Cancelled pending ingest timer for deleted file: %s",
+                    file_path,
+                )
+
+        # Clear hash cache entry
+        with self._timers_lock:
+            old_hash = self._hash_cache.pop(file_path, None)
+            if old_hash is not None:
+                logger.debug(
+                    "Cleared hash cache for deleted file: %s",
+                    file_path,
+                )
+
+        # Remove vectors from ChromaDB
+        try:
+            from .ingestion import remove_document
+
+            result = remove_document(
+                file_path, collection_name=self._collection_name
+            )
+            if result.get("status") == "ok":
+                removed = result.get("chunks_removed", 0)
+                logger.info(
+                    "Auto-removed %s — %d chunk(s) deleted",
+                    Path(file_path).name,
+                    removed,
+                )
+            else:
+                logger.warning(
+                    "Failed to remove deleted file %s: %s",
+                    file_path,
+                    result.get("message", "unknown error"),
+                )
+        except Exception as exc:
+            logger.warning(
+                "Failed to remove deleted file %s: %s",
+                file_path,
+                exc,
+            )
 
     # ── Debounce scheduling ──────────────────────────────────────────────
 
@@ -211,7 +282,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                 logger.info("Auto-ingesting %s…", file_path)
                 from .ingestion import ingest_path
 
-                result = ingest_path(file_path)
+                result = ingest_path(file_path, collection_name=self._collection_name)
 
                 if result.get("status") == "error":
                     error_msg = result.get("message", "unknown error")
@@ -373,6 +444,7 @@ def watch_directory(
     path: str,
     debounce: float = DEFAULT_DEBOUNCE_SECONDS,
     verbose: bool = False,
+    collection_name: str = "documents",
 ) -> None:
     """Start watching a directory for document changes.
 
@@ -384,6 +456,8 @@ def watch_directory(
         path: Directory to watch recursively.
         debounce: Debounce interval in seconds (minimum 0.5).
         verbose: Enable DEBUG-level logging if True.
+        collection_name: ChromaDB collection to route auto-ingested
+            files into (default ``"documents"``).
     """
     from rich.console import Console
 
@@ -412,7 +486,8 @@ def watch_directory(
 
     # Create handler and observer
     handler = DocumentIngestHandler(
-        debounce_seconds=debounce, watch_root=watch_path
+        debounce_seconds=debounce, watch_root=watch_path,
+        collection_name=collection_name,
     )
     observer = Observer()
     observer.schedule(handler, str(watch_path), recursive=True)
@@ -444,7 +519,8 @@ def watch_directory(
         f"Watching [bold]{watch_path}[/bold] for document changes…"
     )
     console.print(
-        f"  [dim]Debounce: {debounce}s | "
+        f"  [dim]Collection: {collection_name} | "
+        f"Debounce: {debounce}s | "
         f"Extensions: {', '.join(sorted(SUPPORTED_EXTENSIONS))}[/dim]"
     )
 

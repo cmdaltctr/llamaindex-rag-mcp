@@ -23,7 +23,7 @@ from mcp.types import TextContent
 
 
 async def test_list_tools_discovers_all_three(mcp_server) -> None:
-    """The server must expose exactly the three expected tools."""
+    """The server must expose all expected tools."""
     async with connected_client(mcp_server) as client:
         result = await client.list_tools()
         tool_names = {t.name for t in result.tools}
@@ -31,6 +31,8 @@ async def test_list_tools_discovers_all_three(mcp_server) -> None:
             "ingest_documents",
             "search_documents",
             "list_indexed_documents",
+            "list_collections",
+            "delete_documents",
         }
 
 
@@ -134,3 +136,223 @@ def _extract_result(result):
 
     # Last resort: return raw
     return result
+
+
+# ── 9.14 Collection parameter tests ─────────────────────────────────────────
+
+
+async def test_ingest_with_collection_parameter(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """ingest_documents with collection param must store in named collection."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "mcp_test_coll"},
+        )
+        data = _extract_result(result)
+        # Should succeed and use the named collection
+        assert "files_indexed" in data
+        assert data.get("collection") == "mcp_test_coll"
+
+
+async def test_search_with_collection_parameter(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """search_documents with collection param must search named collection."""
+    async with connected_client(mcp_server) as client:
+        # First ingest into a named collection
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "mcp_search_coll"},
+        )
+        # Then search that collection
+        result = await client.call_tool(
+            "search_documents",
+            {"query": "sample", "collection": "mcp_search_coll"},
+        )
+        data = _extract_result(result)
+        assert isinstance(data, list)
+
+
+async def test_list_with_collection_parameter(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """list_indexed_documents with collection param must list named collection."""
+    async with connected_client(mcp_server) as client:
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "mcp_list_coll"},
+        )
+        result = await client.call_tool(
+            "list_indexed_documents",
+            {"collection": "mcp_list_coll"},
+        )
+        data = _extract_result(result)
+        assert isinstance(data, list)
+        assert len(data) >= 1
+
+
+async def test_list_collections_tool(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """list_collections tool must return available collections."""
+    async with connected_client(mcp_server) as client:
+        # Ingest into two different collections
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "coll_a"},
+        )
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "coll_b"},
+        )
+
+        result = await client.call_tool("list_collections", {})
+        data = _extract_result(result)
+        assert isinstance(data, list)
+
+        # Must include both collections
+        names = {c.get("name") for c in data}
+        assert "coll_a" in names
+        assert "coll_b" in names
+
+
+# ── 9.15 Backward compatibility tests ──────────────────────────────────────
+
+
+async def test_ingest_without_collection_defaults_to_documents(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """ingest_documents without collection must use 'documents' collection."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "ingest_documents", {"path": str(fixtures_dir)},
+        )
+        data = _extract_result(result)
+        # Should work without specifying collection
+        assert "status" in data
+
+
+async def test_search_without_collection_defaults_to_documents(
+    mcp_server,
+) -> None:
+    """search_documents without collection must work with default."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "search_documents", {"query": "anything"},
+        )
+        data = _extract_result(result)
+        assert isinstance(data, list)
+
+
+async def test_list_without_collection_defaults_to_documents(
+    mcp_server,
+) -> None:
+    """list_indexed_documents without collection must work with default."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool("list_indexed_documents", {})
+        data = _extract_result(result)
+        assert isinstance(data, list)
+
+
+# ── delete_documents MCP tool tests ──────────────────────────────────────────
+
+
+async def test_delete_documents_by_path(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """delete_documents with path must remove chunks and return count."""
+    async with connected_client(mcp_server) as client:
+        # First ingest
+        ingest_result = await client.call_tool(
+            "ingest_documents", {"path": str(fixtures_dir)},
+        )
+        ingest_data = _extract_result(ingest_result)
+        assert ingest_data["status"] == "ok"
+
+        # Delete by path of one file
+        sample_file = fixtures_dir / "sample.txt"
+        result = await client.call_tool(
+            "delete_documents", {"path": str(sample_file)},
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["mode"] == "path"
+        assert "chunks_removed" in data
+
+
+async def test_delete_documents_dry_run(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """delete_documents with dry_run must preview without deleting."""
+    async with connected_client(mcp_server) as client:
+        # First ingest
+        await client.call_tool(
+            "ingest_documents", {"path": str(fixtures_dir)},
+        )
+
+        # Dry run
+        sample_file = fixtures_dir / "sample.txt"
+        result = await client.call_tool(
+            "delete_documents",
+            {"path": str(sample_file), "dry_run": True},
+        )
+        data = _extract_result(result)
+        assert data.get("dry_run") is True
+        assert "would_delete" in data
+
+
+async def test_delete_documents_drop_collection(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """delete_documents with only collection must drop the collection."""
+    async with connected_client(mcp_server) as client:
+        # Ingest into named collection
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "mcp_drop_coll"},
+        )
+
+        # Drop collection
+        result = await client.call_tool(
+            "delete_documents", {"collection": "mcp_drop_coll"},
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["mode"] == "collection"
+
+
+async def test_delete_documents_collection_dry_run(
+    mcp_server,
+) -> None:
+    """delete_documents with collection + dry_run must preview drop."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "delete_documents",
+            {"collection": "mcp_preview_coll", "dry_run": True},
+        )
+        data = _extract_result(result)
+        assert data.get("dry_run") is True
+        assert data.get("mode") == "collection"
+
+
+async def test_delete_documents_by_metadata_filter(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """delete_documents with metadata_filter must remove matching chunks."""
+    async with connected_client(mcp_server) as client:
+        # Ingest first
+        await client.call_tool(
+            "ingest_documents", {"path": str(fixtures_dir)},
+        )
+
+        # Delete by metadata (just use a non-matching filter)
+        result = await client.call_tool(
+            "delete_documents",
+            {"metadata_filter": {"category": "nonexistent"}},
+        )
+        data = _extract_result(result)
+        # Should succeed with 0 removed (filter matches nothing)
+        assert data["status"] == "ok"
+        assert data.get("chunks_removed", 0) == 0
