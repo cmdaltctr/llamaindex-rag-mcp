@@ -126,6 +126,31 @@ Watch for:
 | ✅ Always | Google-style docstrings on public functions and classes. |
 | ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing. |
 
+## Coverage Thresholds
+
+Coverage is enforced per-module rather than as a single flat number. This
+reflects the reality that CLI formatting branches and OS-level defensive
+code yield diminishing returns past ~85%, while core logic benefits from
+tight coverage.
+
+| Module type | Floor | Modules | Rationale |
+|-------------|-------|---------|-----------|
+| Core logic | ≥95% | `ingestion.py`, `retrieval.py`, `reranker.py`, `metadata_extractor.py`, `config.py` | Business logic, data integrity, embedding correctness |
+| MCP wrappers | ≥95% | `server.py` | Tool contract correctness — MCP clients depend on exact response shapes |
+| Orchestration | ≥85% | `watcher.py` | OS-level edge cases (symlink traversal, shutdown timeout) are low-value to mock |
+| CLI | ≥85% | `cli.py` | Rich/Typer formatting branches, subprocess GPU detection, progress-bar callbacks |
+| **Overall** | **≥90%** | all | Weighted floor across the full package |
+
+When adding new modules, assign them to the appropriate tier. If a module
+straddles tiers (e.g., a new module with both core logic and CLI glue),
+default to the stricter floor and document exceptions inline.
+
+Renegotiated 2026-05-20 during the `make-ingest-path-async` OpenSpec change.
+Previous rule was a flat ≥95% on the entire package. The modular approach
+was adopted because `cli.py` (450 statements of Typer/Rich glue) and
+`watcher.py` (defensive OS-error branches) were dragging the overall number
+below 95% despite core logic sitting at 92–99%.
+
 ## OpenSpec Workflow
 
 For any non-trivial change:

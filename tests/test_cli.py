@@ -1351,3 +1351,266 @@ class TestDeleteCLI:
         ])
         assert result.exit_code != 0
         assert "must be a JSON object" in result.output
+
+
+# ── O: Benchmark subcommand tests ────────────────────────────────────────────
+
+
+class TestBenchmarkCLI:
+    """Tests for the benchmark subcommand."""
+
+    def test_benchmark_no_input(self) -> None:
+        """Neither --text nor --file provided → error exit."""
+        result = runner.invoke(app, ["benchmark"])
+        assert result.exit_code == 1
+        assert "Provide either --text or --file" in result.output
+
+    def test_benchmark_both_inputs(self, tmp_path: Path) -> None:
+        """Both --text and --file provided → error exit."""
+        f = tmp_path / "test.txt"
+        f.write_text("content")
+        result = runner.invoke(app, [
+            "benchmark", "--text", "hello", "--file", str(f),
+        ])
+        assert result.exit_code == 1
+        assert "not both" in result.output
+
+    def test_benchmark_file_not_found(self) -> None:
+        """--file pointing to missing path → error exit."""
+        result = runner.invoke(app, [
+            "benchmark", "--file", "/nonexistent/bench.pdf",
+        ])
+        assert result.exit_code == 1
+        assert "File not found" in result.output or "not found" in result.output
+
+    def test_benchmark_unsupported_extension(self, tmp_path: Path) -> None:
+        """--file with unsupported extension → error exit."""
+        bad = tmp_path / "bench.xyz"
+        bad.write_text("content")
+        result = runner.invoke(app, [
+            "benchmark", "--file", str(bad),
+        ])
+        assert result.exit_code == 1
+        assert "Unsupported file extension" in result.output
+
+    def test_benchmark_text_success(self) -> None:
+        """--text with valid content runs benchmark successfully."""
+        result = runner.invoke(app, [
+            "benchmark", "--text",
+            "This is a sample benchmark text used to measure embedding "
+            "throughput for the current embed model in the RAG MCP server.",
+        ])
+        assert result.exit_code == 0
+        assert "Benchmark" in result.output
+        assert "Model" in result.output
+        assert "Chunks/sec" in result.output
+
+    def test_benchmark_text_json_success(self) -> None:
+        """--text --json produces valid JSON with expected keys."""
+        result = runner.invoke(app, [
+            "benchmark", "--text",
+            "JSON benchmark test text for embedding throughput measurement.",
+            "--json",
+        ])
+        assert result.exit_code == 0
+        # Warmup message goes to stderr (mixed into output).  JSON
+        # follows on stdout.  Extract the JSON block from the first
+        # opening brace.
+        output = result.output
+        json_start = output.index("{")
+        data = json.loads(output[json_start:])
+        assert data["model"] == "nomic-embed-text"
+        assert "chunks" in data
+        assert "avg_time_sec" in data
+        assert "chunks_per_sec" in data
+        assert "vector_dim" in data
+
+    def test_benchmark_warmup_failure(self) -> None:
+        """Warmup failure (embedding connection error) → exit 1 with Ollama message."""
+        from llama_index.core.embeddings import MockEmbedding as _MockEmb
+
+        # Create a test-specific subclass that raises on warmup.
+        # Cannot use patch.object because MockEmbedding is a Pydantic
+        # v2 model that blocks attribute mutation.
+        class _FailingMockEmbedding(_MockEmb):
+            def get_text_embedding(self, text: str) -> list[float]:
+                raise ConnectionError("Connection refused")
+
+        from llama_index.core import Settings
+        Settings.embed_model = _FailingMockEmbedding(embed_dim=384)
+
+        try:
+            result = runner.invoke(app, [
+                "benchmark", "--text",
+                "Warmup failure test text.",
+            ])
+        finally:
+            # Restore the original mock from conftest.
+            Settings.embed_model = _MockEmb(embed_dim=384)
+
+        assert result.exit_code == 1
+        assert "Ollama" in result.output
+
+
+# ── P: Watch subcommand tests ───────────────────────────────────────────────
+
+
+class TestWatchCLI:
+    """Tests for the watch subcommand."""
+
+    def test_watch_delegates_to_watcher(self) -> None:
+        """watch command delegates to watcher.watch_directory and exits 0."""
+        with patch("rag_mcp.watcher.watch_directory") as mock_watch:
+            result = runner.invoke(app, ["watch", "/tmp/watchdir"])
+        assert result.exit_code == 0
+        mock_watch.assert_called_once()
+        # Verify key args were passed
+        call_kwargs = mock_watch.call_args.kwargs
+        assert call_kwargs["collection_name"] == "documents"
+        assert "debounce" in call_kwargs
+
+    def test_watch_system_exit_propagates(self) -> None:
+        """SystemExit from watcher propagates as typer.Exit with matching code."""
+        with patch(
+            "rag_mcp.watcher.watch_directory",
+            side_effect=SystemExit(1),
+        ):
+            result = runner.invoke(app, ["watch", "/tmp/watchdir"])
+        assert result.exit_code == 1
+
+
+# ── Q: List-collections subcommand tests ────────────────────────────────────
+
+
+class TestListCollectionsCLI:
+    """Tests for the list-collections subcommand."""
+
+    def test_list_collections_empty(self) -> None:
+        """Empty result shows 'No collections found' message."""
+        with patch(
+            "rag_mcp.retrieval.list_collections", return_value=[],
+        ):
+            result = runner.invoke(app, ["list-collections"])
+        assert result.exit_code == 0
+        assert "No collections found" in result.output
+
+    def test_list_collections_empty_json(self) -> None:
+        """Empty result with --json outputs '[]'."""
+        with patch(
+            "rag_mcp.retrieval.list_collections", return_value=[],
+        ):
+            result = runner.invoke(app, ["list-collections", "--json"])
+        assert result.exit_code == 0
+        assert result.output.strip() == "[]"
+
+    def test_list_collections_non_empty(self) -> None:
+        """Non-empty result renders a Rich table with collection names."""
+        fake_collections = [
+            {"name": "documents", "document_count": 3, "chunk_count": 15},
+            {"name": "research", "document_count": 1, "chunk_count": 7},
+        ]
+        with patch(
+            "rag_mcp.retrieval.list_collections",
+            return_value=fake_collections,
+        ):
+            result = runner.invoke(app, ["list-collections"])
+        assert result.exit_code == 0
+        assert "documents" in result.output
+        assert "research" in result.output
+        assert "Document" in result.output or "Documents" in result.output
+        assert "collection(s)" in result.output
+
+    def test_list_collections_non_empty_json(self) -> None:
+        """Non-empty result with --json outputs valid JSON array."""
+        fake_collections = [
+            {"name": "documents", "document_count": 3, "chunk_count": 15},
+        ]
+        with patch(
+            "rag_mcp.retrieval.list_collections",
+            return_value=fake_collections,
+        ):
+            result = runner.invoke(app, ["list-collections", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["name"] == "documents"
+        assert data[0]["document_count"] == 3
+        assert data[0]["chunk_count"] == 15
+
+
+# ── R: Delete confirmation and real-execution path tests ────────────────────
+
+
+class TestDeleteConfirmationCLI:
+    """Tests for delete confirmation prompts and real-execution paths."""
+
+    def test_delete_collection_with_yes_flag(self) -> None:
+        """Delete --collection with --yes skips prompt and removes collection."""
+        with patch(
+            "rag_mcp.ingestion.remove_collection",
+            return_value={"status": "ok", "collection": "test_coll"},
+        ) as mock_remove:
+            result = runner.invoke(app, [
+                "delete", "--collection", "test_coll", "--yes",
+            ])
+        assert result.exit_code == 0
+        mock_remove.assert_called_once_with("test_coll")
+        assert "deleted" in result.output
+
+    def test_delete_collection_confirm_yes(self) -> None:
+        """Delete --collection with Confirm.ask returning True proceeds."""
+        with patch(
+            "rag_mcp.ingestion.remove_collection",
+            return_value={"status": "ok", "collection": "test_coll"},
+        ) as mock_remove, patch(
+            "rich.prompt.Confirm.ask", return_value=True,
+        ):
+            result = runner.invoke(app, [
+                "delete", "--collection", "test_coll",
+            ])
+        assert result.exit_code == 0
+        mock_remove.assert_called_once_with("test_coll")
+        assert "deleted" in result.output
+
+    def test_delete_collection_confirm_no(self) -> None:
+        """Delete --collection with Confirm.ask returning False cancels."""
+        with patch("rich.prompt.Confirm.ask", return_value=False):
+            result = runner.invoke(app, [
+                "delete", "--collection", "test_coll",
+            ])
+        assert result.exit_code == 0
+        assert "Cancelled" in result.output
+
+    def test_delete_metadata_real_execution(self) -> None:
+        """Delete --metadata with valid JSON performs real removal."""
+        with patch(
+            "rag_mcp.ingestion.remove_by_metadata",
+            return_value={
+                "status": "ok",
+                "chunks_removed": 5,
+                "collection": "documents",
+            },
+        ) as mock_remove:
+            result = runner.invoke(app, [
+                "delete", "--metadata", '{"category":"test"}',
+            ])
+        assert result.exit_code == 0
+        mock_remove.assert_called_once()
+        assert "Removed" in result.output or "chunk" in result.output
+
+    def test_delete_error_result_display(self) -> None:
+        """Delete with an error result displays the error and exits 1."""
+        with patch(
+            "rag_mcp.ingestion.remove_document",
+            return_value={
+                "status": "error",
+                "message": "boom",
+            },
+        ) as mock_remove:
+            result = runner.invoke(app, [
+                "delete", "--path", "/some/file.pdf",
+            ])
+        assert result.exit_code == 1
+        mock_remove.assert_called_once()
+        assert "boom" in result.output

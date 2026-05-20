@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -324,10 +325,16 @@ async def test_delete_documents_drop_collection(
 
 
 async def test_delete_documents_collection_dry_run(
-    mcp_server,
+    mcp_server, fixtures_dir: Path,
 ) -> None:
     """delete_documents with collection + dry_run must preview drop."""
     async with connected_client(mcp_server) as client:
+        # Ingest into the collection first so the success branch is hit.
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(fixtures_dir), "collection": "mcp_preview_coll"},
+        )
+
         result = await client.call_tool(
             "delete_documents",
             {"collection": "mcp_preview_coll", "dry_run": True},
@@ -335,6 +342,7 @@ async def test_delete_documents_collection_dry_run(
         data = _extract_result(result)
         assert data.get("dry_run") is True
         assert data.get("mode") == "collection"
+        assert data.get("would_delete", 0) >= 1
 
 
 async def test_delete_documents_by_metadata_filter(
@@ -356,3 +364,114 @@ async def test_delete_documents_by_metadata_filter(
         # Should succeed with 0 removed (filter matches nothing)
         assert data["status"] == "ok"
         assert data.get("chunks_removed", 0) == 0
+
+
+# ── delete_documents edge-case tests ────────────────────────────────────────
+
+
+async def test_delete_documents_empty_metadata_filter_error(
+    mcp_server,
+) -> None:
+    """delete_documents with empty metadata_filter must return an error."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "delete_documents",
+            {"metadata_filter": {}},
+        )
+        data = _extract_result(result)
+        assert data["status"] == "error"
+        assert "metadata_filter must be a non-empty dict" in data["message"]
+
+
+async def test_delete_documents_metadata_dry_run_with_match(
+    mcp_server, fixtures_dir: Path,
+) -> None:
+    """metadata_filter + dry_run on ingested data must preview matching count."""
+    async with connected_client(mcp_server) as client:
+        # Ingest first so there are chunks with file_name metadata.
+        await client.call_tool(
+            "ingest_documents", {"path": str(fixtures_dir)},
+        )
+
+        # Use file_name metadata which is always present on ingested chunks.
+        result = await client.call_tool(
+            "delete_documents",
+            {
+                "metadata_filter": {"file_name": "sample.txt"},
+                "dry_run": True,
+            },
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["dry_run"] is True
+        assert data["mode"] == "metadata"
+        assert data["would_delete"] >= 1
+
+
+async def test_delete_documents_metadata_dry_run_nonexistent_coll(
+    mcp_server,
+) -> None:
+    """metadata_filter + dry_run on a non-existent collection must return 0."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "delete_documents",
+            {
+                "metadata_filter": {"category": "research"},
+                "dry_run": True,
+                "collection": "coll_does_not_exist",
+            },
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["dry_run"] is True
+        assert data["mode"] == "metadata"
+        assert data["would_delete"] == 0
+
+
+async def test_delete_documents_collection_dry_run_nonexistent_coll(
+    mcp_server,
+) -> None:
+    """collection-mode dry_run on a non-existent collection must return 0."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "delete_documents",
+            {"collection": "coll_does_not_exist", "dry_run": True},
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["dry_run"] is True
+        assert data["mode"] == "collection"
+        assert data["would_delete"] == 0
+
+
+async def test_delete_documents_path_dry_run_nonexistent_coll(
+    mcp_server, sample_txt: Path,
+) -> None:
+    """path-mode dry_run on a non-existent collection must return would_delete: 0."""
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "delete_documents",
+            {
+                "path": str(sample_txt),
+                "dry_run": True,
+                "collection": "coll_does_not_exist",
+            },
+        )
+        data = _extract_result(result)
+        assert data["status"] == "ok"
+        assert data["dry_run"] is True
+        assert data["mode"] == "path"
+        assert data["would_delete"] == 0
+
+
+# ── main() entry-point test ────────────────────────────────────────────────
+
+
+def test_main_calls_mcp_run() -> None:
+    """main() must configure logging and call mcp.run(transport='stdio')."""
+    with patch("rag_mcp.server.mcp.run") as mock_run:
+        from rag_mcp.server import main
+
+        main()
+
+    mock_run.assert_called_once_with(transport="stdio")

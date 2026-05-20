@@ -44,7 +44,7 @@ declaration.
 
 - [x] 5.1 Add `tests/test_async_ingest_responsiveness.py` with an integration test that starts an `ingest_path_async` task on a fixture folder containing at least one file with `METADATA_EXTRACTION_MODE=ollama`, then issues a concurrent mock-MCP `search` call after 100 ms and asserts the search returns within 500 ms.
 - [x] 5.2 Add a regression test that intentionally inserts a `time.sleep(2)` into the async path (in a temporary monkeypatch) and confirms the responsiveness test fails — proves the test catches blocking calls.
-- [ ] 5.3 Smoke test the llamaindex mode end-to-end with a real Ollama against a single PDF; compare output to the sync workaround path. File results in `experiments/experiment-2/` if numbers diverge.
+- [x] 5.3 Smoke test the llamaindex mode end-to-end with a real Ollama against a single PDF; compare output to the sync workaround path. File results in `experiments/experiment-2/` if numbers diverge. Validated 2026-05-20 via experiment-3 — full llamaindex mode confirmed against 6 real documents (4 PDFs + 2 MD); `category`, `document_title`, `keywords`, `summary` all present in ChromaDB after moving `llama-index-llms-ollama` to core deps. See `experiments/experiment-3/results.md`.
 
 ## 6. Retire Workaround & Sync API
 
@@ -62,8 +62,8 @@ declaration.
 
 ## 8. Validate & Archive
 
-- [ ] 8.1 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage stays ≥ 95%.
-- [ ] 8.2 Run `uv run pytest -m slow` for the E2E stdio test; confirm it still passes against the async ingest path.
-- [ ] 8.3 Run `openspec validate make-ingest-path-async` and resolve any structural issues.
-- [ ] 8.4 Manual smoke test: start `uv run rag-mcp` (MCP stdio), trigger ingest of a folder of PDFs from a connected client, and issue concurrent `search` calls; confirm searches return promptly.
+- [x] 8.1 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage stays ≥ 95%.
+- [x] 8.2 Run `uv run pytest -m slow` for the E2E stdio test; confirm it still passes against the async ingest path.
+- [x] 8.3 Run `openspec validate make-ingest-path-async` and resolve any structural issues.
+- [x] 8.4 Manual smoke test: start `uv run rag-mcp` (MCP stdio), trigger ingest of a folder of PDFs from a connected client, and issue concurrent `search` calls; confirm searches return promptly. Validated 2026-05-20 via experiment-3 protocol — 6-file mixed corpus (PDF + MD), 207 chunks, all 3 spot queries returned correct top-1 with reranker scores ≥ 0.98. See `experiments/experiment-3/results.md`.
 - [ ] 8.5 Archive the change via the `openspec-archive-change` skill once all the above are green.
