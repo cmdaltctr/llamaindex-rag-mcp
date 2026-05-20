@@ -68,8 +68,12 @@ METADATA_EXTRACTION_MODE = os.getenv("METADATA_EXTRACTION_MODE", "keyword")
 METADATA_KEYWORD_RULES = os.getenv("METADATA_KEYWORD_RULES", None)
 
 # Chat model used for Ollama-based classification (only when
-# METADATA_EXTRACTION_MODE is "ollama").
+# METADATA_EXTRACTION_MODE is "ollama" or "llamaindex").
 OLLAMA_CLASSIFY_MODEL = os.getenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
+
+# Note: LLAMANDEX_EXTRACTOR_MAX_CHUNKS is read at call-time in
+# metadata_extractor.py via os.getenv() so tests can override it
+# with monkeypatch.setenv after module load.  Default: 10.
 
 # ── File extensions we know how to handle ───────────────────────────────
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}

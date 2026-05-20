@@ -1474,6 +1474,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-llms-ollama"
+version = "0.10.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "ollama" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/17/8c/dcda55d685d1094bcffa3f4f2b30bb45ade5aa93694617272bf6c81d5822/llama_index_llms_ollama-0.10.1.tar.gz", hash = "sha256:470ed836dee43bc0171dc05c68c2daa3618a7c38166b8044d7f8360cd8cd8fa6", size = 9145, upload-time = "2026-03-20T18:14:39.603Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/87/ecb53ae8f4a79e9e8b2e2f9ef649840ab985c5a095438b2f53b72674b66f/llama_index_llms_ollama-0.10.1-py3-none-any.whl", hash = "sha256:8badbebba5a8b7b36912aa1399319652e2110c36ce58485b9965a1b8238b4bdb", size = 8801, upload-time = "2026-03-20T18:14:38.831Z" },
+]
+
+[[package]]
 name = "llama-index-llms-openai"
 version = "0.7.8"
 source = { registry = "https://pypi.org/simple" }
@@ -3035,6 +3048,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
+    { name = "httpx" },
     { name = "huggingface-hub" },
     { name = "llama-index" },
     { name = "llama-index-embeddings-ollama" },
@@ -3048,6 +3062,11 @@ dependencies = [
     { name = "watchdog" },
 ]
 
+[package.optional-dependencies]
+metadata = [
+    { name = "llama-index-llms-ollama" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -3058,9 +3077,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "chromadb", specifier = ">=0.5.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "huggingface-hub", specifier = ">=0.20.0" },
     { name = "llama-index", specifier = ">=0.11.0" },
     { name = "llama-index-embeddings-ollama", specifier = ">=0.2.0" },
+    { name = "llama-index-llms-ollama", marker = "extra == 'metadata'", specifier = ">=0.4.0" },
     { name = "llama-index-readers-file", specifier = ">=0.2.0" },
     { name = "llama-index-vector-stores-chroma", specifier = ">=0.2.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.0.0" },
@@ -3070,6 +3091,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.25.1" },
     { name = "watchdog", specifier = ">=4.0.0" },
 ]
+provides-extras = ["metadata"]
 
 [package.metadata.requires-dev]
 dev = [
