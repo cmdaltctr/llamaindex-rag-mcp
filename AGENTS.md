@@ -19,7 +19,8 @@ uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
   Never set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, or `server.py`.
 - **No cross-imports between `ingestion.py` and `retrieval.py`** — they share only `config.py`.
 - **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`,
-  `retrieval.py`, and `reranker.py`.
+  `retrieval.py`, `reranker.py`, and `metadata_extractor.py`.
+- **All ingestion is async** — `ingest_path_async` is the sole entry point.
 
 ## Non-Obvious Rules (the stuff that'll trip you up)
 

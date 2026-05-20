@@ -181,13 +181,14 @@ from the terminal.
 ### Ingest a file or directory
 
 ```bash
-# Index a single file
+# Index a single file into the default "documents" collection
 rag-mcp ingest ~/Documents/research/paper.pdf
 
 # Index an entire directory (parallel by default, 4 workers)
 rag-mcp ingest /path/to/zotero/storage/
 
-# Ingest into a named collection (creates it automatically)
+# Index into a named collection — isolates content from other projects
+# Collections are auto-created on first use; no setup needed.
 rag-mcp ingest /path/to/research/papers/ --collection research
 
 # Customise parallelism and chunking
@@ -196,6 +197,60 @@ rag-mcp ingest /path/to/docs/ --workers 8 --chunk-size 1024 --chunk-overlap 128
 # Machine-readable output for scripts
 rag-mcp ingest /path/to/docs/ --json
 ```
+
+The `--collection` flag lets you keep documents from different projects or
+topics in separate, queryable silos *within the same ChromaDB*. For example, you
+might have a `research` collection for academic papers and a `work` collection
+for internal docs. Later, you search only the relevant collection — no cross-
+contamination of results.
+
+```bash
+# Ingest into separate collections
+rag-mcp ingest ~/Zotero/storage/ --collection research
+rag-mcp ingest ~/Documents/work/ --collection work
+
+# Search each collection independently
+rag-mcp search "quantum computing" --collection research
+rag-mcp search "Q3 roadmap" --collection work
+
+# See all collections and their sizes
+rag-mcp list-collections
+```
+
+Default collection is `"documents"` if `--collection` is omitted. The collection
+name is arbitrary — you can use any name you like (`research`, `work`, `python`,
+`my-project`, etc.). Collections are auto-created on first ingest; there is
+nothing to set up. All MCP tools (`ingest_documents`, `search_documents`,
+`list_indexed_documents`, `delete_documents`) accept the same `collection`
+parameter — use `list_collections` to see what exists.
+
+#### Matching chunk size to your embedding model
+
+The `--chunk-size` flag controls how many **characters** of text go into each
+chunk. But the embedding model has a **context length** measured in **tokens**
+(the model column labelled **Context** in the table below). If your chunks
+exceed this limit, the model silently truncates the tail of your text.
+
+A rough guide: about 4 characters equals approximately 1 token for English.
+
+| Model             | Context (tokens) | Max safe chunk-size | Default 512 safe? |
+|-------------------|-----------------|---------------------|-------------------|
+| **nomic-embed-text** | 8,192          | ~32,000 chars          | Yes (plenty of room) |
+| mxbai-embed-large | 512              | ~1,500 chars           | Yes |
+| all-minilm        | 256              | ~1,000 chars           | Yes |
+
+The default chunk size of 512 characters is safe for all models. If you need
+larger chunks (e.g. for nomic 8K context), just make sure your chunk size
+multiplied by 0.25 stays under the model's Context limit.
+
+```
+# Example: 2048-char chunks are fine for nomic (2048 x 0.25 = 512 tokens)
+rag-mcp ingest /path/to/docs/ --chunk-size 2048
+```
+
+---
+
+
 
 Progress bars appear automatically in TTY terminals (Rich). In non-TTY
 contexts (pipes, CI) plain text is emitted to stderr. Press Ctrl+C once for
@@ -316,20 +371,75 @@ auto-ingests them as they appear or change. It includes:
 
 ### Auto-categorisation and metadata extraction
 
-During ingestion, the server can automatically categorise documents and store
-the result as ChromaDB metadata on every chunk. This happens once per file
-(before chunking) so it has minimal overhead.
+During ingestion, the server can automatically extract metadata from documents
+and attach it to every chunk as ChromaDB metadata. This metadata can then be
+used to **filter search results** — for example, searching only chunks
+categorised as `"AI"` or `"Biology"`.
 
-The categorisation mode is controlled by `METADATA_EXTRACTION_MODE` in `.env`:
+#### Configuration via `.env`
 
-| Mode | What happens | Dependencies | Speed |
-|------|-------------|-------------|-------|
-| `keyword` (default) | Regex pattern matching against built-in rules covering AI, Philosophy, Biology, Marketing, and Programming | None (`re` from stdlib) | Instant |
-| `disabled` | No metadata extraction | None | N/A |
-| `ollama` | Chat model classification via local Ollama (uses `OLLAMA_CLASSIFY_MODEL`, default `qwen3:0.6b`) | Ollama running with a chat model | ~2s per file |
-| `llamaindex` | Stubbed for future LlamaIndex MetadataExtractor integration — falls back to keyword mode | None (stubbed) | Same as keyword |
+All metadata extraction settings live in `.env` at the project root. If you
+haven't set one up yet:
 
-**Default keyword rules** (built-in):
+```bash
+# Create .env from the example template
+cp .env.example .env
+```
+
+Then edit `.env` with any text editor. The relevant section looks like this:
+
+```bash
+# .env — metadata extraction settings
+METADATA_EXTRACTION_MODE=keyword
+# OLLAMA_CLASSIFY_MODEL=qwen3:0.6b   # only used when MODE=ollama
+```
+
+The `.env` file is loaded automatically when the server starts (via
+`python-dotenv`). Environment variables from your shell override `.env` values,
+so you can also set them inline:
+
+```bash
+METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+```
+
+#### How it works
+
+The extraction runs **once per file** (not per chunk). After a file is loaded
+but before it is split into chunks, the extraction function runs against the
+file's text. The result — a dict of metadata fields like
+`{"category": "AI"}` — is attached to every chunk produced from that file.
+Overhead is O(files), not O(chunks).
+
+#### Three levels of extraction
+
+| Mode | What it does | Speed | Current status |
+|------|-------------|-------|----------------|
+| `keyword` (default) | Quick regex pattern matching against built-in rules. Scans the first ~2000 chars of each file for keywords like `"transformer"`, `"neural"`, `"crispr"`, etc. Instantly categorises into AI, Philosophy, Biology, Marketing, or Programming. | Instant — zero dependencies | **Ready**. Good enough for most users. |
+| `ollama` | Queries ChromaDB for existing categories, merges them with seed categories from keyword mode, and sends the first 3000 characters of each file to a lightweight chat model (default `qwen3:0.6b`) via Ollama's `/api/generate` endpoint. The model returns a JSON object with `category`, `keywords`, and `summary`. Prefers reusing existing categories but can propose new ones for novel domains. | ~2s per file | **Ready**. Rich metadata: `{"category": "ai", "keywords": ["transformer", "attention"], "summary": "..."}` |
+| `llamaindex` | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor` to enrich document chunks via `Settings.llm` (configured lazily via Ollama). Per-chunk extraction gives finer-grained metadata. Requires `llama-index-llms-ollama` (install with `uv sync --extra metadata`). Falls back to keyword mode if the package is not installed. | ~5-30s per file (varies by document length and chunk count) | **Ready**. Per-chunk enrichment via LlamaIndex pipeline. |
+| `disabled` | No metadata is extracted. No `category` field is written to chunks. | N/A | **Ready**. Choose this if you don't need content-type filtering. |
+
+To switch modes:
+
+```bash
+# In .env — disable metadata entirely
+METADATA_EXTRACTION_MODE=disabled
+
+# In .env — use LLM classification instead of regex
+METADATA_EXTRACTION_MODE=ollama
+# Also pull the classification model if you haven't:
+#   ollama pull qwen3:0.6b
+```
+
+**Important**: The `ollama` mode uses a **separate chat model** (not the
+embedding model) set via `OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). This
+model must be downloaded via `ollama pull qwen3:0.6b` — it is a tiny
+0.6B-parameter model purpose-built for fast classification, not the embedding
+model used for vector search. The mode only sends the first 2000 characters
+per file to keep latency at ~2s — good enough for category classification but
+not comprehensive content extraction.
+
+#### Built-in keyword rules (default mode)
 
 | Category | Keywords matched (case-insensitive regex) |
 |----------|------------------------------------------|
@@ -364,10 +474,29 @@ fetching everything and filtering client-side.
 
 ### Shell completion
 
-```bash
-rag-mcp --install-completion   # Install for current shell
-rag-mcp --show-completion      # Show completion script
+The CLI supports **tab completion** for subcommands and flags. Once installed,
+you can type `rag-mcp ` and press **Tab** to see available options:
+
 ```
+$ rag-mcp [Tab]
+ingest    search    list    list-collections    watch    delete    benchmark
+
+$ rag-mcp delete --[Tab]
+--path    --metadata    --collection    --dry-run    --yes    --json
+```
+
+Install it once per shell:
+
+```bash
+# Install tab completion for your current shell (bash, zsh, or fish)
+rag-mcp --install-completion
+
+# Or just view the completion script without installing
+rag-mcp --show-completion
+```
+
+Run only `--install-completion` once per machine. After that, Tab completion
+works automatically for all future `rag-mcp` commands in new terminal sessions.
 
 ---
 
@@ -383,7 +512,13 @@ Just ask the AI:
 > "Index the file ~/Documents/research/paper.pdf"
 > "Ingest everything in /path/to/my/docs/"
 
-The AI will call `ingest_documents` automatically.
+To isolate content into a named collection, mention the collection name:
+
+> "Index ~/Zotero/storage/ into the research collection"
+> "Ingest /path/to/work/docs/ into a collection called work"
+
+The AI will call `ingest_documents` with the `collection` parameter
+automatically. The collection is created on first use — no setup required.
 
 ### From command line (for testing)
 
@@ -415,6 +550,57 @@ proc.terminate()
 `.pdf` `.docx` `.pptx` `.txt` `.md` `.html` `.csv`
 
 For directories, the server recursively finds all supported files.
+
+---
+
+
+
+## How ingestion works
+
+The ingestion pipeline processes each file through several stages, using
+different models at different points:
+
+```
+  Source file (PDF, DOCX, TXT, ...)
+        |
+        v
+  [1] Load & parse  -----> Metadata extraction (optional)
+        |                      |
+        |                      +-- keyword: regex (no model, instant)
+        |                      +-- ollama:  chat model (qwen3:0.6b, ~2s/file, JSON output)
+        |                      +-- llamaindex: IngestionPipeline (per-chunk, ~5-30s/file)
+        |
+        v
+  [2] Split into chunks (SentenceSplitter)
+        |  chunk_size = 512 chars by default
+        |  chunk_overlap = 64 chars
+        |
+        v
+  [3] Embed each chunk --> Ollama embedding model (EMBED_MODEL)
+        |                     e.g. nomic-embed-text, qwen3-embedding:0.6b
+        |                     Produces a vector of fixed dimension (768, 1024, etc.)
+        |
+        v
+  [4] Store in ChromaDB
+        |  collection = "documents" (or whatever --collection you set)
+        |  Each record: vector + text + metadata + file_path
+        v
+  [Done] Collection ready for search
+```
+
+**Which model runs when:**
+
+| Stage | Model type | What it does | Speed impact |
+|-------|-----------|-------------|-------------|
+| Metadata extraction (ollama mode) | **Chat/LLM** (e.g. qwen3:0.6b) | Classifies document category | ~2s per file |
+| Metadata extraction (keyword mode) | None (regex) | Pattern matching | Instant |
+| Embedding | **Embedding model** (e.g. nomic-embed-text) | Converts text to vectors | ~50-500ms per chunk |
+| Search (rerank) | **Cross-encoder** (e.g. ms-marco-MiniLM-L-6-v2) | Re-scores top results | ~10-50ms per query pair |
+
+The embedding model and chat/classification model are **separate** — each pulled
+independently via Ollama. The embedding model runs per chunk during ingest and
+per query during search. The chat model runs only during metadata extraction
+(if you enable ollama mode).
 
 ---
 
@@ -677,11 +863,17 @@ Add to `~/.opencode/opencode.json` (or equivalent for your MCP client):
 Once connected, use the MCP tools:
 
 - **Ingest**: `"Index the file /path/to/document.pdf"`
+- **Ingest into collection**: `"Index /path/to/docs/ into the research collection"`
 - **Search**: `"Search my documents for information about X"`
+- **Search collection**: `"Search only the research collection for transformer models"`
 - **List**: `"What documents do you have access to?"`
 - **Collections**: `"What collections are available?"`
 - **Delete**: `"Delete the chunks for /path/to/file.pdf"`
 - **Drop collection**: `"Drop the collection named research"`
+
+The `collection` parameter lets you keep project-specific documents isolated.
+Ingest different projects into different collections, then search each one
+independently. Collections are created automatically — nothing to set up.
 
 ---
 
@@ -818,7 +1010,7 @@ ChromaDB client so no external services are needed for fast tests.
 | `tests/test_watcher.py` | 39 | File watcher: debounce, hash dedup, throttling, shutdown, error handling, on_deleted |
 | `tests/test_reranker.py` | 23 | Sigmoid, ONNX variant, singleton, fallback, mock inference, model loading |
 | `tests/test_cli.py` | 93 | CLI validation, formatting, edge cases, delete subcommand |
-| `tests/test_metadata_extractor.py` | 13 | Keyword, disabled, custom rules, llamaindex stub, unknown mode fallback |
+| `tests/test_metadata_extractor.py` | 40 | Keyword, disabled, custom rules, ollama (JSON parsing, normalisation, hybrid taxonomy), llamaindex (pipeline, fallback, aggregation), unknown mode fallback |
 | `tests/test_ingestion.py` | 20 | Path validation, empty dir, list empty, collection routing, metadata attachment, delete functions, upsert |
 | `tests/test_retrieval.py` | 17 | Empty store, threshold, rerank flag, threshold scaling, collection search, metadata filter, list collections |
 | `tests/test_mcp_tools.py` | 19 | Tool discovery, ingest, search, list, list_collections, collection params, backward compat, delete_documents |
