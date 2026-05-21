@@ -98,7 +98,7 @@ Key findings:
 
 ## References
 
-- Throughput benchmark data: `docs/embedding-performance.md`
+- Throughput benchmark data: `experiments/embedding-performance.md`
 - Retrieval quality experiment: `experiments/experiment-2/results.md`
 - Raw experiment data: `experiments/experiment-2/eval_results.json`
 - OpenSpec change: `openspec/changes/optimise-embedding-performance/`

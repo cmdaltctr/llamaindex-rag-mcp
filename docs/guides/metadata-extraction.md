@@ -1,0 +1,76 @@
+# Metadata Extraction
+
+During ingestion, the server can automatically extract metadata from documents and attach it to every chunk as ChromaDB metadata. This metadata can then be used to **filter search results** — for example, searching only chunks categorised as `"AI"` or `"Biology"`.
+
+Extraction runs **once per file** (not per chunk), so overhead is O(files), not O(chunks).
+
+## Modes
+
+Set `METADATA_EXTRACTION_MODE` in `.env`:
+
+| Mode | What it does | Speed | Status |
+|------|-------------|-------|--------|
+| `keyword` (default) | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords. | Instant | Ready |
+| `ollama` | Sends the first 3000 chars to a lightweight chat model (default `qwen3:0.6b`) via Ollama. Returns `category`, `keywords`, and `summary`. | ~2s/file | Ready |
+| `llamaindex` | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`. | ~5–30s/file | Ready |
+| `disabled` | No metadata extracted. No `category` field written to chunks. | N/A | Ready |
+
+```bash
+# In .env
+METADATA_EXTRACTION_MODE=keyword   # default
+METADATA_EXTRACTION_MODE=ollama
+METADATA_EXTRACTION_MODE=disabled
+
+# Or inline for a single run
+METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+```
+
+## Ollama mode
+
+Uses a **separate chat model** (not the embedding model) set via `OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). Pull it first:
+
+```bash
+ollama pull qwen3:0.6b
+```
+
+This tiny 0.6B model is purpose-built for fast classification. It only sees the first 2000 characters per file — good enough for category classification, not comprehensive content extraction.
+
+Rich metadata output example:
+
+```json
+{"category": "ai", "keywords": ["transformer", "attention"], "summary": "..."}
+```
+
+## Built-in keyword rules
+
+| Category | Keywords matched (case-insensitive) |
+|----------|-------------------------------------|
+| AI | `attention`, `transformer`, `token`, `embedding`, `llm`, `rag`, `neural`, `deep learning` |
+| Philosophy | `mantiq`, `logic`, `reasoning`, `ontology`, `epistemology`, `ghazali`, `usul` |
+| Biology | `crispr`, `genome`, `protein`, `cell`, `biology`, `cancer`, `gene` |
+| Marketing | `marketing`, `seo`, `campaign`, `brand`, `pricing`, `funnel`, `conversion` |
+| Programming | `javascript`, `python`, `rust`, `api`, `frontend`, `backend`, `compiler` |
+
+If no keywords match, the category is `"uncategorised"`.
+
+## Custom keyword rules
+
+Override the built-in rules entirely by setting `METADATA_KEYWORD_RULES` in `.env` to a JSON string:
+
+```bash
+METADATA_KEYWORD_RULES='[{"pattern": "f1|grand.?prix|motorsport", "category": "Motorsport"}, {"pattern": "football|goal|stadium", "category": "Sport"}]'
+```
+
+## Filtering search results
+
+Use the `metadata_filter` parameter on the `search_documents` MCP tool:
+
+```json
+{
+  "query": "deep learning architectures",
+  "collection": "research",
+  "metadata_filter": {"category": "AI"}
+}
+```
+
+The filter is applied **server-side** via ChromaDB's native `where` clause — only matching chunks leave the vector store. This is more efficient than fetching everything and filtering client-side.
