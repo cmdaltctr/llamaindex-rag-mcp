@@ -126,6 +126,30 @@ Watch for:
 | ✅ Always | Google-style docstrings on public functions and classes. |
 | ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing. |
 
+## Release Automation
+
+Releases are automated via `python-semantic-release` (PSR). The tool runs in CI
+(GitHub Actions) on every push to `master` and determines the version bump from
+commit prefixes.
+
+| Commit prefix | Version bump | Example |
+|---------------|--------------|---------|
+| `feat:` | minor | 0.1.0 → 0.2.0 |
+| `fix:` / `perf:` | patch | 0.1.0 → 0.1.1 |
+| `feat!:` or `BREAKING CHANGE:` | major | 0.1.0 → 1.0.0 |
+| `chore:` / `docs:` / `test:` / `refactor:` | no release | — |
+
+**Rules:**
+- PSR is NOT a project dependency (conflicts with typer/click). Run via `uvx` locally.
+- Never manually edit the `version` in `pyproject.toml` — PSR owns it.
+- Never manually create git tags with `v` prefix — PSR owns those too.
+- Config lives in `pyproject.toml` under `[tool.semantic_release]`.
+
+**Local preview:**
+```bash
+uvx --from="python-semantic-release@10.5.3" semantic-release -v --noop version
+```
+
 ## Coverage Thresholds
 
 Coverage is enforced per-module rather than as a single flat number. This
