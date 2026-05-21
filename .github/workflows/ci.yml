@@ -19,4 +19,7 @@ jobs:
         run: uv sync
 
       - name: Run tests
+        env:
+          NO_COLOR: "1"
+          TERM: "dumb"
         run: uv run pytest -m "not slow" --cov=rag_mcp -v
