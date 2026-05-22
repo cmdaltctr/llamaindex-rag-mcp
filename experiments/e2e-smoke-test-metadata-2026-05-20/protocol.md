@@ -1,13 +1,29 @@
-# Experiment 3: End-to-End Smoke Test with Real-World Documents
+# Experiment: End-to-End Smoke Test with Real-World Documents
 
+**ID**: `e2e-smoke-test-metadata-2026-05-20`
 **Date**: 2026-05-20
-**Purpose**: Validate the full ingest → retrieval pipeline with a diverse real-world corpus
-(PDFs + Markdown) under the current production configuration, following the
-`enhance-metadata-extraction` ADR (2026-05-20).
-**Metric**: Does the pipeline ingest without errors? Does retrieval return the correct
-document for each ground-truth query?
+**Operator**: Dr Muhammad Aizat Bin Md Hawari
+**Status**: PASS
 
 ---
+
+## Hypothesis / Purpose
+
+Does the full ingest → retrieval pipeline work correctly with a diverse real-world corpus
+(PDFs + Markdown) under the current production configuration, including `llamaindex`
+metadata extraction mode?
+
+## Variables
+
+| Type                         | Variable                                                          | Values                                    |
+| ---------------------------- | ----------------------------------------------------------------- | ----------------------------------------- |
+| Independent (what we change) | Metadata extraction mode                                          | `llamaindex` (full per-chunk enrichment)  |
+| Dependent (what we measure)  | Ingest error count, chunk count, metadata field presence, Hit@1   | —                                         |
+| Controlled (held constant)   | Embedding model                                                   | `qwen3-embedding:0.6b` (1024-dim)        |
+| Controlled (held constant)   | Reranker                                                          | Enabled (cross-encoder)                   |
+| Controlled (held constant)   | Corpus                                                            | 6 documents (PDF + Markdown)              |
+| Controlled (held constant)   | Chunk size / overlap                                              | 512 / 64                                  |
+| Controlled (held constant)   | Similarity threshold                                              | 0.0 (no filtering)                        |
 
 ## Background
 
@@ -56,7 +72,7 @@ The goals are:
 
 ## Corpus
 
-6 documents in `experiments/experiment-3/corpus/`:
+6 documents in `experiments/e2e-smoke-test-metadata-2026-05-20/corpus/`:
 
 | File                                                                                        | Type     | Domain             | Queries |
 | ------------------------------------------------------------------------------------------- | -------- | ------------------ | ------- |
@@ -98,7 +114,7 @@ grep EMBED_MODEL .env
 ```bash
 # From project root — override CHROMA_PERSIST_DIR to avoid touching production
 CHROMA_PERSIST_DIR=./chroma_db_test uv run rag-mcp ingest \
-  experiments/experiment-3/corpus
+  experiments/e2e-smoke-test-metadata-2026-05-20/corpus
 ```
 
 Expected output:
@@ -180,3 +196,14 @@ rm -rf ./chroma_db_test
 - For quantitative Hit@K / MRR metrics, adapt experiment-2's `run_eval.py` pattern.
 - `RERANK_ENABLED=true` means the `÷30` threshold scaling is active (see experiment-1
   findings). With `SIMILARITY_THRESHOLD=0.0` this has no practical effect here.
+
+---
+
+## Artefacts
+
+| File             | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| `protocol.md`   | This file — hypothesis, method, reproduction steps           |
+| `results.md`    | Full results with per-query detail and regression baseline   |
+| `questions.md`  | Human-readable ground-truth queries with full answers        |
+| `corpus/`       | Test documents (6 files: PDFs + Markdown)                    |

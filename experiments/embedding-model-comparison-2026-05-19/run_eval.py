@@ -5,7 +5,7 @@ Hit Rate@K and MRR on a user-defined set of ground-truth queries.
 Each model gets its own temporary ChromaDB to avoid dimension conflicts.
 
 Run with:
-    cd experiments/experiment-2
+    cd experiments/embedding-model-comparison-2026-05-19
     uv run python run_eval.py
 
 Requires Ollama running with both models pulled:

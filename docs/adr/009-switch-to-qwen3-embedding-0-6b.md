@@ -99,7 +99,7 @@ Key findings:
 ## References
 
 - Throughput benchmark data: `experiments/embedding-performance.md`
-- Retrieval quality experiment: `experiments/experiment-2/results.md`
-- Raw experiment data: `experiments/experiment-2/eval_results.json`
+- Retrieval quality experiment: `experiments/embedding-model-comparison-2026-05-19/results.md`
+- Raw experiment data: `experiments/embedding-model-comparison-2026-05-19/eval_results.json`
 - OpenSpec change: `openspec/changes/optimise-embedding-performance/`
 - Concurrent embedding implementation: `ADRs 007` (CLI and parallel ingestion)

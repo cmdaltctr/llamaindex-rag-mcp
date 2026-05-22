@@ -24,7 +24,7 @@ Cross-encoder sigmoid scores occupy a much lower range than cosine similarity. V
 
 When `rerank=True`, the `similarity_threshold` is **automatically scaled down by 30×** so that a user-supplied value of 0.3 becomes 0.01. You always supply a threshold in cosine-similarity terms; the system handles the conversion transparently.
 
-Calibrated from experiment data in `experiments/experiment-1/`:
+Calibrated from experiment data in `experiments/reranker-threshold-calibration-2026-05-12/`:
 
 | Score range | Meaning |
 |-------------|---------|

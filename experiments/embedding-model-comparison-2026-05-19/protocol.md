@@ -1,10 +1,28 @@
-# Experiment 2: Embedding Model Retrieval Quality Comparison
+# Experiment: Embedding Model Retrieval Quality Comparison
 
+**ID**: `embedding-model-comparison-2026-05-19`
 **Date**: 2026-05-19
-**Purpose**: Compare retrieval quality between `nomic-embed-text` (768-dim), `qwen3-embedding:0.6b` (1024-dim), and `qwen3-embedding:8b` (4096-dim)
-**Metric**: For a given query, does the model return the correct document in the top-K results?
+**Operator**: Dr Muhammad Aizat Bin Md Hawari
+**Status**: PASS
 
 ---
+
+## Hypothesis / Purpose
+
+Which embedding model produces the best retrieval results — `nomic-embed-text` (768-dim),
+`qwen3-embedding:0.6b` (1024-dim), or `qwen3-embedding:8b` (4096-dim) — and is the
+quality difference worth the throughput trade-off?
+
+## Variables
+
+| Type                         | Variable                                    | Values                                                         |
+| ---------------------------- | ------------------------------------------- | -------------------------------------------------------------- |
+| Independent (what we change) | Embedding model                             | `nomic-embed-text`, `qwen3-embedding:0.6b`, `qwen3-embedding:8b` |
+| Dependent (what we measure)  | Hit@1, Hit@3, Hit@5, MRR, avg query latency | —                                                              |
+| Controlled (held constant)   | Reranker                                    | Disabled                                                       |
+| Controlled (held constant)   | Corpus                                      | 6 documents, 207 chunks                                        |
+| Controlled (held constant)   | Chunk size / overlap                        | 512 / 64                                                       |
+| Controlled (held constant)   | Similarity threshold                        | 0.0 (no filtering)                                             |
 
 ## Background
 
@@ -47,7 +65,7 @@ disabled, so the only variable is the embedding model.
 Place 5–10 documents (PDF, MD, or TXT) into the `corpus/` directory:
 
 ```
-experiments/experiment-2/corpus/
+experiments/embedding-model-comparison-2026-05-19/corpus/
 ├── why-language-models-hallucinate.pdf
 ├── learning-to-code-systematic-review.pdf
 ├── handwriting-brain-connectivity-eeg.pdf
@@ -121,7 +139,7 @@ ollama list
 ## Step 4: Run the Experiment
 
 ```bash
-cd experiments/experiment-2
+cd experiments/embedding-model-comparison-2026-05-19
 uv run python run_eval.py
 ```
 
@@ -193,3 +211,17 @@ Key questions to answer:
 - The script cleans up temporary directories after completion.
 - All results are saved to `eval_results.json` for post-hoc analysis.
 - The `MODELS` list in `run_eval.py` can be edited to add or remove models from the comparison.
+
+---
+
+## Artefacts
+
+| File                | Description                                              |
+| ------------------- | -------------------------------------------------------- |
+| `protocol.md`       | This file — hypothesis, method, reproduction steps       |
+| `results.md`        | Full results with per-query detail and score tables      |
+| `run_eval.py`       | Automation script (17 queries × 3 models)                |
+| `eval_results.json` | Raw per-query results (scores, sources, latency)         |
+| `ground-truth.json` | Pre-written queries with expected sources and answers    |
+| `questions.md`      | Human-readable ground-truth queries with full answers    |
+| `corpus/`           | Test documents (6 files: PDFs + Markdown)                |
