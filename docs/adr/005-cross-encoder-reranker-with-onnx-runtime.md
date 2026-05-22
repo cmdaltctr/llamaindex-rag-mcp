@@ -71,4 +71,4 @@ Implement an optional **cross-encoder reranker** using **pure ONNX Runtime**
 
 - `src/rag_mcp/reranker.py` — `CrossEncoderReranker` singleton with ONNX inference
 - `src/rag_mcp/retrieval.py` — `_effective_threshold()` for ÷30 auto-scaling
-- `experiments/experiment-1/` — experiment data and analysis justifying the design
+- `experiments/reranker-threshold-calibration-2026-05-12/` — experiment data and analysis justifying the design

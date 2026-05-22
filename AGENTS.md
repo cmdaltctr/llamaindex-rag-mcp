@@ -39,7 +39,7 @@ uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
 5. **The ÷30 threshold scaling is empirically calibrated.**
    When `rerank=True`, `similarity_threshold` is divided by 30 because cross-encoder sigmoid
    scores are much lower than cosine similarity (valid reranker results can be as low as 0.015).
-   See `experiments/experiment-1/` for the data. Don't change the factor without re-running
+   See `experiments/reranker-threshold-calibration-2026-05-12/` for the data. Don't change the factor without re-running
    experiments.
 
 6. **`reranker.py` imports `dotenv` independently** of `config.py`. This is intentional —
@@ -191,7 +191,7 @@ Changes live in `openspec/changes/<change-id>/`. Active specs are in `openspec/s
 |------|-------|
 | Dependencies | `pyproject.toml` (not duplicated here) |
 | Config vars | `.env.example` + defaults in `config.py` |
-| Experiment data | `experiments/experiment-1/` |
+| Experiment data | `experiments/reranker-threshold-calibration-2026-05-12/` |
 | OpenSpec specs | `openspec/specs/` and `openspec/changes/` |
 | Reranker model | `cross-encoder/ms-marco-MiniLM-L-6-v2` via HuggingFace Hub |
 | Metadata extraction | `rag_mcp/metadata_extractor.py` (keyword/Ollama/llamaindex modes) |
