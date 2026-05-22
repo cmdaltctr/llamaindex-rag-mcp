@@ -86,6 +86,7 @@ Then register it in your AI client — see [MCP Client Setup](docs/guides/mcp-cl
 | [Testing](docs/guides/testing.md) | Test suite, coverage, running tests |
 | [Architecture](docs/guides/architecture.md) | Why things are built the way they are (plain English) |
 | [Architecture Decisions](docs/adr/) | Full ADRs with alternatives and consequences |
+| [Contributing](CONTRIBUTING.md) | Workflow, conventions, and how to open a PR |
 
 ---
 
