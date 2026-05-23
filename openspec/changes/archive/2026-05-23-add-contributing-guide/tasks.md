@@ -33,7 +33,7 @@
 - [x] 4.1 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm 332 tests pass and coverage floors hold (pure docs change — no regressions expected)
 - [x] 4.2 Run `openspec validate add-contributing-guide` and confirm the change is valid
 - [x] 4.3 Spot-check rendered Mermaid in `CONTRIBUTING.md` via GitHub preview after push
-- [ ] 4.4 Open PR via `gh pr create` (deferred to PR step)
+- [x] 4.4 Open PR via `gh pr create` (deferred to PR step)
 
 ## 5. ADR Decision
 
@@ -41,4 +41,4 @@
 
 ## 6. Archive
 
-- [ ] 6.1 After PR merge, archive via `openspec-archive-change` skill (user does this manually per project convention).
+- [x] 6.1 After PR merge, archive via `openspec-archive-change` skill (user does this manually per project convention).
