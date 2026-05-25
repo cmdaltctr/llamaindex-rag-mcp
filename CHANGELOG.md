@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.0 (2026-05-25)
+
+### Features
+
+- Implement archived OpenSpec maintenance changes
+  ([`1be0e73`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/1be0e739042f2dd812feaa51a1e4c58cf18eb30c))
+
+### Breaking Changes
+
+- Remove rag-mcp ingest --workers/-w, INGEST_WORKERS, and the workers parameter from
+  ingest_path_async(). Use EMBED_CONCURRENCY and EMBED_BATCH_SIZE for ingestion throughput tuning.
+
+
 ## v0.1.1 (2026-05-21)
 
 ### Bug Fixes
