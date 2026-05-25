@@ -1,3 +1,7 @@
+## Purpose
+
+Define how reranker scores are normalised so similarity thresholds behave consistently with and without reranking.
+
 ## Requirements
 
 ### Requirement: sigmoid score normalisation for reranker

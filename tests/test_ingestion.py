@@ -60,6 +60,34 @@ class TestListDocuments:
         result = list_documents()
         assert result == []
 
+    def test_list_documents_scans_multiple_metadata_pages(self, monkeypatch) -> None:
+        """Document chunk counts must include metadata beyond one scan page."""
+        import chromadb
+        import rag_mcp.config as _config
+        import rag_mcp.ingestion as _ingestion
+
+        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+
+        db = chromadb.PersistentClient(path=_ingestion.CHROMA_PERSIST_DIR)
+        collection = db.get_or_create_collection("paged_docs")
+        collection.add(
+            ids=["1", "2", "3", "4", "5"],
+            documents=["one", "two", "three", "four", "five"],
+            embeddings=[[float(i)] * 384 for i in range(5)],
+            metadatas=[
+                {"file_path": "a.txt"},
+                {"file_path": "a.txt"},
+                {"file_path": "b.txt"},
+                {"file_path": "b.txt"},
+                {"file_path": "b.txt"},
+            ],
+        )
+
+        assert list_documents(collection_name="paged_docs") == [
+            {"source": "a.txt", "chunks": 2},
+            {"source": "b.txt", "chunks": 3},
+        ]
+
 
 # ── 9.5-9.6 Collection routing tests ──────────────────────────────────────
 
@@ -192,6 +220,77 @@ class TestMetadataAttachment:
 
 class TestDocumentDeletion:
     """Tests for remove_document, remove_by_metadata, remove_collection."""
+
+    # ── preview_delete ────────────────────────────────────────────────────
+
+    async def test_preview_delete_path_counts_matching_chunks(self, sample_txt):
+        """preview_delete path mode must count matching chunks."""
+        from rag_mcp.ingestion import preview_delete
+
+        ingest_result = await ingest_path_async(
+            str(sample_txt), collection_name="preview_path_coll",
+        )
+        assert ingest_result["status"] == "ok"
+
+        result = preview_delete(
+            path=str(sample_txt), collection_name="preview_path_coll",
+        )
+        assert result == {
+            "status": "ok",
+            "dry_run": True,
+            "mode": "path",
+            "collection": "preview_path_coll",
+            "would_delete": ingest_result["chunks_created"],
+        }
+
+    async def test_preview_delete_metadata_counts_matching_chunks(self, sample_txt):
+        """preview_delete metadata mode must count matching chunks."""
+        from rag_mcp.ingestion import preview_delete
+
+        ingest_result = await ingest_path_async(
+            str(sample_txt), collection_name="preview_metadata_coll",
+        )
+        assert ingest_result["status"] == "ok"
+
+        result = preview_delete(
+            metadata_filter={"file_name": sample_txt.name},
+            collection_name="preview_metadata_coll",
+        )
+        assert result["status"] == "ok"
+        assert result["dry_run"] is True
+        assert result["mode"] == "metadata"
+        assert result["collection"] == "preview_metadata_coll"
+        assert result["would_delete"] == ingest_result["chunks_created"]
+
+    async def test_preview_delete_collection_counts_all_chunks(self, sample_txt):
+        """preview_delete collection mode must count all collection chunks."""
+        from rag_mcp.ingestion import preview_delete
+
+        ingest_result = await ingest_path_async(
+            str(sample_txt), collection_name="preview_collection_coll",
+        )
+        assert ingest_result["status"] == "ok"
+
+        result = preview_delete(collection_name="preview_collection_coll")
+        assert result["status"] == "ok"
+        assert result["dry_run"] is True
+        assert result["mode"] == "collection"
+        assert result["collection"] == "preview_collection_coll"
+        assert result["would_delete"] == ingest_result["chunks_created"]
+
+    def test_preview_delete_missing_collection_returns_zero(self):
+        """Dry-run preview on missing collections must return zero."""
+        from rag_mcp.ingestion import preview_delete
+
+        result = preview_delete(
+            path="/missing/file.pdf",
+            collection_name="preview_missing_coll",
+        )
+        assert result["status"] == "ok"
+        assert result["dry_run"] is True
+        assert result["mode"] == "path"
+        assert result["collection"] == "preview_missing_coll"
+        assert result["would_delete"] == 0
 
     # ── remove_document ───────────────────────────────────────────────────
 

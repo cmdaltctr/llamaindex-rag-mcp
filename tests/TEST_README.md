@@ -63,7 +63,7 @@ during the `make-ingest-path-async` OpenSpec change.
 | `test_ingestion.py` | 20 | Path validation, empty dir, list empty, collection routing, metadata attachment, delete functions, upsert |
 | `test_retrieval.py` | 17 | Empty store, threshold, rerank flag, threshold scaling, collection search, metadata filter, list collections |
 | `test_mcp_tools.py` | 19 | Tool discovery, ingest, search, list, list_collections, collection params, backward compat, delete_documents |
-| `test_signal_handling.py` | 13 | SIGINT, shutdown flag, workers clamping, lock recheck |
+| `test_signal_handling.py` | 13 | SIGINT, shutdown flag, lock recheck |
 | `test_ingestion_parallel.py` | 21 | Concurrent ingestion, all-or-nothing semantics |
 | `test_async_ingest_responsiveness.py` | — | Responsiveness contract: search returns within 500 ms while ingest is in flight |
 | `test_e2e_stdio.py` | 1 | JSON-RPC handshake over stdio subprocess (`@pytest.mark.slow`) |

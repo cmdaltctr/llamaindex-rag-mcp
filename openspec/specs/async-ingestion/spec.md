@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define the asynchronous ingestion contract so document ingestion can run without blocking MCP tool handling while preserving existing ingestion result shapes and metadata extraction behaviour.
+
+## Requirements
 
 ### Requirement: Async ingestion entry point
 
@@ -31,7 +35,8 @@ optional `error_type` / `message` fields).
 When ingestion runs inside the MCP server's event loop, the loop SHALL remain
 able to service other tool calls. A concurrent MCP `search` request issued
 while a long ingest is in flight SHALL receive a response without waiting for
-the ingest to complete.
+the ingest to complete. MCP search SHALL not execute blocking embedding or
+ChromaDB retrieval work directly on the event-loop thread.
 
 #### Scenario: Search responds during in-flight ingest
 
@@ -39,6 +44,13 @@ the ingest to complete.
 - **AND** an MCP client issues a `search(query="x", top_k=5)` call
 - **THEN** the search SHALL return its result within 500 ms
 - **THEN** the ingest SHALL continue to run uninterrupted to completion
+
+#### Scenario: Search offloads synchronous retrieval
+
+- **WHEN** `search_documents(...)` is called via MCP
+- **THEN** the MCP handler SHALL be asynchronous
+- **THEN** synchronous retrieval work SHALL be offloaded from the event-loop
+  thread
 
 #### Scenario: Multiple MCP tool calls interleave during ingest
 
@@ -117,17 +129,35 @@ a reference to the running loop at startup.
 
 ### Requirement: CLI wraps async ingest
 
-The CLI subcommand `rag-mcp ingest` SHALL invoke
-`ingest_path_async(...)` via `asyncio.run(...)` at the entry point. CLI
-flags, output format, exit codes, and report generation SHALL remain
-unchanged.
+The CLI subcommand `rag-mcp ingest` SHALL invoke `ingest_path_async(...)`
+via `asyncio.run(...)` at the entry point. CLI flags, output format, exit
+codes, and report generation SHALL describe only controls that affect
+current async ingestion behavior. The CLI SHALL NOT present a file-reader
+`--workers` option as effective unless file-level parallel reading is
+implemented.
 
-#### Scenario: CLI ingest behaves identically to the previous sync version
+#### Scenario: CLI ingest uses async entry point
 
 - **WHEN** the user runs `rag-mcp ingest /path/to/docs`
 - **THEN** the CLI SHALL invoke `asyncio.run(ingest_path_async("/path/to/docs"))`
-- **THEN** stderr output, exit code, and `--report` output SHALL be
-  byte-identical to the sync implementation for the same input
+- **THEN** stderr output, exit code, and `--report` output SHALL reflect the
+  async implementation
+
+#### Scenario: Ingest help omits ineffective workers option
+
+- **WHEN** the user runs `rag-mcp ingest --help`
+- **THEN** the help output SHALL NOT advertise file-reader workers as an
+  effective throughput control
+- **THEN** the help output SHALL continue to document effective chunking,
+  collection, report, and JSON options
+
+#### Scenario: Ingest report omits ineffective workers setting
+
+- **WHEN** `rag-mcp ingest /docs --report report.json` runs
+- **THEN** the generated report SHALL NOT claim a file-reader worker count
+  affected the run
+- **THEN** the report MAY include effective embedding batch size and embedding
+  concurrency settings
 
 ### Requirement: Sync `ingest_path` retired
 
@@ -170,11 +200,11 @@ blocking sync call into the async ingest path.
 
 ### Requirement: Backward-compatible result data
 
-The async migration SHALL preserve all existing on-disk artifacts (ChromaDB
-collections, ingestion reports) and existing public dict shapes. No `.env`
-variables, CLI flags, or MCP tool names/parameters SHALL change as part of
-this work, and no schema migration SHALL be required to read data written
-by the previous sync implementation.
+The async migration SHALL preserve existing on-disk ChromaDB collections and
+existing public result dict shapes. No schema migration SHALL be required to
+read data written by the previous sync implementation. Ingestion reports and
+CLI flags SHALL only include controls supported by the current async ingestion
+implementation.
 
 #### Scenario: Existing ChromaDB data continues to work
 
@@ -185,9 +215,10 @@ by the previous sync implementation.
 - **THEN** subsequent `await ingest_path_async(...)` calls SHALL upsert
   into the same collections without schema migration
 
-#### Scenario: `--report` output unchanged
+#### Scenario: `--report` output preserves core report structure
 
 - **WHEN** `rag-mcp ingest /docs --report report.json` runs against the
   async build
-- **THEN** the JSON schema (`timestamp`, `config`, `input_path`, `summary`,
-  `files`) SHALL be identical to the sync build
+- **THEN** the JSON report SHALL include `timestamp`, `config`, `input_path`,
+  `summary`, and `files`
+- **THEN** `config` SHALL NOT include ineffective file-reader worker settings

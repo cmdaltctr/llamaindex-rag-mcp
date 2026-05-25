@@ -2,6 +2,11 @@
 
 **Date:** 2026-05-15
 **Status:** Accepted
+
+> **Superseded note (2026-05-25):** the file-reader worker API described in
+> this ADR was later removed because async ingestion now reads files
+> sequentially. Use `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` for supported
+> throughput tuning.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Git Commits:** `08121d7`, `60e955a`, `b28abe2`, `7857c32`
 
@@ -37,7 +42,8 @@ ingestion** using `ThreadPoolExecutor`.
   Phase 2 embeds and writes to ChromaDB serially (behind a write lock)
 - `BoundedSemaphore` throttles concurrent Ollama embedding calls
 - Per-file error isolation: one failed file does not abort the entire batch
-- Configurable via `INGEST_WORKERS` (default 4) and `EMBED_CONCURRENCY` (default 2)
+- Historically configurable via file-reader workers; current supported
+  throughput controls are `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY`.
 
 ## Consequences
 
@@ -58,7 +64,7 @@ ingestion** using `ThreadPoolExecutor`.
   embedding remains serial due to ChromaDB's write constraints
 
 ### Neutral
-- New config variables: `EMBED_BATCH_SIZE`, `INGEST_WORKERS`, `EMBED_CONCURRENCY`
+- New config variables: `EMBED_BATCH_SIZE`, `EMBED_CONCURRENCY`
 - Shell completion available via `rag-mcp --install-completion`
 
 ## Alternatives Considered

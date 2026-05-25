@@ -1,5 +1,9 @@
 # Specification: document-deletion
 
+## Purpose
+
+Define document deletion, collection deletion, re-ingestion cleanup, and dry-run preview behaviour across shared ingestion logic, the CLI, and the MCP delete tool.
+
 ## Requirements
 
 ### Requirement: Delete chunks by source file path
@@ -61,7 +65,7 @@ When `ingest_path()` processes a file, it SHALL call `remove_document()` for tha
 
 ### Requirement: CLI delete subcommand
 
-The `rag-mcp` CLI SHALL provide a `delete` subcommand with three mutually-exclusive flags: `--path`, `--metadata`, and `--collection`. A `--dry-run` flag SHALL preview what would be deleted without executing. Only `--collection` SHALL require confirmation (it drops the entire collection), unless `--yes` is passed.
+The `rag-mcp` CLI SHALL provide a `delete` subcommand with three mutually-exclusive flags: `--path`, `--metadata`, and `--collection`. A `--dry-run` flag SHALL preview what would be deleted without executing. Only `--collection` SHALL require confirmation (it drops the entire collection), unless `--yes` is passed. Dry-run counts SHALL be produced by the same shared deletion preview logic used by the MCP delete tool.
 
 #### Scenario: Delete by file path via CLI
 - **WHEN** `rag-mcp delete --path /path/to/file.pdf --collection research` is executed
@@ -85,6 +89,7 @@ The `rag-mcp` CLI SHALL provide a `delete` subcommand with three mutually-exclus
 #### Scenario: Dry run preview
 - **WHEN** `rag-mcp delete --path /file.pdf --dry-run` is executed
 - **THEN** the CLI SHALL display "Would delete N chunks" but SHALL NOT modify ChromaDB
+- **THEN** the count SHALL match the shared deletion preview helper for the same inputs
 
 #### Scenario: Validation — exactly one flag must be provided
 - **WHEN** `rag-mcp delete` is executed with no flags, or with multiple mutually-exclusive flags
@@ -92,7 +97,7 @@ The `rag-mcp` CLI SHALL provide a `delete` subcommand with three mutually-exclus
 
 ### Requirement: MCP delete_documents tool
 
-The system SHALL expose a `delete_documents` MCP tool that accepts optional `path: str`, `metadata_filter: dict`, `collection: str` (default `"documents"`), and `dry_run: bool` (default `false`) parameters. When `collection` is provided without `path` or `metadata_filter`, the collection itself SHALL be dropped.
+The system SHALL expose a `delete_documents` MCP tool that accepts optional `path: str`, `metadata_filter: dict`, `collection: str` (default `"documents"`), and `dry_run: bool` (default `false`) parameters. When `collection` is provided without `path` or `metadata_filter`, the collection itself SHALL be dropped. Dry-run counts SHALL be produced by the same shared deletion preview logic used by the CLI delete subcommand.
 
 #### Scenario: MCP delete by file path
 - **WHEN** `delete_documents(path="/path/to/file.pdf", collection="research")` is called via MCP
@@ -110,3 +115,4 @@ The system SHALL expose a `delete_documents` MCP tool that accepts optional `pat
 #### Scenario: MCP dry run
 - **WHEN** `delete_documents(path="/file.pdf", dry_run=true)` is called via MCP
 - **THEN** the result SHALL include `"would_delete": N` but no chunks SHALL be removed
+- **THEN** the count SHALL match the CLI dry-run preview for the same path and collection

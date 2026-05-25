@@ -1,13 +1,17 @@
 # ADR-008: CLI Folder Embedding with Progress and Reports
 
 **Status**: Accepted
+
+> **Superseded note (2026-05-25):** the ingest report no longer includes a
+> file-reader worker count. File reading is sequential; embedding throughput is
+> tuned with `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY`.
 **Proposed**: 2026-05-19
 **Accepted**: 2026-05-19
 **Change**: `cli-folder-embed-progress`
 
 ## Context
 
-The `rag-mcp ingest` CLI command already supports folder ingestion with Rich progress bars and parallel file reading. However, it lacks structured per-file tracking, logging, and report generation. When ingesting a Zotero library or document collection, users need visibility into which files succeeded, which failed, and a machine-readable summary for verification.
+The `rag-mcp ingest` CLI command supports folder ingestion with Rich progress bars. However, it lacks structured per-file tracking, logging, and report generation. When ingesting a Zotero library or document collection, users need visibility into which files succeeded, which failed, and a machine-readable summary for verification.
 
 ## Decision
 
@@ -91,7 +95,6 @@ verified). The feature works uniformly for both files and directories.
     "model": "qwen3-embedding:0.6b",
     "batch_size": 100,
     "concurrency": 2,
-    "workers": 4,
     "chunk_size": 512,
     "chunk_overlap": 64
   },

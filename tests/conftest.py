@@ -10,6 +10,7 @@ Provides:
 from __future__ import annotations
 
 import os
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest.mock import patch
@@ -100,7 +101,10 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     import sys
 
-    _TEST_PERSIST_DIR = "/tmp/test_chroma_rag_mcp"
+    _TEST_PERSIST_DIR = os.path.join(
+        tempfile.gettempdir(),
+        f"test_chroma_rag_mcp_{os.getpid()}",
+    )
     _TEST_COLLECTION = "test_documents"
 
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)

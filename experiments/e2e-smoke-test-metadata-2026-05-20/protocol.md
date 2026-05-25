@@ -55,7 +55,6 @@ The goals are:
 | `RERANK_ENABLED`           | `true`                                   | Cross-encoder reranker active             |
 | `CHUNK_SIZE`               | 512                                      |                                           |
 | `CHUNK_OVERLAP`            | 64                                       |                                           |
-| `INGEST_WORKERS`           | 8                                        | Higher than default (4)                   |
 | `EMBED_CONCURRENCY`        | 4                                        | Higher than default (2)                   |
 | `SIMILARITY_THRESHOLD`     | 0.0                                      | No filtering; reranker handles precision  |
 | `CHROMA_PERSIST_DIR`       | `./chroma_db_test`                       | **Experiment override** — not production  |

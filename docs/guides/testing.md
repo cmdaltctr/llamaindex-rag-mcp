@@ -29,7 +29,7 @@ The fast suite (261 tests) uses mock embeddings and an in-memory ChromaDB client
 | `tests/test_ingestion.py` | 20 | Path validation, empty dir, list empty, collection routing, metadata attachment, delete functions, upsert |
 | `tests/test_retrieval.py` | 17 | Empty store, threshold, rerank flag, threshold scaling, collection search, metadata filter, list collections |
 | `tests/test_mcp_tools.py` | 19 | Tool discovery, ingest, search, list, list_collections, collection params, backward compat, delete_documents |
-| `tests/test_signal_handling.py` | 13 | SIGINT, shutdown flag, workers clamping, lock recheck |
+| `tests/test_signal_handling.py` | 13 | SIGINT, shutdown flag, lock recheck |
 | `tests/test_ingestion_parallel.py` | 21 | Concurrent ingestion, all-or-nothing semantics |
 | `tests/test_e2e_stdio.py` | 1 | JSON-RPC handshake over stdio subprocess (`@pytest.mark.slow`) |
 

@@ -96,7 +96,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         self._consecutive_errors: int = 0
         self._in_flight_count: int = 0
         self._in_flight_lock = threading.Lock()
-        self._timers_lock = threading.Lock()
+        self._state_lock = threading.Lock()
         self._error_counter_lock = threading.Lock()
         self._shutdown_requested = threading.Event()
 
@@ -133,7 +133,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
             return
 
         # Cancel any pending ingest timer for this file
-        with self._timers_lock:
+        with self._state_lock:
             old_timer = self._timers.pop(file_path, None)
             if old_timer is not None:
                 old_timer.cancel()
@@ -143,7 +143,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                 )
 
         # Clear hash cache entry
-        with self._timers_lock:
+        with self._state_lock:
             old_hash = self._hash_cache.pop(file_path, None)
             if old_hash is not None:
                 logger.debug(
@@ -189,7 +189,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         if self._shutdown_requested.is_set():
             return
 
-        with self._timers_lock:
+        with self._state_lock:
             # Cancel any existing timer for this file
             old_timer = self._timers.pop(file_path, None)
             if old_timer is not None:
@@ -236,7 +236,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                     resolved,
                     self._watch_root,
                 )
-                with self._timers_lock:
+                with self._state_lock:
                     self._timers.pop(file_path, None)
                     self._hash_cache.pop(file_path, None)
                 return
@@ -246,7 +246,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                     file_path,
                     exc,
                 )
-                with self._timers_lock:
+                with self._state_lock:
                     self._timers.pop(file_path, None)
                 return
 
@@ -257,20 +257,20 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
             logger.debug(
                 "File vanished before debounce completed: %s", file_path
             )
-            with self._timers_lock:
+            with self._state_lock:
                 self._timers.pop(file_path, None)
                 self._hash_cache.pop(file_path, None)
             return
         except OSError as exc:
             logger.warning("Cannot read file for hashing: %s — %s", file_path, exc)
-            with self._timers_lock:
+            with self._state_lock:
                 self._timers.pop(file_path, None)
             return
 
         cached_hash = self._hash_cache.get(file_path)
         if cached_hash == current_hash:
             logger.debug("Skipping unchanged file: %s", file_path)
-            with self._timers_lock:
+            with self._state_lock:
                 self._timers.pop(file_path, None)
             return
 
@@ -292,7 +292,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                     self._in_flight_count -= 1
 
         # Clean up timer entry
-        with self._timers_lock:
+        with self._state_lock:
             self._timers.pop(file_path, None)
 
 
@@ -325,7 +325,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
             logger.debug(
                 "File not found during ingestion (deleted): %s", file_path
             )
-            with self._timers_lock:
+            with self._state_lock:
                 self._hash_cache.pop(file_path, None)
                 self._timers.pop(file_path, None)
         except Exception as exc:
@@ -375,7 +375,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
           4. (Observer stop is done by the caller)
         """
         # Step 1: Cancel all pending timers
-        with self._timers_lock:
+        with self._state_lock:
             for timer in self._timers.values():
                 timer.cancel()
             self._timers.clear()

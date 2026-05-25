@@ -1,74 +1,30 @@
-# Delta Specification: metadata-extraction
+# Specification: metadata-extraction
 
-## MODIFIED Requirements
+## Purpose
 
+Define metadata extraction modes and fallback behaviour for enriching indexed document chunks with categories, keywords, and summaries.
+## Requirements
 ### Requirement: Ollama LLM-based categorisation with hybrid category lookup
-
-When `METADATA_EXTRACTION_MODE` is `"ollama"`, the system SHALL make a single HTTP POST request to the local Ollama `/api/generate` endpoint to classify the document. The request SHALL use the model specified by `OLLAMA_CLASSIFY_MODEL` env var (default `"qwen3:0.6b"`). Before sending the prompt, the system SHALL query ChromaDB for all unique category values currently in use and SHALL include them in the prompt as "existing categories" alongside the seed categories from keyword mode. The prompt SHALL instruct the model to prefer an existing category when applicable, but to propose a new concise category label (1-3 words, lowercase) when no existing category fits. The prompt SHALL instruct the model to return a JSON object with keys `category`, `keywords`, and `summary`. On failure (Ollama unreachable, model not pulled, or invalid JSON response), the system SHALL fall back to `{"category": "uncategorised", "keywords": [], "summary": ""}` and log a WARNING.
+When `METADATA_EXTRACTION_MODE` is `"ollama"`, the system SHALL make a single HTTP POST request to the local Ollama `/api/generate` endpoint to classify the document. The request SHALL use the model specified by `OLLAMA_CLASSIFY_MODEL` env var (default `"qwen3:0.6b"`). Before sending the prompt, the system SHALL query ChromaDB for all unique category values currently in use across all metadata scan pages and SHALL include them in the prompt as "existing categories" alongside the seed categories from keyword mode. The prompt SHALL instruct the model to prefer an existing category when applicable, but to propose a new concise category label (1-3 words, lowercase) when no existing category fits. The prompt SHALL instruct the model to return a JSON object with keys `category`, `keywords`, and `summary`. On failure (Ollama unreachable, model not pulled, or invalid JSON response), the system SHALL fall back to `{"category": "uncategorised", "keywords": [], "summary": ""}` and log a WARNING.
 
 #### Scenario: Successful classification reuses existing category
-
 - **WHEN** `METADATA_EXTRACTION_MODE=ollama`
 - **AND** ChromaDB contains existing categories `["ai", "biology", "philosophy"]`
 - **AND** the document is about machine learning
 - **THEN** the prompt SHALL include "ai" as an existing category option
 - **THEN** Ollama SHALL return `{"category": "ai", ...}` (reusing the exact existing label)
 
-#### Scenario: Classification proposes a new category
-
+#### Scenario: Category exists beyond first metadata page
 - **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** ChromaDB contains existing categories `["ai", "biology"]`
-- **AND** the document is about music theory (matches no existing category)
-- **THEN** Ollama MAY return `{"category": "music", ...}` as a new proposed category
-- **THEN** the system SHALL normalise the new category (lowercase, max 3 words, underscores for spaces)
-- **THEN** the new category SHALL be stored and available for future classification prompts
+- **AND** a category value exists only after the first metadata scan page
+- **THEN** the existing category lookup SHALL still discover that category
+- **THEN** the classification prompt SHALL include that category as an existing option
 
 #### Scenario: First run with no existing categories
-
 - **WHEN** `METADATA_EXTRACTION_MODE=ollama`
 - **AND** ChromaDB has no existing category values (empty collection)
 - **THEN** the prompt SHALL include the seed categories from keyword mode as the initial taxonomy
 - **THEN** classification SHALL proceed normally against the seed categories
-
-#### Scenario: Successful Ollama classification with rich output
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** Ollama returns valid JSON `{"category": "AI", "keywords": ["transformer", "attention"], "summary": "This document discusses..."}`
-- **THEN** `extract_metadata()` SHALL return `{"category": "AI", "keywords": ["transformer", "attention"], "summary": "This document discusses..."}`
-
-#### Scenario: Ollama returns JSON but missing optional fields
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** Ollama returns valid JSON `{"category": "Biology"}` (no keywords or summary keys)
-- **THEN** `extract_metadata()` SHALL return `{"category": "Biology", "keywords": [], "summary": ""}`
-
-#### Scenario: Ollama returns invalid JSON
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** Ollama returns a plain text string `"AI"` (not valid JSON)
-- **THEN** `extract_metadata()` SHALL return `{"category": "AI", "keywords": [], "summary": ""}`
-- **THEN** the system SHALL log a WARNING
-
-#### Scenario: Ollama unreachable
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** Ollama is not running or the model is not pulled
-- **THEN** `extract_metadata()` SHALL return `{"category": "uncategorised", "keywords": [], "summary": ""}`
-- **THEN** the system SHALL log a WARNING with the error details
-
-#### Scenario: Category output normalised
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** Ollama returns a category with mixed case or spaces, e.g. `"Artificial Intelligence"`
-- **THEN** the system SHALL normalise to `"artificial_intelligence"` (lowercase, underscores)
-- **THEN** the system SHALL reject categories longer than 3 words → `"uncategorised"`
-
-#### Scenario: Keywords truncated to maximum length
-
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama`
-- **AND** the model returns more than 10 keywords
-- **THEN** the returned list SHALL be truncated to 10
-- **THEN** the summary SHALL be truncated to 300 characters
 
 ### Requirement: LlamaIndex MetadataExtractor integration
 

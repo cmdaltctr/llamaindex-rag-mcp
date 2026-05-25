@@ -24,7 +24,6 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 |------|-----------|-------------|
 | `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete` | ChromaDB collection name (default `"documents"`) |
 | `--json` | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON |
-| `--workers`, `-w` | `ingest` | Number of parallel file readers |
 | `--chunk-size` | `ingest` | Override chunk size (characters) |
 | `--chunk-overlap` | `ingest` | Override chunk overlap (characters) |
 | `--report`, `-r` | `ingest` | Write ingestion report to a file |
@@ -44,20 +43,22 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 # Index a single file
 rag-mcp ingest ~/Documents/paper.pdf
 
-# Index a directory (4 workers by default)
+# Index a directory
 rag-mcp ingest /path/to/docs/
 
 # Index into a named collection
 rag-mcp ingest /path/to/papers/ --collection research
 
-# Custom parallelism and chunking
-rag-mcp ingest /path/to/docs/ --workers 8 --chunk-size 1024 --chunk-overlap 128
+# Custom chunking
+rag-mcp ingest /path/to/docs/ --chunk-size 1024 --chunk-overlap 128
 
 # JSON output for scripts
 rag-mcp ingest /path/to/docs/ --json
 ```
 
 Collections are created automatically on first ingest — nothing to set up.
+
+File reading is sequential. For ingestion throughput, tune `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` in your environment.
 
 ### search
 

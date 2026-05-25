@@ -174,7 +174,6 @@ These 17 queries establish a regression baseline. Future changes that degrade to
 | `RERANK_ENABLED` | `true` |
 | `CHUNK_SIZE` | 512 |
 | `CHUNK_OVERLAP` | 64 |
-| `INGEST_WORKERS` | 8 |
 | `EMBED_CONCURRENCY` | 4 |
 | `SIMILARITY_THRESHOLD` | 0.0 |
 | `CHROMA_PERSIST_DIR` | `./chroma_db_test` (experiment only) |

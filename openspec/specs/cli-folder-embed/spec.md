@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define CLI folder ingestion progress, per-file reporting, generated reports, and supporting documentation for batch document ingestion workflows.
+
+## Requirements
 
 ### Requirement: Per-file tracking in ingestion results
 The `ingest_path()` function SHALL return a `file_details` list alongside the existing `files_indexed` and `chunks_created` fields. Each entry SHALL contain `file` (str), `status` (one of `indexed`, `failed`, `skipped`), `chunks` (int, 0 for failed/skipped), and optionally `error` (str, present only when status is `failed`).

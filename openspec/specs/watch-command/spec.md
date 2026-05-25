@@ -1,6 +1,10 @@
 # Specification: watch-command
 
-## ADDED Requirements
+## Purpose
+
+Define the `rag-mcp watch` command and file-system watcher behaviour for automatically ingesting, updating, and removing indexed document chunks as files change.
+
+## Requirements
 
 ### Requirement: CLI subcommand `rag-mcp watch`
 

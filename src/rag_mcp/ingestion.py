@@ -23,6 +23,7 @@ from .config import (
     SUPPORTED_EXTENSIONS,
     Settings,
 )
+from .chroma_utils import iter_collection_metadatas
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +92,6 @@ def _gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
     if path_obj.is_file():
         if path_obj.suffix.lower() in SUPPORTED_EXTENSIONS:
             files.append(path_obj)
-        else:
-            # Single unsupported file — tracked as skipped
-            pass
     else:
         for ext in SUPPORTED_EXTENSIONS:
             files.extend(path_obj.rglob(f"*{ext}"))
@@ -134,13 +132,8 @@ def list_documents(collection_name: str = "documents") -> list[dict]:
     if count == 0:
         return []
 
-    # Fetch everything so we can group by source file.
-    # Capped at 10,000 chunks to avoid memory pressure on large collections.
-    all_data = collection.get(
-        include=["metadatas"], limit=10000,
-    )
     source_counts: dict[str, int] = {}
-    for meta in all_data["metadatas"]:
+    for meta in iter_collection_metadatas(collection):
         if meta is None:
             continue
         source = meta.get("file_path") or meta.get("file_name") or "unknown"
@@ -219,6 +212,24 @@ async def _read_and_chunk_file_async(
     return nodes
 
 
+async def read_and_chunk_file_async(
+    file_path: Path,
+    chunk_size: int = CHUNK_SIZE,
+    chunk_overlap: int = CHUNK_OVERLAP,
+) -> list:
+    """Read and chunk a file for internal ingestion and benchmark callers.
+
+    This is an internal-supported helper shared with the benchmark CLI so
+    cross-module usage does not depend on an underscored private function. It
+    is not a stable external public API and may change between minor releases.
+    """
+    return await _read_and_chunk_file_async(
+        file_path,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+
+
 async def _embed_and_write_async(
     nodes: list,
     progress_callback: Callable | None = None,
@@ -283,7 +294,6 @@ async def _embed_and_write_async(
 
 async def ingest_path_async(
     path: str,
-    workers: int = 1,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
     progress_callback: Callable | None = None,
@@ -296,7 +306,6 @@ async def ingest_path_async(
 
     Args:
         path: Absolute or relative path to a file or directory.
-        workers: Unused (kept for API compatibility).
         chunk_size: Override CHUNK_SIZE for this ingestion.
         chunk_overlap: Override CHUNK_OVERLAP for this ingestion.
         progress_callback: Optional callable ``(phase, current, total)``.
@@ -467,6 +476,68 @@ def _count_chunks(
     """
     result = collection.get(where=where, include=[])
     return len(result.get("ids", []))
+
+
+def preview_delete(
+    *,
+    path: str | None = None,
+    metadata_filter: dict | None = None,
+    collection_name: str = "documents",
+) -> dict:
+    """Preview a delete operation without modifying ChromaDB.
+
+    Supports the three delete modes used by the CLI and MCP tool:
+    deleting chunks for a source file path, deleting chunks matching a
+    metadata filter, or dropping an entire collection. Missing collections
+    intentionally preview as ``would_delete: 0`` to preserve existing dry-run
+    behavior.
+
+    Args:
+        path: Source file path used as ``file_path`` metadata. Mutually
+            exclusive with ``metadata_filter``.
+        metadata_filter: ChromaDB-compatible ``where`` clause. Mutually
+            exclusive with ``path``.
+        collection_name: ChromaDB collection to preview against.
+
+    Returns:
+        Dict with keys ``status``, ``dry_run``, ``mode``, ``collection``, and
+        ``would_delete``. On invalid input, returns ``status: error``.
+    """
+    if path is not None and metadata_filter is not None:
+        return {
+            "status": "error",
+            "message": "path and metadata_filter are mutually exclusive.",
+            "dry_run": True,
+            "collection": collection_name,
+            "would_delete": 0,
+        }
+
+    if path is not None:
+        mode = "path"
+        where = {"file_path": str(path)}
+    elif metadata_filter is not None:
+        mode = "metadata"
+        where = metadata_filter
+    else:
+        mode = "collection"
+        where = None
+
+    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    try:
+        collection = db.get_collection(collection_name)
+        count = collection.count() if where is None else _count_chunks(
+            collection, where,
+        )
+    except Exception:
+        count = 0
+
+    return {
+        "status": "ok",
+        "dry_run": True,
+        "mode": mode,
+        "collection": collection_name,
+        "would_delete": count,
+    }
 
 
 def remove_document(

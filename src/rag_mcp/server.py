@@ -12,6 +12,8 @@ Tools
 - delete_documents       – remove documents by path, metadata filter, or drop collection
 """
 
+import asyncio
+
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
@@ -51,7 +53,7 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         "collection name to scope the search."
     )
 )
-def search_documents(
+async def search_documents(
     query: str,
     top_k: int = 5,
     similarity_threshold: float = 0.0,
@@ -70,7 +72,8 @@ def search_documents(
         collection: Name of the ChromaDB collection to search
             (default "documents").
     """
-    return search(
+    return await asyncio.to_thread(
+        search,
         query,
         top_k=top_k,
         similarity_threshold=similarity_threshold,
@@ -146,33 +149,17 @@ def delete_documents(
         ``collection``, and relevant counts.
     """
     from .ingestion import (
+        preview_delete,
         remove_document,
         remove_by_metadata,
         remove_collection,
     )
-    import chromadb
-    from .config import CHROMA_PERSIST_DIR
 
     # Determine operation mode
     if path is not None:
         # Mode: delete by file path
         if dry_run:
-            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-            try:
-                coll = db.get_collection(collection)
-                matching = coll.get(
-                    where={"file_path": str(path)}, include=[]
-                )
-                count = len(matching.get("ids", []))
-            except Exception:
-                count = 0
-            return {
-                "status": "ok",
-                "dry_run": True,
-                "mode": "path",
-                "collection": collection,
-                "would_delete": count,
-            }
+            return preview_delete(path=str(path), collection_name=collection)
         result = remove_document(str(path), collection_name=collection)
         result["mode"] = "path"
         return result
@@ -186,20 +173,10 @@ def delete_documents(
             }
 
         if dry_run:
-            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-            try:
-                coll = db.get_collection(collection)
-                matching = coll.get(where=metadata_filter, include=[])
-                count = len(matching.get("ids", []))
-            except Exception:
-                count = 0
-            return {
-                "status": "ok",
-                "dry_run": True,
-                "mode": "metadata",
-                "collection": collection,
-                "would_delete": count,
-            }
+            return preview_delete(
+                metadata_filter=metadata_filter,
+                collection_name=collection,
+            )
         result = remove_by_metadata(
             metadata_filter, collection_name=collection
         )
@@ -208,19 +185,7 @@ def delete_documents(
 
     # Mode: delete by collection (drop) — no path or metadata_filter given
     if dry_run:
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-        try:
-            coll = db.get_collection(collection)
-            count = coll.count()
-        except Exception:
-            count = 0
-        return {
-            "status": "ok",
-            "dry_run": True,
-            "mode": "collection",
-            "collection": collection,
-            "would_delete": count,
-        }
+        return preview_delete(collection_name=collection)
     result = remove_collection(collection)
     result["mode"] = "collection"
     return result

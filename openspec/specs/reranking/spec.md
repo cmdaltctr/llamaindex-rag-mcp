@@ -1,3 +1,7 @@
+## Purpose
+
+Define optional cross-encoder reranking, score filtering, model loading, and runtime configuration for improving retrieval result precision.
+
 ## Requirements
 
 ### Requirement: cross-encoder re-ranking for precision

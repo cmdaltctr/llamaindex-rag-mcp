@@ -160,25 +160,13 @@ class TestIngestCLI:
         assert result.exit_code == 1
         assert "Error" in result.output or "not found" in result.output.lower()
 
-    @patch("rag_mcp.cli.signal.signal")
-    def test_ingest_with_workers_clamped_negative(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
-        """Negative --workers is clamped and succeeds."""
+    def test_ingest_workers_option_removed(self, sample_txt: Path) -> None:
+        """--workers is no longer accepted by the ingest command."""
         result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--workers", "-5"]
+            app, ["ingest", str(sample_txt), "--workers", "4"]
         )
-        assert result.exit_code == 0
-
-    @patch("rag_mcp.cli.signal.signal")
-    def test_ingest_with_workers_clamped_zero(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
-        """--workers 0 is clamped and succeeds."""
-        result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--workers", "0"]
-        )
-        assert result.exit_code == 0
+        assert result.exit_code != 0
+        assert "No such option" in result.output
 
     @patch("rag_mcp.cli.signal.signal")
     def test_ingest_with_chunk_size(
@@ -229,7 +217,7 @@ class TestIngestCLI:
         """--help lists all options."""
         result = runner.invoke(app, ["ingest", "--help"])
         assert result.exit_code == 0
-        assert "--workers" in result.output
+        assert "--workers" not in result.output
         assert "--chunk-size" in result.output
         assert "--chunk-overlap" in result.output
         assert "--json" in result.output
@@ -417,7 +405,7 @@ class TestProgressReporting:
 
             from rag_mcp.cli import _run_ingest_with_rich_progress
 
-            _run_ingest_with_rich_progress("/fake", {"workers": 1})
+            _run_ingest_with_rich_progress("/fake", {})
 
             # ingest_path_async should have been called with a progress_callback
             assert mock_ingest.called
@@ -569,6 +557,42 @@ class TestIngestErrorHandling:
 class TestSearchErrorHandling:
     """Tests for error handling in the search command."""
 
+    def test_search_cli_still_uses_sync_retrieval(self) -> None:
+        """CLI search remains synchronous and delegates directly to retrieval.search."""
+        result_payload = [{
+            "score": 0.8,
+            "source": "cli.txt",
+            "page_label": None,
+            "text": "CLI result",
+            "reranked": False,
+        }]
+
+        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+            result = runner.invoke(
+                app,
+                [
+                    "search",
+                    "cli query",
+                    "--top-k",
+                    "2",
+                    "--threshold",
+                    "0.1",
+                    "--collection",
+                    "cli_coll",
+                    "--json",
+                ],
+            )
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == result_payload
+        mock_search.assert_called_once_with(
+            "cli query",
+            top_k=2,
+            similarity_threshold=0.1,
+            rerank=False,
+            collection_name="cli_coll",
+        )
+
     def test_search_connection_error(self) -> None:
         """ConnectionError in search triggers Ollama error message."""
         with patch("rag_mcp.retrieval.search") as mock_search:
@@ -640,7 +664,7 @@ class TestRichProgressCallbackInternals:
             return {"status": "ok", "files_indexed": 3, "chunks_created": 9}
 
         with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
-            result = _run_ingest_with_rich_progress("/fake", {"workers": 1})
+            result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
 
@@ -919,7 +943,7 @@ class TestReportGeneration:
         assert "model" in report["config"]
         assert "batch_size" in report["config"]
         assert "concurrency" in report["config"]
-        assert "workers" in report["config"]
+        assert "workers" not in report["config"]
         assert "chunk_size" in report["config"]
         assert "chunk_overlap" in report["config"]
 
@@ -960,6 +984,7 @@ class TestReportGeneration:
         assert "## Configuration" in content
         assert "## Per-File Details" in content
         assert "| Metric | Value |" in content
+        assert "| Workers |" not in content
         assert "| File | Status | Chunks | Error |" in content
 
     def test_no_report_without_flag(

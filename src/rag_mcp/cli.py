@@ -41,7 +41,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from .config import INGEST_WORKERS, SUPPORTED_EXTENSIONS
+from .config import SUPPORTED_EXTENSIONS
 
 app = typer.Typer(
     name="rag-mcp",
@@ -350,7 +350,6 @@ def _write_report(
         "model": EMBED_MODEL_NAME,
         "batch_size": EMBED_BATCH_SIZE,
         "concurrency": EMBED_CONCURRENCY,
-        "workers": ingest_kwargs.get("workers", 1),
         "chunk_size": ingest_kwargs.get("chunk_size", CHUNK_SIZE),
         "chunk_overlap": ingest_kwargs.get("chunk_overlap", CHUNK_OVERLAP),
     }
@@ -399,7 +398,6 @@ def _write_report(
             f"| Model | {config_info['model']} |",
             f"| Batch size | {config_info['batch_size']} |",
             f"| Concurrency | {config_info['concurrency']} |",
-            f"| Workers | {config_info['workers']} |",
             f"| Chunk size | {config_info['chunk_size']} |",
             f"| Chunk overlap | {config_info['chunk_overlap']} |",
             f"",
@@ -421,15 +419,6 @@ def _write_report(
 @app.command()
 def ingest(
     path: str = typer.Argument(..., help="Path to a file or directory to ingest."),
-    workers: int = typer.Option(
-        None,
-        "--workers",
-        "-w",
-        help=(
-            "Number of parallel file readers. Clamped to ≥1. "
-            f"Default: {INGEST_WORKERS} (from INGEST_WORKERS env var)."
-        ),
-    ),
     chunk_size: Optional[int] = typer.Option(
         None,
         "--chunk-size",
@@ -461,27 +450,25 @@ def ingest(
         ),
     ),
 ) -> None:
-    """Index a file or directory into the RAG vector store."""
+    """Index a file or directory into the RAG vector store.
+
+    File reading is sequential. Tune ingestion throughput with the
+    EMBED_BATCH_SIZE and EMBED_CONCURRENCY environment variables.
+    """
     import asyncio
 
     from .ingestion import _shutdown_requested, ingest_path_async
 
-    # Clamp workers
-    if workers is None:
-        workers = INGEST_WORKERS
-    if workers < 1:
-        workers = 1
-
     # Build kwargs for overrides
-    ingest_kwargs: dict = {"workers": workers, "collection_name": collection}
+    ingest_kwargs: dict = {"collection_name": collection}
     if chunk_size is not None:
         ingest_kwargs["chunk_size"] = chunk_size
     if chunk_overlap is not None:
         ingest_kwargs["chunk_overlap"] = chunk_overlap
 
     # Register SIGINT handler for graceful shutdown.
-    # The first Ctrl+C sets the shutdown flag so workers finish their
-    # current file and stop.  A second Ctrl+C raises KeyboardInterrupt
+        # The first Ctrl+C sets the shutdown flag so ingestion finishes the
+        # current file and stops. A second Ctrl+C raises KeyboardInterrupt
     # for an immediate abort.
     _sigint_count = 0
     _original_handler = signal.getsignal(signal.SIGINT)
@@ -799,10 +786,10 @@ def benchmark(
 
         import asyncio
 
-        from .ingestion import _read_and_chunk_file_async
+        from .ingestion import read_and_chunk_file_async
 
         nodes = asyncio.run(
-            _read_and_chunk_file_async(
+            read_and_chunk_file_async(
                 file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
             )
         )
@@ -1063,33 +1050,21 @@ def delete(
     # Resolve collection name
     coll_name = "documents" if collection is None else collection
 
-    from .ingestion import remove_document, remove_by_metadata, remove_collection
+    from .ingestion import (
+        preview_delete,
+        remove_document,
+        remove_by_metadata,
+        remove_collection,
+    )
 
     # ── Mode: delete by path ────────────────────────────────────────────
     if path is not None:
         file_path = str(Path(path).expanduser().resolve())
         if dry_run:
-            # Preview without deleting
-            import chromadb
-            from .config import CHROMA_PERSIST_DIR
-
-            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-            try:
-                coll = db.get_collection(coll_name)
-                where = {"file_path": file_path}
-                matching = coll.get(where=where, include=[])
-                count = len(matching.get("ids", []))
-            except Exception:
-                count = 0
-
-            result = {
-                "status": "ok",
-                "dry_run": True,
-                "mode": "path",
-                "collection": coll_name,
-                "path": file_path,
-                "would_delete": count,
-            }
+            result = preview_delete(
+                path=file_path, collection_name=coll_name,
+            )
+            result["path"] = file_path
         else:
             result = remove_document(file_path, collection_name=coll_name)
             result["mode"] = "path"
@@ -1113,25 +1088,11 @@ def delete(
             raise typer.Exit(code=1)
 
         if dry_run:
-            import chromadb
-            from .config import CHROMA_PERSIST_DIR
-
-            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-            try:
-                coll = db.get_collection(coll_name)
-                matching = coll.get(where=metadata_filter, include=[])
-                count = len(matching.get("ids", []))
-            except Exception:
-                count = 0
-
-            result = {
-                "status": "ok",
-                "dry_run": True,
-                "mode": "metadata",
-                "collection": coll_name,
-                "metadata_filter": metadata_filter,
-                "would_delete": count,
-            }
+            result = preview_delete(
+                metadata_filter=metadata_filter,
+                collection_name=coll_name,
+            )
+            result["metadata_filter"] = metadata_filter
         else:
             result = remove_by_metadata(
                 metadata_filter, collection_name=coll_name
@@ -1155,23 +1116,7 @@ def delete(
                 raise typer.Exit(code=0)
 
         if dry_run:
-            import chromadb
-            from .config import CHROMA_PERSIST_DIR
-
-            db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-            try:
-                coll = db.get_collection(coll_name)
-                count = coll.count()
-            except Exception:
-                count = 0
-
-            result = {
-                "status": "ok",
-                "dry_run": True,
-                "mode": "collection",
-                "collection": coll_name,
-                "would_delete": count,
-            }
+            result = preview_delete(collection_name=coll_name)
         else:
             result = remove_collection(coll_name)
             result["mode"] = "collection"

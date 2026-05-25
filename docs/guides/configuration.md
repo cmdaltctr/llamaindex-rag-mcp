@@ -23,7 +23,6 @@ METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 | `CHUNK_SIZE` | `512` | Text splitter chunk size (characters) |
 | `CHUNK_OVERLAP` | `64` | Chunk overlap (characters) |
 | `EMBED_BATCH_SIZE` | `100` | Embedding batch size per Ollama API call |
-| `INGEST_WORKERS` | `4` | Parallel file readers for directory ingestion |
 | `EMBED_CONCURRENCY` | `2` | Max concurrent Ollama embedding requests |
 | `TOP_K` | `5` | Default number of search results |
 | `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | ONNX reranker model ID |

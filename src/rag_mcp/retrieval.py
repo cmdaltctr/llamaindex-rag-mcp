@@ -7,6 +7,7 @@ from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from .config import CHROMA_PERSIST_DIR, RERANK_ENABLED, SIMILARITY_THRESHOLD, TOP_K
+from .chroma_utils import iter_collection_metadatas
 from .reranker import CrossEncoderReranker
 
 
@@ -203,11 +204,7 @@ def list_collections() -> list[dict]:
             # values in metadata.
             doc_sources: set[str] = set()
             if chunk_count > 0:
-                # Cap at 10,000 chunks to avoid memory pressure.
-                all_data = coll.get(
-                    include=["metadatas"], limit=10000,
-                )
-                for meta in all_data.get("metadatas", []) or []:
+                for meta in iter_collection_metadatas(coll):
                     if meta is None:
                         continue
                     source = (

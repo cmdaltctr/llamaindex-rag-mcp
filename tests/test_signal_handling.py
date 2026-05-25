@@ -3,7 +3,6 @@
 Tests cover:
 - Shutdown flag causes ingestion to stop early
 - No partial ChromaDB writes when shutdown is requested
-- Workers clamping (negative → 1, 0 → 1) via ingest_path
 """
 
 from __future__ import annotations
@@ -33,7 +32,7 @@ class TestShutdownFlag:
         _shutdown_requested.set()
         assert _shutdown_requested.is_set()
 
-        result = await ingest_path_async(str(dir_with_docs), workers=1)
+        result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
 
     async def test_shutdown_flag_stops_sequential_early(
@@ -52,7 +51,6 @@ class TestShutdownFlag:
         try:
             result = await ingest_path_async(
                 str(tmp_path),
-                workers=1,
                 progress_callback=_signal_after_first,
             )
         finally:
@@ -77,39 +75,6 @@ class TestEmbedAndWriteShutdown:
         """_embed_and_write_async returns 0 for empty node list."""
         result = await _embed_and_write_async([])
         assert result == 0
-
-
-class TestWorkersClamping:
-    """Tests for --workers clamping via ingest_path."""
-
-    async def test_workers_zero_clamped_to_one(
-        self, sample_txt: Path
-    ) -> None:
-        """Workers=0 is clamped to 1."""
-        result = await ingest_path_async(str(sample_txt), workers=0)
-        assert result["status"] == "ok"
-        assert result["files_indexed"] > 0
-
-    async def test_workers_negative_clamped_to_one(
-        self, sample_txt: Path
-    ) -> None:
-        """Workers=-5 is clamped to 1."""
-        result = await ingest_path_async(str(sample_txt), workers=-5)
-        assert result["status"] == "ok"
-        assert result["files_indexed"] > 0
-
-    async def test_workers_one_works(self, sample_txt: Path) -> None:
-        """Workers=1 works for single file."""
-        result = await ingest_path_async(str(sample_txt), workers=1)
-        assert result["status"] == "ok"
-
-    async def test_workers_large_clamped_by_max(
-        self, dir_with_docs: Path
-    ) -> None:
-        """Workers larger than file count still works."""
-        result = await ingest_path_async(str(dir_with_docs), workers=100)
-        assert result["status"] == "ok"
-        assert result["files_indexed"] > 0
 
 
 class TestLockRecheckOnShutdown:

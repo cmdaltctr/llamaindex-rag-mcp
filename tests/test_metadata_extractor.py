@@ -1074,6 +1074,33 @@ class TestCoverageGaps:
         # bad_col skipped, good_col processed
         assert "biology" in result
 
+    def test_gather_existing_categories_scans_multiple_metadata_pages(
+        self, monkeypatch,
+    ) -> None:
+        """Categories beyond the first metadata scan page must be discovered."""
+        import chromadb
+        import rag_mcp.config as _config
+        import rag_mcp.metadata_extractor as _me
+
+        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+
+        db = chromadb.PersistentClient(path=_me.CHROMA_PERSIST_DIR)
+        collection = db.get_or_create_collection("paged_categories")
+        collection.add(
+            ids=["1", "2", "3"],
+            documents=["one", "two", "three"],
+            embeddings=[[float(i)] * 384 for i in range(3)],
+            metadatas=[
+                {"category": "ai"},
+                {"category": "biology"},
+                {"category": "philosophy"},
+            ],
+        )
+        monkeypatch.setattr(_me, "_chroma_client", db)
+
+        result = _me._gather_existing_categories()
+        assert result == ["ai", "biology", "philosophy"]
+
     # ── _build_ollama_prompt: empty merged taxonomy (line 338) ────────────
 
     def test_build_ollama_prompt_empty_merged_taxonomy(self, monkeypatch) -> None:

@@ -25,6 +25,7 @@ from rag_mcp.ingestion import (
     _embed_semaphore,
     ingest_path_async,
     list_documents,
+    read_and_chunk_file_async,
 )
 
 
@@ -41,11 +42,12 @@ class TestGatherSupportedFiles:
         assert skipped == []
 
     def test_unsupported_file(self, tmp_path: Path) -> None:
-        """Unsupported extension is excluded and tracked as skipped."""
+        """Unsupported single file is excluded without a skipped entry."""
         bad = tmp_path / "test.xyz"
         bad.write_text("content")
         files, skipped = _gather_supported_files(bad)
         assert files == []
+        assert skipped == []
 
     def test_directory_with_mixed_files(self, tmp_path: Path) -> None:
         """Only supported extensions are discovered in directories."""
@@ -83,6 +85,12 @@ class TestReadAndChunkFile:
         nodes = asyncio.run(_read_and_chunk_file_async(sample_md))
         assert len(nodes) > 0
 
+    def test_public_wrapper_delegates_to_chunker(self, sample_txt: Path) -> None:
+        """Public internal-supported wrapper reads and chunks benchmark files."""
+        nodes = asyncio.run(read_and_chunk_file_async(sample_txt))
+        assert len(nodes) > 0
+        assert all(n.text for n in nodes)
+
     def test_custom_chunk_size(self, sample_txt: Path) -> None:
         """Smaller chunk_size produces more nodes."""
         nodes_default = asyncio.run(_read_and_chunk_file_async(sample_txt, chunk_size=512))
@@ -95,42 +103,34 @@ class TestReadAndChunkFile:
             asyncio.run(_read_and_chunk_file_async(tmp_path / "nonexistent.txt"))
 
 
-# ── Parallel vs Sequential ───────────────────────────────────────────────
+# ── Sequential ingestion ─────────────────────────────────────────────────
 
 
-class TestIngestPathWithWorkers:
-    """Tests for parallel vs sequential ingestion."""
+class TestSequentialIngestPath:
+    """Tests for the sequential async ingestion path."""
 
-    async def test_sequential_ingest(self, dir_with_docs: Path) -> None:
-        """Sequential ingestion (workers=1) works."""
-        result = await ingest_path_async(str(dir_with_docs), workers=1)
+    async def test_directory_ingest(self, dir_with_docs: Path) -> None:
+        """Directory ingestion works."""
+        result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
         assert result["files_indexed"] > 0
         assert result["chunks_created"] > 0
 
-    async def test_parallel_ingest(self, dir_with_docs: Path) -> None:
-        """Parallel ingestion (workers=4) works via async path."""
-        result = await ingest_path_async(str(dir_with_docs), workers=4)
-        assert result["status"] == "ok"
-        assert result["files_indexed"] > 0
-        assert result["chunks_created"] > 0
-
-    async def test_parallel_produces_same_chunk_count(
+    async def test_repeated_ingest_consistent_chunk_count(
         self, dir_with_docs: Path
     ) -> None:
-        """Sequential produces consistent chunk count."""
-        r1 = await ingest_path_async(str(dir_with_docs), workers=1)
-        r2 = await ingest_path_async(str(dir_with_docs), workers=4)
+        """Repeated sequential ingestion produces consistent chunk count."""
+        r1 = await ingest_path_async(str(dir_with_docs))
+        r2 = await ingest_path_async(str(dir_with_docs))
         assert r1["files_indexed"] == r2["files_indexed"]
         assert r1["chunks_created"] == r2["chunks_created"]
 
-    async def test_workers_clamped_to_one(self, sample_txt: Path) -> None:
-        """Workers < 1 is clamped to 1."""
-        result = await ingest_path_async(str(sample_txt), workers=0)
+    async def test_single_file_ingest(self, sample_txt: Path) -> None:
+        """Single-file ingestion works."""
+        result = await ingest_path_async(str(sample_txt))
         assert result["status"] == "ok"
-
-        result = await ingest_path_async(str(sample_txt), workers=-5)
-        assert result["status"] == "ok"
+        assert result["files_indexed"] > 0
+        assert result["chunks_created"] > 0
 
 
 class TestErrorIsolation:
@@ -144,7 +144,7 @@ class TestErrorIsolation:
         bad = tmp_path / "bad.pdf"
         bad.write_bytes(b"NOT A REAL PDF" * 100)
 
-        result = await ingest_path_async(str(tmp_path), workers=1)
+        result = await ingest_path_async(str(tmp_path))
         assert result["status"] == "ok"
         assert result["files_indexed"] >= 1
 
@@ -226,7 +226,6 @@ class TestConcurrencyPrimitives:
         try:
             result = await ingest_path_async(
                 str(tmp_path),
-                workers=4,
                 progress_callback=_signal_midway,
             )
             # Should have stopped early — fewer files indexed than total

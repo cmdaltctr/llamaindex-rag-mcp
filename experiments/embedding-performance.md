@@ -17,7 +17,6 @@
 |---------|-------|
 | `EMBED_BATCH_SIZE` | 100 |
 | `EMBED_CONCURRENCY` | 2 |
-| `INGEST_WORKERS` | 4 |
 | `CHUNK_SIZE` | 512 |
 | `CHUNK_OVERLAP` | 64 |
 

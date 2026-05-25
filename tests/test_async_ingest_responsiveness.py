@@ -47,9 +47,9 @@ class TestIngestResponsiveness:
     async def test_search_responsive_during_inflight_ingest(
         self, dir_with_docs: str, monkeypatch
     ) -> None:
-        """Concurrent search returns while ingest is blocked mid-flight."""
+        """Concurrent MCP search returns while ingest is blocked mid-flight."""
         from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.server import search_documents
 
         # Pre-populate so search has data to find.
         coll = "resp_test"
@@ -74,7 +74,7 @@ class TestIngestResponsiveness:
 
         # Search must complete quickly even though ingest is still running.
         start = time.monotonic()
-        results = search("test", top_k=5, collection_name=coll)
+        results = await search_documents("test", top_k=5, collection=coll)
         elapsed = time.monotonic() - start
 
         assert elapsed < 0.5, (
@@ -120,6 +120,42 @@ class TestIngestResponsiveness:
 
         _pause.set()
         await ingest_task
+
+    async def test_async_search_offloads_blocking_retrieval(
+        self, monkeypatch
+    ) -> None:
+        """Slow synchronous retrieval runs in a worker, not the event loop."""
+        from rag_mcp.server import search_documents
+
+        def slow_search(*args, **kwargs):
+            time.sleep(0.3)
+            return [{
+                "score": 1.0,
+                "source": "slow.txt",
+                "page_label": None,
+                "text": "slow result",
+                "reranked": False,
+            }]
+
+        monkeypatch.setattr("rag_mcp.server.search", slow_search)
+
+        search_task = asyncio.create_task(search_documents("slow"))
+        await asyncio.sleep(0.05)
+
+        start = time.monotonic()
+        await asyncio.sleep(0.01)
+        elapsed = time.monotonic() - start
+
+        assert elapsed < 0.1, (
+            f"event loop sleep took {elapsed:.3f}s while search was in flight"
+        )
+        assert await search_task == [{
+            "score": 1.0,
+            "source": "slow.txt",
+            "page_label": None,
+            "text": "slow result",
+            "reranked": False,
+        }]
 
 
 class TestResponsivenessRegression:

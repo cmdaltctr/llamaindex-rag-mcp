@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 from typing import TYPE_CHECKING
 
 from .config import (
@@ -36,6 +37,7 @@ from .config import (
     OLLAMA_BASE_URL,
     OLLAMA_CLASSIFY_MODEL,
 )
+from .chroma_utils import iter_collection_metadatas
 
 if TYPE_CHECKING:
     pass
@@ -225,6 +227,7 @@ def _load_keyword_rules() -> list[dict[str, str]]:
 # Cached ChromaDB client for category lookups (avoids re-opening the
 # database on every file during batch ingestion).
 _chroma_client = None
+_chroma_client_lock = threading.Lock()
 
 
 def _get_chroma_client():
@@ -238,8 +241,12 @@ def _get_chroma_client():
     """
     global _chroma_client
     if _chroma_client is None:
-        import chromadb
-        _chroma_client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        with _chroma_client_lock:
+            if _chroma_client is None:
+                import chromadb
+                _chroma_client = chromadb.PersistentClient(
+                    path=CHROMA_PERSIST_DIR
+                )
     return _chroma_client
 
 
@@ -281,13 +288,7 @@ def _gather_existing_categories() -> list[str]:
         categories: set[str] = set()
         for collection in client.list_collections():
             try:
-                # Fetch only the 'category' metadata field for efficiency.
-                # Cap at 10000 to avoid memory pressure.
-                result = collection.get(
-                    include=["metadatas"],
-                    limit=10000,
-                )
-                for meta in (result.get("metadatas") or []):
+                for meta in iter_collection_metadatas(collection):
                     if isinstance(meta, dict):
                         cat = meta.get("category")
                         if cat and isinstance(cat, str):

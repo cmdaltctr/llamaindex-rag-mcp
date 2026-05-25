@@ -310,3 +310,33 @@ class TestListCollections:
             assert "name" in c
             assert "document_count" in c
             assert "chunk_count" in c
+
+    def test_list_collections_scans_multiple_metadata_pages(self, monkeypatch):
+        """Collection document counts must include all metadata pages."""
+        import chromadb
+        import rag_mcp.config as _config
+        import rag_mcp.retrieval as _retrieval
+        from rag_mcp.retrieval import list_collections
+
+        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+
+        db = chromadb.PersistentClient(path=_retrieval.CHROMA_PERSIST_DIR)
+        collection = db.get_or_create_collection("paged_collection_stats")
+        collection.add(
+            ids=["1", "2", "3", "4", "5"],
+            documents=["one", "two", "three", "four", "five"],
+            embeddings=[[float(i)] * 384 for i in range(5)],
+            metadatas=[
+                {"file_path": "a.txt"},
+                {"file_path": "a.txt"},
+                {"file_path": "b.txt"},
+                {"file_path": "c.txt"},
+                {"file_path": "c.txt"},
+            ],
+        )
+
+        stats = {
+            c["name"]: c for c in list_collections()
+        }["paged_collection_stats"]
+        assert stats["chunk_count"] == 5
+        assert stats["document_count"] == 3

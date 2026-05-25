@@ -52,11 +52,11 @@ The challenge: most reranker implementations require PyTorch, a ~2 GB dependency
 
 ## Features added over time
 
-### CLI and parallel ingestion ([ADR-007](../adr/007-cli-and-parallel-ingestion.md))
+### CLI and ingestion controls ([ADR-007](../adr/007-cli-and-parallel-ingestion.md))
 
 The original server only worked through an MCP client. To test it, you needed the MCP Inspector. To ingest documents, you needed an AI assistant. That was inconvenient, so we added a CLI: `rag-mcp ingest`, `rag-mcp search`, `rag-mcp list`. The same binary, no arguments = MCP server; with subcommands = CLI tool.
 
-At the same time, directory ingestion was sequential — one file at a time. For a Zotero library with hundreds of PDFs, that was slow. We added parallel file reading (up to 4 workers by default) while keeping ChromaDB writes serial behind a lock. File I/O is parallelised; the database is not.
+Directory ingestion currently reads files sequentially and keeps ChromaDB writes serial behind a lock. Throughput tuning is focused on embedding work: `EMBED_BATCH_SIZE` controls Ollama batch size and `EMBED_CONCURRENCY` controls concurrent embedding API calls.
 
 ### Ingestion reports ([ADR-008](../adr/008-cli-folder-embed-progress.md))
 

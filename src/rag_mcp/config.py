@@ -45,11 +45,11 @@ Settings.embed_model = OllamaEmbedding(
 # ── Shared paths and collection ─────────────────────────────────────────
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
+CHROMA_SCAN_PAGE_SIZE = int(os.getenv("CHROMA_SCAN_PAGE_SIZE", "10000"))
 
 # ── Ingestion defaults ──────────────────────────────────────────────────
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "64"))
-INGEST_WORKERS = int(os.getenv("INGEST_WORKERS", "4"))
 EMBED_CONCURRENCY = int(os.getenv("EMBED_CONCURRENCY", "2"))
 
 # ── Retrieval defaults ──────────────────────────────────────────────────

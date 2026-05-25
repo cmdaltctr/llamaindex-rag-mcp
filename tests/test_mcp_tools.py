@@ -10,6 +10,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -78,6 +79,46 @@ async def test_search_after_ingest_returns_results(
         assert "source" in first
         assert "text" in first
         assert "reranked" in first
+
+
+async def test_search_documents_handler_is_async_and_preserves_shape(
+    mcp_server,
+) -> None:
+    """MCP search handler is async and returns the same list-of-dicts shape."""
+    import rag_mcp.server as server
+
+    expected = [{
+        "score": 0.9,
+        "source": "fixture.txt",
+        "page_label": None,
+        "text": "fixture text",
+        "reranked": False,
+    }]
+
+    assert inspect.iscoroutinefunction(server.search_documents)
+
+    with patch("rag_mcp.server.search", return_value=expected) as mock_search:
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {
+                    "query": "fixture",
+                    "top_k": 3,
+                    "similarity_threshold": 0.25,
+                    "rerank": True,
+                    "collection": "mcp_shape_coll",
+                },
+            )
+
+    data = _extract_result(result)
+    assert data == expected
+    mock_search.assert_called_once_with(
+        "fixture",
+        top_k=3,
+        similarity_threshold=0.25,
+        rerank=True,
+        collection_name="mcp_shape_coll",
+    )
 
 
 # ── list_indexed_documents ─────────────────────────────────────────────────
