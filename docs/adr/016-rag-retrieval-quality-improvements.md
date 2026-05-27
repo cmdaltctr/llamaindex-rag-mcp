@@ -1,10 +1,10 @@
 # ADR-016: RAG Retrieval Quality Improvements
 
-**Status**: Proposed
-**Date**: <TODO: YYYY-MM-DD on archive>
-**Change**: `rag-retrieval-quality-improvements`
+**Status**: Accepted
+**Date**: 2026-05-27
+**Change**: `2-rag-retrieval-quality-improvements`
 **Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Git Commits**: <TODO: list relevant SHAs once landed>
+**Git Commits**: `0b91d03`, `abea2b5`, `483c4dd`, `796b132`, `8214605` (feature branch `feat/rag-retrieval-quality-tier-2`)
 
 ## Context
 
@@ -47,14 +47,14 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
    `fetch_k` is clamped to `min(fetch_k, collection.count())` so small
    collections do not over-fetch. Implements the "Wide Net, Tight Filter"
    pattern. Latency target verified empirically by re-running the
-   existing reranker calibration script:
+   reranker calibration script (`experiments/5-reranker-pool-sizing-2026-05-27/`):
 
-   - Pre-change baseline (10 candidates): post-warmup mean ~85 ms
-   - Post-change measured (target defaults): post-warmup mean
-     <TODO: fill in mean ms>, P95 <TODO: fill in P95 ms>
-   - Acceptance criterion: post-warmup P95 ≤ 500 ms
-   - Final shipped defaults: <TODO: confirm `(50, 10)` or list tightened
-     values such as `(30, 6)` if the criterion required them>
+   - Pre-change baseline (`(20, 2)`, fetch_k=20): post-warmup mean **354 ms**, P95 **475 ms**
+   - Post-change candidate (`(50, 10)`, fetch_k=50): post-warmup mean **298 ms**, P95 **377 ms**
+   - Stress test (`(100, 20)`, fetch_k=100): post-warmup mean **272 ms**, P95 **298 ms**
+   - Acceptance criterion: post-warmup P95 ≤ 500 ms — **PASS**
+   - Final shipped defaults: **`(50, 10)`** — comfortably under the budget,
+     full source / answer accuracy preserved, no fallback to `(30, 6)` required.
 
 3. **Default `CHUNK_OVERLAP` bumped from 64 to 100.** Aligns the
    shipped default with Stäbler et al. (2025)'s empirical sweet spot.
@@ -133,12 +133,21 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
   - `openspec/changes/rag-retrieval-quality-improvements/specs/reranking/spec.md`
   - `openspec/changes/rag-retrieval-quality-improvements/specs/query-embedding-cache/spec.md`
   - `openspec/changes/rag-retrieval-quality-improvements/specs/async-ingestion/spec.md`
-- Experiment: `experiments/reranker-threshold-calibration-2026-05-12/results.md` — re-run with the new defaults; <TODO: link to the updated section or new dated experiment>
+- Experiments:
+  - `experiments/5-reranker-pool-sizing-2026-05-27/results.md` — pool latency sweep, P95 confirmation, shipped defaults
+  - `experiments/6-markdown-chunking-quality-2026-05-27/results.md` — Markdown chunker non-regression on a structured corpus
+  - `experiments/7-chunk-overlap-sensitivity-2026-05-27/results.md` — overlap sweep, non-regression confirmation
+  - `experiments/8-query-embedding-cache-2026-05-27/results.md` — cache speedup measurement (≥ 30 % warm-trace reduction)
+  - `experiments/1-reranker-threshold-calibration-2026-05-12/results.md` — original ÷30 threshold calibration that this ADR widens
 - Source:
   - `src/rag_mcp/ingestion.py` — Markdown branch with chained splitter
   - `src/rag_mcp/retrieval.py` — refactored `search()` with embed-once-at-top and cache
   - `src/rag_mcp/config.py` — `RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`, `CHUNK_OVERLAP=100`
-- Tests: <TODO: list the regression tests added>
+- Tests:
+  - `tests/test_markdown_chunking.py` — heading boundaries, long-section split, non-Markdown isolation, heading-less Markdown
+  - `tests/test_rerank_fetch_pool.py` — default pool, env override, small-collection clamp
+  - `tests/test_chunk_overlap_default.py` — source-level contract for `CHUNK_OVERLAP=100`
+  - `tests/test_query_embedding_cache.py` — cache hits on filtered/unfiltered branches, distinct queries, LRU eviction
 - Literature:
   - Pham & Luong (2025) — heading-aware chunking gains on structured documents
   - Lavarec & Du (2026) — hierarchical chunking benchmarks
