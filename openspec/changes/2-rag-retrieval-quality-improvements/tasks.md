@@ -66,8 +66,8 @@ After implementation passes validation, write **ADR-016: RAG Retrieval Quality I
 
 ## 7. Validation
 
-- [ ] 7.1 Run `openspec validate rag-retrieval-quality-improvements --strict`
-- [ ] 7.2 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage thresholds remain intact
+- [x] 7.1 Run `openspec validate rag-retrieval-quality-improvements --strict`
+- [x] 7.2 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage thresholds remain intact
 - [ ] 7.3 Confirm Experiment 5 (`experiments/5-reranker-pool-sizing-2026-05-27/`) shows post-warmup P95 ≤ 500 ms with the chosen defaults, and that the chosen `(RERANK_MAX_FETCH, RERANK_FETCH_MULTIPLIER)` defaults are reflected in `config.py` and `.env.example`
 - [ ] 7.4 Confirm Experiment 6 (`experiments/6-markdown-chunking-quality-2026-05-27/`) shows the heading-targeted Hit@1 lift and no chunk overruns past `CHUNK_SIZE * 1.1`
 - [ ] 7.5 Confirm Experiment 7 (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) shows non-regression between overlap=64 and overlap=100
