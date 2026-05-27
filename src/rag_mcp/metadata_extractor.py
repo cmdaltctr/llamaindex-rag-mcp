@@ -680,7 +680,11 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
 
 
 async def _extract_keyword_async(text: str) -> dict:
-    """Async wrapper around keyword extraction (no I/O, for uniformity).
+    """Async wrapper around keyword extraction.
+
+    Offloads to a worker thread because regex matching against large
+    documents (10+ MB) can take several seconds and would otherwise
+    block the event loop.  See ADR-015 / Experiment 4 findings.
 
     Args:
         text: The full document text to classify.
@@ -688,7 +692,7 @@ async def _extract_keyword_async(text: str) -> dict:
     Returns:
         Same dict as ``_extract_keyword()``.
     """
-    return _extract_keyword(text)
+    return await asyncio.to_thread(_extract_keyword, text)
 
 
 async def _extract_ollama_async(text: str) -> dict:
