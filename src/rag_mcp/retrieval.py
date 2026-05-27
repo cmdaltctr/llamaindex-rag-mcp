@@ -2,12 +2,125 @@
 
 from __future__ import annotations
 
+import functools
+import logging
+
 import chromadb
 from llama_index.core import Settings
 
-from .config import CHROMA_PERSIST_DIR, RERANK_ENABLED, SIMILARITY_THRESHOLD, TOP_K
+from .config import (
+    CHROMA_PERSIST_DIR,
+    RERANK_ENABLED,
+    RERANK_FETCH_MULTIPLIER,
+    RERANK_MAX_FETCH,
+    SIMILARITY_THRESHOLD,
+    TOP_K,
+)
 from .chroma_utils import iter_collection_metadatas
 from .reranker import CrossEncoderReranker
+
+logger = logging.getLogger(__name__)
+
+
+# ── Query embedding cache ──────────────────────────────────────────────
+# Process-local LRU cache so repeated identical queries (common in
+# agentic loops) do not re-hit Ollama for the embedding step.  The cache
+# is keyed by ``(query, embed_model_name)`` so a model swap (e.g. via
+# ``Settings.embed_model = ...`` in tests) automatically invalidates
+# entries from the previous model.  See ADR-016 / OpenSpec change
+# ``rag-retrieval-quality-improvements`` Decision 4.
+_QUERY_EMBED_CACHE_MAXSIZE = 128
+
+
+@functools.lru_cache(maxsize=_QUERY_EMBED_CACHE_MAXSIZE)
+def _cached_query_embedding(
+    query: str,
+    embed_model_name: str,
+) -> tuple[float, ...]:
+    """Return the query embedding, cached by ``(query, embed_model_name)``.
+
+    The result is a tuple so it is hashable and immutable; callers
+    convert to a list before passing to ChromaDB.
+
+    Args:
+        query: The user's search query string.
+        embed_model_name: The current ``Settings.embed_model.model_name``,
+            included in the key so that swapping models invalidates the
+            cache automatically.
+
+    Returns:
+        The embedding vector as a tuple of floats.
+    """
+    vec = Settings.embed_model.get_query_embedding(query)
+    return tuple(vec)
+
+
+def _embed_query(query: str) -> list[float]:
+    """Embed a query, using the LRU cache when available.
+
+    Falls back gracefully to a direct embed call if the configured
+    embed model does not expose ``model_name`` (rare; e.g. some test
+    mocks).  Returns a fresh list so callers may safely mutate it.
+
+    Args:
+        query: The user's search query string.
+
+    Returns:
+        Embedding vector as a list of floats.
+    """
+    embed_model = Settings.embed_model
+    model_name = getattr(embed_model, "model_name", None)
+    if model_name is None:
+        # Uncacheable model — bypass the cache rather than risk
+        # collisions across instances.
+        return list(embed_model.get_query_embedding(query))
+    return list(_cached_query_embedding(query, model_name))
+
+
+def _resolve_fetch_k(
+    top_k: int,
+    rerank: bool,
+    collection_count: int,
+) -> int:
+    """Compute the candidate pool size, applying the reranker fetch rules.
+
+    When ``rerank`` is False, ``fetch_k`` equals ``top_k`` (the original
+    behaviour).  When ``rerank`` is True, the pool follows the
+    "Wide Net, Tight Filter" pattern:
+
+        fetch_k = max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)
+
+    The result is clamped to ``min(fetch_k, collection_count)`` so an
+    unbounded ``top_k`` on a small collection does not produce a fetch
+    larger than the collection itself.  See ADR-016 / OpenSpec change
+    ``rag-retrieval-quality-improvements`` Decision 2.
+
+    Args:
+        top_k: Final number of results requested by the caller.
+        rerank: Whether the cross-encoder reranker is active.
+        collection_count: ``collection.count()`` for the target
+            ChromaDB collection.
+
+    Returns:
+        The effective candidate pool size to fetch from the vector store.
+    """
+    if rerank:
+        # Re-read env-derived values from config at call time so tests
+        # that monkeypatch ``rag_mcp.config.RERANK_*`` are honoured.
+        from . import config as _config
+
+        fetch_k = max(
+            _config.RERANK_MAX_FETCH,
+            top_k * _config.RERANK_FETCH_MULTIPLIER,
+        )
+    else:
+        fetch_k = top_k
+
+    if collection_count > 0:
+        fetch_k = min(fetch_k, collection_count)
+    # Always fetch at least 1 candidate so an empty result set is the
+    # only zero-result scenario.
+    return max(fetch_k, 1)
 
 
 def _effective_threshold(
@@ -113,16 +226,18 @@ def search(
         return []
 
     # Fetch more candidates when reranking so the cross-encoder
-    # has a meaningful pool to re-score.
-    fetch_k = top_k * 2 if rerank else top_k
+    # has a meaningful pool to re-score.  See ADR-016 Decision 2.
+    fetch_k = _resolve_fetch_k(top_k, rerank, collection.count())
 
     # Both retrieval paths (filtered and unfiltered) issue the same direct
     # ChromaDB query.  This guarantees the pre-threshold ``score`` field
     # is computed by exactly the same formula on both paths — the
     # ``1.0 / (1.0 + distance)`` conversion in ``_distance_to_score``.
     # See ADR-015 / OpenSpec change ``rag-reliability-correctness-fixes``
-    # Decision 3.
-    query_embedding = Settings.embed_model.get_query_embedding(query)
+    # Decision 3.  The query is embedded exactly once via the LRU-cached
+    # helper so repeated identical queries do not re-hit Ollama
+    # (ADR-016 Decision 4).
+    query_embedding = _embed_query(query)
 
     query_kwargs: dict = {
         "query_embeddings": [query_embedding],
