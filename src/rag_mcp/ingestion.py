@@ -10,7 +10,7 @@ from typing import Callable
 
 import chromadb
 from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.node_parser import MarkdownNodeParser, SentenceSplitter
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from .config import (
@@ -199,13 +199,26 @@ async def _read_and_chunk_file_async(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
+    # Markdown files use a heading-aware parser chained with the sentence
+    # splitter so heading boundaries are preserved wherever the
+    # heading-bounded section fits in ``chunk_size``, while longer
+    # sections are still split so no chunk exceeds ``chunk_size``.
+    # See ADR-016 / OpenSpec change ``rag-retrieval-quality-improvements``
+    # Decision 1.  Non-Markdown files retain the existing splitter.
+    is_markdown = file_path.suffix.lower() == ".md"
+
+    def _split_sync() -> list:
+        if is_markdown:
+            md_parser = MarkdownNodeParser()
+            heading_nodes = md_parser.get_nodes_from_documents(documents)
+            return splitter.get_nodes_from_documents(heading_nodes)
+        return splitter.get_nodes_from_documents(documents)
+
     # Chunk splitting is CPU-bound and synchronous — offload to a worker
     # thread so the MCP event loop stays responsive while large documents
     # are split.  See ADR-015 / OpenSpec change
     # ``rag-reliability-correctness-fixes`` Decision 1.
-    nodes = await asyncio.to_thread(
-        splitter.get_nodes_from_documents, documents
-    )
+    nodes = await asyncio.to_thread(_split_sync)
 
     if doc_metadata:
         flat_metadata = {

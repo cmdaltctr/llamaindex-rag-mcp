@@ -49,13 +49,27 @@ CHROMA_SCAN_PAGE_SIZE = int(os.getenv("CHROMA_SCAN_PAGE_SIZE", "10000"))
 
 # ── Ingestion defaults ──────────────────────────────────────────────────
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "64"))
+# Default overlap raised from 64 → 100 in the rag-retrieval-quality-improvements
+# change (Stäbler et al. 2025 empirical sweet spot).  Existing collections
+# are unaffected until they are re-ingested.
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
 EMBED_CONCURRENCY = int(os.getenv("EMBED_CONCURRENCY", "2"))
 
 # ── Retrieval defaults ──────────────────────────────────────────────────
 TOP_K = int(os.getenv("TOP_K", "5"))
 RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
+
+# ── Reranker fetch-pool sizing ─────────────────────────────────────────
+# When reranking is enabled, ``search()`` fetches a larger candidate pool
+# from vector search and lets the cross-encoder re-score them before
+# returning the final ``top_k``.  This implements the "Wide Net, Tight
+# Filter" pattern from the rag-retrieval-quality-improvements change.
+#
+# Effective fetch size = max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)
+# clamped to the collection size so small collections do not over-fetch.
+RERANK_FETCH_MULTIPLIER = int(os.getenv("RERANK_FETCH_MULTIPLIER", "10"))
+RERANK_MAX_FETCH = int(os.getenv("RERANK_MAX_FETCH", "50"))
 
 # ── Metadata extraction ─────────────────────────────────────────────────
 # Controls how document metadata (e.g., category) is extracted during
