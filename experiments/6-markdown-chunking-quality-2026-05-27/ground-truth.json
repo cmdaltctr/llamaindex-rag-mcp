@@ -1,0 +1,177 @@
+{
+  "_comment": "Exp 6 ground truth for Markdown-aware chunking quality. 24 queries: 12 heading-targeted, 8 general, 4 cross-domain. expected_section is the H2 (or H1 if no H2) the gold chunk lives under in the source document.",
+  "queries": [
+    {
+      "query": "Under Getting Started in the Nuxt readme, what command creates a new starter project?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Getting Started",
+      "expected_answer": "npm create nuxt@latest",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "In the Vue Development section of the Nuxt readme, what helper sets the page title?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Vue Development",
+      "expected_answer": "useSeoMeta",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under Professional Support in the Nuxt readme, who handles technical audit and consulting?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Professional Support",
+      "expected_answer": "Nuxt Experts",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under Option Stores in the Pinia docs, what shape does the state factory return?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "Option Stores",
+      "expected_answer": "count: 0",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "In the Setup Stores section of Pinia, what does a ref become inside the store?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "Setup Stores",
+      "expected_answer": "state properties",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under Destructuring from a Store in Pinia, which helper preserves reactivity?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "Destructuring from a Store",
+      "expected_answer": "storeToRefs",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "In the Pinia 'What syntax should I pick' section, what does the doc recommend for choosing between option and setup stores?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "What syntax should I pick?",
+      "expected_answer": "pick the one that you feel the most comfortable",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under Project setup in the Django REST quickstart, how do you create a virtual environment?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Project setup",
+      "expected_answer": "python3 -m venv",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "In the Serializers section of the Django REST quickstart, what serializer class is used?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Serializers",
+      "expected_answer": "HyperlinkedModelSerializer",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under Views in the Django REST quickstart, what base class do the viewsets inherit from?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Views",
+      "expected_answer": "viewsets.ModelViewSet",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "In the Pagination section of the Django REST quickstart, what page size is configured?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Pagination",
+      "expected_answer": "PAGE_SIZE",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "Under URLs in the Django REST quickstart, what router class is used to wire the API automatically?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "URLs",
+      "expected_answer": "DefaultRouter",
+      "category": "heading-targeted"
+    },
+    {
+      "query": "What features does Nuxt provide for full-stack web applications?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Nuxt",
+      "expected_answer": "Server-side rendering",
+      "category": "general"
+    },
+    {
+      "query": "How does Pinia define a store and what is the unique id for?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "Defining a Store",
+      "expected_answer": "defineStore",
+      "category": "general"
+    },
+    {
+      "query": "Why does the RAG essay argue hybrid retrieval is the obvious response to dense-only failure modes?",
+      "expected_source": "essay-on-rag.md",
+      "expected_section": "Why retrieval augmentation still matters",
+      "expected_answer": "Run a sparse retriever and a dense retriever in parallel",
+      "category": "general"
+    },
+    {
+      "query": "What does the prose essay say about deleting code as an engineering skill?",
+      "expected_source": "no-headings.md",
+      "expected_section": null,
+      "expected_answer": "Delete aggressively",
+      "category": "general"
+    },
+    {
+      "query": "How does the Django REST quickstart create the initial admin user?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Project setup",
+      "expected_answer": "createsuperuser",
+      "category": "general"
+    },
+    {
+      "query": "What does the RAG essay say a cross-encoder reranker actually computes?",
+      "expected_source": "essay-on-rag.md",
+      "expected_section": "Why retrieval augmentation still matters",
+      "expected_answer": "transformer that takes the query and the candidate chunk together",
+      "category": "general"
+    },
+    {
+      "query": "What does the prose essay say about choosing a programming language for production systems?",
+      "expected_source": "no-headings.md",
+      "expected_section": null,
+      "expected_answer": "Programming languages do not matter as much as people think",
+      "category": "general"
+    },
+    {
+      "query": "What benefits does the Nuxt readme list for SEO and meta tags?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Nuxt",
+      "expected_answer": "Search engine optimization",
+      "category": "general"
+    },
+    {
+      "query": "How do I require authenticated users on a REST framework viewset?",
+      "expected_source": "django-rest-quickstart.md",
+      "expected_section": "Views",
+      "expected_answer": "permissions.IsAuthenticated",
+      "category": "cross-domain",
+      "must_not_match": ["nuxt-readme.md", "pinia-core-concepts.md"]
+    },
+    {
+      "query": "How do auto-imports work for composables and components in Nuxt?",
+      "expected_source": "nuxt-readme.md",
+      "expected_section": "Nuxt",
+      "expected_answer": "Auto imports of components",
+      "category": "cross-domain",
+      "must_not_match": ["pinia-core-concepts.md", "django-rest-quickstart.md"]
+    },
+    {
+      "query": "Should I define each Pinia store in a different file?",
+      "expected_source": "pinia-core-concepts.md",
+      "expected_section": "Using the store",
+      "expected_answer": "different file",
+      "category": "cross-domain",
+      "must_not_match": ["nuxt-readme.md", "django-rest-quickstart.md"]
+    },
+    {
+      "query": "What does the RAG essay say a cross-encoder reranker computes per candidate?",
+      "expected_source": "essay-on-rag.md",
+      "expected_section": "Why retrieval augmentation still matters",
+      "expected_answer": "forward pass",
+      "category": "cross-domain",
+      "must_not_match": ["nuxt-readme.md", "pinia-core-concepts.md", "django-rest-quickstart.md", "no-headings.md"]
+    }
+  ]
+}

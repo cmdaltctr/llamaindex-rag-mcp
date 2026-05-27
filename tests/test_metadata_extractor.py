@@ -1163,3 +1163,216 @@ class TestCoverageGaps:
         # All keywords fail → falls back to first 2 words of title
         assert result["category"] == "deep_learning"
         assert result.get("document_title") == "Deep Learning Review"
+
+
+# ── Ollama hardening: markdown fences, retry, backoff ──────────────────────
+
+
+class TestOllamaMarkdownFenceStripping:
+    """qwen3:0.6b often wraps JSON in a markdown fence; we must unwrap it."""
+
+    def test_strip_json_fence(self) -> None:
+        from rag_mcp.metadata_extractor import _strip_markdown_fence
+
+        wrapped = '```json\n{"category": "ai", "keywords": [], "summary": ""}\n```'
+        assert _strip_markdown_fence(wrapped) == (
+            '{"category": "ai", "keywords": [], "summary": ""}'
+        )
+
+    def test_strip_bare_fence(self) -> None:
+        from rag_mcp.metadata_extractor import _strip_markdown_fence
+
+        wrapped = '```\n{"category": "ai"}\n```'
+        assert _strip_markdown_fence(wrapped) == '{"category": "ai"}'
+
+    def test_unfenced_text_returned_unchanged(self) -> None:
+        from rag_mcp.metadata_extractor import _strip_markdown_fence
+
+        bare = '{"category": "ai"}'
+        assert _strip_markdown_fence(bare) == bare
+
+    def test_empty_input_returns_empty(self) -> None:
+        from rag_mcp.metadata_extractor import _strip_markdown_fence
+
+        assert _strip_markdown_fence("") == ""
+
+    def test_parse_ollama_json_with_markdown_fence(self) -> None:
+        """Parser must unwrap a fenced JSON payload before json.loads."""
+        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+
+        raw = (
+            '```json\n'
+            '{"category": "Biology", "keywords": ["gene"], "summary": "x"}\n'
+            '```'
+        )
+        result = _parse_ollama_json_response(raw)
+        assert result["category"] == "biology"
+        assert result["keywords"] == ["gene"]
+        assert result["summary"] == "x"
+
+
+class TestOllamaRetry:
+    """Bounded retry with exponential backoff around the Ollama HTTP call."""
+
+    @pytest.fixture(autouse=True)
+    def _ollama_mode(self, monkeypatch) -> None:
+        _set_mode(monkeypatch, "ollama")
+        # Avoid real time.sleep / asyncio.sleep delays in tests.
+        async def _noop_sleep(_seconds):
+            return None
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "_retry_sleep", _noop_sleep)
+
+    def _mock_async_client(self, monkeypatch, side_effects: list) -> list:
+        """Patch httpx.AsyncClient so each ``post`` call consumes one side_effect.
+
+        Each entry in side_effects is either:
+          * an ``Exception`` instance to raise, or
+          * a ``str`` — the JSON-or-plain ``response`` field to return.
+
+        Returns a call log (list) populated as side_effects are consumed.
+        """
+        from unittest.mock import AsyncMock, MagicMock
+
+        call_log: list[int] = []
+
+        async def _post(*args, **kwargs):
+            i = len(call_log)
+            call_log.append(i)
+            if i >= len(side_effects):
+                raise AssertionError(
+                    f"unexpected post call #{i + 1} (only {len(side_effects)} configured)"
+                )
+            effect = side_effects[i]
+            if isinstance(effect, Exception):
+                raise effect
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {"response": effect}
+            return mock_response
+
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.post = _post
+
+        monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
+        return call_log
+
+    def test_retry_succeeds_after_transient_failure(
+        self, monkeypatch,
+    ) -> None:
+        """First call fails, second succeeds → returns parsed metadata."""
+        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+
+        good = json.dumps({
+            "category": "ai",
+            "keywords": ["transformer"],
+            "summary": "ok",
+        })
+        log = self._mock_async_client(
+            monkeypatch,
+            [ConnectionError("transient"), good],
+        )
+
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("transformer attention"))
+        assert result["category"] == "ai"
+        assert result["keywords"] == ["transformer"]
+        assert len(log) == 2
+
+    def test_retry_exhaustion_falls_back(self, monkeypatch, caplog) -> None:
+        """All attempts fail → fallback dict + WARNING log."""
+        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+
+        log = self._mock_async_client(
+            monkeypatch,
+            [
+                ConnectionError("attempt 1"),
+                ConnectionError("attempt 2"),
+                ConnectionError("attempt 3"),
+            ],
+        )
+
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        with caplog.at_level(logging.WARNING):
+            result = asyncio.run(extract_metadata_async("any text"))
+
+        assert result == {
+            "category": "uncategorised",
+            "keywords": [],
+            "summary": "",
+        }
+        assert len(log) == 3
+        assert any(
+            r.levelno == logging.WARNING
+            and "ollama classification failed" in r.message.lower()
+            for r in caplog.records
+        )
+
+    def test_backoff_grows_between_attempts(self, monkeypatch) -> None:
+        """``_retry_sleep`` must be called with 1, 2, 4 ... seconds."""
+        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "4")
+
+        sleeps: list[float] = []
+
+        async def _record_sleep(seconds):
+            sleeps.append(seconds)
+
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "_retry_sleep", _record_sleep)
+
+        self._mock_async_client(
+            monkeypatch,
+            [
+                ConnectionError("a"),
+                ConnectionError("b"),
+                ConnectionError("c"),
+                ConnectionError("d"),
+            ],
+        )
+
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        asyncio.run(extract_metadata_async("text"))
+
+        # Sleeps run AFTER attempts 1, 2, 3 — not after the final attempt.
+        assert sleeps == [1, 2, 4]
+
+    def test_no_sleep_when_max_attempts_is_one(self, monkeypatch) -> None:
+        """A single-attempt configuration must not call _retry_sleep."""
+        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+
+        sleeps: list[float] = []
+
+        async def _record_sleep(seconds):
+            sleeps.append(seconds)
+
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "_retry_sleep", _record_sleep)
+
+        self._mock_async_client(
+            monkeypatch,
+            [ConnectionError("one and done")],
+        )
+
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        asyncio.run(extract_metadata_async("text"))
+
+        assert sleeps == []
+
+    def test_first_attempt_success_no_retry(self, monkeypatch) -> None:
+        """A successful first attempt must not trigger a retry."""
+        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+
+        good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
+        log = self._mock_async_client(monkeypatch, [good])
+
+        from rag_mcp.metadata_extractor import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("attention"))
+        assert result["category"] == "ai"
+        assert len(log) == 1

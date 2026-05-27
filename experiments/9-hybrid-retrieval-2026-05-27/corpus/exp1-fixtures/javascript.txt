@@ -1,0 +1,1 @@
+JavaScript is a versatile programming language used for web development. It powers interactive front-end applications and can also run on the server with Node.js.

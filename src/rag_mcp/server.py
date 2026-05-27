@@ -13,12 +13,15 @@ Tools
 """
 
 import asyncio
+import logging
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 from .ingestion import ingest_path_async, list_documents as _list_documents
 from .retrieval import search
+
+logger = logging.getLogger(__name__)
 
 # Load .env from the working directory (project root when run via `uv run`)
 load_dotenv()
@@ -50,7 +53,8 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         "and relevance score. Optionally re-score results with a "
         "cross-encoder reranker for better precision, or filter by "
         "a minimum similarity threshold. Accepts an optional "
-        "collection name to scope the search."
+        "collection name to scope the search and an optional "
+        "metadata_filter to restrict results by metadata fields."
     )
 )
 async def search_documents(
@@ -59,6 +63,7 @@ async def search_documents(
     similarity_threshold: float = 0.0,
     rerank: bool = False,
     collection: str = "documents",
+    metadata_filter: dict | None = None,
 ) -> list[dict]:
     """Search indexed documents for semantically relevant chunks.
 
@@ -71,15 +76,62 @@ async def search_documents(
             reranker for better precision (default False).
         collection: Name of the ChromaDB collection to search
             (default "documents").
+        metadata_filter: Optional ChromaDB-compatible ``where`` clause
+            (e.g. ``{"category": "ai"}``) restricting results to chunks
+            whose metadata matches.  When omitted, the unfiltered
+            retrieval path is used.
+
+    Returns:
+        On success, a list of result dicts (`score`, `source`,
+        `page_label`, `text`, `reranked`).  On failure, a single-element
+        list ``[{"status": "error", "error_type": <category>, "message": ...}]``
+        where ``error_type`` is one of ``"validation"``, ``"retrieval"``,
+        or ``"internal"``.  The handler never raises.
     """
-    return await asyncio.to_thread(
-        search,
-        query,
-        top_k=top_k,
-        similarity_threshold=similarity_threshold,
-        rerank=rerank,
-        collection_name=collection,
-    )
+    try:
+        return await asyncio.to_thread(
+            search,
+            query,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
+            rerank=rerank,
+            collection_name=collection,
+            metadata_filter=metadata_filter,
+        )
+    except ValueError as exc:
+        # ChromaDB raises ValueError for malformed ``where`` clauses
+        # (unsupported operator, type mismatch, etc.).  Treat any
+        # ValueError as a client-side input problem.
+        logger.warning("search_documents validation error: %s", exc)
+        return [{
+            "status": "error",
+            "error_type": "validation",
+            "message": str(exc),
+        }]
+    except Exception as exc:
+        # ChromaDB query / vector store failures end up here.  Distinguish
+        # genuinely unexpected errors (``internal``) from the common
+        # ChromaDB / vector-store failure mode (``retrieval``).  Any
+        # exception originating from the chromadb namespace, or any
+        # exception while a metadata filter was attached, is treated as
+        # ``retrieval``; everything else is ``internal``.
+        is_chroma = (
+            type(exc).__module__.startswith("chromadb")
+            or "chroma" in type(exc).__name__.lower()
+        )
+        if is_chroma or metadata_filter is not None:
+            error_type = "retrieval"
+        else:
+            error_type = "internal"
+        logger.warning(
+            "search_documents %s error: %s: %s",
+            error_type, type(exc).__name__, exc,
+        )
+        return [{
+            "status": "error",
+            "error_type": error_type,
+            "message": f"{type(exc).__name__}: {exc}",
+        }]
 
 
 # ── Tool 3: List indexed documents ------------------------------------------

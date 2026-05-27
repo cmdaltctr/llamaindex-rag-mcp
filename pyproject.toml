@@ -22,6 +22,7 @@ dependencies = [
     "httpx>=0.27.0",
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
     "llama-index-llms-ollama>=0.4.0",
+    "docx2txt>=0.9",
 ]
 
 [project.scripts]

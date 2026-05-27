@@ -1,0 +1,610 @@
+{
+  "mode": "idle-baseline",
+  "queries": [
+    {
+      "index": 0,
+      "started_at_ms": 1279.740916999799,
+      "latency_ms": 161.88,
+      "error": null
+    },
+    {
+      "index": 1,
+      "started_at_ms": 1441.6343749999214,
+      "latency_ms": 96.95,
+      "error": null
+    },
+    {
+      "index": 2,
+      "started_at_ms": 1538.5999999998603,
+      "latency_ms": 92.67,
+      "error": null
+    },
+    {
+      "index": 3,
+      "started_at_ms": 1631.2773329991614,
+      "latency_ms": 180.69,
+      "error": null
+    },
+    {
+      "index": 4,
+      "started_at_ms": 1811.9692919990484,
+      "latency_ms": 90.62,
+      "error": null
+    },
+    {
+      "index": 5,
+      "started_at_ms": 1902.5959169994167,
+      "latency_ms": 100.41,
+      "error": null
+    },
+    {
+      "index": 6,
+      "started_at_ms": 2003.0159999987518,
+      "latency_ms": 87.91,
+      "error": null
+    },
+    {
+      "index": 7,
+      "started_at_ms": 2090.9332079991145,
+      "latency_ms": 90.45,
+      "error": null
+    },
+    {
+      "index": 8,
+      "started_at_ms": 2181.3935419995687,
+      "latency_ms": 82.83,
+      "error": null
+    },
+    {
+      "index": 9,
+      "started_at_ms": 2264.227249999749,
+      "latency_ms": 93.87,
+      "error": null
+    },
+    {
+      "index": 10,
+      "started_at_ms": 2358.1004999996367,
+      "latency_ms": 92.36,
+      "error": null
+    },
+    {
+      "index": 11,
+      "started_at_ms": 2450.465166999493,
+      "latency_ms": 93.89,
+      "error": null
+    },
+    {
+      "index": 12,
+      "started_at_ms": 2544.362041999193,
+      "latency_ms": 89.64,
+      "error": null
+    },
+    {
+      "index": 13,
+      "started_at_ms": 2634.0089999994234,
+      "latency_ms": 87.22,
+      "error": null
+    },
+    {
+      "index": 14,
+      "started_at_ms": 2721.2331669998093,
+      "latency_ms": 86.75,
+      "error": null
+    },
+    {
+      "index": 15,
+      "started_at_ms": 2807.991124998807,
+      "latency_ms": 85.52,
+      "error": null
+    },
+    {
+      "index": 16,
+      "started_at_ms": 2893.521416999647,
+      "latency_ms": 91.23,
+      "error": null
+    },
+    {
+      "index": 17,
+      "started_at_ms": 2984.7538329995587,
+      "latency_ms": 90.08,
+      "error": null
+    },
+    {
+      "index": 18,
+      "started_at_ms": 3074.8447079986363,
+      "latency_ms": 78.62,
+      "error": null
+    },
+    {
+      "index": 19,
+      "started_at_ms": 3153.4838329989725,
+      "latency_ms": 88.15,
+      "error": null
+    },
+    {
+      "index": 20,
+      "started_at_ms": 3241.6445419985394,
+      "latency_ms": 91.53,
+      "error": null
+    },
+    {
+      "index": 21,
+      "started_at_ms": 3333.1842079987837,
+      "latency_ms": 88.11,
+      "error": null
+    },
+    {
+      "index": 22,
+      "started_at_ms": 3421.2961249995715,
+      "latency_ms": 88.82,
+      "error": null
+    },
+    {
+      "index": 23,
+      "started_at_ms": 3510.1193329992384,
+      "latency_ms": 91.35,
+      "error": null
+    },
+    {
+      "index": 24,
+      "started_at_ms": 3601.4786249997996,
+      "latency_ms": 91.65,
+      "error": null
+    },
+    {
+      "index": 25,
+      "started_at_ms": 3693.1350419999944,
+      "latency_ms": 89.54,
+      "error": null
+    },
+    {
+      "index": 26,
+      "started_at_ms": 3782.6791249990492,
+      "latency_ms": 83.63,
+      "error": null
+    },
+    {
+      "index": 27,
+      "started_at_ms": 3866.313624999748,
+      "latency_ms": 88.84,
+      "error": null
+    },
+    {
+      "index": 28,
+      "started_at_ms": 3955.1639999990584,
+      "latency_ms": 82.73,
+      "error": null
+    },
+    {
+      "index": 29,
+      "started_at_ms": 4037.900916999206,
+      "latency_ms": 88.53,
+      "error": null
+    },
+    {
+      "index": 30,
+      "started_at_ms": 4126.43583299905,
+      "latency_ms": 88.24,
+      "error": null
+    },
+    {
+      "index": 31,
+      "started_at_ms": 4214.697583000088,
+      "latency_ms": 81.96,
+      "error": null
+    },
+    {
+      "index": 32,
+      "started_at_ms": 4296.667582999362,
+      "latency_ms": 78.39,
+      "error": null
+    },
+    {
+      "index": 33,
+      "started_at_ms": 4375.064582998675,
+      "latency_ms": 81.76,
+      "error": null
+    },
+    {
+      "index": 34,
+      "started_at_ms": 4456.832916999701,
+      "latency_ms": 83.55,
+      "error": null
+    },
+    {
+      "index": 35,
+      "started_at_ms": 4540.392124999926,
+      "latency_ms": 85.27,
+      "error": null
+    },
+    {
+      "index": 36,
+      "started_at_ms": 4625.6646669990005,
+      "latency_ms": 91.96,
+      "error": null
+    },
+    {
+      "index": 37,
+      "started_at_ms": 4717.632791998767,
+      "latency_ms": 80.73,
+      "error": null
+    },
+    {
+      "index": 38,
+      "started_at_ms": 4798.37283300003,
+      "latency_ms": 91.57,
+      "error": null
+    },
+    {
+      "index": 39,
+      "started_at_ms": 4889.945207998608,
+      "latency_ms": 84.09,
+      "error": null
+    },
+    {
+      "index": 40,
+      "started_at_ms": 4974.045875000229,
+      "latency_ms": 90.56,
+      "error": null
+    },
+    {
+      "index": 41,
+      "started_at_ms": 5064.613667000231,
+      "latency_ms": 85.34,
+      "error": null
+    },
+    {
+      "index": 42,
+      "started_at_ms": 5149.962124998638,
+      "latency_ms": 89.95,
+      "error": null
+    },
+    {
+      "index": 43,
+      "started_at_ms": 5239.92220800028,
+      "latency_ms": 80.48,
+      "error": null
+    },
+    {
+      "index": 44,
+      "started_at_ms": 5320.409666999694,
+      "latency_ms": 96.11,
+      "error": null
+    },
+    {
+      "index": 45,
+      "started_at_ms": 5416.530958000294,
+      "latency_ms": 86.07,
+      "error": null
+    },
+    {
+      "index": 46,
+      "started_at_ms": 5502.605333000247,
+      "latency_ms": 93.38,
+      "error": null
+    },
+    {
+      "index": 47,
+      "started_at_ms": 5595.990042000267,
+      "latency_ms": 90.34,
+      "error": null
+    },
+    {
+      "index": 48,
+      "started_at_ms": 5686.3395829986985,
+      "latency_ms": 89.55,
+      "error": null
+    },
+    {
+      "index": 49,
+      "started_at_ms": 5775.903124998877,
+      "latency_ms": 93.21,
+      "error": null
+    },
+    {
+      "index": 50,
+      "started_at_ms": 5869.120999999723,
+      "latency_ms": 119.31,
+      "error": null
+    },
+    {
+      "index": 51,
+      "started_at_ms": 5988.437874999363,
+      "latency_ms": 88.36,
+      "error": null
+    },
+    {
+      "index": 52,
+      "started_at_ms": 6076.806332999695,
+      "latency_ms": 84.41,
+      "error": null
+    },
+    {
+      "index": 53,
+      "started_at_ms": 6161.221958000169,
+      "latency_ms": 88.16,
+      "error": null
+    },
+    {
+      "index": 54,
+      "started_at_ms": 6249.383708000096,
+      "latency_ms": 84.77,
+      "error": null
+    },
+    {
+      "index": 55,
+      "started_at_ms": 6334.156999999323,
+      "latency_ms": 88.79,
+      "error": null
+    },
+    {
+      "index": 56,
+      "started_at_ms": 6422.953874998711,
+      "latency_ms": 83.21,
+      "error": null
+    },
+    {
+      "index": 57,
+      "started_at_ms": 6506.171875000291,
+      "latency_ms": 87.25,
+      "error": null
+    },
+    {
+      "index": 58,
+      "started_at_ms": 6593.4268749988405,
+      "latency_ms": 85.39,
+      "error": null
+    },
+    {
+      "index": 59,
+      "started_at_ms": 6678.8279579996015,
+      "latency_ms": 87.62,
+      "error": null
+    },
+    {
+      "index": 60,
+      "started_at_ms": 6766.455416998724,
+      "latency_ms": 92.38,
+      "error": null
+    },
+    {
+      "index": 61,
+      "started_at_ms": 6858.838832999027,
+      "latency_ms": 86.09,
+      "error": null
+    },
+    {
+      "index": 62,
+      "started_at_ms": 6944.937541999025,
+      "latency_ms": 91.54,
+      "error": null
+    },
+    {
+      "index": 63,
+      "started_at_ms": 7036.4840000002005,
+      "latency_ms": 88.6,
+      "error": null
+    },
+    {
+      "index": 64,
+      "started_at_ms": 7125.08941699889,
+      "latency_ms": 90.13,
+      "error": null
+    },
+    {
+      "index": 65,
+      "started_at_ms": 7215.226541999073,
+      "latency_ms": 85.57,
+      "error": null
+    },
+    {
+      "index": 66,
+      "started_at_ms": 7300.808416999644,
+      "latency_ms": 90.81,
+      "error": null
+    },
+    {
+      "index": 67,
+      "started_at_ms": 7391.627916998914,
+      "latency_ms": 92.11,
+      "error": null
+    },
+    {
+      "index": 68,
+      "started_at_ms": 7483.746124999016,
+      "latency_ms": 93.19,
+      "error": null
+    },
+    {
+      "index": 69,
+      "started_at_ms": 7576.938999998674,
+      "latency_ms": 93.14,
+      "error": null
+    },
+    {
+      "index": 70,
+      "started_at_ms": 7670.08770800021,
+      "latency_ms": 88.04,
+      "error": null
+    },
+    {
+      "index": 71,
+      "started_at_ms": 7758.130999998684,
+      "latency_ms": 93.87,
+      "error": null
+    },
+    {
+      "index": 72,
+      "started_at_ms": 7852.008249999926,
+      "latency_ms": 92.33,
+      "error": null
+    },
+    {
+      "index": 73,
+      "started_at_ms": 7944.343832999948,
+      "latency_ms": 88.51,
+      "error": null
+    },
+    {
+      "index": 74,
+      "started_at_ms": 8032.863667000129,
+      "latency_ms": 89.8,
+      "error": null
+    },
+    {
+      "index": 75,
+      "started_at_ms": 8122.667791998538,
+      "latency_ms": 81.69,
+      "error": null
+    },
+    {
+      "index": 76,
+      "started_at_ms": 8204.360416999407,
+      "latency_ms": 88.12,
+      "error": null
+    },
+    {
+      "index": 77,
+      "started_at_ms": 8292.487666998568,
+      "latency_ms": 90.6,
+      "error": null
+    },
+    {
+      "index": 78,
+      "started_at_ms": 8383.092999998553,
+      "latency_ms": 93.21,
+      "error": null
+    },
+    {
+      "index": 79,
+      "started_at_ms": 8476.309249999758,
+      "latency_ms": 96.26,
+      "error": null
+    },
+    {
+      "index": 80,
+      "started_at_ms": 8572.574166999402,
+      "latency_ms": 87.95,
+      "error": null
+    },
+    {
+      "index": 81,
+      "started_at_ms": 8660.532916999728,
+      "latency_ms": 88.1,
+      "error": null
+    },
+    {
+      "index": 82,
+      "started_at_ms": 8748.636416999943,
+      "latency_ms": 91.33,
+      "error": null
+    },
+    {
+      "index": 83,
+      "started_at_ms": 8839.977416999318,
+      "latency_ms": 82.83,
+      "error": null
+    },
+    {
+      "index": 84,
+      "started_at_ms": 8922.815874999287,
+      "latency_ms": 90.25,
+      "error": null
+    },
+    {
+      "index": 85,
+      "started_at_ms": 9013.073374999294,
+      "latency_ms": 87.58,
+      "error": null
+    },
+    {
+      "index": 86,
+      "started_at_ms": 9100.666958000147,
+      "latency_ms": 98.01,
+      "error": null
+    },
+    {
+      "index": 87,
+      "started_at_ms": 9198.68120799947,
+      "latency_ms": 89.94,
+      "error": null
+    },
+    {
+      "index": 88,
+      "started_at_ms": 9288.632249999864,
+      "latency_ms": 80.13,
+      "error": null
+    },
+    {
+      "index": 89,
+      "started_at_ms": 9368.771542000104,
+      "latency_ms": 98.79,
+      "error": null
+    },
+    {
+      "index": 90,
+      "started_at_ms": 9467.571916999077,
+      "latency_ms": 96.42,
+      "error": null
+    },
+    {
+      "index": 91,
+      "started_at_ms": 9563.99699999929,
+      "latency_ms": 93.93,
+      "error": null
+    },
+    {
+      "index": 92,
+      "started_at_ms": 9657.936166999207,
+      "latency_ms": 89.61,
+      "error": null
+    },
+    {
+      "index": 93,
+      "started_at_ms": 9747.558082999603,
+      "latency_ms": 84.4,
+      "error": null
+    },
+    {
+      "index": 94,
+      "started_at_ms": 9831.970707999062,
+      "latency_ms": 90.93,
+      "error": null
+    },
+    {
+      "index": 95,
+      "started_at_ms": 9922.910582999975,
+      "latency_ms": 90.1,
+      "error": null
+    },
+    {
+      "index": 96,
+      "started_at_ms": 10013.015582999287,
+      "latency_ms": 94.89,
+      "error": null
+    },
+    {
+      "index": 97,
+      "started_at_ms": 10107.914124999297,
+      "latency_ms": 82.48,
+      "error": null
+    },
+    {
+      "index": 98,
+      "started_at_ms": 10190.401957999711,
+      "latency_ms": 82.65,
+      "error": null
+    },
+    {
+      "index": 99,
+      "started_at_ms": 10273.062624999511,
+      "latency_ms": 98.55,
+      "error": null
+    }
+  ],
+  "ingest_wall_clock_s": null,
+  "p50_ms": 89.58,
+  "p95_ms": 98.56,
+  "p99_ms": 162.07,
+  "error_count": 0
+}

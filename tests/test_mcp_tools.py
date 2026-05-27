@@ -118,6 +118,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         similarity_threshold=0.25,
         rerank=True,
         collection_name="mcp_shape_coll",
+        metadata_filter=None,
     )
 
 
@@ -516,3 +517,213 @@ def test_main_calls_mcp_run() -> None:
         main()
 
     mock_run.assert_called_once_with(transport="stdio")
+
+
+# ── search_documents: metadata_filter exposure ─────────────────────────────
+
+
+async def test_search_documents_metadata_filter_passed_through(
+    mcp_server,
+) -> None:
+    """metadata_filter param must reach retrieval.search() unchanged."""
+    expected = [{
+        "score": 0.9,
+        "source": "ai.txt",
+        "page_label": None,
+        "text": "ai content",
+        "reranked": False,
+    }]
+
+    with patch(
+        "rag_mcp.server.search", return_value=expected,
+    ) as mock_search:
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {
+                    "query": "attention",
+                    "metadata_filter": {"category": "ai"},
+                    "collection": "filtered_coll",
+                },
+            )
+
+    data = _extract_result(result)
+    assert data == expected
+    # The filter must reach retrieval.search untouched.
+    _, kwargs = mock_search.call_args
+    assert kwargs["metadata_filter"] == {"category": "ai"}
+
+
+async def test_search_documents_returns_filter_matches(
+    mcp_server, tmp_path: Path, monkeypatch,
+) -> None:
+    """End-to-end: a filtered MCP search returns only matching chunks."""
+    import rag_mcp.metadata_extractor as _me
+    monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
+    monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+
+    ai_doc = tmp_path / "ai.txt"
+    ai_doc.write_text(
+        "transformer attention heads. deep learning neural networks. "
+        "embeddings drive llm performance."
+    )
+
+    async with connected_client(mcp_server) as client:
+        await client.call_tool(
+            "ingest_documents",
+            {"path": str(ai_doc), "collection": "mcp_filter"},
+        )
+
+        # Filter that should not match anything.
+        result = await client.call_tool(
+            "search_documents",
+            {
+                "query": "attention",
+                "collection": "mcp_filter",
+                "metadata_filter": {"category": "philosophy"},
+            },
+        )
+        data = _extract_result(result)
+        assert data == []
+
+        # Unfiltered: should return at least one result.
+        result_open = await client.call_tool(
+            "search_documents",
+            {"query": "attention", "collection": "mcp_filter"},
+        )
+        open_data = _extract_result(result_open)
+        assert isinstance(open_data, list)
+        assert len(open_data) > 0
+
+
+async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
+    """Unfiltered search must pass metadata_filter=None to retrieval."""
+    expected: list[dict] = []
+
+    with patch(
+        "rag_mcp.server.search", return_value=expected,
+    ) as mock_search:
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents", {"query": "anything"},
+            )
+
+    data = _extract_result(result)
+    assert data == []
+    _, kwargs = mock_search.call_args
+    assert kwargs["metadata_filter"] is None
+
+
+# ── search_documents: error envelope ───────────────────────────────────────
+
+
+async def test_search_documents_validation_error_envelope(
+    mcp_server,
+) -> None:
+    """A ValueError from search → validation envelope, no exception."""
+    def _raise_value_error(*args, **kwargs):
+        raise ValueError("Invalid where clause: unsupported operator $bogus")
+
+    with patch("rag_mcp.server.search", side_effect=_raise_value_error):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {
+                    "query": "anything",
+                    "metadata_filter": {"category": {"$bogus": "x"}},
+                },
+            )
+
+    data = _extract_result(result)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    err = data[0]
+    assert err["status"] == "error"
+    assert err["error_type"] == "validation"
+    assert "unsupported operator" in err["message"].lower()
+
+
+async def test_search_documents_retrieval_error_envelope(
+    mcp_server,
+) -> None:
+    """A ChromaDB failure during search → retrieval envelope."""
+    # Forge an exception class whose ``__module__`` lives under chromadb,
+    # without importing chromadb.errors directly (which moves between
+    # versions).  This matches the production-side discriminator in
+    # rag_mcp.server.search_documents.
+    fake_chroma = type(
+        "ChromaError",
+        (RuntimeError,),
+        {"__module__": "chromadb.errors"},
+    )
+
+    def _raise_chroma(*args, **kwargs):
+        raise fake_chroma("collection 'x' is corrupt")
+
+    with patch("rag_mcp.server.search", side_effect=_raise_chroma):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents", {"query": "anything"},
+            )
+
+    data = _extract_result(result)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    err = data[0]
+    assert err["status"] == "error"
+    assert err["error_type"] == "retrieval"
+    assert "corrupt" in err["message"]
+
+
+async def test_search_documents_internal_error_envelope(
+    mcp_server,
+) -> None:
+    """An unexpected non-ChromaDB error → internal envelope."""
+    def _raise_unexpected(*args, **kwargs):
+        raise KeyError("missing config key 'foo'")
+
+    with patch("rag_mcp.server.search", side_effect=_raise_unexpected):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents", {"query": "anything"},
+            )
+
+    data = _extract_result(result)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    err = data[0]
+    assert err["status"] == "error"
+    assert err["error_type"] == "internal"
+
+
+async def test_search_documents_success_has_no_status_key(
+    mcp_server,
+) -> None:
+    """Successful results must not contain a 'status' key on any dict."""
+    expected = [
+        {
+            "score": 0.9,
+            "source": "a.txt",
+            "page_label": None,
+            "text": "first",
+            "reranked": False,
+        },
+        {
+            "score": 0.5,
+            "source": "b.txt",
+            "page_label": 1,
+            "text": "second",
+            "reranked": False,
+        },
+    ]
+
+    with patch("rag_mcp.server.search", return_value=expected):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents", {"query": "anything"},
+            )
+
+    data = _extract_result(result)
+    assert data == expected
+    for entry in data:
+        assert "status" not in entry

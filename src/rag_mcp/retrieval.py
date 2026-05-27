@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import chromadb
-from llama_index.core import VectorStoreIndex
-from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core import Settings
 
 from .config import CHROMA_PERSIST_DIR, RERANK_ENABLED, SIMILARITY_THRESHOLD, TOP_K
 from .chroma_utils import iter_collection_metadatas
@@ -42,6 +41,25 @@ def _effective_threshold(
     return similarity_threshold / 30 if rerank else similarity_threshold
 
 
+def _distance_to_score(distance: float | None) -> float:
+    """Convert a ChromaDB L2 distance to a 0–1 similarity score.
+
+    The single canonical conversion shared by every non-reranked
+    retrieval path: ``score = 1.0 / (1.0 + distance)``.  Closer distance
+    yields higher score.  See ADR-015 / OpenSpec change
+    ``rag-reliability-correctness-fixes`` Decision 3.
+
+    Args:
+        distance: Raw L2 distance from ChromaDB (``None`` is treated as 0).
+
+    Returns:
+        Float in ``(0, 1]``.
+    """
+    if distance is None:
+        return 0.0
+    return 1.0 / (1.0 + distance)
+
+
 def search(
     query: str,
     top_k: int = TOP_K,
@@ -77,6 +95,12 @@ def search(
             page_label – page number (or None)
             text       – the chunk text
             reranked   – bool (True if cross-encoder re-scored the result)
+
+    Raises:
+        ValueError: If ``metadata_filter`` is rejected by ChromaDB
+            (unsupported operator, type mismatch, etc.).  Other
+            ChromaDB-side failures propagate as their original
+            exception types so the MCP layer can classify them.
     """
     db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 
@@ -92,74 +116,46 @@ def search(
     # has a meaningful pool to re-score.
     fetch_k = top_k * 2 if rerank else top_k
 
+    # Both retrieval paths (filtered and unfiltered) issue the same direct
+    # ChromaDB query.  This guarantees the pre-threshold ``score`` field
+    # is computed by exactly the same formula on both paths — the
+    # ``1.0 / (1.0 + distance)`` conversion in ``_distance_to_score``.
+    # See ADR-015 / OpenSpec change ``rag-reliability-correctness-fixes``
+    # Decision 3.
+    query_embedding = Settings.embed_model.get_query_embedding(query)
+
+    query_kwargs: dict = {
+        "query_embeddings": [query_embedding],
+        "n_results": fetch_k,
+        "include": ["metadatas", "documents", "distances"],
+    }
     if metadata_filter:
-        # ── Server-side filtering via ChromaDB's native where clause ─────
-        # Embed the query, then query ChromaDB directly with the where
-        # parameter.  This ensures only matching chunks are fetched from
-        # the vector store — no post-retrieval client-side filtering.
-        from llama_index.core import Settings
+        query_kwargs["where"] = metadata_filter
 
-        query_embedding = Settings.embed_model.get_query_embedding(query)
+    raw = collection.query(**query_kwargs)
 
-        raw = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=fetch_k,
-            where=metadata_filter,
-            include=["metadatas", "documents", "distances"],
-        )
+    results: list[dict] = []
+    ids = raw.get("ids", [[]])[0]
+    documents = raw.get("documents", [[]])[0]
+    metadatas = raw.get("metadatas", [[]])[0]
+    distances = raw.get("distances", [[]])[0]
 
-        results: list[dict] = []
-        ids = raw.get("ids", [[]])[0]
-        documents = raw.get("documents", [[]])[0]
-        metadatas = raw.get("metadatas", [[]])[0]
-        distances = raw.get("distances", [[]])[0]
+    for i, _chunk_id in enumerate(ids):
+        meta = metadatas[i] if i < len(metadatas) else {}
+        text = documents[i] if i < len(documents) else ""
+        distance = distances[i] if i < len(distances) else None
 
-        for i, chunk_id in enumerate(ids):
-            meta = metadatas[i] if i < len(metadatas) else {}
-            text = documents[i] if i < len(documents) else ""
-            distance = distances[i] if i < len(distances) else 0.0
-            # Convert L2 distance (ChromaDB default) to a 0–1 similarity
-            # score: 1.0 / (1.0 + distance).  Closer distance → higher score.
-            score = 1.0 / (1.0 + distance) if distance is not None else 0.0
-
-            results.append({
-                "score": score,
-                "source": (
-                    meta.get("file_path")
-                    or meta.get("file_name")
-                    or "unknown"
-                ),
-                "page_label": meta.get("page_label"),
-                "text": text,
-                "reranked": False,
-            })
-
-    else:
-        # ── Existing LlamaIndex retriever path (no metadata filter) ──────
-        vector_store = ChromaVectorStore(chroma_collection=collection)
-        index = VectorStoreIndex.from_vector_store(vector_store)
-
-        retriever = index.as_retriever(similarity_top_k=fetch_k)
-        nodes = retriever.retrieve(query)
-
-        results: list[dict] = []
-        for item in nodes:
-            node = item.node
-            meta = node.metadata
-
-            results.append(
-                {
-                    "score": float(item.score) if item.score is not None else 0.0,
-                    "source": (
-                        meta.get("file_path")
-                        or meta.get("file_name")
-                        or "unknown"
-                    ),
-                    "page_label": meta.get("page_label"),
-                    "text": node.text,
-                    "reranked": False,
-                }
-            )
+        results.append({
+            "score": _distance_to_score(distance),
+            "source": (
+                meta.get("file_path")
+                or meta.get("file_name")
+                or "unknown"
+            ),
+            "page_label": meta.get("page_label"),
+            "text": text,
+            "reranked": False,
+        })
 
     # Optional: re-score with cross-encoder reranker.
     if rerank and results:

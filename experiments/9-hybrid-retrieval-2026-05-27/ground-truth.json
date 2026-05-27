@@ -1,0 +1,121 @@
+{
+  "_comment": "Exp 9 ground truth for hybrid retrieval. 19 queries: 8 rare-term (incl. 2 named cases), 6 semantic (paraphrase, no overlap), 5 mixed/general. category controls per-partition aggregation in run_eval.py. named_case marks regression targets.",
+  "queries": [
+    {
+      "query": "Where was the Colosseum built?",
+      "expected_source": "sample.md",
+      "expected_answer": "Rome",
+      "category": "rare-term",
+      "named_case": "colosseum"
+    },
+    {
+      "query": "What is the resolution for the MCP-1138 build error?",
+      "expected_source": "mcp-1138-error-codes.md",
+      "expected_answer": "git submodule",
+      "category": "rare-term",
+      "named_case": "bm25-only"
+    },
+    {
+      "query": "How does numpy.fft.rfft2 differ from fft2?",
+      "expected_source": "numpy-fft-readme.md",
+      "expected_answer": "real",
+      "category": "rare-term"
+    },
+    {
+      "query": "What is the BRCA1 protein's role in homologous recombination repair?",
+      "expected_source": "brca1-research-note.md",
+      "expected_answer": "RAD51",
+      "category": "rare-term"
+    },
+    {
+      "query": "What does 42 U.S.C. § 1983 allow plaintiffs to sue state actors for?",
+      "expected_source": "42-usc-1983-summary.md",
+      "expected_answer": "deprivation",
+      "category": "rare-term"
+    },
+    {
+      "query": "What does the ECONNREFUSED error code mean in Node.js?",
+      "expected_source": "econnrefused-troubleshooting.md",
+      "expected_answer": "actively rejected",
+      "category": "rare-term"
+    },
+    {
+      "query": "What is the I²C address of the SCD41 element on the XK-2034b sensor module?",
+      "expected_source": "xk-2034b-product-spec.md",
+      "expected_answer": "0x62",
+      "category": "rare-term"
+    },
+    {
+      "query": "Under EU Reg. 2016/679, what is the maximum administrative fine for the most serious infringements?",
+      "expected_source": "eu-2016-679-gdpr-summary.md",
+      "expected_answer": "€20 million",
+      "category": "rare-term"
+    },
+    {
+      "query": "What innovation lets GPT-class systems handle long-range word ties efficiently?",
+      "expected_source": "transformers.md",
+      "expected_answer": "self-attention",
+      "category": "semantic"
+    },
+    {
+      "query": "What scientific framework explains earthquakes, mountain building, and the slow movement of continents?",
+      "expected_source": "plate-tectonics.md",
+      "expected_answer": "Plate tectonics",
+      "category": "semantic"
+    },
+    {
+      "query": "How do statisticians measure the total economic output of a country?",
+      "expected_source": "gdp-economics.md",
+      "expected_answer": "gross domestic product",
+      "category": "semantic"
+    },
+    {
+      "query": "What kind of car uses a rechargeable cell stack instead of liquid fuel?",
+      "expected_source": "electric-vehicles.md",
+      "expected_answer": "battery pack",
+      "category": "semantic"
+    },
+    {
+      "query": "How do green plants manufacture sugar from atmospheric gases using sunlight?",
+      "expected_source": "photosynthesis.md",
+      "expected_answer": "photosynthesis",
+      "category": "semantic"
+    },
+    {
+      "query": "Which city is celebrated for a wrought-iron landmark?",
+      "expected_source": "sample.md",
+      "expected_answer": "Paris",
+      "category": "semantic"
+    },
+    {
+      "query": "Tell me about Python data science libraries",
+      "expected_source": "python.txt",
+      "expected_answer": "scikit-learn",
+      "category": "mixed"
+    },
+    {
+      "query": "What is JavaScript used for on the server?",
+      "expected_source": "javascript.txt",
+      "expected_answer": "Node.js",
+      "category": "mixed"
+    },
+    {
+      "query": "How does qualified immunity affect Section 1983 lawsuits against police officers?",
+      "expected_source": "42-usc-1983-summary.md",
+      "expected_answer": "qualified immunity",
+      "category": "mixed"
+    },
+    {
+      "query": "What is the relationship between BRCA1 deficiency and PARP inhibitors?",
+      "expected_source": "brca1-research-note.md",
+      "expected_answer": "synthetic lethality",
+      "category": "mixed"
+    },
+    {
+      "query": "What troubleshooting steps fix a partial git submodule checkout?",
+      "expected_source": "mcp-1138-error-codes.md",
+      "expected_answer": "git submodule update --init --recursive",
+      "category": "mixed"
+    }
+  ]
+}
