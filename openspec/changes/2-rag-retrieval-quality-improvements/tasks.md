@@ -1,52 +1,52 @@
 ## 1. Markdown-aware chunking
 
-- [ ] 1.1 Add a Markdown branch in the async ingestion chunking step that uses LlamaIndex's `MarkdownNodeParser` for files with extension `.md`
-- [ ] 1.2 Chain a `SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)` after `MarkdownNodeParser` so heading-bounded sections longer than `CHUNK_SIZE` are further split
-- [ ] 1.3 Keep the existing default splitter for all other file types
-- [ ] 1.4 Add a fixture Markdown document with multiple H2 sections, all shorter than `CHUNK_SIZE`, and assert chunk boundaries align with heading boundaries
-- [ ] 1.5 Add a fixture Markdown document with a single H2 section longer than `CHUNK_SIZE` and assert it produces more than one chunk and every chunk is at most `CHUNK_SIZE` characters
-- [ ] 1.6 Add a test asserting non-Markdown files retain previous chunk count and content
-- [ ] 1.7 Add a test asserting a Markdown file with no headings still produces non-empty chunks
+- [x] 1.1 Add a Markdown branch in the async ingestion chunking step that uses LlamaIndex's `MarkdownNodeParser` for files with extension `.md`
+- [x] 1.2 Chain a `SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)` after `MarkdownNodeParser` so heading-bounded sections longer than `CHUNK_SIZE` are further split
+- [x] 1.3 Keep the existing default splitter for all other file types
+- [x] 1.4 Add a fixture Markdown document with multiple H2 sections, all shorter than `CHUNK_SIZE`, and assert chunk boundaries align with heading boundaries
+- [x] 1.5 Add a fixture Markdown document with a single H2 section longer than `CHUNK_SIZE` and assert it produces more than one chunk and every chunk is at most `CHUNK_SIZE` characters
+- [x] 1.6 Add a test asserting non-Markdown files retain previous chunk count and content
+- [x] 1.7 Add a test asserting a Markdown file with no headings still produces non-empty chunks
 - [ ] 1.8 Run **Experiment 6** (`experiments/6-markdown-chunking-quality-2026-05-27/`) end-to-end and confirm heading-targeted Hit@1 lifts ≥ 5 pp, general-query Hit@1 stays within ±2 pp of baseline, and max chunk length ≤ `CHUNK_SIZE * 1.1`
 - [ ] 1.9 If Experiment 6 fails its pass criteria: revisit tasks 1.2 (size cap), 1.5 (cap test), or the Markdown branch wiring, re-run the experiment, loop until criteria pass
 
 ## 2. Reranker fetch pool sizing
 
-- [ ] 2.1 Add `RERANK_FETCH_MULTIPLIER` and `RERANK_MAX_FETCH` env vars to `config.py` with defaults `10` and `50`
-- [ ] 2.2 Replace the `top_k * 2` candidate calculation with `max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)` when reranking is enabled
-- [ ] 2.3 Clamp the resulting `fetch_k` to `min(fetch_k, collection.count())` so small collections do not over-fetch
-- [ ] 2.4 Add tests covering the default pool size, env-var-overridden pool size, and the small-collection clamp behaviour
-- [ ] 2.5 Verify the calibrated reranker threshold scaling factor remains unchanged
+- [x] 2.1 Add `RERANK_FETCH_MULTIPLIER` and `RERANK_MAX_FETCH` env vars to `config.py` with defaults `10` and `50`
+- [x] 2.2 Replace the `top_k * 2` candidate calculation with `max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)` when reranking is enabled
+- [x] 2.3 Clamp the resulting `fetch_k` to `min(fetch_k, collection.count())` so small collections do not over-fetch
+- [x] 2.4 Add tests covering the default pool size, env-var-overridden pool size, and the small-collection clamp behaviour
+- [x] 2.5 Verify the calibrated reranker threshold scaling factor remains unchanged
 - [ ] 2.6 Run **Experiment 5** (`experiments/5-reranker-pool-sizing-2026-05-27/`) — extends `experiments/1-...` with a fetch-size sweep across `(20, 2)`, `(50, 10)`, `(30, 6)`, `(100, 20)` and records post-warmup mean / P95 latency and accuracy per config
 - [ ] 2.7 Confirm the chosen default config has post-warmup P95 ≤ 500 ms; if `(50, 10)` exceeds, fall back to `(30, 6)` and re-run until the criterion is met. Record the chosen defaults in `experiments/5-reranker-pool-sizing-2026-05-27/results.md` and propagate to `config.py`
 
 ## 3. Default chunk overlap bump
 
-- [ ] 3.1 Change the default `CHUNK_OVERLAP` in `config.py` from 64 to 100
-- [ ] 3.2 Confirm `.env.example` is consistent
-- [ ] 3.3 Add or update a test that asserts the new default value when no env override is set
+- [x] 3.1 Change the default `CHUNK_OVERLAP` in `config.py` from 64 to 100
+- [x] 3.2 Confirm `.env.example` is consistent
+- [x] 3.3 Add or update a test that asserts the new default value when no env override is set
 - [ ] 3.4 Run **Experiment 7** (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) — sweeps `CHUNK_OVERLAP ∈ {32, 64, 100, 128}` against the Exp 3 corpus with the reranker enabled and the Exp 5 pool defaults
 - [ ] 3.5 Confirm overlap=100 Hit@1 / MRR ≥ overlap=64 Hit@1 / MRR and chunk-count delta vs overlap=64 ≤ 15 %; if not, hold the default at 64 (revert task 3.1) and document the corpus-specific result
 
 ## 4. Query embedding cache and `search()` refactor
 
-- [ ] 4.1 Refactor `retrieval.search()` so the query is embedded exactly once at the top of the function via a cached helper, and the resulting vector is threaded into both the filtered and unfiltered branches
-- [ ] 4.2 Replace the unfiltered branch's `VectorStoreIndex.from_vector_store(...).as_retriever(...).retrieve(query)` chain with a direct `collection.query(query_embeddings=[vec], n_results=fetch_k)` call so the LlamaIndex internal embed call is removed
-- [ ] 4.3 Wrap the cached helper with `functools.lru_cache(maxsize=128)` keyed on `(query, embed_model_name)`
-- [ ] 4.4 Add a unit test asserting two identical queries on the unfiltered path hit Ollama only once
-- [ ] 4.5 Add a unit test asserting two identical queries on the filtered path hit Ollama only once
-- [ ] 4.6 Add a unit test asserting an unfiltered call followed by a filtered call with the same query hits Ollama only once
-- [ ] 4.7 Add a unit test asserting that distinct queries do not collide in the cache
-- [ ] 4.8 Add a unit test asserting LRU eviction at the configured `maxsize`
-- [ ] 4.9 Confirm the existing Tier 1 score-normalisation guarantee (`score = 1.0 / (1.0 + distance)` on both branches) is preserved by the refactor — both branches now use the same direct ChromaDB call
+- [x] 4.1 Refactor `retrieval.search()` so the query is embedded exactly once at the top of the function via a cached helper, and the resulting vector is threaded into both the filtered and unfiltered branches
+- [x] 4.2 Replace the unfiltered branch's `VectorStoreIndex.from_vector_store(...).as_retriever(...).retrieve(query)` chain with a direct `collection.query(query_embeddings=[vec], n_results=fetch_k)` call so the LlamaIndex internal embed call is removed
+- [x] 4.3 Wrap the cached helper with `functools.lru_cache(maxsize=128)` keyed on `(query, embed_model_name)`
+- [x] 4.4 Add a unit test asserting two identical queries on the unfiltered path hit Ollama only once
+- [x] 4.5 Add a unit test asserting two identical queries on the filtered path hit Ollama only once
+- [x] 4.6 Add a unit test asserting an unfiltered call followed by a filtered call with the same query hits Ollama only once
+- [x] 4.7 Add a unit test asserting that distinct queries do not collide in the cache
+- [x] 4.8 Add a unit test asserting LRU eviction at the configured `maxsize`
+- [x] 4.9 Confirm the existing Tier 1 score-normalisation guarantee (`score = 1.0 / (1.0 + distance)` on both branches) is preserved by the refactor — both branches now use the same direct ChromaDB call
 - [ ] 4.10 Run **Experiment 8** (`experiments/8-query-embedding-cache-2026-05-27/`) end-to-end and confirm warm-trace mean latency drops ≥ 30 %, cold-trace mean latency stays within ±5 % of cache-off, both retrieval paths show ≥ 80 % cache hit rate on the warm trace, and LRU eviction caps cache size at `maxsize=128`
 - [ ] 4.11 If Experiment 8 fails its pass criteria: revisit task 4.2 (unfiltered-branch refactor) if the unfiltered hit rate is 0 %, or task 4.3 (cache wrapper) if both branches miss; re-run the experiment, loop until criteria pass
 
 ## 5. Documentation
 
-- [ ] 5.1 Update the reranker section in `AGENTS.md` to document the new fetch pool env vars and the P95 ≤ 500 ms target
-- [ ] 5.2 Update the chunking section in `AGENTS.md` to note Markdown branching and the chained sentence-splitter cap
-- [ ] 5.3 Update `.env.example` to include the new reranker env vars and the bumped `CHUNK_OVERLAP` default
+- [x] 5.1 Update the reranker section in `AGENTS.md` to document the new fetch pool env vars and the P95 ≤ 500 ms target
+- [x] 5.2 Update the chunking section in `AGENTS.md` to note Markdown branching and the chained sentence-splitter cap
+- [x] 5.3 Update `.env.example` to include the new reranker env vars and the bumped `CHUNK_OVERLAP` default
 
 ## 6. ADR — record the architectural decisions
 

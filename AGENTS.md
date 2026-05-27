@@ -63,6 +63,36 @@ uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
 11. **Watcher `on_deleted` is immediate** (no debounce). Cancels pending ingest timers,
     clears hash cache, calls `remove_document()`. Deletion is idempotent.
 
+12. **Reranker fetch pool follows the "Wide Net, Tight Filter" pattern.**
+    When `rerank=True`, `search()` fetches
+    `max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)` candidates
+    (defaults `50` and `10`) clamped to `collection.count()`, reranks them,
+    and returns the top `top_k`. Target post-warmup P95 latency is
+    **≤ 500 ms** on the calibration corpus
+    (`experiments/reranker-threshold-calibration-2026-05-12/`). If the
+    measured P95 exceeds 500 ms on the operator's hardware, lower
+    `RERANK_FETCH_MULTIPLIER` and/or `RERANK_MAX_FETCH` and re-record the
+    chosen defaults.
+
+13. **Markdown files use a chained heading-aware parser.**
+    `.md` files go through `MarkdownNodeParser` followed by
+    `SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)`
+    so heading boundaries are preserved when sections fit within
+    `CHUNK_SIZE`, and oversized sections are still split. Non-Markdown
+    files keep the bare `SentenceSplitter`. Both parsers ship with
+    `llama-index-core` — no extra dependency.
+
+14. **Query embeddings are LRU-cached in `retrieval.py`.**
+    `_cached_query_embedding` is a `functools.lru_cache(maxsize=128)`
+    keyed on `(query, embed_model_name)`. The cache is process-local
+    and resets on restart. `search()` embeds the query exactly once at
+    the top via `_embed_query()` and threads the vector into both the
+    metadata-filtered and unfiltered branches — both branches now use
+    the same direct `collection.query(query_embeddings=[vec], ...)`
+    call. Tests that swap `Settings.embed_model` should clear the cache
+    via `_retrieval._cached_query_embedding.cache_clear()` to avoid
+    cross-test contamination.
+
 ## MCP Conventions
 
 - **Transport**: `mcp.run(transport="stdio")`. All logging to stderr.
