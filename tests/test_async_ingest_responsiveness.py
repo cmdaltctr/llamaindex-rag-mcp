@@ -217,3 +217,60 @@ class TestResponsivenessRegression:
             "`time.sleep(2)` was not triggered. The responsiveness "
             "regression test may not actually detect blocking calls."
         )
+
+
+class TestSplitterOffload:
+    """Verify the SentenceSplitter call is offloaded from the event loop.
+
+    The wider responsiveness tests above patch
+    ``_read_and_chunk_file_async`` in full, so they cannot catch a
+    regression where the splitter slips back onto the event-loop thread.
+    These tests inject a blocking splitter directly and prove the
+    surrounding loop stays responsive.
+    """
+
+    async def test_search_responsive_during_blocking_splitter(
+        self, dir_with_docs: str, monkeypatch
+    ) -> None:
+        """A slow splitter must not stall a concurrent search call."""
+        from llama_index.core.node_parser import SentenceSplitter
+
+        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.server import search_documents
+
+        coll = "splitter_offload"
+
+        # Pre-populate so search has something to retrieve.
+        await ingest_path_async(dir_with_docs, collection_name=coll)
+
+        original_get_nodes = SentenceSplitter.get_nodes_from_documents
+
+        def _slow_get_nodes(self, documents, *args, **kwargs):
+            # Synchronous block — only safe if offloaded to a worker thread.
+            time.sleep(0.6)
+            return original_get_nodes(self, documents, *args, **kwargs)
+
+        monkeypatch.setattr(
+            SentenceSplitter,
+            "get_nodes_from_documents",
+            _slow_get_nodes,
+        )
+
+        ingest_task = asyncio.create_task(
+            ingest_path_async(dir_with_docs, collection_name=coll)
+        )
+
+        # Let the ingest reach the splitter.
+        await asyncio.sleep(0.1)
+
+        start = time.monotonic()
+        results = await search_documents("test", top_k=5, collection=coll)
+        elapsed = time.monotonic() - start
+
+        assert elapsed < 0.5, (
+            f"Search took {elapsed:.3f}s while splitter was blocking — "
+            "splitter offload may have regressed"
+        )
+        assert isinstance(results, list)
+
+        await ingest_task

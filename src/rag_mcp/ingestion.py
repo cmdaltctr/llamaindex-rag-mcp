@@ -199,7 +199,13 @@ async def _read_and_chunk_file_async(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
-    nodes = splitter.get_nodes_from_documents(documents)
+    # Chunk splitting is CPU-bound and synchronous — offload to a worker
+    # thread so the MCP event loop stays responsive while large documents
+    # are split.  See ADR-015 / OpenSpec change
+    # ``rag-reliability-correctness-fixes`` Decision 1.
+    nodes = await asyncio.to_thread(
+        splitter.get_nodes_from_documents, documents
+    )
 
     if doc_metadata:
         flat_metadata = {

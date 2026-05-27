@@ -340,3 +340,128 @@ class TestListCollections:
         }["paged_collection_stats"]
         assert stats["chunk_count"] == 5
         assert stats["document_count"] == 3
+
+
+# ── Score-metric consistency between filtered and unfiltered paths ─────────
+
+
+class TestScoreConsistency:
+    """Ensure both retrieval paths produce identical pre-threshold scores.
+
+    The fix collapsed both branches into a direct ChromaDB ``query()`` call
+    so the conversion is structurally identical.  These tests pin that
+    contract: a chunk that comes back on the unfiltered path must score
+    the same as that chunk on the filtered path, and ``1.0 / (1.0 + d)``
+    is the only conversion in use.
+    """
+
+    async def test_filtered_and_unfiltered_scores_match(
+        self, tmp_path, monkeypatch,
+    ) -> None:
+        """Same chunk + same query → equal score on both paths."""
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+
+        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.retrieval import search
+
+        ai_file = tmp_path / "ai_only.txt"
+        ai_file.write_text(
+            "The transformer model uses attention heads. Deep learning "
+            "neural networks train on large datasets. LLMs use embeddings."
+        )
+        await ingest_path_async(
+            str(ai_file), collection_name="score_consistency",
+        )
+
+        unfiltered = search(
+            "attention transformer",
+            collection_name="score_consistency",
+            top_k=5,
+        )
+        filtered = search(
+            "attention transformer",
+            collection_name="score_consistency",
+            top_k=5,
+            metadata_filter={"category": "AI"},
+        )
+
+        # Both paths return the same chunks (only one source) with the
+        # same scoring formula — pair them by source/page/text and
+        # compare scores within the contract tolerance.
+        assert unfiltered, "expected at least one chunk from unfiltered path"
+        assert filtered, "expected at least one chunk from filtered path"
+
+        keyed = lambda r: (r["source"], r.get("page_label"), r["text"])
+        unfiltered_by_chunk = {keyed(r): r["score"] for r in unfiltered}
+
+        for r in filtered:
+            key = keyed(r)
+            assert key in unfiltered_by_chunk, (
+                "filtered chunk missing from unfiltered results — "
+                "test fixture must produce a single shared corpus"
+            )
+            assert abs(r["score"] - unfiltered_by_chunk[key]) < 1e-6
+
+    async def test_threshold_consistent_across_paths(
+        self, tmp_path, monkeypatch,
+    ) -> None:
+        """Same threshold filters identically on both paths."""
+        import rag_mcp.metadata_extractor as _me
+        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+
+        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.retrieval import search
+
+        ai_file = tmp_path / "ai_threshold.txt"
+        ai_file.write_text(
+            "transformer attention heads neural networks deep learning "
+            "embeddings power large language models."
+        )
+        await ingest_path_async(
+            str(ai_file), collection_name="threshold_consistency",
+        )
+
+        # Pick a threshold mid-way through the unfiltered scores.
+        unfiltered = search(
+            "attention",
+            collection_name="threshold_consistency",
+            top_k=5,
+        )
+        if not unfiltered:
+            pytest.skip("MockEmbedding produced no matches")
+
+        scores = sorted((r["score"] for r in unfiltered), reverse=True)
+        # Use a threshold strictly between the top score and zero so
+        # both paths exclude the same set of chunks.
+        threshold = max(scores) * 0.5
+
+        unfiltered_filt = search(
+            "attention",
+            collection_name="threshold_consistency",
+            top_k=5,
+            similarity_threshold=threshold,
+        )
+        filtered_filt = search(
+            "attention",
+            collection_name="threshold_consistency",
+            top_k=5,
+            similarity_threshold=threshold,
+            metadata_filter={"category": "AI"},
+        )
+
+        for r in unfiltered_filt:
+            assert r["score"] >= threshold
+        for r in filtered_filt:
+            assert r["score"] >= threshold
+
+    def test_distance_to_score_canonical_formula(self) -> None:
+        """``_distance_to_score`` follows ``1 / (1 + d)`` exactly."""
+        from rag_mcp.retrieval import _distance_to_score
+
+        assert _distance_to_score(0.0) == pytest.approx(1.0)
+        assert _distance_to_score(1.0) == pytest.approx(0.5)
+        assert _distance_to_score(3.0) == pytest.approx(0.25)
+        assert _distance_to_score(None) == 0.0

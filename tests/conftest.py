@@ -114,6 +114,11 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("METADATA_EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
     monkeypatch.setenv("METADATA_KEYWORD_RULES", "")
     monkeypatch.setenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
+    # Keep retry behaviour out of the default test path so existing
+    # tests don't pay 1+2+...=O(2^n) seconds of backoff.  Retry-specific
+    # tests opt back in by setting this to 2+.
+    monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("OLLAMA_CLASSIFY_TIMEOUT", "5.0")
 
     # Patch the shared config module if already loaded — this covers
     # both ingestion and retrieval since they import from config.

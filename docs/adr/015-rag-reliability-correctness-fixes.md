@@ -1,133 +1,158 @@
 # ADR-015: RAG Reliability and Correctness Fixes
 
 **Status**: Proposed
-**Date**: <TODO: YYYY-MM-DD on archive>
+**Date**: 2026-05-27
 **Change**: `rag-reliability-correctness-fixes`
-**Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Git Commits**: <TODO: list relevant SHAs once landed>
 
 ## Context
 
-ADR-014 made the ingest path async end-to-end, but four reliability gaps
-remained in the surrounding pipeline. Chunk splitting (`SentenceSplitter`)
-still ran synchronously inside the otherwise-async ingest path and could
-block the event loop on large documents. The MCP `search_documents` tool
-did not expose `metadata_filter` even though `retrieval.search()` already
-accepted one internally. Filtered and unfiltered retrieval paths used
-different score conversions (filtered: `1.0 / (1.0 + L2_distance)`;
-unfiltered: whatever LlamaIndex returned), so the same
-`similarity_threshold` filtered different chunks on each path. Ollama
-metadata extraction failed closed after a single HTTP or JSON-parsing
-error, even though qwen3 frequently wraps its JSON in ```` ```json ```` fences.
+After ADR-014 made the ingestion path async end-to-end, an audit found a
+small set of correctness and reliability gaps that were independent of
+larger algorithmic upgrades:
 
-These four issues are independent of larger algorithmic choices (hybrid
-retrieval, semantic chunking) and should ship before them so subsequent
-changes inherit a correct baseline.
+- `_read_and_chunk_file_async` still ran `SentenceSplitter.get_nodes_from_documents(...)`
+  synchronously on the event-loop thread. On large documents the splitter
+  blocks the loop for several seconds, so concurrent MCP `search`,
+  `list_collections`, and `delete_documents` calls stall behind ingest.
+- `retrieval.search()` already supports `metadata_filter`, but the MCP
+  `search_documents` tool does not expose it — clients cannot use the
+  feature.
+- The two retrieval branches (filtered direct-ChromaDB, unfiltered
+  LlamaIndex retriever) produced scores on different scales:
+  the filtered branch used `1 / (1 + distance)`, the unfiltered branch
+  surfaced whatever LlamaIndex returned. The same chunk could appear with
+  visibly different `score` values depending on whether a filter was
+  attached, which made `similarity_threshold` semantics inconsistent
+  across paths.
+- `_extract_ollama_async` failed closed on the first transient HTTP error
+  and could not parse JSON wrapped in markdown code fences — qwen3:0.6b's
+  default output shape.
+- The MCP search handler had no explicit error envelope, so a ChromaDB
+  validation failure (invalid `where` clause) propagated as a raw
+  exception, contradicting the AGENTS.md rule "Never raise from MCP tool
+  handlers".
+
+These fixes do not touch the embedding model, ChromaDB collection
+dimensionality, the calibrated ÷30 reranker threshold, or the retrieval
+algorithm. They tighten correctness at module boundaries before larger
+retrieval-quality work begins.
 
 ## Decision
 
-Adopt five sub-decisions, each independent in code but bundled in this
-change for shared test infrastructure and documentation:
+This ADR captures five sub-decisions implemented as one OpenSpec change:
 
-1. **Offload chunk splitting via `asyncio.to_thread`.** Wrap
-   `SentenceSplitter.get_nodes_from_documents(...)` in
-   `asyncio.to_thread(...)` inside `_read_and_chunk_file_async` so the
-   event loop stays responsive during ingestion of large files. Extends
-   ADR-014's pattern (file reads, ChromaDB writes already offload this way).
+1. **Offload chunk splitting via `asyncio.to_thread`.** `_read_and_chunk_file_async`
+   now wraps the `SentenceSplitter.get_nodes_from_documents(...)` call in
+   `asyncio.to_thread(...)`, matching the pattern ADR-014 already
+   established for file reading and ChromaDB writes. This is the last
+   remaining synchronous step in the async ingest path.
 
 2. **Expose optional `metadata_filter` on the MCP `search_documents` tool.**
-   `retrieval.search()` already accepts a ChromaDB-compatible `where`
-   clause; the MCP tool gains an optional `metadata_filter: dict | None
-   = None` parameter and passes it through unchanged. Default
-   behaviour is preserved.
+   The tool now takes an optional `metadata_filter: dict | None = None`
+   parameter and passes it through to `retrieval.search()` unchanged.
+   Existing clients that omit the parameter see no behavioural change.
 
-3. **Both retrieval paths convert ChromaDB L2 distance via
-   `score = 1.0 / (1.0 + distance)`.** The unfiltered path is reworked to
-   surface this conversion either by querying ChromaDB directly or by
-   post-processing LlamaIndex retriever output. A regression test asserts
-   pre-threshold scores agree within `1e-6` for the same chunk traversed
-   on both paths. Reranker scores remain on the sigmoid-normalised
-   cross-encoder scale; ADR-005's calibrated ÷30 threshold scaling is
-   explicitly preserved.
+3. **Both retrieval paths use the same score formula `score = 1.0 / (1.0 + distance)`.**
+   `retrieval.search()` was reworked so the metadata-filtered and
+   metadata-free branches both issue a direct ChromaDB `query()` call
+   and apply the same `_distance_to_score` conversion. The branches
+   differ only in whether `where` is attached. The pre-threshold score
+   is therefore byte-identical across paths for the same `(query, chunk)`
+   pair (the OpenSpec contract is `≤ 1e-6`, and the implementation hits
+   exact equality by construction). The reranker's sigmoid scale and the
+   calibrated ÷30 threshold scaling are untouched.
 
 4. **Ollama metadata extraction gains bounded retry, exponential backoff,
-   and markdown fence stripping.** `_extract_ollama_async` is wrapped in
-   a manual async retry loop with `OLLAMA_CLASSIFY_MAX_ATTEMPTS` and
-   `OLLAMA_CLASSIFY_TIMEOUT` env vars; successive attempts use
-   `await asyncio.sleep(2 ** attempt)` so retries cannot pile up against
-   a slow Ollama. `_parse_ollama_json_response` strips ```` ```json ```` and
-   ```` ``` ```` fences before `json.loads(...)`. JSON mode (`format: "json"`)
-   is intentionally left off in this change because fence-stripping
-   handles the common failure mode without depending on a specific
-   Ollama version.
+   and markdown fence stripping.** `_extract_ollama_async` now runs up to
+   `OLLAMA_CLASSIFY_MAX_ATTEMPTS` attempts (default 3) with
+   `await _retry_sleep(2 ** attempt)` between failures and a per-attempt
+   `OLLAMA_CLASSIFY_TIMEOUT` (default 30 s). `_parse_ollama_json_response`
+   strips a single surrounding markdown code fence (` ```json ... ``` `
+   or bare ` ``` ... ``` `) before `json.loads`. Ollama JSON mode
+   (`format: "json"`) is left off in this change — the open question is
+   resolved in `design.md` open-questions.
 
 5. **MCP `search_documents` returns errors as a single-element list.**
-   The handler keeps its declared `list[dict]` return type on every path.
-   On caught exception, returns
-   `[{"status": "error", "error_type": "<category>", "message": "<text>"}]`
-   where `error_type` is one of `validation` (invalid `metadata_filter`),
-   `retrieval` (ChromaDB query failure), or `internal`. Successful
-   responses keep their existing field set with no `status` key. This
-   preserves the MCP tool contract while satisfying the AGENTS.md rule
-   that handlers never raise.
+   The handler keeps its declared `list[dict]` return type on every path,
+   including failures. On a caught exception it returns
+   `[{"status": "error", "error_type": <category>, "message": <text>}]`,
+   where `error_type` is one of:
+   - `"validation"` — `ValueError` from ChromaDB, typically a malformed
+     `where` clause;
+   - `"retrieval"` — any other exception originating in the chromadb
+     namespace, or any exception thrown while a `metadata_filter` was
+     attached;
+   - `"internal"` — anything else.
+
+   Successful responses keep their existing list-of-result-dicts shape
+   (`score`, `source`, `page_label`, `text`, `reranked`) and contain no
+   `status` key.
 
 ## Consequences
 
-### Positive
+**Positive**
 
-- Filtered and unfiltered searches now apply `similarity_threshold`
-  against the same score scale; the long-standing comparability bug is
-  closed.
-- Event loop no longer blocks on chunk splitting for large files;
-  responsiveness contract from ADR-014 now holds for the full ingest path.
-- `search_documents` errors are deterministic and machine-readable
-  rather than raised exceptions; MCP clients can branch on
-  `result[0].get("status") == "error"`.
-- qwen3-style ```` ```json ```` fence-wrapped JSON now parses correctly
-  through `_parse_ollama_json_response`.
-- Bounded retry with exponential backoff makes transient Ollama failures
-  recoverable without piling up requests.
+- The MCP event loop stays responsive during ingest of large files.
+  Concurrent `search` calls return well under the 500 ms responsiveness
+  contract from ADR-014, even when the splitter is mid-flight.
+- `similarity_threshold` now means the same thing on every non-reranked
+  retrieval path. The unfiltered and filtered branches use the same
+  formula and the same ChromaDB call, so threshold semantics, ranking,
+  and scoring are uniform.
+- Errors from the search tool have a deterministic, machine-readable
+  shape. Clients can detect failures by checking `result[0]["status"]`
+  on the first element.
+- qwen3:0.6b responses wrapped in fenced JSON now parse correctly. A
+  transient Ollama timeout no longer drops the document straight to
+  `uncategorised`.
 
-### Negative
+**Negative**
 
-- Adds modest latency to metadata extraction when Ollama is degraded
-  (bounded by `OLLAMA_CLASSIFY_MAX_ATTEMPTS × OLLAMA_CLASSIFY_TIMEOUT`).
-- The score-normalisation rework on the unfiltered path replaces the
-  LlamaIndex retriever-chain with a direct `collection.query(...)` call;
-  callers depending on LlamaIndex-specific behaviour on the unfiltered
-  path see a narrower API surface.
+- When Ollama is genuinely unreachable, retry latency now compounds
+  (1 s + 2 s for default 3 attempts ≈ 3 s of backoff) before the
+  `uncategorised` fallback. Bounded by `OLLAMA_CLASSIFY_MAX_ATTEMPTS`
+  and capped by `OLLAMA_CLASSIFY_TIMEOUT` per attempt.
 
-### Neutral
+**Neutral**
 
-- New env vars (`OLLAMA_CLASSIFY_MAX_ATTEMPTS`, `OLLAMA_CLASSIFY_TIMEOUT`)
-  added with backwards-compatible defaults.
-- Error-envelope shape adds a `status` key only on failure responses;
-  existing clients that iterate the list and check field presence are
-  unaffected.
+- The unfiltered retrieval path no longer goes through
+  `VectorStoreIndex.as_retriever()` — it issues a direct ChromaDB query
+  exactly like the filtered path did before. This collapses two code
+  paths into one and simplifies retrieval, but it does mean we no
+  longer rely on LlamaIndex for retriever scoring on the default path.
+  Existing on-disk ChromaDB collections continue to work with no
+  migration.
 
 ## Alternatives Considered
 
-| Option | Rejected because |
-|--------|------------------|
-| Recreate ChromaDB collections with `hnsw:space = cosine` for unified scoring | Forces a migration, breaks existing persisted collections |
-| Switch the MCP error response to a top-level dict (`dict \| list[dict]`) | Changes the declared MCP tool schema and breaks clients that iterate the list |
-| Use `tenacity` for retry | New dependency; a small manual loop avoids it |
-| Enable Ollama JSON mode (`format: "json"`) immediately | Introduces a version-specific dependency on minimum Ollama; fence-stripping addresses the common failure mode without it |
-| Leave both retrieval paths with divergent score formulas and document the divergence | Status quo — produces the bug this ADR exists to fix |
+| Decision | Alternative | Rejected because |
+|----------|-------------|-----------------|
+| 3 — score formula | Recreate ChromaDB collections with `hnsw:space = cosine` so distances are already in `[0, 1]`. | Requires a destructive migration of every persisted collection, and breaks ADR-014's "no rebuild" promise. |
+| 3 — score formula | Leave both paths as-is and document the divergence. | "Documented divergence" is the status quo and is precisely the bug this ADR fixes. |
+| 5 — error envelope | Change `search_documents` to return `dict | list[dict]`. | Changes the declared MCP tool schema and breaks clients that iterate the list. |
+| 5 — error envelope | Raise from the handler and let FastMCP wrap as `TextContent` with `isError`. | Forbidden by AGENTS.md rule 1 ("Never raise from MCP tool handlers"). |
+| 4 — retry library | Adopt `tenacity`. | A small manual loop is enough; adding a runtime dependency for a few lines of retry logic is not worth it. |
 
 ## References
 
-- ADR-005: [Cross-Encoder Reranker with ONNX Runtime](./005-cross-encoder-reranker-with-onnx-runtime.md) — the ÷30 threshold calibration this ADR explicitly preserves
-- ADR-014: [Async Ingestion Path](./014-async-ingestion-path.md) — the foundation this ADR extends to the chunking step
-- OpenSpec change: `openspec/changes/rag-reliability-correctness-fixes/`
+- ADR-014: [Async Ingestion Path](./014-async-ingestion-path.md) — this
+  ADR extends the responsiveness contract to the splitter.
+- ADR-013: [Hybrid Category Taxonomy for Ollama Metadata](./013-hybrid-category-taxonomy-for-ollama-metadata.md)
+  — the taxonomy logic that the retry loop now wraps.
+- OpenSpec change: `openspec/changes/1-rag-reliability-correctness-fixes/`
 - Specs:
-  - `openspec/changes/rag-reliability-correctness-fixes/specs/async-ingestion/spec.md`
-  - `openspec/changes/rag-reliability-correctness-fixes/specs/mcp-search-filtering/spec.md`
-  - `openspec/changes/rag-reliability-correctness-fixes/specs/score-normalisation/spec.md`
-  - `openspec/changes/rag-reliability-correctness-fixes/specs/metadata-extraction/spec.md`
+  - `specs/async-ingestion/spec.md` — splitter offload scenario
+  - `specs/mcp-search-filtering/spec.md` — metadata_filter parameter and
+    error envelope
+  - `specs/score-normalisation/spec.md` — `1 / (1 + d)` parity contract
+  - `specs/metadata-extraction/spec.md` — Ollama retry and fence handling
 - Source:
-  - `src/rag_mcp/ingestion.py` — `_read_and_chunk_file_async` with `to_thread` chunking
-  - `src/rag_mcp/retrieval.py` — unified `score = 1.0 / (1.0 + distance)` on both paths
-  - `src/rag_mcp/server.py` — `search_documents` error envelope and `metadata_filter` parameter
-  - `src/rag_mcp/metadata_extractor.py` — retry loop, exponential backoff, fence stripping
-- Tests: <TODO: list the regression tests added>
+  - `src/rag_mcp/ingestion.py` — `_read_and_chunk_file_async`
+  - `src/rag_mcp/retrieval.py` — `search`, `_distance_to_score`
+  - `src/rag_mcp/server.py` — `search_documents`
+  - `src/rag_mcp/metadata_extractor.py` — `_extract_ollama_async`,
+    `_parse_ollama_json_response`, `_strip_markdown_fence`
+  - `src/rag_mcp/config.py` — `OLLAMA_CLASSIFY_MAX_ATTEMPTS`,
+    `OLLAMA_CLASSIFY_TIMEOUT`
+- Experiment: `experiments/4-async-chunking-responsiveness-2026-05-27/`
+  — under-load vs idle-baseline P95 latency comparison

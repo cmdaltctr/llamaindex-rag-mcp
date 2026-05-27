@@ -71,6 +71,13 @@ METADATA_KEYWORD_RULES = os.getenv("METADATA_KEYWORD_RULES", None)
 # METADATA_EXTRACTION_MODE is "ollama" or "llamaindex").
 OLLAMA_CLASSIFY_MODEL = os.getenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 
+# Bounded retry / per-attempt timeout for Ollama metadata extraction.
+# Reads at import time; tests override via ``monkeypatch.setenv`` and
+# ``monkeypatch.setattr`` on the ``rag_mcp.metadata_extractor`` module
+# (which copies these constants at its own import time).
+OLLAMA_CLASSIFY_MAX_ATTEMPTS = int(os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3"))
+OLLAMA_CLASSIFY_TIMEOUT = float(os.getenv("OLLAMA_CLASSIFY_TIMEOUT", "30.0"))
+
 # Note: LLAMANDEX_EXTRACTOR_MAX_CHUNKS is read at call-time in
 # metadata_extractor.py via os.getenv() so tests can override it
 # with monkeypatch.setenv after module load.  Default: 10.
