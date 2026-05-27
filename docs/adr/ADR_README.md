@@ -21,7 +21,7 @@ development of the LlamaIndex RAG MCP Server.
 | [012](./012-document-deletion.md) | Document Deletion | 2026-05-20 | Accepted |
 | [013](./013-hybrid-category-taxonomy-for-ollama-metadata.md) | Hybrid Category Taxonomy for Ollama Metadata Extraction | 2026-05-20 | Proposed |
 | [014](./014-async-ingestion-path.md) | Async Ingestion Path | 2026-05-20 | Accepted |
-| [015](./015-rag-reliability-correctness-fixes.md) | RAG Reliability and Correctness Fixes | 2026-05-27 | Proposed |
+| [015](./015-rag-reliability-correctness-fixes.md) | RAG Reliability and Correctness Fixes | 2026-05-27 | Accepted |
 | [016](./016-rag-retrieval-quality-improvements.md) | RAG Retrieval Quality Improvements | 2026-05-27 | Proposed |
 | [017](./017-hybrid-retrieval-rrf.md) | Hybrid Retrieval with Reciprocal Rank Fusion | 2026-05-27 | Proposed |
 

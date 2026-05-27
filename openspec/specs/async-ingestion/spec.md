@@ -52,6 +52,12 @@ ChromaDB retrieval work directly on the event-loop thread.
 - **THEN** synchronous retrieval work SHALL be offloaded from the event-loop
   thread
 
+#### Scenario: Chunk splitting is offloaded
+
+- **WHEN** `ingest_path_async` splits loaded documents into nodes
+- **THEN** the splitter call SHALL be offloaded from the event-loop thread
+- **THEN** other tasks scheduled on the loop SHALL be eligible to run while splitting proceeds
+
 #### Scenario: Multiple MCP tool calls interleave during ingest
 
 - **WHEN** an ingest is in progress
