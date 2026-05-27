@@ -1,6 +1,6 @@
 [project]
 name = "rag-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [

@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-05-27)
+
+### Bug Fixes
+
+- Offload keyword extraction to thread + large corpus experiment replication
+  ([`735ef52`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/735ef52491bd879951ff8ce923ec7980f49f5e58))
+
+### Features
+
+- Expose metadata_filter on MCP search and harden Ollama metadata extraction
+  ([`30ccb2d`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/30ccb2d624a9da428d3483a35f4e44cb55f194d5))
+
+
 ## v1.0.0 (2026-05-25)
 
 ### Features
