@@ -1,0 +1,1210 @@
+{
+  "experiment": "query-embedding-cache",
+  "warm_trace_size": 40,
+  "cold_trace_size": 40,
+  "cells": [
+    {
+      "cache_enabled": false,
+      "trace": "warm",
+      "calls": [
+        {
+          "index": 0,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 156.32,
+          "cache_hit": false
+        },
+        {
+          "index": 1,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 102.62,
+          "cache_hit": false
+        },
+        {
+          "index": 2,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 101.76,
+          "cache_hit": false
+        },
+        {
+          "index": 3,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 97.93,
+          "cache_hit": false
+        },
+        {
+          "index": 4,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 105.64,
+          "cache_hit": false
+        },
+        {
+          "index": 5,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 97.53,
+          "cache_hit": false
+        },
+        {
+          "index": 6,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 82.99,
+          "cache_hit": false
+        },
+        {
+          "index": 7,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 86.83,
+          "cache_hit": false
+        },
+        {
+          "index": 8,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 11.83,
+          "cache_hit": true
+        },
+        {
+          "index": 9,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 10.88,
+          "cache_hit": true
+        },
+        {
+          "index": 10,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 10.07,
+          "cache_hit": true
+        },
+        {
+          "index": 11,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 10.1,
+          "cache_hit": true
+        },
+        {
+          "index": 12,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.51,
+          "cache_hit": true
+        },
+        {
+          "index": 13,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 9.9,
+          "cache_hit": true
+        },
+        {
+          "index": 14,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.2,
+          "cache_hit": true
+        },
+        {
+          "index": 15,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 9.81,
+          "cache_hit": true
+        },
+        {
+          "index": 16,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.49,
+          "cache_hit": true
+        },
+        {
+          "index": 17,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 9.62,
+          "cache_hit": true
+        },
+        {
+          "index": 18,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.78,
+          "cache_hit": true
+        },
+        {
+          "index": 19,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 10.0,
+          "cache_hit": true
+        },
+        {
+          "index": 20,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.24,
+          "cache_hit": true
+        },
+        {
+          "index": 21,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 9.99,
+          "cache_hit": true
+        },
+        {
+          "index": 22,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.14,
+          "cache_hit": true
+        },
+        {
+          "index": 23,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 9.75,
+          "cache_hit": true
+        },
+        {
+          "index": 24,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.37,
+          "cache_hit": true
+        },
+        {
+          "index": 25,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 9.99,
+          "cache_hit": true
+        },
+        {
+          "index": 26,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.66,
+          "cache_hit": true
+        },
+        {
+          "index": 27,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 10.17,
+          "cache_hit": true
+        },
+        {
+          "index": 28,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.73,
+          "cache_hit": true
+        },
+        {
+          "index": 29,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 10.04,
+          "cache_hit": true
+        },
+        {
+          "index": 30,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.35,
+          "cache_hit": true
+        },
+        {
+          "index": 31,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 9.98,
+          "cache_hit": true
+        },
+        {
+          "index": 32,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.29,
+          "cache_hit": true
+        },
+        {
+          "index": 33,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 9.97,
+          "cache_hit": true
+        },
+        {
+          "index": 34,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.47,
+          "cache_hit": true
+        },
+        {
+          "index": 35,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 9.84,
+          "cache_hit": true
+        },
+        {
+          "index": 36,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 10.06,
+          "cache_hit": true
+        },
+        {
+          "index": 37,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 10.45,
+          "cache_hit": true
+        },
+        {
+          "index": 38,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.72,
+          "cache_hit": true
+        },
+        {
+          "index": 39,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 9.48,
+          "cache_hit": true
+        }
+      ],
+      "embed_calls": 8,
+      "cache_info": {
+        "hits": 32,
+        "misses": 8,
+        "maxsize": 128,
+        "currsize": 8
+      },
+      "mean_latency_ms": 28.66,
+      "p95_latency_ms": 102.77,
+      "hit_rate": 0.8,
+      "hit_rate_filtered": 0.8,
+      "hit_rate_unfiltered": 0.8
+    },
+    {
+      "cache_enabled": false,
+      "trace": "cold",
+      "calls": [
+        {
+          "index": 0,
+          "query": "How does pretraining force language models to hallucinate at scale?",
+          "branch": "filtered",
+          "latency_ms": 133.4,
+          "cache_hit": false
+        },
+        {
+          "index": 1,
+          "query": "What statistical mechanism causes language models to hallucinate?",
+          "branch": "unfiltered",
+          "latency_ms": 97.17,
+          "cache_hit": false
+        },
+        {
+          "index": 2,
+          "query": "Why does pretraining produce hallucinations in modern LLMs?",
+          "branch": "filtered",
+          "latency_ms": 100.07,
+          "cache_hit": false
+        },
+        {
+          "index": 3,
+          "query": "How does cross-entropy loss reduce trustworthiness in models?",
+          "branch": "unfiltered",
+          "latency_ms": 161.98,
+          "cache_hit": false
+        },
+        {
+          "index": 4,
+          "query": "Why is cross-entropy optimisation linked to model hallucinations?",
+          "branch": "filtered",
+          "latency_ms": 83.51,
+          "cache_hit": false
+        },
+        {
+          "index": 5,
+          "query": "How does the cross-entropy objective harm model reliability?",
+          "branch": "unfiltered",
+          "latency_ms": 93.68,
+          "cache_hit": false
+        },
+        {
+          "index": 6,
+          "query": "How does coding improve mathematical problem-solving in children?",
+          "branch": "filtered",
+          "latency_ms": 96.59,
+          "cache_hit": false
+        },
+        {
+          "index": 7,
+          "query": "What math skills do children gain from learning to program?",
+          "branch": "unfiltered",
+          "latency_ms": 92.29,
+          "cache_hit": false
+        },
+        {
+          "index": 8,
+          "query": "Why does coding help children develop maths reasoning?",
+          "branch": "filtered",
+          "latency_ms": 95.15,
+          "cache_hit": false
+        },
+        {
+          "index": 9,
+          "query": "Does coding improve children's social skills and collaboration?",
+          "branch": "unfiltered",
+          "latency_ms": 98.02,
+          "cache_hit": false
+        },
+        {
+          "index": 10,
+          "query": "How does coding foster collaboration among young learners?",
+          "branch": "filtered",
+          "latency_ms": 89.97,
+          "cache_hit": false
+        },
+        {
+          "index": 11,
+          "query": "Why does pair coding improve student communication?",
+          "branch": "unfiltered",
+          "latency_ms": 91.85,
+          "cache_hit": false
+        },
+        {
+          "index": 12,
+          "query": "What does handwriting do to brain connectivity in young people?",
+          "branch": "filtered",
+          "latency_ms": 88.53,
+          "cache_hit": false
+        },
+        {
+          "index": 13,
+          "query": "How does handwriting affect EEG-measured brain connectivity?",
+          "branch": "unfiltered",
+          "latency_ms": 90.6,
+          "cache_hit": false
+        },
+        {
+          "index": 14,
+          "query": "Why does typing fail to produce the same brain patterns as handwriting?",
+          "branch": "filtered",
+          "latency_ms": 82.82,
+          "cache_hit": false
+        },
+        {
+          "index": 15,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 90.11,
+          "cache_hit": false
+        },
+        {
+          "index": 16,
+          "query": "What role does maslaha play in al-Mustasfa?",
+          "branch": "filtered",
+          "latency_ms": 90.07,
+          "cache_hit": false
+        },
+        {
+          "index": 17,
+          "query": "How does Al-Ghazali define public interest in al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 92.8,
+          "cache_hit": false
+        },
+        {
+          "index": 18,
+          "query": "What features does the grep-ai semantic code search tool offer?",
+          "branch": "filtered",
+          "latency_ms": 94.91,
+          "cache_hit": false
+        },
+        {
+          "index": 19,
+          "query": "How does grep-ai differ from traditional grep?",
+          "branch": "unfiltered",
+          "latency_ms": 86.59,
+          "cache_hit": false
+        },
+        {
+          "index": 20,
+          "query": "What use cases does grep-ai enable?",
+          "branch": "filtered",
+          "latency_ms": 96.18,
+          "cache_hit": false
+        },
+        {
+          "index": 21,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 88.26,
+          "cache_hit": false
+        },
+        {
+          "index": 22,
+          "query": "What sources does paper-search-mcp-cf query?",
+          "branch": "filtered",
+          "latency_ms": 92.04,
+          "cache_hit": false
+        },
+        {
+          "index": 23,
+          "query": "How does paper-search-mcp-cf normalise results across providers?",
+          "branch": "unfiltered",
+          "latency_ms": 93.21,
+          "cache_hit": false
+        },
+        {
+          "index": 24,
+          "query": "What is the role of attention in transformer architectures?",
+          "branch": "filtered",
+          "latency_ms": 86.39,
+          "cache_hit": false
+        },
+        {
+          "index": 25,
+          "query": "How do residual connections help deep neural networks train?",
+          "branch": "unfiltered",
+          "latency_ms": 90.12,
+          "cache_hit": false
+        },
+        {
+          "index": 26,
+          "query": "Why is layer normalisation important in transformer training?",
+          "branch": "filtered",
+          "latency_ms": 90.8,
+          "cache_hit": false
+        },
+        {
+          "index": 27,
+          "query": "What does positional encoding do in a sequence model?",
+          "branch": "unfiltered",
+          "latency_ms": 81.79,
+          "cache_hit": false
+        },
+        {
+          "index": 28,
+          "query": "How does multi-head attention capture different relationships?",
+          "branch": "filtered",
+          "latency_ms": 94.2,
+          "cache_hit": false
+        },
+        {
+          "index": 29,
+          "query": "Why is self-attention quadratic in sequence length?",
+          "branch": "unfiltered",
+          "latency_ms": 88.22,
+          "cache_hit": false
+        },
+        {
+          "index": 30,
+          "query": "How do encoder-only transformers differ from decoder-only ones?",
+          "branch": "filtered",
+          "latency_ms": 99.51,
+          "cache_hit": false
+        },
+        {
+          "index": 31,
+          "query": "What is masked language modelling?",
+          "branch": "unfiltered",
+          "latency_ms": 77.98,
+          "cache_hit": false
+        },
+        {
+          "index": 32,
+          "query": "How does next-token prediction differ from masked LM?",
+          "branch": "filtered",
+          "latency_ms": 94.44,
+          "cache_hit": false
+        },
+        {
+          "index": 33,
+          "query": "Why does temperature sampling affect LLM creativity?",
+          "branch": "unfiltered",
+          "latency_ms": 89.24,
+          "cache_hit": false
+        },
+        {
+          "index": 34,
+          "query": "What is the role of top-p sampling in text generation?",
+          "branch": "filtered",
+          "latency_ms": 87.06,
+          "cache_hit": false
+        },
+        {
+          "index": 35,
+          "query": "How does beam search work in sequence-to-sequence models?",
+          "branch": "unfiltered",
+          "latency_ms": 90.58,
+          "cache_hit": false
+        },
+        {
+          "index": 36,
+          "query": "Why is greedy decoding suboptimal for open-ended generation?",
+          "branch": "filtered",
+          "latency_ms": 89.64,
+          "cache_hit": false
+        },
+        {
+          "index": 37,
+          "query": "What is mixture of experts in language models?",
+          "branch": "unfiltered",
+          "latency_ms": 92.13,
+          "cache_hit": false
+        },
+        {
+          "index": 38,
+          "query": "How does MoE reduce inference cost?",
+          "branch": "filtered",
+          "latency_ms": 87.52,
+          "cache_hit": false
+        },
+        {
+          "index": 39,
+          "query": "What is RAG and how does it differ from fine-tuning?",
+          "branch": "unfiltered",
+          "latency_ms": 93.39,
+          "cache_hit": false
+        }
+      ],
+      "embed_calls": 40,
+      "cache_info": {
+        "hits": 0,
+        "misses": 40,
+        "maxsize": 128,
+        "currsize": 40
+      },
+      "mean_latency_ms": 93.82,
+      "p95_latency_ms": 101.74,
+      "hit_rate": 0.0,
+      "hit_rate_filtered": 0.0,
+      "hit_rate_unfiltered": 0.0
+    },
+    {
+      "cache_enabled": true,
+      "trace": "warm",
+      "calls": [
+        {
+          "index": 0,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 89.44,
+          "cache_hit": false
+        },
+        {
+          "index": 1,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 94.78,
+          "cache_hit": false
+        },
+        {
+          "index": 2,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 91.11,
+          "cache_hit": false
+        },
+        {
+          "index": 3,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 94.13,
+          "cache_hit": false
+        },
+        {
+          "index": 4,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 90.74,
+          "cache_hit": false
+        },
+        {
+          "index": 5,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 90.59,
+          "cache_hit": false
+        },
+        {
+          "index": 6,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 84.32,
+          "cache_hit": false
+        },
+        {
+          "index": 7,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 106.52,
+          "cache_hit": false
+        },
+        {
+          "index": 8,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.81,
+          "cache_hit": true
+        },
+        {
+          "index": 9,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 9.8,
+          "cache_hit": true
+        },
+        {
+          "index": 10,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.51,
+          "cache_hit": true
+        },
+        {
+          "index": 11,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 9.59,
+          "cache_hit": true
+        },
+        {
+          "index": 12,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.85,
+          "cache_hit": true
+        },
+        {
+          "index": 13,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 10.57,
+          "cache_hit": true
+        },
+        {
+          "index": 14,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.8,
+          "cache_hit": true
+        },
+        {
+          "index": 15,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 10.2,
+          "cache_hit": true
+        },
+        {
+          "index": 16,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.39,
+          "cache_hit": true
+        },
+        {
+          "index": 17,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 9.86,
+          "cache_hit": true
+        },
+        {
+          "index": 18,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.82,
+          "cache_hit": true
+        },
+        {
+          "index": 19,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 9.79,
+          "cache_hit": true
+        },
+        {
+          "index": 20,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.72,
+          "cache_hit": true
+        },
+        {
+          "index": 21,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 9.78,
+          "cache_hit": true
+        },
+        {
+          "index": 22,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 9.46,
+          "cache_hit": true
+        },
+        {
+          "index": 23,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 9.78,
+          "cache_hit": true
+        },
+        {
+          "index": 24,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.33,
+          "cache_hit": true
+        },
+        {
+          "index": 25,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 10.57,
+          "cache_hit": true
+        },
+        {
+          "index": 26,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 9.41,
+          "cache_hit": true
+        },
+        {
+          "index": 27,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 9.96,
+          "cache_hit": true
+        },
+        {
+          "index": 28,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 9.75,
+          "cache_hit": true
+        },
+        {
+          "index": 29,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 10.51,
+          "cache_hit": true
+        },
+        {
+          "index": 30,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 10.48,
+          "cache_hit": true
+        },
+        {
+          "index": 31,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 10.27,
+          "cache_hit": true
+        },
+        {
+          "index": 32,
+          "query": "How does pretraining force language models to hallucinate?",
+          "branch": "filtered",
+          "latency_ms": 9.41,
+          "cache_hit": true
+        },
+        {
+          "index": 33,
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "branch": "unfiltered",
+          "latency_ms": 10.25,
+          "cache_hit": true
+        },
+        {
+          "index": 34,
+          "query": "How does coding improve children's mathematical problem solving?",
+          "branch": "filtered",
+          "latency_ms": 10.06,
+          "cache_hit": true
+        },
+        {
+          "index": 35,
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "branch": "unfiltered",
+          "latency_ms": 10.24,
+          "cache_hit": true
+        },
+        {
+          "index": 36,
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "branch": "filtered",
+          "latency_ms": 11.18,
+          "cache_hit": true
+        },
+        {
+          "index": 37,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 12.33,
+          "cache_hit": true
+        },
+        {
+          "index": 38,
+          "query": "What features does the grep-ai tool offer?",
+          "branch": "filtered",
+          "latency_ms": 10.32,
+          "cache_hit": true
+        },
+        {
+          "index": 39,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 10.61,
+          "cache_hit": true
+        }
+      ],
+      "embed_calls": 8,
+      "cache_info": {
+        "hits": 32,
+        "misses": 8,
+        "maxsize": 128,
+        "currsize": 8
+      },
+      "mean_latency_ms": 26.58,
+      "p95_latency_ms": 94.16,
+      "hit_rate": 0.8,
+      "hit_rate_filtered": 0.8,
+      "hit_rate_unfiltered": 0.8
+    },
+    {
+      "cache_enabled": true,
+      "trace": "cold",
+      "calls": [
+        {
+          "index": 0,
+          "query": "How does pretraining force language models to hallucinate at scale?",
+          "branch": "filtered",
+          "latency_ms": 134.57,
+          "cache_hit": false
+        },
+        {
+          "index": 1,
+          "query": "What statistical mechanism causes language models to hallucinate?",
+          "branch": "unfiltered",
+          "latency_ms": 92.46,
+          "cache_hit": false
+        },
+        {
+          "index": 2,
+          "query": "Why does pretraining produce hallucinations in modern LLMs?",
+          "branch": "filtered",
+          "latency_ms": 101.13,
+          "cache_hit": false
+        },
+        {
+          "index": 3,
+          "query": "How does cross-entropy loss reduce trustworthiness in models?",
+          "branch": "unfiltered",
+          "latency_ms": 95.53,
+          "cache_hit": false
+        },
+        {
+          "index": 4,
+          "query": "Why is cross-entropy optimisation linked to model hallucinations?",
+          "branch": "filtered",
+          "latency_ms": 95.44,
+          "cache_hit": false
+        },
+        {
+          "index": 5,
+          "query": "How does the cross-entropy objective harm model reliability?",
+          "branch": "unfiltered",
+          "latency_ms": 96.3,
+          "cache_hit": false
+        },
+        {
+          "index": 6,
+          "query": "How does coding improve mathematical problem-solving in children?",
+          "branch": "filtered",
+          "latency_ms": 88.81,
+          "cache_hit": false
+        },
+        {
+          "index": 7,
+          "query": "What math skills do children gain from learning to program?",
+          "branch": "unfiltered",
+          "latency_ms": 84.18,
+          "cache_hit": false
+        },
+        {
+          "index": 8,
+          "query": "Why does coding help children develop maths reasoning?",
+          "branch": "filtered",
+          "latency_ms": 92.12,
+          "cache_hit": false
+        },
+        {
+          "index": 9,
+          "query": "Does coding improve children's social skills and collaboration?",
+          "branch": "unfiltered",
+          "latency_ms": 90.04,
+          "cache_hit": false
+        },
+        {
+          "index": 10,
+          "query": "How does coding foster collaboration among young learners?",
+          "branch": "filtered",
+          "latency_ms": 91.82,
+          "cache_hit": false
+        },
+        {
+          "index": 11,
+          "query": "Why does pair coding improve student communication?",
+          "branch": "unfiltered",
+          "latency_ms": 93.18,
+          "cache_hit": false
+        },
+        {
+          "index": 12,
+          "query": "What does handwriting do to brain connectivity in young people?",
+          "branch": "filtered",
+          "latency_ms": 89.54,
+          "cache_hit": false
+        },
+        {
+          "index": 13,
+          "query": "How does handwriting affect EEG-measured brain connectivity?",
+          "branch": "unfiltered",
+          "latency_ms": 92.53,
+          "cache_hit": false
+        },
+        {
+          "index": 14,
+          "query": "Why does typing fail to produce the same brain patterns as handwriting?",
+          "branch": "filtered",
+          "latency_ms": 91.39,
+          "cache_hit": false
+        },
+        {
+          "index": 15,
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 90.07,
+          "cache_hit": false
+        },
+        {
+          "index": 16,
+          "query": "What role does maslaha play in al-Mustasfa?",
+          "branch": "filtered",
+          "latency_ms": 88.99,
+          "cache_hit": false
+        },
+        {
+          "index": 17,
+          "query": "How does Al-Ghazali define public interest in al-Mustasfa?",
+          "branch": "unfiltered",
+          "latency_ms": 91.51,
+          "cache_hit": false
+        },
+        {
+          "index": 18,
+          "query": "What features does the grep-ai semantic code search tool offer?",
+          "branch": "filtered",
+          "latency_ms": 96.58,
+          "cache_hit": false
+        },
+        {
+          "index": 19,
+          "query": "How does grep-ai differ from traditional grep?",
+          "branch": "unfiltered",
+          "latency_ms": 88.4,
+          "cache_hit": false
+        },
+        {
+          "index": 20,
+          "query": "What use cases does grep-ai enable?",
+          "branch": "filtered",
+          "latency_ms": 89.45,
+          "cache_hit": false
+        },
+        {
+          "index": 21,
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "branch": "unfiltered",
+          "latency_ms": 82.96,
+          "cache_hit": false
+        },
+        {
+          "index": 22,
+          "query": "What sources does paper-search-mcp-cf query?",
+          "branch": "filtered",
+          "latency_ms": 85.41,
+          "cache_hit": false
+        },
+        {
+          "index": 23,
+          "query": "How does paper-search-mcp-cf normalise results across providers?",
+          "branch": "unfiltered",
+          "latency_ms": 88.32,
+          "cache_hit": false
+        },
+        {
+          "index": 24,
+          "query": "What is the role of attention in transformer architectures?",
+          "branch": "filtered",
+          "latency_ms": 85.46,
+          "cache_hit": false
+        },
+        {
+          "index": 25,
+          "query": "How do residual connections help deep neural networks train?",
+          "branch": "unfiltered",
+          "latency_ms": 86.04,
+          "cache_hit": false
+        },
+        {
+          "index": 26,
+          "query": "Why is layer normalisation important in transformer training?",
+          "branch": "filtered",
+          "latency_ms": 89.21,
+          "cache_hit": false
+        },
+        {
+          "index": 27,
+          "query": "What does positional encoding do in a sequence model?",
+          "branch": "unfiltered",
+          "latency_ms": 87.21,
+          "cache_hit": false
+        },
+        {
+          "index": 28,
+          "query": "How does multi-head attention capture different relationships?",
+          "branch": "filtered",
+          "latency_ms": 86.55,
+          "cache_hit": false
+        },
+        {
+          "index": 29,
+          "query": "Why is self-attention quadratic in sequence length?",
+          "branch": "unfiltered",
+          "latency_ms": 84.81,
+          "cache_hit": false
+        },
+        {
+          "index": 30,
+          "query": "How do encoder-only transformers differ from decoder-only ones?",
+          "branch": "filtered",
+          "latency_ms": 92.49,
+          "cache_hit": false
+        },
+        {
+          "index": 31,
+          "query": "What is masked language modelling?",
+          "branch": "unfiltered",
+          "latency_ms": 82.12,
+          "cache_hit": false
+        },
+        {
+          "index": 32,
+          "query": "How does next-token prediction differ from masked LM?",
+          "branch": "filtered",
+          "latency_ms": 96.76,
+          "cache_hit": false
+        },
+        {
+          "index": 33,
+          "query": "Why does temperature sampling affect LLM creativity?",
+          "branch": "unfiltered",
+          "latency_ms": 93.07,
+          "cache_hit": false
+        },
+        {
+          "index": 34,
+          "query": "What is the role of top-p sampling in text generation?",
+          "branch": "filtered",
+          "latency_ms": 85.8,
+          "cache_hit": false
+        },
+        {
+          "index": 35,
+          "query": "How does beam search work in sequence-to-sequence models?",
+          "branch": "unfiltered",
+          "latency_ms": 86.91,
+          "cache_hit": false
+        },
+        {
+          "index": 36,
+          "query": "Why is greedy decoding suboptimal for open-ended generation?",
+          "branch": "filtered",
+          "latency_ms": 87.67,
+          "cache_hit": false
+        },
+        {
+          "index": 37,
+          "query": "What is mixture of experts in language models?",
+          "branch": "unfiltered",
+          "latency_ms": 86.95,
+          "cache_hit": false
+        },
+        {
+          "index": 38,
+          "query": "How does MoE reduce inference cost?",
+          "branch": "filtered",
+          "latency_ms": 89.65,
+          "cache_hit": false
+        },
+        {
+          "index": 39,
+          "query": "What is RAG and how does it differ from fine-tuning?",
+          "branch": "unfiltered",
+          "latency_ms": 94.98,
+          "cache_hit": false
+        }
+      ],
+      "embed_calls": 40,
+      "cache_info": {
+        "hits": 0,
+        "misses": 40,
+        "maxsize": 128,
+        "currsize": 40
+      },
+      "mean_latency_ms": 91.16,
+      "p95_latency_ms": 96.98,
+      "hit_rate": 0.0,
+      "hit_rate_filtered": 0.0,
+      "hit_rate_unfiltered": 0.0
+    }
+  ],
+  "pass_criteria": {
+    "warm_speedup_pct": 7.26,
+    "warm_speedup_pass": false,
+    "cold_overhead_pct": -2.84,
+    "cold_overhead_pass": true,
+    "warm_filtered_hit_rate": 0.8,
+    "warm_unfiltered_hit_rate": 0.8,
+    "warm_both_branches_pass": true,
+    "cold_no_hit_pass": true,
+    "cache_size_at_cold_end": 40
+  }
+}

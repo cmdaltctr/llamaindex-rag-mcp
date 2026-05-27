@@ -1,0 +1,1380 @@
+{
+  "experiment": "markdown-chunking-quality",
+  "baseline": {
+    "label": "baseline",
+    "chroma_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/chroma_md_baseline",
+    "queries": [
+      {
+        "query": "Under Getting Started in the Nuxt readme, what command creates a new starter project?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Getting Started",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6695017334312825,
+          0.6559668205564225,
+          0.6299051396173506,
+          0.6250071619526676,
+          0.49777019506632036
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 152.97
+      },
+      {
+        "query": "In the Vue Development section of the Nuxt readme, what helper sets the page title?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Vue Development",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6477981209501555,
+          0.6066083336578395,
+          0.6057584184063267,
+          0.5839626708661408,
+          0.4976575070032149
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 120.77
+      },
+      {
+        "query": "Under Professional Support in the Nuxt readme, who handles technical audit and consulting?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Professional Support",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md"
+        ],
+        "top_k_scores": [
+          0.6533152254249239,
+          0.598092566653915,
+          0.592061167879523,
+          0.5548804675792515,
+          0.5154544952356175
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 134.09
+      },
+      {
+        "query": "Under Option Stores in the Pinia docs, what shape does the state factory return?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Option Stores",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6473083938578373,
+          0.6331538357582281,
+          0.6312532045272805,
+          0.6095445372694791,
+          0.6066932040749066
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 132.09
+      },
+      {
+        "query": "In the Setup Stores section of Pinia, what does a ref become inside the store?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Setup Stores",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6380816220520482,
+          0.6202465353039103,
+          0.614264617338061,
+          0.612743453459014,
+          0.6111026120484848
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 128.36
+      },
+      {
+        "query": "Under Destructuring from a Store in Pinia, which helper preserves reactivity?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Destructuring from a Store",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.7288356120212581,
+          0.6865097075609414,
+          0.6366848640245426,
+          0.6212643338504236,
+          0.6208995418422134
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 137.54
+      },
+      {
+        "query": "In the Pinia 'What syntax should I pick' section, what does the doc recommend for choosing between option and setup stores?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "What syntax should I pick?",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6871460052805981,
+          0.6315513765530959,
+          0.6164498764397118,
+          0.6146284073804429,
+          0.5744285191168699
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 129.8
+      },
+      {
+        "query": "Under Project setup in the Django REST quickstart, how do you create a virtual environment?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Project setup",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.7263421245993416,
+          0.5872202881805002,
+          0.5532954475224311,
+          0.5518788375595145,
+          0.5236852055980313
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 135.15
+      },
+      {
+        "query": "In the Serializers section of the Django REST quickstart, what serializer class is used?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Serializers",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.5817431333903846,
+          0.552880891869068,
+          0.5492521990102653,
+          0.546706699102594,
+          0.5339615477524541
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 125.89
+      },
+      {
+        "query": "Under Views in the Django REST quickstart, what base class do the viewsets inherit from?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Views",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.5759460797550607,
+          0.5525082934454727,
+          0.5509497677679915,
+          0.5363213070867793,
+          0.5207914873277514
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 131.4
+      },
+      {
+        "query": "In the Pagination section of the Django REST quickstart, what page size is configured?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Pagination",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.5951743218915437,
+          0.5604650747930796,
+          0.5393415623466575,
+          0.5181294166049677,
+          0.47627725798417714
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 123.18
+      },
+      {
+        "query": "Under URLs in the Django REST quickstart, what router class is used to wire the API automatically?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "URLs",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6599211377449341,
+          0.5698541233664457,
+          0.5694476161098821,
+          0.5608722228039145,
+          0.5418202186345776
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 113.29
+      },
+      {
+        "query": "What features does Nuxt provide for full-stack web applications?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.7430542627024181,
+          0.6506095842861097,
+          0.6491910870542934,
+          0.632311647650953,
+          0.5125667673242328
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 120.41
+      },
+      {
+        "query": "How does Pinia define a store and what is the unique id for?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Defining a Store",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.648195390009667,
+          0.5660338642260239,
+          0.5643939960985762,
+          0.5516965428568845,
+          0.5402628811848186
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 119.41
+      },
+      {
+        "query": "Why does the RAG essay argue hybrid retrieval is the obvious response to dense-only failure modes?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6652768347933917,
+          0.6277558114091214,
+          0.6026832909367363,
+          0.5870481633977855,
+          0.47752819990154116
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 137.26
+      },
+      {
+        "query": "What does the prose essay say about deleting code as an engineering skill?",
+        "expected_source": "no-headings.md",
+        "expected_section": null,
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.6662510180082826,
+          0.5876167828225473,
+          0.5717698791674986,
+          0.45472223380146415,
+          0.4498005267453736
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 134.63
+      },
+      {
+        "query": "How does the Django REST quickstart create the initial admin user?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Project setup",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.7003217214109558,
+          0.6517508279541371,
+          0.6406270541985962,
+          0.5906626024589442,
+          0.5691943769191445
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 125.92
+      },
+      {
+        "query": "What does the RAG essay say a cross-encoder reranker actually computes?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.7119211479719685,
+          0.6027433757462523,
+          0.5935436779479198,
+          0.572530727274266,
+          0.4725434310746103
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 119.9
+      },
+      {
+        "query": "What does the prose essay say about choosing a programming language for production systems?",
+        "expected_source": "no-headings.md",
+        "expected_section": null,
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md"
+        ],
+        "top_k_scores": [
+          0.5200334438851246,
+          0.5031160586868615,
+          0.483621200075409,
+          0.4702513577047298,
+          0.4542509128763544
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 116.0
+      },
+      {
+        "query": "What benefits does the Nuxt readme list for SEO and meta tags?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6743942508600155,
+          0.664116216664483,
+          0.6604296748879268,
+          0.6470383288430369,
+          0.4731792310582534
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 116.79
+      },
+      {
+        "query": "How do I require authenticated users on a REST framework viewset?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Views",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.5816267860907394,
+          0.5567554923104385,
+          0.5275016057197454,
+          0.5227606241464002,
+          0.5091394622067065
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 124.25
+      },
+      {
+        "query": "How do auto-imports work for composables and components in Nuxt?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.5867294331197209,
+          0.574337492071595,
+          0.5542172193010326,
+          0.5482996165710436,
+          0.5459500526402058
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 121.54
+      },
+      {
+        "query": "Should I define each Pinia store in a different file?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Using the store",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.676123665323296,
+          0.6622250752360023,
+          0.6549591701047645,
+          0.6306358950984506,
+          0.6248008442691004
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 121.1
+      },
+      {
+        "query": "What does the RAG essay say a cross-encoder reranker computes per candidate?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md"
+        ],
+        "top_k_scores": [
+          0.707023818456388,
+          0.6058180679220303,
+          0.5951306404370331,
+          0.5665883915479623,
+          0.46815791426991243
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 134.71
+      }
+    ],
+    "chunk_stats": {
+      "total_chunks": 23,
+      "mean_length": 1678.6,
+      "p95_length": 2108.5,
+      "max_length": 2193,
+      "over_cap_count": 22
+    },
+    "metrics_by_category": {
+      "heading-targeted": {
+        "n": 12,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      },
+      "general": {
+        "n": 8,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      },
+      "cross-domain": {
+        "n": 4,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      }
+    }
+  },
+  "candidate": {
+    "label": "candidate",
+    "chroma_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/chroma_md_new",
+    "queries": [
+      {
+        "query": "Under Getting Started in the Nuxt readme, what command creates a new starter project?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Getting Started",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.7993218643850737,
+          0.6732835848837361,
+          0.6250026449673052,
+          0.5999968600437455,
+          0.589453772374765
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.59
+      },
+      {
+        "query": "In the Vue Development section of the Nuxt readme, what helper sets the page title?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Vue Development",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.6766074563786985,
+          0.6077772607070412,
+          0.5703239814594232,
+          0.5623583417061425,
+          0.5582382723391756
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.26
+      },
+      {
+        "query": "Under Professional Support in the Nuxt readme, who handles technical audit and consulting?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Professional Support",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.728759979190841,
+          0.6136945958187076,
+          0.6017210139957064,
+          0.5977274890823596,
+          0.5885439192745775
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.46
+      },
+      {
+        "query": "Under Option Stores in the Pinia docs, what shape does the state factory return?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Option Stores",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6334894928830296,
+          0.6308543873934528,
+          0.6267335298345713,
+          0.598498888366037,
+          0.5979618307311856
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.82
+      },
+      {
+        "query": "In the Setup Stores section of Pinia, what does a ref become inside the store?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Setup Stores",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6736375632847079,
+          0.6447591025462373,
+          0.6026353399463242,
+          0.6000955805427031,
+          0.5810533134574122
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.36
+      },
+      {
+        "query": "Under Destructuring from a Store in Pinia, which helper preserves reactivity?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Destructuring from a Store",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.7079176896888646,
+          0.6868236742210908,
+          0.6457392917273768,
+          0.6031025536860228,
+          0.5839200911623369
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.78
+      },
+      {
+        "query": "In the Pinia 'What syntax should I pick' section, what does the doc recommend for choosing between option and setup stores?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "What syntax should I pick?",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.7434103329382591,
+          0.630045296808276,
+          0.6095421233889641,
+          0.6085046212315145,
+          0.5736627592997855
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.43
+      },
+      {
+        "query": "Under Project setup in the Django REST quickstart, how do you create a virtual environment?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Project setup",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.7401154807031611,
+          0.5879540946829056,
+          0.5827519319799667,
+          0.5812677523094676,
+          0.5544566810888983
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.09
+      },
+      {
+        "query": "In the Serializers section of the Django REST quickstart, what serializer class is used?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Serializers",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6298807811006812,
+          0.5587700861721155,
+          0.552331892379202,
+          0.5420160929894705,
+          0.5354110986480254
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.73
+      },
+      {
+        "query": "Under Views in the Django REST quickstart, what base class do the viewsets inherit from?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Views",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6358228044499217,
+          0.5803384273456568,
+          0.5525835591957027,
+          0.5417067148424373,
+          0.5345383576594486
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.47
+      },
+      {
+        "query": "In the Pagination section of the Django REST quickstart, what page size is configured?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Pagination",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.7691443098918951,
+          0.5618463768290666,
+          0.5436701465385569,
+          0.533280882166245,
+          0.5131751598402127
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.45
+      },
+      {
+        "query": "Under URLs in the Django REST quickstart, what router class is used to wire the API automatically?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "URLs",
+        "category": "heading-targeted",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6745188516586017,
+          0.5676636399557243,
+          0.5643378965728645,
+          0.5584467199358352,
+          0.5470240993993605
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.11
+      },
+      {
+        "query": "What features does Nuxt provide for full-stack web applications?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.74762453350659,
+          0.7267896537017732,
+          0.6412508775663465,
+          0.5935722790985715,
+          0.5900261507955473
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.07
+      },
+      {
+        "query": "How does Pinia define a store and what is the unique id for?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Defining a Store",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6401106148180056,
+          0.6155455067444237,
+          0.5660193317893308,
+          0.5457695580250611,
+          0.5273666511479468
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.07
+      },
+      {
+        "query": "Why does the RAG essay argue hybrid retrieval is the obvious response to dense-only failure modes?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6569219345434293,
+          0.6294458141810737,
+          0.5939403289708057,
+          0.5814029953529944,
+          0.4868713862373501
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.58
+      },
+      {
+        "query": "What does the prose essay say about deleting code as an engineering skill?",
+        "expected_source": "no-headings.md",
+        "expected_section": null,
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.6552100950966023,
+          0.5687615832786993,
+          0.5629772006732687,
+          0.4873262530139072,
+          0.45990268730260037
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.29
+      },
+      {
+        "query": "How does the Django REST quickstart create the initial admin user?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Project setup",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.6433435487779813,
+          0.6233218417008052,
+          0.6225991258415575,
+          0.6101481418578893,
+          0.5896354962957506
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.3
+      },
+      {
+        "query": "What does the RAG essay say a cross-encoder reranker actually computes?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.7095807263827321,
+          0.5964461482044898,
+          0.585350890261292,
+          0.5680971489488746,
+          0.500971801715304
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.19
+      },
+      {
+        "query": "What does the prose essay say about choosing a programming language for production systems?",
+        "expected_source": "no-headings.md",
+        "expected_section": null,
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/edge/no-headings.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.5319754610175322,
+          0.5288734818331603,
+          0.4785890838022459,
+          0.4667057822480169,
+          0.4582202568709758
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.61
+      },
+      {
+        "query": "What benefits does the Nuxt readme list for SEO and meta tags?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "general",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.707302544420374,
+          0.6806685875146289,
+          0.6801928857370128,
+          0.6338313487808075,
+          0.627390819248104
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.97
+      },
+      {
+        "query": "How do I require authenticated users on a REST framework viewset?",
+        "expected_source": "django-rest-quickstart.md",
+        "expected_section": "Views",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/django-rest-quickstart.md"
+        ],
+        "top_k_scores": [
+          0.5586127457092804,
+          0.5556827927753489,
+          0.5461978031651783,
+          0.520750137480053,
+          0.5194299984748887
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.87
+      },
+      {
+        "query": "How do auto-imports work for composables and components in Nuxt?",
+        "expected_source": "nuxt-readme.md",
+        "expected_section": "Nuxt",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.5912082263044207,
+          0.5803026368824014,
+          0.5693734447807178,
+          0.5573051981485627,
+          0.5511394086508293
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 12.8
+      },
+      {
+        "query": "Should I define each Pinia store in a different file?",
+        "expected_source": "pinia-core-concepts.md",
+        "expected_section": "Using the store",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/pinia-core-concepts.md"
+        ],
+        "top_k_scores": [
+          0.6957598962971552,
+          0.6452603894258041,
+          0.6410412420687595,
+          0.6280908000127287,
+          0.6001894380539817
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.7
+      },
+      {
+        "query": "What does the RAG essay say a cross-encoder reranker computes per candidate?",
+        "expected_source": "essay-on-rag.md",
+        "expected_section": "Why retrieval augmentation still matters",
+        "category": "cross-domain",
+        "top_k_sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/prose/essay-on-rag.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/6-markdown-chunking-quality-2026-05-27/corpus/structured/nuxt-readme.md"
+        ],
+        "top_k_scores": [
+          0.7051464224398517,
+          0.5983230124507144,
+          0.586817924323323,
+          0.5613254832867548,
+          0.5003248476126817
+        ],
+        "top_section": null,
+        "hit_rank": 1,
+        "hit_at_1": true,
+        "hit_at_3": true,
+        "hit_at_5": true,
+        "section_match": false,
+        "latency_ms": 13.67
+      }
+    ],
+    "chunk_stats": {
+      "total_chunks": 37,
+      "mean_length": 965.1,
+      "p95_length": 2040.4,
+      "max_length": 2110,
+      "over_cap_count": 23
+    },
+    "metrics_by_category": {
+      "heading-targeted": {
+        "n": 12,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      },
+      "general": {
+        "n": 8,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      },
+      "cross-domain": {
+        "n": 4,
+        "hit_at_1": 1.0,
+        "hit_at_3": 1.0,
+        "hit_at_5": 1.0,
+        "mrr": 1.0
+      }
+    }
+  },
+  "pass_criteria": {
+    "heading_targeted_lift_pp": 0.0,
+    "heading_targeted_lift_pass": false,
+    "general_query_delta_pp": 0.0,
+    "general_query_non_regression_pass": true,
+    "size_cap_honoured_pass": false,
+    "size_cap_max_chars": 2110,
+    "size_cap_threshold": 563
+  }
+}

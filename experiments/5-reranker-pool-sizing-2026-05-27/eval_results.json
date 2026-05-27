@@ -1,0 +1,2466 @@
+{
+  "experiment": "reranker-pool-sizing",
+  "p95_budget_ms": 500.0,
+  "warmup_queries": 50,
+  "measured_repeats": 25,
+  "configs": [
+    {
+      "label": "baseline (top_k * 2)",
+      "max_fetch": 20,
+      "multiplier": 2,
+      "fetch_k_effective": 20,
+      "queries": [
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 659.37
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 442.49
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 342.11
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 383.0
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 373.16
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 364.43
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 340.63
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 379.37
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 375.27
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 351.02
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 337.6
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 337.13
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 323.71
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 411.44
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 344.65
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 323.84
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 345.19
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 304.72
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 339.7
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 310.43
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 313.7
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 411.51
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 311.43
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 303.35
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 324.17
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 319.65
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 351.37
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 312.61
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 319.15
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 371.68
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 339.43
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 323.91
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 321.94
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 319.82
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 363.39
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 320.09
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 405.55
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 316.36
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 319.05
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 327.2
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 324.57
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 306.27
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 325.2
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 316.46
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 333.23
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 335.95
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 324.36
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 319.72
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 318.63
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 469.97
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 424.58
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 486.72
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 389.16
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 394.92
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 437.95
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 333.01
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 308.84
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 278.66
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 279.74
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 298.51
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 390.69
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 426.92
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 318.0
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 380.56
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 612.27
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 607.82
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 312.85
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 301.42
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 316.5
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 298.59
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 290.36
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 294.29
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 303.0
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 284.84
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 287.55
+        }
+      ],
+      "source_accuracy": 1.0,
+      "answer_accuracy": 1.0,
+      "mean_latency_ms": 353.56,
+      "p95_latency_ms": 475.0,
+      "p99_latency_ms": 624.52
+    },
+    {
+      "label": "candidate default",
+      "max_fetch": 50,
+      "multiplier": 10,
+      "fetch_k_effective": 50,
+      "queries": [
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 329.48
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 313.94
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 399.56
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 367.47
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 373.08
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 386.84
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 313.75
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 301.31
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 327.96
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 328.77
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 324.7
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 329.52
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 324.01
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 308.5
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 304.36
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 299.9
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 314.74
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 294.26
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 296.38
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 298.22
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 287.58
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 281.19
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 281.07
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 277.92
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 291.2
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 282.36
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 283.12
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 291.18
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 293.33
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 287.78
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 289.47
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 281.57
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 286.88
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 289.33
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 318.05
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 389.3
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 285.64
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 291.46
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 299.14
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 275.97
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 299.5
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 291.44
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 292.16
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 290.44
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 363.73
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 302.04
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 267.55
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 272.9
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.8
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.99
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.81
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 278.74
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 310.81
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 332.35
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 317.39
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 329.29
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 284.38
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 282.99
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 263.09
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 268.15
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 260.33
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 275.66
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 272.74
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.8
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.37
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 273.39
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 260.78
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.0
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 260.69
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 390.76
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 276.53
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.36
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 278.03
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.72
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.13
+        }
+      ],
+      "source_accuracy": 1.0,
+      "answer_accuracy": 1.0,
+      "mean_latency_ms": 298.27,
+      "p95_latency_ms": 377.21,
+      "p99_latency_ms": 393.05
+    },
+    {
+      "label": "fallback",
+      "max_fetch": 30,
+      "multiplier": 6,
+      "fetch_k_effective": 30,
+      "queries": [
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 331.31
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 328.54
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 320.37
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 309.56
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 355.82
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 578.04
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 282.12
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 573.3
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 635.96
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 392.78
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 293.13
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 352.26
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 307.19
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 317.77
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 344.89
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 327.82
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 347.28
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 428.5
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 347.53
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 344.03
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 390.27
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 415.21
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 440.92
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 366.93
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 318.26
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 311.46
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 321.09
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 341.06
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 304.75
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 310.83
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 293.6
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 474.62
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 374.4
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 306.91
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 305.68
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 286.81
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.76
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 270.48
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 276.91
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 273.41
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 275.67
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 330.53
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 420.5
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 330.35
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 294.7
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 366.41
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 275.96
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 274.61
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 327.53
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 318.73
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 314.29
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 284.02
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 304.76
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 277.81
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 277.2
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 268.95
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 270.21
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.49
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 280.32
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 289.7
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.33
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 321.38
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 346.6
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 329.24
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 579.73
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 315.43
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 404.19
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 453.24
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 331.68
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 307.71
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 286.27
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 275.24
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 289.68
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 327.42
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 323.48
+        }
+      ],
+      "source_accuracy": 1.0,
+      "answer_accuracy": 1.0,
+      "mean_latency_ms": 338.45,
+      "p95_latency_ms": 504.22,
+      "p99_latency_ms": 594.35
+    },
+    {
+      "label": "stress test",
+      "max_fetch": 100,
+      "multiplier": 20,
+      "fetch_k_effective": 100,
+      "queries": [
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 288.66
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 281.47
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 268.23
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 281.45
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 352.19
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.71
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.44
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.52
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.1
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 282.11
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 274.36
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 286.79
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 314.65
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.59
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.67
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 263.6
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 269.74
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 276.52
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.22
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.73
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.68
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 288.11
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 309.72
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 267.91
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 278.02
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 279.77
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 270.28
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.52
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.98
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 268.01
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.82
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.91
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.39
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.9
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 258.64
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.05
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.33
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.04
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.05
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.74
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 387.86
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.65
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 256.94
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 260.52
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 270.0
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.39
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 264.54
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 263.53
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 268.17
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.22
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 263.67
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.65
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.86
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 257.63
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 271.27
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.59
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 258.74
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.84
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 274.81
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 293.46
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 263.94
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.3
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.41
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 265.66
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 261.36
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.31
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.26
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.0
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 257.82
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 287.38
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 267.75
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.16
+        },
+        {
+          "query": "What is Python used for?",
+          "expected_source": "python.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/dir_with_docs/python.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 259.8
+        },
+        {
+          "query": "Where was the Colosseum built?",
+          "expected_source": "sample.md",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.md",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 266.84
+        },
+        {
+          "query": "What is the capital of France?",
+          "expected_source": "sample.txt",
+          "top_source": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/tests/fixtures/sample.txt",
+          "source_hit": true,
+          "answer_hit": true,
+          "latency_ms": 262.44
+        }
+      ],
+      "source_accuracy": 1.0,
+      "answer_accuracy": 1.0,
+      "mean_latency_ms": 271.61,
+      "p95_latency_ms": 298.34,
+      "p99_latency_ms": 361.46
+    }
+  ],
+  "recommendation": {
+    "chosen_label": "candidate default",
+    "max_fetch": 50,
+    "multiplier": 10,
+    "reason": "P95 377.21 ms <= 500.0 ms"
+  }
+}

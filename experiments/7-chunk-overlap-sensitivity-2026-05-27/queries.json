@@ -1,0 +1,44 @@
+{
+  "queries": [
+    {
+      "query": "How does pretraining force language models to hallucinate?",
+      "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+      "expected_answer": "statistical objectives"
+    },
+    {
+      "query": "Why does cross-entropy loss reduce model trustworthiness?",
+      "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+      "expected_answer": "density estimation"
+    },
+    {
+      "query": "How does coding improve children's mathematical problem solving?",
+      "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+      "expected_answer": "counting"
+    },
+    {
+      "query": "Does coding improve social skills and collaboration in classrooms?",
+      "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+      "expected_answer": "communicate"
+    },
+    {
+      "query": "What does handwriting do to brain connectivity that typing does not?",
+      "expected_source": "Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+      "expected_answer": "connectivity"
+    },
+    {
+      "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+      "expected_source": "Ghazali-Mustasfa.pdf",
+      "expected_answer": "maslaha"
+    },
+    {
+      "query": "What features does the grep-ai tool offer?",
+      "expected_source": "grep-ai-README.md",
+      "expected_answer": "grep"
+    },
+    {
+      "query": "How does paper-search-mcp-cf integrate with academic databases?",
+      "expected_source": "paper-search-mcp-cf-README.md",
+      "expected_answer": "search"
+    }
+  ]
+}

@@ -1,0 +1,875 @@
+{
+  "experiment": "chunk-overlap-sensitivity",
+  "corpus_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus",
+  "questions_path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/7-chunk-overlap-sensitivity-2026-05-27/queries.json",
+  "overlaps": [
+    32,
+    64,
+    100,
+    128
+  ],
+  "rerank_pool": {
+    "max_fetch": 50,
+    "multiplier": 10
+  },
+  "evaluations": [
+    {
+      "overlap": 32,
+      "queries": [
+        {
+          "query": "How does pretraining force language models to hallucinate?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "statistical objectives",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.95738690518567,
+            0.9472422091782456,
+            0.9351215881642104,
+            0.8573333330490119,
+            0.7632611516513268
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 5723.16
+        },
+        {
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "density estimation",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.10443811414583963,
+            0.054073570125925216,
+            0.0017263760049568615,
+            0.000611708950737533,
+            0.0004321129685022863
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1557.04
+        },
+        {
+          "query": "How does coding improve children's mathematical problem solving?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "counting",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.995472864182901,
+            0.9947720264573432,
+            0.9915742637708356,
+            0.9759418516461643,
+            0.9702082775241118
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1529.35
+        },
+        {
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "communicate",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9970680482021469,
+            0.9951679537435645,
+            0.9730054316282801,
+            0.9704251015563192,
+            0.9127767999265219
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1521.3
+        },
+        {
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "expected_source": "Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "expected_answer": "connectivity",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+          ],
+          "top_k_scores": [
+            0.9922056766575376,
+            0.9882709136830348,
+            0.984973442223701,
+            0.9512778436344671,
+            0.929879546876067
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1648.68
+        },
+        {
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "expected_source": "Ghazali-Mustasfa.pdf",
+          "expected_answer": "maslaha",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf"
+          ],
+          "top_k_scores": [
+            0.9781550810907237,
+            0.975239623360566,
+            0.913372912754744,
+            0.9052088188355306,
+            0.8996410677853617
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1773.07
+        },
+        {
+          "query": "What features does the grep-ai tool offer?",
+          "expected_source": "grep-ai-README.md",
+          "expected_answer": "grep",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md"
+          ],
+          "top_k_scores": [
+            0.972718126853663,
+            0.4184842639725063,
+            0.038676333920870165,
+            0.0180331565844008,
+            0.017497314451606162
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1769.52
+        },
+        {
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "expected_source": "paper-search-mcp-cf-README.md",
+          "expected_answer": "search",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md"
+          ],
+          "top_k_scores": [
+            0.9932701454034437,
+            0.9734911538613593,
+            0.7179981185602102,
+            0.6479194855407381,
+            0.6207015850045078
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 3973.12
+        }
+      ],
+      "chunk_count": 239,
+      "ingest_seconds": 332.66,
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "answer_accuracy": 0.625
+    },
+    {
+      "overlap": 64,
+      "queries": [
+        {
+          "query": "How does pretraining force language models to hallucinate?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "statistical objectives",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.9626397546555929,
+            0.9394799640111148,
+            0.9279401509857823,
+            0.916652537493777,
+            0.7552530124795261
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 3453.73
+        },
+        {
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "density estimation",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.11183982135945222,
+            0.10484130546735528,
+            0.002037986777961992,
+            0.0014578083900988702,
+            0.0005471694016940366
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1529.97
+        },
+        {
+          "query": "How does coding improve children's mathematical problem solving?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "counting",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9969465976266575,
+            0.9966657974194266,
+            0.9951269993118068,
+            0.9735724259629933,
+            0.970922506023297
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 2266.27
+        },
+        {
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "communicate",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9988835253116026,
+            0.9951417872501556,
+            0.9945821934365201,
+            0.9942631888289825,
+            0.9470649816152915
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1550.22
+        },
+        {
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "expected_source": "Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "expected_answer": "connectivity",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+          ],
+          "top_k_scores": [
+            0.9989700464534718,
+            0.9956736176431764,
+            0.9874865239778734,
+            0.9822255132344557,
+            0.9604998906029792
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1404.84
+        },
+        {
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "expected_source": "Ghazali-Mustasfa.pdf",
+          "expected_answer": "maslaha",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf"
+          ],
+          "top_k_scores": [
+            0.9774344644876266,
+            0.9560253935748249,
+            0.9318935887561934,
+            0.9291775382721655,
+            0.9105526994010504
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1598.0
+        },
+        {
+          "query": "What features does the grep-ai tool offer?",
+          "expected_source": "grep-ai-README.md",
+          "expected_answer": "grep",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md"
+          ],
+          "top_k_scores": [
+            0.9736646028308366,
+            0.4195447440567049,
+            0.03552959061267028,
+            0.01698274634327419,
+            0.01122840253341554
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1678.03
+        },
+        {
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "expected_source": "paper-search-mcp-cf-README.md",
+          "expected_answer": "search",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md"
+          ],
+          "top_k_scores": [
+            0.9946190676427514,
+            0.9720266964269649,
+            0.7263698376789762,
+            0.6725025107799442,
+            0.6222895825827192
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 2460.1
+        }
+      ],
+      "chunk_count": 243,
+      "ingest_seconds": 390.66,
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "answer_accuracy": 0.375
+    },
+    {
+      "overlap": 100,
+      "queries": [
+        {
+          "query": "How does pretraining force language models to hallucinate?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "statistical objectives",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.9749433848351826,
+            0.9723861094478674,
+            0.9573691599457909,
+            0.9379028078733874,
+            0.9106369780685417
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 3461.05
+        },
+        {
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "density estimation",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.1727010548225498,
+            0.10590181869831307,
+            0.0011707703507125276,
+            0.00044201343028913543,
+            0.0004369070893866681
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1829.85
+        },
+        {
+          "query": "How does coding improve children's mathematical problem solving?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "counting",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9951400948505775,
+            0.9920071333300652,
+            0.97846837361789,
+            0.9696287495810948,
+            0.9620404494059358
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1349.21
+        },
+        {
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "communicate",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9988541865466616,
+            0.9946442508971306,
+            0.9920272298185673,
+            0.9763772745402953,
+            0.9311356081417353
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1297.07
+        },
+        {
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "expected_source": "Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "expected_answer": "connectivity",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+          ],
+          "top_k_scores": [
+            0.9978241540326769,
+            0.9929240707674832,
+            0.9901412572244453,
+            0.9871492398246942,
+            0.9859302094762807
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1210.91
+        },
+        {
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "expected_source": "Ghazali-Mustasfa.pdf",
+          "expected_answer": "maslaha",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf"
+          ],
+          "top_k_scores": [
+            0.9744370964002415,
+            0.9568458257072958,
+            0.9417481921603401,
+            0.9400283588287728,
+            0.9180339382380874
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1288.89
+        },
+        {
+          "query": "What features does the grep-ai tool offer?",
+          "expected_source": "grep-ai-README.md",
+          "expected_answer": "grep",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md"
+          ],
+          "top_k_scores": [
+            0.9740278759633396,
+            0.40289182972464016,
+            0.03580750336836074,
+            0.014057743800500237,
+            0.012946246850204736
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1479.89
+        },
+        {
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "expected_source": "paper-search-mcp-cf-README.md",
+          "expected_answer": "search",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md"
+          ],
+          "top_k_scores": [
+            0.99405228397481,
+            0.9753849029161742,
+            0.7453680152895238,
+            0.6175860556426526,
+            0.6166771980711366
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 2911.48
+        }
+      ],
+      "chunk_count": 251,
+      "ingest_seconds": 385.78,
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "answer_accuracy": 0.5
+    },
+    {
+      "overlap": 128,
+      "queries": [
+        {
+          "query": "How does pretraining force language models to hallucinate?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "statistical objectives",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.965162901429088,
+            0.9628888594103912,
+            0.9571003216935153,
+            0.9309324148298228,
+            0.916508669303754
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 2908.99
+        },
+        {
+          "query": "Why does cross-entropy loss reduce model trustworthiness?",
+          "expected_source": "Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+          "expected_answer": "density estimation",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Kalai et al. - 2025 - Why Language Models Hallucinate.pdf"
+          ],
+          "top_k_scores": [
+            0.19398531436365712,
+            0.09785839109768336,
+            0.009491041652281863,
+            0.0011950185396523267,
+            0.0004964893482520081
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1217.19
+        },
+        {
+          "query": "How does coding improve children's mathematical problem solving?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "counting",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.9968415724347439,
+            0.9965425242194323,
+            0.9961093726852424,
+            0.9948434696748882,
+            0.9884553421072971
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1141.87
+        },
+        {
+          "query": "Does coding improve social skills and collaboration in classrooms?",
+          "expected_source": "Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+          "expected_answer": "communicate",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf"
+          ],
+          "top_k_scores": [
+            0.995211250230439,
+            0.9926858472780404,
+            0.9811172430444298,
+            0.963605637811558,
+            0.9031837477368477
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1166.77
+        },
+        {
+          "query": "What does handwriting do to brain connectivity that typing does not?",
+          "expected_source": "Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+          "expected_answer": "connectivity",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting leads to widespread brain connectivity a high-density EEG study wit.pdf"
+          ],
+          "top_k_scores": [
+            0.9953052743466038,
+            0.9899359990470279,
+            0.9893262963089626,
+            0.9877370962359712,
+            0.9853984494871116
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1311.28
+        },
+        {
+          "query": "How is istislah used in Al-Ghazali's al-Mustasfa?",
+          "expected_source": "Ghazali-Mustasfa.pdf",
+          "expected_answer": "maslaha",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/Ghazali-Mustasfa.pdf"
+          ],
+          "top_k_scores": [
+            0.973982988677152,
+            0.9469433395787409,
+            0.9387928151628016,
+            0.9119903105117185,
+            0.8917029500962311
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": false,
+          "latency_ms": 1921.8
+        },
+        {
+          "query": "What features does the grep-ai tool offer?",
+          "expected_source": "grep-ai-README.md",
+          "expected_answer": "grep",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/grep-ai-README.md"
+          ],
+          "top_k_scores": [
+            0.9757114300793382,
+            0.41092523726376357,
+            0.03345534764998507,
+            0.021346353277383028,
+            0.012080582605560612
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1448.81
+        },
+        {
+          "query": "How does paper-search-mcp-cf integrate with academic databases?",
+          "expected_source": "paper-search-mcp-cf-README.md",
+          "expected_answer": "search",
+          "top_k_sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/paper-search-mcp-cf-README.md"
+          ],
+          "top_k_scores": [
+            0.9946703938784505,
+            0.9717453395899553,
+            0.7651379262272775,
+            0.7400124266952763,
+            0.650970433038513
+          ],
+          "hit_rank": 1,
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "answer_hit": true,
+          "latency_ms": 1615.19
+        }
+      ],
+      "chunk_count": 260,
+      "ingest_seconds": 425.12,
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_3": 1.0,
+      "hit_rate_at_5": 1.0,
+      "mrr": 1.0,
+      "answer_accuracy": 0.5
+    }
+  ],
+  "pass_criteria": {
+    "hit_at_1_64": 1.0,
+    "hit_at_1_100": 1.0,
+    "hit_at_1_non_regression_pass": true,
+    "mrr_64": 1.0,
+    "mrr_100": 1.0,
+    "mrr_non_regression_pass": true,
+    "chunk_ratio_100_over_64": 1.033,
+    "chunk_within_15pct_pass": true
+  }
+}
