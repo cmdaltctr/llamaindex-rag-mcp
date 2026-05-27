@@ -39,11 +39,17 @@ Hypothesis → Variables → Method → Results → Conclusion
 
 ## Index
 
-| # | Experiment | Date | Status | Key Finding |
-| - | ---------- | ---- | ------ | ----------- |
-| 1 | [Reranker threshold calibration](./reranker-threshold-calibration-2026-05-12/) | 2026-05-12 | PASS | Reranker fixes 12.5% of failures; ÷30 threshold scaling calibrated |
-| 2 | [Embedding model comparison](./embedding-model-comparison-2026-05-19/) | 2026-05-19 | PASS | qwen3:0.6b = perfect retrieval (100% Hit@1), 13× faster than 8b |
-| 3 | [E2E smoke test — LlamaIndex metadata extraction](./e2e-smoke-test-metadata-2026-05-20/) | 2026-05-20 | PASS | Full pipeline 100% Hit@1 on 17 queries across 6 diverse documents |
+| # | Experiment | Date | Status | Key Finding / Purpose |
+| - | ---------- | ---- | ------ | --------------------- |
+| 1 | [Reranker threshold calibration](./1-reranker-threshold-calibration-2026-05-12/) | 2026-05-12 | PASS | Reranker fixes 12.5% of failures; ÷30 threshold scaling calibrated |
+| 2 | [Embedding model comparison](./2-embedding-model-comparison-2026-05-19/) | 2026-05-19 | PASS | qwen3:0.6b = perfect retrieval (100% Hit@1), 13× faster than 8b |
+| 3 | [E2E smoke test — LlamaIndex metadata extraction](./3-e2e-smoke-test-metadata-2026-05-20/) | 2026-05-20 | PASS | Full pipeline 100% Hit@1 on 17 queries across 6 diverse documents |
+| 4 | [Async chunking responsiveness](./4-async-chunking-responsiveness-2026-05-27/) | 2026-05-27 | PLANNED | Confirms `asyncio.to_thread` chunk-splitter offload (Tier 1) keeps search P95 ≤ 2× idle baseline during ingest |
+| 5 | [Reranker pool sizing recalibration](./5-reranker-pool-sizing-2026-05-27/) | 2026-05-27 | PLANNED | Picks Tier 2 defaults for `RERANK_MAX_FETCH` / `RERANK_FETCH_MULTIPLIER`; mandated by design Decision 2 |
+| 6 | [Markdown-aware chunking quality](./6-markdown-chunking-quality-2026-05-27/) | 2026-05-27 | PLANNED | Validates Tier 2 Markdown chunker improves heading-targeted Hit@1 by ≥ 5 pp without hurting general queries |
+| 7 | [Chunk overlap sensitivity](./7-chunk-overlap-sensitivity-2026-05-27/) | 2026-05-27 | PLANNED | Confirms Tier 2 `CHUNK_OVERLAP=100` default is non-regressive vs the previous default of 64 |
+| 8 | [Query embedding cache](./8-query-embedding-cache-2026-05-27/) | 2026-05-27 | PLANNED | Validates Tier 2 LRU cache delivers ≥ 30 % warm-trace speedup and zero overhead on cold traces, both retrieval branches |
+| 9 | [Hybrid retrieval (dense + BM25 + RRF)](./9-hybrid-retrieval-2026-05-27/) | 2026-05-27 | PLANNED | Mandated by Tier 3 Migration Plan; Colosseum regression target + rare-term/semantic partition; informs follow-up `HYBRID_ENABLED` default flip |
 
 ## Standalone Benchmarks
 
@@ -52,14 +58,20 @@ These are useful reference data but not structured for full reproducibility.
 
 | Report | Date | Summary |
 | ------ | ---- | ------- |
-| [Embedding performance](./embedding-performance.md) | 2026-05-19 | qwen3:0.6b delivers 13.2× speedup over 8b (8.35 vs 0.63 chunks/sec) |
+| [Embedding performance](./ARCHIVED/embedding-performance.md) | 2026-05-19 | qwen3:0.6b delivers 13.2× speedup over 8b (8.35 vs 0.63 chunks/sec) |
 
 ## Cross-References
 
 Experiments often inform code changes. Key links:
 
-| Experiment | Resulting Change |
-| ---------- | ---------------- |
-| reranker-threshold-calibration-2026-05-12 | `_effective_threshold()` in `retrieval.py` — ÷30 scaling factor |
-| embedding-model-comparison-2026-05-19 | Default `EMBED_MODEL` switched to `qwen3-embedding:0.6b` |
-| e2e-smoke-test-metadata-2026-05-20 | Validated `enhance-metadata-extraction` ADR; exposed `_strip_llm_prefix` bugs (ADR-014) |
+| Experiment | Resulting / Related Change |
+| ---------- | -------------------------- |
+| 1 — reranker-threshold-calibration-2026-05-12 | `_effective_threshold()` in `retrieval.py` — ÷30 scaling factor |
+| 2 — embedding-model-comparison-2026-05-19 | Default `EMBED_MODEL` switched to `qwen3-embedding:0.6b` |
+| 3 — e2e-smoke-test-metadata-2026-05-20 | Validated `enhance-metadata-extraction` ADR; exposed `_strip_llm_prefix` bugs (ADR-014) |
+| 4 — async-chunking-responsiveness-2026-05-27 | OpenSpec `rag-reliability-correctness-fixes` (Tier 1), task 1.x |
+| 5 — reranker-pool-sizing-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 2.x — picks shipped defaults |
+| 6 — markdown-chunking-quality-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 1.x |
+| 7 — chunk-overlap-sensitivity-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 3.x |
+| 8 — query-embedding-cache-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 4.x |
+| 9 — hybrid-retrieval-2026-05-27 | OpenSpec `rag-hybrid-retrieval` (Tier 3), task 9.x — informs follow-up default flip |
