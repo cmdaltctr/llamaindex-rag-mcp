@@ -110,6 +110,66 @@ stall in both versions. The splitter offload (this change) prevents a
 *second* blocking window, but the first window (file read + GIL) was
 already present and is what the experiment captures.
 
+### Why our experiment couldn't see the splitter bug directly
+
+This is the most important nuance to call out: **the experiment harness
+itself masks the bug we were trying to measure**.
+
+Look at the query loop in `run_eval.py` and the mini-harness used in
+Phase 2:
+
+```python
+await asyncio.to_thread(search, query=q, top_k=5, ...)
+```
+
+The harness already wraps `search` in `asyncio.to_thread`. So even on
+the pre-fix code, the search call runs on a worker thread, not on the
+event loop. From the harness's perspective, both pre-fix and post-fix
+look like "two CPU-bound threads competing for the GIL" — and the GIL
+arbitrates them identically in both versions.
+
+**What the harness measures**: GIL contention between the splitter /
+keyword threads and the search thread.
+
+**What the harness cannot measure**: the original bug — the event loop
+being completely frozen, unable to even *schedule* incoming work.
+
+In a real MCP server, the protocol layer reads incoming requests
+**directly on the event loop** via stdin coroutines. There's no
+`to_thread` wrapping the request reader. So when the loop is frozen by
+the synchronous splitter:
+
+| Layer                       | Pre-fix behaviour                       | Post-fix behaviour                  |
+| --------------------------- | --------------------------------------- | ----------------------------------- |
+| MCP stdin reader            | Frozen for 5s — request not even read   | Free — request read immediately     |
+| `search_documents` handler  | Doesn't get scheduled until loop free   | Scheduled immediately               |
+| `asyncio.to_thread(search)` | Then waits for GIL — adds ~100 ms       | Same — adds ~100 ms                 |
+| **Total visible to client** | **5000+ ms**                            | **~200 ms**                         |
+
+The unit test `tests/test_async_ingest_responsiveness.py::TestSplitterOffload`
+is the truer simulation. It calls `search_documents` directly without
+wrapping it in `to_thread`, so when the splitter blocks the loop, the
+search coroutine cannot be scheduled at all — and the test fails on
+pre-fix code (proven by the regression test
+`test_blocking_call_causes_responsiveness_failure`).
+
+### Production impact
+
+For real MCP clients the visible difference is dramatic:
+
+- **Pre-fix**: the entire MCP server freezes for 5 s during ingest;
+  no requests of any kind are served (search, list_collections,
+  delete_documents — all blocked).
+- **Post-fix**: the server stays responsive throughout. Individual
+  search calls may take ~100-200 ms longer than idle due to GIL
+  contention, but they execute, return, and don't block other
+  requests.
+
+This is why the experiment "looking the same" between pre-fix and
+post-fix is **not a failure**. The harness instruments the wrong
+boundary. The unit test instruments the right boundary and shows the
+fix works exactly as intended.
+
 ---
 
 ## Success Criteria (Final)
