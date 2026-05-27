@@ -7,8 +7,8 @@
 - [x] 1.5 Add a fixture Markdown document with a single H2 section longer than `CHUNK_SIZE` and assert it produces more than one chunk and every chunk is at most `CHUNK_SIZE` characters
 - [x] 1.6 Add a test asserting non-Markdown files retain previous chunk count and content
 - [x] 1.7 Add a test asserting a Markdown file with no headings still produces non-empty chunks
-- [ ] 1.8 Run **Experiment 6** (`experiments/6-markdown-chunking-quality-2026-05-27/`) end-to-end and confirm heading-targeted Hit@1 lifts ≥ 5 pp, general-query Hit@1 stays within ±2 pp of baseline, and max chunk length ≤ `CHUNK_SIZE * 1.1`
-- [ ] 1.9 If Experiment 6 fails its pass criteria: revisit tasks 1.2 (size cap), 1.5 (cap test), or the Markdown branch wiring, re-run the experiment, loop until criteria pass
+- [x] 1.8 Run **Experiment 6** (`experiments/6-markdown-chunking-quality-2026-05-27/`) end-to-end and confirm heading-targeted Hit@1 lifts ≥ 5 pp, general-query Hit@1 stays within ±2 pp of baseline, and max chunk length ≤ `CHUNK_SIZE * 1.1`
+- [x] 1.9 If Experiment 6 fails its pass criteria: revisit tasks 1.2 (size cap), 1.5 (cap test), or the Markdown branch wiring, re-run the experiment, loop until criteria pass
 
 ## 2. Reranker fetch pool sizing
 
@@ -17,16 +17,16 @@
 - [x] 2.3 Clamp the resulting `fetch_k` to `min(fetch_k, collection.count())` so small collections do not over-fetch
 - [x] 2.4 Add tests covering the default pool size, env-var-overridden pool size, and the small-collection clamp behaviour
 - [x] 2.5 Verify the calibrated reranker threshold scaling factor remains unchanged
-- [ ] 2.6 Run **Experiment 5** (`experiments/5-reranker-pool-sizing-2026-05-27/`) — extends `experiments/1-...` with a fetch-size sweep across `(20, 2)`, `(50, 10)`, `(30, 6)`, `(100, 20)` and records post-warmup mean / P95 latency and accuracy per config
-- [ ] 2.7 Confirm the chosen default config has post-warmup P95 ≤ 500 ms; if `(50, 10)` exceeds, fall back to `(30, 6)` and re-run until the criterion is met. Record the chosen defaults in `experiments/5-reranker-pool-sizing-2026-05-27/results.md` and propagate to `config.py`
+- [x] 2.6 Run **Experiment 5** (`experiments/5-reranker-pool-sizing-2026-05-27/`) — extends `experiments/1-...` with a fetch-size sweep across `(20, 2)`, `(50, 10)`, `(30, 6)`, `(100, 20)` and records post-warmup mean / P95 latency and accuracy per config
+- [x] 2.7 Confirm the chosen default config has post-warmup P95 ≤ 500 ms; if `(50, 10)` exceeds, fall back to `(30, 6)` and re-run until the criterion is met. Record the chosen defaults in `experiments/5-reranker-pool-sizing-2026-05-27/results.md` and propagate to `config.py`
 
 ## 3. Default chunk overlap bump
 
 - [x] 3.1 Change the default `CHUNK_OVERLAP` in `config.py` from 64 to 100
 - [x] 3.2 Confirm `.env.example` is consistent
 - [x] 3.3 Add or update a test that asserts the new default value when no env override is set
-- [ ] 3.4 Run **Experiment 7** (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) — sweeps `CHUNK_OVERLAP ∈ {32, 64, 100, 128}` against the Exp 3 corpus with the reranker enabled and the Exp 5 pool defaults
-- [ ] 3.5 Confirm overlap=100 Hit@1 / MRR ≥ overlap=64 Hit@1 / MRR and chunk-count delta vs overlap=64 ≤ 15 %; if not, hold the default at 64 (revert task 3.1) and document the corpus-specific result
+- [x] 3.4 Run **Experiment 7** (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) — sweeps `CHUNK_OVERLAP ∈ {32, 64, 100, 128}` against the Exp 3 corpus with the reranker enabled and the Exp 5 pool defaults
+- [x] 3.5 Confirm overlap=100 Hit@1 / MRR ≥ overlap=64 Hit@1 / MRR and chunk-count delta vs overlap=64 ≤ 15 %; if not, hold the default at 64 (revert task 3.1) and document the corpus-specific result
 
 ## 4. Query embedding cache and `search()` refactor
 
@@ -39,8 +39,8 @@
 - [x] 4.7 Add a unit test asserting that distinct queries do not collide in the cache
 - [x] 4.8 Add a unit test asserting LRU eviction at the configured `maxsize`
 - [x] 4.9 Confirm the existing Tier 1 score-normalisation guarantee (`score = 1.0 / (1.0 + distance)` on both branches) is preserved by the refactor — both branches now use the same direct ChromaDB call
-- [ ] 4.10 Run **Experiment 8** (`experiments/8-query-embedding-cache-2026-05-27/`) end-to-end and confirm warm-trace mean latency drops ≥ 30 %, cold-trace mean latency stays within ±5 % of cache-off, both retrieval paths show ≥ 80 % cache hit rate on the warm trace, and LRU eviction caps cache size at `maxsize=128`
-- [ ] 4.11 If Experiment 8 fails its pass criteria: revisit task 4.2 (unfiltered-branch refactor) if the unfiltered hit rate is 0 %, or task 4.3 (cache wrapper) if both branches miss; re-run the experiment, loop until criteria pass
+- [x] 4.10 Run **Experiment 8** (`experiments/8-query-embedding-cache-2026-05-27/`) end-to-end and confirm warm-trace mean latency drops ≥ 30 %, cold-trace mean latency stays within ±5 % of cache-off, both retrieval paths show ≥ 80 % cache hit rate on the warm trace, and LRU eviction caps cache size at `maxsize=128`
+- [x] 4.11 If Experiment 8 fails its pass criteria: revisit task 4.2 (unfiltered-branch refactor) if the unfiltered hit rate is 0 %, or task 4.3 (cache wrapper) if both branches miss; re-run the experiment, loop until criteria pass
 
 ## 5. Documentation
 
@@ -68,8 +68,8 @@ After implementation passes validation, write **ADR-016: RAG Retrieval Quality I
 
 - [x] 7.1 Run `openspec validate rag-retrieval-quality-improvements --strict`
 - [x] 7.2 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage thresholds remain intact
-- [ ] 7.3 Confirm Experiment 5 (`experiments/5-reranker-pool-sizing-2026-05-27/`) shows post-warmup P95 ≤ 500 ms with the chosen defaults, and that the chosen `(RERANK_MAX_FETCH, RERANK_FETCH_MULTIPLIER)` defaults are reflected in `config.py` and `.env.example`
-- [ ] 7.4 Confirm Experiment 6 (`experiments/6-markdown-chunking-quality-2026-05-27/`) shows the heading-targeted Hit@1 lift and no chunk overruns past `CHUNK_SIZE * 1.1`
-- [ ] 7.5 Confirm Experiment 7 (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) shows non-regression between overlap=64 and overlap=100
-- [ ] 7.6 Confirm Experiment 8 (`experiments/8-query-embedding-cache-2026-05-27/`) shows ≥ 30 % warm-trace speedup and zero overhead on the cold trace, on both retrieval branches
-- [ ] 7.7 Confirm ADR-016 is published, indexed, and cross-referenced before archiving the OpenSpec change
+- [x] 7.3 Confirm Experiment 5 (`experiments/5-reranker-pool-sizing-2026-05-27/`) shows post-warmup P95 ≤ 500 ms with the chosen defaults, and that the chosen `(RERANK_MAX_FETCH, RERANK_FETCH_MULTIPLIER)` defaults are reflected in `config.py` and `.env.example`
+- [x] 7.4 Confirm Experiment 6 (`experiments/6-markdown-chunking-quality-2026-05-27/`) shows the heading-targeted Hit@1 lift and no chunk overruns past `CHUNK_SIZE * 1.1`
+- [x] 7.5 Confirm Experiment 7 (`experiments/7-chunk-overlap-sensitivity-2026-05-27/`) shows non-regression between overlap=64 and overlap=100
+- [x] 7.6 Confirm Experiment 8 (`experiments/8-query-embedding-cache-2026-05-27/`) shows ≥ 30 % warm-trace speedup and zero overhead on the cold trace, on both retrieval branches
+- [x] 7.7 Confirm ADR-016 is published, indexed, and cross-referenced before archiving the OpenSpec change
