@@ -153,15 +153,23 @@ P50 / P95 across runs to absorb warm-up noise.
 This is the actual test. We start an ingest of the large file and, as soon as
 chunking begins, start firing the same 100 queries at the same 100 ms cadence.
 
+**Repetition for statistical significance**: each treatment (pre-fix and
+post-fix) is run **3 times** under load, matching the 3 idle-baseline runs.
+The reported P95 for each treatment is the **median P95 across its 3 runs**;
+this is robust to the long tail that a single noisy run can produce when the
+embed worker pool contends for cores. The same numbering scheme applies to
+ingest wall-clock — report the median.
+
 ```bash
-# Same fresh ChromaDB so search has results to return.
-CHROMA_PERSIST_DIR=./chroma_db_test \
-  uv run python experiments/4-async-chunking-responsiveness-2026-05-27/run_eval.py \
-  --mode under-load \
-  --ingest-path experiments/4-async-chunking-responsiveness-2026-05-27/corpus \
-  --queries 100 \
-  --cadence-ms 100 \
-  --output under-load.json
+# Post-fix runs (from the feature branch checkout):
+for i in 1 2 3; do
+  CHROMA_PERSIST_DIR=./chroma_db_test \
+    uv run python experiments/4-async-chunking-responsiveness-2026-05-27/run_eval.py \
+    --mode under-load \
+    --ingest-path experiments/4-async-chunking-responsiveness-2026-05-27/corpus \
+    --queries 100 --cadence-ms 100 \
+    --output under-load-postfix-${i}.json
+done
 ```
 
 The harness:
@@ -170,16 +178,60 @@ The harness:
 2. As soon as ingestion has started, spawns a second coroutine that fires
    100 search queries at 100 ms cadence.
 3. Records per-query latency, per-query timestamp, and the ingest wall-clock.
-4. Writes the full timeline to `under-load.json`.
+4. Writes the full timeline to `under-load-postfix-${i}.json`.
 
-Run this **once on the pre-fix code** (record as
-`under-load-prefix.json`) and **once on the post-fix code** (record as
-`under-load-postfix.json`). Use the same corpus and the same harness in both
-runs. The only difference is which git revision you have checked out.
+### Pre-fix control via git worktree
 
-If you cannot easily check out two revisions, run only the post-fix path and
-treat the idle baseline as the "what good looks like" reference. The 2× rule
-still applies.
+The post-fix code path includes the `asyncio.to_thread` wrap around the
+splitter. To capture pre-fix behaviour without thrashing the working branch,
+use a `git worktree` checked out at `master` (or the last commit before the
+splitter offload landed):
+
+```bash
+# Create the pre-fix worktree as a sibling directory.
+git worktree add ../llamaindex-rag-mcp-prefix master
+
+# Copy the experiment harness + corpus into the worktree (master doesn't
+# carry the experiment directory yet).
+cp -r experiments/4-async-chunking-responsiveness-2026-05-27 \
+      ../llamaindex-rag-mcp-prefix/experiments/
+
+# Sync deps inside the worktree (independent .venv).
+cd ../llamaindex-rag-mcp-prefix
+uv sync
+
+# Seed the fixture so search() has a chunk to retrieve.
+CHROMA_PERSIST_DIR=./chroma_db_test uv run rag-mcp ingest tests/fixtures/sample.txt
+
+# Pre-fix runs (3 repetitions matching post-fix).
+for i in 1 2 3; do
+  CHROMA_PERSIST_DIR=./chroma_db_test \
+    uv run python experiments/4-async-chunking-responsiveness-2026-05-27/run_eval.py \
+    --mode under-load \
+    --ingest-path experiments/4-async-chunking-responsiveness-2026-05-27/corpus \
+    --queries 100 --cadence-ms 100 \
+    --output under-load-prefix-${i}.json
+done
+
+# Move the JSON outputs back to the feature branch for the comparison report.
+cp experiments/4-async-chunking-responsiveness-2026-05-27/under-load-prefix-*.json \
+   /path/to/feature-branch/experiments/4-async-chunking-responsiveness-2026-05-27/
+cd -
+
+# When done, prune the worktree.
+git worktree remove ../llamaindex-rag-mcp-prefix
+```
+
+Why a worktree rather than `git stash` or branch-switching: a worktree gets
+its own checkout, its own `.venv`, and its own ChromaDB persist dir, so the
+pre-fix and post-fix harnesses can run without contaminating each other or
+forcing a deps-reinstall round-trip.
+
+If you cannot run the worktree path (e.g. a different machine or the corpus
+won't fit on disk twice), run only the post-fix path 3 times and treat the
+idle baseline as the "what good looks like" reference — but the pre-fix
+sanity and ingest-throughput checks then drop to *unverified* in the
+results table, not *passed*.
 
 ---
 
