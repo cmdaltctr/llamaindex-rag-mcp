@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-05-29)
+
+### Features
+
+- **retrieval**: Promote balanced defaults
+  ([`183734d`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/183734dbf25938e9db3a154e561da22545491f62))
+
+
 ## v1.2.0 (2026-05-29)
 
 ### Features
