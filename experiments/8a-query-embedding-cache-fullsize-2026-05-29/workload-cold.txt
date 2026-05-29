@@ -1,0 +1,200 @@
+Unique retrieval question 000: explain language model hallucination with variant 0.
+Unique retrieval question 001: explain cross entropy reliability with variant 1.
+Unique retrieval question 002: explain coding and mathematics with variant 2.
+Unique retrieval question 003: explain classroom collaboration with variant 3.
+Unique retrieval question 004: explain handwriting brain connectivity with variant 4.
+Unique retrieval question 005: explain istislah in al-Mustasfa with variant 5.
+Unique retrieval question 006: explain semantic grep tool with variant 6.
+Unique retrieval question 007: explain academic database integration with variant 7.
+Unique retrieval question 008: explain attention mechanisms with variant 8.
+Unique retrieval question 009: explain residual neural networks with variant 9.
+Unique retrieval question 010: explain layer normalisation with variant 10.
+Unique retrieval question 011: explain positional encodings with variant 11.
+Unique retrieval question 012: explain multi-head attention with variant 12.
+Unique retrieval question 013: explain masked language modelling with variant 13.
+Unique retrieval question 014: explain next-token prediction with variant 14.
+Unique retrieval question 015: explain temperature sampling with variant 15.
+Unique retrieval question 016: explain top-p sampling with variant 16.
+Unique retrieval question 017: explain beam search with variant 17.
+Unique retrieval question 018: explain greedy decoding with variant 18.
+Unique retrieval question 019: explain mixture of experts with variant 19.
+Unique retrieval question 020: explain retrieval augmented generation with variant 20.
+Unique retrieval question 021: explain vector databases with variant 21.
+Unique retrieval question 022: explain metadata filtering with variant 22.
+Unique retrieval question 023: explain reranking with variant 23.
+Unique retrieval question 024: explain chunk overlap with variant 24.
+Unique retrieval question 025: explain Markdown chunking with variant 25.
+Unique retrieval question 026: explain Qasper evidence retrieval with variant 26.
+Unique retrieval question 027: explain BM25 retrieval with variant 27.
+Unique retrieval question 028: explain query embedding cache with variant 28.
+Unique retrieval question 029: explain ChromaDB collection with variant 29.
+Unique retrieval question 030: explain Ollama embeddings with variant 30.
+Unique retrieval question 031: explain PDF ingestion with variant 31.
+Unique retrieval question 032: explain document deletion with variant 32.
+Unique retrieval question 033: explain file watcher ingestion with variant 33.
+Unique retrieval question 034: explain MCP search tool with variant 34.
+Unique retrieval question 035: explain source attribution with variant 35.
+Unique retrieval question 036: explain nDCG metrics with variant 36.
+Unique retrieval question 037: explain evidence recall with variant 37.
+Unique retrieval question 038: explain agent verification loop with variant 38.
+Unique retrieval question 039: explain latency benchmark with variant 39.
+Unique retrieval question 040: explain Apple Silicon with variant 40.
+Unique retrieval question 041: explain cross encoder threshold with variant 41.
+Unique retrieval question 042: explain dense retrieval with variant 42.
+Unique retrieval question 043: explain sparse retrieval with variant 43.
+Unique retrieval question 044: explain hybrid search with variant 44.
+Unique retrieval question 045: explain academic paper QA with variant 45.
+Unique retrieval question 046: explain structured Markdown with variant 46.
+Unique retrieval question 047: explain semantic code search with variant 47.
+Unique retrieval question 048: explain local RAG with variant 48.
+Unique retrieval question 049: explain collection statistics with variant 49.
+Unique retrieval question 050: explain language model hallucination with variant 50.
+Unique retrieval question 051: explain cross entropy reliability with variant 51.
+Unique retrieval question 052: explain coding and mathematics with variant 52.
+Unique retrieval question 053: explain classroom collaboration with variant 53.
+Unique retrieval question 054: explain handwriting brain connectivity with variant 54.
+Unique retrieval question 055: explain istislah in al-Mustasfa with variant 55.
+Unique retrieval question 056: explain semantic grep tool with variant 56.
+Unique retrieval question 057: explain academic database integration with variant 57.
+Unique retrieval question 058: explain attention mechanisms with variant 58.
+Unique retrieval question 059: explain residual neural networks with variant 59.
+Unique retrieval question 060: explain layer normalisation with variant 60.
+Unique retrieval question 061: explain positional encodings with variant 61.
+Unique retrieval question 062: explain multi-head attention with variant 62.
+Unique retrieval question 063: explain masked language modelling with variant 63.
+Unique retrieval question 064: explain next-token prediction with variant 64.
+Unique retrieval question 065: explain temperature sampling with variant 65.
+Unique retrieval question 066: explain top-p sampling with variant 66.
+Unique retrieval question 067: explain beam search with variant 67.
+Unique retrieval question 068: explain greedy decoding with variant 68.
+Unique retrieval question 069: explain mixture of experts with variant 69.
+Unique retrieval question 070: explain retrieval augmented generation with variant 70.
+Unique retrieval question 071: explain vector databases with variant 71.
+Unique retrieval question 072: explain metadata filtering with variant 72.
+Unique retrieval question 073: explain reranking with variant 73.
+Unique retrieval question 074: explain chunk overlap with variant 74.
+Unique retrieval question 075: explain Markdown chunking with variant 75.
+Unique retrieval question 076: explain Qasper evidence retrieval with variant 76.
+Unique retrieval question 077: explain BM25 retrieval with variant 77.
+Unique retrieval question 078: explain query embedding cache with variant 78.
+Unique retrieval question 079: explain ChromaDB collection with variant 79.
+Unique retrieval question 080: explain Ollama embeddings with variant 80.
+Unique retrieval question 081: explain PDF ingestion with variant 81.
+Unique retrieval question 082: explain document deletion with variant 82.
+Unique retrieval question 083: explain file watcher ingestion with variant 83.
+Unique retrieval question 084: explain MCP search tool with variant 84.
+Unique retrieval question 085: explain source attribution with variant 85.
+Unique retrieval question 086: explain nDCG metrics with variant 86.
+Unique retrieval question 087: explain evidence recall with variant 87.
+Unique retrieval question 088: explain agent verification loop with variant 88.
+Unique retrieval question 089: explain latency benchmark with variant 89.
+Unique retrieval question 090: explain Apple Silicon with variant 90.
+Unique retrieval question 091: explain cross encoder threshold with variant 91.
+Unique retrieval question 092: explain dense retrieval with variant 92.
+Unique retrieval question 093: explain sparse retrieval with variant 93.
+Unique retrieval question 094: explain hybrid search with variant 94.
+Unique retrieval question 095: explain academic paper QA with variant 95.
+Unique retrieval question 096: explain structured Markdown with variant 96.
+Unique retrieval question 097: explain semantic code search with variant 97.
+Unique retrieval question 098: explain local RAG with variant 98.
+Unique retrieval question 099: explain collection statistics with variant 99.
+Unique retrieval question 100: explain language model hallucination with variant 100.
+Unique retrieval question 101: explain cross entropy reliability with variant 101.
+Unique retrieval question 102: explain coding and mathematics with variant 102.
+Unique retrieval question 103: explain classroom collaboration with variant 103.
+Unique retrieval question 104: explain handwriting brain connectivity with variant 104.
+Unique retrieval question 105: explain istislah in al-Mustasfa with variant 105.
+Unique retrieval question 106: explain semantic grep tool with variant 106.
+Unique retrieval question 107: explain academic database integration with variant 107.
+Unique retrieval question 108: explain attention mechanisms with variant 108.
+Unique retrieval question 109: explain residual neural networks with variant 109.
+Unique retrieval question 110: explain layer normalisation with variant 110.
+Unique retrieval question 111: explain positional encodings with variant 111.
+Unique retrieval question 112: explain multi-head attention with variant 112.
+Unique retrieval question 113: explain masked language modelling with variant 113.
+Unique retrieval question 114: explain next-token prediction with variant 114.
+Unique retrieval question 115: explain temperature sampling with variant 115.
+Unique retrieval question 116: explain top-p sampling with variant 116.
+Unique retrieval question 117: explain beam search with variant 117.
+Unique retrieval question 118: explain greedy decoding with variant 118.
+Unique retrieval question 119: explain mixture of experts with variant 119.
+Unique retrieval question 120: explain retrieval augmented generation with variant 120.
+Unique retrieval question 121: explain vector databases with variant 121.
+Unique retrieval question 122: explain metadata filtering with variant 122.
+Unique retrieval question 123: explain reranking with variant 123.
+Unique retrieval question 124: explain chunk overlap with variant 124.
+Unique retrieval question 125: explain Markdown chunking with variant 125.
+Unique retrieval question 126: explain Qasper evidence retrieval with variant 126.
+Unique retrieval question 127: explain BM25 retrieval with variant 127.
+Unique retrieval question 128: explain query embedding cache with variant 128.
+Unique retrieval question 129: explain ChromaDB collection with variant 129.
+Unique retrieval question 130: explain Ollama embeddings with variant 130.
+Unique retrieval question 131: explain PDF ingestion with variant 131.
+Unique retrieval question 132: explain document deletion with variant 132.
+Unique retrieval question 133: explain file watcher ingestion with variant 133.
+Unique retrieval question 134: explain MCP search tool with variant 134.
+Unique retrieval question 135: explain source attribution with variant 135.
+Unique retrieval question 136: explain nDCG metrics with variant 136.
+Unique retrieval question 137: explain evidence recall with variant 137.
+Unique retrieval question 138: explain agent verification loop with variant 138.
+Unique retrieval question 139: explain latency benchmark with variant 139.
+Unique retrieval question 140: explain Apple Silicon with variant 140.
+Unique retrieval question 141: explain cross encoder threshold with variant 141.
+Unique retrieval question 142: explain dense retrieval with variant 142.
+Unique retrieval question 143: explain sparse retrieval with variant 143.
+Unique retrieval question 144: explain hybrid search with variant 144.
+Unique retrieval question 145: explain academic paper QA with variant 145.
+Unique retrieval question 146: explain structured Markdown with variant 146.
+Unique retrieval question 147: explain semantic code search with variant 147.
+Unique retrieval question 148: explain local RAG with variant 148.
+Unique retrieval question 149: explain collection statistics with variant 149.
+Unique retrieval question 150: explain language model hallucination with variant 150.
+Unique retrieval question 151: explain cross entropy reliability with variant 151.
+Unique retrieval question 152: explain coding and mathematics with variant 152.
+Unique retrieval question 153: explain classroom collaboration with variant 153.
+Unique retrieval question 154: explain handwriting brain connectivity with variant 154.
+Unique retrieval question 155: explain istislah in al-Mustasfa with variant 155.
+Unique retrieval question 156: explain semantic grep tool with variant 156.
+Unique retrieval question 157: explain academic database integration with variant 157.
+Unique retrieval question 158: explain attention mechanisms with variant 158.
+Unique retrieval question 159: explain residual neural networks with variant 159.
+Unique retrieval question 160: explain layer normalisation with variant 160.
+Unique retrieval question 161: explain positional encodings with variant 161.
+Unique retrieval question 162: explain multi-head attention with variant 162.
+Unique retrieval question 163: explain masked language modelling with variant 163.
+Unique retrieval question 164: explain next-token prediction with variant 164.
+Unique retrieval question 165: explain temperature sampling with variant 165.
+Unique retrieval question 166: explain top-p sampling with variant 166.
+Unique retrieval question 167: explain beam search with variant 167.
+Unique retrieval question 168: explain greedy decoding with variant 168.
+Unique retrieval question 169: explain mixture of experts with variant 169.
+Unique retrieval question 170: explain retrieval augmented generation with variant 170.
+Unique retrieval question 171: explain vector databases with variant 171.
+Unique retrieval question 172: explain metadata filtering with variant 172.
+Unique retrieval question 173: explain reranking with variant 173.
+Unique retrieval question 174: explain chunk overlap with variant 174.
+Unique retrieval question 175: explain Markdown chunking with variant 175.
+Unique retrieval question 176: explain Qasper evidence retrieval with variant 176.
+Unique retrieval question 177: explain BM25 retrieval with variant 177.
+Unique retrieval question 178: explain query embedding cache with variant 178.
+Unique retrieval question 179: explain ChromaDB collection with variant 179.
+Unique retrieval question 180: explain Ollama embeddings with variant 180.
+Unique retrieval question 181: explain PDF ingestion with variant 181.
+Unique retrieval question 182: explain document deletion with variant 182.
+Unique retrieval question 183: explain file watcher ingestion with variant 183.
+Unique retrieval question 184: explain MCP search tool with variant 184.
+Unique retrieval question 185: explain source attribution with variant 185.
+Unique retrieval question 186: explain nDCG metrics with variant 186.
+Unique retrieval question 187: explain evidence recall with variant 187.
+Unique retrieval question 188: explain agent verification loop with variant 188.
+Unique retrieval question 189: explain latency benchmark with variant 189.
+Unique retrieval question 190: explain Apple Silicon with variant 190.
+Unique retrieval question 191: explain cross encoder threshold with variant 191.
+Unique retrieval question 192: explain dense retrieval with variant 192.
+Unique retrieval question 193: explain sparse retrieval with variant 193.
+Unique retrieval question 194: explain hybrid search with variant 194.
+Unique retrieval question 195: explain academic paper QA with variant 195.
+Unique retrieval question 196: explain structured Markdown with variant 196.
+Unique retrieval question 197: explain semantic code search with variant 197.
+Unique retrieval question 198: explain local RAG with variant 198.
+Unique retrieval question 199: explain collection statistics with variant 199.

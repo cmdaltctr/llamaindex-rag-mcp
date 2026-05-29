@@ -25,6 +25,14 @@ experiments/**/chroma_candidate/
 experiments/**/chroma_candidate_runs/
 experiments/**/data/qasper_raw/
 
+# Experiment heavy/generated artefacts stored in GitHub Releases
+experiments/**/corpus/
+experiments/**/raw/
+experiments/**/data/
+experiments/**/eval_results.json
+experiments/**/ground-truth.json
+experiments/**/*.pdf
+
 # Testing
 .pytest_cache/
 .coverage

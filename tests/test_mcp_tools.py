@@ -122,6 +122,37 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     )
 
 
+async def test_search_documents_defaults_follow_config(mcp_server) -> None:
+    """MCP search defaults should follow config.TOP_K / RERANK_ENABLED."""
+    from rag_mcp.config import RERANK_ENABLED, TOP_K
+
+    expected = [{
+        "score": 0.9,
+        "source": "fixture.txt",
+        "page_label": None,
+        "text": "fixture text",
+        "reranked": RERANK_ENABLED,
+    }]
+
+    with patch("rag_mcp.server.search", return_value=expected) as mock_search:
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {"query": "fixture"},
+            )
+
+    data = _extract_result(result)
+    assert data == expected
+    mock_search.assert_called_once_with(
+        "fixture",
+        top_k=TOP_K,
+        similarity_threshold=0.0,
+        rerank=RERANK_ENABLED,
+        collection_name="documents",
+        metadata_filter=None,
+    )
+
+
 # ── list_indexed_documents ─────────────────────────────────────────────────
 
 

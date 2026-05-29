@@ -152,7 +152,16 @@ def list_documents(collection_name: str = "documents") -> list[dict]:
 
 
 def _ensure_heading_metadata(nodes: list) -> None:
-    """Defensively copy source heading metadata onto emitted child nodes."""
+    """Defensively copy source heading metadata onto emitted child nodes.
+
+    Experiment 6c recovery hook.  LlamaIndex splitters can emit child nodes
+    whose own metadata omits heading information even though their
+    ``source_node`` still has it.  This idempotently preserves that metadata
+    for evidence/section evaluators and downstream search results.
+
+    Args:
+        nodes: Nodes emitted by the Markdown parser / splitter pipeline.
+    """
     for node in nodes:
         source_node = getattr(node, "source_node", None)
         source_meta = getattr(source_node, "metadata", {}) if source_node else {}
@@ -162,7 +171,15 @@ def _ensure_heading_metadata(nodes: list) -> None:
 
 
 def _apply_heading_prepend(nodes: list) -> None:
-    """Prepend heading path to Markdown chunk text for Experiment 6c."""
+    """Optionally prepend heading path to Markdown chunk text.
+
+    Experiment 6c recovery knob controlled by ``MARKDOWN_HEADING_PREPEND``.
+    Disabled by default.  When enabled, heading context becomes part of the
+    embedded text while a double-prepend guard keeps repeated processing safe.
+
+    Args:
+        nodes: Markdown nodes after heading metadata propagation.
+    """
     if not MARKDOWN_HEADING_PREPEND:
         return
     for node in nodes:
@@ -177,7 +194,20 @@ def _apply_heading_prepend(nodes: list) -> None:
 
 
 def _drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
-    """Drop very small Markdown chunks when the 6c size floor is enabled."""
+    """Optionally drop tiny Markdown chunks before embedding.
+
+    Experiment 6c recovery knob controlled by
+    ``MARKDOWN_MIN_CHUNK_FRACTION``.  Disabled by default.  Uses the same
+    four-characters-per-token estimate used in the 6b/6c chunk-size reports.
+
+    Args:
+        nodes: Markdown nodes to filter.
+        chunk_size: Effective Markdown chunk size for this ingestion run.
+
+    Returns:
+        The original node list when disabled, otherwise only nodes meeting
+        the configured minimum estimated size.
+    """
     if MARKDOWN_MIN_CHUNK_FRACTION <= 0:
         return nodes
     min_chars = int(chunk_size * 4 * MARKDOWN_MIN_CHUNK_FRACTION)

@@ -24,6 +24,7 @@ development of the LlamaIndex RAG MCP Server.
 | [015](./015-rag-reliability-correctness-fixes.md) | RAG Reliability and Correctness Fixes | 2026-05-27 | Accepted |
 | [016](./016-rag-retrieval-quality-improvements.md) | RAG Retrieval Quality Improvements | 2026-05-27 | Accepted |
 | [017](./017-hybrid-retrieval-rrf.md) | Hybrid Retrieval with Reciprocal Rank Fusion | 2026-05-27 | Proposed |
+| [018](./018-balanced-retrieval-defaults.md) | Balanced Retrieval Defaults | 2026-05-29 | Accepted |
 
 ## Convention
 

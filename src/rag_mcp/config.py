@@ -65,8 +65,12 @@ MARKDOWN_HEADING_PREPEND = os.getenv("MARKDOWN_HEADING_PREPEND", "false").lower(
 MARKDOWN_MIN_CHUNK_FRACTION = float(os.getenv("MARKDOWN_MIN_CHUNK_FRACTION", "0.0"))
 
 # ── Retrieval defaults ──────────────────────────────────────────────────
-TOP_K = int(os.getenv("TOP_K", "5"))
-RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"
+# Balanced evidence-retrieval profile promoted after Experiments 7a and 8a:
+# keep CHUNK_OVERLAP=100, enable reranking, and return top_k=10 chunks.  7a
+# showed this recovers overlap=100 on Qasper-like evidence QA without the
+# latency cost of top_k=20; 8a confirmed repeated-query cache performance.
+TOP_K = int(os.getenv("TOP_K", "10"))
+RERANK_ENABLED = os.getenv("RERANK_ENABLED", "true").lower() == "true"
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
 
 # ── Reranker fetch-pool sizing ─────────────────────────────────────────

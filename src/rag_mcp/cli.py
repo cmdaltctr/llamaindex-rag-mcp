@@ -22,7 +22,9 @@ import signal
 import subprocess
 import sys
 import threading
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
+from io import StringIO
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -41,7 +43,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from .config import SUPPORTED_EXTENSIONS
+from .config import RERANK_ENABLED, SUPPORTED_EXTENSIONS, TOP_K
 
 app = typer.Typer(
     name="rag-mcp",
@@ -596,12 +598,12 @@ def ingest(
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Natural language search query."),
-    top_k: int = typer.Option(5, "--top-k", "-k", help="Max results to return."),
+    top_k: int = typer.Option(TOP_K, "--top-k", "-k", help="Max results to return."),
     threshold: float = typer.Option(
         0.0, "--threshold", "-t", help="Minimum similarity score."
     ),
     rerank: bool = typer.Option(
-        False, "--rerank", help="Re-score with cross-encoder reranker."
+        RERANK_ENABLED, "--rerank/--no-rerank", help="Re-score with cross-encoder reranker."
     ),
     collection: str = typer.Option(
         "documents",
@@ -619,13 +621,20 @@ def search(
     from .retrieval import search as do_search
 
     try:
-        results = do_search(
-            query,
-            top_k=top_k,
-            similarity_threshold=threshold,
-            rerank=rerank,
-            collection_name=collection,
+        output_guard = (
+            redirect_stdout(StringIO()) if json_output else nullcontext()
         )
+        error_guard = (
+            redirect_stderr(StringIO()) if json_output else nullcontext()
+        )
+        with output_guard, error_guard:
+            results = do_search(
+                query,
+                top_k=top_k,
+                similarity_threshold=threshold,
+                rerank=rerank,
+                collection_name=collection,
+            )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
         raise typer.Exit(code=1)

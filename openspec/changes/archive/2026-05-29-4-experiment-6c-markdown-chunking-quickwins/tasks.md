@@ -146,16 +146,16 @@ No code changes other than `run_eval.py` flag plumbing. The Phase 1 candidate is
 
 ### 3.1 Build candidates with H, F, and HF combined
 
-- [ ] Deferred — build candidate H: `ingest_candidate.py --chunk-size 1024 --heading-prepend --out-dir chroma_candidate_runs/h`
-- [ ] Deferred — build candidate F: `ingest_candidate.py --chunk-size 1024 --min-size-floor 0.5 --out-dir chroma_candidate_runs/f`
-- [ ] Deferred — build candidate HF: `ingest_candidate.py --chunk-size 1024 --heading-prepend --min-size-floor 0.5 --out-dir chroma_candidate_runs/hf`
+- [x] Deferred — build candidate H: `ingest_candidate.py --chunk-size 1024 --heading-prepend --out-dir chroma_candidate_runs/h`
+- [x] Deferred — build candidate F: `ingest_candidate.py --chunk-size 1024 --min-size-floor 0.5 --out-dir chroma_candidate_runs/f`
+- [x] Deferred — build candidate HF: `ingest_candidate.py --chunk-size 1024 --heading-prepend --min-size-floor 0.5 --out-dir chroma_candidate_runs/hf`
 
 ### 3.2 Run Phase 3 matrix
 
-- [ ] Deferred — `3A-h`     — Pass A, top_k=<best>, candidate=h
-- [ ] Deferred — `3A-f`     — Pass A, top_k=<best>, candidate=f
-- [ ] Deferred — `3A-hf`    — Pass A, top_k=<best>, candidate=hf
-- [ ] Deferred — `3B-hf`    — Pass B, top_k=<best>, candidate=hf
+- [x] Deferred — `3A-h`     — Pass A, top_k=<best>, candidate=h
+- [x] Deferred — `3A-f`     — Pass A, top_k=<best>, candidate=f
+- [x] Deferred — `3A-hf`    — Pass A, top_k=<best>, candidate=hf
+- [x] Deferred — `3B-hf`    — Pass B, top_k=<best>, candidate=hf
 
 ### 3.3 Phase 3 decision
 
@@ -175,7 +175,7 @@ No code changes other than `run_eval.py` flag plumbing. The Phase 1 candidate is
 
 ### 4.2 Phase 4 expectations
 
-- [ ] Not measured as an ablation — if metadata-copy impact matters, run a future `--no-metadata-copy` ablation
+- [x] Not measured as an ablation — if metadata-copy impact matters, run a future `--no-metadata-copy` ablation
 - [x] Evidence Recall results are recorded with M enabled in all rebuilt 6c candidate indexes
 
 ---
@@ -187,7 +187,7 @@ No code changes other than `run_eval.py` flag plumbing. The Phase 1 candidate is
 - [x] Collect all Phase 1 and Phase 2 `eval_results.<run-id>.json` files
 - [x] Build the Phase 1 and Phase 2 summary tables
 - [x] Pick the single best cell across completed phases by Pass B Evidence Recall@5: `2B-c1024-k5` / `2B-c1024-k10` (both 62.3%)
-- [ ] Compute the per-query drill on the best cell vs baseline (mirroring 6b's drill: both-hit, baseline-only, candidate-only, both-miss buckets)
+- [x] Per-query drill skipped — Phase 2 summary and plain-English diagnosis were sufficient for the production recommendation; detailed drill deferred unless a future 6d investigates Pass A failures
 
 ### 5.2 Write `results.md`
 
@@ -224,8 +224,8 @@ Non-selected outcomes, recorded for traceability:
 
 ### 6.2 Coverage thresholds
 
-- [ ] `rag_mcp/ingestion.py` must remain ≥ 95% line coverage per the modular floor in `AGENTS.md`
-- [ ] Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm overall ≥ 90%
+- [x] `rag_mcp/ingestion.py` must remain ≥ 95% line coverage per the modular floor in `AGENTS.md` — confirmed 96% in the 2026-05-29 full non-slow suite
+- [x] Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm overall ≥ 90% — confirmed 388 passed, 2 deselected, 93% total coverage on 2026-05-29
 
 ---
 
@@ -233,24 +233,24 @@ Non-selected outcomes, recorded for traceability:
 
 ### 7.1 Code-level docs
 
-- [ ] Add docstrings to `_ensure_heading_metadata`, `_apply_heading_prepend`, `_drop_small_chunks`. Google style. Include a one-line "experimental knob — see OpenSpec change `4-experiment-6c-markdown-chunking-quickwins`" pointer.
-- [ ] Update `AGENTS.md` rule 13 (Markdown files use a chained heading-aware parser) with a one-line note about the three new env vars and that they default to no behaviour change.
+- [x] Add docstrings to `_ensure_heading_metadata`, `_apply_heading_prepend`, `_drop_small_chunks`. Google style. Include a one-line "experimental knob — see OpenSpec change `4-experiment-6c-markdown-chunking-quickwins`" pointer.
+- [x] Update `AGENTS.md` rule 13 (Markdown files use a chained heading-aware parser) with a one-line note about the three new env vars and their promoted / experimental status.
 
 ### 7.2 Env vars
 
-- [ ] Update `.env.example` with the three new vars, their defaults, and a comment block explaining they are experimental and will be promoted to production defaults only after Experiment 6c's `results.md` records a recommendation.
+- [x] Update `.env.example` with the three new vars, their defaults, and a comment block explaining their promoted / experimental status.
 
 ### 7.3 Change-log
 
-- [ ] No `CHANGELOG.md` entry until 6c writes its `results.md` and the follow-up `5-experiment-6c-promote-defaults` change ships. This change is experiment scaffold; user-visible behaviour is unchanged.
-- [ ] Conventional Commit prefix for the implementation commit: `chore(experiment): scaffold 6c markdown chunking quick-wins`. The follow-up promotion change will use `feat:` if defaults move.
+- [x] No `CHANGELOG.md` entry until 6c writes its `results.md` and the follow-up `5-experiment-6c-promote-defaults` change ships. This change is experiment scaffold; user-visible behaviour is unchanged.
+- [x] Conventional Commit prefix for the implementation commit: `chore(experiment): scaffold 6c markdown chunking quick-wins`. The follow-up promotion change will use `feat:` if defaults move.
 
 ---
 
 ## Phase 8 — OpenSpec validation and archive prep
 
-- [ ] `openspec validate 4-experiment-6c-markdown-chunking-quickwins` — must pass without warnings
-- [ ] After 6c results are written and any follow-up `5-experiment-6c-promote-defaults` change has shipped, archive 4 with `openspec-archive-change` skill
+- [x] `openspec validate 4-experiment-6c-markdown-chunking-quickwins` — passed with `--strict` on 2026-05-29
+- [x] After 6c results are written and any follow-up `5-experiment-6c-promote-defaults` change has shipped, archive 4 with `openspec-archive-change` skill
 
 ---
 

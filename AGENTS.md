@@ -80,12 +80,28 @@ OpenSpec (propose → implement → archive)
 
 Active changes: `openspec/changes/<id>/`. Archived: `openspec/changes/archive/`. ADRs: `docs/adr/`.
 
+### Branch / PR / Merge Procedure
+
+Use a branch + PR for every OpenSpec change:
+
+1. Create/update branch: `git switch -c feat/<change-id>` (or continue the existing change branch).
+2. Implement and validate locally: targeted tests + `openspec validate --all --strict`.
+3. Commit with Conventional Commits; keep commits logically grouped.
+4. Push the branch and open a PR to `master`: `gh pr create --base master --head <branch>`.
+5. Wait for GitHub CI to pass; if it fails, fix on the same branch and push again.
+6. Merge only when PR is clean/green; delete the remote branch after merge.
+7. Sync locally: `git switch master && git pull origin master && git branch -d <branch>`.
+
 ## Architecture
 
 - **`config.py`** is the single source of truth for `Settings.embed_model` and all constants. Never set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, or `server.py`.
 - **No cross-imports between `ingestion.py` and `retrieval.py`** — they share only `config.py`.
 - **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`, `retrieval.py`, `reranker.py`, and `metadata_extractor.py`.
 - **All ingestion is async** — `ingest_path_async` is the sole entry point.
+- **Markdown chunking has three recovery knobs** — `MARKDOWN_CHUNK_SIZE`,
+  `MARKDOWN_HEADING_PREPEND`, and `MARKDOWN_MIN_CHUNK_FRACTION` came from
+  Experiment 6c. `MARKDOWN_CHUNK_SIZE=1024` is promoted; heading prepend and
+  min-size floor remain experimental opt-ins.
 
 For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tools, ingestion, retrieval, reranker, metadata extraction, CLI, configuration, and testing.
 
@@ -95,7 +111,8 @@ For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tool
 2. **The reranker is a singleton.** Tests MUST reset `CrossEncoderReranker._instance = None` in setup/teardown.
 3. **The ÷30 threshold scaling is empirically calibrated.** Don't change without re-running `experiments/1-reranker-threshold-calibration-2026-05-12/`.
 4. **`reranker.py` imports `dotenv` independently** of `config.py`. Don't "fix" — circular import risk.
-5. **CLI output goes to stderr.** stdout is the MCP protocol channel.
+5. **Balanced retrieval defaults are intentional.** ADR-018 promotes `TOP_K=10` and `RERANK_ENABLED=true` with `CHUNK_OVERLAP=100`, based on Experiments 7a/8a. `server.py` and `cli.py` must read these defaults from `config.py`, not hardcode `5` / `False`.
+6. **CLI output goes to stderr.** stdout is the MCP protocol channel. JSON output must suppress third-party stdout/stderr noise from lazy reranker/model imports.
 
 ## MCP Best Practices (FastMCP / Python)
 

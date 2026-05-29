@@ -579,6 +579,7 @@ class TestSearchErrorHandling:
                     "0.1",
                     "--collection",
                     "cli_coll",
+                    "--no-rerank",
                     "--json",
                 ],
             )
@@ -591,6 +592,31 @@ class TestSearchErrorHandling:
             similarity_threshold=0.1,
             rerank=False,
             collection_name="cli_coll",
+        )
+
+    def test_search_cli_defaults_follow_config(self) -> None:
+        """CLI search defaults should follow config.TOP_K / RERANK_ENABLED."""
+        from rag_mcp.config import RERANK_ENABLED, TOP_K
+
+        result_payload = [{
+            "score": 0.8,
+            "source": "cli.txt",
+            "page_label": None,
+            "text": "CLI result",
+            "reranked": RERANK_ENABLED,
+        }]
+
+        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+            result = runner.invoke(app, ["search", "cli query", "--json"])
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == result_payload
+        mock_search.assert_called_once_with(
+            "cli query",
+            top_k=TOP_K,
+            similarity_threshold=0.0,
+            rerank=RERANK_ENABLED,
+            collection_name="documents",
         )
 
     def test_search_connection_error(self) -> None:

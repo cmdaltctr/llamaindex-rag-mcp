@@ -1,0 +1,250 @@
+language model hallucination?
+cross entropy reliability?
+coding and mathematics?
+classroom collaboration?
+handwriting brain connectivity?
+istislah in al-Mustasfa?
+semantic grep tool?
+academic database integration?
+attention mechanisms?
+residual neural networks?
+layer normalisation?
+positional encodings?
+multi-head attention?
+masked language modelling?
+next-token prediction?
+temperature sampling?
+top-p sampling?
+beam search?
+greedy decoding?
+mixture of experts?
+retrieval augmented generation?
+vector databases?
+metadata filtering?
+reranking?
+chunk overlap?
+Markdown chunking?
+Qasper evidence retrieval?
+BM25 retrieval?
+query embedding cache?
+ChromaDB collection?
+Ollama embeddings?
+PDF ingestion?
+document deletion?
+file watcher ingestion?
+MCP search tool?
+source attribution?
+nDCG metrics?
+evidence recall?
+agent verification loop?
+latency benchmark?
+Apple Silicon?
+cross encoder threshold?
+dense retrieval?
+sparse retrieval?
+hybrid search?
+academic paper QA?
+structured Markdown?
+semantic code search?
+local RAG?
+collection statistics?
+language model hallucination?
+cross entropy reliability?
+coding and mathematics?
+classroom collaboration?
+handwriting brain connectivity?
+istislah in al-Mustasfa?
+semantic grep tool?
+academic database integration?
+attention mechanisms?
+residual neural networks?
+layer normalisation?
+positional encodings?
+multi-head attention?
+masked language modelling?
+next-token prediction?
+temperature sampling?
+top-p sampling?
+beam search?
+greedy decoding?
+mixture of experts?
+retrieval augmented generation?
+vector databases?
+metadata filtering?
+reranking?
+chunk overlap?
+Markdown chunking?
+Qasper evidence retrieval?
+BM25 retrieval?
+query embedding cache?
+ChromaDB collection?
+Ollama embeddings?
+PDF ingestion?
+document deletion?
+file watcher ingestion?
+MCP search tool?
+source attribution?
+nDCG metrics?
+evidence recall?
+agent verification loop?
+latency benchmark?
+Apple Silicon?
+cross encoder threshold?
+dense retrieval?
+sparse retrieval?
+hybrid search?
+academic paper QA?
+structured Markdown?
+semantic code search?
+local RAG?
+collection statistics?
+language model hallucination?
+cross entropy reliability?
+coding and mathematics?
+classroom collaboration?
+handwriting brain connectivity?
+istislah in al-Mustasfa?
+semantic grep tool?
+academic database integration?
+attention mechanisms?
+residual neural networks?
+layer normalisation?
+positional encodings?
+multi-head attention?
+masked language modelling?
+next-token prediction?
+temperature sampling?
+top-p sampling?
+beam search?
+greedy decoding?
+mixture of experts?
+retrieval augmented generation?
+vector databases?
+metadata filtering?
+reranking?
+chunk overlap?
+Markdown chunking?
+Qasper evidence retrieval?
+BM25 retrieval?
+query embedding cache?
+ChromaDB collection?
+Ollama embeddings?
+PDF ingestion?
+document deletion?
+file watcher ingestion?
+MCP search tool?
+source attribution?
+nDCG metrics?
+evidence recall?
+agent verification loop?
+latency benchmark?
+Apple Silicon?
+cross encoder threshold?
+dense retrieval?
+sparse retrieval?
+hybrid search?
+academic paper QA?
+structured Markdown?
+semantic code search?
+local RAG?
+collection statistics?
+language model hallucination?
+cross entropy reliability?
+coding and mathematics?
+classroom collaboration?
+handwriting brain connectivity?
+istislah in al-Mustasfa?
+semantic grep tool?
+academic database integration?
+attention mechanisms?
+residual neural networks?
+layer normalisation?
+positional encodings?
+multi-head attention?
+masked language modelling?
+next-token prediction?
+temperature sampling?
+top-p sampling?
+beam search?
+greedy decoding?
+mixture of experts?
+retrieval augmented generation?
+vector databases?
+metadata filtering?
+reranking?
+chunk overlap?
+Markdown chunking?
+Qasper evidence retrieval?
+BM25 retrieval?
+query embedding cache?
+ChromaDB collection?
+Ollama embeddings?
+PDF ingestion?
+document deletion?
+file watcher ingestion?
+MCP search tool?
+source attribution?
+nDCG metrics?
+evidence recall?
+agent verification loop?
+latency benchmark?
+Apple Silicon?
+cross encoder threshold?
+dense retrieval?
+sparse retrieval?
+hybrid search?
+academic paper QA?
+structured Markdown?
+semantic code search?
+local RAG?
+collection statistics?
+language model hallucination?
+cross entropy reliability?
+coding and mathematics?
+classroom collaboration?
+handwriting brain connectivity?
+istislah in al-Mustasfa?
+semantic grep tool?
+academic database integration?
+attention mechanisms?
+residual neural networks?
+layer normalisation?
+positional encodings?
+multi-head attention?
+masked language modelling?
+next-token prediction?
+temperature sampling?
+top-p sampling?
+beam search?
+greedy decoding?
+mixture of experts?
+retrieval augmented generation?
+vector databases?
+metadata filtering?
+reranking?
+chunk overlap?
+Markdown chunking?
+Qasper evidence retrieval?
+BM25 retrieval?
+query embedding cache?
+ChromaDB collection?
+Ollama embeddings?
+PDF ingestion?
+document deletion?
+file watcher ingestion?
+MCP search tool?
+source attribution?
+nDCG metrics?
+evidence recall?
+agent verification loop?
+latency benchmark?
+Apple Silicon?
+cross encoder threshold?
+dense retrieval?
+sparse retrieval?
+hybrid search?
+academic paper QA?
+structured Markdown?
+semantic code search?
+local RAG?
+collection statistics?

@@ -70,15 +70,32 @@ async def test_default_threshold_includes_results(
 # ── Rerank flag propagation ────────────────────────────────────────────────
 
 
-async def test_default_search_reranked_false(
+async def test_default_search_uses_balanced_rerank_default(
     mcp_server, fixtures_dir: Path
 ) -> None:
-    """Without rerank, all results must have reranked=False."""
+    """Default MCP search uses the balanced rerank-on profile."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
         result = await client.call_tool(
             "search_documents",
             {"query": "capital"},
+        )
+        data = _extract_result(result)
+        assert isinstance(data, list)
+        assert len(data) > 0
+        for r in data:
+            assert r["reranked"] is True
+
+
+async def test_rerank_false_sets_flag_false(
+    mcp_server, fixtures_dir: Path
+) -> None:
+    """Explicit rerank=False still preserves the un-reranked path."""
+    async with connected_client(mcp_server) as client:
+        await _ingest_fixtures(client, fixtures_dir)
+        result = await client.call_tool(
+            "search_documents",
+            {"query": "capital", "rerank": False},
         )
         data = _extract_result(result)
         assert isinstance(data, list)

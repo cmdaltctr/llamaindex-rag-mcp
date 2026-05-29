@@ -1,0 +1,30 @@
+{
+  "experiment_id": "7a-chunk-overlap-evidence-2026-05-29",
+  "date": "2026-05-29",
+  "status": "INCONCLUSIVE for global default; FAIL on Qasper at production top_k=5",
+  "recommendation": "Keep global CHUNK_OVERLAP=100, document Qasper-specific override guidance, and use TOP_K=10 with reranking for the balanced production profile.",
+  "corpus": "Qasper dev, 20 papers, 53 evidence-bearing QA records",
+  "main_production_shape": {
+    "pass": "B / rerank on",
+    "top_k": 5,
+    "overlap_64": {
+      "evidence_recall_at_5": 0.6226,
+      "evidence_mrr": 0.3849,
+      "ndcg_at_5": 0.7288,
+      "chunks": 259,
+      "p95_latency_ms": 1428
+    },
+    "overlap_100": {
+      "evidence_recall_at_5": 0.5849,
+      "evidence_mrr": 0.3827,
+      "ndcg_at_5": 0.7243,
+      "chunks": 283,
+      "p95_latency_ms": 1468
+    }
+  },
+  "artifact": {
+    "release_tag": "experiment-artifacts-2026-05-29",
+    "asset": "experiment-7a-chunk-overlap-evidence-2026-05-29-artifacts.zip",
+    "sha256": "2309dc58ccc0b6ef9bd77d73e94281a6eaa3af0ee84bb2eb92e701496551fa0c"
+  }
+}

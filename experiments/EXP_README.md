@@ -50,6 +50,8 @@ Hypothesis → Variables → Method → Results → Conclusion
 | 7 | [Chunk overlap sensitivity](./7-chunk-overlap-sensitivity-2026-05-27/) | 2026-05-27 | PLANNED | Confirms Tier 2 `CHUNK_OVERLAP=100` default is non-regressive vs the previous default of 64 |
 | 8 | [Query embedding cache](./8-query-embedding-cache-2026-05-27/) | 2026-05-27 | PLANNED | Validates Tier 2 LRU cache delivers ≥ 30 % warm-trace speedup and zero overhead on cold traces, both retrieval branches |
 | 9 | [Hybrid retrieval (dense + BM25 + RRF)](./9-hybrid-retrieval-2026-05-27/) | 2026-05-27 | PLANNED | Mandated by Tier 3 Migration Plan; Colosseum regression target + rare-term/semantic partition; informs follow-up `HYBRID_ENABLED` default flip |
+| 7a | [Chunk overlap sensitivity on Qasper](./7a-chunk-overlap-evidence-2026-05-29/) | 2026-05-29 | INCONCLUSIVE | Qasper is a stress case: overlap 64 beats 100 at rerank-on `top_k=5`; keep global default 100 but document corpus-specific override guidance |
+| 8a | [Query embedding cache full-size evaluation](./8a-query-embedding-cache-fullsize-2026-05-29/) | 2026-05-29 | PASS | Full-size traces confirm 76% warm speedup, 87% agent-loop speedup, no cold-query penalty, and cache hits on both retrieval branches |
 
 ## Standalone Benchmarks
 
@@ -75,3 +77,5 @@ Experiments often inform code changes. Key links:
 | 7 — chunk-overlap-sensitivity-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 3.x |
 | 8 — query-embedding-cache-2026-05-27 | OpenSpec `rag-retrieval-quality-improvements` (Tier 2), task 4.x |
 | 9 — hybrid-retrieval-2026-05-27 | OpenSpec `rag-hybrid-retrieval` (Tier 3), task 9.x — informs follow-up default flip |
+| 7a — chunk-overlap-evidence-2026-05-29 | Follow-up evidence-level validation for ADR-016 overlap default; documents Qasper-specific `CHUNK_OVERLAP=64` preference at `top_k=5` |
+| 8a — query-embedding-cache-fullsize-2026-05-29 | Follow-up validation for ADR-016 query embedding cache using full-size traces and true cache-off cells |

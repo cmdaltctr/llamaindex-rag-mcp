@@ -1,0 +1,29 @@
+{
+  "experiment_id": "8a-query-embedding-cache-fullsize-2026-05-29",
+  "date": "2026-05-29",
+  "status": "PASS",
+  "recommendation": "Keep the query embedding cache enabled; repeated-query workloads get large mean-latency wins with no meaningful cold-query penalty.",
+  "corpus": "4 PDFs plus 2 Markdown README files copied from Experiment 3",
+  "main_pass_criteria": {
+    "warm_trace_speedup": 0.7616,
+    "agent_loop_speedup": 0.8671,
+    "cold_trace_overhead": -0.0278,
+    "warm_cache_on_embed_calls": 50,
+    "cold_cache_on_embed_calls": 200,
+    "agent_loop_cache_on_embed_calls": 25,
+    "both_branches_hit_cache": true
+  },
+  "selected_cells": {
+    "warm_cache_off_rerank_off_mean_ms": 75.49,
+    "warm_cache_on_rerank_off_mean_ms": 18.0,
+    "agent_loop_cache_off_rerank_off_mean_ms": 80.35,
+    "agent_loop_cache_on_rerank_off_mean_ms": 10.68,
+    "warm_cache_off_rerank_on_mean_ms": 1318.24,
+    "warm_cache_on_rerank_on_mean_ms": 1214.01
+  },
+  "artifact": {
+    "release_tag": "experiment-artifacts-2026-05-29",
+    "asset": "experiment-8a-query-embedding-cache-fullsize-2026-05-29-artifacts.zip",
+    "sha256": "e5f164b74ad9fd8e6aefb128379b4fef508eb504155dbfbb3fa30a7a627c77ce"
+  }
+}

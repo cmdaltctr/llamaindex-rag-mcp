@@ -1,0 +1,250 @@
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.
+Verify retrieval evidence for step 01: language model hallucination.
+Verify retrieval evidence for step 02: cross entropy reliability.
+Verify retrieval evidence for step 03: coding and mathematics.
+Verify retrieval evidence for step 04: classroom collaboration.
+Verify retrieval evidence for step 05: handwriting brain connectivity.
+Verify retrieval evidence for step 06: istislah in al-Mustasfa.
+Verify retrieval evidence for step 07: semantic grep tool.
+Verify retrieval evidence for step 08: academic database integration.
+Verify retrieval evidence for step 09: attention mechanisms.
+Verify retrieval evidence for step 10: residual neural networks.
+Verify retrieval evidence for step 11: layer normalisation.
+Verify retrieval evidence for step 12: positional encodings.
+Verify retrieval evidence for step 13: multi-head attention.
+Verify retrieval evidence for step 14: masked language modelling.
+Verify retrieval evidence for step 15: next-token prediction.
+Verify retrieval evidence for step 16: temperature sampling.
+Verify retrieval evidence for step 17: top-p sampling.
+Verify retrieval evidence for step 18: beam search.
+Verify retrieval evidence for step 19: greedy decoding.
+Verify retrieval evidence for step 20: mixture of experts.
+Verify retrieval evidence for step 21: retrieval augmented generation.
+Verify retrieval evidence for step 22: vector databases.
+Verify retrieval evidence for step 23: metadata filtering.
+Verify retrieval evidence for step 24: reranking.
+Verify retrieval evidence for step 25: chunk overlap.

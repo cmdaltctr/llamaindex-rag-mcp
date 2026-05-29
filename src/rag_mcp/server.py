@@ -18,6 +18,7 @@ import logging
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+from .config import RERANK_ENABLED, TOP_K
 from .ingestion import ingest_path_async, list_documents as _list_documents
 from .retrieval import search
 
@@ -59,9 +60,9 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
 )
 async def search_documents(
     query: str,
-    top_k: int = 5,
+    top_k: int = TOP_K,
     similarity_threshold: float = 0.0,
-    rerank: bool = False,
+    rerank: bool = RERANK_ENABLED,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -69,11 +70,11 @@ async def search_documents(
 
     Args:
         query: Natural language search query.
-        top_k: Maximum number of chunks to return (default 5).
+        top_k: Maximum number of chunks to return (default from config).
         similarity_threshold: Minimum relevance score to include a
             result. 0.0 means no filtering (default).
         rerank: If True, re-score results with the cross-encoder
-            reranker for better precision (default False).
+            reranker for better precision (default from config).
         collection: Name of the ChromaDB collection to search
             (default "documents").
         metadata_filter: Optional ChromaDB-compatible ``where`` clause
