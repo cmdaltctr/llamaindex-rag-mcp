@@ -174,9 +174,10 @@ def _evaluate_config(
     Returns:
         ConfigResult with per-query records and aggregate stats.
     """
+    import asyncio
     import random
 
-    from rag_mcp.ingestion import ingest_path
+    from rag_mcp.ingestion import ingest_path_async
     from rag_mcp.retrieval import search
 
     tmp_dir = tempfile.mkdtemp(prefix=f"rag_pool_{config['max_fetch']}_")
@@ -191,7 +192,7 @@ def _evaluate_config(
     )
 
     try:
-        ingest_result = ingest_path(str(corpus_dir))
+        ingest_result = asyncio.run(ingest_path_async(str(corpus_dir)))
         if ingest_result.get("status") != "ok":
             print(f"  ERROR: ingest failed for {config['label']}")
             return result

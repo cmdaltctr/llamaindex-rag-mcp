@@ -1,0 +1,1 @@
+Plain markdown text with no headings at all. Just a single paragraph that should still chunk cleanly through the chained pipeline. The Markdown branch must not crash on heading-less input and must still produce at least one non-empty node so that downstream embedding has something to work with.

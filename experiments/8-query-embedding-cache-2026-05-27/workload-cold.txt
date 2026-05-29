@@ -1,0 +1,40 @@
+How does pretraining force language models to hallucinate at scale?
+What statistical mechanism causes language models to hallucinate?
+Why does pretraining produce hallucinations in modern LLMs?
+How does cross-entropy loss reduce trustworthiness in models?
+Why is cross-entropy optimisation linked to model hallucinations?
+How does the cross-entropy objective harm model reliability?
+How does coding improve mathematical problem-solving in children?
+What math skills do children gain from learning to program?
+Why does coding help children develop maths reasoning?
+Does coding improve children's social skills and collaboration?
+How does coding foster collaboration among young learners?
+Why does pair coding improve student communication?
+What does handwriting do to brain connectivity in young people?
+How does handwriting affect EEG-measured brain connectivity?
+Why does typing fail to produce the same brain patterns as handwriting?
+How is istislah used in Al-Ghazali's al-Mustasfa?
+What role does maslaha play in al-Mustasfa?
+How does Al-Ghazali define public interest in al-Mustasfa?
+What features does the grep-ai semantic code search tool offer?
+How does grep-ai differ from traditional grep?
+What use cases does grep-ai enable?
+How does paper-search-mcp-cf integrate with academic databases?
+What sources does paper-search-mcp-cf query?
+How does paper-search-mcp-cf normalise results across providers?
+What is the role of attention in transformer architectures?
+How do residual connections help deep neural networks train?
+Why is layer normalisation important in transformer training?
+What does positional encoding do in a sequence model?
+How does multi-head attention capture different relationships?
+Why is self-attention quadratic in sequence length?
+How do encoder-only transformers differ from decoder-only ones?
+What is masked language modelling?
+How does next-token prediction differ from masked LM?
+Why does temperature sampling affect LLM creativity?
+What is the role of top-p sampling in text generation?
+How does beam search work in sequence-to-sequence models?
+Why is greedy decoding suboptimal for open-ended generation?
+What is mixture of experts in language models?
+How does MoE reduce inference cost?
+What is RAG and how does it differ from fine-tuning?

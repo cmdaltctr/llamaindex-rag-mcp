@@ -94,7 +94,9 @@ class TestReadAndChunkFile:
     def test_custom_chunk_size(self, sample_txt: Path) -> None:
         """Smaller chunk_size produces more nodes."""
         nodes_default = asyncio.run(_read_and_chunk_file_async(sample_txt, chunk_size=512))
-        nodes_small = asyncio.run(_read_and_chunk_file_async(sample_txt, chunk_size=64))
+        nodes_small = asyncio.run(
+            _read_and_chunk_file_async(sample_txt, chunk_size=64, chunk_overlap=10)
+        )
         assert len(nodes_small) >= len(nodes_default)
 
     def test_nonexistent_file_raises(self, tmp_path: Path) -> None:

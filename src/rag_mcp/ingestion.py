@@ -10,7 +10,7 @@ from typing import Callable
 
 import chromadb
 from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.node_parser import MarkdownNodeParser, SentenceSplitter
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from .config import (
@@ -20,6 +20,9 @@ from .config import (
     COLLECTION_NAME,
     EMBED_BATCH_SIZE,
     EMBED_CONCURRENCY,
+    MARKDOWN_CHUNK_SIZE,
+    MARKDOWN_HEADING_PREPEND,
+    MARKDOWN_MIN_CHUNK_FRACTION,
     SUPPORTED_EXTENSIONS,
     Settings,
 )
@@ -148,6 +151,43 @@ def list_documents(collection_name: str = "documents") -> list[dict]:
 # ── Async ingestion path ───────────────────────────────────────────────────
 
 
+def _ensure_heading_metadata(nodes: list) -> None:
+    """Defensively copy source heading metadata onto emitted child nodes."""
+    for node in nodes:
+        source_node = getattr(node, "source_node", None)
+        source_meta = getattr(source_node, "metadata", {}) if source_node else {}
+        header_path = source_meta.get("header_path") or source_meta.get("heading_path")
+        if header_path:
+            node.metadata.setdefault("header_path", header_path)
+
+
+def _apply_heading_prepend(nodes: list) -> None:
+    """Prepend heading path to Markdown chunk text for Experiment 6c."""
+    if not MARKDOWN_HEADING_PREPEND:
+        return
+    for node in nodes:
+        header_path = node.metadata.get("header_path") or node.metadata.get("heading_path")
+        if not header_path:
+            continue
+        prefix = f"[{header_path}] "
+        text = getattr(node, "text", "")
+        if text.startswith(prefix):
+            continue
+        node.text = prefix + text
+
+
+def _drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
+    """Drop very small Markdown chunks when the 6c size floor is enabled."""
+    if MARKDOWN_MIN_CHUNK_FRACTION <= 0:
+        return nodes
+    min_chars = int(chunk_size * 4 * MARKDOWN_MIN_CHUNK_FRACTION)
+    kept = [node for node in nodes if len(getattr(node, "text", "")) >= min_chars]
+    dropped = len(nodes) - len(kept)
+    if dropped:
+        logger.info("Dropped %d Markdown chunk(s) below min-size floor", dropped)
+    return kept
+
+
 async def _read_and_chunk_file_async(
     file_path: Path,
     chunk_size: int = CHUNK_SIZE,
@@ -195,17 +235,36 @@ async def _read_and_chunk_file_async(
             file_path.name,
         )
 
+    # Markdown files use a heading-aware parser chained with the sentence
+    # splitter so heading boundaries are preserved wherever the
+    # heading-bounded section fits in ``chunk_size``, while longer
+    # sections are still split so no chunk exceeds ``chunk_size``.
+    # See ADR-016 / OpenSpec change ``rag-retrieval-quality-improvements``
+    # Decision 1.  Non-Markdown files retain the existing splitter.
+    is_markdown = file_path.suffix.lower() == ".md"
+    effective_chunk_size = MARKDOWN_CHUNK_SIZE if is_markdown else chunk_size
     splitter = SentenceSplitter(
-        chunk_size=chunk_size,
+        chunk_size=effective_chunk_size,
         chunk_overlap=chunk_overlap,
     )
+
+    def _split_sync() -> list:
+        if is_markdown:
+            md_parser = MarkdownNodeParser()
+            heading_nodes = md_parser.get_nodes_from_documents(documents)
+            return splitter.get_nodes_from_documents(heading_nodes)
+        return splitter.get_nodes_from_documents(documents)
+
     # Chunk splitting is CPU-bound and synchronous — offload to a worker
     # thread so the MCP event loop stays responsive while large documents
     # are split.  See ADR-015 / OpenSpec change
     # ``rag-reliability-correctness-fixes`` Decision 1.
-    nodes = await asyncio.to_thread(
-        splitter.get_nodes_from_documents, documents
-    )
+    nodes = await asyncio.to_thread(_split_sync)
+
+    if is_markdown:
+        _ensure_heading_metadata(nodes)
+        _apply_heading_prepend(nodes)
+        nodes = _drop_small_markdown_chunks(nodes, effective_chunk_size)
 
     if doc_metadata:
         flat_metadata = {

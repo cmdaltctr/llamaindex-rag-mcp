@@ -142,7 +142,9 @@ def _evaluate_overlap(
     overlap: int, corpus_dir: Path, queries: list[dict]
 ) -> OverlapEvaluation:
     """Ingest under one overlap value and run the query set."""
-    from rag_mcp.ingestion import ingest_path
+    import asyncio
+
+    from rag_mcp.ingestion import ingest_path_async
     from rag_mcp.retrieval import search
 
     chroma_dir = str((EXPERIMENT_DIR / f"chroma_overlap_{overlap}").resolve())
@@ -153,7 +155,7 @@ def _evaluate_overlap(
     eval_result = OverlapEvaluation(overlap=overlap)
 
     started = time.perf_counter()
-    ingest_result = ingest_path(str(corpus_dir))
+    ingest_result = asyncio.run(ingest_path_async(str(corpus_dir)))
     eval_result.ingest_seconds = round(time.perf_counter() - started, 2)
     eval_result.chunk_count = ingest_result.get("chunks_created", 0)
 

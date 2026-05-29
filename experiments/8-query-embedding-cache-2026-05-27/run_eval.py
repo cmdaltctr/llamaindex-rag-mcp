@@ -94,11 +94,20 @@ class EmbedCallCounter:
             self.count += 1
             return self._original(query)  # type: ignore[misc]
 
-        self._embed_model.get_query_embedding = wrapped  # type: ignore[method-assign]
+        # Pydantic v2 BaseEmbedding rejects unknown field assignment, so
+        # bypass it via object.__setattr__.  This puts the wrapped callable
+        # directly on the instance __dict__, where attribute lookup finds
+        # it before walking the class.
+        object.__setattr__(self._embed_model, "get_query_embedding", wrapped)
 
     def uninstall(self) -> None:
         if self._original is not None and self._embed_model is not None:
-            self._embed_model.get_query_embedding = self._original  # type: ignore[method-assign]
+            # Drop the instance-level override; lookup falls back to the
+            # class-level bound method.
+            try:
+                object.__delattr__(self._embed_model, "get_query_embedding")
+            except AttributeError:
+                pass
         self.count = 0
 
 
@@ -240,7 +249,9 @@ def _run_cell(
 
 def _ingest_corpus(corpus_dir: Path) -> str:
     """Ingest the corpus into a fresh temp ChromaDB and return its path."""
-    from rag_mcp.ingestion import ingest_path
+    import asyncio
+
+    from rag_mcp.ingestion import ingest_path_async
 
     tmp_dir = tempfile.mkdtemp(prefix="rag_cache_")
     os.environ["CHROMA_PERSIST_DIR"] = tmp_dir
@@ -253,7 +264,7 @@ def _ingest_corpus(corpus_dir: Path) -> str:
             mod.COLLECTION_NAME = EXPERIMENT_COLLECTION
 
     print(f"  Ingesting corpus: {corpus_dir}")
-    result = ingest_path(str(corpus_dir))
+    result = asyncio.run(ingest_path_async(str(corpus_dir)))
     if result.get("status") != "ok":
         print(f"  ERROR: ingest failed: {result.get('message')}")
         shutil.rmtree(tmp_dir, ignore_errors=True)

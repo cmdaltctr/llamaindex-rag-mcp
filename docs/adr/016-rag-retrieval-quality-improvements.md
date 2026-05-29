@@ -1,10 +1,10 @@
 # ADR-016: RAG Retrieval Quality Improvements
 
-**Status**: Proposed
-**Date**: <TODO: YYYY-MM-DD on archive>
-**Change**: `rag-retrieval-quality-improvements`
+**Status**: Accepted
+**Date**: 2026-05-27
+**Change**: `2-rag-retrieval-quality-improvements`
 **Deciders**: Dr Muhammad Aizat Bin Md Hawari
-**Git Commits**: <TODO: list relevant SHAs once landed>
+**Git Commits**: `0b91d03`, `abea2b5`, `483c4dd`, `796b132`, `8214605` (feature branch `feat/rag-retrieval-quality-tier-2`)
 
 ## Context
 
@@ -34,10 +34,14 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
 1. **Markdown branch chains `MarkdownNodeParser` → `SentenceSplitter`.**
    When a file has the `.md` extension, ingestion routes through
    `MarkdownNodeParser` first to respect heading boundaries, then through
-   `SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)`
-   to cap heading-bounded sections that exceed `CHUNK_SIZE`. Non-Markdown
-   files retain the existing `SentenceSplitter`-only path. The chained
-   structure is required because `MarkdownNodeParser` alone will emit
+   `SentenceSplitter(chunk_size=MARKDOWN_CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)`
+   to cap heading-bounded sections that exceed `MARKDOWN_CHUNK_SIZE`.
+   After Experiment 6c, `MARKDOWN_CHUNK_SIZE` defaults to **1024**
+   (up from the global `CHUNK_SIZE=512`), which was empirically found
+   to reduce the Markdown chunker's fragmentation penalty at the reranker
+   stage. Non-Markdown files retain the existing
+   `SentenceSplitter(chunk_size=CHUNK_SIZE, ...)` path with `CHUNK_SIZE=512`.
+   The chained structure is required because `MarkdownNodeParser` alone will emit
    one giant node per long heading section, defeating embedding-batch
    sizing.
 
@@ -47,14 +51,14 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
    `fetch_k` is clamped to `min(fetch_k, collection.count())` so small
    collections do not over-fetch. Implements the "Wide Net, Tight Filter"
    pattern. Latency target verified empirically by re-running the
-   existing reranker calibration script:
+   reranker calibration script (`experiments/5-reranker-pool-sizing-2026-05-27/`):
 
-   - Pre-change baseline (10 candidates): post-warmup mean ~85 ms
-   - Post-change measured (target defaults): post-warmup mean
-     <TODO: fill in mean ms>, P95 <TODO: fill in P95 ms>
-   - Acceptance criterion: post-warmup P95 ≤ 500 ms
-   - Final shipped defaults: <TODO: confirm `(50, 10)` or list tightened
-     values such as `(30, 6)` if the criterion required them>
+   - Pre-change baseline (`(20, 2)`, fetch_k=20): post-warmup mean **354 ms**, P95 **475 ms**
+   - Post-change candidate (`(50, 10)`, fetch_k=50): post-warmup mean **298 ms**, P95 **377 ms**
+   - Stress test (`(100, 20)`, fetch_k=100): post-warmup mean **272 ms**, P95 **298 ms**
+   - Acceptance criterion: post-warmup P95 ≤ 500 ms — **PASS**
+   - Final shipped defaults: **`(50, 10)`** — comfortably under the budget,
+     full source / answer accuracy preserved, no fallback to `(30, 6)` required.
 
 3. **Default `CHUNK_OVERLAP` bumped from 64 to 100.** Aligns the
    shipped default with Stäbler et al. (2025)'s empirical sweet spot.
@@ -73,8 +77,17 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
    chain is replaced with a direct
    `collection.query(query_embeddings=[vec], n_results=fetch_k)` call.
    This refactor also collapses both branches onto the same code path,
-   automatically satisfying ADR-015's score-normalisation contract on
-   the unfiltered branch.
+    automatically satisfying ADR-015's score-normalisation contract on
+    the unfiltered branch.
+
+## Empirical Evidence
+
+The Markdown chunking decision was validated through a three-experiment sequence on the Qasper dev split (20 NLP papers, 53 evidence-bearing QA records):
+
+- **Experiment 6b** (`experiments/6b-qasper-markdown-chunking-2026-05-28/`): At `chunk_size=512` with `top_k=5`, the Markdown-aware chunker regressed −5.66 pp (Pass A, reranker off) and −1.89 pp (Pass B, reranker on) on Evidence Recall@5. The dominant cause was chunk fragmentation: the candidate produced 49 % more chunks than the baseline, pushing relevant evidence to ranks 6–15.
+- **Experiment 6c** (`experiments/6c-markdown-chunking-quickwins-2026-05-28/`): Swept `top_k ∈ {5,10,20}` and candidate `chunk_size ∈ {768,1024}`. The winning configuration — `MARKDOWN_CHUNK_SIZE=1024` with reranker enabled — improved Evidence Recall@5 by **+1.9 pp** over the bare splitter at `top_k=5`. At `top_k=10` the candidate reached 73.6 % Recall@10 but did not improve Recall@5 beyond the +1.9 pp plateau, confirming that `TOP_K=5` remains the correct production default. **`top_k=10` is recommended only for evidence/audit workflows** that intentionally want more returned chunks.
+
+Pass A (chunker isolation, reranker off) remained negative across all configurations, confirming that the gain is reranker-driven, not chunker-driven. The `chunk_size=1024` setting reduces fragmentation enough that the reranker can re-score the candidate above the baseline.
 
 ## Consequences
 
@@ -133,12 +146,23 @@ preserving the calibrated ÷30 reranker threshold scaling from ADR-005:
   - `openspec/changes/rag-retrieval-quality-improvements/specs/reranking/spec.md`
   - `openspec/changes/rag-retrieval-quality-improvements/specs/query-embedding-cache/spec.md`
   - `openspec/changes/rag-retrieval-quality-improvements/specs/async-ingestion/spec.md`
-- Experiment: `experiments/reranker-threshold-calibration-2026-05-12/results.md` — re-run with the new defaults; <TODO: link to the updated section or new dated experiment>
+- Experiments:
+  - `experiments/5-reranker-pool-sizing-2026-05-27/results.md` — pool latency sweep, P95 confirmation, shipped defaults
+  - `experiments/6-markdown-chunking-quality-2026-05-27/results.md` — Markdown chunker non-regression on a structured corpus
+  - `experiments/6b-qasper-markdown-chunking-2026-05-28/results.md` — Qasper evaluation showing −5.66 pp regression at chunk_size=512, chunker isolation (Pass A)
+  - `experiments/6c-markdown-chunking-quickwins-2026-05-28/results.md` — quick-win sweep finding +1.9 pp at MARKDOWN_CHUNK_SIZE=1024 with reranker enabled (production shape)
+  - `experiments/7-chunk-overlap-sensitivity-2026-05-27/results.md` — overlap sweep, non-regression confirmation
+  - `experiments/8-query-embedding-cache-2026-05-27/results.md` — cache speedup measurement (≥ 30 % warm-trace reduction)
+  - `experiments/1-reranker-threshold-calibration-2026-05-12/results.md` — original ÷30 threshold calibration that this ADR widens
 - Source:
-  - `src/rag_mcp/ingestion.py` — Markdown branch with chained splitter
+  - `src/rag_mcp/ingestion.py` — Markdown branch with chained splitter; `_ensure_heading_metadata` for defensive heading propagation; `MARKDOWN_CHUNK_SIZE=1024` default (post-6c)
   - `src/rag_mcp/retrieval.py` — refactored `search()` with embed-once-at-top and cache
-  - `src/rag_mcp/config.py` — `RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`, `CHUNK_OVERLAP=100`
-- Tests: <TODO: list the regression tests added>
+  - `src/rag_mcp/config.py` — `MARKDOWN_CHUNK_SIZE=1024`, `RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`, `CHUNK_OVERLAP=100`
+- Tests:
+  - `tests/test_markdown_chunking.py` — heading boundaries, long-section split, non-Markdown isolation, heading-less Markdown, `MARKDOWN_CHUNK_SIZE=1024` default assertion, defensive metadata-copy tests (`_ensure_heading_metadata` idempotency and heading-preservation)
+  - `tests/test_rerank_fetch_pool.py` — default pool, env override, small-collection clamp
+  - `tests/test_chunk_overlap_default.py` — source-level contract for `CHUNK_OVERLAP=100`
+  - `tests/test_query_embedding_cache.py` — cache hits on filtered/unfiltered branches, distinct queries, LRU eviction
 - Literature:
   - Pham & Luong (2025) — heading-aware chunking gains on structured documents
   - Lavarec & Du (2026) — hierarchical chunking benchmarks

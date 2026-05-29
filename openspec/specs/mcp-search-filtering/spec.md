@@ -1,4 +1,10 @@
-## ADDED Requirements
+## Purpose
+
+Define MCP search metadata filtering and error-envelope behaviour so clients
+can restrict retrieval by stored metadata without receiving raw ChromaDB or
+retrieval exceptions.
+
+## Requirements
 
 ### Requirement: MCP search metadata filtering
 The system SHALL allow MCP clients to pass an optional `metadata_filter` parameter to `search_documents`. When provided, the filter SHALL be passed to retrieval as a ChromaDB-compatible `where` clause and applied before returning results.
@@ -29,5 +35,5 @@ The system SHALL catch retrieval errors inside the MCP `search_documents` handle
 
 #### Scenario: Successful response shape is unchanged
 - **WHEN** `search_documents` succeeds
-- **THEN** the returned list SHALL contain zero or more result dicts with the existing field set (`score`, `source`, `page_label`, `text`, `reranked`)
+- **THEN** the returned list SHALL contain zero or more result dicts with the existing field set (`score`, `source`, `page_label`, `text`, `metadata`, `reranked`)
 - **THEN** no result dict SHALL contain a `status` key

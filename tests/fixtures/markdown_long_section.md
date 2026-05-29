@@ -1,0 +1,5 @@
+# Long Section Document
+
+## Single Long Section
+
+This section is intentionally crafted to exceed the default `CHUNK_SIZE` of 512 characters so that the chained sentence splitter is forced to break it up into multiple chunks. The point of the chained pipeline is that heading boundaries are honoured wherever a section fits, but a runaway H2 like this one must still produce multiple chunks rather than a single oversized one. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.
