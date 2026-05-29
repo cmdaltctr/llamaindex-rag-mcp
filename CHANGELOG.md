@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-05-29)
+
+### Features
+
+- **ingestion**: Markdown-aware chunking and overlap bump
+  ([`0b91d03`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/0b91d036369e2fbac438ac636eff2f98c81f34ae))
+
+- **retrieval**: Improve markdown retrieval quality
+  ([`e963046`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/e9630467491d8a3520a7cf736c87be7d27bd7b27))
+
+- **retrieval**: Query embedding cache and configurable rerank pool
+  ([`abea2b5`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/abea2b52dbab04003d6a93e80eace0b5c7ea0990))
+
+
 ## v1.1.0 (2026-05-27)
 
 ### Bug Fixes
