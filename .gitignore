@@ -20,6 +20,10 @@ chroma_db_test/
 experiments/**/chroma_md_*/
 experiments/**/chroma_overlap_*/
 experiments/**/chroma_cache_*/
+experiments/**/chroma_baseline/
+experiments/**/chroma_candidate/
+experiments/**/chroma_candidate_runs/
+experiments/**/data/qasper_raw/
 
 # Testing
 .pytest_cache/

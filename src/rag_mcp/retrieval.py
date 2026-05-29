@@ -269,6 +269,7 @@ def search(
             ),
             "page_label": meta.get("page_label"),
             "text": text,
+            "metadata": dict(meta) if isinstance(meta, dict) else {},
             "reranked": False,
         })
 

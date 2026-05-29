@@ -28,6 +28,8 @@ Branch on `file_path.suffix == ".md"` inside the chunking step and feed the docu
 
 The chained-splitter pattern matters because `MarkdownNodeParser` on its own will happily emit a single 10K-character node for a long H2 section, which would defeat embedding-batch sizing and produce one chunk that drowns out the rest of the document at retrieval time.
 
+Experiment 6's first corpus did not validate this retrieval-quality claim: it measured source-file Hit@K on five topically distinct documents, and the baseline reached 100 % Hit@1. That is the evidence-sparsity failure mode described by Lu et al. (2025) in HiChunk / HiCBench: a benchmark with too few explicit evidence labels, or labels only at document level, cannot distinguish a correct evidence chunk from merely retrieving the right file. The follow-up validation SHALL therefore be Experiment 6b: a Qasper-dev evidence-level evaluator that uses gold evidence snippets and hierarchy labels. HiCBench was investigated but the published dataset URL was unavailable/404, so Qasper is canonical and HiChunk-schema support is retained only as historical compatibility.
+
 Alternative considered: replace `SentenceSplitter` globally with a recursive splitter. Rejected because non-Markdown files (PDF, DOCX, TXT) do not benefit equally and risk-reward is asymmetric.
 
 Alternative considered: use `MarkdownNodeParser` alone without a size cap. Rejected because of the long-section behaviour above.
@@ -70,6 +72,7 @@ Alternative considered: decorate `Settings.embed_model.get_query_embedding` and 
 ## Risks / Trade-offs
 
 - **Risk: heading-aware chunking on malformed Markdown produces fewer/larger chunks.** → Mitigate by preserving a chunk-size cap inside the heading branch.
+- **Risk: source-level chunking evaluations saturate and create false negatives.** → Mitigate by validating Markdown chunking with Experiment 6b's Qasper evidence-level metrics instead of source-file Hit@K alone.
 - **Risk: larger rerank pool increases search latency on slow CPUs.** → Mitigate with env vars so users can lower `RERANK_FETCH_MULTIPLIER`. Document the trade-off.
 - **Risk: changing default chunk overlap affects existing collections only on re-ingestion.** → Acceptable; behaviour change is opt-in via re-ingest.
 - **Risk: query embedding cache hides Ollama outages because cached results return.** → Mitigate by limiting `maxsize` and noting in module docstring that the cache is process-local and bypassed on cache miss.

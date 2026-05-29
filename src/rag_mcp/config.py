@@ -55,6 +55,15 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
 EMBED_CONCURRENCY = int(os.getenv("EMBED_CONCURRENCY", "2"))
 
+# ── Markdown chunking knobs ──────────────────────────────────────────────
+# Experiment 6c promoted a Markdown-only chunk-size default of 1024. The
+# global CHUNK_SIZE remains 512 for non-Markdown files; existing collections
+# only pick up this value after re-ingestion.
+MARKDOWN_CHUNK_SIZE = int(os.getenv("MARKDOWN_CHUNK_SIZE", "1024"))
+# Heading prepend and min-size floor remain experimental and opt-in.
+MARKDOWN_HEADING_PREPEND = os.getenv("MARKDOWN_HEADING_PREPEND", "false").lower() == "true"
+MARKDOWN_MIN_CHUNK_FRACTION = float(os.getenv("MARKDOWN_MIN_CHUNK_FRACTION", "0.0"))
+
 # ── Retrieval defaults ──────────────────────────────────────────────────
 TOP_K = int(os.getenv("TOP_K", "5"))
 RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"

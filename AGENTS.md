@@ -6,223 +6,167 @@ Only what you **cannot infer** from reading the code. The rest is in the code.
 ## Quick Reference
 
 ```bash
-uv sync                    # Install deps (uv, not pip/poetry)
-uv run rag-mcp             # Start MCP server (stdio)
-uv run rag-mcp ingest ./docs   # CLI ingest
-uv run pytest -m "not slow" -v # Fast tests (no Ollama, no disk I/O)
-uv run pytest --cov=rag_mcp    # Coverage (must stay ≥ 95%)
+uv sync                          # Install deps (uv, not pip/poetry)
+uv run rag-mcp                   # Start MCP server (stdio)
+uv run rag-mcp ingest ./docs     # CLI ingest
+uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
+uv run pytest --cov=rag_mcp      # Coverage
 ```
 
-## Architecture (3 lines)
+## Mandatory Tool Rules
 
-- **`config.py`** is the single source of truth for `Settings.embed_model` and all constants.
-  Never set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, or `server.py`.
+**These override any built-in tool instinct. Follow them every time.**
+
+| Task                       | Use                                            | Never use                     |
+| -------------------------- | ---------------------------------------------- | ----------------------------- |
+| Read a file                | `desktop-commander-mcp` → `read_file`              | built-in `read`                 |
+| Edit a file                | `desktop-commander-mcp` → `edit_block`             | built-in write tools          |
+| Write a new file           | `desktop-commander-mcp` → `write_file`             | built-in write tools          |
+| Search codebase            | `desktop-commander-mcp` → `start_search`           | built-in grep/glob            |
+| List directory             | `desktop-commander-mcp` → `list_directory`         | built-in ls                   |
+| Library/framework docs     | `context7-mcp` → `resolve_library_id` → `query_docs` | web search                    |
+| Specific doc URL           | `ref-mcp` → `ref_read_url`                         | scraping                      |
+| GitHub repo architecture   | `deepwiki-mcp` → `ask_question`                    | web search                    |
+| General web search         | `tavily-mcp` → `tavily_search`                     | brave-search (secondary only) |
+| Deep multi-source research | `tavily-mcp` → `tavily_research`                   | —                             |
+| Academic papers            | `paper-search-mcp-cf-local` → `search_papers`      | web search                    |
+| Scopus literature          | `scopus-mcp-cf-local` → `search_scopus`            | —                             |
+| Web scraping               | `firecrawl-mcp` → `firecrawl_scrape`               | —                             |
+
+## Skills — Load Before You Work
+
+**Always load the relevant skill before framework-specific code or specialised tasks.**
+
+| Task                           | Skill           |
+| ------------------------------ | --------------- |
+| Web or documentation research  | `s-dev-search`    |
+| General web search / scraping  | `s-web-search`    |
+| Academic paper search / Zotero | `s-papers-search` |
+| Codebase → knowledge graph     | `s-graphify`      |
+
+Skills live in `~/.claude/skills/` and `~/.config/opencode/skills/`. Load via the `skill` tool.
+
+## Coding Behaviour (Karpathy Rules)
+
+These apply to every code change. Bias toward caution over speed.
+
+**1. Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask.
+
+**2. Simplicity first.** Minimum code that solves the problem. No speculative features, no abstractions for single-use code, no configurability that wasn't requested. If you write 200 lines and it could be 50, rewrite it.
+
+**3. Surgical changes.** Touch only what you must. Don't improve adjacent code, comments, or formatting. Match existing style. Remove only imports/variables YOUR changes made unused — not pre-existing dead code.
+
+**4. Goal-driven execution.** Transform tasks into verifiable goals:
+- "Fix the bug" → write a test that reproduces it, then make it pass
+- "Add validation" → write tests for invalid inputs, then make them pass
+
+For multi-step tasks, state a brief plan with verify steps before starting.
+
+## Change Workflow
+
+For any non-trivial change, follow this order:
+
+```
+OpenSpec (propose → implement → archive)
+  └── Experiment (if empirical validation needed)
+        └── ADR (record the decision)
+```
+
+1. **Propose** (`openspec-propose` skill) — creates `proposal.md`, `specs/`, `tasks.md` in `openspec/changes/<id>/`
+2. **Experiment** (if needed) — run in `experiments/<slug>-<YYYY-MM-DD>/`, write ground truth before running, record results in `results.md` + `eval_results.json`
+3. **Implement** (`openspec-apply-change` skill) — work through `tasks.md` checkboxes
+4. **ADR** — record the decision in `docs/adr/` once the approach is confirmed
+5. **Archive** (`openspec-archive-change` skill) — move to `openspec/changes/archive/`
+
+Active changes: `openspec/changes/<id>/`. Archived: `openspec/changes/archive/`. ADRs: `docs/adr/`.
+
+## Architecture
+
+- **`config.py`** is the single source of truth for `Settings.embed_model` and all constants. Never set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, or `server.py`.
 - **No cross-imports between `ingestion.py` and `retrieval.py`** — they share only `config.py`.
-- **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`,
-  `retrieval.py`, `reranker.py`, and `metadata_extractor.py`.
+- **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`, `retrieval.py`, `reranker.py`, and `metadata_extractor.py`.
 - **All ingestion is async** — `ingest_path_async` is the sole entry point.
 
-## Non-Obvious Rules (the stuff that'll trip you up)
+For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tools, ingestion, retrieval, reranker, metadata extraction, CLI, configuration, and testing.
+
+## Critical Gotchas (silent breakage if violated)
 
 1. **Never raise from MCP tool handlers.** Always return `{"status": "error", "message": "..."}`.
-   Let FastMCP wrap errors as `TextContent` with `isError`.
+2. **The reranker is a singleton.** Tests MUST reset `CrossEncoderReranker._instance = None` in setup/teardown.
+3. **The ÷30 threshold scaling is empirically calibrated.** Don't change without re-running `experiments/1-reranker-threshold-calibration-2026-05-12/`.
+4. **`reranker.py` imports `dotenv` independently** of `config.py`. Don't "fix" — circular import risk.
+5. **CLI output goes to stderr.** stdout is the MCP protocol channel.
 
-2. **All new MCP tool parameters must be optional with sensible defaults.**
-   Preserves backward compatibility with existing clients.
+## MCP Best Practices (FastMCP / Python)
 
-3. **CLI output goes to stderr** (`Console(stderr=True)`). stdout is the MCP protocol channel.
-   `--json` mode is the only exception.
+1. **Annotate every tool.** Use `ToolAnnotations` — `readOnlyHint=True` for reads, `destructiveHint=True` for deletes/mutations. Clients use these to skip/require confirmation prompts.
 
-4. **The reranker is a singleton.** `CrossEncoderReranker.__new__()` returns one instance.
-   Tests MUST reset `CrossEncoderReranker._instance = None` in setup/teardown.
+2. **Design outcome-oriented tools, not raw API wrappers.** `search_documents(query)` not `run_chromadb_query(where_filter, n_results, include)`. The LLM is the end user — design for goals, not primitives.
 
-5. **The ÷30 threshold scaling is empirically calibrated.**
-   When `rerank=True`, `similarity_threshold` is divided by 30 because cross-encoder sigmoid
-   scores are much lower than cosine similarity (valid reranker results can be as low as 0.015).
-   See `experiments/reranker-threshold-calibration-2026-05-12/` for the data. Don't change the factor without re-running
-   experiments.
+3. **Never raise from tool handlers.** Return `{"status": "error", "message": "..."}` with full diagnostic detail. Generic errors cause expensive LLM retry loops.
 
-6. **`reranker.py` imports `dotenv` independently** of `config.py`. This is intentional —
-   it works standalone. Don't "fix" this without checking for circular import risks
-   (config.py runs `OllamaEmbedding(...)` at import time).
+4. **Document parameters exhaustively.** Use `Annotated[type, Field(description="...", examples=[...])]`. Include return format in docstrings. Every schema field is part of the LLM's prompt.
 
-7. **Deletion functions live in `ingestion.py`** (`remove_document`, `remove_by_metadata`,
-   `remove_collection`). They use direct ChromaDB ``collection.delete(where=...)`` API,
-   not LlamaIndex abstractions.
+5. **Return token-efficient responses.** CSV for tabular data (40–60% fewer tokens than JSON). Keep responses focused — don't dump entire collections when the agent asked for a count.
 
-8. **Re-ingestion is upsert, not append.** `ingest_path()` calls `remove_document()` for
-   each file before reading/chunking. Old chunks are always replaced.
+6. **All parameters optional with safe defaults.** New params must not break existing clients. Default to the least-destructive option (e.g. `dry_run=False`, not auto-delete).
 
-9. **The `delete` CLI subcommand takes exactly one of `--path`, `--metadata`, `--collection`.**
-   `--collection` drops the entire collection (requires confirmation unless `--yes`).
-   `--dry-run` previews without modifying ChromaDB. JSON output via `--json`.
-
-10. **`delete_documents` MCP tool** — `path` (by file), `metadata_filter` (by filter), or
-    `collection` alone (drop collection). All params optional. `dry_run` previews.
-
-11. **Watcher `on_deleted` is immediate** (no debounce). Cancels pending ingest timers,
-    clears hash cache, calls `remove_document()`. Deletion is idempotent.
-
-12. **Reranker fetch pool follows the "Wide Net, Tight Filter" pattern.**
-    When `rerank=True`, `search()` fetches
-    `max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)` candidates
-    (defaults `50` and `10`) clamped to `collection.count()`, reranks them,
-    and returns the top `top_k`. Target post-warmup P95 latency is
-    **≤ 500 ms** on the calibration corpus
-    (`experiments/reranker-threshold-calibration-2026-05-12/`). If the
-    measured P95 exceeds 500 ms on the operator's hardware, lower
-    `RERANK_FETCH_MULTIPLIER` and/or `RERANK_MAX_FETCH` and re-record the
-    chosen defaults.
-
-13. **Markdown files use a chained heading-aware parser.**
-    `.md` files go through `MarkdownNodeParser` followed by
-    `SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)`
-    so heading boundaries are preserved when sections fit within
-    `CHUNK_SIZE`, and oversized sections are still split. Non-Markdown
-    files keep the bare `SentenceSplitter`. Both parsers ship with
-    `llama-index-core` — no extra dependency.
-
-14. **Query embeddings are LRU-cached in `retrieval.py`.**
-    `_cached_query_embedding` is a `functools.lru_cache(maxsize=128)`
-    keyed on `(query, embed_model_name)`. The cache is process-local
-    and resets on restart. `search()` embeds the query exactly once at
-    the top via `_embed_query()` and threads the vector into both the
-    metadata-filtered and unfiltered branches — both branches now use
-    the same direct `collection.query(query_embeddings=[vec], ...)`
-    call. Tests that swap `Settings.embed_model` should clear the cache
-    via `_retrieval._cached_query_embedding.cache_clear()` to avoid
-    cross-test contamination.
-
-## MCP Conventions
-
-- **Transport**: `mcp.run(transport="stdio")`. All logging to stderr.
-- **Tool names**: `snake_case`. Function docstring becomes the tool description.
-- **Input schemas**: Native Python types (str, int, float, bool, list, dict).
-  FastMCP auto-generates JSON Schema. Use `Annotated[type, Field(description="...")]`
-  from pydantic for richer descriptions.
-- **Tool handlers return `dict` or `list`**, never raise exceptions.
-
-### Multi-Collection Support
-
-- **Don't use `COLLECTION_NAME` from config.py in retrieval.py.** Use the `collection_name` parameter
-  (default `"documents"`) passed to `search()` instead. The same applies to new ingestion code.
-- **All collection parameters default to `"documents"`** — backward compatibility with the original
-  single-collection design is maintained.
-- **`list_collections()` lives in retrieval.py**, not ingestion.py. It uses `PersistentClient` directly.
-- **ChromaDB collections share the same embedding dimension** — all use the embed model from `config.py`.
-  Never create a collection with a different embedding model without handling dimension mismatch.
-
-### Metadata Extraction
-
-- **`METADATA_EXTRACTION_MODE=keyword` is the default.** It uses regex rules from
-  `metadata_extractor.py` — zero additional dependencies.
-- **Ollama mode uses `OLLAMA_CLASSIFY_MODEL`** (default `qwen3:0.6b`) via the `/api/generate` endpoint.
-  It sends only the first 2000 characters of the document for efficiency.
-- **`metadata_extractor.py` imports `config.py`** for its constants, but the module is otherwise
-  self-contained. It does NOT import any LlamaIndex modules (the llamaindex mode is a stub).
-- **Metadata is attached in `_read_and_chunk_file()`** — one `extract_metadata()` call per file,
-  result attached to all chunks. Tests must set `METADATA_EXTRACTION_MODE` on the
-  `rag_mcp.metadata_extractor` module (not just `config.py`) because the extractor copies
-  values at import time.
-
-## Test Gotchas
-
-All tests inherit three autouse patches from `conftest.py`:
-1. **ChromaDB** → shared `EphemeralClient` (no disk I/O)
-2. **Settings.embed_model** → `MockEmbedding(384)` (no Ollama)
-3. **Module-level constants** → patched via `sys.modules` for consistent collection naming
-
-Watch for:
-- **EphemeralClient leaks state between tests.** `conftest.py` clears collections before each
-  test, but if you bypass the fixture or create a new `PersistentClient`, data can leak.
-- **Reranker singleton must be reset:** `CrossEncoderReranker._instance = None` in
-  `setup_method`/`teardown_method`.
-- **`@pytest.mark.slow`** on the E2E stdio test. Excluded by default (`-m "not slow"`).
-- **`connected_client`** is imported directly from conftest: `from conftest import connected_client`.
-  It's an `asynccontextmanager`, not a fixture.
+7. **Validate all inputs at the boundary.** Treat every string from an LLM as untrusted user input. No path traversal, no command injection, no secrets in URLs.
 
 ## Hard Boundaries
 
-| Type | Rule |
-|------|------|
-| 🚫 Never | API keys, cloud services, or any dependency that needs a remote sign-up |
-| 🚫 Never | PyTorch at runtime. ONNX Runtime only. The reranker downloads pre-exported ONNX models (~23 MB). |
-| 🚫 Never | Hardcoded paths or secrets. Everything via `.env`. |
-| 🚫 Never | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`. |
-| ⚠️ Ask | Adding new core dependencies. Prefer no-code solutions first. |
-| ⚠️ Ask | Mixing embedding models (ChromaDB locks vector dimension at collection creation). |
-| ⚠️ Ask | Big bang refactors. Use OpenSpec: propose → implement → archive. |
+| Type      | Rule                                                                                   |
+| --------- | -------------------------------------------------------------------------------------- |
+| 🚫 Never  | API keys, cloud services, or any dependency that needs a remote sign-up                |
+| 🚫 Never  | PyTorch at runtime. ONNX Runtime only.                                                 |
+| 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                                       |
+| 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                         |
+| ⚠️ Ask    | Adding new core dependencies. Prefer no-code solutions first.                          |
+| ⚠️ Ask    | Mixing embedding models (ChromaDB locks vector dimension at collection creation).      |
+| ⚠️ Ask    | Big bang refactors. Use OpenSpec: propose → implement → archive.                       |
 | ✅ Always | Type annotations on every function. `from __future__ import annotations` in new modules. |
-| ✅ Always | Google-style docstrings on public functions and classes. |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing. |
+| ✅ Always | Google-style docstrings on public functions and classes.                               |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.                 |
 
 ## Release Automation
 
-Releases are automated via `python-semantic-release` (PSR). The tool runs in CI
-(GitHub Actions) on every push to `master` and determines the version bump from
-commit prefixes.
+Releases are automated via `python-semantic-release` (PSR) on every push to `master`.
 
-| Commit prefix | Version bump | Example |
-|---------------|--------------|---------|
-| `feat:` | minor | 0.1.0 → 0.2.0 |
-| `fix:` / `perf:` | patch | 0.1.0 → 0.1.1 |
-| `feat!:` or `BREAKING CHANGE:` | major | 0.1.0 → 1.0.0 |
-| `chore:` / `docs:` / `test:` / `refactor:` | no release | — |
+| Commit prefix                      | Version bump |
+| ---------------------------------- | ------------ |
+| `feat:`                              | minor        |
+| `fix:` / `perf:`                       | patch        |
+| `feat!:` or `BREAKING CHANGE:`         | major        |
+| `chore:` / `docs:` / `test:` / `refactor:` | no release   |
 
-**Rules:**
-- PSR is NOT a project dependency (conflicts with typer/click). Run via `uvx` locally.
-- Never manually edit the `version` in `pyproject.toml` — PSR owns it.
-- Never manually create git tags with `v` prefix — PSR owns those too.
-- Config lives in `pyproject.toml` under `[tool.semantic_release]`.
+- PSR is NOT a project dependency. Run via `uvx` locally.
+- Never manually edit `version` in `pyproject.toml` or create `v` tags — PSR owns both.
 
-**Local preview:**
 ```bash
 uvx --from="python-semantic-release@10.5.3" semantic-release -v --noop version
 ```
 
 ## Coverage Thresholds
 
-Coverage is enforced per-module rather than as a single flat number. This
-reflects the reality that CLI formatting branches and OS-level defensive
-code yield diminishing returns past ~85%, while core logic benefits from
-tight coverage.
+| Module type   | Floor | Modules                                                                   |
+| ------------- | ----- | ------------------------------------------------------------------------- |
+| Core logic    | ≥95%  | `ingestion.py`, `retrieval.py`, `reranker.py`, `metadata_extractor.py`, `config.py` |
+| MCP wrappers  | ≥95%  | `server.py`                                                                 |
+| Orchestration | ≥85%  | `watcher.py`                                                                |
+| CLI           | ≥85%  | `cli.py`                                                                    |
+| **Overall**       | **≥90%**  | all                                                                       |
 
-| Module type | Floor | Modules | Rationale |
-|-------------|-------|---------|-----------|
-| Core logic | ≥95% | `ingestion.py`, `retrieval.py`, `reranker.py`, `metadata_extractor.py`, `config.py` | Business logic, data integrity, embedding correctness |
-| MCP wrappers | ≥95% | `server.py` | Tool contract correctness — MCP clients depend on exact response shapes |
-| Orchestration | ≥85% | `watcher.py` | OS-level edge cases (symlink traversal, shutdown timeout) are low-value to mock |
-| CLI | ≥85% | `cli.py` | Rich/Typer formatting branches, subprocess GPU detection, progress-bar callbacks |
-| **Overall** | **≥90%** | all | Weighted floor across the full package |
-
-When adding new modules, assign them to the appropriate tier. If a module
-straddles tiers (e.g., a new module with both core logic and CLI glue),
-default to the stricter floor and document exceptions inline.
-
-Renegotiated 2026-05-20 during the `make-ingest-path-async` OpenSpec change.
-Previous rule was a flat ≥95% on the entire package. The modular approach
-was adopted because `cli.py` (450 statements of Typer/Rich glue) and
-`watcher.py` (defensive OS-error branches) were dragging the overall number
-below 95% despite core logic sitting at 92–99%.
-
-## OpenSpec Workflow
-
-For any non-trivial change:
-
-1. **Propose** (`openspec-propose` skill): Creates `proposal.md`, `specs/`, `tasks.md`
-2. **Implement** (`openspec-apply-change` skill): Work through `tasks.md` checkboxes
-3. **Archive** (`openspec-archive-change` skill): Move to `openspec/changes/archive/`
-
-Changes live in `openspec/changes/<change-id>/`. Active specs are in `openspec/specs/`.
+New modules: assign to the appropriate tier. Default to the stricter floor if a module straddles tiers.
 
 ## Where to Find Things
 
-| What | Where |
-|------|-------|
-| Dependencies | `pyproject.toml` (not duplicated here) |
-| Config vars | `.env.example` + defaults in `config.py` |
-| Experiment data | `experiments/reranker-threshold-calibration-2026-05-12/` |
-| OpenSpec specs | `openspec/specs/` and `openspec/changes/` |
-| Reranker model | `cross-encoder/ms-marco-MiniLM-L-6-v2` via HuggingFace Hub |
-| Metadata extraction | `rag_mcp/metadata_extractor.py` (keyword/Ollama/llamaindex modes) |
+| What                   | Where                                                                  |
+| ---------------------- | ---------------------------------------------------------------------- |
+| Dependencies           | `pyproject.toml`                                                         |
+| Config vars            | `.env.example` + defaults in `config.py`                                   |
+| Experiment data        | `experiments/`                                                           |
+| ADRs                   | `docs/adr/`                                                              |
+| OpenSpec specs         | `openspec/specs/` and `openspec/changes/`                                  |
+| Reranker model         | `cross-encoder/ms-marco-MiniLM-L-6-v2` via HuggingFace Hub               |
+| Metadata extraction    | `rag_mcp/metadata_extractor.py`                                          |
 | Multi-collection logic | `ingestion.py` (`_get_chroma_collection`), `retrieval.py` (`list_collections`) |
