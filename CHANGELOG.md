@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-05-31)
+
+### Features
+
+- **hybrid**: Ship opt-in hybrid retrieval and archive follow-up reranker work
+  ([`e3a506f`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/e3a506f6a6161f557a334d7e42f30a1b74b48006))
+
+
 ## v1.3.0 (2026-05-29)
 
 ### Features
