@@ -58,6 +58,8 @@ All four cells (dense/hybrid × rerank on/off) were evaluated on the same
 | **hybrid, no rerank** | **73.8%** | **54.9%** | **42.6%** | **82.5%** | **57.8%** | 2,952 ms |
 | hybrid, rerank | 54.0% | 35.4% | 26.2% | 59.6% | 34.6% | 31,804 ms |
 
+*Cell = retrieval configuration tested (dense-only or hybrid BM25 + dense with RRF fusion, with or without cross-encoder reranking); Coverage@20 = percentage of queries where the top-20 retrieved documents collectively cover all relevant nuggets (sub-questions) for that query — measures whether the retriever finds enough relevant material across the 10,025-document corpus; Recall@50 = fraction of all ground-truth relevant documents found within the top-50 results; α-nDCG@10 = alpha-normalized Discounted Cumulative Gain at 10, a ranking-quality metric that rewards covering multiple relevant nuggets at high ranks (1.0 = perfect ranking, all nuggets covered at the top); Hit@10 = percentage of queries where at least one relevant document appears in the top-10 results; MRR@10 = Mean Reciprocal Rank at 10, the average of 1/rank for the first correct result (1.0 = always rank 1); P95 latency = 95th-percentile response time in milliseconds (95% of queries complete faster than this); RRF = Reciprocal Rank Fusion, the algorithm that merges dense and sparse rank lists (k = 60); BM25 = Best Matching 25, a classic keyword-frequency retrieval algorithm.*
+
 ### Identifier-heavy queries (n = 200)
 
 | Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
@@ -67,6 +69,8 @@ All four cells (dense/hybrid × rerank on/off) were evaluated on the same
 | **hybrid, no rerank** | **72.1%** | **51.3%** | **38.6%** | **82.5%** | **55.7%** | 3,100 ms |
 | hybrid, rerank | 50.2% | 29.7% | 20.4% | 57.0% | 29.7% | 32,072 ms |
 
+*Cell = retrieval configuration tested; Coverage@20 = percentage of queries where top-20 results cover all relevant nuggets; Recall@50 = fraction of ground-truth relevant documents found in top-50; α-nDCG@10 = alpha-normalized Discounted Cumulative Gain at 10 (1.0 = perfect ranking across all nuggets); Hit@10 = percentage of queries with at least one relevant document in top-10; MRR@10 = Mean Reciprocal Rank at 10 (1.0 = always rank 1); P95 latency = 95th-percentile response time in milliseconds.*
+
 ### Semantic queries (n = 3)
 
 | Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
@@ -75,6 +79,8 @@ All four cells (dense/hybrid × rerank on/off) were evaluated on the same
 | dense-only, rerank | 50.0% | 17.4% | 13.8% | 33.3% | 16.7% | 63,395 ms |
 | hybrid, no rerank | 44.4% | 27.1% | 20.0% | 33.3% | 16.7% | 513 ms |
 | hybrid, rerank | 66.7% | 22.1% | 21.2% | 66.7% | 27.8% | 15,259 ms |
+
+*Cell = retrieval configuration tested; Coverage@20 = percentage of queries where top-20 results cover all relevant nuggets; Recall@50 = fraction of ground-truth relevant documents found in top-50; α-nDCG@10 = alpha-normalized Discounted Cumulative Gain at 10 (1.0 = perfect ranking across all nuggets); Hit@10 = percentage of queries with at least one relevant document in top-10; MRR@10 = Mean Reciprocal Rank at 10 (1.0 = always rank 1); P95 latency = 95th-percentile response time in milliseconds.*
 
 *Note: only 3 semantic queries — too few for statistical conclusions.*
 
@@ -86,6 +92,8 @@ All four cells (dense/hybrid × rerank on/off) were evaluated on the same
 | dense-only, rerank | 90.0% | 95.0% | 85.0% | 85.0% | 85.0% | 107,831 ms |
 | hybrid, no rerank | 95.0% | 95.0% | 86.3% | 90.0% | 85.0% | 383 ms |
 | hybrid, rerank | 90.0% | 95.0% | 85.0% | 85.0% | 85.0% | 19,975 ms |
+
+*Cell = retrieval configuration tested; Coverage@20 = percentage of queries where top-20 results cover all relevant nuggets; Recall@50 = fraction of ground-truth relevant documents found in top-50; α-nDCG@10 = alpha-normalized Discounted Cumulative Gain at 10 (1.0 = perfect ranking across all nuggets); Hit@10 = percentage of queries with at least one relevant document in top-10; MRR@10 = Mean Reciprocal Rank at 10 (1.0 = always rank 1); P95 latency = 95th-percentile response time in milliseconds.*
 
 ## Pass gate analysis
 
@@ -138,6 +146,8 @@ Notable examples where BM25 rescued documents that dense retrieval missed:
 | 77365175 | `conversational_retrieval_chain.ts` | 17 | 1 | 2 |
 | 76199653 | `self-query-qdrant/README.md` | — | 63 | 143 |
 
+*Query = FreshStack query identifier; Document = source file from the LangChain corpus where the relevant content lives; Dense rank = position of that document in the dense-only retrieval results ("—" means dense retrieval did not find it at all); Sparse rank = position in the BM25-only results; Fused rank = final position after RRF (Reciprocal Rank Fusion) merges both rank lists — lower is better.*
+
 ### Continuity non-regression — ✅ PASS
 
 Dense Coverage@20 = 0.900, hybrid Coverage@20 = 0.900 on continuity queries.
@@ -174,6 +184,8 @@ The reranker actively degrades quality for both retrieval modes:
 | Hybrid, WITH rerank | 54.0% | ❌ Reranker killed 19.8pp of them |
 | Dense, NO rerank | 69.2% | ✅ Dense found decent docs |
 | Dense, WITH rerank | 53.9% | ❌ Reranker killed 15.3pp of them |
+
+*Configuration = retrieval mode (hybrid or dense-only) with reranker on or off; Coverage@20 = percentage of queries where top-20 results cover all relevant nuggets across the 10,025-document corpus; pp = percentage points (difference between two percentage values).*
 
 Both dense+rerank and hybrid+rerank score *worse* than their no-rerank
 counterparts on Coverage@20 and Recall@50. This is expected behaviour for a
