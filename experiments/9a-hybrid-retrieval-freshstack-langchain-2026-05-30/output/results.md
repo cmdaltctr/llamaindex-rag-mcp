@@ -51,41 +51,41 @@ All four cells (dense/hybrid × rerank on/off) were evaluated on the same
 
 ### All queries (n = 223)
 
-| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 ms |
+| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dense-only, no rerank | 0.692 | 0.519 | 0.388 | 0.776 | 0.513 | 2,190 |
-| dense-only, rerank | 0.539 | 0.353 | 0.262 | 0.601 | 0.346 | 52,279 |
-| **hybrid, no rerank** | **0.738** | **0.549** | **0.426** | **0.825** | **0.578** | 2,952 |
-| hybrid, rerank | 0.540 | 0.354 | 0.262 | 0.596 | 0.346 | 31,804 |
+| dense-only, no rerank | 69.2% | 51.9% | 38.8% | 77.6% | 51.3% | 2,190 ms |
+| dense-only, rerank | 53.9% | 35.3% | 26.2% | 60.1% | 34.6% | 52,279 ms |
+| **hybrid, no rerank** | **73.8%** | **54.9%** | **42.6%** | **82.5%** | **57.8%** | 2,952 ms |
+| hybrid, rerank | 54.0% | 35.4% | 26.2% | 59.6% | 34.6% | 31,804 ms |
 
 ### Identifier-heavy queries (n = 200)
 
-| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 ms |
+| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dense-only, no rerank | 0.677 | 0.486 | 0.343 | 0.775 | 0.482 | 2,392 |
-| dense-only, rerank | 0.504 | 0.296 | 0.205 | 0.580 | 0.298 | 34,574 |
-| **hybrid, no rerank** | **0.721** | **0.513** | **0.386** | **0.825** | **0.557** | 3,100 |
-| hybrid, rerank | 0.502 | 0.297 | 0.204 | 0.570 | 0.297 | 32,072 |
+| dense-only, no rerank | 67.7% | 48.6% | 34.3% | 77.5% | 48.2% | 2,392 ms |
+| dense-only, rerank | 50.4% | 29.6% | 20.5% | 58.0% | 29.8% | 34,574 ms |
+| **hybrid, no rerank** | **72.1%** | **51.3%** | **38.6%** | **82.5%** | **55.7%** | 3,100 ms |
+| hybrid, rerank | 50.2% | 29.7% | 20.4% | 57.0% | 29.7% | 32,072 ms |
 
 ### Semantic queries (n = 3)
 
-| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 ms |
+| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dense-only, no rerank | 0.333 | 0.216 | 0.265 | 0.333 | 0.333 | 302 |
-| dense-only, rerank | 0.500 | 0.174 | 0.138 | 0.333 | 0.167 | 63,395 |
-| hybrid, no rerank | 0.444 | 0.271 | 0.200 | 0.333 | 0.167 | 513 |
-| hybrid, rerank | 0.667 | 0.221 | 0.212 | 0.667 | 0.278 | 15,259 |
+| dense-only, no rerank | 33.3% | 21.6% | 26.5% | 33.3% | 33.3% | 302 ms |
+| dense-only, rerank | 50.0% | 17.4% | 13.8% | 33.3% | 16.7% | 63,395 ms |
+| hybrid, no rerank | 44.4% | 27.1% | 20.0% | 33.3% | 16.7% | 513 ms |
+| hybrid, rerank | 66.7% | 22.1% | 21.2% | 66.7% | 27.8% | 15,259 ms |
 
 *Note: only 3 semantic queries — too few for statistical conclusions.*
 
 ### Continuity queries (n = 40)
 
-| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 ms |
+| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 latency |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dense-only, no rerank | 0.900 | 0.900 | 0.850 | 0.850 | 0.850 | 171 |
-| dense-only, rerank | 0.900 | 0.950 | 0.850 | 0.850 | 0.850 | 107,831 |
-| hybrid, no rerank | 0.950 | 0.950 | 0.863 | 0.900 | 0.850 | 383 |
-| hybrid, rerank | 0.900 | 0.950 | 0.850 | 0.850 | 0.850 | 19,975 |
+| dense-only, no rerank | 90.0% | 90.0% | 85.0% | 85.0% | 85.0% | 171 ms |
+| dense-only, rerank | 90.0% | 95.0% | 85.0% | 85.0% | 85.0% | 107,831 ms |
+| hybrid, no rerank | 95.0% | 95.0% | 86.3% | 90.0% | 85.0% | 383 ms |
+| hybrid, rerank | 90.0% | 95.0% | 85.0% | 85.0% | 85.0% | 19,975 ms |
 
 ## Pass gate analysis
 
@@ -165,6 +165,15 @@ that dense misses (sparse rank 1–2 for several queries), but these documents
 cannot survive the reranker's 50-candidate pool.
 
 ### Why the reranker hurts overall quality
+
+The reranker actively degrades quality for both retrieval modes:
+
+| Configuration | Coverage@20 | What happened |
+| --- | ---: | --- |
+| Hybrid, NO rerank | 73.8% | ✅ Hybrid found good docs |
+| Hybrid, WITH rerank | 54.0% | ❌ Reranker killed 19.8pp of them |
+| Dense, NO rerank | 69.2% | ✅ Dense found decent docs |
+| Dense, WITH rerank | 53.9% | ❌ Reranker killed 15.3pp of them |
 
 Both dense+rerank and hybrid+rerank score *worse* than their no-rerank
 counterparts on Coverage@20 and Recall@50. This is expected behaviour for a
