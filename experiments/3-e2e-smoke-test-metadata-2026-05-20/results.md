@@ -30,6 +30,8 @@ Both were fixed (see ADR-014) before this re-run:
 | LlamaIndex per-chunk metadata attached | ✓ Pass — `category`, `document_title`, `keywords`, `summary` on all 6 files |
 | No keyword mode fallback | ✓ Pass — all 6 files used full `llamaindex` extraction |
 
+*Check = ingestion validation condition; Result = measured outcome and pass/fail status for that condition.*
+
 ### Chunk breakdown
 
 | File | Chunks |
@@ -41,6 +43,8 @@ Both were fixed (see ADR-014) before this re-run:
 | paper-search-mcp-cf-README.md | 8 |
 | grep-ai-README.md | 3 |
 | **Total** | **207** |
+
+*File = ingested source document; Chunks = number of indexed chunks produced from that file.*
 
 **Ingest time**: ~5.5 minutes for 6 files / 207 chunks (embedding + LLM classification).
 
@@ -56,6 +60,8 @@ Each file was processed with full `llamaindex` extraction (TitleExtractor + Keyw
 | Ghazali-Mustasfa.pdf | `comprehensive` | Mostly clean — `document_title` has `**` bold marker wrapping |
 | paper-search-mcp-cf-README.md | `academic_sources` | Clean — short document, less room for noise |
 | grep-ai-README.md | `semantic-code-search` | Clean — short document, less room for noise |
+
+*File = ingested source document; Category = metadata category assigned during LlamaIndex extraction; Metadata quality = qualitative cleanliness of extracted title, keyword, and summary fields.*
 
 ### Remaining cosmetic noise
 
@@ -78,6 +84,8 @@ All 17 ground-truth queries run with `rerank=True`, `top_k=3`. Queries were writ
 |---|---|---|---|---|
 | 1 | How does pretraining training data force models to hallucinate? | Kalai et al. | 0.7220 | ✓ |
 | 2 | Does optimizing for cross-entropy loss make models less trustworthy? | Kalai et al. | 0.0562 | ✓ |
+
+*# = query number from the ground-truth set; Query = user question; Top-1 source = highest-ranked retrieved source; Score = reranker sigmoid score; Status = whether the top-1 source matched the expected source. This legend applies to the per-document retrieval tables below.*
 
 ### Popat and Starkey — Learning to Code (3 queries)
 
@@ -130,6 +138,8 @@ All 17 ground-truth queries run with `rerank=True`, `top_k=3`. Queries were writ
 | Reranker active | Yes on all 17 queries (`reranked=True`) |
 | Score range | 0.0000–0.9980 (sigmoid range; reranker amplifies strong matches, assigns near-zero to weak but correct matches) |
 
+*Metric = aggregate retrieval measure; Result = measured value across the 17-query regression set; Hit@1 = percentage of queries where the correct source is ranked first.*
+
 ### Score distribution insight
 
 The reranker's sigmoid-based scoring produces a wide range: some correct matches score near 1.0 (e.g., Q3 at 0.9974), while others score near 0.0 (e.g., Q5 at 0.0000) despite still returning the correct document. This confirms that the embedding model and the reranker work together: even when the cross-encoder assigns very low pairwise scores, the vector search (which fetches candidates before reranking) reliably surfaces the correct document in the candidate pool. The reranker's verdict does not override a correct vector match — it just weights it.
@@ -160,6 +170,8 @@ These 17 queries establish a regression baseline. Future changes that degrade to
 | 16 | Ghazali-Mustasfa.pdf | 0.9980 |
 | 17 | Ghazali-Mustasfa.pdf | 0.9946 |
 
+*Query # = query number from the baseline set; Expected file = source that should rank first; Baseline score = reranker score observed in the passing run.*
+
 > **Tolerance**: With LLM-based metadata extraction, category labels and reranker scores may vary slightly between runs. A score change of ±0.10 on the same query-source pair is within normal variance. A source mismatch (wrong document as top-1) is a regression regardless of score.
 
 ---
@@ -177,6 +189,8 @@ These 17 queries establish a regression baseline. Future changes that degrade to
 | `EMBED_CONCURRENCY` | 4 |
 | `SIMILARITY_THRESHOLD` | 0.0 |
 | `CHROMA_PERSIST_DIR` | `./chroma_db_test` (experiment only) |
+
+*Setting = environment variable or ingestion/retrieval configuration knob; Value = value used for this experiment run.*
 
 ---
 

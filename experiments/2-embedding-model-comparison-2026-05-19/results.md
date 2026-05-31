@@ -30,6 +30,8 @@
 | **Avg latency**     | **36.2 ms**                | 104.3 ms                        | 259.2 ms                      |
 | **Query speed**     | fastest                    | 2.9× slower than nomic          | 7.2× slower than nomic        |
 
+*Hit@k = percentage of queries where the correct document appears in the top k results; MRR = Mean Reciprocal Rank, the average of 1/rank for the first correct result (1.000 = always rank 1); Avg latency = average query response time in milliseconds; Query speed = relative latency compared with the fastest model.*
+
 ---
 
 ## Key Findings
@@ -44,6 +46,8 @@ This is the most important finding: `qwen3-embedding:0.6b` and `qwen3-embedding:
 | ---------------- | -------------------- | --------------------------------------- | ----------------------------- |
 | 0.6b vs nomic    | **0.6b wins** (100% vs 94.1%) | nomic **3.4× faster** (15.3 vs 4.5 chunks/sec) | nomic 2.9× faster |
 | 0.6b vs 8b       | **Tied** (100% both) | **0.6b is 13.2× faster** (8.35 vs 0.63 chunks/sec) | **0.6b is 2.5× faster** |
+
+*Quality = retrieval success rate on the 17-query benchmark; Embedding Throughput = indexing speed in chunks embedded per second; Query Latency = relative time to embed and search a query.*
 
 The 0.6b model:
 - **Outperforms nomic** in retrieval quality (100% vs 94.1% Hit@1) while being only ~3× slower to embed
@@ -72,6 +76,8 @@ While quality is tied, the 8b model showed notably higher similarity scores on s
 | -- | -------------------------------------------------------- | ---------------- | ---------------- | -------------------- |
 | 1  | How does pretraining training data force models to hallucinate? | 1st / 0.632 | 1st / 0.564 | 1st / 0.578 |
 | 2  | Does optimising for cross-entropy loss make models less trustworthy? | 1st / 0.596 | 1st / 0.446 | 1st / 0.491 |
+
+*nomic / 0.6b / 8b rank/score = rank of the expected document and its similarity score under that embedding model; 1st = expected document was the top result; — = expected document was not retrieved at the evaluated cutoff. This legend applies to the per-document query tables below.*
 
 ### Document 2: Learning to code or coding to learn (Popat & Starkey 2019)
 
@@ -123,6 +129,8 @@ While quality is tied, the 8b model showed notably higher similarity scores on s
 | Highest top score       | 0.746            | 0.662                | **0.890**          |
 | Lowest top score (hit)  | 0.399            | 0.309                | 0.340              |
 
+*Average top score = mean similarity score of the top-ranked result; Highest top score = maximum top-result similarity observed; Lowest top score (hit) = lowest top-result similarity among successful retrievals.*
+
 ---
 
 ## Conclusion
@@ -133,6 +141,8 @@ The evidence is conclusive:
 | ---------------------- | --------------------------------------------- | ----------------------------------------------- |
 | **0.6b over 8b**       | ✅ **13.2× faster** embedding (8.35 vs 0.63 chunks/sec) | ✅ **Neither has quality advantage** — both score 100% Hit@1 |
 | **0.6b over nomic**    | ⚠️ nomic **3.4× faster** (15.3 vs 4.5 chunks/sec)    | ✅ **0.6b is better** — 100% vs 94.1% Hit@1 |
+
+*Decision = model comparison used for the final recommendation; Throughput Evidence = embedding-speed evidence from benchmarked chunks per second; Quality Evidence = retrieval-quality evidence from Hit@1 on the 17-query set.*
 
 **Recommendation**: Use `qwen3-embedding:0.6b` as the default embedding model. It delivers the same perfect retrieval quality as the 8b model while being 13.2× faster to embed and 2.5× faster per query, and it outperforms nomic-embed-text on retrieval quality while maintaining acceptable latency (~104ms).
 

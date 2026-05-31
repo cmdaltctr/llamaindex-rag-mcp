@@ -9,16 +9,18 @@
 
 ## Summary table
 
-| Config / Category | n | Hit@1 | Hit@5 | MRR@10 | Recall@10 | P95 |
-| ----------------- | -: | :---: | :---: | :----: | :-------: | --: |
-| **dense-only + rerank** / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 1493.8 ms |
-| **dense-only + rerank** / semantic | 6 | 83.3% | 100.0% | 0.917 | 100.0% | 1493.8 ms |
-| **dense-only + rerank** / mixed | 5 | 100.0% | 100.0% | 1.000 | 100.0% | 1493.8 ms |
-| **hybrid BM25 + rerank** / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 1314.4 ms |
-| **hybrid BM25 + rerank** / semantic | 6 | 83.3% | 100.0% | 0.917 | 100.0% | 1314.4 ms |
-| **hybrid BM25 + rerank** / mixed | 5 | 100.0% | 100.0% | 1.000 | 100.0% | 1314.4 ms |
+| Config / Category | n | Hit@1 | Hit@5 | MRR@10 | Recall@10 | P95 latency |
+| ----------------- | -: | :---: | :---: | :----: | :-------: | ----------: |
+| **dense-only + rerank** / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 1,493.8 ms |
+| **dense-only + rerank** / semantic | 6 | 83.3% | 100.0% | 0.917 | 100.0% | 1,493.8 ms |
+| **dense-only + rerank** / mixed | 5 | 100.0% | 100.0% | 1.000 | 100.0% | 1,493.8 ms |
+| **hybrid BM25 + rerank** / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 1,314.4 ms |
+| **hybrid BM25 + rerank** / semantic | 6 | 83.3% | 100.0% | 0.917 | 100.0% | 1,314.4 ms |
+| **hybrid BM25 + rerank** / mixed | 5 | 100.0% | 100.0% | 1.000 | 100.0% | 1,314.4 ms |
 | dense-only, no rerank / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 13.7 ms |
 | hybrid BM25, no rerank / rare-term | 9 | 100.0% | 100.0% | 1.000 | 100.0% | 11.2 ms |
+
+*Hit@k = percentage of queries where the correct document appears in the top k results; MRR@10 = Mean Reciprocal Rank, the average of 1/rank for the first correct result (1.000 = perfect, always rank 1); Recall@10 = percentage of relevant documents found in top 10 results; P95 latency = 95th percentile response time (95% of queries are faster than this).*
 
 Named cases:
 
@@ -28,6 +30,8 @@ Named cases:
 | MCP-1138 BM25-only case | rank 1 | rank 1 | Hybrid succeeds, but dense already succeeds |
 | ZZQJ-9097 dense-trap case | rank 1 | rank 1 | Trap did not work; dense still wins |
 
+*Case = named regression or diagnostic query; Dense-only = rank of the expected document without BM25; Hybrid BM25 = rank of the expected document with BM25 + dense RRF fusion; Result = interpretation of the comparison.*
+
 ---
 
 ## Pass criteria
@@ -35,10 +39,12 @@ Named cases:
 | Criterion | Threshold | Measured | Pass |
 | :-------- | :-------: | :------: | :--: |
 | Colosseum top-1 under hybrid | must pass | rank 1 | ✅ |
-| Rare-term Hit@1 lift vs dense-only + rerank | ≥ +10 pp | +0.0 pp | ❌ |
-| Semantic Hit@1 regression | no worse than −2 pp | 0.0 pp | ✅ |
-| Mixed Hit@1 regression | no worse than 0 pp | 0.0 pp | ✅ |
+| Rare-term Hit@1 lift vs dense-only + rerank | ≥ +10 percentage points | +0.0 pp | ❌ |
+| Semantic Hit@1 regression | no worse than −2 percentage points | 0.0 pp | ✅ |
+| Mixed Hit@1 regression | no worse than 0 percentage points | 0.0 pp | ✅ |
 | Hybrid + rerank P95 latency | ≤ 1.5× dense + rerank | 0.88× | ✅ |
+
+*pp = percentage points (e.g., +10 pp means going from 80% to 90%); P95 latency = 95th percentile response time.*
 
 The experiment fails only one criterion: **rare-term lift**.
 

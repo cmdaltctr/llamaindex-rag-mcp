@@ -10,8 +10,10 @@
 
 | Pass | What it answers                                  | Reranker | Heading Evidence Recall@5 lift | nDCG@5 lift | Verdict                              |
 | ---- | ------------------------------------------------ | -------- | -----------------------------: | ----------: | ------------------------------------ |
-| A    | Does the chunker change retrieval, holding else constant? | OFF | **−5.66 pp**                    | −0.0486     | Candidate regresses vs. baseline.    |
-| B    | Does the production-shape stack with reranker improve? | ON  | **−1.89 pp**                    | −0.0399     | Reranker partly recovers; still negative. |
+| A    | Does the chunker change retrieval, holding else constant? | OFF | **−5.66 percentage points**                    | −0.0486     | Candidate regresses vs. baseline.    |
+| B    | Does the production-shape stack with reranker improve? | ON  | **−1.89 percentage points**                    | −0.0399     | Reranker partly recovers; still negative. |
+
+*Evidence Recall@5 = percentage of queries where at least one of the top 5 retrieved chunks contains the labelled evidence; nDCG@5 = normalized Discounted Cumulative Gain at 5, measures ranking quality with graded relevance; percentage points = absolute difference between two percentages (e.g., going from 50% to 45% is −5 percentage points).*
 
 The reranker recovers about 4 pp of the gap (Pass A −5.66 → Pass B −1.89 on Evidence Recall@5) but does not flip the verdict. Both passes fail the ≥ 5 pp lift criterion.
 
@@ -48,13 +50,15 @@ Pass A answers: *does Markdown-aware chunking change retrieval quality, holding 
 
 | Metric (hierarchy-targeted)        | Baseline | Candidate | Δ              |
 | ---------------------------------- | -------: | --------: | :------------: |
-| Evidence Recall@1                  |   20.75% |    13.21% | **−7.54 pp**   |
-| Evidence Recall@3                  |   35.85% |    30.19% | **−5.66 pp**   |
-| Evidence Recall@5                  |   47.17% |    41.51% | **−5.66 pp**   |
+| Evidence Recall@1                  |   20.75% |    13.21% | **−7.54 percentage points**   |
+| Evidence Recall@3                  |   35.85% |    30.19% | **−5.66 percentage points**   |
+| Evidence Recall@5                  |   47.17% |    41.51% | **−5.66 percentage points**   |
 | Evidence MRR                       |    0.302 |     0.232 | −0.070         |
-| Section/Hierarchy Match@1          |   22.64% |    20.75% | −1.89 pp       |
+| Section/Hierarchy Match@1          |   22.64% |    20.75% | −1.89 percentage points       |
 | nDCG@5                             |    0.698 |     0.649 | −0.049         |
-| Source Hit@1 *(diagnostic only)*   |   45.28% |    50.94% | +5.66 pp       |
+| Source Hit@1 *(diagnostic only)*   |   45.28% |    50.94% | +5.66 percentage points       |
+
+*Evidence Recall@k = percentage of queries where at least one of the top k retrieved chunks contains the labelled evidence; Evidence MRR = Mean Reciprocal Rank for evidence chunks (1.0 = evidence always at rank 1, 0.5 = average rank 2); Section/Hierarchy Match@1 = percentage of queries where the top-1 chunk comes from the correct section; nDCG@5 = normalized Discounted Cumulative Gain at 5, measures ranking quality with graded relevance; Source Hit@1 = percentage of queries where the correct source document appears in the top result.*
 
 Per-query (53 queries):
 
@@ -73,13 +77,13 @@ Pass B answers: *in our deployed configuration, does the heading-aware chunker b
 
 | Metric (hierarchy-targeted)        | Baseline | Candidate | Δ              |
 | ---------------------------------- | -------: | --------: | :------------: |
-| Evidence Recall@1                  |   28.30% |    24.53% | −3.77 pp       |
-| Evidence Recall@3                  |   52.83% |    43.40% | −9.43 pp       |
-| Evidence Recall@5                  |   60.38% |    58.49% | **−1.89 pp**   |
+| Evidence Recall@1                  |   28.30% |    24.53% | −3.77 percentage points       |
+| Evidence Recall@3                  |   52.83% |    43.40% | −9.43 percentage points       |
+| Evidence Recall@5                  |   60.38% |    58.49% | **−1.89 percentage points**   |
 | Evidence MRR                       |    0.401 |     0.355 | −0.046         |
-| Section/Hierarchy Match@1          |   26.42% |    26.42% | 0.00 pp        |
+| Section/Hierarchy Match@1          |   26.42% |    26.42% | 0.00 percentage points        |
 | nDCG@5                             |    0.738 |     0.698 | −0.040         |
-| Source Hit@1 *(diagnostic only)*   |   58.49% |    60.38% | +1.89 pp       |
+| Source Hit@1 *(diagnostic only)*   |   58.49% |    60.38% | +1.89 percentage points       |
 
 Per-query (53 queries):
 
@@ -96,9 +100,9 @@ Per-query (53 queries):
 
 | Metric (heading-targeted Recall@5)        | Baseline | Candidate | Δ          |
 | ----------------------------------------- | -------: | --------: | :--------: |
-| Pass A (rerank OFF)                       |   47.17% |    41.51% | −5.66 pp   |
-| Pass B (rerank ON)                        |   60.38% |    58.49% | −1.89 pp   |
-| Lift from reranker (per chunker)          | +13.21 pp | +16.98 pp |            |
+| Pass A (rerank OFF)                       |   47.17% |    41.51% | −5.66 percentage points   |
+| Pass B (rerank ON)                        |   60.38% |    58.49% | −1.89 percentage points   |
+| Lift from reranker (per chunker)          | +13.21 percentage points | +16.98 percentage points |            |
 
 The reranker lifts both indexes but lifts the candidate more, halving the gap. That confirms the candidate's failure mode is "right paper, wrong section" — exactly what a wider candidate pool plus cross-encoder can recover. It does not, however, close the gap to a positive lift on this corpus / this top-K / this chunk size.
 
@@ -108,12 +112,14 @@ The reranker lifts both indexes but lifts the candidate more, halving the gap. T
 
 | Criterion                                                        | Threshold              | Pass A          | Pass B          |
 | ---------------------------------------------------------------- | :--------------------: | :-------------: | :-------------: |
-| Heading/hierarchy-targeted Evidence Recall@5 lift                | candidate − baseline ≥ 5 pp | **−5.66 pp** ❌ | **−1.89 pp** ❌ |
+| Heading/hierarchy-targeted Evidence Recall@5 lift                | candidate − baseline ≥ 5 percentage points | **−5.66 percentage points** ❌ | **−1.89 percentage points** ❌ |
 | Heading/hierarchy-targeted nDCG@5 lift                           | ≥ 0.03                  | **−0.0486** ❌  | **−0.0399** ❌  |
-| General/evidence-dense Evidence Recall@5 non-regression          | candidate ≥ baseline − 2 pp | 0.00 pp ✅       | 0.00 pp ✅       |
+| General/evidence-dense Evidence Recall@5 non-regression          | candidate ≥ baseline − 2 percentage points | 0.00 percentage points ✅       | 0.00 percentage points ✅       |
 | Candidate chunk size P95 (token estimate)                        | ≤ 563                   | 533 ✅           | 533 ✅           |
 | Evidence density of the QA set                                   | ≥ 80%                   | 100% ✅          | 100% ✅          |
 | Source-only saturation guard                                     | source Hit@K diagnostic | ✅              | ✅              |
+
+*Evidence Recall@5 = percentage of queries where at least one of the top 5 retrieved chunks contains the labelled evidence; nDCG@5 = normalized Discounted Cumulative Gain at 5, measures ranking quality with graded relevance; percentage points = absolute difference between two percentages; P95 = 95th percentile.*
 
 Per the protocol's interpretation rules: neither pass clears the lift threshold, so this is recorded as a **real negative result** for `MarkdownNodeParser → SentenceSplitter` against the bare splitter on Qasper-dev with `chunk_size=512`, `chunk_overlap=100`, and `top_k=5`.
 

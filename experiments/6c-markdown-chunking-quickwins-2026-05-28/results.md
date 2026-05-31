@@ -30,6 +30,8 @@ The original Markdown chunker shipped under OpenSpec change `2-rag-retrieval-qua
 | Dependent (what we measure)  | Evidence Recall@5, MRR, nDCG@5, chunk stats | —                                |
 | Controlled (held constant)   | Corpus, ground truth, embed model, reranker config, `chunk_overlap=100` | — |
 
+*Type = role of the variable in the experiment; Variable = configuration knob or measured outcome; Values = values swept or held constant.*
+
 The baseline (bare `SentenceSplitter`) is never re-tuned. Only the Markdown branch's `chunk_size` changes. This keeps the experiment's focus narrow: "does the Markdown branch deserve a different chunk size?"
 
 ## Environment & Prerequisites
@@ -40,6 +42,8 @@ The baseline (bare `SentenceSplitter`) is never re-tuned. Only the Markdown bran
 | Ollama models | `qwen3-embedding:0.6b` (embed), `qwen3:0.6b` (classification only, disabled here) |
 | Hardware      | Apple Silicon Mac, 16 GB                 |
 | Key config    | `CHUNK_OVERLAP=100`, `METADATA_EXTRACTION_MODE=disabled`, `RERANK_MAX_FETCH=50`, `RERANK_FETCH_MULTIPLIER=10` |
+
+*Requirement = runtime dependency or environment detail; Version / Value = value used for this run.*
 
 ## Corpus
 
@@ -132,6 +136,8 @@ done
 | Source-only saturation guard            | source Hit@K reported as diagnostic         |
 | Evidence density of QA set              | ≥ 80% of records carry evidence             |
 
+*Check = success criterion; Pass condition = rule used to judge whether the experiment passes; pp = percentage points; P95 = 95th percentile.*
+
 The threshold for Pass A is deliberately more lenient than 6b's ≥ 5 pp lift target. The 6b post-mortem established that the reranker does most of the heavy lifting; 6c's goal for Pass A is "do no harm," not "win on chunker isolation."
 
 ---
@@ -151,6 +157,8 @@ All candidate chunks here are the same as 6b's original candidate: `MarkdownNode
 | **1B-k10** | B (rerank ON)  | 10  |          60.4% |          **60.4%** |          **71.7%** | **0.0 pp** ✅ |
 | 1B-k20 | B (rerank ON)  | 20  |          64.2% |           56.6% |            67.9% | −7.6 pp      |
 
+*Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Baseline/Candidate Rec@k = evidence recall at k, percentage of queries where at least one retrieved chunk contains labelled evidence; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points.*
+
 **Phase 1 finding**: widening `top_k` to 10 with the reranker on achieves exact parity on Evidence Recall@5 (60.4% both). The candidate also pulls ahead on Recall@10 (71.7% vs 69.8%), meaning the evidence chunks that were at ranks 6–10 in 6b are now being caught. However, Pass A remains negative even at `top_k=10` — the chunker alone still cannot match the baseline.
 
 ### Phase 2 — `chunk_size` sweep
@@ -167,6 +175,8 @@ Each cell is the Markdown branch at a larger `chunk_size`. Chunk counts drop as 
 | 2B-c768-k10  | B    | 10  | 768  |          60.4% |          **60.4%** |          **73.6%** |    355 |       336.8 | **0.0 pp** ✅ |
 | **2B-c1024-k5**  | B    | 5   | 1024 |          60.4% |          **62.3%** |              —   |    330 |       355.0 | **+1.9 pp** ✅ |
 | **2B-c1024-k10** | B    | 10  | 1024 |          60.4% |          **62.3%** |          **73.6%** |    330 |       355.0 | **+1.9 pp** ✅ |
+
+*Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Size = Markdown branch chunk size in tokens; Baseline/Candidate Rec@k = evidence recall at k; Chunks = candidate index chunk count; Mean tokens = average candidate chunk size estimate; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points.*
 
 **Phase 2 finding**: `chunk_size=1024` on the Markdown branch, with the reranker on, is the first configuration where the candidate meaningfully beats the baseline. At both `top_k=5` and `top_k=10`, Evidence Recall@5 lands at 62.3% vs 60.4% (+1.9 pp gain). The chunk count rise is only +16% (284 → 330), much tamer than 6b's original +49% (284 → 424), so the embedder gets more keyword surface area per chunk and the sibling-crowding problem is reduced.
 
@@ -186,6 +196,8 @@ In plain English: the Markdown chunker forces the text into smaller, more focuse
 | Candidate chunk size P95                   | ≤ `1024 * 1.1 = 1126`      | within cap ✅             |
 | Source-only saturation guard                | diagnostic reported         | ✅                        |
 | Evidence density of QA set                 | ≥ 80%                       | 100% ✅                   |
+
+*Criterion = protocol success condition; Threshold = required value; Best cell = measured value for the best production-shaped cell; pp = percentage points; P95 = 95th percentile.*
 
 The Pass B criterion just barely clears. Pass A does not. This matches the "reranker-driven, not chunker-driven" interpretation from the protocol: the chunker change alone is not enough, but the combination with the reranker at a larger chunk size works.
 
@@ -247,6 +259,8 @@ If heading-prepend at chunk_size=1024 lifts Pass A into the "do no harm" zone (�
 | `ground-truth.json`                        | 53 evidence-bearing QA records (copied from 6b) |
 | `chroma_baseline/`                         | Rebuilt baseline index with 6c-local paths      |
 | `chroma_candidate_runs/`                   | Per-run candidate indexes                       |
+
+*File = tracked or generated experiment artefact; Description = role of that artefact in the experiment.*
 
 ## References
 

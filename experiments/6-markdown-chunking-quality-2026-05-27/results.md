@@ -18,12 +18,16 @@
 | **candidate** / general         |  8 | 100.0% | 100.0% | 100.0% | 1.000 |
 | **candidate** / cross-domain    |  4 | 100.0% | 100.0% | 100.0% | 1.000 |
 
+*Config / Category = chunking pipeline and query category; n = number of queries; Hit@k = percentage of queries where the correct source appears in the top k results; MRR = Mean Reciprocal Rank, the average of 1/rank for the first correct result (1.000 = always rank 1).*
+
 Chunk stats:
 
 | Config    | Chunks | Mean (chars) | P95 (chars) | Max (chars) |
 | --------- | -----: | -----------: | ----------: | ----------: |
 | baseline  |  23    | 1678.6       |  2108.5     |  2193       |
 | candidate |  37    |  965.1       |  2040.4     |  2110       |
+
+*Config = chunking pipeline; Chunks = number of chunks produced; Mean/P95/Max (chars) = average, 95th-percentile, and maximum chunk length measured in characters.*
 
 ---
 
@@ -34,6 +38,8 @@ Chunk stats:
 | Heading-targeted Hit@1 lift ≥ 5 pp | +5 pp | +0.0 pp | ❌ |
 | General-query Hit@1 within ±2 pp of baseline | ±2 pp | 0.0 pp | ✅ |
 | Max chunk length ≤ `CHUNK_SIZE * 1.1` (chars) | 563 chars | 2110 chars | ❌ (see below) |
+
+*Criterion = protocol success condition; Threshold = required value; Measured = observed value; Pass = whether the measured value satisfies the criterion; pp = percentage points.*
 
 The heading-targeted lift criterion fails because **baseline already
 achieves 100% Hit@1** on this query set — there is no headroom for an

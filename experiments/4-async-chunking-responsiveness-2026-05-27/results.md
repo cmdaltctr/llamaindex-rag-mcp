@@ -28,6 +28,8 @@
 | under-load pre-fix  |      84.69 | **163.14** |     353.87 |        193.12 |
 | under-load post-fix |      85.56 | **165.77** |     429.17 |        199.50 |
 
+*Condition = idle or ingest-under-load scenario; Median P50/P95/P99 = median percentile search latency across three runs in milliseconds; Median ingest = median ingest duration in seconds.*
+
 **Finding**: Both conditions pass the 2× ceiling (194 ms). Pre-fix and
 post-fix are statistically indistinguishable because the 7.6 MB PDF
 splits in <3s and embedding dominates the 200s ingest. Most queries
@@ -53,6 +55,8 @@ ChromaDB equalised at 1 chunk for both conditions.
 | 2   | 87.8 | 95.9 |  139.1 | 2049.4 |              1 |
 | 3   | 88.2 | 96.7 |  121.6 | 2307.5 |              1 |
 
+*Run = repeated measurement number; P50/P95/P99 = search latency percentiles in milliseconds; Max = slowest observed search latency in milliseconds; Stalled >500ms = number of queries taking longer than 500 ms.*
+
 ### Post-fix (feature branch — splitter + keyword offloaded to threads)
 
 | Run | P50  | P95  | P99    | Max    | Stalled >500ms |
@@ -60,6 +64,8 @@ ChromaDB equalised at 1 chunk for both conditions.
 | 1   | 87.2 | 97.9 |  125.5 | 2033.8 |              1 |
 | 2   | 85.4 | 98.3 |  119.7 | 2014.0 |              1 |
 | 3   | 87.4 | 98.9 |  168.1 | 2055.2 |              1 |
+
+*Run = repeated measurement number; P50/P95/P99 = search latency percentiles in milliseconds; Max = slowest observed search latency in milliseconds; Stalled >500ms = number of queries taking longer than 500 ms.*
 
 ---
 
@@ -146,6 +152,8 @@ the synchronous splitter:
 | `asyncio.to_thread(search)` | Then waits for GIL — adds ~100 ms       | Same — adds ~100 ms                 |
 | **Total visible to client** | **5000+ ms**                            | **~200 ms**                         |
 
+*Layer = part of the MCP request path; Pre-fix behaviour = expected behaviour when splitting runs synchronously on the event loop; Post-fix behaviour = expected behaviour after splitter and keyword extraction are offloaded to worker threads.*
+
 The unit test `tests/test_async_ingest_responsiveness.py::TestSplitterOffload`
 is the truer simulation. It calls `search_documents` directly without
 wrapping it in `to_thread`, so when the splitter blocks the loop, the
@@ -181,6 +189,8 @@ fix works exactly as intended.
 | Ingest throughput regression                         | Not measurable (ingest cancelled for timing; Phase 1 shows 1.033×)   |  ✅  |
 | Zero search errors                                   | 0 errors across all runs                                             |  ✅  |
 | Unit test proves offload works                       | `TestSplitterOffload::test_search_responsive_during_blocking_splitter` ✓ |  ✅  |
+
+*Check = success criterion; Result = measured outcome; Pass = whether the criterion is satisfied. P95 = 95th percentile latency; 2× idle baseline = allowed latency ceiling relative to idle search.*
 
 ---
 
@@ -218,3 +228,5 @@ regex/tokeniser operations.
 | `under-load-postfix-{1,2,3}.json` | Phase 1 post-fix under load (3 runs)                     |
 | `corpus/large-document.pdf`   | Phase 1 corpus (7.6 MB)                                      |
 | `corpus/large-corpus.txt`     | Phase 2 corpus (14.3 MB, CC public domain)                   |
+
+*File = tracked or generated experiment artefact; Description = role of that artefact in the experiment.*

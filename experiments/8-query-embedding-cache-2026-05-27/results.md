@@ -9,12 +9,14 @@
 
 ## Summary table
 
-| Cell                  | Mean (ms) | P95 (ms) | Embed calls | Hit rate | Hit (filt) | Hit (unfilt) | Cache size end |
+| Cell                  | Mean latency | P95 latency | Embed calls | Hit rate | Hit (filt) | Hit (unfilt) | Cache size end |
 | --------------------- | :-------: | :------: | :---------: | :------: | :--------: | :----------: | :------------: |
-| cache=off, trace=warm |   28.66   |  102.77  |      8      |   80%    |    80%     |     80%      |       8        |
-| cache=off, trace=cold |   93.82   |  101.74  |     40      |    0%    |     0%     |      0%      |      40        |
-| **cache=on, trace=warm** | **26.58** | **94.16** | **8**     | **80%**  | **80%**    | **80%**      | **8**          |
-| cache=on, trace=cold  |   91.16   |   96.98  |     40      |    0%    |     0%     |      0%      |      40        |
+| cache=off, trace=warm |   28.66 ms   |  102.77 ms  |      8      |   80%    |    80%     |     80%      |       8        |
+| cache=off, trace=cold |   93.82 ms   |  101.74 ms  |     40      |    0%    |     0%     |      0%      |      40        |
+| **cache=on, trace=warm** | **26.58 ms** | **94.16 ms** | **8**     | **80%**  | **80%**    | **80%**      | **8**          |
+| cache=on, trace=cold  |   91.16 ms   |   96.98 ms  |     40      |    0%    |     0%     |      0%      |      40        |
+
+*Mean latency = average response time in milliseconds; P95 latency = 95th percentile response time (95% of queries are faster than this); Embed calls = actual number of calls to the embedding model; Hit rate = percentage of queries that reused a cached embedding; Hit (filt) = hit rate on filtered search path; Hit (unfilt) = hit rate on unfiltered search path; Cache size end = number of cached embeddings at the end of the trace.*
 
 Trace sizes: warm = 40 calls (8 distinct × 5 repeats), cold = 40 calls (40 distinct).
 Corpus: `experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/`.
@@ -32,6 +34,8 @@ Embed model: `qwen3-embedding:0.6b`.
 | Embed-call count, cold cache-on | = total queries (40) | 40 | ✅ |
 | Both branches cached, warm | ≥ 80 % each | filtered=80 %, unfiltered=80 % | ✅ |
 | LRU cache stores entries | currsize > 0 on warm | 8 | ✅ |
+
+*Criterion = protocol success condition; Threshold = required value; Measured = observed value; Pass = whether the measured value satisfies the criterion; warm = repeated-query trace; cold = unique-query trace.*
 
 All six pass criteria from `tasks.md` 4.10 met. The unfiltered branch hits
 the cache at the same 80 % rate as the filtered branch, which directly

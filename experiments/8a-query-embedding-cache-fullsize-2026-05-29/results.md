@@ -82,6 +82,8 @@ cache-off cells genuinely bypassed the production LRU cache.
 | Agent-loop cache-on embed calls = 25 | **25** | ✅ |
 | Both branches hit cache | filtered/unfiltered ≥ 80% | ✅ |
 
+*Criterion = protocol success condition; Result = measured value; Pass? = whether the criterion is satisfied; warm = repeated-query trace; cold = unique-query trace; agent-loop = repeated verification-style workload.*
+
 Simple reading:
 
 - Repeated queries become much faster.
@@ -98,8 +100,10 @@ Simple reading:
 | cold | on | off | 80.64 ms | 87.96 ms | 200 | 0% |
 | agent-loop | off | off | 80.35 ms | 86.86 ms | 250 | 0% |
 | agent-loop | on | off | **10.68 ms** | 79.89 ms | **25** | 90% |
-| warm | off | on | 1318.24 ms | 1367.78 ms | 250 | 0% |
-| warm | on | on | **1214.01 ms** | 1308.74 ms | **50** | 80% |
+| warm | off | on | 1,318.24 ms | 1,367.78 ms | 250 | 0% |
+| warm | on | on | **1,214.01 ms** | 1,308.74 ms | **50** | 80% |
+
+*Trace = workload type (warm = repeated queries, cold = unique queries, agent-loop = simulated agent behaviour); Cache = whether the query embedding cache is enabled; Rerank = whether the cross-encoder reranker is enabled; Mean latency = average response time in milliseconds; P95 latency = 95th percentile response time (95% of queries are faster than this); Embed calls = actual number of calls to the embedding model; Hit rate = percentage of queries that reused a cached embedding.*
 
 ### Why P95 does not drop as much as the mean
 
