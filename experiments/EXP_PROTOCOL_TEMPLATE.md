@@ -158,8 +158,23 @@ explicitly changes directory.
 ### Step 3: Run evaluation
 
 ```bash
-<command producing eval_results.json or per-cell JSON files>
+PYTHONUNBUFFERED=1 uv run python -u \
+  experiments/<id>/run_eval.py \
+  --modes <mode1>,<mode2> \
+  --rerank-cross \
+  --resume \
+  --k-values 5 10 20 50
 ```
+
+The runner saves raw per-query results, parent-ID mappings, latency,
+and fusion diagnostics to `eval_results.json`.
+
+**Checkpoint and resume**: The runner saves an atomic checkpoint to
+`eval_results_checkpoint.json` after each completed cell (mode × rerank combination).
+Use `--resume` to load the checkpoint and skip already-completed cells if the
+experiment is interrupted. The checkpoint is written atomically (write to `.tmp`
+then rename) to prevent corruption. This allows the experiment to be safely
+resumed without losing progress from earlier cells.
 
 ### Step 4: Summarise raw results
 
@@ -227,7 +242,9 @@ summaries; remove only large generated indexes if they are reproducible.
 | `results.md` | Human-readable result report | ✅ |
 | `run_eval.py` | Evaluation runner | Usually |
 | `eval_results.json` or `eval_results.*.json` | Raw machine-readable results | ✅ |
+| `eval_results_checkpoint.json` | Cell-by-cell checkpoint for resume | Usually |
 | `eval_results.summary.json` | Aggregated summary, if raw data is large | Optional |
+| `output/*.log` | Run logs | Optional |
 | `ground-truth.json` / `questions.md` / `workload-*.txt` | Pre-written queries or traces | Usually |
 | `corpus/` | Local test documents | Usually |
 | `artifacts.md` | Pointer to external artifacts, if too large for git | Optional |
