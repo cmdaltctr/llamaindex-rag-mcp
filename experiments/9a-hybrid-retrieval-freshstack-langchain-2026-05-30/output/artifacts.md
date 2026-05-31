@@ -12,7 +12,7 @@ Large artifacts are uploaded to the GitHub release for this experiment:
 
 > **Release URL**: https://github.com/cmdaltctr/llamaindex-rag-mcp/releases/tag/exp-9a-hybrid-retrieval
 
-*(Update this URL once the release is published.)*
+*Release published; see assets in the release above.*
 
 ---
 
