@@ -25,6 +25,11 @@ dependencies = [
     "docx2txt>=0.9",
 ]
 
+[project.optional-dependencies]
+hybrid = [
+    "rank-bm25>=0.2.2",
+]
+
 [project.scripts]
 rag-mcp = "rag_mcp.cli:run_cli"
 
@@ -92,4 +97,3 @@ ignore_merge_commits = true
 [tool.semantic_release.remote]
 type = "github"
 token = { env = "GH_TOKEN" }
-

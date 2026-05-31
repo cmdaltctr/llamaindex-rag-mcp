@@ -9,6 +9,7 @@ independently set ``Settings.embed_model`` at import time.
 
 from __future__ import annotations
 
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -16,6 +17,8 @@ from llama_index.core import Settings
 from llama_index.embeddings.ollama import OllamaEmbedding
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # ── Embedding model (local via Ollama) ──────────────────────────────────
 # The model name MUST come from a .env file or ENV var — there is no
@@ -83,6 +86,46 @@ SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
 # clamped to the collection size so small collections do not over-fetch.
 RERANK_FETCH_MULTIPLIER = int(os.getenv("RERANK_FETCH_MULTIPLIER", "10"))
 RERANK_MAX_FETCH = int(os.getenv("RERANK_MAX_FETCH", "50"))
+
+# ── Hybrid retrieval defaults ─────────────────────────────────────────────
+# V1 deliberately defaults to the in-process BM25 path.  Promotion of
+# HYBRID_SPARSE_BACKEND to "auto" is a follow-up change after Experiment 9
+# validates native Chroma sparse support for this project's runtime mode.
+HYBRID_ENABLED = os.getenv("HYBRID_ENABLED", "false").lower() == "true"
+HYBRID_RRF_K = int(os.getenv("HYBRID_RRF_K", "60"))
+HYBRID_SPARSE_BACKEND = os.getenv("HYBRID_SPARSE_BACKEND", "bm25").lower()
+
+if HYBRID_SPARSE_BACKEND not in {"auto", "native", "bm25"}:
+    logger.warning(
+        "Unknown HYBRID_SPARSE_BACKEND=%r; falling back to bm25",
+        HYBRID_SPARSE_BACKEND,
+    )
+    HYBRID_SPARSE_BACKEND = "bm25"
+
+
+def _resolve_sparse_backend() -> str:
+    """Resolve the configured sparse backend to ``bm25`` or ``native``."""
+    if HYBRID_SPARSE_BACKEND == "bm25":
+        return "bm25"
+
+    from .sparse_retriever import _detect_native_sparse_capability
+
+    native_available = _detect_native_sparse_capability()
+    if HYBRID_SPARSE_BACKEND == "auto":
+        return "native" if native_available else "bm25"
+
+    if native_available:
+        return "native"
+
+    logger.warning(
+        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
+        "ChromaDB runtime does not expose native sparse retrieval for this "
+        "project configuration. Falling back to bm25."
+    )
+    return "bm25"
+
+
+RESOLVED_HYBRID_SPARSE_BACKEND = _resolve_sparse_backend()
 
 # ── Metadata extraction ─────────────────────────────────────────────────
 # Controls how document metadata (e.g., category) is extracted during

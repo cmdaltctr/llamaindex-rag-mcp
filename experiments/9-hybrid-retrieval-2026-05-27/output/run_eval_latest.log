@@ -1,0 +1,552 @@
+Experiment 9: Hybrid Retrieval Quality
+============================================================
+  Modes: ['dense-only', 'hybrid_bm25']
+  Rerank settings: [True, False]
+  RRF k: 60
+  Rerank pool: max_fetch=50, multiplier=10
+  Warmup queries: 50 (discarded)
+  Ground-truth queries: 20
+  Ingesting corpus for mode=dense-only into /var/folders/r1/7zdb3kt10bn4b6ggpgzf__380000gn/T/rag_hybrid_dense-only_qyf5jekg...
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:18,151 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:54:20,902 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:54:24,296 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.17s/it]100%|██████████| 1/1 [00:06<00:00,  6.17s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:27,336 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.04s/it]100%|██████████| 1/1 [00:03<00:00,  3.04s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:30,323 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.99s/it]100%|██████████| 1/1 [00:02<00:00,  2.99s/it]
+2026-05-30 02:54:30,325 - INFO - LlamaIndex extraction: category=html, keywords=10, summary=479 chars
+2026-05-30 02:54:30,326 - INFO - ✓ javascript.txt — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:30,345 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:54:32,276 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:54:35,680 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:05<00:00,  5.35s/it]100%|██████████| 1/1 [00:05<00:00,  5.35s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:40,385 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.70s/it]100%|██████████| 1/1 [00:04<00:00,  4.70s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:42,404 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.02s/it]100%|██████████| 1/1 [00:02<00:00,  2.02s/it]
+2026-05-30 02:54:42,405 - INFO - LlamaIndex extraction: category=data-science, keywords=9, summary=279 chars
+2026-05-30 02:54:42,406 - INFO - ✓ python.txt — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:42,427 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:54:45,547 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:54:48,251 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:05<00:00,  5.84s/it]100%|██████████| 1/1 [00:05<00:00,  5.84s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:51,753 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.50s/it]100%|██████████| 1/1 [00:03<00:00,  3.50s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:53,556 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:01<00:00,  1.80s/it]100%|██████████| 1/1 [00:01<00:00,  1.80s/it]
+2026-05-30 02:54:53,557 - INFO - LlamaIndex extraction: category=france, keywords=10, summary=297 chars
+2026-05-30 02:54:53,557 - INFO - ✓ sample.txt — 1 chunk(s)
+2026-05-30 02:54:53,621 - WARNING - incorrect startxref pointer(1)
+2026-05-30 02:54:53,621 - WARNING - parsing for Object Streams
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:54:53,639 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:54:55,991 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:54:59,283 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:05<00:00,  5.66s/it]100%|██████████| 1/1 [00:05<00:00,  5.66s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:02,039 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.76s/it]100%|██████████| 1/1 [00:02<00:00,  2.76s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:04,112 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.07s/it]100%|██████████| 1/1 [00:02<00:00,  2.07s/it]
+2026-05-30 02:55:04,113 - INFO - LlamaIndex extraction: category=climate_change, keywords=9, summary=303 chars
+2026-05-30 02:55:04,114 - INFO - ✓ doc1_climate.pdf — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:04,133 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:55:07,788 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:55:10,362 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.25s/it]100%|██████████| 1/1 [00:06<00:00,  6.25s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:14,261 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.90s/it]100%|██████████| 1/1 [00:03<00:00,  3.90s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:17,599 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.34s/it]100%|██████████| 1/1 [00:03<00:00,  3.34s/it]
+2026-05-30 02:55:17,600 - INFO - LlamaIndex extraction: category=wegener, keywords=10, summary=693 chars
+2026-05-30 02:55:17,601 - INFO - ✓ plate-tectonics.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:17,620 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:55:20,682 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:55:25,756 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:08<00:00,  8.15s/it]100%|██████████| 1/1 [00:08<00:00,  8.15s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:28,785 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.03s/it]100%|██████████| 1/1 [00:03<00:00,  3.03s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:31,510 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.72s/it]100%|██████████| 1/1 [00:02<00:00,  2.72s/it]
+2026-05-30 02:55:31,511 - INFO - LlamaIndex extraction: category=gdp, keywords=9, summary=365 chars
+2026-05-30 02:55:31,512 - INFO - ✓ gdp-economics.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:31,533 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:55:34,786 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:55:37,972 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.46s/it]100%|██████████| 1/1 [00:06<00:00,  6.46s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:40,821 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.85s/it]100%|██████████| 1/1 [00:02<00:00,  2.85s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:44,660 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.84s/it]100%|██████████| 1/1 [00:03<00:00,  3.84s/it]
+2026-05-30 02:55:44,661 - INFO - LlamaIndex extraction: category=permutation-invariance, keywords=8, summary=782 chars
+2026-05-30 02:55:44,662 - INFO - ✓ transformers.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:44,681 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:55:46,914 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:55:48,868 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.20s/it]100%|██████████| 1/1 [00:04<00:00,  4.20s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:52,400 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.53s/it]100%|██████████| 1/1 [00:03<00:00,  3.53s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:56,607 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.21s/it]100%|██████████| 1/1 [00:04<00:00,  4.21s/it]
+2026-05-30 02:55:56,609 - INFO - LlamaIndex extraction: category=battery-chemistry, keywords=10, summary=840 chars
+2026-05-30 02:55:56,610 - INFO - ✓ electric-vehicles.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:55:56,629 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:55:59,383 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:56:04,672 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:08<00:00,  8.06s/it]100%|██████████| 1/1 [00:08<00:00,  8.06s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:07,295 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.62s/it]100%|██████████| 1/1 [00:02<00:00,  2.62s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:11,993 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.70s/it]100%|██████████| 1/1 [00:04<00:00,  4.70s/it]
+2026-05-30 02:56:11,994 - INFO - LlamaIndex extraction: category=photosynthesis, keywords=10, summary=579 chars
+2026-05-30 02:56:11,995 - INFO - ✓ photosynthesis.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:12,017 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:56:13,783 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:56:16,882 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.89s/it]100%|██████████| 1/1 [00:04<00:00,  4.89s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:19,375 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.49s/it]100%|██████████| 1/1 [00:02<00:00,  2.49s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:22,016 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.64s/it]100%|██████████| 1/1 [00:02<00:00,  2.64s/it]
+2026-05-30 02:56:22,018 - INFO - LlamaIndex extraction: category=europe, keywords=9, summary=418 chars
+2026-05-30 02:56:22,020 - INFO - ✓ sample.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:22,038 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:56:25,245 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:56:29,289 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:07<00:00,  7.27s/it]100%|██████████| 1/1 [00:07<00:00,  7.27s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:31,364 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.07s/it]100%|██████████| 1/1 [00:02<00:00,  2.07s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:34,296 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.93s/it]100%|██████████| 1/1 [00:02<00:00,  2.93s/it]
+2026-05-30 02:56:34,297 - INFO - LlamaIndex extraction: category=calibration, keywords=9, summary=439 chars
+2026-05-30 02:56:34,298 - INFO - ✓ generic-remedy-decoy.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:56:34,499 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:56:38,243 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:56:40,349 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:56:43,133 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:08<00:00,  8.66s/it]100%|██████████| 1/1 [00:08<00:00,  8.66s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:56:50,680 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:07<00:07,  7.66s/it]2026-05-30 02:56:53,330 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:10<00:00,  4.70s/it]100%|██████████| 2/2 [00:10<00:00,  5.15s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:56:56,547 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.12s/it]2026-05-30 02:57:00,828 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:07<00:00,  3.80s/it]100%|██████████| 2/2 [00:07<00:00,  3.70s/it]
+2026-05-30 02:57:00,844 - INFO - LlamaIndex extraction: category=eu_regulation, keywords=9, summary=763 chars
+2026-05-30 02:57:00,937 - INFO - ✓ eu-2016-679-gdpr-summary.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:57:03,322 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:57:08,212 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:57:10,865 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:57:14,234 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:13<00:00, 13.06s/it]100%|██████████| 1/1 [00:13<00:00, 13.06s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:57:16,543 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.31s/it]2026-05-30 02:57:20,216 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:05<00:00,  3.11s/it]100%|██████████| 2/2 [00:05<00:00,  2.99s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:57:23,241 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.03s/it]2026-05-30 02:57:26,735 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.45s/it]100%|██████████| 2/2 [00:06<00:00,  3.39s/it]
+2026-05-30 02:57:27,011 - INFO - LlamaIndex extraction: category=firewall_behavior, keywords=10, summary=509 chars
+2026-05-30 02:57:27,228 - INFO - ✓ econnrefused-troubleshooting.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:57:27,873 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:57:31,532 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:57:34,400 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:07<00:00,  7.14s/it]100%|██████████| 1/1 [00:07<00:00,  7.14s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:57:37,249 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.84s/it]100%|██████████| 1/1 [00:02<00:00,  2.84s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:57:41,074 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.82s/it]100%|██████████| 1/1 [00:03<00:00,  3.82s/it]
+2026-05-30 02:57:41,078 - INFO - LlamaIndex extraction: category=sensor-module, keywords=9, summary=731 chars
+2026-05-30 02:57:41,090 - INFO - ✓ xk-2034b-product-spec.md — 5 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:57:41,158 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:57:44,008 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:57:47,507 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:57:50,481 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:09<00:00,  9.39s/it]100%|██████████| 1/1 [00:09<00:00,  9.39s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:57:53,342 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.86s/it]2026-05-30 02:57:56,887 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.27s/it]100%|██████████| 2/2 [00:06<00:00,  3.21s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:58:00,356 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.46s/it]2026-05-30 02:58:04,588 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:07<00:00,  3.93s/it]100%|██████████| 2/2 [00:07<00:00,  3.86s/it]
+2026-05-30 02:58:04,612 - INFO - LlamaIndex extraction: category=federal-question_jurisdiction, keywords=10, summary=821 chars
+2026-05-30 02:58:04,641 - INFO - ✓ 42-usc-1983-summary.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:58:05,019 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:58:11,167 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:58:13,207 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:58:17,170 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:12<00:00, 12.49s/it]100%|██████████| 1/1 [00:12<00:00, 12.49s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:58:19,706 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.54s/it]2026-05-30 02:58:26,970 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:09<00:00,  5.31s/it]100%|██████████| 2/2 [00:09<00:00,  4.90s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:58:30,177 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.20s/it]2026-05-30 02:58:34,932 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:08<00:00,  4.15s/it]100%|██████████| 2/2 [00:08<00:00,  4.01s/it]
+2026-05-30 02:58:34,997 - INFO - LlamaIndex extraction: category=real_arrays, keywords=9, summary=785 chars
+2026-05-30 02:58:35,258 - INFO - ✓ numpy-fft-readme.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:58:36,281 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:58:40,827 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:58:43,507 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:58:46,957 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:11<00:00, 11.32s/it]100%|██████████| 1/1 [00:11<00:00, 11.32s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:58:49,462 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.50s/it]2026-05-30 02:58:53,214 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.24s/it]100%|██████████| 2/2 [00:06<00:00,  3.13s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:58:56,624 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.41s/it]2026-05-30 02:58:59,575 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.13s/it]100%|██████████| 2/2 [00:06<00:00,  3.18s/it]
+2026-05-30 02:58:59,577 - INFO - LlamaIndex extraction: category=layernorm, keywords=10, summary=752 chars
+2026-05-30 02:58:59,584 - INFO - ✓ torch-layernorm-notes.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:58:59,654 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:59:04,513 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:59:06,707 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:59:10,829 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:11<00:00, 11.24s/it]100%|██████████| 1/1 [00:11<00:00, 11.24s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:59:14,773 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.95s/it]2026-05-30 02:59:17,915 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:07<00:00,  3.50s/it]100%|██████████| 2/2 [00:07<00:00,  3.57s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 02:59:21,779 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.79s/it]2026-05-30 02:59:24,352 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.08s/it]100%|██████████| 2/2 [00:06<00:00,  3.18s/it]
+2026-05-30 02:59:24,358 - INFO - LlamaIndex extraction: category=dna_repair, keywords=9, summary=744 chars
+2026-05-30 02:59:24,364 - INFO - ✓ brca1-research-note.md — 5 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:24,432 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:59:27,289 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:59:30,713 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.35s/it]100%|██████████| 1/1 [00:06<00:00,  6.35s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:33,503 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.78s/it]100%|██████████| 1/1 [00:02<00:00,  2.78s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:37,588 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.09s/it]100%|██████████| 1/1 [00:04<00:00,  4.09s/it]
+2026-05-30 02:59:37,598 - INFO - LlamaIndex extraction: category=submodule, keywords=10, summary=537 chars
+2026-05-30 02:59:37,606 - INFO - ✓ mcp-1138-error-codes.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:37,715 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 02:59:40,936 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 02:59:43,863 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.25s/it]100%|██████████| 1/1 [00:06<00:00,  6.25s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:46,330 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.46s/it]100%|██████████| 1/1 [00:02<00:00,  2.46s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 02:59:49,414 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.08s/it]100%|██████████| 1/1 [00:03<00:00,  3.08s/it]
+2026-05-30 02:59:49,419 - INFO - LlamaIndex extraction: category=ticket_code, keywords=10, summary=598 chars
+2026-05-30 02:59:49,426 - INFO - ✓ zzqj-9097-runbook.md — 1 chunk(s)
+2026-05-30 02:59:49,510 - INFO - Embedding 55 chunks via qwen3-embedding:0.6b...
+2026-05-30 02:59:59,433 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 02:59:59,763 - INFO - Successfully stored 55 chunks in ChromaDB
+    Indexed 55 chunks
+  Ingesting corpus for mode=hybrid_bm25 into /var/folders/r1/7zdb3kt10bn4b6ggpgzf__380000gn/T/rag_hybrid_hybrid_bm25_29qoege6...
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:09,162 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:00:11,977 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:00:15,146 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.29s/it]100%|██████████| 1/1 [00:06<00:00,  6.29s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:22,084 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.94s/it]100%|██████████| 1/1 [00:06<00:00,  6.94s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:24,152 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.06s/it]100%|██████████| 1/1 [00:02<00:00,  2.06s/it]
+2026-05-30 03:00:24,154 - INFO - LlamaIndex extraction: category=javascript, keywords=5, summary=256 chars
+2026-05-30 03:00:24,163 - INFO - ✓ javascript.txt — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:24,246 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:00:26,206 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:00:28,510 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.49s/it]100%|██████████| 1/1 [00:04<00:00,  4.49s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:31,099 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.54s/it]100%|██████████| 1/1 [00:02<00:00,  2.55s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:33,607 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.38s/it]100%|██████████| 1/1 [00:02<00:00,  2.39s/it]
+2026-05-30 03:00:33,702 - INFO - LlamaIndex extraction: category=numpy, keywords=10, summary=232 chars
+2026-05-30 03:00:33,836 - INFO - ✓ python.txt — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:35,584 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:00:40,836 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:00:44,625 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:10<00:00, 10.43s/it]100%|██████████| 1/1 [00:10<00:00, 10.43s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:49,660 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:05<00:00,  5.03s/it]100%|██████████| 1/1 [00:05<00:00,  5.03s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:51,775 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.11s/it]100%|██████████| 1/1 [00:02<00:00,  2.11s/it]
+2026-05-30 03:00:51,779 - INFO - LlamaIndex extraction: category=paris, keywords=5, summary=231 chars
+2026-05-30 03:00:51,784 - INFO - ✓ sample.txt — 1 chunk(s)
+2026-05-30 03:00:51,790 - WARNING - incorrect startxref pointer(1)
+2026-05-30 03:00:51,790 - WARNING - parsing for Object Streams
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:51,879 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:00:53,221 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:00:55,545 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.75s/it]100%|██████████| 1/1 [00:03<00:00,  3.75s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:00:57,983 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.43s/it]100%|██████████| 1/1 [00:02<00:00,  2.43s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:00,462 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.48s/it]100%|██████████| 1/1 [00:02<00:00,  2.48s/it]
+2026-05-30 03:01:00,465 - INFO - LlamaIndex extraction: category=climate_change, keywords=10, summary=214 chars
+2026-05-30 03:01:00,484 - INFO - ✓ doc1_climate.pdf — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:00,911 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:01:05,573 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:01:09,392 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:08<00:00,  8.86s/it]100%|██████████| 1/1 [00:08<00:00,  8.86s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:11,835 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.46s/it]100%|██████████| 1/1 [00:02<00:00,  2.46s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:15,737 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.89s/it]100%|██████████| 1/1 [00:03<00:00,  3.89s/it]
+2026-05-30 03:01:15,749 - INFO - LlamaIndex extraction: category=plate-tectonics, keywords=10, summary=703 chars
+2026-05-30 03:01:15,768 - INFO - ✓ plate-tectonics.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:16,331 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:01:19,444 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:01:23,026 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:07<00:00,  7.21s/it]100%|██████████| 1/1 [00:07<00:00,  7.22s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:26,031 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.02s/it]100%|██████████| 1/1 [00:03<00:00,  3.02s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:30,591 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.58s/it]100%|██████████| 1/1 [00:04<00:00,  4.58s/it]
+2026-05-30 03:01:30,638 - INFO - LlamaIndex extraction: category=approaches, keywords=10, summary=713 chars
+2026-05-30 03:01:30,686 - INFO - ✓ gdp-economics.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:31,042 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:01:34,678 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:01:38,214 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:07<00:00,  7.41s/it]100%|██████████| 1/1 [00:07<00:00,  7.41s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:40,708 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.59s/it]100%|██████████| 1/1 [00:02<00:00,  2.59s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:43,605 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.75s/it]100%|██████████| 1/1 [00:02<00:00,  2.75s/it]
+2026-05-30 03:01:43,607 - INFO - LlamaIndex extraction: category=self-attention, keywords=10, summary=532 chars
+2026-05-30 03:01:43,609 - INFO - ✓ transformers.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:43,636 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:01:47,190 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:01:50,472 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.86s/it]100%|██████████| 1/1 [00:06<00:00,  6.86s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:53,123 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.65s/it]100%|██████████| 1/1 [00:02<00:00,  2.65s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:57,019 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.89s/it]100%|██████████| 1/1 [00:03<00:00,  3.90s/it]
+2026-05-30 03:01:57,020 - INFO - LlamaIndex extraction: category=battery, keywords=10, summary=359 chars
+2026-05-30 03:01:57,021 - INFO - ✓ electric-vehicles.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:01:57,043 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:02:00,327 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:02:04,053 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:07<00:00,  7.03s/it]100%|██████████| 1/1 [00:07<00:00,  7.03s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:07,234 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.20s/it]100%|██████████| 1/1 [00:03<00:00,  3.20s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:11,692 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.44s/it]100%|██████████| 1/1 [00:04<00:00,  4.44s/it]
+2026-05-30 03:02:11,699 - INFO - LlamaIndex extraction: category=photosynthesis, keywords=10, summary=616 chars
+2026-05-30 03:02:11,706 - INFO - ✓ photosynthesis.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:11,734 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:02:13,611 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:02:15,629 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.92s/it]100%|██████████| 1/1 [00:03<00:00,  3.92s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:18,638 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.01s/it]100%|██████████| 1/1 [00:03<00:00,  3.01s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:20,900 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.26s/it]100%|██████████| 1/1 [00:02<00:00,  2.26s/it]
+2026-05-30 03:02:20,901 - INFO - LlamaIndex extraction: category=capital, keywords=9, summary=329 chars
+2026-05-30 03:02:20,902 - INFO - ✓ sample.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:20,930 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:02:23,165 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:02:27,218 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.32s/it]100%|██████████| 1/1 [00:06<00:00,  6.32s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:29,992 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.77s/it]100%|██████████| 1/1 [00:02<00:00,  2.77s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:34,052 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.09s/it]100%|██████████| 1/1 [00:04<00:00,  4.09s/it]
+2026-05-30 03:02:34,089 - INFO - LlamaIndex extraction: category=calibrate, keywords=10, summary=445 chars
+2026-05-30 03:02:34,113 - INFO - ✓ generic-remedy-decoy.md — 1 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:02:34,350 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:02:38,212 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:02:40,296 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:02:43,692 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:09<00:00,  9.52s/it]100%|██████████| 1/1 [00:09<00:00,  9.52s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:02:46,332 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.64s/it]2026-05-30 03:02:48,694 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:05<00:00,  2.48s/it]100%|██████████| 2/2 [00:05<00:00,  2.50s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:02:52,432 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.74s/it]2026-05-30 03:02:57,434 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:10<00:00,  5.56s/it]100%|██████████| 2/2 [00:10<00:00,  5.29s/it]
+2026-05-30 03:02:59,385 - INFO - LlamaIndex extraction: category=eu, keywords=10, summary=428 chars
+2026-05-30 03:03:01,436 - INFO - ✓ eu-2016-679-gdpr-summary.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:03:33,523 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:03:38,492 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:03:42,384 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:03:46,212 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:43<00:00, 43.95s/it]100%|██████████| 1/1 [00:43<00:00, 43.95s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:03:48,659 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.44s/it]2026-05-30 03:03:51,019 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:04<00:00,  2.39s/it]100%|██████████| 2/2 [00:04<00:00,  2.40s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:03:53,935 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:02<00:02,  2.91s/it]2026-05-30 03:03:56,811 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:05<00:00,  2.89s/it]100%|██████████| 2/2 [00:05<00:00,  2.90s/it]
+2026-05-30 03:03:56,812 - INFO - LlamaIndex extraction: category=container_management, keywords=10, summary=479 chars
+2026-05-30 03:03:56,814 - INFO - ✓ econnrefused-troubleshooting.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:03:56,839 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:03:59,673 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:04:02,619 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:05<00:00,  5.80s/it]100%|██████████| 1/1 [00:05<00:00,  5.80s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:04:05,685 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.07s/it]100%|██████████| 1/1 [00:03<00:00,  3.07s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:04:09,934 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.25s/it]100%|██████████| 1/1 [00:04<00:00,  4.25s/it]
+2026-05-30 03:04:09,938 - INFO - LlamaIndex extraction: category=sensor-module, keywords=9, summary=657 chars
+2026-05-30 03:04:09,941 - INFO - ✓ xk-2034b-product-spec.md — 5 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:04:09,970 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:04:14,582 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:04:18,344 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:04:22,611 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:12<00:00, 12.67s/it]100%|██████████| 1/1 [00:12<00:00, 12.67s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:04:27,336 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:04<00:04,  4.73s/it]2026-05-30 03:04:31,116 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:08<00:00,  4.17s/it]100%|██████████| 2/2 [00:08<00:00,  4.25s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:04:35,147 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:04<00:04,  4.03s/it]2026-05-30 03:04:39,001 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:07<00:00,  3.93s/it]100%|██████████| 2/2 [00:07<00:00,  3.94s/it]
+2026-05-30 03:04:39,003 - INFO - LlamaIndex extraction: category=procedural_posture, keywords=9, summary=954 chars
+2026-05-30 03:04:39,004 - INFO - ✓ 42-usc-1983-summary.md — 6 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:04:39,029 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:04:45,783 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:04:53,198 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:05:00,968 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:25<00:00, 25.18s/it]100%|██████████| 1/1 [00:25<00:00, 25.18s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:05:23,122 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:19<00:19, 19.35s/it]2026-05-30 03:05:26,097 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:22<00:00,  9.66s/it]100%|██████████| 2/2 [00:22<00:00, 11.12s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:05:33,191 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:07<00:07,  7.04s/it]2026-05-30 03:05:36,664 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:10<00:00,  4.89s/it]100%|██████████| 2/2 [00:10<00:00,  5.22s/it]
+2026-05-30 03:05:37,148 - INFO - LlamaIndex extraction: category=real_input, keywords=10, summary=553 chars
+2026-05-30 03:05:40,055 - INFO - ✓ numpy-fft-readme.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:05:48,322 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:05:59,813 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:06:04,806 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:06:08,856 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:27<00:00, 27.70s/it]100%|██████████| 1/1 [00:27<00:00, 27.70s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:06:13,406 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:04<00:04,  4.61s/it]2026-05-30 03:06:16,353 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:07<00:00,  3.72s/it]100%|██████████| 2/2 [00:07<00:00,  3.86s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:06:24,324 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:06<00:06,  6.85s/it]2026-05-30 03:06:28,084 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:10<00:00,  5.06s/it]100%|██████████| 2/2 [00:10<00:00,  5.33s/it]
+2026-05-30 03:06:28,201 - INFO - LlamaIndex extraction: category=layernorm, keywords=10, summary=591 chars
+2026-05-30 03:06:28,824 - INFO - ✓ torch-layernorm-notes.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:06:31,640 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:06:36,581 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:06:39,024 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:06:42,315 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:12<00:00, 12.86s/it]100%|██████████| 1/1 [00:12<00:00, 12.86s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:06:51,257 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:08<00:08,  8.90s/it]2026-05-30 03:06:53,397 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:10<00:00,  4.89s/it]100%|██████████| 2/2 [00:10<00:00,  5.49s/it]
+  0%|          | 0/2 [00:00<?, ?it/s]2026-05-30 03:06:57,216 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+ 50%|█████     | 1/2 [00:03<00:03,  3.89s/it]2026-05-30 03:07:00,041 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 2/2 [00:06<00:00,  3.32s/it]100%|██████████| 2/2 [00:06<00:00,  3.41s/it]
+2026-05-30 03:07:00,253 - INFO - LlamaIndex extraction: category=brca1, keywords=10, summary=758 chars
+2026-05-30 03:07:00,512 - INFO - ✓ brca1-research-note.md — 5 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:02,506 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:07:07,940 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:07:11,659 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:10<00:00, 10.86s/it]100%|██████████| 1/1 [00:10<00:00, 10.86s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:14,425 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.76s/it]100%|██████████| 1/1 [00:02<00:00,  2.76s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:17,947 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:03<00:00,  3.55s/it]100%|██████████| 1/1 [00:03<00:00,  3.55s/it]
+2026-05-30 03:07:17,979 - INFO - LlamaIndex extraction: category=error_codes, keywords=10, summary=317 chars
+2026-05-30 03:07:18,014 - INFO - ✓ mcp-1138-error-codes.md — 4 chunk(s)
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:18,339 - INFO - HTTP Request: POST http://localhost:11434/api/show "HTTP/1.1 200 OK"
+2026-05-30 03:07:20,994 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2026-05-30 03:07:25,069 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:06<00:00,  6.99s/it]100%|██████████| 1/1 [00:06<00:00,  6.99s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:27,998 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:02<00:00,  2.92s/it]100%|██████████| 1/1 [00:02<00:00,  2.92s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]2026-05-30 03:07:32,315 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+100%|██████████| 1/1 [00:04<00:00,  4.90s/it]100%|██████████| 1/1 [00:04<00:00,  4.90s/it]
+2026-05-30 03:07:32,916 - INFO - LlamaIndex extraction: category=ticket_codes, keywords=9, summary=405 chars
+2026-05-30 03:07:33,465 - INFO - ✓ zzqj-9097-runbook.md — 1 chunk(s)
+2026-05-30 03:07:43,434 - INFO - Embedding 55 chunks via qwen3-embedding:0.6b...
+2026-05-30 03:07:54,902 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:07:57,626 - INFO - Successfully stored 55 chunks in ChromaDB
+    Indexed 55 chunks
+
+  Cell: mode=dense-only, rerank=True
+2026-05-30 03:07:57,774 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+2026-05-30 03:07:59,351 - INFO - Loading reranker model: cross-encoder/ms-marco-MiniLM-L-6-v2
+2026-05-30 03:08:00,469 - INFO - Reranker model loaded successfully (variant: onnx/model_qint8_arm64.onnx)
+2026-05-30 03:08:02,358 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:04,009 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:05,510 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:06,917 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:08,327 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:09,816 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:11,311 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:12,910 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:14,803 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:16,501 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:19,114 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:20,507 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:22,063 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:25,075 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:26,615 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:28,369 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:30,237 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:08:46,273 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+2026-05-30 03:09:35,771 - INFO - HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 200 OK"
+    mean=1327.13ms  P95=1493.8ms
+
+  Cell: mode=dense-only, rerank=False
+    mean=11.22ms  P95=13.71ms
+
+  Cell: mode=hybrid_bm25, rerank=True
+2026-05-30 03:10:41,989 - INFO - Loading reranker model: cross-encoder/ms-marco-MiniLM-L-6-v2
+'(ReadTimeoutError("HTTPSConnectionPool(host='huggingface.co', port=443): Read timed out. (read timeout=10)"), '(Request ID: 598e7320-517e-4efa-8c63-1505f82b01fd)')' thrown while requesting HEAD https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2/resolve/main/onnx/model_qint8_arm64.onnx
+2026-05-30 03:10:51,993 - WARNING - '(ReadTimeoutError("HTTPSConnectionPool(host='huggingface.co', port=443): Read timed out. (read timeout=10)"), '(Request ID: 598e7320-517e-4efa-8c63-1505f82b01fd)')' thrown while requesting HEAD https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2/resolve/main/onnx/model_qint8_arm64.onnx
+Retrying in 1s [Retry 1/5].
+2026-05-30 03:10:51,993 - WARNING - Retrying in 1s [Retry 1/5].
+2026-05-30 03:10:54,033 - INFO - Reranker model loaded successfully (variant: onnx/model_qint8_arm64.onnx)
+    mean=1134.86ms  P95=1314.38ms
+
+  Cell: mode=hybrid_bm25, rerank=False
+    mean=10.6ms  P95=11.23ms
+
+                             Hybrid Retrieval — Cell × Category                             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┓
+┃ Cell                     ┃ Category  ┃ n ┃  Hit@1 ┃  Hit@5 ┃ MRR@10 ┃ Recall@10 ┃ P95 ms ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━┩
+│ dense-only / rerank=on   │ rare-term │ 9 │ 100.0% │ 100.0% │  1.000 │    100.0% │   1494 │
+│ dense-only / rerank=on   │ semantic  │ 6 │  83.3% │ 100.0% │  0.917 │    100.0% │   1494 │
+│ dense-only / rerank=on   │ mixed     │ 5 │ 100.0% │ 100.0% │  1.000 │    100.0% │   1494 │
+│ dense-only / rerank=off  │ rare-term │ 9 │ 100.0% │ 100.0% │  1.000 │    100.0% │     14 │
+│ dense-only / rerank=off  │ semantic  │ 6 │ 100.0% │ 100.0% │  1.000 │    100.0% │     14 │
+│ dense-only / rerank=off  │ mixed     │ 5 │ 100.0% │ 100.0% │  1.000 │    100.0% │     14 │
+│ hybrid_bm25 / rerank=on  │ rare-term │ 9 │ 100.0% │ 100.0% │  1.000 │    100.0% │   1314 │
+│ hybrid_bm25 / rerank=on  │ semantic  │ 6 │  83.3% │ 100.0% │  0.917 │    100.0% │   1314 │
+│ hybrid_bm25 / rerank=on  │ mixed     │ 5 │ 100.0% │ 100.0% │  1.000 │    100.0% │   1314 │
+│ hybrid_bm25 / rerank=off │ rare-term │ 9 │ 100.0% │ 100.0% │  1.000 │    100.0% │     11 │
+│ hybrid_bm25 / rerank=off │ semantic  │ 6 │  83.3% │ 100.0% │  0.889 │    100.0% │     11 │
+│ hybrid_bm25 / rerank=off │ mixed     │ 5 │ 100.0% │ 100.0% │  1.000 │    100.0% │     11 │
+└──────────────────────────┴───────────┴───┴────────┴────────┴────────┴───────────┴────────┘
+
+  dense-only/rerank=True named cases: {'colosseum': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': 
+{'dense_rank': None, 'sparse_rank': None, 'fused_rank': None}}, 'bm25-only': {'hit_at_1': True, 
+'hit_rank': 1, 'fusion_ranks': {'dense_rank': None, 'sparse_rank': None, 'fused_rank': None}}, 
+'dense-trap': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': {'dense_rank': None, 'sparse_rank': 
+None, 'fused_rank': None}}}
+  dense-only/rerank=False named cases: {'colosseum': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': 
+{'dense_rank': None, 'sparse_rank': None, 'fused_rank': None}}, 'bm25-only': {'hit_at_1': True, 
+'hit_rank': 1, 'fusion_ranks': {'dense_rank': None, 'sparse_rank': None, 'fused_rank': None}}, 
+'dense-trap': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': {'dense_rank': None, 'sparse_rank': 
+None, 'fused_rank': None}}}
+  hybrid_bm25/rerank=True named cases: {'colosseum': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': 
+{'dense_rank': 1, 'sparse_rank': 1, 'fused_rank': 1}}, 'bm25-only': {'hit_at_1': True, 'hit_rank': 1, 
+'fusion_ranks': {'dense_rank': 2, 'sparse_rank': 1, 'fused_rank': 2}}, 'dense-trap': {'hit_at_1': True, 
+'hit_rank': 1, 'fusion_ranks': {'dense_rank': 1, 'sparse_rank': 1, 'fused_rank': 1}}}
+  hybrid_bm25/rerank=False named cases: {'colosseum': {'hit_at_1': True, 'hit_rank': 1, 'fusion_ranks': 
+{'dense_rank': 1, 'sparse_rank': 1, 'fused_rank': 1}}, 'bm25-only': {'hit_at_1': True, 'hit_rank': 1, 
+'fusion_ranks': {'dense_rank': 1, 'sparse_rank': 2, 'fused_rank': 1}}, 'dense-trap': {'hit_at_1': True, 
+'hit_rank': 1, 'fusion_ranks': {'dense_rank': 1, 'sparse_rank': 1, 'fused_rank': 1}}}
+
+  Pass Criteria
+  ------------------------------------------------------------
+  colosseum_hit_top_1_under_hybrid: True
+  rare_term_lift_pp: 0.0
+  rare_term_lift_pass: False
+  semantic_delta_pp: 0.0
+  semantic_non_regression_pass: True
+  mixed_delta_pp: 0.0
+  mixed_non_regression_pass: True
+  latency_p95_ratio_hybrid_over_dense: 0.88
+  latency_pass: True
+
+  Recommendation: FAIL: keep HYBRID_ENABLED=false; investigate per protocol's failure-mode guide
+
+  Raw results saved to: /Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9-hybrid-retrieval-2026-05-27/eval_results.json

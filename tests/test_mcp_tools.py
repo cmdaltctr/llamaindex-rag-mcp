@@ -117,6 +117,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         top_k=3,
         similarity_threshold=0.25,
         rerank=True,
+        hybrid=False,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
     )
@@ -148,6 +149,7 @@ async def test_search_documents_defaults_follow_config(mcp_server) -> None:
         top_k=TOP_K,
         similarity_threshold=0.0,
         rerank=RERANK_ENABLED,
+        hybrid=False,
         collection_name="documents",
         metadata_filter=None,
     )

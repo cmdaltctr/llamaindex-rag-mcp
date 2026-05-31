@@ -305,6 +305,7 @@ class TestSearchCLI:
         assert "--top-k" in result.output
         assert "--threshold" in result.output
         assert "--rerank" in result.output
+        assert "--hybrid" in result.output
         assert "--json" in result.output
 
 
@@ -592,6 +593,7 @@ class TestSearchErrorHandling:
             similarity_threshold=0.1,
             rerank=False,
             collection_name="cli_coll",
+            hybrid=False,
         )
 
     def test_search_cli_defaults_follow_config(self) -> None:
@@ -617,7 +619,28 @@ class TestSearchErrorHandling:
             similarity_threshold=0.0,
             rerank=RERANK_ENABLED,
             collection_name="documents",
+            hybrid=False,
         )
+
+    def test_search_cli_hybrid_flag_passes_true(self) -> None:
+        """``rag-mcp search --hybrid`` delegates with ``hybrid=True``."""
+        result_payload = [{
+            "score": 0.8,
+            "source": "cli.txt",
+            "page_label": None,
+            "text": "CLI result",
+            "reranked": False,
+        }]
+
+        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+            result = runner.invoke(
+                app,
+                ["search", "cli query", "--hybrid", "--json"],
+            )
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == result_payload
+        assert mock_search.call_args.kwargs["hybrid"] is True
 
     def test_search_connection_error(self) -> None:
         """ConnectionError in search triggers Ollama error message."""

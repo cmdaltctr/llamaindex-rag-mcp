@@ -1,60 +1,41 @@
 ## Purpose
 
 Define optional cross-encoder reranking, score filtering, model loading, and runtime configuration for improving retrieval result precision.
-
 ## Requirements
-
 ### Requirement: cross-encoder re-ranking for precision
 
 The system SHALL provide an optional cross-encoder reranker that re-scores
 initial vector search results to improve retrieval precision. When reranking
-is enabled, the system SHALL fetch a configurable larger candidate pool from
-vector search before reranking, and SHALL return the top `top_k` results after
-reranking.
+is enabled and hybrid retrieval is also enabled, the reranker SHALL receive
+the fused dense+sparse candidate list. When reranking is enabled and hybrid
+retrieval is disabled, the reranker SHALL receive the dense-only candidate
+list. The fetch pool size SHALL be governed by `RERANK_MAX_FETCH` and
+`RERANK_FETCH_MULTIPLIER` regardless of whether hybrid retrieval is active.
 
-#### Scenario: basic reranking with configurable pool
-- **GIVEN** documents have been indexed into the vector store
-- **WHEN** `search_documents` is called with `rerank=True`
-- **THEN** the system SHALL retrieve `max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)` candidates from vector search
-- **AND** pass them through the cross-encoder reranker
-- **AND** return the top `top_k` results reordered by reranker score
-
-#### Scenario: default pool is at least 50 candidates
+#### Scenario: Rerank over dense-only candidates
 - **GIVEN** documents have been indexed
-- **AND** `RERANK_MAX_FETCH` and `RERANK_FETCH_MULTIPLIER` use defaults
-- **WHEN** `search_documents` is called with `rerank=True` and `top_k=5`
-- **THEN** the candidate pool sent to the reranker SHALL contain at least 50 candidates subject to availability in the collection
+- **WHEN** `search_documents(query="X", rerank=True, hybrid=False)` is called
+- **THEN** the system SHALL fetch dense-only candidates up to the configured fetch pool
+- **THEN** the reranker SHALL re-score those candidates
+- **THEN** the calibrated reranker score scaling SHALL be applied unchanged
 
-#### Scenario: small collection returns all available candidates
-- **GIVEN** a collection has fewer chunks than the configured fetch pool
-- **WHEN** `search_documents` is called with `rerank=True`
-- **THEN** the reranker SHALL receive all available chunks (`min(fetch_k, collection.count())`)
-- **THEN** reranking SHALL succeed without padding or error
+#### Scenario: Rerank over hybrid candidates
+- **GIVEN** documents have been indexed
+- **WHEN** `search_documents(query="X", rerank=True, hybrid=True)` is called
+- **THEN** the system SHALL run dense and sparse retrievers and fuse them via RRF
+- **THEN** the top fused candidates up to the configured fetch pool SHALL be passed to the reranker
+- **THEN** the calibrated reranker score scaling SHALL be applied unchanged
 
-#### Scenario: rerank pool latency stays within target
-- **GIVEN** the existing reranker calibration corpus from `experiments/reranker-threshold-calibration-2026-05-12/`
-- **WHEN** the calibration script is re-run with default `RERANK_FETCH_MULTIPLIER` and `RERANK_MAX_FETCH`
-- **THEN** post-warmup P95 latency for `rerank=True` SHALL be at most 500 ms on the operator's hardware
-- **THEN** the measured P95 SHALL be recorded in the experiment results
-- **THEN** if P95 exceeds 500 ms, the defaults SHALL be lowered until the criterion is met
+#### Scenario: Hybrid does not change reranker scoring semantics
+- **WHEN** the same query is run with `hybrid=False, rerank=True` and `hybrid=True, rerank=True` against a corpus where dense retrieval already finds the correct chunk
+- **THEN** the reranker SHALL produce equivalent reranker scores for that chunk in both runs (within numerical tolerance)
+- **THEN** the calibrated reranker threshold scaling factor SHALL NOT require recalibration
 
-#### Scenario: reranking disabled (default)
-- **GIVEN** documents have been indexed into the vector store
-- **WHEN** `search_documents` is called without `rerank` (or `rerank=False`)
-- **THEN** the system SHALL return results from vector search only, unchanged
-- **THEN** the configurable rerank pool SHALL NOT apply
-
-#### Scenario: reranker model unavailable
+#### Scenario: Reranker model unavailable with hybrid
 - **GIVEN** the ONNX reranker model is not downloaded or fails to load
-- **WHEN** `search_documents` is called with `rerank=True`
-- **THEN** the system SHALL fall back to un-reranked results trimmed to `top_k`
-- **AND** emit a warning log (not crash)
-
-#### Scenario: reranked results have different scores
-- **GIVEN** documents have been indexed
-- **WHEN** `search_documents` is called with `rerank=True`
-- **THEN** the `score` field in results SHALL reflect the reranker's score
-- **AND** the score SHALL differ from the raw vector similarity score
+- **WHEN** `search_documents` is called with `rerank=True, hybrid=True`
+- **THEN** the system SHALL fall back to fused (un-reranked) results trimmed to `top_k`
+- **THEN** the system SHALL emit a warning log without crashing
 
 ### Requirement: ONNX inference via pure onnxruntime
 
@@ -186,3 +167,4 @@ dependencies. No `torch` import SHALL occur at runtime.
 - **AND** `torch` SHALL NOT be a direct or transitive runtime dependency
 - **AND** only `onnxruntime`, `transformers`, and `huggingface-hub` SHALL be
   used for reranker inference and model management
+

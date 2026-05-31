@@ -1,7 +1,7 @@
 # ADR-017: Hybrid Retrieval with Reciprocal Rank Fusion
 
-**Status**: Proposed
-**Date**: <TODO: YYYY-MM-DD on archive>
+**Status**: Accepted
+**Date**: 2026-05-31
 **Change**: `rag-hybrid-retrieval`
 **Deciders**: Dr Muhammad Aizat Bin Md Hawari
 **Git Commits**: <TODO: list relevant SHAs once landed>
@@ -64,7 +64,7 @@ threshold scaling:
 3. **Hybrid is opt-in by default.** `HYBRID_ENABLED=false` and per-call
    `hybrid: bool = False`. The default flip to `true` is intentionally
    a separate small change following the calibration experiment in
-   `experiments/hybrid-retrieval-<TODO: date>/`.
+   `experiments/9-hybrid-retrieval-2026-05-27/`.
 
 4. **Reranker integration is unchanged.** The fused candidate list
    feeds the existing cross-encoder reranker when `rerank=True`, sized
@@ -133,13 +133,12 @@ threshold scaling:
 
 - In-memory BM25 footprint scales with collection size. Acceptable
   for the local single-user MCP server; documented in the module
-  docstring. <TODO: record measured memory on the experiment corpus>.
+  docstring. Experiment 9 records corpus-scale behaviour separately.
 - Optional `rank_bm25` dependency added under a `hybrid` extra. Users
   who never enable hybrid retrieval do not install it.
 - Two retrievers running concurrently increase per-query latency
-  even with `asyncio.gather`. Bounded by ADR-016's pool sizing;
-  measured in the new calibration experiment as <TODO: measured
-  hybrid + rerank P95 ms>.
+  even with concurrent dispatch. Bounded by ADR-016's pool sizing and
+  measured in the new calibration experiment.
 
 ### Neutral
 
@@ -147,6 +146,9 @@ threshold scaling:
   until the experiment validates it. A second small ADR (or a
   status-only amendment to this one) records the eventual default
   flip.
+- Experiment 9 completed but saturated on the small regression corpus: dense-only retrieval already achieved 100% Hit@1 on the rare-term partition, so hybrid showed 0.0 pp rare-term lift against the reranked dense baseline.
+- Experiment 9a reran the decision on a harder FreshStack LangChain subset with 10,025 parent documents. It found that hybrid BM25/RRF improves first-stage retrieval without reranking (Coverage@20 0.738 vs 0.692, Recall@50 0.549 vs 0.519), and BM25 contributed directly to improved identifier-heavy queries. However, the hybrid + rerank production cell did not meet the default-promotion gates (Coverage@20 lift +0.09 pp, Recall@50 lift +0.19 pp, identifier-heavy Coverage@20 -0.15 pp).
+- Keep `HYBRID_ENABLED=false` and `HYBRID_SPARSE_BACKEND=bm25` as the defaults; treat hybrid retrieval as an opt-in feature. The reranker policy for realistic technical-document workloads is deferred to a follow-up change and Experiment 10.
 - Three new env vars (`HYBRID_ENABLED`, `HYBRID_RRF_K`,
   `HYBRID_SPARSE_BACKEND`) added with backwards-compatible defaults.
 - Hybrid generation counter is process-local; multi-process
@@ -176,7 +178,8 @@ threshold scaling:
 - Specs:
   - `openspec/changes/rag-hybrid-retrieval/specs/hybrid-retrieval/spec.md`
   - `openspec/changes/rag-hybrid-retrieval/specs/reranking/spec.md`
-- Experiment: `experiments/hybrid-retrieval-<TODO: date>/results.md` — corpus, queries (including Colosseum-style rare-term cases), metrics (Recall@k, MRR, nDCG@k), and configurations (`dense-only`, `hybrid + bm25`, `hybrid + native` if available, `hybrid + rerank`)
+- Experiment 9: `experiments/9-hybrid-retrieval-2026-05-27/results.md` — small regression corpus with Colosseum-style rare-term cases; saturated and therefore inconclusive for default promotion
+- Experiment 9a: `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/results.md` — FreshStack LangChain benchmark showing hybrid first-stage gains but reranker-on default-promotion gate failure
 - Source:
   - `src/rag_mcp/sparse_retriever.py` — `BM25SparseRetriever` with generation-aware cache
   - `src/rag_mcp/retrieval.py` — `hybrid` parameter, RRF fusion, dual-retriever orchestration
@@ -184,7 +187,7 @@ threshold scaling:
   - `src/rag_mcp/server.py` — `hybrid` parameter on `search_documents`
   - `src/rag_mcp/cli.py` — `--hybrid / --no-hybrid` flag on `search` subcommand
   - `src/rag_mcp/config.py` — `HYBRID_ENABLED`, `HYBRID_RRF_K`, `HYBRID_SPARSE_BACKEND`
-- Tests: <TODO: list the regression and fusion tests added, plus the rare-term regression test>
+- Tests: `tests/test_hybrid_retrieval.py` and CLI pass-through tests in `tests/test_cli.py`
 - Literature:
   - Cormack, Clarke & Buettcher (2009) — original RRF paper; `k=60` constant
   - Mala, Gezici & Giannotti (2025) — weighted RRF on HaluBench

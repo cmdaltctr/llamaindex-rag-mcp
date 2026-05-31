@@ -9,9 +9,10 @@ Semantic similarity search over indexed documents.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `query` | string | *(required)* | Natural language search query |
-| `top_k` | int | `5` | Maximum number of chunks to return |
+| `top_k` | int | `10` | Maximum number of chunks to return |
 | `similarity_threshold` | float | `0.0` | Minimum relevance score (0.0 = no filtering). When `rerank=True`, automatically scaled down 30× because cross-encoder scores occupy a lower range. |
-| `rerank` | bool | `false` | Re-score results with cross-encoder for better precision |
+| `rerank` | bool | `true` | Re-score results with cross-encoder for better precision |
+| `hybrid` | bool | `false` | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Use for rare terms, exact identifiers, citations, and error codes. |
 | `collection` | string | `"documents"` | ChromaDB collection to search |
 | `metadata_filter` | dict | `null` | ChromaDB `where` clause to filter by metadata fields, e.g. `{"category": "AI"}`. Applied server-side — only matching chunks are fetched. |
 

@@ -84,6 +84,10 @@ This supports default reranking despite higher per-query latency because
 agentic repeated-query workloads recover a substantial part of the embedding
 cost through cache hits.
 
+## Follow-up note: FreshStack technical workload reranking
+
+Experiment 9a (`experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/`) later showed that the default reranker can hurt FreshStack-like technical documentation retrieval: both dense and hybrid first-stage results degraded when `cross-encoder/ms-marco-MiniLM-L-6-v2` reranking was applied to the 10,025-document LangChain subset. This does not immediately overturn ADR-018, which was based on Qasper-style evidence retrieval, but it does mean the reranker default needs a separate technical-workload calibration before any hybrid default flip. That follow-up is tracked outside this ADR as Experiment 10.
+
 ## Consequences
 
 ### Positive

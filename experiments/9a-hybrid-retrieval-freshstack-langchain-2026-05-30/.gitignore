@@ -1,0 +1,16 @@
+# Experiment 9a: Generated artefacts ignored from git
+# Large/regenerated files; reproducible from prepare_freshstack.py and build_indexes.py
+
+# ChromaDB indexes (315 MB + 310 MB)
+output/chroma_dense/
+output/chroma_hybrid_bm25/
+
+# Raw eval results and checkpoint (21 MB each)
+output/eval_results.json
+output/eval_results_checkpoint.json
+
+# Run logs
+output/*.log
+
+# OS metadata
+.DS_Store

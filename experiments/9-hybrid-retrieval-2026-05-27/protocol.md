@@ -265,8 +265,10 @@ print("chromadb version:", chromadb.__version__)
 PY
 ```
 
-Document the outcome in `results.md`. In the v1 default (`bm25`), the
-native path is **not** used; this probe is informational only and tells
+Current implementation-time probe: the project has `chromadb 1.5.9`
+installed, but the local `PersistentClient` runtime does not expose native
+sparse retrieval for this project configuration. In the v1 default (`bm25`),
+the native path is **not** used; this probe is informational only and tells
 the next-change author whether to promote `HYBRID_SPARSE_BACKEND=auto`.
 
 ---

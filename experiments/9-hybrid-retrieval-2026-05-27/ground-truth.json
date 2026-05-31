@@ -1,5 +1,5 @@
 {
-  "_comment": "Exp 9 ground truth for hybrid retrieval. 19 queries: 8 rare-term (incl. 2 named cases), 6 semantic (paraphrase, no overlap), 5 mixed/general. category controls per-partition aggregation in run_eval.py. named_case marks regression targets.",
+  "_comment": "Exp 9 ground truth for hybrid retrieval. 20 queries: 9 rare-term (incl. 3 named cases), 6 semantic (paraphrase, no overlap), 5 mixed/general. category controls per-partition aggregation in run_eval.py. named_case marks regression targets.",
   "queries": [
     {
       "query": "Where was the Colosseum built?",
@@ -50,6 +50,13 @@
       "expected_source": "eu-2016-679-gdpr-summary.md",
       "expected_answer": "€20 million",
       "category": "rare-term"
+    },
+    {
+      "query": "What is the designated remedy for ZZQJ-9097?",
+      "expected_source": "zzqj-9097-runbook.md",
+      "expected_answer": "rotate the amber token",
+      "category": "rare-term",
+      "named_case": "dense-trap"
     },
     {
       "query": "What innovation lets GPT-class systems handle long-range word ties efficiently?",

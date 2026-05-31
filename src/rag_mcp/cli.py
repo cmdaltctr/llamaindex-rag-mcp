@@ -605,6 +605,11 @@ def search(
     rerank: bool = typer.Option(
         RERANK_ENABLED, "--rerank/--no-rerank", help="Re-score with cross-encoder reranker."
     ),
+    hybrid: bool = typer.Option(
+        False,
+        "--hybrid/--no-hybrid",
+        help="Fuse dense vector search with sparse BM25 retrieval via RRF.",
+    ),
     collection: str = typer.Option(
         "documents",
         "--collection",
@@ -633,6 +638,7 @@ def search(
                 top_k=top_k,
                 similarity_threshold=threshold,
                 rerank=rerank,
+                hybrid=hybrid,
                 collection_name=collection,
             )
     except ConnectionError as exc:

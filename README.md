@@ -19,7 +19,7 @@ Five tools your AI can call:
 | Tool | What it does |
 |------|-------------|
 | `ingest_documents` | Index a file or directory (PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV) |
-| `search_documents` | Semantic search with optional reranking and metadata filtering |
+| `search_documents` | Semantic search with optional reranking, hybrid BM25 fusion, and metadata filtering |
 | `list_indexed_documents` | See what's currently indexed |
 | `list_collections` | See all document collections and their sizes |
 | `delete_documents` | Remove documents by path, filter, or drop a whole collection |
@@ -34,7 +34,7 @@ The same `rag-mcp` command works as both an MCP server and a terminal tool:
 |---------|-------------|
 | `rag-mcp` | Start the MCP server |
 | `rag-mcp ingest <path>` | Index a file or directory |
-| `rag-mcp search <query>` | Search from the terminal |
+| `rag-mcp search <query>` | Search from the terminal (`--hybrid` enables dense+BM25 fusion) |
 | `rag-mcp list` | List indexed documents |
 | `rag-mcp list-collections` | List all collections |
 | `rag-mcp watch <dir>` | Auto-ingest new and changed files |
@@ -62,6 +62,26 @@ uv run rag-mcp
 No output means it's working. It's waiting silently for MCP messages on stdin.
 
 Then register it in your AI client — see [MCP Client Setup](docs/guides/mcp-client-setup.md).
+
+### Optional hybrid retrieval
+
+Hybrid retrieval is opt-in and keeps the dense-only default unchanged. Use it
+for rare terms, exact identifiers, citations, error codes, and product names:
+
+```bash
+uv run rag-mcp search "What fixes MCP-1138?" --hybrid
+```
+
+MCP clients can pass the same option:
+
+```json
+{"query": "What fixes MCP-1138?", "hybrid": true, "rerank": true}
+```
+
+The v1 sparse backend is in-memory BM25 (`HYBRID_SPARSE_BACKEND=bm25`) fused
+with dense results via RRF (`HYBRID_RRF_K=60`). The BM25 index is cached per
+collection and rebuilt lazily after ingestion or deletion; its memory footprint
+scales with the collection's chunk count.
 
 ---
 

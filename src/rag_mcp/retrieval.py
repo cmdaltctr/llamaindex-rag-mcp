@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import functools
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 import chromadb
 from llama_index.core import Settings
 
 from .config import (
     CHROMA_PERSIST_DIR,
+    HYBRID_ENABLED,
+    HYBRID_RRF_K,
     RERANK_ENABLED,
     RERANK_FETCH_MULTIPLIER,
     RERANK_MAX_FETCH,
@@ -20,6 +24,8 @@ from .chroma_utils import iter_collection_metadatas
 from .reranker import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
+_warned_collections: set[str] = set()
+_warned_native_fallback_collections: set[str] = set()
 
 
 # ── Query embedding cache ──────────────────────────────────────────────
@@ -173,13 +179,217 @@ def _distance_to_score(distance: float | None) -> float:
     return 1.0 / (1.0 + distance)
 
 
+def reciprocal_rank_fusion(
+    rankings: list[list[str]],
+    k: int = HYBRID_RRF_K,
+) -> dict[str, float]:
+    """Fuse ranked doc-id lists with Reciprocal Rank Fusion."""
+    fused: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking, start=1):
+            fused[doc_id] = fused.get(doc_id, 0.0) + 1.0 / (k + rank)
+    return fused
+
+
+def rrf_with_metadata(
+    dense_ranked: list[dict],
+    sparse_ranked: list[dict],
+    k: int = HYBRID_RRF_K,
+) -> list[dict]:
+    """Return sorted fused result dicts with score and rank diagnostics."""
+    dense_ids = [str(row["id"]) for row in dense_ranked]
+    sparse_ids = [str(row["id"]) for row in sparse_ranked]
+    scores = reciprocal_rank_fusion([dense_ids, sparse_ids], k=k)
+
+    by_id: dict[str, dict] = {}
+    dense_rank: dict[str, int] = {}
+    sparse_rank: dict[str, int] = {}
+
+    for rank, row in enumerate(dense_ranked, start=1):
+        doc_id = str(row["id"])
+        dense_rank[doc_id] = rank
+        by_id.setdefault(doc_id, dict(row))
+    for rank, row in enumerate(sparse_ranked, start=1):
+        doc_id = str(row["id"])
+        sparse_rank[doc_id] = rank
+        by_id.setdefault(doc_id, dict(row))
+
+    fused_rows: list[dict] = []
+    for doc_id, score in scores.items():
+        row = dict(by_id[doc_id])
+        row["id"] = doc_id
+        row["fused_score"] = score
+        row["score"] = score
+        row["dense_rank"] = dense_rank.get(doc_id)
+        row["sparse_rank"] = sparse_rank.get(doc_id)
+        fused_rows.append(row)
+
+    fused_rows.sort(key=lambda row: row["fused_score"], reverse=True)
+    for rank, row in enumerate(fused_rows, start=1):
+        row["fused_rank"] = rank
+    return fused_rows
+
+
+def _result_source(meta: dict) -> str:
+    return meta.get("file_path") or meta.get("file_name") or "unknown"
+
+
+def _dense_query_rows(
+    collection: Any,
+    query: str,
+    fetch_k: int,
+    metadata_filter: dict | None = None,
+) -> list[dict]:
+    query_kwargs: dict = {
+        "query_embeddings": [_embed_query(query)],
+        "n_results": fetch_k,
+        "include": ["metadatas", "documents", "distances"],
+    }
+    if metadata_filter:
+        query_kwargs["where"] = metadata_filter
+
+    raw = collection.query(**query_kwargs)
+    ids = raw.get("ids", [[]])[0]
+    documents = raw.get("documents", [[]])[0]
+    metadatas = raw.get("metadatas", [[]])[0]
+    distances = raw.get("distances", [[]])[0]
+
+    rows: list[dict] = []
+    for i, chunk_id in enumerate(ids):
+        meta = metadatas[i] if i < len(metadatas) and isinstance(metadatas[i], dict) else {}
+        text = documents[i] if i < len(documents) else ""
+        distance = distances[i] if i < len(distances) else None
+        rows.append({
+            "id": str(chunk_id),
+            "score": _distance_to_score(distance),
+            "source": _result_source(meta),
+            "page_label": meta.get("page_label"),
+            "text": text,
+            "metadata": dict(meta),
+            "reranked": False,
+        })
+    return rows
+
+
+def _selected_sparse_backend() -> str:
+    from . import config as _config
+
+    return getattr(
+        _config,
+        "RESOLVED_HYBRID_SPARSE_BACKEND",
+        getattr(_config, "HYBRID_SPARSE_BACKEND", "bm25"),
+    )
+
+
+def _sparse_bm25_query(
+    collection_name: str,
+    collection: Any,
+    query: str,
+    fetch_k: int,
+) -> list[dict]:
+    from .sparse_retriever import BM25SparseRetriever
+
+    rows = BM25SparseRetriever(collection_name, collection=collection).query(query, fetch_k)
+    return [
+        {
+            "id": doc_id,
+            "source": _result_source(metadata),
+            "page_label": metadata.get("page_label"),
+            "text": text,
+            "metadata": dict(metadata),
+            "reranked": False,
+        }
+        for _rank, doc_id, text, metadata in rows
+    ]
+
+
+def _emit_mixed_coverage_warning(collection_name: str, collection: Any) -> None:
+    if collection_name in _warned_collections:
+        return
+    total = 0
+    covered = 0
+    try:
+        for meta in iter_collection_metadatas(collection):
+            total += 1
+            if isinstance(meta, dict) and meta.get("has_sparse_vector"):
+                covered += 1
+    except Exception:
+        return
+    if 0 < covered < total:
+        _warned_collections.add(collection_name)
+        logger.warning(
+            "Hybrid native sparse retrieval on collection '%s' has mixed "
+            "coverage: %d/%d chunks have sparse vectors. Re-ingest the "
+            "collection for full hybrid coverage.",
+            collection_name,
+            covered,
+            total,
+        )
+
+
+def _native_sparse_query(
+    collection_name: str,
+    collection: Any,
+    query: str,
+    fetch_k: int,
+) -> list[dict]:
+    """Return sparse results for native mode, falling back safely in v1."""
+    if collection_name not in _warned_native_fallback_collections:
+        _warned_native_fallback_collections.add(collection_name)
+        logger.warning(
+            "Native ChromaDB sparse retrieval is selected for collection '%s', "
+            "but this runtime cannot issue a native sparse query. Falling "
+            "back to the BM25 sparse retriever so hybrid retrieval does not "
+            "silently degrade to dense-only results.",
+            collection_name,
+        )
+    return _sparse_bm25_query(collection_name, collection, query, fetch_k)
+
+
+def _hybrid_query_rows(
+    collection: Any,
+    collection_name: str,
+    query: str,
+    fetch_k: int,
+    metadata_filter: dict | None = None,
+) -> list[dict]:
+    backend = _selected_sparse_backend()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        dense_future = executor.submit(
+            _dense_query_rows, collection, query, fetch_k, metadata_filter,
+        )
+        if backend == "native":
+            _emit_mixed_coverage_warning(collection_name, collection)
+            sparse_future = executor.submit(
+                _native_sparse_query, collection_name, collection, query, fetch_k,
+            )
+        else:
+            sparse_future = executor.submit(
+                _sparse_bm25_query, collection_name, collection, query, fetch_k,
+            )
+        dense_rows = dense_future.result()
+        sparse_rows = sparse_future.result()
+
+    return rrf_with_metadata(dense_rows, sparse_rows, k=HYBRID_RRF_K)[:fetch_k]
+
+
+def _strip_internal_result_fields(result: dict) -> dict:
+    """Remove retrieval diagnostics that are not public API by default."""
+    public = dict(result)
+    for key in ("id", "fused_score", "dense_rank", "sparse_rank", "fused_rank"):
+        public.pop(key, None)
+    return public
+
+
 def search(
     query: str,
     top_k: int = TOP_K,
     similarity_threshold: float = SIMILARITY_THRESHOLD,
     rerank: bool = RERANK_ENABLED,
+    hybrid: bool = HYBRID_ENABLED,
     collection_name: str = "documents",
     metadata_filter: dict | None = None,
+    include_diagnostics: bool = False,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -193,6 +403,8 @@ def search(
             cosine similarity.  For example, 0.3 becomes 0.01.
         rerank: If True, re-score results with the cross-encoder
             reranker for better precision (default from env).
+        hybrid: If True, fuse dense vector results with sparse BM25/native
+            sparse rankings via Reciprocal Rank Fusion before reranking.
         collection_name: Name of the ChromaDB collection to search
             (default ``"documents"`` for backward compatibility).
         metadata_filter: Optional ChromaDB ``where`` clause to filter
@@ -200,6 +412,10 @@ def search(
             When provided, the filter is applied server-side via
             ChromaDB's native ``where`` parameter — only matching
             chunks are returned from the vector store.
+        include_diagnostics: If True, preserve hybrid rank diagnostic
+            fields (``id``, ``fused_score``, ``dense_rank``, ``sparse_rank``,
+            ``fused_rank``) for experiments. Public MCP/CLI callers leave
+            this False so result shape stays stable.
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -229,49 +445,14 @@ def search(
     # has a meaningful pool to re-score.  See ADR-016 Decision 2.
     fetch_k = _resolve_fetch_k(top_k, rerank, collection.count())
 
-    # Both retrieval paths (filtered and unfiltered) issue the same direct
-    # ChromaDB query.  This guarantees the pre-threshold ``score`` field
-    # is computed by exactly the same formula on both paths — the
-    # ``1.0 / (1.0 + distance)`` conversion in ``_distance_to_score``.
-    # See ADR-015 / OpenSpec change ``rag-reliability-correctness-fixes``
-    # Decision 3.  The query is embedded exactly once via the LRU-cached
-    # helper so repeated identical queries do not re-hit Ollama
-    # (ADR-016 Decision 4).
-    query_embedding = _embed_query(query)
-
-    query_kwargs: dict = {
-        "query_embeddings": [query_embedding],
-        "n_results": fetch_k,
-        "include": ["metadatas", "documents", "distances"],
-    }
-    if metadata_filter:
-        query_kwargs["where"] = metadata_filter
-
-    raw = collection.query(**query_kwargs)
-
-    results: list[dict] = []
-    ids = raw.get("ids", [[]])[0]
-    documents = raw.get("documents", [[]])[0]
-    metadatas = raw.get("metadatas", [[]])[0]
-    distances = raw.get("distances", [[]])[0]
-
-    for i, _chunk_id in enumerate(ids):
-        meta = metadatas[i] if i < len(metadatas) else {}
-        text = documents[i] if i < len(documents) else ""
-        distance = distances[i] if i < len(distances) else None
-
-        results.append({
-            "score": _distance_to_score(distance),
-            "source": (
-                meta.get("file_path")
-                or meta.get("file_name")
-                or "unknown"
-            ),
-            "page_label": meta.get("page_label"),
-            "text": text,
-            "metadata": dict(meta) if isinstance(meta, dict) else {},
-            "reranked": False,
-        })
+    if hybrid:
+        results = _hybrid_query_rows(
+            collection, collection_name, query, fetch_k, metadata_filter,
+        )
+    else:
+        results = _dense_query_rows(
+            collection, query, fetch_k, metadata_filter,
+        )
 
     # Optional: re-score with cross-encoder reranker.
     if rerank and results:
@@ -294,6 +475,9 @@ def search(
         ]
 
     results.sort(key=lambda r: r["score"], reverse=True)
+    results = results[:top_k]
+    if not include_diagnostics:
+        results = [_strip_internal_result_fields(r) for r in results]
     return results
 
 

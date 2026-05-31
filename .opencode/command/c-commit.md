@@ -1,5 +1,5 @@
 ---
-description: Create a systematic conventional commit with staged analysis, type selection, scoping, and quality checks. Usage: /commit [description]
+description: Create a systematic conventional commit with staged analysis, type selection, scoping, and quality checks. Usage - /commit [description]
 ---
 
 You are creating a Conventional Commit following the specification.

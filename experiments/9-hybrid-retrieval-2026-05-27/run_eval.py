@@ -27,6 +27,8 @@ expands `--modes` × `[off, on]` automatically when `--rerank-cross` is set.
 from __future__ import annotations
 
 import argparse
+import asyncio
+import inspect
 import json
 import os
 import shutil
@@ -56,8 +58,8 @@ DEFAULT_RERANK_FETCH_MULTIPLIER = int(os.getenv("RERANK_FETCH_MULTIPLIER", "10")
 # RRF fusion constant.
 DEFAULT_RRF_K = int(os.getenv("HYBRID_RRF_K", "60"))
 
-# Warmup discarded.
-WARMUP_QUERIES = 50
+# Warmup discarded. Override for local reruns while tuning the corpus.
+WARMUP_QUERIES = int(os.getenv("EXP9_WARMUP_QUERIES", "50"))
 
 
 @dataclass
@@ -122,6 +124,7 @@ def _setup_environment(mode: str, rerank: bool, chroma_dir: str) -> None:
     """Configure env vars and patch module-level constants for one cell."""
     if mode == "dense-only":
         os.environ["HYBRID_ENABLED"] = "false"
+        os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
     elif mode == "hybrid_bm25":
         os.environ["HYBRID_ENABLED"] = "true"
         os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
@@ -144,6 +147,10 @@ def _setup_environment(mode: str, rerank: bool, chroma_dir: str) -> None:
             mod.CHROMA_PERSIST_DIR = chroma_dir
         if hasattr(mod, "HYBRID_ENABLED"):
             mod.HYBRID_ENABLED = (mode != "dense-only")
+        if hasattr(mod, "HYBRID_SPARSE_BACKEND"):
+            mod.HYBRID_SPARSE_BACKEND = os.environ["HYBRID_SPARSE_BACKEND"]
+        if hasattr(mod, "RESOLVED_HYBRID_SPARSE_BACKEND"):
+            mod.RESOLVED_HYBRID_SPARSE_BACKEND = os.environ["HYBRID_SPARSE_BACKEND"]
 
     # Reset reranker singleton.
     try:
@@ -165,12 +172,12 @@ def _ingest_for_mode(mode: str) -> str:
 
     Returns the ChromaDB directory path.
     """
-    from rag_mcp.ingestion import ingest_path
+    from rag_mcp.ingestion import ingest_path_async
 
     chroma_dir = tempfile.mkdtemp(prefix=f"rag_hybrid_{mode}_")
     _setup_environment(mode, rerank=False, chroma_dir=chroma_dir)
     print(f"  Ingesting corpus for mode={mode} into {chroma_dir}...")
-    result = ingest_path(str(CORPUS_DIR))
+    result = asyncio.run(ingest_path_async(str(CORPUS_DIR)))
     if result.get("status") != "ok":
         print(f"  ERROR: ingest failed for mode={mode}: {result.get('message')}")
         shutil.rmtree(chroma_dir, ignore_errors=True)
@@ -191,16 +198,14 @@ def _evaluate_cell(
     # Warmup.
     for i in range(WARMUP_QUERIES):
         q = queries[i % len(queries)]
-        try:
-            search(
-                query=q["query"],
-                top_k=10,
-                similarity_threshold=0.0,
-                rerank=rerank,
-                hybrid=(mode != "dense-only"),  # type: ignore[arg-type]
-            )
-        except TypeError:
-            search(query=q["query"], top_k=10, similarity_threshold=0.0, rerank=rerank)
+        search(
+            query=q["query"],
+            top_k=10,
+            similarity_threshold=0.0,
+            rerank=rerank,
+            hybrid=(mode != "dense-only"),
+            include_diagnostics=True,
+        )
 
     # Measured queries.
     for qa in queries:
@@ -211,21 +216,14 @@ def _evaluate_cell(
         named_case = qa.get("named_case")
 
         started = time.perf_counter()
-        try:
-            results = search(
-                query=query_text,
-                top_k=10,
-                similarity_threshold=0.0,
-                rerank=rerank,
-                hybrid=(mode != "dense-only"),  # type: ignore[arg-type]
-            )
-        except TypeError:
-            results = search(
-                query=query_text,
-                top_k=10,
-                similarity_threshold=0.0,
-                rerank=rerank,
-            )
+        results = search(
+            query=query_text,
+            top_k=10,
+            similarity_threshold=0.0,
+            rerank=rerank,
+            hybrid=(mode != "dense-only"),
+            include_diagnostics=True,
+        )
         latency_ms = (time.perf_counter() - started) * 1000
 
         top_sources = [r.get("source", "") for r in results[:10]]
@@ -477,7 +475,13 @@ def main() -> None:
     print(f"  Ground-truth queries: {len(queries)}")
 
     import rag_mcp.ingestion  # noqa: F401
-    import rag_mcp.retrieval  # noqa: F401
+    import rag_mcp.retrieval as retrieval
+
+    if "hybrid" not in inspect.signature(retrieval.search).parameters:
+        raise RuntimeError(
+            "Experiment 9 requires retrieval.search(..., hybrid=...). "
+            "Refusing to run hybrid cells through a dense-only signature."
+        )
 
     # One ingest per mode (dense-only and hybrid_bm25 share ChromaDB shape but
     # we keep them separate for cleanliness; native gets its own).

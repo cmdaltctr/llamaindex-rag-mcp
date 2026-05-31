@@ -30,6 +30,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `--top-k`, `-k` | `search` | Max results to return |
 | `--threshold`, `-t` | `search` | Minimum similarity score |
 | `--rerank` | `search` | Re-score with cross-encoder reranker |
+| `--hybrid` | `search` | Fuse dense vector search with sparse BM25 via RRF |
 | `--debounce`, `-d` | `watch` | Debounce interval in seconds (default: 2) |
 | `--verbose`, `-v` | `watch` | Enable DEBUG-level logging |
 | `--dry-run` | `delete` | Preview deletion without modifying ChromaDB |
@@ -72,11 +73,14 @@ rag-mcp search "transformer architecture" --collection research
 # With reranking and threshold
 rag-mcp search "machine learning" --rerank --threshold 0.3 --top-k 10
 
+# Hybrid retrieval for rare terms / exact identifiers
+rag-mcp search "What fixes MCP-1138?" --hybrid
+
 # JSON output
 rag-mcp search "climate change" --json
 ```
 
-> Metadata filtering is only available via the `search_documents` MCP tool, not the CLI.
+> Search-time metadata filtering is available via the `search_documents` MCP tool. The CLI supports metadata filters for deletion via `rag-mcp delete --metadata`.
 
 ### list
 

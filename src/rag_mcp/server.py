@@ -63,6 +63,7 @@ async def search_documents(
     top_k: int = TOP_K,
     similarity_threshold: float = 0.0,
     rerank: bool = RERANK_ENABLED,
+    hybrid: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -75,6 +76,8 @@ async def search_documents(
             result. 0.0 means no filtering (default).
         rerank: If True, re-score results with the cross-encoder
             reranker for better precision (default from config).
+        hybrid: If True, fuse dense vector retrieval with sparse keyword
+            retrieval via Reciprocal Rank Fusion before reranking.
         collection: Name of the ChromaDB collection to search
             (default "documents").
         metadata_filter: Optional ChromaDB-compatible ``where`` clause
@@ -96,6 +99,7 @@ async def search_documents(
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             rerank=rerank,
+            hybrid=hybrid,
             collection_name=collection,
             metadata_filter=metadata_filter,
         )

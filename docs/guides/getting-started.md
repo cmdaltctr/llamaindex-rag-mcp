@@ -21,8 +21,8 @@
 # 1. Start Ollama
 ollama serve &
 
-# 2. Pull the embedding model
-ollama pull nomic-embed-text
+# 2. Pull the embedding model used by .env.example
+ollama pull qwen3-embedding:0.6b
 
 # 3. Copy the example config
 cp .env.example .env
@@ -45,9 +45,9 @@ To inspect the tools interactively:
 npx @modelcontextprotocol/inspector uv run rag-mcp
 ```
 
-## Enable the reranker (recommended)
+## Reranker and hybrid search
 
-The reranker significantly improves search precision. It's a ~23 MB ONNX model that downloads once from HuggingFace and runs entirely locally.
+The reranker is enabled by default and significantly improves search precision. It's a ~23 MB ONNX model that downloads once from HuggingFace and runs entirely locally.
 
 1. Edit `.env` and set:
    ```
@@ -57,13 +57,21 @@ The reranker significantly improves search precision. It's a ~23 MB ONNX model t
 
 See [Reranker](reranker.md) for details.
 
+For rare terms, citations, error codes, and exact identifiers, try opt-in hybrid retrieval:
+
+```bash
+uv run rag-mcp search "What fixes MCP-1138?" --hybrid
+```
+
+MCP clients can pass `hybrid: true` to `search_documents`.
+
 ## Register in your AI client
 
 See [MCP Client Setup](mcp-client-setup.md) to connect the server to OpenChamber, Claude Desktop, or any other MCP-compatible client.
 
 ## Verification checklist
 
-- [ ] `ollama ps` shows `nomic-embed-text` loaded
+- [ ] `ollama ps` shows `qwen3-embedding:0.6b` loaded
 - [ ] `uv run rag-mcp` starts without errors and waits on stdin
 - [ ] MCP Inspector can discover and call all five tools
 - [ ] Your MCP client shows `rag-docs` as connected (green)

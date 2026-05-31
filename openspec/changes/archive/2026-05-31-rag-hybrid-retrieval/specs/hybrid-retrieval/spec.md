@@ -136,6 +136,15 @@ The system SHALL produce correct results for rare-term queries that pure dense r
 - **THEN** the correct chunk SHALL appear in the top results
 - **THEN** the same query with `hybrid=False` SHALL still pass any thresholds it currently passes (no regression in the dense-only default)
 
+### Requirement: Hybrid experiment fails loudly when hybrid retrieval is unavailable
+Experiment 9 SHALL fail before running ingestion or query evaluation if the active `retrieval.search()` implementation does not expose a `hybrid` parameter. The experiment SHALL NOT silently fall back to dense-only retrieval for hybrid cells.
+
+#### Scenario: Missing hybrid parameter aborts experiment
+- **GIVEN** `retrieval.search()` does not accept a `hybrid` parameter
+- **WHEN** Experiment 9 starts
+- **THEN** the experiment SHALL raise a clear error before running any cell
+- **THEN** no `hybrid_bm25` cell SHALL be evaluated using the dense-only path
+
 ### Requirement: Hybrid retrieval composes with the existing reranker
 The fused candidate list produced by hybrid retrieval SHALL be passed to the existing cross-encoder reranker when `rerank=True`. The reranker SHALL receive the configured fetch pool size derived from Tier 2 settings (`RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`).
 
@@ -154,6 +163,25 @@ The system SHALL accept existing ChromaDB collections without forcing a re-inges
 - **THEN** all chunks SHALL participate in dense ranking
 - **THEN** only chunks with sparse vectors SHALL participate in sparse ranking
 - **THEN** the system SHALL NOT raise on chunks lacking sparse vectors
+
+### Requirement: Native sparse placeholder must not silently degrade to dense-only
+If the native sparse backend is selected but the implementation cannot issue a real native sparse query, the system SHALL either fall back to the BM25 sparse retriever with a WARNING or fail loudly before any native-hybrid evaluation is reported. The system SHALL NOT represent native hybrid as successful when the sparse side is an empty placeholder.
+
+#### Scenario: Native selected without implemented sparse query
+- **GIVEN** `HYBRID_SPARSE_BACKEND=native` is selected
+- **AND** no real native sparse query implementation is available
+- **WHEN** hybrid retrieval is requested
+- **THEN** the system SHALL warn and use the BM25 sparse path, or raise a clear unsupported-backend error before evaluation
+- **THEN** native hybrid SHALL NOT silently return dense-only results through an empty sparse ranking
+
+### Requirement: Hybrid result diagnostics are explicit
+The system SHALL make the public result-shape decision for hybrid diagnostics explicit. If diagnostic fields such as `id`, `fused_score`, `dense_rank`, `sparse_rank`, and `fused_rank` are returned to MCP/CLI callers, they SHALL be documented and tested as public fields. If they are internal diagnostics, they SHALL be stripped from public `search_documents` / CLI results and exposed only through experiment/debug-specific paths.
+
+#### Scenario: Public hybrid result shape is pinned
+- **GIVEN** a hybrid search returns fused results
+- **WHEN** results are returned through MCP or CLI
+- **THEN** all included fields SHALL be documented as public output or excluded from the public response
+- **THEN** tests SHALL fail if internal diagnostic fields leak unintentionally
 
 ### Requirement: Hybrid configuration via environment
 The system SHALL expose the following environment variables for hybrid retrieval:

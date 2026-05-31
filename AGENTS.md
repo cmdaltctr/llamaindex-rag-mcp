@@ -145,6 +145,42 @@ For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tool
 | ✅ Always | Google-style docstrings on public functions and classes.                               |
 | ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.                 |
 
+## Experiment Scripts — Checkpoint & Resume
+
+Long-running experiment scripts **must** save progress after each major step so they can be resumed if interrupted (crash, OOM, session timeout, disk pressure, etc.).
+
+**Required pattern:**
+
+- Define a `checkpoint_path` (e.g. `output/eval_results_checkpoint.json`).
+- After each cell/step completes, write the checkpoint **atomically** (write to `.tmp` then rename).
+- On startup, support a `--resume` flag that loads the checkpoint and skips already-completed cells.
+- The final output (e.g. `eval_results.json`) is written only when **all** cells complete.
+
+**Progress logging:**
+
+- Use `print(..., flush=True)` or `python -u` to ensure output appears immediately.
+- Print progress at regular intervals (e.g. every 25 queries, every batch, every N items).
+- Print **before** expensive operations (embedding, writing to disk) so if it hangs, you know which step.
+- Support `tee` for dual output: `PYTHONUNBUFFERED=1 uv run python -u script.py 2>&1 | tee output/script.log`
+
+**Log files layout:**
+
+```
+output/
+├── build_indexes.log
+├── run_eval.log
+├── eval_results_checkpoint.json   # after each cell (resumable)
+├── eval_results.json              # final, all cells
+├── eval_results.summary.json      # aggregated metrics
+└── results.md                     # human-readable report
+```
+
+**Cleanup before rerun:**
+
+- **Keep**: Chroma indexes (`output/chroma_*`), corpus, ground truth, qrels.
+- **Delete**: stale logs, incomplete results, old checkpoint from unpatched runs.
+- **Never delete** `output/chroma_*` unless rebuilding indexes from scratch.
+
 ## Release Automation
 
 Releases are automated via `python-semantic-release` (PSR) on every push to `master`.

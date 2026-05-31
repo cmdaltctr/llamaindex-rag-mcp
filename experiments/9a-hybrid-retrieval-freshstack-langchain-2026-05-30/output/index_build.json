@@ -1,0 +1,18 @@
+{
+  "manifest": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain_manifest.jsonl",
+  "collection_name": "documents",
+  "parent_docs": 10025,
+  "dense": {
+    "status": "built",
+    "chunks": 10025,
+    "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/chroma_dense",
+    "embedding_model": "qwen3-embedding:0.6b",
+    "elapsed_seconds": 19370.84
+  },
+  "hybrid_bm25": {
+    "status": "copied-from-dense",
+    "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/chroma_hybrid_bm25",
+    "chunks": 10025
+  },
+  "note": "Hybrid BM25 uses the same Chroma documents; sparse BM25 index is built at query time."
+}

@@ -33,9 +33,22 @@ logger = logging.getLogger(__name__)
 # ── Thread-safety primitives ─────────────────────────────────────────────
 _write_lock = threading.Lock()
 _embed_semaphore = threading.BoundedSemaphore(value=EMBED_CONCURRENCY)
+_collection_generations: dict[str, int] = {}
 
 # ── Shutdown flag for graceful SIGINT handling ───────────────────────────
 _shutdown_requested = threading.Event()
+
+
+def get_collection_generation(collection_name: str = "documents") -> int:
+    """Return the process-local generation counter for a collection."""
+    return _collection_generations.get(collection_name, 0)
+
+
+def _bump_collection_generation(collection_name: str = "documents") -> None:
+    """Advance BM25 cache generation; callers hold ``_write_lock``."""
+    _collection_generations[collection_name] = (
+        _collection_generations.get(collection_name, 0) + 1
+    )
 
 
 def _make_file_detail(
@@ -374,6 +387,7 @@ async def _embed_and_write_async(
                     storage_context=storage_context,
                     show_progress=False,
                 )
+                _bump_collection_generation(collection_name)
                 logger.info(
                     "Successfully stored %d chunks in ChromaDB", len(nodes)
                 )
@@ -668,7 +682,9 @@ def remove_document(
     try:
         chunks_removed = _count_chunks(collection, where)
         if chunks_removed > 0:
-            collection.delete(where=where)
+            with _write_lock:
+                collection.delete(where=where)
+                _bump_collection_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -727,7 +743,9 @@ def remove_by_metadata(
     try:
         chunks_removed = _count_chunks(collection, metadata_filter)
         if chunks_removed > 0:
-            collection.delete(where=metadata_filter)
+            with _write_lock:
+                collection.delete(where=metadata_filter)
+                _bump_collection_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -762,7 +780,9 @@ def remove_collection(
     """
     db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
     try:
-        db.delete_collection(collection_name)
+        with _write_lock:
+            db.delete_collection(collection_name)
+            _bump_collection_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
