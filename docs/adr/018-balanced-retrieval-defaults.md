@@ -1,6 +1,6 @@
 # ADR-018: Balanced Retrieval Defaults
 
-**Status**: Accepted
+**Status**: Superseded by [ADR-019](./019-reranker-disabled-for-technical-workloads.md)
 **Date**: 2026-05-29
 **Deciders**: Dr Muhammad Aizat Bin Md Hawari
 **Related experiments**: Experiment 7a and Experiment 8a
@@ -84,9 +84,11 @@ This supports default reranking despite higher per-query latency because
 agentic repeated-query workloads recover a substantial part of the embedding
 cost through cache hits.
 
-## Follow-up note: FreshStack technical workload reranking
+## Supersession note
 
-Experiment 9a (`experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/`) later showed that the default reranker can hurt FreshStack-like technical documentation retrieval: both dense and hybrid first-stage results degraded when `cross-encoder/ms-marco-MiniLM-L-6-v2` reranking was applied to the 10,025-document LangChain subset. This does not immediately overturn ADR-018, which was based on Qasper-style evidence retrieval, but it does mean the reranker default needs a separate technical-workload calibration before any hybrid default flip. That follow-up is tracked outside this ADR as Experiment 10.
+Experiment 9a (`experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/`) later showed that the default reranker can hurt FreshStack-like technical documentation retrieval: both dense and hybrid first-stage results degraded when `cross-encoder/ms-marco-MiniLM-L-6-v2` reranking was applied to the 10,025-document LangChain subset.
+
+Experiment 10 (`experiments/10-reranker-technical-workload-calibration-2026-05-31/`) completed the follow-up calibration. Its corrected interpretation is that reranking with an effective candidate pool of 500 still substantially underperformed rerank-off retrieval on the FreshStack technical workload. ADR-019 supersedes this ADR by changing the default reranker policy while preserving `CHUNK_OVERLAP=100` and `TOP_K=10`.
 
 ## Consequences
 

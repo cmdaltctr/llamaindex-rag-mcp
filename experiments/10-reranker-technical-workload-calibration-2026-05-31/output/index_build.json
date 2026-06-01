@@ -1,0 +1,45 @@
+{
+  "exp9a_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30",
+  "artefacts": {
+    "ground_truth": {
+      "status": "copied",
+      "from": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/ground-truth.json",
+      "to": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10-reranker-technical-workload-calibration-2026-05-31/output/ground-truth.json"
+    },
+    "qrels": {
+      "status": "copied",
+      "from": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/freshstack-qrels.json",
+      "to": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10-reranker-technical-workload-calibration-2026-05-31/freshstack-qrels.json"
+    },
+    "manifest": {
+      "status": "copied",
+      "from": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain_manifest.jsonl",
+      "to": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10-reranker-technical-workload-calibration-2026-05-31/corpus/langchain_manifest.jsonl"
+    },
+    "chroma_dense": {
+      "status": "copied",
+      "from": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/chroma_dense",
+      "to": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10-reranker-technical-workload-calibration-2026-05-31/output/chroma_dense"
+    },
+    "chroma_hybrid_bm25": {
+      "status": "copied",
+      "from": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/chroma_hybrid_bm25",
+      "to": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10-reranker-technical-workload-calibration-2026-05-31/output/chroma_hybrid_bm25"
+    }
+  },
+  "corpus": {
+    "source_repo": "freshstack/corpus-oct-2024",
+    "source_split": "train",
+    "source_parent_docs": 49514,
+    "selected_freshstack_parent_docs": 10009,
+    "continuity_parent_docs": 16,
+    "total_parent_docs": 10025,
+    "manifest_path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain_manifest.jsonl",
+    "selection_mode": "qrels-plus-distractors-subset",
+    "rng_seed": 20260530,
+    "target_parent_docs": 10000,
+    "required_qrel_docs": 1547,
+    "sampled_distractors": 8453,
+    "missing_qrel_ids": []
+  }
+}
