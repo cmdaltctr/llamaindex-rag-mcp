@@ -74,22 +74,20 @@ MARKDOWN_MIN_CHUNK_FRACTION = float(os.getenv("MARKDOWN_MIN_CHUNK_FRACTION", "0.
 # (ms-marco-MiniLM-L-6-v2) is fundamentally mismatched for
 # identifier-heavy technical documentation, degrading Coverage@20 by
 # 19–27% at 19× latency cost.  Reranker remains available as an opt-in.
-# RERANK_ENABLED_FOR_SEMANTIC and HARD_TECHNICAL_THRESHOLD are policy knobs
-# for future retrieval-side logic to conditionally enable reranking on
-# semantic corpora; this logic has not yet been implemented.
+# Omitted rerank requests are resolved centrally in retrieval.py: first by
+# RERANK_ENABLED, then by the semantic/technical policy below.
 TOP_K = int(os.getenv("TOP_K", "10"))
 RERANK_ENABLED = os.getenv("RERANK_ENABLED", "false").lower() == "true"
 
-# Policy knob: when RERANK_ENABLED=False but the corpus is predominantly
-# semantic (non-technical), the reranker could be conditionally activated.
-# Currently unused; retrieval.py only checks RERANK_ENABLED.
+# Policy knob: when RERANK_ENABLED=False but the query/workload is below the
+# configured technical threshold, retrieval.py may conditionally activate the
+# reranker for semantic workloads.
 RERANK_ENABLED_FOR_SEMANTIC = os.getenv("RERANK_ENABLED_FOR_SEMANTIC", "true").lower() == "true"
 
 # Policy knob: fraction of identifier-heavy queries above which the reranker
-# would be automatically disabled (even when RERANK_ENABLED_FOR_SEMANTIC=True).
+# is automatically disabled (even when RERANK_ENABLED_FOR_SEMANTIC=True).
 # Experiment 10 showed the cross-encoder is actively harmful at any
 # pool size when ≥30% of queries are identifier-heavy.
-# Currently unused; retrieval.py only checks RERANK_ENABLED.
 HARD_TECHNICAL_THRESHOLD = float(os.getenv("HARD_TECHNICAL_THRESHOLD", "0.3"))
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
 

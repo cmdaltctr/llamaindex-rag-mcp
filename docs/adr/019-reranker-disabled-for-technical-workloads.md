@@ -58,11 +58,11 @@ change is that reranking is no longer globally enabled.
 `RERANK_ENABLED=false` makes reranking opt-in rather than the default precision
 stage.
 
-`RERANK_ENABLED_FOR_SEMANTIC=true` is a policy knob for future retrieval logic:
-when global reranking is disabled, the system may conditionally enable reranking
-for corpora or query sets that are predominantly semantic. This knob preserves a
-path to the Qasper-style benefit measured in Experiments 7a and 8a, but it does
-not by itself implement semantic detection.
+`RERANK_ENABLED_FOR_SEMANTIC=true` is a retrieval policy knob: when global
+reranking is disabled, the system conditionally enables reranking for queries or
+workloads that are below the configured technical threshold. This preserves a
+path to the Qasper-style benefit measured in Experiments 7a and 8a while still
+protecting identifier-heavy technical workloads.
 
 `HARD_TECHNICAL_THRESHOLD=0.3` is a conservative policy heuristic, not an
 experimentally calibrated threshold. Experiment 10 tested a corpus with roughly
@@ -83,10 +83,11 @@ RERANK_ENABLED_FOR_SEMANTIC = os.getenv("RERANK_ENABLED_FOR_SEMANTIC", "true").l
 HARD_TECHNICAL_THRESHOLD = float(os.getenv("HARD_TECHNICAL_THRESHOLD", "0.3"))
 ```
 
-The semantic/technical conditional policy must still be implemented in
-retrieval-side code. Defining these config values in `config.py` makes the
-policy explicit and keeps configuration centralised, but the current code does
-not automatically classify corpora by technical-query fraction.
+The semantic/technical conditional policy is implemented in retrieval-side code
+via a central policy resolver. Explicit `rerank=True` and `rerank=False` always
+override the policy; omitted rerank requests use `RERANK_ENABLED` first, then
+the semantic/technical classifier and optional workload technical-fraction
+metadata.
 
 ## Evidence
 

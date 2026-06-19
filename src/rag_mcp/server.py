@@ -18,7 +18,7 @@ import logging
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-from .config import RERANK_ENABLED, TOP_K
+from .config import TOP_K
 from .ingestion import ingest_path_async, list_documents as _list_documents
 from .retrieval import search
 
@@ -62,7 +62,7 @@ async def search_documents(
     query: str,
     top_k: int = TOP_K,
     similarity_threshold: float = 0.0,
-    rerank: bool = RERANK_ENABLED,
+    rerank: bool | None = None,
     hybrid: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
@@ -74,8 +74,13 @@ async def search_documents(
         top_k: Maximum number of chunks to return (default from config).
         similarity_threshold: Minimum relevance score to include a
             result. 0.0 means no filtering (default).
-        rerank: If True, re-score results with the cross-encoder
-            reranker for better precision (default from config).
+        rerank: Tri-state rerank control:
+            - ``True``: force reranking (explicit opt-in)
+            - ``False``: force no reranking (explicit opt-out)
+            - ``None``: apply policy resolver (default)
+            The policy resolver checks ``RERANK_ENABLED``, then
+            ``RERANK_ENABLED_FOR_SEMANTIC`` and ``HARD_TECHNICAL_THRESHOLD``
+            to decide whether to enable reranking based on query type.
         hybrid: If True, fuse dense vector retrieval with sparse keyword
             retrieval via Reciprocal Rank Fusion before reranking.
         collection: Name of the ChromaDB collection to search

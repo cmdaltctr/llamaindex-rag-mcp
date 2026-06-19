@@ -596,16 +596,16 @@ class TestSearchErrorHandling:
             hybrid=False,
         )
 
-    def test_search_cli_defaults_follow_config(self) -> None:
-        """CLI search defaults should follow config.TOP_K / RERANK_ENABLED."""
-        from rag_mcp.config import RERANK_ENABLED, TOP_K
+    def test_search_cli_defaults_follow_policy_resolver(self) -> None:
+        """CLI omitted rerank should pass None so retrieval resolves policy."""
+        from rag_mcp.config import TOP_K
 
         result_payload = [{
             "score": 0.8,
             "source": "cli.txt",
             "page_label": None,
             "text": "CLI result",
-            "reranked": RERANK_ENABLED,
+            "reranked": False,
         }]
 
         with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
@@ -617,7 +617,7 @@ class TestSearchErrorHandling:
             "cli query",
             top_k=TOP_K,
             similarity_threshold=0.0,
-            rerank=RERANK_ENABLED,
+            rerank=None,
             collection_name="documents",
             hybrid=False,
         )
