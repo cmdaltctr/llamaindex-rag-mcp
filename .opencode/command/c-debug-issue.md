@@ -1,7 +1,6 @@
 ---
 description: Systematic debugging workflow — root cause analysis, fix, and regression test. Usage: /debug-issue <description>
 agent: a-build
-model: zai-coding-plan/glm-5.1
 subtask: true
 ---
 

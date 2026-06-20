@@ -1,7 +1,6 @@
 ---
 description: Full security audit — dependency scan, code review, and threat modelling with remediation. Usage: /security-audit <change-id or path>
 agent: a-build
-model: zai-coding-plan/glm-5.1
 subtask: true
 ---
 

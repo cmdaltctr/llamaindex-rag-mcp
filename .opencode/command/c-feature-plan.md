@@ -1,7 +1,6 @@
 ---
 description: Quick OpenSpec feature planning with proposal, tasks, specs, and design docs. Usage: /feature-plan <feature-name> [description]
 agent: a-plan
-model: deepseek/deepseek-v4-pro
 subtask: true
 ---
 
