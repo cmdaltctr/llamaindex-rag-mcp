@@ -2,6 +2,26 @@
 
 Define optional cross-encoder reranking, score filtering, model loading, and runtime configuration for improving retrieval result precision.
 ## Requirements
+### Requirement: Reranker candidate pool is configurable
+
+The system SHALL keep reranker candidate-pool sizing configurable via `RERANK_MAX_FETCH` and `RERANK_FETCH_MULTIPLIER`. A realistic technical-workload calibration experiment SHALL evaluate whether the current defaults remain appropriate for technical documentation, especially when hybrid BM25/RRF retrieval is enabled.
+
+#### Scenario: Technical workload calibration records reranker policy
+- **GIVEN** a realistic technical-document benchmark with dense-only and hybrid retrieval modes
+- **WHEN** reranker policies are evaluated
+- **THEN** the experiment SHALL record the active `RERANK_ENABLED`, `RERANK_MAX_FETCH`, `RERANK_FETCH_MULTIPLIER`, reranker model, retrieval mode, and latency for each cell
+- **THEN** the recommendation SHALL state whether reranking should remain default, become conditional, change pool size, or stay opt-in for technical workloads
+
+### Requirement: Reranker can be evaluated independently from hybrid retrieval
+
+The system SHALL support experiments that compare reranking on and off for both dense-only and hybrid retrieval without changing the underlying corpus or query set.
+
+#### Scenario: Reranker on/off comparison
+- **GIVEN** the same indexed corpus and query set
+- **WHEN** dense-only and hybrid retrieval are each evaluated with reranking disabled and enabled
+- **THEN** the experiment SHALL attribute quality changes separately to first-stage retrieval and reranker policy
+- **THEN** the experiment SHALL fail loudly if completed cells cannot be distinguished by retrieval mode and reranker policy
+
 ### Requirement: cross-encoder re-ranking for precision
 
 The system SHALL provide an optional cross-encoder reranker that re-scores
@@ -85,13 +105,14 @@ low-confidence results.
 
 ### Requirement: reranker configuration via environment
 
-The system SHALL support the following environment variables for reranker
-configuration, with sensible defaults:
+The system SHALL support the following environment variables for reranker configuration, with sensible defaults:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | HuggingFace model ID for reranker |
-| `RERANK_ENABLED` | `false` | Default rerank behaviour for `search_documents` |
+| `RERANK_ENABLED` | `false` | Global default rerank behaviour for omitted rerank requests |
+| `RERANK_ENABLED_FOR_SEMANTIC` | `true` | Policy knob allowing omitted rerank requests to enable reranking for semantic workloads below the technical threshold |
+| `HARD_TECHNICAL_THRESHOLD` | `0.3` | Identifier-heavy workload fraction at or above which semantic policy reranking SHALL NOT be enabled |
 | `SIMILARITY_THRESHOLD` | `0.0` | Default minimum score to include a result |
 | `RERANK_FETCH_MULTIPLIER` | `10` | Multiplier applied to `top_k` when reranking is enabled |
 | `RERANK_MAX_FETCH` | `50` | Lower bound on the rerank candidate pool size |
@@ -105,6 +126,16 @@ configuration, with sensible defaults:
 - **GIVEN** `RERANK_FETCH_MULTIPLIER=4` and `RERANK_MAX_FETCH=20` are set
 - **WHEN** `search_documents` is called with `rerank=True` and `top_k=3`
 - **THEN** the reranker SHALL receive `max(20, 3 * 4) = 20` candidates
+
+#### Scenario: semantic policy env vars are exposed
+- **GIVEN** `RERANK_ENABLED_FOR_SEMANTIC=true` and `HARD_TECHNICAL_THRESHOLD=0.3` are set
+- **WHEN** the effective rerank policy resolver is called for an omitted rerank request
+- **THEN** the resolver SHALL consider those values when deciding whether policy reranking is allowed
+
+#### Scenario: explicit rerank bypasses semantic policy env vars
+- **GIVEN** `RERANK_ENABLED_FOR_SEMANTIC=false`
+- **WHEN** `search_documents` is called with `rerank=True`
+- **THEN** reranking SHALL be applied regardless of the semantic policy setting
 
 ### Requirement: reranker as singleton with recovery
 
