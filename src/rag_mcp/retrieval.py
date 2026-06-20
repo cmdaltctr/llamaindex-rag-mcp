@@ -444,8 +444,9 @@ def _classify_query_technical(query: str) -> float:
         if re.search(r"(Exception|Error|err|exc)", token, re.IGNORECASE):
             technical_count += 1
             continue
-        # Version strings (v1.2.3 or 1.0.0)
-        if re.search(r"v?\d+\.\d+(\.\d+)?", token):
+        # Version strings (v1.2.3 or 1.0.0). Guard with "." in token to
+        # avoid O(n²) backtracking on digit-only tokens (ReDoS hardening).
+        if "." in token and re.search(r"v?\d+\.\d+(\.\d+)?", token):
             technical_count += 1
             continue
         # Explicit package/API/tooling terms and HTTP-ish API tokens.
