@@ -1,7 +1,6 @@
 ---
 description: Full code quality review with security audit, test coverage check, and spec compliance. Usage: /review-code <change-id> [--deep]
 agent: a-review
-model: deepseek/deepseek-v4-pro
 subtask: true
 ---
 
