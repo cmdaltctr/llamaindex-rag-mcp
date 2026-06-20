@@ -14,9 +14,6 @@ from .config import (
     CHROMA_PERSIST_DIR,
     HYBRID_ENABLED,
     HYBRID_RRF_K,
-    RERANK_ENABLED,
-    RERANK_FETCH_MULTIPLIER,
-    RERANK_MAX_FETCH,
     SIMILARITY_THRESHOLD,
     TOP_K,
 )
@@ -381,15 +378,168 @@ def _strip_internal_result_fields(result: dict) -> dict:
     return public
 
 
+# ── Technical query classifier ──────────────────────────────────────────────
+# Deterministic identifier-heavy rules from Experiment 9a/10: backticks,
+# slash paths, dotted paths, camelCase, snake_case, all-caps constants,
+# exception/error tokens, version strings, and explicit package/API names.
+
+
+def _classify_query_technical(query: str) -> float:
+    """Estimate the technical fraction of a query (0.0–1.0).
+
+    Uses deterministic identifier-heavy rules from Experiment 9a/10:
+    - Backticks: `identifier`
+    - Slash paths: /path/to/file
+    - Dotted paths: module.class.method
+    - camelCase identifiers
+    - snake_case identifiers
+    - ALL_CAPS constants
+    - Exception/Error tokens
+    - Version strings: v1.2.3, 1.0.0
+    - Package/API names
+
+    Args:
+        query: The search query string.
+
+    Returns:
+        Float in [0.0, 1.0] representing the fraction of tokens that are
+        identifier-heavy technical content.
+    """
+    import re
+
+    if not query.strip():
+        return 0.0
+
+    tokens = query.split()
+    if not tokens:
+        return 0.0
+
+    technical_count = 0
+    for token in tokens:
+        # Backtick-quoted identifiers
+        if "`" in token:
+            technical_count += 1
+            continue
+        # Slash paths (Unix-style)
+        if "/" in token and len(token) > 1:
+            technical_count += 1
+            continue
+        # Dotted paths (Python-style: module.class.method)
+        if "." in token and re.search(r"[a-zA-Z_]\.[a-zA-Z_]", token):
+            technical_count += 1
+            continue
+        # camelCase (lowercase followed by uppercase)
+        if re.search(r"[a-z][A-Z]", token):
+            technical_count += 1
+            continue
+        # snake_case (lowercase with underscores)
+        if re.search(r"[a-z]_[a-z]", token):
+            technical_count += 1
+            continue
+        # ALL_CAPS constants (at least 2 uppercase letters with underscores)
+        if re.search(r"[A-Z]{2,}", token) and "_" in token:
+            technical_count += 1
+            continue
+        # Exception/Error tokens
+        if re.search(r"(Exception|Error|err|exc)", token, re.IGNORECASE):
+            technical_count += 1
+            continue
+        # Version strings (v1.2.3 or 1.0.0)
+        if re.search(r"v?\d+\.\d+(\.\d+)?", token):
+            technical_count += 1
+            continue
+        # Explicit package/API/tooling terms and HTTP-ish API tokens.
+        if token.lower().strip(".,:;()[]{}") in {
+            "api", "sdk", "cli", "package", "module", "import",
+            "endpoint", "http", "json", "yaml", "pip", "npm",
+        }:
+            technical_count += 1
+            continue
+
+    return technical_count / len(tokens)
+
+
+def _resolve_rerank_policy(
+    rerank: bool | None,
+    query: str,
+    technical_fraction: float | None = None,
+) -> tuple[bool, str]:
+    """Resolve effective rerank behaviour from explicit intent and policy.
+
+    Implements tri-state rerank logic:
+    - ``rerank=True``: force reranking (explicit opt-in)
+    - ``rerank=False``: force no reranking (explicit opt-out)
+    - ``rerank=None``: apply config/policy defaults
+
+    Policy resolution for omitted rerank:
+    1. If ``RERANK_ENABLED=True``, rerank by default.
+    2. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=False``,
+       do not rerank.
+    3. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=True``:
+       - Classify the query as technical or semantic.
+       - If technical fraction >= ``HARD_TECHNICAL_THRESHOLD``, do not rerank.
+       - Otherwise, enable reranking (semantic workload override).
+
+    Args:
+        rerank: Explicit rerank value (True/False) or None for policy.
+        query: The search query (used for technical classification).
+        technical_fraction: Optional pre-computed technical fraction. If
+            None, the query is classified on demand.
+
+    Returns:
+        Tuple of ``(effective_rerank, reason)`` where ``effective_rerank``
+        is the resolved boolean and ``reason`` is a diagnostic string.
+    """
+    # Re-read config at call time so tests that monkeypatch are honoured.
+    from . import config as _config
+
+    # Explicit override: True forces reranking.
+    if rerank is True:
+        return (True, "explicit rerank=True override")
+
+    # Explicit override: False disables reranking.
+    if rerank is False:
+        return (False, "explicit rerank=False override")
+
+    # Omitted/None: apply policy.
+    # Step 1: Check global default.
+    if _config.RERANK_ENABLED:
+        return (True, "global default RERANK_ENABLED=true")
+
+    # Step 2: Global is off. Check semantic policy.
+    if not _config.RERANK_ENABLED_FOR_SEMANTIC:
+        return (False, "disabled by default (RERANK_ENABLED_FOR_SEMANTIC=false)")
+
+    # Step 3: Semantic policy is enabled. Classify the query.
+    if technical_fraction is None:
+        technical_fraction = _classify_query_technical(query)
+
+    threshold = _config.HARD_TECHNICAL_THRESHOLD
+    if technical_fraction >= threshold:
+        return (
+            False,
+            f"disabled by technical policy (fraction={technical_fraction:.2f} "
+            f">= threshold={threshold})",
+        )
+
+    # Below threshold: semantic workload override.
+    return (
+        True,
+        f"enabled by semantic policy (fraction={technical_fraction:.2f} "
+        f"< threshold={threshold})",
+    )
+
+
 def search(
     query: str,
     top_k: int = TOP_K,
     similarity_threshold: float = SIMILARITY_THRESHOLD,
-    rerank: bool = RERANK_ENABLED,
+    rerank: bool | None = None,
     hybrid: bool = HYBRID_ENABLED,
     collection_name: str = "documents",
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
+    technical_fraction: float | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -401,8 +551,13 @@ def search(
             is True the threshold is scaled down by 30× because
             cross-encoder sigmoid scores occupy a lower range than
             cosine similarity.  For example, 0.3 becomes 0.01.
-        rerank: If True, re-score results with the cross-encoder
-            reranker for better precision (default from env).
+        rerank: Tri-state rerank control:
+            - ``True``: force reranking (explicit opt-in)
+            - ``False``: force no reranking (explicit opt-out)
+            - ``None``: apply policy resolver (default)
+            The policy resolver checks ``RERANK_ENABLED``, then
+            ``RERANK_ENABLED_FOR_SEMANTIC`` and ``HARD_TECHNICAL_THRESHOLD``
+            to decide whether to enable reranking based on query type.
         hybrid: If True, fuse dense vector results with sparse BM25/native
             sparse rankings via Reciprocal Rank Fusion before reranking.
         collection_name: Name of the ChromaDB collection to search
@@ -414,8 +569,11 @@ def search(
             chunks are returned from the vector store.
         include_diagnostics: If True, preserve hybrid rank diagnostic
             fields (``id``, ``fused_score``, ``dense_rank``, ``sparse_rank``,
-            ``fused_rank``) for experiments. Public MCP/CLI callers leave
-            this False so result shape stays stable.
+            ``fused_rank``) and policy resolution reason for experiments.
+            Public MCP/CLI callers leave this False so result shape stays stable.
+        technical_fraction: Optional workload-level identifier-heavy fraction
+            (0.0–1.0). When provided, it overrides the single-query classifier
+            for policy resolution.
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -425,12 +583,20 @@ def search(
             text       – the chunk text
             reranked   – bool (True if cross-encoder re-scored the result)
 
+        When ``include_diagnostics=True``, each result also includes:
+            rerank_reason – string explaining the policy decision
+
     Raises:
         ValueError: If ``metadata_filter`` is rejected by ChromaDB
             (unsupported operator, type mismatch, etc.).  Other
             ChromaDB-side failures propagate as their original
             exception types so the MCP layer can classify them.
     """
+    # Resolve effective rerank behaviour from policy.
+    effective_rerank, rerank_reason = _resolve_rerank_policy(
+        rerank, query, technical_fraction=technical_fraction,
+    )
+
     db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 
     try:
@@ -443,7 +609,7 @@ def search(
 
     # Fetch more candidates when reranking so the cross-encoder
     # has a meaningful pool to re-score.  See ADR-016 Decision 2.
-    fetch_k = _resolve_fetch_k(top_k, rerank, collection.count())
+    fetch_k = _resolve_fetch_k(top_k, effective_rerank, collection.count())
 
     if hybrid:
         results = _hybrid_query_rows(
@@ -455,7 +621,7 @@ def search(
         )
 
     # Optional: re-score with cross-encoder reranker.
-    if rerank and results:
+    if effective_rerank and results:
         reranker = CrossEncoderReranker()
         results = reranker.rerank(query, results, top_k=top_k)
         # Propagate the reranked flag from the internal _reranked key.
@@ -468,7 +634,7 @@ def search(
     # than cosine similarity.  A cosine threshold of 0.3 is a weak match,
     # but the reranker may assign a valid result only 0.015 (sigmoid).
     # Scale the threshold down by 30× when reranking to avoid over-filtering.
-    effective_threshold = _effective_threshold(similarity_threshold, rerank)
+    effective_threshold = _effective_threshold(similarity_threshold, effective_rerank)
     if effective_threshold > 0.0:
         results = [
             r for r in results if r["score"] >= effective_threshold
@@ -476,6 +642,12 @@ def search(
 
     results.sort(key=lambda r: r["score"], reverse=True)
     results = results[:top_k]
+
+    # Attach policy diagnostics when requested.
+    if include_diagnostics:
+        for r in results:
+            r["rerank_reason"] = rerank_reason
+
     if not include_diagnostics:
         results = [_strip_internal_result_fields(r) for r in results]
     return results

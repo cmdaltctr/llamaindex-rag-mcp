@@ -1,0 +1,11 @@
+# Generated artefacts (reproducible from scripts)
+output/chroma_*/
+output/eval_results.json
+output/eval_results_checkpoint.json
+output/*.log
+
+# Copied/symlinked data from Experiment 9a
+corpus/
+
+# OS artefacts
+.DS_Store

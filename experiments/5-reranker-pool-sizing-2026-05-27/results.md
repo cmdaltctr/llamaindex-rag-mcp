@@ -9,12 +9,14 @@
 
 ## Summary table
 
-| Config                | fetch_k | Src acc | Ans acc | Mean (ms) | P95 (ms) | P99 (ms) |
+| Config                | fetch_k | Source accuracy | Answer accuracy | Mean latency | P95 latency | P99 latency |
 | --------------------- | :-----: | :-----: | :-----: | :-------: | :------: | :------: |
-| baseline (top_k * 2)  |   20    | 100.0%  | 100.0%  |   353.6   |  475.0   |  624.5   |
-| **candidate default** | **50**  | **100.0%** | **100.0%** | **298.3** | **377.2** | **393.1** |
-| fallback              |   30    | 100.0%  | 100.0%  |   338.4   |  504.2   |  594.4   |
-| stress test           |  100    | 100.0%  | 100.0%  |   271.6   |  298.3   |  361.5   |
+| baseline (top_k * 2)  |   20    | 100.0%  | 100.0%  |   353.6 ms   |  475.0 ms   |  624.5 ms   |
+| **candidate default** | **50**  | **100.0%** | **100.0%** | **298.3 ms** | **377.2 ms** | **393.1 ms** |
+| fallback              |   30    | 100.0%  | 100.0%  |   338.4 ms   |  504.2 ms   |  594.4 ms   |
+| stress test           |  100    | 100.0%  | 100.0%  |   271.6 ms   |  298.3 ms   |  361.5 ms   |
+
+*fetch_k = number of candidate chunks retrieved before reranking; Source accuracy = percentage of queries where the correct source document appears in the top result; Answer accuracy = percentage of queries where the retrieved chunk contains the expected answer substring; Mean latency = average response time; P95 latency = 95th percentile response time (95% of queries are faster than this); P99 latency = 99th percentile response time (99% of queries are faster than this).*
 
 n = 75 measured queries per config (3 unique × 25 repeats, post 50-query warmup).
 

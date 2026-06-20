@@ -94,10 +94,12 @@ The most important cell is:
 
 | Overlap | Evidence Recall@5 | Evidence MRR | nDCG@5 | Chunks | P95 latency |
 | ------: | ----------------: | -----------: | -----: | -----: | ----------: |
-| 32 | 56.60% | 0.3758 | 0.7387 | 242 | 1789 ms |
-| **64** | **62.26%** | **0.3849** | 0.7288 | 259 | 1428 ms |
-| 100 | 58.49% | 0.3827 | 0.7243 | 283 | 1468 ms |
-| 128 | 58.49% | **0.4107** | **0.7601** | 302 | 1746 ms |
+| 32 | 56.60% | 0.3758 | 0.7387 | 242 | 1,789 ms |
+| **64** | **62.26%** | **0.3849** | 0.7288 | 259 | 1,428 ms |
+| 100 | 58.49% | 0.3827 | 0.7243 | 283 | 1,468 ms |
+| 128 | 58.49% | **0.4107** | **0.7601** | 302 | 1,746 ms |
+
+*Evidence Recall@5 = percentage of queries where at least one of the top 5 retrieved chunks contains the labelled evidence; Evidence MRR = Mean Reciprocal Rank for evidence chunks (1.0 = evidence always at rank 1, 0.5 = average rank 2); nDCG@5 = normalized Discounted Cumulative Gain at 5, measures ranking quality with graded relevance (1.0 = perfect ranking); P95 latency = 95th percentile response time in milliseconds.*
 
 Simple reading:
 
@@ -119,6 +121,8 @@ Simple reading:
 | B / rerank on | 5 | -3.77 pp | -0.0022 | 1.093× | Fail on Recall@5 |
 | B / rerank on | 10 | +1.88 pp | -0.0135 | 1.093× | Mixed |
 | B / rerank on | 20 | -1.88 pp | -0.0096 | 1.093× | Pass |
+
+*pp = percentage points (e.g., -3.78 pp means overlap 100 is 3.78 percentage points worse than overlap 64); MRR delta = change in Mean Reciprocal Rank (negative means worse); Chunk ratio = ratio of chunk counts (overlap 100 / overlap 64).*
 
 Simple reading:
 
@@ -156,6 +160,8 @@ Simple reading:
 | 128 | B | 5 | **32.08%** | 58.49% | 58.49% | **0.4107** | **0.7601** | 302 |
 | 128 | B | 10 | **30.19%** | 56.60% | **73.58%** | **0.4216** | 0.5992 | 302 |
 | 128 | B | 20 | **30.19%** | 56.60% | 66.04% | **0.4144** | 0.5613 | 302 |
+
+*Pass = A (reranker off) or B (reranker on); top_k = number of chunks retrieved; Recall@k = percentage of queries where at least one of the top k retrieved chunks contains the labelled evidence; MRR = Mean Reciprocal Rank for evidence chunks; nDCG@5 = normalized Discounted Cumulative Gain at 5, measures ranking quality with graded relevance.*
 
 ---
 

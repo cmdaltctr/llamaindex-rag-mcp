@@ -16,6 +16,8 @@
 |  **100**| **100.0%**| **100.0%**| **100.0%**| **1.000** | **50.0%** | **251** | **385.8** |
 |   128   | 100.0%| 100.0%| 100.0%| 1.000 |   50.0%    |  260   |   425.1    |
 
+*Hit@k = percentage of queries where the correct document appears in the top k results; MRR = Mean Reciprocal Rank, the average of 1/rank for the first correct result (1.000 = perfect, always rank 1); Answer acc = answer accuracy, percentage of queries where the retrieved chunk contains the expected answer substring; Ingest (s) = ingestion time in seconds.*
+
 Corpus: `experiments/3-e2e-smoke-test-metadata-2026-05-20/corpus/` (4 PDFs, 2 README files).
 Queries: 8 hand-curated source-targeted queries with answer substrings
 (`experiments/7-chunk-overlap-sensitivity-2026-05-27/queries.json`).
@@ -30,6 +32,8 @@ Embed model: `qwen3-embedding:0.6b`. Reranker enabled with the Exp 5 pool defaul
 | Hit@1 at overlap=100 ≥ Hit@1 at overlap=64 | non-regression | 1.000 ≥ 1.000 | ✅ |
 | MRR at overlap=100 ≥ MRR at overlap=64 | non-regression | 1.000 ≥ 1.000 | ✅ |
 | Chunk count delta vs overlap=64 ≤ 15% | ≤ 1.15× | 1.033× | ✅ |
+
+*Criterion = protocol success condition; Threshold = required value; Measured = observed value; Pass = whether the measured value satisfies the criterion; MRR = Mean Reciprocal Rank.*
 
 All three pass criteria from `tasks.md` 3.5 met. The new default
 `CHUNK_OVERLAP=100` ships.

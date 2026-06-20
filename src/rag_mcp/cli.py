@@ -43,7 +43,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from .config import RERANK_ENABLED, SUPPORTED_EXTENSIONS, TOP_K
+from .config import SUPPORTED_EXTENSIONS, TOP_K
 
 app = typer.Typer(
     name="rag-mcp",
@@ -602,8 +602,8 @@ def search(
     threshold: float = typer.Option(
         0.0, "--threshold", "-t", help="Minimum similarity score."
     ),
-    rerank: bool = typer.Option(
-        RERANK_ENABLED, "--rerank/--no-rerank", help="Re-score with cross-encoder reranker."
+    rerank: Optional[bool] = typer.Option(
+        None, "--rerank/--no-rerank", help="Re-score with cross-encoder reranker (omit for policy default)."
     ),
     hybrid: bool = typer.Option(
         False,

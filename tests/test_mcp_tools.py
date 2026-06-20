@@ -123,16 +123,16 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     )
 
 
-async def test_search_documents_defaults_follow_config(mcp_server) -> None:
-    """MCP search defaults should follow config.TOP_K / RERANK_ENABLED."""
-    from rag_mcp.config import RERANK_ENABLED, TOP_K
+async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
+    """MCP omitted rerank should pass None so retrieval resolves policy."""
+    from rag_mcp.config import TOP_K
 
     expected = [{
         "score": 0.9,
         "source": "fixture.txt",
         "page_label": None,
         "text": "fixture text",
-        "reranked": RERANK_ENABLED,
+        "reranked": False,
     }]
 
     with patch("rag_mcp.server.search", return_value=expected) as mock_search:
@@ -148,7 +148,7 @@ async def test_search_documents_defaults_follow_config(mcp_server) -> None:
         "fixture",
         top_k=TOP_K,
         similarity_threshold=0.0,
-        rerank=RERANK_ENABLED,
+        rerank=None,
         hybrid=False,
         collection_name="documents",
         metadata_filter=None,

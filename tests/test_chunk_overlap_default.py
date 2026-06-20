@@ -5,7 +5,7 @@ and ADR-018 balanced retrieval defaults:
 - Default CHUNK_OVERLAP is 100 (Stäbler et al. 2025 empirical sweet spot).
 - The default still honours the CHUNK_OVERLAP env var when set.
 - Default TOP_K is 10.
-- Default RERANK_ENABLED is true.
+- Default RERANK_ENABLED is false (ADR-019: default-off for technical workloads).
 """
 
 from __future__ import annotations
@@ -81,10 +81,10 @@ def test_chunk_overlap_env_override_shape() -> None:
 
 
 def test_balanced_retrieval_defaults_are_configured() -> None:
-    """ADR-018 balanced defaults SHALL be the codebase defaults."""
+    """ADR-018/019 retrieval defaults SHALL be the codebase defaults."""
     assert _extract_default_chunk_overlap() == 100
     assert _extract_default_int_env("TOP_K") == 10
-    assert _extract_default_bool_env("RERANK_ENABLED") == "true"
+    assert _extract_default_bool_env("RERANK_ENABLED") == "false"
 
 
 def test_balanced_retrieval_defaults_are_env_overridable() -> None:

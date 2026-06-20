@@ -16,6 +16,8 @@
 | Full Pipeline (pre-fix) | 87.5% (7/8) | 87.5% (7/8) | 0.833 | 85 ms |
 | Full Pipeline (post-fix) | **100%** (8/8) | **100%** (8/8) | 0.833 | 85 ms |
 
+*Configuration = retrieval pipeline variant tested; Source Acc. = source accuracy, the percentage of queries where the correct source document was retrieved; Answer Acc. = answer accuracy, the percentage of queries where the retrieved chunk contained the expected answer; Avg Score = average retrieval or reranker score for the returned result; Avg Latency = average response time in milliseconds.*
+
 > **Pre-fix**: The original Full Pipeline applied the raw 0.3 threshold to
 > reranker sigmoid scores, filtering out the Colosseum result (score 0.015).
 > **Post-fix**: `_effective_threshold()` scales 0.3 → 0.01, allowing the
@@ -73,6 +75,8 @@ reranking is active. This means:
 | 0.5 | 0.5 | 0.0167 |
 | 0.9 | 0.9 | 0.03 |
 
+*User threshold = operator-supplied `similarity_threshold`; Effective (no rerank) = threshold applied directly to vector cosine-similarity scores; Effective (with rerank) = threshold after dividing by 30 for reranker sigmoid scores.*
+
 The 30× factor was calibrated from experiment data:
 
 - Strong reranker matches: 0.79–1.0
@@ -90,6 +94,8 @@ threshold of 0.01, while true noise (< 0.003) is still filtered.
 | Vector + Reranker | 100% (8/8) | 100% (8/8) |
 | Vector + Threshold | 87.5% (7/8) | 87.5% (7/8) |
 | Full Pipeline (fixed) | **100%** (8/8) | **100%** (8/8) |
+
+*Configuration = retrieval pipeline variant tested; Source Acc. = percentage of queries where the correct source document was retrieved; Answer Acc. = percentage of queries where the retrieved chunk contained the expected answer.*
 
 ### 5. Vector-only search is surprisingly good for simple queries
 
@@ -146,6 +152,8 @@ manually.
 | Reranker improves results? | ✓ (mock only) | ✓ (real ONNX) |
 | Latency measurement | ✗ | ✓ |
 | Score distribution | ✗ | ✓ |
+
+*Aspect = validation dimension; Test Suite = whether automated tests cover that dimension; This Experiment = whether the real-embedding experiment covered that dimension.*
 
 ---
 
