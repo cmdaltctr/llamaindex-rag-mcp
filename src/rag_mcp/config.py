@@ -20,6 +20,23 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
+def _get_float_env(name: str, default: float) -> float:
+    """Parse a float env var, failing fast with a clear error on bad input.
+
+    A typo like ``HARD_TECHNICAL_THRESHOLD=O.3`` (letter O instead of zero)
+    would otherwise produce a bare ``ValueError`` traceback. This wraps it
+    with the variable name and the offending value so the operator knows
+    exactly what to fix.
+    """
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got: {raw!r}") from None
+
 # ── Embedding model (local via Ollama) ──────────────────────────────────
 # The model name MUST come from a .env file or ENV var — there is no
 # hardcoded fallback.  Create or edit .env in the project root:
@@ -65,7 +82,7 @@ EMBED_CONCURRENCY = int(os.getenv("EMBED_CONCURRENCY", "2"))
 MARKDOWN_CHUNK_SIZE = int(os.getenv("MARKDOWN_CHUNK_SIZE", "1024"))
 # Heading prepend and min-size floor remain experimental and opt-in.
 MARKDOWN_HEADING_PREPEND = os.getenv("MARKDOWN_HEADING_PREPEND", "false").lower() == "true"
-MARKDOWN_MIN_CHUNK_FRACTION = float(os.getenv("MARKDOWN_MIN_CHUNK_FRACTION", "0.0"))
+MARKDOWN_MIN_CHUNK_FRACTION = _get_float_env("MARKDOWN_MIN_CHUNK_FRACTION", 0.0)
 
 # ── Retrieval defaults ──────────────────────────────────────────────────
 # Balanced evidence-retrieval profile promoted after Experiments 7a and 8a:
@@ -88,8 +105,8 @@ RERANK_ENABLED_FOR_SEMANTIC = os.getenv("RERANK_ENABLED_FOR_SEMANTIC", "true").l
 # is automatically disabled (even when RERANK_ENABLED_FOR_SEMANTIC=True).
 # Experiment 10 showed the cross-encoder is actively harmful at any
 # pool size when ≥30% of queries are identifier-heavy.
-HARD_TECHNICAL_THRESHOLD = float(os.getenv("HARD_TECHNICAL_THRESHOLD", "0.3"))
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.0"))
+HARD_TECHNICAL_THRESHOLD = _get_float_env("HARD_TECHNICAL_THRESHOLD", 0.3)
+SIMILARITY_THRESHOLD = _get_float_env("SIMILARITY_THRESHOLD", 0.0)
 
 # ── Reranker fetch-pool sizing ─────────────────────────────────────────
 # When reranking is enabled, ``search()`` fetches a larger candidate pool
@@ -161,7 +178,7 @@ OLLAMA_CLASSIFY_MODEL = os.getenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 # ``monkeypatch.setattr`` on the ``rag_mcp.metadata_extractor`` module
 # (which copies these constants at its own import time).
 OLLAMA_CLASSIFY_MAX_ATTEMPTS = int(os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3"))
-OLLAMA_CLASSIFY_TIMEOUT = float(os.getenv("OLLAMA_CLASSIFY_TIMEOUT", "30.0"))
+OLLAMA_CLASSIFY_TIMEOUT = _get_float_env("OLLAMA_CLASSIFY_TIMEOUT", 30.0)
 
 # Note: LLAMANDEX_EXTRACTOR_MAX_CHUNKS is read at call-time in
 # metadata_extractor.py via os.getenv() so tests can override it
