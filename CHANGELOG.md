@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.5.2 (2026-06-20)
+
+### Bug Fixes
+
+- **graphify**: Remove echo banner injection from plugin
+  ([`11b66d4`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/11b66d4c361c6f88c166dcc988163faea367ef75))
+
+
 ## v1.5.1 (2026-06-20)
 
 ### Bug Fixes
