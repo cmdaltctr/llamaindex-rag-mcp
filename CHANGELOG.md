@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.5.1 (2026-06-20)
+
+### Bug Fixes
+
+- **reranker**: Guard version regex against ReDoS on digit-only tokens
+  ([#6](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/6),
+  [`2e5cde9`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/2e5cde9ff64a10967191fffb6c3b648b9be193bf))
+
+
 ## v1.5.0 (2026-06-20)
 
 ### Bug Fixes
