@@ -20,9 +20,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.ref_name }}
+          # Full history is required for two reasons:
+          #   1. python-semantic-release walks every commit since the last tag
+          #      to compute the version bump (feat -> minor, fix -> patch).
+          #   2. The "Force branch to workflow SHA" step below resets to
+          #      github.sha, which is an ancestor of the tip when commits land
+          #      while this run is queued. With the default fetch-depth: 1 that
+          #      ancestor is absent and the reset fails with exit code 128.
+          fetch-depth: 0
 
       - name: Force branch to workflow SHA
         run: git reset --hard ${{ github.sha }}
