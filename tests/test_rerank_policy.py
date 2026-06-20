@@ -95,6 +95,15 @@ class TestClassifyQueryTechnical:
         fraction2 = _classify_query_technical(query2)
         assert fraction2 == 0.5  # 1 of 2 tokens
 
+    def test_digit_only_token_does_not_classify_as_technical(self) -> None:
+        """A bare digit string is not a version and must not backtrack.
+
+        Regression test for ReDoS: without the '.' guard, the version
+        regex catastrophically backtracks on long digit-only tokens.
+        """
+        fraction = _classify_query_technical("1234567890" * 100)
+        assert fraction == 0.0  # no dots, not a version, not technical
+
     def test_explicit_technical_terms(self) -> None:
         """Explicit technical terms like 'api', 'sdk', 'cli' are technical."""
         query = "rest api design"
