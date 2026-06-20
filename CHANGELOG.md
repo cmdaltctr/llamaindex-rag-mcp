@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.5.3 (2026-06-20)
+
+### Bug Fixes
+
+- **ci**: Fetch full history in release checkout to fix exit 128
+  ([`f4d7a9e`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/f4d7a9e32a480f781ea8d802d5b49e7cd155717e))
+
+
 ## v1.5.2 (2026-06-20)
 
 ### Bug Fixes
