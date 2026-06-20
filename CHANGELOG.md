@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-06-20)
+
+### Bug Fixes
+
+- **test**: Update chunk-overlap default test for ADR-019 reranker default-off
+  ([#5](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/5),
+  [`a0a5def`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/a0a5def30cfb3aeee13391012156f706411a6975))
+
+### Features
+
+- **reranker**: Disable reranker by default after Experiment 10
+  ([#5](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/5),
+  [`a0a5def`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/a0a5def30cfb3aeee13391012156f706411a6975))
+
+- **reranker**: Implement semantic/technical reranker policy resolver
+  ([#5](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/5),
+  [`a0a5def`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/a0a5def30cfb3aeee13391012156f706411a6975))
+
+
 ## v1.4.0 (2026-05-31)
 
 ### Features
