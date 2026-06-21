@@ -107,7 +107,7 @@
 ## 11. Tests
 
 - [ ] 11.1 `tests/unit/test_pdf_reader_factory.py` — factory resolution: each `PDF_READER` value (`auto`, `liteparse`, `pypdfium2`, `pypdf`), fallback chain, `auto` order, unknown value warns and falls back, pymupdf value rejected with clear error
-- [ ] 11.2 `tests/unit/test_pypdf_reader.py` — pypdf adapter preserves byte-identical Document output vs pre-change behaviour (regression guard)
+- [ ] 11.2 `tests/unit/test_pypdf_reader.py` — pypdf adapter preserves semantically equivalent Document output vs pre-change behaviour (regression guard; not byte-identical because PDF parsing is non-deterministic across library versions, per spec.md)
 - [ ] 11.3 `tests/unit/test_liteparse_reader.py` — LiteParse adapter: successful parse emits Documents with `pdf_reader="liteparse"` metadata and bbox fields; two-column fixture produces `column` metadata; corrupt PDF returns structured error dict (not exception); LiteParse not installed → graceful failure when explicitly requested
 - [ ] 11.4 `tests/unit/test_pypdfium_reader.py` — pypdfium2 adapter: successful parse, missing-import handling
 - [ ] 11.5 `tests/unit/test_ingestion_pdf_extractor.py` — integration: `_read_and_chunk_file_async` uses the factory; bbox metadata propagates to Node.metadata for LiteParse path; pypdf path unchanged
