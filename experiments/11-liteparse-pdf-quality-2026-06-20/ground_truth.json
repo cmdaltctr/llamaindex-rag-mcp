@@ -1,0 +1,57 @@
+{
+  "_comment": "STUB — operator expands to >=25 queries before running the experiment. Each query MUST have at least one expected source file in corpus/. Categories align with the corpus mix in protocol.md (two_column, single_column, table_heavy, optional scanned).",
+  "_writing_order_reminder": "Per /s-experiment discipline, write ALL queries and expected answers BEFORE running build_indexes.py or run_eval.py. Do not edit after seeing results.",
+  "experiment": "11-liteparse-pdf-quality-2026-06-20",
+  "queries": [
+    {
+      "query_id": "q001",
+      "category": "two_column",
+      "query": "TODO: Replace with a real query whose answer is in one of the two-column papers in corpus/. Example shape: 'What regularisation term does the proposed method use?'",
+      "expected_files": ["lewis2020_rag.pdf"],
+      "expected_pages": [3],
+      "notes": "TODO: cite the specific section heading or paragraph the answer lives in. This helps debug retrieval misses."
+    },
+    {
+      "query_id": "q002",
+      "category": "two_column",
+      "query": "TODO: query targeting a different two-column paper",
+      "expected_files": ["TODO.pdf"],
+      "expected_pages": [1],
+      "notes": ""
+    },
+    {
+      "query_id": "q003",
+      "category": "single_column",
+      "query": "TODO: query targeting a single-column arXiv preprint",
+      "expected_files": ["TODO.pdf"],
+      "expected_pages": [1],
+      "notes": "Single-column sanity check — LiteParse should not regress here."
+    },
+    {
+      "query_id": "q004",
+      "category": "table_heavy",
+      "query": "TODO: query whose answer is inside a table",
+      "expected_files": ["TODO.pdf"],
+      "expected_pages": [1],
+      "notes": "Exercises LiteParse's grid projection. The hardest case for parsers without table models."
+    },
+    {
+      "query_id": "q005",
+      "category": "two_column",
+      "query": "TODO: query spanning both columns of the same page (the make-or-break case)",
+      "expected_files": ["TODO.pdf"],
+      "expected_pages": [1],
+      "notes": "This is the case where pypdf most often produces garbage by interleaving columns."
+    },
+    {
+      "query_id": "q006",
+      "category": "scanned",
+      "query": "TODO: query whose answer is in a scanned/image-only PDF (requires OCR). Skip this category if Tesseract OCR is unavailable.",
+      "expected_files": ["TODO_scanned.pdf"],
+      "expected_pages": [1],
+      "notes": "Optional category. Exercises LiteParse's Tesseract OCR path. If no scanned PDFs in corpus, delete this entry and note in results.md that OCR was not tested."
+    }
+  ],
+  "_target_count": "Expand queries[] to >=25 entries with the following suggested distribution: 12 two_column, 7 single_column, 4 table_heavy, 2 scanned (optional, requires OCR).",
+  "_saturation_warning": "If you find that any pilot query retrieves the expected file in the top-1 result without effort, the corpus may saturate. Add harder queries: cross-section, paraphrased, definition-only."
+}
