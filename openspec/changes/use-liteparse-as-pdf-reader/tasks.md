@@ -7,32 +7,32 @@
 - [x] 1.1 Create branch `feat/use-liteparse-as-pdf-reader` from `master` (`git switch -c feat/use-liteparse-as-pdf-reader`)
 - [x] 1.2 Scaffold OpenSpec change via `openspec new change "use-liteparse-as-pdf-reader"`
 - [x] 1.3 Draft proposal.md, design.md, specs/pdf-reader/spec.md, tasks.md
-- [ ] 1.4 Run `openspec validate use-liteparse-as-pdf-reader --strict` and resolve any reported issues
-- [ ] 1.5 Commit the OpenSpec artifacts: `git add openspec/changes/use-liteparse-as-pdf-reader && git commit -m "docs(openspec): propose use-liteparse-as-pdf-reader"`
+- [x] 1.4 Run `openspec validate use-liteparse-as-pdf-reader --strict` and resolve any reported issues
+- [x] 1.5 Commit the OpenSpec artifacts: `git add openspec/changes/use-liteparse-as-pdf-reader && git commit -m "docs(openspec): propose use-liteparse-as-pdf-reader"`
 
 ## 2. Experiment 11 scaffold
 
 > Creates the validation gate per `/s-experiment` skill phases 1–3. No code under `src/` changes yet.
 
-- [ ] 2.1 Create experiment directory: `mkdir -p experiments/11-liteparse-pdf-quality-2026-06-20/{corpus,output}`
-- [ ] 2.2 Copy full protocol template: `cp .opencode/skills/s-experiment/references/protocol-template.md experiments/11-liteparse-pdf-quality-2026-06-20/protocol.md`
-- [ ] 2.3 Fill `protocol.md` sections: hypothesis, single variable under test (PDF parser), pass gates (see design.md Decision 6), cells matrix (`{pypdf, liteparse} × {rerank-on, rerank-off}`), corpus requirement (≥20 academic PDFs with two-column layouts)
-- [ ] 2.4 Write `experiments/11-liteparse-pdf-quality-2026-06-20/ground_truth.json` stub with at least 15 queries spanning single-column, two-column, and table-heavy cases. Each entry: `{"query": str, "expected_files": [str], "expected_pages": [int], "category": str}`. Mark with `// TODO: expand to 25+ queries after corpus assembly`
-- [ ] 2.5 Write `experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py` per the eval-runner-pattern: builds two isolated ChromaDB dirs (`output/chroma_pypdf_baseline`, `output/chroma_liteparse`) using `CHROMA_PERSIST_DIR` env override; uses the `_read_and_chunk_file_async` helper to ensure both indexes use identical chunking
-- [ ] 2.6 Write `experiments/11-liteparse-pdf-quality-2026-06-20/run_eval.py` per the canonical eval-runner-pattern.md: iterates cells, supports `--modes pypdf,liteparse --rerank-cross --k-values 5,10,20,50 --resume`, writes atomic checkpoint per cell, calls `_cached_query_embedding.cache_clear()` between cells
-- [ ] 2.7 Write `experiments/11-liteparse-pdf-quality-2026-06-20/summarise_eval.py` per summarise-pattern.md: loads `eval_results.json`, computes nDCG@10 per cell, evaluates all four pass gates, writes `eval_results.summary.json` and `results.md`
-- [ ] 2.8 Add `.gitkeep` to `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/` so the empty directory is tracked
-- [ ] 2.9 Add `experiments/11-liteparse-pdf-quality-2026-06-20/output/` to `.gitignore` (or rely on the existing global output ignore) so generated artifacts are not committed
-- [ ] 2.10 Update `experiments/EXP_README.md` index table with the new entry; status `PLANNED`
-- [ ] 2.11 Commit the scaffold: `git add experiments/ && git commit -m "exp(11): scaffold liteparse pdf quality experiment"`
+- [x] 2.1 Create experiment directory: `mkdir -p experiments/11-liteparse-pdf-quality-2026-06-20/{corpus,output}`
+- [x] 2.2 Copy full protocol template: `cp .opencode/skills/s-experiment/references/protocol-template.md experiments/11-liteparse-pdf-quality-2026-06-20/protocol.md`
+- [x] 2.3 Fill `protocol.md` sections: hypothesis, single variable under test (PDF parser), pass gates (see design.md Decision 6), cells matrix (`{pypdf, liteparse} × {rerank-on, rerank-off}`), corpus requirement (≥20 academic PDFs with two-column layouts)
+- [x] 2.4 Write `experiments/11-liteparse-pdf-quality-2026-06-20/ground_truth.json` stub with at least 15 queries spanning single-column, two-column, and table-heavy cases. Each entry: `{"query": str, "expected_files": [str], "expected_pages": [int], "category": str}`. Mark with `// TODO: expand to 25+ queries after corpus assembly`
+- [x] 2.5 Write `experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py` per the eval-runner-pattern: builds two isolated ChromaDB dirs (`output/chroma_pypdf_baseline`, `output/chroma_liteparse`) using `CHROMA_PERSIST_DIR` env override; uses the `_read_and_chunk_file_async` helper to ensure both indexes use identical chunking
+- [x] 2.6 Write `experiments/11-liteparse-pdf-quality-2026-06-20/run_eval.py` per the canonical eval-runner-pattern.md: iterates cells, supports `--modes pypdf,liteparse --rerank-cross --k-values 5,10,20,50 --resume`, writes atomic checkpoint per cell, calls `_cached_query_embedding.cache_clear()` between cells
+- [x] 2.7 Write `experiments/11-liteparse-pdf-quality-2026-06-20/summarise_eval.py` per summarise-pattern.md: loads `eval_results.json`, computes nDCG@10 per cell, evaluates all four pass gates, writes `eval_results.summary.json` and `results.md`
+- [x] 2.8 Add `.gitkeep` to `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/` so the empty directory is tracked
+- [x] 2.9 Add `experiments/11-liteparse-pdf-quality-2026-06-20/output/` to `.gitignore` (or rely on the existing global output ignore) so generated artifacts are not committed
+- [x] 2.10 Update `experiments/EXP_README.md` index table with the new entry; status `PLANNED`
+- [x] 2.11 Commit the scaffold: `git add experiments/ && git commit -m "exp(11): scaffold liteparse pdf quality experiment"`
 
 ## 3. User supplies corpus
 
 > Manual step. Operator (user) populates `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/` with ≥20 academic PDFs.
 
-- [ ] 3.1 Operator adds ≥20 academic PDFs to `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/`. Suggested mix: 12 two-column papers (e.g. NeurIPS/ICML/ACL style), 5 single-column (e.g. arXiv preprints), 3 table-heavy (e.g. survey papers, financial reports)
+- [x] 3.1 Operator adds ≥20 academic PDFs to `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/`. Suggested mix: 12 two-column papers (e.g. NeurIPS/ICML/ACL style), 5 single-column (e.g. arXiv preprints), 3 table-heavy (e.g. survey papers, financial reports)
 - [ ] 3.2 Operator expands `ground_truth.json` from stub to ≥25 queries with known-good answers drawn from the supplied corpus
-- [ ] 3.3 Commit the corpus (if licence permits) or add `corpus/*.pdf` to `.gitignore` and document the corpus manifest in `corpus/MANIFEST.md` listing each PDF's source URL and licence
+- [x] 3.3 Commit the corpus (if licence permits) or add `corpus/*.pdf` to `.gitignore` and document the corpus manifest in `corpus/MANIFEST.md` listing each PDF's source URL and licence
 
 ## 4. Run Experiment 11
 
