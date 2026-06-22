@@ -38,7 +38,7 @@
 
 > Per `/s-experiment` skill phases 4–5. Operator runs this manually; long-running.
 
-- [ ] 4.1 Install the LiteParse backend in the experiment venv: `uv sync --extra pdf-liteparse`. The experiment exercises only `pypdf` and `liteparse` cells; pypdfium2 is not a cell in this experiment.
+- [x] 4.1 Install the LiteParse backend in the experiment venv: `uv sync --extra pdf-liteparse`. The experiment exercises only `pypdf` and `liteparse` cells; pypdfium2 is not a cell in this experiment.
 - [ ] 4.2 Build indexes for both cells: `CHROMA_PERSIST_DIR=./experiments/11-liteparse-pdf-quality-2026-06-20/output/chroma_pypdf PDF_READER=pypdf uv run python experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py` and the equivalent with `PDF_READER=liteparse` for the candidate
 - [ ] 4.3 Run evaluation with checkpoint/resume: `PYTHONUNBUFFERED=1 uv run python -u experiments/11-liteparse-pdf-quality-2026-06-20/run_eval.py --modes pypdf,liteparse --rerank-cross --k-values 5,10,20,50 --resume 2>&1 | tee experiments/11-liteparse-pdf-quality-2026-06-20/output/run_eval.log`
 - [ ] 4.4 If interrupted, re-run with `--resume` to pick up from the last checkpoint

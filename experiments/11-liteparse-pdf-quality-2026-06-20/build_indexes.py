@@ -70,7 +70,11 @@ def _parse_with_liteparse(file_path: Path) -> list[Document]:
     """
     from liteparse import LiteParse
 
-    parser = LiteParse()  # constructor defaults; expose env knobs in adapter
+    # OCR disabled: the corpus is all digital arXiv preprints (no scanned
+    # PDFs per corpus/MANIFEST.md). OCR would add ~16s/file of pure overhead
+    # and unfairly penalise LiteParse on the H2 speed gate. The spec default
+    # for LITEPARSE_OCR_ENABLED is False (task 6.5).
+    parser = LiteParse(ocr_enabled=False, quiet=True)
     result = parser.parse(str(file_path))
 
     documents: list[Document] = []
