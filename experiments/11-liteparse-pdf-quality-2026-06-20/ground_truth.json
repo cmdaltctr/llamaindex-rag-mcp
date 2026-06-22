@@ -1,57 +1,182 @@
 {
-  "_comment": "STUB — operator expands to >=25 queries before running the experiment. Each query MUST have at least one expected source file in corpus/. Categories align with the corpus mix in protocol.md (two_column, single_column, table_heavy, optional scanned).",
-  "_writing_order_reminder": "Per /s-experiment discipline, write ALL queries and expected answers BEFORE running build_indexes.py or run_eval.py. Do not edit after seeing results.",
+  "_comment": "Experiment 11 ground truth. 25 queries spanning three layout categories (two_column, single_column, table_heavy) per openspec/changes/use-liteparse-as-pdf-reader tasks 2.4 and 3.2. Entry schema: {query_id, query, expected_files, expected_pages, category}. query_id is added for run_eval.py traceability (the runner reads it via .get); the four spec-required fields (query, expected_files, expected_pages, category) are all present. Page numbers reference the arXiv PDF versions committed in corpus/ and should be spot-checked before running the experiment. Written blind per /s-experiment discipline: do NOT edit queries after build_indexes.py runs.",
   "experiment": "11-liteparse-pdf-quality-2026-06-20",
+  "_category_counts": {"two_column": 13, "single_column": 7, "table_heavy": 5, "total": 25},
   "queries": [
     {
       "query_id": "q001",
       "category": "two_column",
-      "query": "TODO: Replace with a real query whose answer is in one of the two-column papers in corpus/. Example shape: 'What regularisation term does the proposed method use?'",
-      "expected_files": ["lewis2020_rag.pdf"],
-      "expected_pages": [3],
-      "notes": "TODO: cite the specific section heading or paragraph the answer lives in. This helps debug retrieval misses."
+      "query": "What is the mathematical formula for scaled dot-product attention?",
+      "expected_files": ["vaswani2017_attention.pdf"],
+      "expected_pages": [4]
     },
     {
       "query_id": "q002",
       "category": "two_column",
-      "query": "TODO: query targeting a different two-column paper",
-      "expected_files": ["TODO.pdf"],
-      "expected_pages": [1],
-      "notes": ""
+      "query": "How many parameters does the BERT-LARGE model have?",
+      "expected_files": ["devlin2019_bert.pdf"],
+      "expected_pages": [3]
     },
     {
       "query_id": "q003",
-      "category": "single_column",
-      "query": "TODO: query targeting a single-column arXiv preprint",
-      "expected_files": ["TODO.pdf"],
-      "expected_pages": [1],
-      "notes": "Single-column sanity check — LiteParse should not regress here."
+      "category": "two_column",
+      "query": "How many parameters does the largest GPT-3 model have?",
+      "expected_files": ["brown2020_gpt3.pdf"],
+      "expected_pages": [1]
     },
     {
       "query_id": "q004",
-      "category": "table_heavy",
-      "query": "TODO: query whose answer is inside a table",
-      "expected_files": ["TODO.pdf"],
-      "expected_pages": [1],
-      "notes": "Exercises LiteParse's grid projection. The hardest case for parsers without table models."
+      "category": "two_column",
+      "query": "What is the layer configuration of the 18-layer residual network described in the architecture table?",
+      "expected_files": ["he2016_resnet.pdf"],
+      "expected_pages": [4]
     },
     {
       "query_id": "q005",
       "category": "two_column",
-      "query": "TODO: query spanning both columns of the same page (the make-or-break case)",
-      "expected_files": ["TODO.pdf"],
-      "expected_pages": [1],
-      "notes": "This is the case where pypdf most often produces garbage by interleaving columns."
+      "query": "How many patches result from splitting a 224 by 224 image into 16 by 16 patches?",
+      "expected_files": ["dosovitskiy2021_vit.pdf"],
+      "expected_pages": [3]
     },
     {
       "query_id": "q006",
-      "category": "scanned",
-      "query": "TODO: query whose answer is in a scanned/image-only PDF (requires OCR). Skip this category if Tesseract OCR is unavailable.",
-      "expected_files": ["TODO_scanned.pdf"],
-      "expected_pages": [1],
-      "notes": "Optional category. Exercises LiteParse's Tesseract OCR path. If no scanned PDFs in corpus, delete this entry and note in results.md that OCR was not tested."
+      "category": "two_column",
+      "query": "What are the two variants of Retrieval-Augmented Generation proposed by the authors?",
+      "expected_files": ["lewis2020_rag.pdf"],
+      "expected_pages": [3]
+    },
+    {
+      "query_id": "q007",
+      "category": "two_column",
+      "query": "What encoder architecture does Dense Passage Retrieval use for the question and passage encoders?",
+      "expected_files": ["karpukhin2020_dpr.pdf"],
+      "expected_pages": [3]
+    },
+    {
+      "query_id": "q008",
+      "category": "two_column",
+      "query": "What low-rank value r does LoRA primarily use in its main experiments?",
+      "expected_files": ["hu2021_lora.pdf"],
+      "expected_pages": [10]
+    },
+    {
+      "query_id": "q009",
+      "category": "two_column",
+      "query": "On the GSM8K math word problem benchmark, what accuracy does PaLM 540B achieve with chain-of-thought prompting?",
+      "expected_files": ["wei2022_cot.pdf"],
+      "expected_pages": [6]
+    },
+    {
+      "query_id": "q010",
+      "category": "two_column",
+      "query": "What two capabilities does the ReAct framework combine in its approach to language model reasoning?",
+      "expected_files": ["yao2022_react.pdf"],
+      "expected_pages": [1]
+    },
+    {
+      "query_id": "q011",
+      "category": "two_column",
+      "query": "How many sampled reasoning paths does the self-consistency method use to select the most consistent answer?",
+      "expected_files": ["wang2022_selfconsistency.pdf"],
+      "expected_pages": [4]
+    },
+    {
+      "query_id": "q012",
+      "category": "two_column",
+      "query": "What are the three iterative steps of the Self-Refine process?",
+      "expected_files": ["madaan2023_selfrefine.pdf"],
+      "expected_pages": [2]
+    },
+    {
+      "query_id": "q013",
+      "category": "two_column",
+      "query": "What is the compositionality gap as defined by the authors measuring and narrowing it?",
+      "expected_files": ["press2022_measuring.pdf"],
+      "expected_pages": [2]
+    },
+    {
+      "query_id": "q014",
+      "category": "single_column",
+      "query": "How many tokens was the LLaMA 7B model trained on?",
+      "expected_files": ["touvron2023_llama.pdf"],
+      "expected_pages": [2]
+    },
+    {
+      "query_id": "q015",
+      "category": "single_column",
+      "query": "What is the hidden dimension of the LLaMA 65B model?",
+      "expected_files": ["touvron2023_llama.pdf"],
+      "expected_pages": [3]
+    },
+    {
+      "query_id": "q016",
+      "category": "single_column",
+      "query": "How many tokens of training data does Llama 2 use for pre-training?",
+      "expected_files": ["touvron2023_llama2.pdf"],
+      "expected_pages": [5]
+    },
+    {
+      "query_id": "q017",
+      "category": "single_column",
+      "query": "What is the context window length of Llama 2 models?",
+      "expected_files": ["touvron2023_llama2.pdf"],
+      "expected_pages": [4]
+    },
+    {
+      "query_id": "q018",
+      "category": "single_column",
+      "query": "What are the three steps of the InstructGPT training pipeline?",
+      "expected_files": ["ouyang2022_instructgpt.pdf"],
+      "expected_pages": [3]
+    },
+    {
+      "query_id": "q019",
+      "category": "single_column",
+      "query": "Which reinforcement learning algorithm does InstructGPT use to optimise the policy in step three?",
+      "expected_files": ["ouyang2022_instructgpt.pdf"],
+      "expected_pages": [3]
+    },
+    {
+      "query_id": "q020",
+      "category": "single_column",
+      "query": "What are the two phases of the Constitutional AI method?",
+      "expected_files": ["bai2022_constitutional.pdf"],
+      "expected_pages": [2]
+    },
+    {
+      "query_id": "q021",
+      "category": "table_heavy",
+      "query": "According to the compute-optimal scaling law, approximately how many training tokens are recommended for a 10-billion parameter model?",
+      "expected_files": ["hoffmann2022_chinchilla.pdf"],
+      "expected_pages": [6]
+    },
+    {
+      "query_id": "q022",
+      "category": "table_heavy",
+      "query": "What model size and training token count define the Chinchilla model under the same compute budget as Gopher?",
+      "expected_files": ["hoffmann2022_chinchilla.pdf"],
+      "expected_pages": [2]
+    },
+    {
+      "query_id": "q023",
+      "category": "table_heavy",
+      "query": "What metric categories does the Holistic Evaluation of Language Models use for holistic evaluation?",
+      "expected_files": ["liang2022_helm.pdf"],
+      "expected_pages": [1]
+    },
+    {
+      "query_id": "q024",
+      "category": "table_heavy",
+      "query": "What is the purpose of the calibration metric in the HELM evaluation framework?",
+      "expected_files": ["liang2022_helm.pdf"],
+      "expected_pages": [6]
+    },
+    {
+      "query_id": "q025",
+      "category": "table_heavy",
+      "query": "What emergent abilities distinguish large language models from smaller pre-trained language models according to the survey?",
+      "expected_files": ["zhao2023_llm_survey.pdf"],
+      "expected_pages": [1]
     }
-  ],
-  "_target_count": "Expand queries[] to >=25 entries with the following suggested distribution: 12 two_column, 7 single_column, 4 table_heavy, 2 scanned (optional, requires OCR).",
-  "_saturation_warning": "If you find that any pilot query retrieves the expected file in the top-1 result without effort, the corpus may saturate. Add harder queries: cross-section, paraphrased, definition-only."
+  ]
 }

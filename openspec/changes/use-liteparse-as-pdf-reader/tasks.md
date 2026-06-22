@@ -31,7 +31,7 @@
 > Manual step. Operator (user) populates `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/` with ≥20 academic PDFs.
 
 - [x] 3.1 Operator adds ≥20 academic PDFs to `experiments/11-liteparse-pdf-quality-2026-06-20/corpus/`. Suggested mix: 12 two-column papers (e.g. NeurIPS/ICML/ACL style), 5 single-column (e.g. arXiv preprints), 3 table-heavy (e.g. survey papers, financial reports)
-- [ ] 3.2 Operator expands `ground_truth.json` from stub to ≥25 queries with known-good answers drawn from the supplied corpus
+- [x] 3.2 Operator expands `ground_truth.json` from stub to ≥25 queries with known-good answers drawn from the supplied corpus
 - [x] 3.3 Commit the corpus (if licence permits) or add `corpus/*.pdf` to `.gitignore` and document the corpus manifest in `corpus/MANIFEST.md` listing each PDF's source URL and licence
 
 ## 4. Run Experiment 11
