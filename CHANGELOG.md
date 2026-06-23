@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-06-23)
+
+### Bug Fixes
+
+- **exp11**: _parent_id reads dict source, not object metadata
+  ([#9](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/9),
+  [`96eec6b`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/96eec6b6d82ef8262024eb3c1c8ed014cf1973e9))
+
+- **exp11**: JSON-encode section_bbox for ChromaDB compatibility
+  ([#9](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/9),
+  [`96eec6b`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/96eec6b6d82ef8262024eb3c1c8ed014cf1973e9))
+
+### Features
+
+- Add pluggable PDF reader factory with LiteParse adapter
+  ([#9](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/9),
+  [`96eec6b`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/96eec6b6d82ef8262024eb3c1c8ed014cf1973e9))
+
+- Use LiteParse as pluggable PDF reader (gated by Experiment 11)
+  ([#9](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/9),
+  [`96eec6b`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/96eec6b6d82ef8262024eb3c1c8ed014cf1973e9))
+
+### Performance Improvements
+
+- **reranker**: 10x speedup via CoreML, batching, shorter sequences
+  ([#9](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/9),
+  [`96eec6b`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/96eec6b6d82ef8262024eb3c1c8ed014cf1973e9))
+
+
 ## v1.5.3 (2026-06-20)
 
 ### Bug Fixes
