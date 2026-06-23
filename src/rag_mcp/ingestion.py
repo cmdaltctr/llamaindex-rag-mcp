@@ -254,9 +254,12 @@ async def _read_and_chunk_file_async(
         Exception: If the file cannot be read or parsed.
     """
     def _read_sync() -> list:
+        from .readers import get_pdf_reader
+
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],
             filename_as_id=True,
+            file_extractor={".pdf": get_pdf_reader()},
         )
         return reader.load_data()
 

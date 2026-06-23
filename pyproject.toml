@@ -32,6 +32,9 @@ hybrid = [
 pdf-liteparse = [
     "liteparse>=2.0.0",
 ]
+pdf-pypdfium2 = [
+    "pypdfium2>=4.0.0",
+]
 
 [project.scripts]
 rag-mcp = "rag_mcp.cli:run_cli"

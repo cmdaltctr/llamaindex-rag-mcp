@@ -1,0 +1,602 @@
+{
+  "experiment": "11-liteparse-pdf-quality-2026-06-20",
+  "metrics_by_cell": {
+    "pypdf__rerank_false": {
+      "all": {
+        "n": 25,
+        "ndcg_at_10": 2.999984,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 0.96,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.946668,
+        "mean_latency_ms": 176.17,
+        "p95_latency_ms": 429.76
+      },
+      "two_column": {
+        "n": 13,
+        "ndcg_at_10": 3.032038,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 1.0,
+        "mean_latency_ms": 189.16,
+        "p95_latency_ms": 429.76
+      },
+      "single_column": {
+        "n": 7,
+        "ndcg_at_10": 2.404743,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 0.857143,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.809529,
+        "mean_latency_ms": 165.0,
+        "p95_latency_ms": 215.1
+      },
+      "table_heavy": {
+        "n": 5,
+        "ndcg_at_10": 3.74998,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 1.0,
+        "mean_latency_ms": 158.03,
+        "p95_latency_ms": 162.48
+      }
+    },
+    "pypdf__rerank_true": {
+      "all": {
+        "n": 25,
+        "ndcg_at_10": 3.03332,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 0.96,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.918332,
+        "mean_latency_ms": 20528.51,
+        "p95_latency_ms": 54921.72
+      },
+      "two_column": {
+        "n": 13,
+        "ndcg_at_10": 3.160238,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 0.923077,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.932692,
+        "mean_latency_ms": 23157.06,
+        "p95_latency_ms": 54921.72
+      },
+      "single_column": {
+        "n": 7,
+        "ndcg_at_10": 2.583329,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.904757,
+        "mean_latency_ms": 16850.06,
+        "p95_latency_ms": 21207.88
+      },
+      "table_heavy": {
+        "n": 5,
+        "ndcg_at_10": 3.33332,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.9,
+        "mean_latency_ms": 18844.12,
+        "p95_latency_ms": 22633.99
+      }
+    },
+    "liteparse__rerank_false": {
+      "all": {
+        "n": 25,
+        "ndcg_at_10": 3.206648,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.933332,
+        "mean_latency_ms": 216.17,
+        "p95_latency_ms": 473.94
+      },
+      "two_column": {
+        "n": 13,
+        "ndcg_at_10": 3.032031,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.910254,
+        "mean_latency_ms": 260.1,
+        "p95_latency_ms": 473.94
+      },
+      "single_column": {
+        "n": 7,
+        "ndcg_at_10": 2.988086,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.928571,
+        "mean_latency_ms": 174.08,
+        "p95_latency_ms": 208.67
+      },
+      "table_heavy": {
+        "n": 5,
+        "ndcg_at_10": 3.96664,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 1.0,
+        "mean_latency_ms": 160.89,
+        "p95_latency_ms": 166.9
+      }
+    },
+    "liteparse__rerank_true": {
+      "all": {
+        "n": 25,
+        "ndcg_at_10": 3.149992,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.913332,
+        "mean_latency_ms": 16261.71,
+        "p95_latency_ms": 29551.17
+      },
+      "two_column": {
+        "n": 13,
+        "ndcg_at_10": 3.249992,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.923077,
+        "mean_latency_ms": 14769.32,
+        "p95_latency_ms": 29551.17
+      },
+      "single_column": {
+        "n": 7,
+        "ndcg_at_10": 2.738086,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.928571,
+        "mean_latency_ms": 18705.76,
+        "p95_latency_ms": 27519.92
+      },
+      "table_heavy": {
+        "n": 5,
+        "ndcg_at_10": 3.46666,
+        "coverage_at_20": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "hit_at_20": 1.0,
+        "mrr_at_10": 0.86666,
+        "mean_latency_ms": 16720.27,
+        "p95_latency_ms": 23497.47
+      }
+    }
+  },
+  "build_timing": {
+    "pypdf": {
+      "parser": "pypdf",
+      "files_total": 22,
+      "files_ok": 22,
+      "files_failed": 0,
+      "chunks_written": 2858,
+      "total_seconds": 932.842,
+      "parse_seconds_total": 30.88,
+      "chunk_seconds_total": 2.353,
+      "embed_seconds_total": 899.606,
+      "per_file": [
+        {
+          "file": "README.md",
+          "status": "ok",
+          "pages": 1,
+          "chunks": 2,
+          "parse_seconds": 0.3,
+          "chunk_seconds": 0.308
+        },
+        {
+          "file": "MANIFEST.md",
+          "status": "ok",
+          "pages": 1,
+          "chunks": 6,
+          "parse_seconds": 0.001,
+          "chunk_seconds": 0.004
+        },
+        {
+          "file": "press2022_measuring.pdf",
+          "status": "ok",
+          "pages": 25,
+          "chunks": 64,
+          "parse_seconds": 0.469,
+          "chunk_seconds": 0.045
+        },
+        {
+          "file": "hu2021_lora.pdf",
+          "status": "ok",
+          "pages": 26,
+          "chunks": 78,
+          "parse_seconds": 4.059,
+          "chunk_seconds": 0.046
+        },
+        {
+          "file": "devlin2019_bert.pdf",
+          "status": "ok",
+          "pages": 16,
+          "chunks": 51,
+          "parse_seconds": 0.459,
+          "chunk_seconds": 0.033
+        },
+        {
+          "file": "karpukhin2020_dpr.pdf",
+          "status": "ok",
+          "pages": 13,
+          "chunks": 42,
+          "parse_seconds": 0.291,
+          "chunk_seconds": 0.027
+        },
+        {
+          "file": "touvron2023_llama.pdf",
+          "status": "ok",
+          "pages": 27,
+          "chunks": 79,
+          "parse_seconds": 0.652,
+          "chunk_seconds": 0.049
+        },
+        {
+          "file": "ouyang2022_instructgpt.pdf",
+          "status": "ok",
+          "pages": 68,
+          "chunks": 146,
+          "parse_seconds": 1.276,
+          "chunk_seconds": 0.164
+        },
+        {
+          "file": "hoffmann2022_chinchilla.pdf",
+          "status": "ok",
+          "pages": 36,
+          "chunks": 92,
+          "parse_seconds": 4.99,
+          "chunk_seconds": 0.056
+        },
+        {
+          "file": "vaswani2017_attention.pdf",
+          "status": "ok",
+          "pages": 15,
+          "chunks": 32,
+          "parse_seconds": 0.776,
+          "chunk_seconds": 0.017
+        },
+        {
+          "file": "lewis2020_rag.pdf",
+          "status": "ok",
+          "pages": 19,
+          "chunks": 57,
+          "parse_seconds": 0.379,
+          "chunk_seconds": 0.03
+        },
+        {
+          "file": "brown2020_gpt3.pdf",
+          "status": "ok",
+          "pages": 75,
+          "chunks": 197,
+          "parse_seconds": 0.858,
+          "chunk_seconds": 0.199
+        },
+        {
+          "file": "dosovitskiy2021_vit.pdf",
+          "status": "ok",
+          "pages": 22,
+          "chunks": 57,
+          "parse_seconds": 0.855,
+          "chunk_seconds": 0.034
+        },
+        {
+          "file": "liang2022_helm.pdf",
+          "status": "ok",
+          "pages": 162,
+          "chunks": 539,
+          "parse_seconds": 4.212,
+          "chunk_seconds": 0.403
+        },
+        {
+          "file": "wang2022_selfconsistency.pdf",
+          "status": "ok",
+          "pages": 24,
+          "chunks": 77,
+          "parse_seconds": 0.617,
+          "chunk_seconds": 0.058
+        },
+        {
+          "file": "touvron2023_llama2.pdf",
+          "status": "ok",
+          "pages": 77,
+          "chunks": 218,
+          "parse_seconds": 3.241,
+          "chunk_seconds": 0.151
+        },
+        {
+          "file": "madaan2023_selfrefine.pdf",
+          "status": "ok",
+          "pages": 54,
+          "chunks": 99,
+          "parse_seconds": 0.75,
+          "chunk_seconds": 0.049
+        },
+        {
+          "file": "bai2022_constitutional.pdf",
+          "status": "ok",
+          "pages": 34,
+          "chunks": 84,
+          "parse_seconds": 0.773,
+          "chunk_seconds": 0.049
+        },
+        {
+          "file": "zhao2023_llm_survey.pdf",
+          "status": "ok",
+          "pages": 144,
+          "chunks": 675,
+          "parse_seconds": 4.049,
+          "chunk_seconds": 0.482
+        },
+        {
+          "file": "wei2022_cot.pdf",
+          "status": "ok",
+          "pages": 43,
+          "chunks": 113,
+          "parse_seconds": 1.024,
+          "chunk_seconds": 0.066
+        },
+        {
+          "file": "yao2022_react.pdf",
+          "status": "ok",
+          "pages": 33,
+          "chunks": 99,
+          "parse_seconds": 0.507,
+          "chunk_seconds": 0.05
+        },
+        {
+          "file": "he2016_resnet.pdf",
+          "status": "ok",
+          "pages": 12,
+          "chunks": 51,
+          "parse_seconds": 0.342,
+          "chunk_seconds": 0.033
+        }
+      ]
+    },
+    "liteparse": {
+      "parser": "liteparse",
+      "files_total": 22,
+      "files_ok": 20,
+      "files_failed": 2,
+      "chunks_written": 3280,
+      "total_seconds": 990.611,
+      "parse_seconds_total": 5.629,
+      "chunk_seconds_total": 1.897,
+      "embed_seconds_total": 983.082,
+      "per_file": [
+        {
+          "file": "press2022_measuring.pdf",
+          "status": "ok",
+          "pages": 25,
+          "chunks": 76,
+          "parse_seconds": 0.449,
+          "chunk_seconds": 0.324
+        },
+        {
+          "file": "hu2021_lora.pdf",
+          "status": "ok",
+          "pages": 26,
+          "chunks": 87,
+          "parse_seconds": 0.32,
+          "chunk_seconds": 0.044
+        },
+        {
+          "file": "devlin2019_bert.pdf",
+          "status": "ok",
+          "pages": 16,
+          "chunks": 57,
+          "parse_seconds": 0.076,
+          "chunk_seconds": 0.026
+        },
+        {
+          "file": "karpukhin2020_dpr.pdf",
+          "status": "ok",
+          "pages": 13,
+          "chunks": 50,
+          "parse_seconds": 0.056,
+          "chunk_seconds": 0.02
+        },
+        {
+          "file": "touvron2023_llama.pdf",
+          "status": "ok",
+          "pages": 27,
+          "chunks": 92,
+          "parse_seconds": 0.09,
+          "chunk_seconds": 0.044
+        },
+        {
+          "file": "ouyang2022_instructgpt.pdf",
+          "status": "ok",
+          "pages": 68,
+          "chunks": 173,
+          "parse_seconds": 0.182,
+          "chunk_seconds": 0.074
+        },
+        {
+          "file": "hoffmann2022_chinchilla.pdf",
+          "status": "ok",
+          "pages": 36,
+          "chunks": 102,
+          "parse_seconds": 0.35,
+          "chunk_seconds": 0.05
+        },
+        {
+          "file": "vaswani2017_attention.pdf",
+          "status": "ok",
+          "pages": 15,
+          "chunks": 38,
+          "parse_seconds": 0.114,
+          "chunk_seconds": 0.016
+        },
+        {
+          "file": "lewis2020_rag.pdf",
+          "status": "ok",
+          "pages": 19,
+          "chunks": 62,
+          "parse_seconds": 0.074,
+          "chunk_seconds": 0.03
+        },
+        {
+          "file": "brown2020_gpt3.pdf",
+          "status": "ok",
+          "pages": 75,
+          "chunks": 224,
+          "parse_seconds": 0.205,
+          "chunk_seconds": 0.096
+        },
+        {
+          "file": "dosovitskiy2021_vit.pdf",
+          "status": "ok",
+          "pages": 22,
+          "chunks": 67,
+          "parse_seconds": 0.123,
+          "chunk_seconds": 0.034
+        },
+        {
+          "file": "liang2022_helm.pdf",
+          "status": "ok",
+          "pages": 162,
+          "chunks": 594,
+          "parse_seconds": 0.68,
+          "chunk_seconds": 0.293
+        },
+        {
+          "file": "wang2022_selfconsistency.pdf",
+          "status": "ok",
+          "pages": 24,
+          "chunks": 89,
+          "parse_seconds": 0.169,
+          "chunk_seconds": 0.04
+        },
+        {
+          "file": "touvron2023_llama2.pdf",
+          "status": "ok",
+          "pages": 77,
+          "chunks": 253,
+          "parse_seconds": 1.402,
+          "chunk_seconds": 0.13
+        },
+        {
+          "file": "madaan2023_selfrefine.pdf",
+          "status": "ok",
+          "pages": 54,
+          "chunks": 119,
+          "parse_seconds": 0.168,
+          "chunk_seconds": 0.055
+        },
+        {
+          "file": "bai2022_constitutional.pdf",
+          "status": "ok",
+          "pages": 34,
+          "chunks": 97,
+          "parse_seconds": 0.161,
+          "chunk_seconds": 0.045
+        },
+        {
+          "file": "zhao2023_llm_survey.pdf",
+          "status": "ok",
+          "pages": 144,
+          "chunks": 797,
+          "parse_seconds": 0.671,
+          "chunk_seconds": 0.435
+        },
+        {
+          "file": "wei2022_cot.pdf",
+          "status": "ok",
+          "pages": 43,
+          "chunks": 128,
+          "parse_seconds": 0.132,
+          "chunk_seconds": 0.064
+        },
+        {
+          "file": "yao2022_react.pdf",
+          "status": "ok",
+          "pages": 33,
+          "chunks": 117,
+          "parse_seconds": 0.134,
+          "chunk_seconds": 0.048
+        },
+        {
+          "file": "he2016_resnet.pdf",
+          "status": "ok",
+          "pages": 12,
+          "chunks": 58,
+          "parse_seconds": 0.073,
+          "chunk_seconds": 0.029
+        },
+        {
+          "file": "README.md",
+          "status": "failed",
+          "error": "conversion error: unsupported file format: .md",
+          "parse_seconds": 0.0
+        },
+        {
+          "file": "MANIFEST.md",
+          "status": "failed",
+          "error": "conversion error: unsupported file format: .md",
+          "parse_seconds": 0.0
+        }
+      ]
+    }
+  },
+  "h4_detail": {
+    "lost_query_count": 0,
+    "lost_queries": [],
+    "pass": true
+  },
+  "pass_criteria": {
+    "H1_quality_win": {
+      "baseline_ndcg10": 2.999984,
+      "candidate_ndcg10": 3.206648,
+      "ratio": 1.0689,
+      "threshold": ">= 1.05",
+      "pass": true
+    },
+    "H2_speed_win": {
+      "baseline_seconds": 932.842,
+      "candidate_seconds": 990.611,
+      "ratio": 1.0619,
+      "threshold": "<= 0.80",
+      "pass": false
+    },
+    "H3_reranker_still_helps": {
+      "no_rerank_ndcg10": 3.206648,
+      "with_rerank_ndcg10": 3.149992,
+      "ratio": 0.9823,
+      "threshold": ">= 1.05",
+      "pass": false
+    },
+    "H4_no_lost_queries": {
+      "threshold": "0 queries drop from found to not-found",
+      "pass": true,
+      "lost_count": 0
+    },
+    "all_primary_gates_pass": false,
+    "all_gates_pass": false,
+    "verdict": "PARTIAL",
+    "recommendation": "Quality win confirmed but speed win failed. Adopt LiteParse as auto default (quality > speed); record H2 failure in ADR-020."
+  }
+}

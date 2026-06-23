@@ -159,6 +159,64 @@ def _resolve_sparse_backend() -> str:
 
 RESOLVED_HYBRID_SPARSE_BACKEND = _resolve_sparse_backend()
 
+# ── PDF reader selection ───────────────────────────────────────────────
+# Controls which parser handles .pdf files during ingestion. Accepted
+# values: "auto", "liteparse", "pypdfium2", "pypdf". See ADR-020.
+# Default is "pypdf" (not "auto") — promotion to "auto" is a follow-on
+# change after Experiment 11 validated quality (see tasks.md task 5.4).
+PDF_READER = os.getenv("PDF_READER", "pypdf").lower()
+
+if PDF_READER not in {"auto", "liteparse", "pypdfium2", "pypdf"}:
+    logger.warning(
+        "Unknown PDF_READER=%r; falling back to auto", PDF_READER,
+    )
+    PDF_READER = "auto"
+
+# LiteParse constructor knobs. OCR is disabled by default — the corpus
+# has no scanned PDFs, and OCR adds ~16s/file overhead (see Experiment 11).
+LITEPARSE_NUM_WORKERS: int | None = (
+    int(v) if (v := os.getenv("LITEPARSE_NUM_WORKERS")) else None
+)
+LITEPARSE_OCR_ENABLED = os.getenv("LITEPARSE_OCR_ENABLED", "false").lower() == "true"
+
+
+def _resolve_pdf_reader() -> str:
+    """Resolve the configured PDF reader to a concrete backend name.
+
+    Mirrors the ``_resolve_sparse_backend()`` pattern. Probes imports in
+    preference order: ``liteparse → pypdfium2 → pypdf``.
+    """
+    if PDF_READER == "pypdf":
+        return "pypdf"
+
+    # Explicit backend requests: verify the package is importable.
+    if PDF_READER in ("liteparse", "pypdfium2"):
+        try:
+            __import__(PDF_READER)
+            return PDF_READER
+        except ImportError:
+            logger.error(
+                "PDF_READER=%s was requested but the package is not "
+                "installed. Falling back to pypdf.", PDF_READER,
+            )
+            return "pypdf"
+
+    # auto resolution: probe in preference order.
+    for backend in ("liteparse", "pypdfium2"):
+        try:
+            __import__(backend)
+            logger.info(
+                "PDF_READER=auto resolved to %s", backend,
+            )
+            return backend
+        except ImportError:
+            continue
+
+    return "pypdf"
+
+
+RESOLVED_PDF_READER = _resolve_pdf_reader()
+
 # ── Metadata extraction ─────────────────────────────────────────────────
 # Controls how document metadata (e.g., category) is extracted during
 # ingestion.  Allowed values: "disabled", "keyword", "ollama", "llamaindex".

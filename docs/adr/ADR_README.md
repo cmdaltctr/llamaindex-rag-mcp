@@ -26,6 +26,7 @@ development of the LlamaIndex RAG MCP Server.
 | [017](./017-hybrid-retrieval-rrf.md) | Hybrid Retrieval with Reciprocal Rank Fusion | 2026-05-27 | Proposed |
 | [018](./018-balanced-retrieval-defaults.md) | Balanced Retrieval Defaults | 2026-05-29 | Accepted |
 | [019](./019-reranker-disabled-for-technical-workloads.md) | Disable Reranker for Technical Workloads | 2026-06-01 | Accepted |
+| [020](./020-use-liteparse-as-pdf-reader.md) | Adopt LiteParse as Pluggable PDF Reader | 2026-06-23 | Accepted |
 | [021](./021-reranker-inference-optimisation.md) | Reranker Inference Optimisation — CoreML, Batching, and Reduced Fetch Pool | 2026-06-23 | Accepted |
 
 ## Convention

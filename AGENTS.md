@@ -113,6 +113,7 @@ For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tool
 4. **`reranker.py` imports `dotenv` independently** of `config.py`. Don't "fix" — circular import risk.
 5. **Balanced retrieval defaults are intentional.** ADR-018 promotes `TOP_K=10` and `RERANK_ENABLED=true` with `CHUNK_OVERLAP=100`, based on Experiments 7a/8a. `server.py` and `cli.py` must read these defaults from `config.py`, not hardcode `5` / `False`.
 6. **CLI output goes to stderr.** stdout is the MCP protocol channel. JSON output must suppress third-party stdout/stderr noise from lazy reranker/model imports.
+7. **The PDF reader is now a factory.** Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf. See ADR-020.
 
 ## MCP Best Practices (FastMCP / Python)
 
