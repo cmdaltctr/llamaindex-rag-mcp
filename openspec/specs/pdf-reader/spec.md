@@ -103,7 +103,7 @@ The system SHALL expose a `BaseReader` protocol in `src/rag_mcp/readers/base.py`
 
 ### Requirement: LiteParse SHALL be installed via optional-dependency extra, not as a core dependency
 
-The `liteparse` package SHALL be declared in `pyproject.toml` under `[project.optional-dependencies]` as the `pdf-liteparse` extra. The base `uv sync` SHALL NOT install `liteparse` or trigger its native PDFium build. Users SHALL opt in via `uv sync --extra pdf-liteparse`. This隔离 respects the AGENTS.md rule `⚠️ Ask: Adding new core dependencies` by keeping the baseline install footprint unchanged.
+The `liteparse` package SHALL be declared in `pyproject.toml` under `[project.optional-dependencies]` as the `pdf-liteparse` extra. The base `uv sync` SHALL NOT install `liteparse` or trigger its native PDFium build. Users SHALL opt in via `uv sync --extra pdf-liteparse`. This isolation respects the AGENTS.md rule `⚠️ Ask: Adding new core dependencies` by keeping the baseline install footprint unchanged.
 
 #### Scenario: Baseline install does not include liteparse
 - **WHEN** a user runs `uv sync` without extras
@@ -114,14 +114,17 @@ The `liteparse` package SHALL be declared in `pyproject.toml` under `[project.op
 - **WHEN** a user runs `uv sync --extra pdf-liteparse` and sets `PDF_READER=auto`
 - **THEN** the `liteparse` package SHALL be importable and `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
 
-### Requirement: System SHALL validate LiteParse adoption via Experiment 11 before promoting to auto default
+### Requirement: PDF reader default SHALL be auto after Experiment 11 validation
 
-LiteParse SHALL NOT become the `auto` default until Experiment 11 (`experiments/11-liteparse-pdf-quality-2026-06-20/`) completes with status PASS against its pre-registered pass gates. Until the experiment passes, the implicit default for `PDF_READER` SHALL remain `pypdf` (current behaviour). The promotion from `pypdf` default to `auto` default SHALL be a separate follow-on change referencing the experiment results and ADR-020.
+The default value for `PDF_READER` SHALL be `auto`. When `auto` is selected
+and `liteparse` is installed, the system SHALL resolve to LiteParse. When
+LiteParse is not installed, the system SHALL fall back to pypdf. Experiment 11
+validated this adoption (+6.9% nDCG@10); see ADR-020 for the decision record.
 
-#### Scenario: Pre-experiment default
-- **WHEN** this change is merged but Experiment 11 has not yet run
-- **THEN** setting no `PDF_READER` env var SHALL result in `RESOLVED_PDF_READER="pypdf"`
+#### Scenario: Auto default (current state)
+- **WHEN** no `PDF_READER` env var is set and `liteparse` is installed
+- **THEN** `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
 
-#### Scenario: Post-experiment PASS promotion
-- **WHEN** Experiment 11 completes with PASS and a follow-on change flips the default
-- **THEN** setting no `PDF_READER` env var SHALL result in `auto` resolution, preferring LiteParse when installed
+#### Scenario: Auto fallback when LiteParse not installed
+- **WHEN** no `PDF_READER` env var is set and `liteparse` is NOT installed
+- **THEN** `RESOLVED_PDF_READER` SHALL resolve to `"pypdf"` (always available)

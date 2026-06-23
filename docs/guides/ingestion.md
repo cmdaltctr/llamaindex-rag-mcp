@@ -45,12 +45,12 @@ environment variable. Accepted values:
 | `pypdfium2`  | Same PDFium engine as LiteParse, no bbox. Fallback tier.  | `[pdf-pypdfium2]`       |
 | `auto`       | Probes in order: liteparse → pypdfium2 → pypdf.            | Depends on what's installed |
 
-The default is `pypdf` (not `auto`) until a follow-on change promotes it.
-To use LiteParse:
+The default is `auto`, which resolves to LiteParse when installed, then
+pypdfium2, then pypdf. To use LiteParse:
 
 ```bash
 uv sync --extra pdf-liteparse
-# In .env: PDF_READER=liteparse
+# PDF_READER=auto is already the default — LiteParse is used automatically
 ```
 
 LiteParse captures bounding-box metadata (`page`, `column`,

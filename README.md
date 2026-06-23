@@ -85,16 +85,15 @@ scales with the collection's chunk count.
 
 ### Optional PDF reader (LiteParse)
 
-The default PDF parser is **pypdf** (always available, no extra install).
-[LiteParse](https://github.com/run-llama/liteparse) (Rust + PDFium) is an
-optional upgrade that provides column-aware reading order, bounding-box
-metadata, and faster parsing — validated by [Experiment 11](experiments/11-liteparse-pdf-quality-2026-06-20/)
+The default PDF parser is **LiteParse** (when installed via `[pdf-liteparse]`),
+falling back to **pypdf** if LiteParse is not present. LiteParse provides
+column-aware reading order, bounding-box metadata, and faster parsing —
+validated by [Experiment 11](experiments/11-liteparse-pdf-quality-2026-06-20/)
 (+6.9% nDCG@10 on academic PDFs). See [ADR-020](docs/adr/020-use-liteparse-as-pdf-reader.md).
 
 ```bash
 uv sync --extra pdf-liteparse
-# Then set in .env:
-# PDF_READER=liteparse
+# LiteParse is now used automatically (PDF_READER=auto is the default)
 ```
 
 ---

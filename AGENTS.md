@@ -46,22 +46,6 @@ uv run pytest --cov=rag_mcp      # Coverage
 
 Skills live in `~/.claude/skills/` and `~/.config/opencode/skills/`. Load via the `skill` tool.
 
-## Coding Behaviour (Karpathy Rules)
-
-These apply to every code change. Bias toward caution over speed.
-
-**1. Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask.
-
-**2. Simplicity first.** Minimum code that solves the problem. No speculative features, no abstractions for single-use code, no configurability that wasn't requested. If you write 200 lines and it could be 50, rewrite it.
-
-**3. Surgical changes.** Touch only what you must. Don't improve adjacent code, comments, or formatting. Match existing style. Remove only imports/variables YOUR changes made unused — not pre-existing dead code.
-
-**4. Goal-driven execution.** Transform tasks into verifiable goals:
-- "Fix the bug" → write a test that reproduces it, then make it pass
-- "Add validation" → write tests for invalid inputs, then make them pass
-
-For multi-step tasks, state a brief plan with verify steps before starting.
-
 ## Change Workflow
 
 For any non-trivial change, follow this order:
@@ -113,7 +97,7 @@ For detailed behaviour, read `docs/guides/` — it covers architecture, MCP tool
 4. **`reranker.py` imports `dotenv` independently** of `config.py`. Don't "fix" — circular import risk.
 5. **Balanced retrieval defaults are intentional.** ADR-018 promotes `TOP_K=10` and `RERANK_ENABLED=true` with `CHUNK_OVERLAP=100`, based on Experiments 7a/8a. `server.py` and `cli.py` must read these defaults from `config.py`, not hardcode `5` / `False`.
 6. **CLI output goes to stderr.** stdout is the MCP protocol channel. JSON output must suppress third-party stdout/stderr noise from lazy reranker/model imports.
-7. **The PDF reader is now a factory.** Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf. See ADR-020.
+7. **The PDF reader is now a factory.** Default is `auto` (LiteParse when installed, else pypdf). Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf. See ADR-020.
 
 ## MCP Best Practices (FastMCP / Python)
 

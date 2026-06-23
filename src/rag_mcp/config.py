@@ -161,10 +161,10 @@ RESOLVED_HYBRID_SPARSE_BACKEND = _resolve_sparse_backend()
 
 # ── PDF reader selection ───────────────────────────────────────────────
 # Controls which parser handles .pdf files during ingestion. Accepted
-# values: "auto", "liteparse", "pypdfium2", "pypdf". See ADR-020.
-# Default is "pypdf" (not "auto") — promotion to "auto" is a follow-on
-# change after Experiment 11 validated quality (see tasks.md task 5.4).
-PDF_READER = os.getenv("PDF_READER", "pypdf").lower()
+# values: "auto", "liteparse", "pypdfium2", "pypdf". Default is "auto",
+# which resolves to LiteParse when installed, falling back to pypdf.
+# See ADR-020.
+PDF_READER = os.getenv("PDF_READER", "auto").lower()
 
 if PDF_READER not in {"auto", "liteparse", "pypdfium2", "pypdf"}:
     logger.warning(
