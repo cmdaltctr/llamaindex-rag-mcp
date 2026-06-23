@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-06-23)
+
+### Features
+
+- Make liteparse a core dependency
+  ([`7eec00e`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/7eec00e918f875b48399689a84c842391e1b0ec4))
+
+
 ## v1.7.0 (2026-06-23)
 
 ### Features
