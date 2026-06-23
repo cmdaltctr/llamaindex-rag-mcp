@@ -54,7 +54,7 @@
   - Speed win: ingest wall-clock candidate-B ≤ baseline-A × 0.80
   - Regression guard A: candidate-B-r ≥ candidate-B (reranker still helps)
   - Regression guard B: zero queries move from "found" to "not found"
-- [ ] 5.3 Update `experiments/EXP_README.md` with status `PASS` or `FAIL` and a one-line summary
+- [x] 5.3 Update `experiments/EXP_README.md` with status `PASS` or `FAIL` and a one-line summary
 - [x] 5.4 **DECISION GATE.** If Experiment 11 status is PASS → continue to task 6. If FAIL → jump to task 10.2 (write ADR-020 recording negative result) and stop. Do not implement the factory change on a failed experiment.
 - [x] 5.5 Commit summary: `git add experiments/11-liteparse-pdf-quality-2026-06-20/{results.md,output/eval_results.summary.json} experiments/EXP_README.md && git commit -m "exp(11): summarise results, status=<PASS|FAIL>"`
 
@@ -102,7 +102,7 @@
 - [x] 10.1 If Experiment 11 PASSED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Accepted, Context (pypdf problem, LiteParse selection rationale), Decision (adopt LiteParse via factory), Alternatives (pymupdf4llm/AGPL, pypdfium2/no-bbox, spdf/immature, docling/PyTorch-blocked), Consequences (bbox metadata available, native build dep, AGPL avoidance), References (Experiment 11 results, this OpenSpec change)
 - [ ] 10.2 If Experiment 11 FAILED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Declined, Context (same), Decision (reject LiteParse adoption; retain factory architecture for future use), Negative Result (what specifically failed — quality, speed, or both), Follow-on (pypdfium2 as smaller upgrade, or wait for spdf maturity)
 - [x] 10.3 Update `docs/adr/ADR_README.md` index with the new entry, following the existing format
-- [ ] 10.4 Cross-reference the ADR from `experiments/EXP_README.md` Experiment 11 row
+- [x] 10.4 Cross-reference the ADR from `experiments/EXP_README.md` Experiment 11 row
 
 ## 11. Tests
 
