@@ -73,15 +73,16 @@ def _setup_environment(parser_mode: str, chroma_dir: Path) -> None:
         pass
 
 
-def _parent_id(result: Any) -> str:
-    """Extract a stable source identifier from a retrieval result."""
-    metadata = getattr(result, "metadata", {}) or {}
-    return (
-        metadata.get("file_name")
-        or metadata.get("file_path")
-        or metadata.get("source_id")
-        or getattr(result, "id_", "")
-    )
+def _parent_id(result: dict) -> str:
+    """Extract a bare source filename from a retrieval result dict.
+
+    retrieval.search() returns dicts with a 'source' key holding the
+    full file path. We extract the basename to match expected_files
+    in ground_truth.json (which uses bare filenames like
+    'vaswani2017_attention.pdf').
+    """
+    source = result.get("source", "")
+    return os.path.basename(source) if source else ""
 
 
 def _metrics_for_query(
