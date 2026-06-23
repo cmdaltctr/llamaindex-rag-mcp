@@ -113,7 +113,7 @@ def _parse_with_liteparse(file_path: Path) -> list[Document]:
                 "pdf_reader": "liteparse",
                 "page": page.page_num,
                 "column": column,
-                "section_bbox": bbox,
+                "section_bbox": json.dumps(bbox),
                 "bbox_schema_version": 1,
                 "file_path": str(file_path),
                 "file_name": file_path.name,
