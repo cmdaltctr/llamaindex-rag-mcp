@@ -116,8 +116,8 @@ SIMILARITY_THRESHOLD = _get_float_env("SIMILARITY_THRESHOLD", 0.0)
 #
 # Effective fetch size = max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)
 # clamped to the collection size so small collections do not over-fetch.
-RERANK_FETCH_MULTIPLIER = int(os.getenv("RERANK_FETCH_MULTIPLIER", "10"))
-RERANK_MAX_FETCH = int(os.getenv("RERANK_MAX_FETCH", "50"))
+RERANK_FETCH_MULTIPLIER = int(os.getenv("RERANK_FETCH_MULTIPLIER", "3"))
+RERANK_MAX_FETCH = int(os.getenv("RERANK_MAX_FETCH", "100"))
 
 # ── Hybrid retrieval defaults ─────────────────────────────────────────────
 # V1 deliberately defaults to the in-process BM25 path.  Promotion of
