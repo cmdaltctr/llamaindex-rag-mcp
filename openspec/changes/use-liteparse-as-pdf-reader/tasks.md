@@ -91,16 +91,16 @@
 
 - [x] 9.1 Add `[project.optional-dependencies]` section to `pyproject.toml` (or extend existing) with two extras: `pdf-liteparse = ["liteparse>=2.0.0"]` and `pdf-pypdfium2 = ["pypdfium2>=4.0.0"]`
 - [x] 9.2 Run `uv lock` to update `uv.lock`
-- [ ] 9.3 Verify `uv sync` (no extras) still works and neither `liteparse` nor `pypdfium2` is importable
+- [x] 9.3 Verify `uv sync` (no extras) still works and neither `liteparse` nor `pypdfium2` is importable
 - [x] 9.4 Verify `uv sync --extra pdf-liteparse` installs LiteParse and the native PDFium binary builds successfully on macOS arm64
-- [ ] 9.5 Document the `[pdf-liteparse]` flag in the README "Quick install" section, alongside the existing optional hybrid retrieval flag
+- [x] 9.5 Document the `[pdf-liteparse]` flag in the README "Quick install" section, alongside the existing optional hybrid retrieval flag
 
 ## 10. ADR-020
 
 > Written regardless of Experiment 11 outcome.
 
 - [x] 10.1 If Experiment 11 PASSED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Accepted, Context (pypdf problem, LiteParse selection rationale), Decision (adopt LiteParse via factory), Alternatives (pymupdf4llm/AGPL, pypdfium2/no-bbox, spdf/immature, docling/PyTorch-blocked), Consequences (bbox metadata available, native build dep, AGPL avoidance), References (Experiment 11 results, this OpenSpec change)
-- [ ] 10.2 If Experiment 11 FAILED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Declined, Context (same), Decision (reject LiteParse adoption; retain factory architecture for future use), Negative Result (what specifically failed — quality, speed, or both), Follow-on (pypdfium2 as smaller upgrade, or wait for spdf maturity)
+- [x] 10.2 If Experiment 11 FAILED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Declined, Context (same), Decision (reject LiteParse adoption; retain factory architecture for future use), Negative Result (what specifically failed — quality, speed, or both), Follow-on (pypdfium2 as smaller upgrade, or wait for spdf maturity)
 - [x] 10.3 Update `docs/adr/ADR_README.md` index with the new entry, following the existing format
 - [x] 10.4 Cross-reference the ADR from `experiments/EXP_README.md` Experiment 11 row
 
@@ -113,25 +113,25 @@
 - [x] 11.5 `tests/unit/test_ingestion_pdf_extractor.py` — integration: `_read_and_chunk_file_async` uses the factory; bbox metadata propagates to Node.metadata for LiteParse path; pypdf path unchanged
 - [x] 11.6 Mark all LiteParse-path tests with `@pytest.mark.slow` (they require `[pdf-liteparse]` extra and the native binary); ensure default `pytest -m "not slow"` skips them
 - [ ] 11.7 Add CI matrix job that installs `[pdf-liteparse]` and runs the slow tests on macOS arm64 and Linux x86_64
-- [ ] 11.8 Run `uv run pytest -m "not slow" --cov=rag_mcp` and verify overall coverage stays ≥90% (per AGENTS.md coverage thresholds); new modules in `readers/` target ≥95% (core-logic tier)
+- [x] 11.8 Run `uv run pytest -m "not slow" --cov=rag_mcp` and verify overall coverage stays ≥90% (per AGENTS.md coverage thresholds); new modules in `readers/` target ≥95% (core-logic tier)
 
 ## 12. Documentation
 
-- [ ] 12.1 Update `docs/guides/ingestion.md` (or equivalent) with a "PDF reader configuration" section: explain `PDF_READER` env var, `auto` resolution, `[pdf-liteparse]` extra, fallback behaviour
-- [ ] 12.2 Update `README.md` MCP Tools table — no tool changes, but add a footnote on the `ingest_documents` row linking to the PDF reader guide
+- [x] 12.1 Update `docs/guides/ingestion.md` (or equivalent) with a "PDF reader configuration" section: explain `PDF_READER` env var, `auto` resolution, `[pdf-liteparse]` extra, fallback behaviour
+- [x] 12.2 Update `README.md` MCP Tools table — no tool changes, but add a footnote on the `ingest_documents` row linking to the PDF reader guide
 - [x] 12.3 Update `.env.example` with `PDF_READER`, `LITEPARSE_NUM_WORKERS`, `LITEPARSE_OCR_ENABLED` entries with explanatory comments
 - [x] 12.4 Update `AGENTS.md` "Critical Gotchas" with: "The PDF reader is now a factory. Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf."
-- [ ] 12.5 Verify all doc claims by reading the actual source (per the user's documentation-as-contract preference)
+- [x] 12.5 Verify all doc claims by reading the actual source (per the user's documentation-as-contract preference)
 
 ## 13. Validation
 
 - [x] 13.1 `uv run pytest -m "not slow" -v` — all existing tests still pass
-- [ ] 13.2 `uv run pytest -m "slow" -v` — LiteParse-path tests pass when `[pdf-liteparse]` installed
-- [ ] 13.3 `uv run pytest --cov=rag_mcp` — coverage thresholds met (≥90% overall, ≥95% for `readers/` and `config.py`)
-- [ ] 13.4 `openspec validate use-liteparse-as-pdf-reader --strict` — no schema issues
-- [ ] 13.5 `openspec validate --all --strict` — entire project OpenSpec is consistent
-- [ ] 13.6 Manual smoke test: `uv run rag-mcp ingest ./experiments/11-liteparse-pdf-quality-2026-06-20/corpus --collection liteparse_smoke` with `PDF_READER=liteparse` set; verify chunks have bbox metadata
-- [ ] 13.7 Manual smoke test: same with `PDF_READER=pypdf`; verify NO bbox metadata (only `pdf_reader="pypdf"` diagnostic)
+- [x] 13.2 `uv run pytest -m "slow" -v` — LiteParse-path tests pass when `[pdf-liteparse]` installed
+- [x] 13.3 `uv run pytest --cov=rag_mcp` — coverage thresholds met (≥90% overall, ≥95% for `readers/` and `config.py`)
+- [x] 13.4 `openspec validate use-liteparse-as-pdf-reader --strict` — no schema issues
+- [x] 13.5 `openspec validate --all --strict` — entire project OpenSpec is consistent
+- [x] 13.6 Manual smoke test: `uv run rag-mcp ingest ./experiments/11-liteparse-pdf-quality-2026-06-20/corpus --collection liteparse_smoke` with `PDF_READER=liteparse` set; verify chunks have bbox metadata
+- [x] 13.7 Manual smoke test: same with `PDF_READER=pypdf`; verify NO bbox metadata (only `pdf_reader="pypdf"` diagnostic)
 
 ## 14. Commit, push, open PR
 
