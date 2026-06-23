@@ -101,18 +101,21 @@ The system SHALL expose a `BaseReader` protocol in `src/rag_mcp/readers/base.py`
 - **WHEN** `get_pdf_reader()` is called
 - **THEN** it SHALL return a callable (typically a LlamaIndex-compatible reader class or a closure wrapping one), not a parsed-document instance, so `SimpleDirectoryReader(file_extractor={".pdf": get_pdf_reader()})` works at `ingestion.py:257`
 
-### Requirement: LiteParse SHALL be installed via optional-dependency extra, not as a core dependency
+### Requirement: LiteParse SHALL be a core dependency
 
-The `liteparse` package SHALL be declared in `pyproject.toml` under `[project.optional-dependencies]` as the `pdf-liteparse` extra. The base `uv sync` SHALL NOT install `liteparse` or trigger its native PDFium build. Users SHALL opt in via `uv sync --extra pdf-liteparse`. This isolation respects the AGENTS.md rule `⚠️ Ask: Adding new core dependencies` by keeping the baseline install footprint unchanged.
+The `liteparse` package SHALL be declared in the main `[project.dependencies]`
+list in `pyproject.toml`, not as an optional extra. The base `uv sync` SHALL
+install `liteparse` and make it available for PDF parsing. The `auto`
+resolution order SHALL prefer LiteParse when importable.
 
-#### Scenario: Baseline install does not include liteparse
-- **WHEN** a user runs `uv sync` without extras
-- **THEN** the `liteparse` package SHALL NOT be importable
-- **AND** `RESOLVED_PDF_READER` SHALL resolve to `"pypdf"` or `"pypdfium2"` (if installed) but never `"liteparse"`
+#### Scenario: Baseline install includes liteparse
+- **WHEN** a user runs `uv sync` without any extras
+- **THEN** the `liteparse` package SHALL be importable
+- **AND** `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
 
-#### Scenario: Opt-in install activates LiteParse
-- **WHEN** a user runs `uv sync --extra pdf-liteparse` and sets `PDF_READER=auto`
-- **THEN** the `liteparse` package SHALL be importable and `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
+#### Scenario: Explicit override to pypdf
+- **WHEN** a user sets `PDF_READER=pypdf` in `.env`
+- **THEN** the system SHALL use pypdf regardless of LiteParse being installed
 
 ### Requirement: PDF reader default SHALL be auto after Experiment 11 validation
 

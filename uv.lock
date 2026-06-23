@@ -3129,6 +3129,7 @@ dependencies = [
     { name = "docx2txt" },
     { name = "httpx" },
     { name = "huggingface-hub" },
+    { name = "liteparse" },
     { name = "llama-index" },
     { name = "llama-index-embeddings-ollama" },
     { name = "llama-index-llms-ollama" },
@@ -3145,9 +3146,6 @@ dependencies = [
 [package.optional-dependencies]
 hybrid = [
     { name = "rank-bm25" },
-]
-pdf-liteparse = [
-    { name = "liteparse" },
 ]
 pdf-pypdfium2 = [
     { name = "pypdfium2" },
@@ -3167,7 +3165,7 @@ requires-dist = [
     { name = "docx2txt", specifier = ">=0.9" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "huggingface-hub", specifier = ">=0.20.0" },
-    { name = "liteparse", marker = "extra == 'pdf-liteparse'", specifier = ">=2.0.0" },
+    { name = "liteparse", specifier = ">=2.0.0" },
     { name = "llama-index", specifier = ">=0.11.0" },
     { name = "llama-index-embeddings-ollama", specifier = ">=0.2.0" },
     { name = "llama-index-llms-ollama", specifier = ">=0.4.0" },
@@ -3182,7 +3180,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.25.1" },
     { name = "watchdog", specifier = ">=4.0.0" },
 ]
-provides-extras = ["hybrid", "pdf-liteparse", "pdf-pypdfium2"]
+provides-extras = ["hybrid", "pdf-pypdfium2"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -92,8 +92,8 @@ validated by [Experiment 11](experiments/11-liteparse-pdf-quality-2026-06-20/)
 (+6.9% nDCG@10 on academic PDFs). See [ADR-020](docs/adr/020-use-liteparse-as-pdf-reader.md).
 
 ```bash
-uv sync --extra pdf-liteparse
-# LiteParse is now used automatically (PDF_READER=auto is the default)
+uv sync
+# LiteParse is installed as a core dependency — no extra flag needed
 ```
 
 ---

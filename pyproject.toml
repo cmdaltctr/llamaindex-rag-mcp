@@ -23,14 +23,14 @@ dependencies = [
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
     "llama-index-llms-ollama>=0.4.0",
     "docx2txt>=0.9",
+    # PDF parser (Rust + PDFium, Apache-2.0). Default reader when installed.
+    # See ADR-020. Prebuilt wheels for macOS, Linux, Windows.
+    "liteparse>=2.0.0",
 ]
 
 [project.optional-dependencies]
 hybrid = [
     "rank-bm25>=0.2.2",
-]
-pdf-liteparse = [
-    "liteparse>=2.0.0",
 ]
 pdf-pypdfium2 = [
     "pypdfium2>=4.0.0",
