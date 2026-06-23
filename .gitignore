@@ -55,3 +55,6 @@ graphify-out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project Management
+/niftypm
