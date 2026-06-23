@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-06-23)
+
+### Features
+
+- Flip PDF_READER default to auto (LiteParse when installed)
+  ([`4fbff75`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/4fbff755473730d49cd4cec472563ce32929ad81))
+
+
 ## v1.6.0 (2026-06-23)
 
 ### Bug Fixes
