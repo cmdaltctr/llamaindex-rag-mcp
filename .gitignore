@@ -17,6 +17,7 @@ chroma_db/
 chroma_db_test/
 
 # Experiment-generated ChromaDB directories (per-run artefacts)
+experiments/**/chroma_*/
 experiments/**/chroma_md_*/
 experiments/**/chroma_overlap_*/
 experiments/**/chroma_cache_*/
@@ -30,6 +31,8 @@ experiments/**/corpus/
 experiments/**/raw/
 experiments/**/data/
 experiments/**/eval_results.json
+experiments/**/eval_results_checkpoint.json
+experiments/**/*.log
 experiments/**/ground-truth.json
 experiments/**/*.pdf
 

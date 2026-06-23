@@ -1,0 +1,2 @@
+# Output directory — populated by build_indexes.py and run_eval.py.
+# Gitignored per project convention (see ../../.gitignore).

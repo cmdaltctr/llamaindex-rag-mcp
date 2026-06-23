@@ -1,0 +1,189 @@
+{
+  "parser": "pypdf",
+  "files_total": 22,
+  "files_ok": 22,
+  "files_failed": 0,
+  "chunks_written": 2858,
+  "total_seconds": 932.842,
+  "parse_seconds_total": 30.88,
+  "chunk_seconds_total": 2.353,
+  "embed_seconds_total": 899.606,
+  "per_file": [
+    {
+      "file": "README.md",
+      "status": "ok",
+      "pages": 1,
+      "chunks": 2,
+      "parse_seconds": 0.3,
+      "chunk_seconds": 0.308
+    },
+    {
+      "file": "MANIFEST.md",
+      "status": "ok",
+      "pages": 1,
+      "chunks": 6,
+      "parse_seconds": 0.001,
+      "chunk_seconds": 0.004
+    },
+    {
+      "file": "press2022_measuring.pdf",
+      "status": "ok",
+      "pages": 25,
+      "chunks": 64,
+      "parse_seconds": 0.469,
+      "chunk_seconds": 0.045
+    },
+    {
+      "file": "hu2021_lora.pdf",
+      "status": "ok",
+      "pages": 26,
+      "chunks": 78,
+      "parse_seconds": 4.059,
+      "chunk_seconds": 0.046
+    },
+    {
+      "file": "devlin2019_bert.pdf",
+      "status": "ok",
+      "pages": 16,
+      "chunks": 51,
+      "parse_seconds": 0.459,
+      "chunk_seconds": 0.033
+    },
+    {
+      "file": "karpukhin2020_dpr.pdf",
+      "status": "ok",
+      "pages": 13,
+      "chunks": 42,
+      "parse_seconds": 0.291,
+      "chunk_seconds": 0.027
+    },
+    {
+      "file": "touvron2023_llama.pdf",
+      "status": "ok",
+      "pages": 27,
+      "chunks": 79,
+      "parse_seconds": 0.652,
+      "chunk_seconds": 0.049
+    },
+    {
+      "file": "ouyang2022_instructgpt.pdf",
+      "status": "ok",
+      "pages": 68,
+      "chunks": 146,
+      "parse_seconds": 1.276,
+      "chunk_seconds": 0.164
+    },
+    {
+      "file": "hoffmann2022_chinchilla.pdf",
+      "status": "ok",
+      "pages": 36,
+      "chunks": 92,
+      "parse_seconds": 4.99,
+      "chunk_seconds": 0.056
+    },
+    {
+      "file": "vaswani2017_attention.pdf",
+      "status": "ok",
+      "pages": 15,
+      "chunks": 32,
+      "parse_seconds": 0.776,
+      "chunk_seconds": 0.017
+    },
+    {
+      "file": "lewis2020_rag.pdf",
+      "status": "ok",
+      "pages": 19,
+      "chunks": 57,
+      "parse_seconds": 0.379,
+      "chunk_seconds": 0.03
+    },
+    {
+      "file": "brown2020_gpt3.pdf",
+      "status": "ok",
+      "pages": 75,
+      "chunks": 197,
+      "parse_seconds": 0.858,
+      "chunk_seconds": 0.199
+    },
+    {
+      "file": "dosovitskiy2021_vit.pdf",
+      "status": "ok",
+      "pages": 22,
+      "chunks": 57,
+      "parse_seconds": 0.855,
+      "chunk_seconds": 0.034
+    },
+    {
+      "file": "liang2022_helm.pdf",
+      "status": "ok",
+      "pages": 162,
+      "chunks": 539,
+      "parse_seconds": 4.212,
+      "chunk_seconds": 0.403
+    },
+    {
+      "file": "wang2022_selfconsistency.pdf",
+      "status": "ok",
+      "pages": 24,
+      "chunks": 77,
+      "parse_seconds": 0.617,
+      "chunk_seconds": 0.058
+    },
+    {
+      "file": "touvron2023_llama2.pdf",
+      "status": "ok",
+      "pages": 77,
+      "chunks": 218,
+      "parse_seconds": 3.241,
+      "chunk_seconds": 0.151
+    },
+    {
+      "file": "madaan2023_selfrefine.pdf",
+      "status": "ok",
+      "pages": 54,
+      "chunks": 99,
+      "parse_seconds": 0.75,
+      "chunk_seconds": 0.049
+    },
+    {
+      "file": "bai2022_constitutional.pdf",
+      "status": "ok",
+      "pages": 34,
+      "chunks": 84,
+      "parse_seconds": 0.773,
+      "chunk_seconds": 0.049
+    },
+    {
+      "file": "zhao2023_llm_survey.pdf",
+      "status": "ok",
+      "pages": 144,
+      "chunks": 675,
+      "parse_seconds": 4.049,
+      "chunk_seconds": 0.482
+    },
+    {
+      "file": "wei2022_cot.pdf",
+      "status": "ok",
+      "pages": 43,
+      "chunks": 113,
+      "parse_seconds": 1.024,
+      "chunk_seconds": 0.066
+    },
+    {
+      "file": "yao2022_react.pdf",
+      "status": "ok",
+      "pages": 33,
+      "chunks": 99,
+      "parse_seconds": 0.507,
+      "chunk_seconds": 0.05
+    },
+    {
+      "file": "he2016_resnet.pdf",
+      "status": "ok",
+      "pages": 12,
+      "chunks": 51,
+      "parse_seconds": 0.342,
+      "chunk_seconds": 0.033
+    }
+  ]
+}

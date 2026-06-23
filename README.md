@@ -83,6 +83,20 @@ with dense results via RRF (`HYBRID_RRF_K=60`). The BM25 index is cached per
 collection and rebuilt lazily after ingestion or deletion; its memory footprint
 scales with the collection's chunk count.
 
+### Optional PDF reader (LiteParse)
+
+The default PDF parser is **pypdf** (always available, no extra install).
+[LiteParse](https://github.com/run-llama/liteparse) (Rust + PDFium) is an
+optional upgrade that provides column-aware reading order, bounding-box
+metadata, and faster parsing — validated by [Experiment 11](experiments/11-liteparse-pdf-quality-2026-06-20/)
+(+6.9% nDCG@10 on academic PDFs). See [ADR-020](docs/adr/020-use-liteparse-as-pdf-reader.md).
+
+```bash
+uv sync --extra pdf-liteparse
+# Then set in .env:
+# PDF_READER=liteparse
+```
+
 ---
 
 ## Supported file formats

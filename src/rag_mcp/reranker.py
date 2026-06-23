@@ -132,9 +132,15 @@ class CrossEncoderReranker:
                 self._tokenizer = AutoTokenizer.from_pretrained(
                     RERANK_MODEL,
                 )
+                # Prefer CoreML (Apple Neural Engine) on macOS, fall back to CPU.
+                available = ort.get_available_providers()
+                providers = []
+                if "CoreMLExecutionProvider" in available:
+                    providers.append("CoreMLExecutionProvider")
+                providers.append("CPUExecutionProvider")
                 self._session = ort.InferenceSession(
                     onnx_path,
-                    providers=["CPUExecutionProvider"],
+                    providers=providers,
                 )
                 self._loaded = True
                 self._load_error = None
@@ -192,25 +198,31 @@ class CrossEncoderReranker:
         pairs = [(query, r["text"]) for r in results]
 
         try:
-            # Tokenize the pairs (numpy arrays for onnxruntime).
-            encoded = self._tokenizer(
-                pairs,
-                padding=True,
-                truncation=True,
-                return_tensors="np",
-            )
-
-            # Run ONNX inference.
-            outputs = self._session.run(
-                None,
-                {k: v for k, v in encoded.items()},
-            )
-            # outputs[0] shape: (batch_size, 1) or (batch_size,) → flatten
             import numpy as np  # lightweight; always available with onnxruntime
-            logits = np.asarray(outputs[0]).flatten()
+
+            # Batch inference: processing all candidates in a single ONNX
+            # call causes excessive memory allocation and poor cache
+            # utilisation.  Batches of 32 balance throughput and latency.
+            BATCH_SIZE = 32
+            all_logits: list[float] = []
+            for i in range(0, len(pairs), BATCH_SIZE):
+                batch = pairs[i:i + BATCH_SIZE]
+                encoded = self._tokenizer(
+                    batch,
+                    padding=True,
+                    truncation=True,
+                    max_length=256,
+                    return_tensors="np",
+                )
+                outputs = self._session.run(
+                    None,
+                    {k: v for k, v in encoded.items()},
+                )
+                batch_logits = np.asarray(outputs[0]).flatten()
+                all_logits.extend(float(v) for v in batch_logits)
 
             # Normalise raw logits to (0, 1) via sigmoid.
-            scores: list[float] = [_sigmoid(float(v)) for v in logits]
+            scores: list[float] = [_sigmoid(v) for v in all_logits]
         except Exception as exc:
             logger.warning(
                 "Reranker inference failed: %s. "

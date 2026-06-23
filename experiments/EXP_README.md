@@ -54,6 +54,7 @@ Hypothesis → Variables → Method → Results → Conclusion
 | 8a | [Query embedding cache full-size evaluation](./8a-query-embedding-cache-fullsize-2026-05-29/) | 2026-05-29 | PASS | Full-size traces confirm 76% warm speedup, 87% agent-loop speedup, no cold-query penalty, and cache hits on both retrieval branches |
 | 9a | [Hybrid retrieval on FreshStack LangChain](./9a-hybrid-retrieval-freshstack-langchain-2026-05-30/) | 2026-05-31 | FAIL | Hybrid helps at first retrieval (+4.6pp Coverage@20) but reranker bottleneck (max_fetch=50) erases the advantage; keep HYBRID_ENABLED=false default |
 | 10 | [Reranker technical workload calibration](./10-reranker-technical-workload-calibration-2026-05-31/) | 2026-05-31 | FAIL / INCONCLUSIVE | Reranking with effective `fetch_k=500` degrades technical retrieval (hybrid Coverage@20 0.738 → 0.540, ~19× mean latency). Intended pool-size sweep is inconclusive because labelled pools 50/200/500 all resolved to effective `fetch_k=500`; recommend disabling reranking for technical/hybrid workloads. |
+| 11 | [LiteParse PDF quality and speed](./11-liteparse-pdf-quality-2026-06-20/) | 2026-06-20 | PARTIAL | Validation gate for OpenSpec change `use-liteparse-as-pdf-reader`. H1 PASS (+6.9% nDCG@10, 100% vs 96% Hit@5). H2 FAIL (parsing 5.5× faster but embedding dominates; LiteParse extracts 15% more chunks). H3 FAIL (corpus saturation). H4 PASS. LiteParse adopted via factory (ADR-020). |
 
 ## Standalone Benchmarks
 

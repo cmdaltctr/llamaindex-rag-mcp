@@ -33,6 +33,34 @@ Source file (PDF, DOCX, TXT, ...)
 
 Re-ingesting a file is an **upsert** — old chunks are removed before new ones are written. There is no duplication.
 
+## PDF reader configuration
+
+The PDF parser is a pluggable factory controlled by the `PDF_READER`
+environment variable. Accepted values:
+
+| Value        | Description                                              | Extra required          |
+| ------------ | -------------------------------------------------------- | ----------------------- |
+| `pypdf`      | Default. Always available via `llama-index-readers-file`. | None                    |
+| `liteparse`  | Column-aware reading order + bounding-box metadata.       | `[pdf-liteparse]`       |
+| `pypdfium2`  | Same PDFium engine as LiteParse, no bbox. Fallback tier.  | `[pdf-pypdfium2]`       |
+| `auto`       | Probes in order: liteparse → pypdfium2 → pypdf.            | Depends on what's installed |
+
+The default is `pypdf` (not `auto`) until a follow-on change promotes it.
+To use LiteParse:
+
+```bash
+uv sync --extra pdf-liteparse
+# In .env: PDF_READER=liteparse
+```
+
+LiteParse captures bounding-box metadata (`page`, `column`,
+`section_bbox`, `bbox_schema_version`) on every emitted Document for
+future spatial RAG capabilities. OCR is disabled by default
+(`LITEPARSE_OCR_ENABLED=false`) — enable it only for scanned PDFs.
+
+See [ADR-020](../adr/020-use-liteparse-as-pdf-reader.md) for the adoption
+rationale and Experiment 11 results.
+
 ## Supported file formats
 
 `.pdf` `.docx` `.pptx` `.txt` `.md` `.html` `.csv`

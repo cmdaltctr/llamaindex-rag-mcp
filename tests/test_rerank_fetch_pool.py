@@ -1,7 +1,7 @@
 """Tests for the reranker fetch-pool sizing in `retrieval._resolve_fetch_k`.
 
 Covers Section 2 of the rag-retrieval-quality-improvements OpenSpec change:
-- Default pool when reranking is enabled (max(50, top_k * 10)).
+- Default pool when reranking is enabled (max(100, top_k * 3)).
 - Env-var-overridden pool sizing.
 - Small-collection clamp behaviour (min(fetch_k, collection.count())).
 - Reranking disabled keeps fetch_k == top_k.
@@ -19,9 +19,9 @@ from rag_mcp.retrieval import _resolve_fetch_k
 
 
 def test_default_pool_is_at_least_50_when_reranking() -> None:
-    """With defaults (max=50, multiplier=10), top_k=5 → fetch_k=50."""
+    """With defaults (max=100, multiplier=3), top_k=5 → fetch_k=100."""
     fetch_k = _resolve_fetch_k(top_k=5, rerank=True, collection_count=1000)
-    assert fetch_k == 50
+    assert fetch_k == 100
 
 
 def test_default_pool_grows_with_top_k() -> None:
