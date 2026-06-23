@@ -39,79 +39,79 @@
 > Per `/s-experiment` skill phases 4–5. Operator runs this manually; long-running.
 
 - [x] 4.1 Install the LiteParse backend in the experiment venv: `uv sync --extra pdf-liteparse`. The experiment exercises only `pypdf` and `liteparse` cells; pypdfium2 is not a cell in this experiment.
-- [ ] 4.2 Build indexes for both cells: `CHROMA_PERSIST_DIR=./experiments/11-liteparse-pdf-quality-2026-06-20/output/chroma_pypdf PDF_READER=pypdf uv run python experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py` and the equivalent with `PDF_READER=liteparse` for the candidate
-- [ ] 4.3 Run evaluation with checkpoint/resume: `PYTHONUNBUFFERED=1 uv run python -u experiments/11-liteparse-pdf-quality-2026-06-20/run_eval.py --modes pypdf,liteparse --rerank-cross --k-values 5,10,20,50 --resume 2>&1 | tee experiments/11-liteparse-pdf-quality-2026-06-20/output/run_eval.log`
-- [ ] 4.4 If interrupted, re-run with `--resume` to pick up from the last checkpoint
-- [ ] 4.5 Commit raw results: `git add experiments/11-liteparse-pdf-quality-2026-06-20/output/eval_results.json experiments/11-liteparse-pdf-quality-2026-06-20/output/run_eval.log && git commit -m "exp(11): run evaluation raw results"`
+- [x] 4.2 Build indexes for both cells: `CHROMA_PERSIST_DIR=./experiments/11-liteparse-pdf-quality-2026-06-20/output/chroma_pypdf PDF_READER=pypdf uv run python experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py` and the equivalent with `PDF_READER=liteparse` for the candidate
+- [x] 4.3 Run evaluation with checkpoint/resume: `PYTHONUNBUFFERED=1 uv run python -u experiments/11-liteparse-pdf-quality-2026-06-20/run_eval.py --modes pypdf,liteparse --rerank-cross --k-values 5,10,20,50 --resume 2>&1 | tee experiments/11-liteparse-pdf-quality-2026-06-20/output/run_eval.log`
+- [x] 4.4 If interrupted, re-run with `--resume` to pick up from the last checkpoint
+- [x] 4.5 Commit raw results: `git add experiments/11-liteparse-pdf-quality-2026-06-20/output/eval_results.json experiments/11-liteparse-pdf-quality-2026-06-20/output/run_eval.log && git commit -m "exp(11): run evaluation raw results"`
 
 ## 5. Summarise and decide
 
 > Per `/s-experiment` skill phases 6–7. Produces the pass/fail verdict.
 
-- [ ] 5.1 Run summariser: `uv run python experiments/11-liteparse-pdf-quality-2026-06-20/summarise_eval.py`
-- [ ] 5.2 Verify all four pass gates from design.md Decision 6 are reported in `results.md`:
+- [x] 5.1 Run summariser: `uv run python experiments/11-liteparse-pdf-quality-2026-06-20/summarise_eval.py`
+- [x] 5.2 Verify all four pass gates from design.md Decision 6 are reported in `results.md`:
   - Quality win: nDCG@10 candidate-B ≥ baseline-A + 5% relative
   - Speed win: ingest wall-clock candidate-B ≤ baseline-A × 0.80
   - Regression guard A: candidate-B-r ≥ candidate-B (reranker still helps)
   - Regression guard B: zero queries move from "found" to "not found"
 - [ ] 5.3 Update `experiments/EXP_README.md` with status `PASS` or `FAIL` and a one-line summary
-- [ ] 5.4 **DECISION GATE.** If Experiment 11 status is PASS → continue to task 6. If FAIL → jump to task 10.2 (write ADR-020 recording negative result) and stop. Do not implement the factory change on a failed experiment.
-- [ ] 5.5 Commit summary: `git add experiments/11-liteparse-pdf-quality-2026-06-20/{results.md,output/eval_results.summary.json} experiments/EXP_README.md && git commit -m "exp(11): summarise results, status=<PASS|FAIL>"`
+- [x] 5.4 **DECISION GATE.** If Experiment 11 status is PASS → continue to task 6. If FAIL → jump to task 10.2 (write ADR-020 recording negative result) and stop. Do not implement the factory change on a failed experiment.
+- [x] 5.5 Commit summary: `git add experiments/11-liteparse-pdf-quality-2026-06-20/{results.md,output/eval_results.summary.json} experiments/EXP_README.md && git commit -m "exp(11): summarise results, status=<PASS|FAIL>"`
 
 ## 6. Implementation: config plumbing
 
 > Only execute if Experiment 11 PASSED.
 
-- [ ] 6.1 Add `PDF_READER` env var to `src/rag_mcp/config.py` with default `"pypdf"` (NOT `"auto"` — promotion to `auto` is a follow-on change after this one merges)
-- [ ] 6.2 Add accepted-values validation: `{"auto", "liteparse", "pypdfium2", "pypdf"}`; unknown values log warning and fall back to `auto` resolution per spec. PyMuPDF is NOT an accepted value (AGPL-3 exclusion).
-- [ ] 6.3 Add `_resolve_pdf_reader()` private function mirroring `_resolve_sparse_backend()` at `config.py:138-160` — probes imports in order `liteparse → pypdfium2 → pypdf`, falls back to `pypdf` on any failure
-- [ ] 6.4 Expose `RESOLVED_PDF_READER` module-level constant
-- [ ] 6.5 Add `LITEPARSE_NUM_WORKERS` and `LITEPARSE_OCR_ENABLED` env vars (default `None` and `False`) for future LiteParse constructor configuration
-- [ ] 6.6 Document the new env vars in `.env.example` with inline comments referencing the experiment and ADR
+- [x] 6.1 Add `PDF_READER` env var to `src/rag_mcp/config.py` with default `"pypdf"` (NOT `"auto"` — promotion to `auto` is a follow-on change after this one merges)
+- [x] 6.2 Add accepted-values validation: `{"auto", "liteparse", "pypdfium2", "pypdf"}`; unknown values log warning and fall back to `auto` resolution per spec. PyMuPDF is NOT an accepted value (AGPL-3 exclusion).
+- [x] 6.3 Add `_resolve_pdf_reader()` private function mirroring `_resolve_sparse_backend()` at `config.py:138-160` — probes imports in order `liteparse → pypdfium2 → pypdf`, falls back to `pypdf` on any failure
+- [x] 6.4 Expose `RESOLVED_PDF_READER` module-level constant
+- [x] 6.5 Add `LITEPARSE_NUM_WORKERS` and `LITEPARSE_OCR_ENABLED` env vars (default `None` and `False`) for future LiteParse constructor configuration
+- [x] 6.6 Document the new env vars in `.env.example` with inline comments referencing the experiment and ADR
 
 ## 7. Implementation: readers module
 
-- [ ] 7.1 Create `src/rag_mcp/readers/__init__.py` exposing `get_pdf_reader`
-- [ ] 7.2 Create `src/rag_mcp/readers/base.py` defining `BaseReader` protocol: a `__call__(self, file_path: Path) -> list[Document]` shape compatible with LlamaIndex's `file_extractor` mapping
-- [ ] 7.3 Create `src/rag_mcp/readers/pypdf_reader.py` wrapping the current `SimpleDirectoryReader` path as a callable adapter (no behaviour change — pure refactor of the existing logic)
-- [ ] 7.4 Create `src/rag_mcp/readers/pypdfium_reader.py` adapter using `pypdfium2` (fallback tier; lazy-imported)
-- [ ] 7.5 Create `src/rag_mcp/readers/liteparse_reader.py` adapter: lazy-imports `liteparse`, instantiates `LiteParse()` with constructor defaults, calls `parser.parse(str(file_path))`, converts `result.pages` → LlamaIndex `Document` objects with bbox metadata per spec requirement, wraps every exception in a structured error dictionary per the MCP error contract
-- [ ] 7.6 Create `src/rag_mcp/readers/factory.py` with `get_pdf_reader()` returning the adapter based on `RESOLVED_PDF_READER`. Use a dict mapping `{"pypdf": pypdf_reader, "pypdfium2": pypdfium_reader, "liteparse": liteparse_reader}`. Unknown values raise `ValueError` (this should be unreachable because config validates). No pymupdf entry — AGPL-3 excluded.
-- [ ] 7.7 Add `from __future__ import annotations` to every new module
-- [ ] 7.8 Add Google-style docstrings to every public function/class
+- [x] 7.1 Create `src/rag_mcp/readers/__init__.py` exposing `get_pdf_reader`
+- [x] 7.2 Create `src/rag_mcp/readers/base.py` defining `BaseReader` protocol: a `__call__(self, file_path: Path) -> list[Document]` shape compatible with LlamaIndex's `file_extractor` mapping
+- [x] 7.3 Create `src/rag_mcp/readers/pypdf_reader.py` wrapping the current `SimpleDirectoryReader` path as a callable adapter (no behaviour change — pure refactor of the existing logic)
+- [x] 7.4 Create `src/rag_mcp/readers/pypdfium_reader.py` adapter using `pypdfium2` (fallback tier; lazy-imported)
+- [x] 7.5 Create `src/rag_mcp/readers/liteparse_reader.py` adapter: lazy-imports `liteparse`, instantiates `LiteParse()` with constructor defaults, calls `parser.parse(str(file_path))`, converts `result.pages` → LlamaIndex `Document` objects with bbox metadata per spec requirement, wraps every exception in a structured error dictionary per the MCP error contract
+- [x] 7.6 Create `src/rag_mcp/readers/factory.py` with `get_pdf_reader()` returning the adapter based on `RESOLVED_PDF_READER`. Use a dict mapping `{"pypdf": pypdf_reader, "pypdfium2": pypdfium_reader, "liteparse": liteparse_reader}`. Unknown values raise `ValueError` (this should be unreachable because config validates). No pymupdf entry — AGPL-3 excluded.
+- [x] 7.7 Add `from __future__ import annotations` to every new module
+- [x] 7.8 Add Google-style docstrings to every public function/class
 
 ## 8. Implementation: ingestion integration
 
-- [ ] 8.1 In `src/rag_mcp/ingestion.py:257`, modify the `SimpleDirectoryReader` construction to pass `file_extractor={".pdf": get_pdf_reader()}`. No other change to `_read_sync()`.
-- [ ] 8.2 Verify `_read_and_chunk_file_async` still returns `list[Node]` with metadata attached; the only difference is PDF-sourced Documents now carry bbox metadata
-- [ ] 8.3 Add a `logger.info` line at first reader resolution showing `RESOLVED_PDF_READER` so users see which backend is active
-- [ ] 8.4 Verify no circular imports between `readers/` and `ingestion.py` (readers should import only from `config.py`, never from `ingestion.py` — matches the existing ingestion/retrieval isolation rule)
+- [x] 8.1 In `src/rag_mcp/ingestion.py:257`, modify the `SimpleDirectoryReader` construction to pass `file_extractor={".pdf": get_pdf_reader()}`. No other change to `_read_sync()`.
+- [x] 8.2 Verify `_read_and_chunk_file_async` still returns `list[Node]` with metadata attached; the only difference is PDF-sourced Documents now carry bbox metadata
+- [x] 8.3 Add a `logger.info` line at first reader resolution showing `RESOLVED_PDF_READER` so users see which backend is active
+- [x] 8.4 Verify no circular imports between `readers/` and `ingestion.py` (readers should import only from `config.py`, never from `ingestion.py` — matches the existing ingestion/retrieval isolation rule)
 
 ## 9. Implementation: dependencies and packaging
 
-- [ ] 9.1 Add `[project.optional-dependencies]` section to `pyproject.toml` (or extend existing) with two extras: `pdf-liteparse = ["liteparse>=2.0.0"]` and `pdf-pypdfium2 = ["pypdfium2>=4.0.0"]`
-- [ ] 9.2 Run `uv lock` to update `uv.lock`
+- [x] 9.1 Add `[project.optional-dependencies]` section to `pyproject.toml` (or extend existing) with two extras: `pdf-liteparse = ["liteparse>=2.0.0"]` and `pdf-pypdfium2 = ["pypdfium2>=4.0.0"]`
+- [x] 9.2 Run `uv lock` to update `uv.lock`
 - [ ] 9.3 Verify `uv sync` (no extras) still works and neither `liteparse` nor `pypdfium2` is importable
-- [ ] 9.4 Verify `uv sync --extra pdf-liteparse` installs LiteParse and the native PDFium binary builds successfully on macOS arm64
+- [x] 9.4 Verify `uv sync --extra pdf-liteparse` installs LiteParse and the native PDFium binary builds successfully on macOS arm64
 - [ ] 9.5 Document the `[pdf-liteparse]` flag in the README "Quick install" section, alongside the existing optional hybrid retrieval flag
 
 ## 10. ADR-020
 
 > Written regardless of Experiment 11 outcome.
 
-- [ ] 10.1 If Experiment 11 PASSED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Accepted, Context (pypdf problem, LiteParse selection rationale), Decision (adopt LiteParse via factory), Alternatives (pymupdf4llm/AGPL, pypdfium2/no-bbox, spdf/immature, docling/PyTorch-blocked), Consequences (bbox metadata available, native build dep, AGPL avoidance), References (Experiment 11 results, this OpenSpec change)
+- [x] 10.1 If Experiment 11 PASSED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Accepted, Context (pypdf problem, LiteParse selection rationale), Decision (adopt LiteParse via factory), Alternatives (pymupdf4llm/AGPL, pypdfium2/no-bbox, spdf/immature, docling/PyTorch-blocked), Consequences (bbox metadata available, native build dep, AGPL avoidance), References (Experiment 11 results, this OpenSpec change)
 - [ ] 10.2 If Experiment 11 FAILED: draft `docs/adr/020-use-liteparse-as-pdf-reader.md` with Status=Declined, Context (same), Decision (reject LiteParse adoption; retain factory architecture for future use), Negative Result (what specifically failed — quality, speed, or both), Follow-on (pypdfium2 as smaller upgrade, or wait for spdf maturity)
-- [ ] 10.3 Update `docs/adr/ADR_README.md` index with the new entry, following the existing format
+- [x] 10.3 Update `docs/adr/ADR_README.md` index with the new entry, following the existing format
 - [ ] 10.4 Cross-reference the ADR from `experiments/EXP_README.md` Experiment 11 row
 
 ## 11. Tests
 
-- [ ] 11.1 `tests/unit/test_pdf_reader_factory.py` — factory resolution: each `PDF_READER` value (`auto`, `liteparse`, `pypdfium2`, `pypdf`), fallback chain, `auto` order, unknown value warns and falls back, pymupdf value rejected with clear error
-- [ ] 11.2 `tests/unit/test_pypdf_reader.py` — pypdf adapter preserves semantically equivalent Document output vs pre-change behaviour (regression guard; not byte-identical because PDF parsing is non-deterministic across library versions, per spec.md)
-- [ ] 11.3 `tests/unit/test_liteparse_reader.py` — LiteParse adapter: successful parse emits Documents with `pdf_reader="liteparse"` metadata and bbox fields; two-column fixture produces `column` metadata; corrupt PDF returns structured error dict (not exception); LiteParse not installed → graceful failure when explicitly requested
-- [ ] 11.4 `tests/unit/test_pypdfium_reader.py` — pypdfium2 adapter: successful parse, missing-import handling
-- [ ] 11.5 `tests/unit/test_ingestion_pdf_extractor.py` — integration: `_read_and_chunk_file_async` uses the factory; bbox metadata propagates to Node.metadata for LiteParse path; pypdf path unchanged
-- [ ] 11.6 Mark all LiteParse-path tests with `@pytest.mark.slow` (they require `[pdf-liteparse]` extra and the native binary); ensure default `pytest -m "not slow"` skips them
+- [x] 11.1 `tests/unit/test_pdf_reader_factory.py` — factory resolution: each `PDF_READER` value (`auto`, `liteparse`, `pypdfium2`, `pypdf`), fallback chain, `auto` order, unknown value warns and falls back, pymupdf value rejected with clear error
+- [x] 11.2 `tests/unit/test_pypdf_reader.py` — pypdf adapter preserves semantically equivalent Document output vs pre-change behaviour (regression guard; not byte-identical because PDF parsing is non-deterministic across library versions, per spec.md)
+- [x] 11.3 `tests/unit/test_liteparse_reader.py` — LiteParse adapter: successful parse emits Documents with `pdf_reader="liteparse"` metadata and bbox fields; two-column fixture produces `column` metadata; corrupt PDF returns structured error dict (not exception); LiteParse not installed → graceful failure when explicitly requested
+- [x] 11.4 `tests/unit/test_pypdfium_reader.py` — pypdfium2 adapter: successful parse, missing-import handling
+- [x] 11.5 `tests/unit/test_ingestion_pdf_extractor.py` — integration: `_read_and_chunk_file_async` uses the factory; bbox metadata propagates to Node.metadata for LiteParse path; pypdf path unchanged
+- [x] 11.6 Mark all LiteParse-path tests with `@pytest.mark.slow` (they require `[pdf-liteparse]` extra and the native binary); ensure default `pytest -m "not slow"` skips them
 - [ ] 11.7 Add CI matrix job that installs `[pdf-liteparse]` and runs the slow tests on macOS arm64 and Linux x86_64
 - [ ] 11.8 Run `uv run pytest -m "not slow" --cov=rag_mcp` and verify overall coverage stays ≥90% (per AGENTS.md coverage thresholds); new modules in `readers/` target ≥95% (core-logic tier)
 
@@ -119,13 +119,13 @@
 
 - [ ] 12.1 Update `docs/guides/ingestion.md` (or equivalent) with a "PDF reader configuration" section: explain `PDF_READER` env var, `auto` resolution, `[pdf-liteparse]` extra, fallback behaviour
 - [ ] 12.2 Update `README.md` MCP Tools table — no tool changes, but add a footnote on the `ingest_documents` row linking to the PDF reader guide
-- [ ] 12.3 Update `.env.example` with `PDF_READER`, `LITEPARSE_NUM_WORKERS`, `LITEPARSE_OCR_ENABLED` entries with explanatory comments
-- [ ] 12.4 Update `AGENTS.md` "Critical Gotchas" with: "The PDF reader is now a factory. Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf."
+- [x] 12.3 Update `.env.example` with `PDF_READER`, `LITEPARSE_NUM_WORKERS`, `LITEPARSE_OCR_ENABLED` entries with explanatory comments
+- [x] 12.4 Update `AGENTS.md` "Critical Gotchas" with: "The PDF reader is now a factory. Tests that pin reader behaviour MUST set `PDF_READER=pypdf` (or mock the factory) to stay deterministic. Default CI runs on pypdf."
 - [ ] 12.5 Verify all doc claims by reading the actual source (per the user's documentation-as-contract preference)
 
 ## 13. Validation
 
-- [ ] 13.1 `uv run pytest -m "not slow" -v` — all existing tests still pass
+- [x] 13.1 `uv run pytest -m "not slow" -v` — all existing tests still pass
 - [ ] 13.2 `uv run pytest -m "slow" -v` — LiteParse-path tests pass when `[pdf-liteparse]` installed
 - [ ] 13.3 `uv run pytest --cov=rag_mcp` — coverage thresholds met (≥90% overall, ≥95% for `readers/` and `config.py`)
 - [ ] 13.4 `openspec validate use-liteparse-as-pdf-reader --strict` — no schema issues
