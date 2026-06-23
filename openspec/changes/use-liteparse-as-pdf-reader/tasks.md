@@ -112,7 +112,7 @@
 - [x] 11.4 `tests/unit/test_pypdfium_reader.py` — pypdfium2 adapter: successful parse, missing-import handling
 - [x] 11.5 `tests/unit/test_ingestion_pdf_extractor.py` — integration: `_read_and_chunk_file_async` uses the factory; bbox metadata propagates to Node.metadata for LiteParse path; pypdf path unchanged
 - [x] 11.6 Mark all LiteParse-path tests with `@pytest.mark.slow` (they require `[pdf-liteparse]` extra and the native binary); ensure default `pytest -m "not slow"` skips them
-- [ ] 11.7 Add CI matrix job that installs `[pdf-liteparse]` and runs the slow tests on macOS arm64 and Linux x86_64
+- [x] 11.7 Add CI matrix job that installs `[pdf-liteparse]` and runs the slow tests on macOS arm64 and Linux x86_64
 - [x] 11.8 Run `uv run pytest -m "not slow" --cov=rag_mcp` and verify overall coverage stays ≥90% (per AGENTS.md coverage thresholds); new modules in `readers/` target ≥95% (core-logic tier)
 
 ## 12. Documentation

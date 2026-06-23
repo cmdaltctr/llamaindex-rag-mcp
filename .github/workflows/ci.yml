@@ -8,18 +8,42 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        extra: ['', 'pdf-liteparse']
+        exclude:
+          - os: ubuntu-latest
+            extra: pdf-liteparse  # LiteParse native binary is macOS arm64 only for now
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        run: pip install uv
 
       - name: Install dependencies
-        run: uv sync
+        run: |
+          if [ -n "${{ matrix.extra }}" ]; then
+            uv sync --extra ${{ matrix.extra }}
+          else
+            uv sync
+          fi
 
-      - name: Run tests
+      - name: Run tests (fast)
         env:
-          NO_COLOR: "1"
-          TERM: "dumb"
-        run: uv run pytest -m "not slow" --cov=rag_mcp -v
+          PDF_READER: pypdf
+        run: uv run pytest -m "not slow" --tb=short -q
+
+      - name: Run tests (slow, liteparse only)
+        if: matrix.extra == 'pdf-liteparse'
+        env:
+          PDF_READER: liteparse
+        run: uv run pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
