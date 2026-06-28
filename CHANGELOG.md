@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-06-28)
+
+### Bug Fixes
+
+- **ci**: Strip ANSI codes in CLI help tests, remove pdf-liteparse matrix
+  ([#10](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/10),
+  [`cf6734f`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/cf6734f40d0807ff42e7e7b85ac74feca7669d58))
+
+### Features
+
+- Codebase map, Azure reader, type-aware ingestion, SonarCloud security gate
+  ([#10](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/10),
+  [`cf6734f`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/cf6734f40d0807ff42e7e7b85ac74feca7669d58))
+
+- **azure**: Add Azure Document Intelligence reader and type-aware ingestion
+  ([#10](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/10),
+  [`cf6734f`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/cf6734f40d0807ff42e7e7b85ac74feca7669d58))
+
+- **codebase-map**: Add fast-context codebase map with boundary validation and graph fixes
+  ([#10](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/10),
+  [`cf6734f`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/cf6734f40d0807ff42e7e7b85ac74feca7669d58))
+
+
 ## v1.8.0 (2026-06-23)
 
 ### Features
