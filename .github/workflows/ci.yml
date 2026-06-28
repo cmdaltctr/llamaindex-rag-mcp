@@ -23,21 +23,21 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen --no-build
 
       - name: Run tests (fast)
         env:
           PDF_READER: pypdf
-        run: uv run pytest -m "not slow" --tb=short -q
+        run: uv run --no-sync --no-build pytest -m "not slow" --tb=short -q
 
       - name: Run tests (slow, liteparse on macOS)
         if: matrix.os == 'macos-latest'
         env:
           PDF_READER: liteparse
-        run: uv run pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
+        run: uv run --no-sync --no-build pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
 
   sonarcloud:
     name: SonarCloud Scan
@@ -53,16 +53,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen --no-build
 
       - name: Run tests with coverage
-        run: uv run pytest -m "not slow" --cov=rag_mcp --cov-report=xml
+        run: uv run --no-sync --no-build pytest -m "not slow" --cov=rag_mcp --cov-report=xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
