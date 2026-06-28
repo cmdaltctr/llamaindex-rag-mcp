@@ -7,13 +7,13 @@ architecture), see the [ADR index](../adr/).
 
 ## When to write a TDR vs an ADR
 
-| TDR | ADR |
-|-----|-----|
-| How to make a specific technology behave correctly | What stack/structure to use |
-| Platform-specific workarounds (WKWebView, sidecar) | Framework and language choices |
-| Debugging findings with root cause analysis | Authentication and authorisation models |
-| Build pipeline and tooling decisions | Data model and API design |
-| "Why is X broken and how did we fix it?" | "Why did we choose X over Y?" |
+| TDR                                                | ADR                                     |
+| -------------------------------------------------- | --------------------------------------- |
+| How to make a specific technology behave correctly | What stack/structure to use             |
+| Platform-specific workarounds (WKWebView, sidecar) | Framework and language choices          |
+| Debugging findings with root cause analysis        | Authentication and authorisation models |
+| Build pipeline and tooling decisions               | Data model and API design               |
+| "Why is X broken and how did we fix it?"           | "Why did we choose X over Y?"           |
 
 ## How to use
 
@@ -24,9 +24,11 @@ architecture), see the [ADR index](../adr/).
 
 ## Index
 
-| ID  | Title | Status | Date |
-|-----|-------|--------|------|
-| 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md) | Accepted | 2026-06-28 |
+| ID  | Title                                                                                                                           | Status   | Date       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- |
+| 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md)                    | Accepted | 2026-06-28 |
+| 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                               | Accepted | 2026-06-28 |
+| 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md) | Accepted | 2026-06-28 |
 
 ## Status values
 

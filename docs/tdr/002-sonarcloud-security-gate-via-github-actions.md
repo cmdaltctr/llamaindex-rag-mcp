@@ -1,0 +1,148 @@
+# TDR-002: SonarCloud security gate via GitHub Actions
+
+**Date:** 2026-06-28
+**Status:** Accepted
+**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+**Tags:** ci | security | sonarqube | sonarcloud
+
+## Context
+
+The project had no automated code quality or security analysis. Secrets,
+vulnerabilities, and code smells could be merged without detection. A
+security gate was needed that:
+
+1. Runs automatically on PRs and pushes to `master`
+2. Scans for hardcoded secrets in source files
+3. Provides coverage reporting and code quality metrics
+4. Works locally for pre-commit secrets scanning
+5. Requires no self-hosted infrastructure
+
+The project already uses GitHub Actions for CI (`ci.yml`) and releases
+(`release.yml`). SonarCloud (free for open source) was chosen over
+self-hosted SonarQube Server to avoid infrastructure overhead.
+
+## Decision
+
+Use **SonarCloud** as the analysis backend with two integration layers:
+
+### CI/CD: SonarScanner via GitHub Actions
+
+Created `.github/workflows/sonarcloud.yml` that runs on PRs and pushes to
+`master`. The workflow:
+
+1. Checks out with full history (`fetch-depth: 0`) for blame analysis
+2. Installs `uv` and dependencies
+3. Runs `pytest --cov=rag_mcp --cov-report=xml` for coverage
+4. Runs `SonarSource/sonarcloud-github-action` to upload analysis
+
+**Authentication:** `SONAR_TOKEN` stored as a GitHub Actions secret (set via
+`gh secret set SONAR_TOKEN`). No tokens in code or `.env` files.
+
+**Project config:** `sonar-project.properties` in project root:
+
+```properties
+sonar.organization=cmdaltctr
+sonar.projectKey=cmdaltctr_llamaindex-rag-mcp
+sonar.sources=src
+sonar.tests=tests
+sonar.python.version=3.12
+sonar.python.coverage.reportPaths=coverage.xml
+```
+
+### Local: SonarQube CLI for developer workflows
+
+Installed `sonar` CLI (already present at `~/.local/share/sonarqube-cli/bin/sonar`).
+Authenticated via shell env vars in `~/.zshrc`:
+
+```bash
+export SONARQUBE_CLI_TOKEN=<user-token>
+export SONARQUBE_CLI_ORG=cmdaltctr
+```
+
+The token is a **user-level token** — works across all projects in the
+`cmdaltctr` org, so no per-project token generation is needed.
+
+Local commands available:
+
+```bash
+sonar analyze              # scan uncommitted changes (secrets + agentic)
+sonar analyze secrets src/ # scan specific paths for hardcoded credentials
+sonar list issues -p cmdaltctr_llamaindex-rag-mcp  # query SonarCloud issues
+```
+
+## Consequences
+
+### Positive
+
+- PRs are automatically analysed for security, quality, and coverage
+- Secrets in source code are detected before merge
+- Local `sonar analyze secrets` provides pre-commit safety net
+- No infrastructure to maintain (SonarCloud is managed)
+- User-level token in `.zshrc` works for all projects in the org
+- Coverage reports integrated into SonarCloud dashboard
+
+### Negative
+
+- SonarCloud analysis adds ~2-3 minutes to CI pipeline
+- `sonar` CLI requires macOS ARM64 (Apple Silicon) — no Intel support
+- Free tier limited to open source projects (private repos require paid plan)
+- `sonar-project.properties` must be maintained when source dirs change
+
+### Neutral
+
+- `SONAR_TOKEN` is also stored in project `.env` (gitignored) as documentation,
+  but `.zshrc` is the primary source for local CLI usage
+
+## Alternatives Considered
+
+| Option                                | Rejected Because                                                                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Self-hosted SonarQube Server (Docker) | Infrastructure overhead — need to run and maintain a Docker container, database, and updates. No benefit over SonarCloud for a single open source project. |
+| GitHub CodeQL                         | Good for security but lacks code quality metrics, coverage integration, and local CLI. Would need a separate tool for quality.                             |
+| Semgrep                               | Good for custom rules but lacks the breadth of SonarQube's rule set and community. No coverage integration.                                                |
+| No security gate                      | Unacceptable — secrets and vulnerabilities could merge undetected.                                                                                         |
+
+## How to Recognise / Handle This Again
+
+1. **SonarCloud workflow not triggering**: Check `.github/workflows/sonarcloud.yml`
+   exists on the target branch. Verify `SONAR_TOKEN` secret is set:
+   `gh secret list --repo cmdaltctr/llamaindex-rag-mcp`
+
+2. **`sonar auth status` fails locally**: Verify env vars are set:
+   `echo $SONARQUBE_CLI_TOKEN $SONARQUBE_CLI_ORG`. If missing, check
+   `~/.zshrc` or run `sonar auth login` for browser-based auth.
+
+3. **Coverage not appearing in SonarCloud**: Ensure `coverage.xml` is
+   generated by the workflow (`pytest --cov-report=xml`). Check
+   `sonar.python.coverage.reportPaths` in `sonar-project.properties` matches
+   the output file path.
+
+4. **New project needs SonarCloud**: Create project at
+   `https://sonarcloud.io/projects/create`, add `sonar-project.properties`
+   with the new project key, copy the workflow file, set `SONAR_TOKEN`
+   secret. The `.zshrc` token already works for the new project.
+
+5. **Token expired or compromised**: Regenerate at
+   `https://sonarcloud.io/account/security/`, update GitHub secret
+   (`gh secret set SONAR_TOKEN`) and `~/.zshrc`.
+
+## Revisit Triggers
+
+- **Project goes private**: SonarCloud free tier is open source only. Would
+  need to either pay for SonarCloud or switch to self-hosted SonarQube.
+- **CI time becomes critical**: Consider running SonarCloud only on PRs,
+  not on every push to `master`.
+- **Need branch-specific analysis**: SonarCloud Developer Edition+ supports
+  branch analysis. Currently only `master` and PRs are analysed.
+- **`sonar` CLI adds macOS Intel support**: Could then use on all developer
+  machines, not just Apple Silicon.
+
+## References
+
+- SonarCloud project: `https://sonarcloud.io/organizations/cmdaltctr`
+- `sonar-project.properties` — project config
+- `.github/workflows/sonarcloud.yml` — CI workflow
+- `~/.zshrc` — local CLI auth (user-level token)
+- `.env` — project-level token documentation (gitignored)
+- SonarQube CLI docs: `https://docs.sonarsource.com/sonarqube-cli/`
+- SonarScanner docs: `https://docs.sonarsource.com/sonarqube-server/analyzing-source-code/scanners/sonarscanner/`
