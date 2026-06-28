@@ -23,7 +23,7 @@ Get that running first; nothing in this guide will work without it.
 ```mermaid
 flowchart TD
     Start([I want to contribute]) --> Setup[Read docs/guides/getting-started.md<br/>uv sync · ollama pull · cp .env.example .env]
-    Setup --> Branch[Cut a feature branch off master]
+    Setup --> Branch[Cut a feature branch off main]
     Branch --> Trivial{Trivial fix?<br/>typo, one-line bug}
     Trivial -->|Yes| Implement
     Trivial -->|No| Propose[OpenSpec proposal<br/>openspec-propose skill<br/>proposal.md · design.md · tasks.md]
@@ -49,9 +49,9 @@ flowchart TD
 [`docs/guides/getting-started.md`](./docs/guides/getting-started.md).
 Verify with `uv run rag-mcp` — silent stdout means it is working.
 
-**Branch off master.** Use a descriptive name. Examples: `add-watcher-debounce`,
+**Branch off main.** Use a descriptive name. Examples: `add-watcher-debounce`,
 `fix-reranker-singleton-leak`, `docs-clarify-collection-isolation`. Never
-commit directly to master.
+commit directly to main.
 
 **Trivial fix shortcut.** Typos, comment fixes, single-line bug fixes,
 or anything that obviously does not change behaviour can skip OpenSpec
@@ -106,14 +106,14 @@ table in `ADR_README.md`.
 
 **Commit.** Conventional Commits. One commit per logical change is
 ideal but not enforced. The prefix matters because
-[`python-semantic-release`](./AGENTS.md) reads it on push to `master`:
+[`python-semantic-release`](./AGENTS.md) reads it on push to `main`:
 
-| Prefix | Version bump | Use for |
-|--------|--------------|---------|
-| `feat:` | minor | new user-visible capability |
-| `fix:` / `perf:` | patch | bug fix or performance improvement |
-| `feat!:` or `BREAKING CHANGE:` footer | major | incompatible change |
-| `docs:` / `chore:` / `test:` / `refactor:` / `ci:` | none | no release |
+| Prefix                                             | Version bump | Use for                            |
+| -------------------------------------------------- | ------------ | ---------------------------------- |
+| `feat:`                                            | minor        | new user-visible capability        |
+| `fix:` / `perf:`                                   | patch        | bug fix or performance improvement |
+| `feat!:` or `BREAKING CHANGE:` footer              | major        | incompatible change                |
+| `docs:` / `chore:` / `test:` / `refactor:` / `ci:` | none         | no release                         |
 
 Never edit `version` in `pyproject.toml` by hand. PSR owns it.
 
@@ -160,7 +160,7 @@ touching the affected modules.
 
 Before marking a PR ready for review:
 
-- [ ] Branch is up to date with `master`
+- [ ] Branch is up to date with `main`
 - [ ] `uv run pytest -m "not slow" --cov=rag_mcp` passes
 - [ ] Coverage floors hold (core ≥95%, CLI/watcher ≥85%, overall ≥90%)
 - [ ] If the change is architectural, an ADR exists and the index is updated
@@ -174,20 +174,20 @@ Before marking a PR ready for review:
 
 ## Where to find things
 
-| You are looking for | It lives in |
-|---------------------|-------------|
-| Setup and prerequisites | [`docs/guides/getting-started.md`](./docs/guides/getting-started.md) |
-| Conventions, MCP rules, hard boundaries | [`AGENTS.md`](./AGENTS.md) |
-| Architectural decisions | [`docs/adr/`](./docs/adr/) and [`docs/adr/ADR_README.md`](./docs/adr/ADR_README.md) |
-| OpenSpec proposals (active and archived) | [`openspec/changes/`](./openspec/changes/) |
-| Active specs | [`openspec/specs/`](./openspec/specs/) |
-| Experiment template and conventions | [`experiments/EXP_TEMPLATE.md`](./experiments/EXP_TEMPLATE.md), [`experiments/EXP_README.md`](./experiments/EXP_README.md) |
-| Test suite quick-start and gotchas | [`tests/TEST_README.md`](./tests/TEST_README.md) |
-| Wider testing strategy and coverage policy | [`docs/guides/testing.md`](./docs/guides/testing.md) |
-| Configuration variables | [`.env.example`](./.env.example) and `config.py` |
-| CLI reference | [`docs/guides/cli-reference.md`](./docs/guides/cli-reference.md) |
-| MCP tool reference | [`docs/guides/mcp-tools.md`](./docs/guides/mcp-tools.md) |
-| Architecture overview | [`docs/guides/architecture.md`](./docs/guides/architecture.md) |
+| You are looking for                        | It lives in                                                                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Setup and prerequisites                    | [`docs/guides/getting-started.md`](./docs/guides/getting-started.md)                                                       |
+| Conventions, MCP rules, hard boundaries    | [`AGENTS.md`](./AGENTS.md)                                                                                                 |
+| Architectural decisions                    | [`docs/adr/`](./docs/adr/) and [`docs/adr/ADR_README.md`](./docs/adr/ADR_README.md)                                        |
+| OpenSpec proposals (active and archived)   | [`openspec/changes/`](./openspec/changes/)                                                                                 |
+| Active specs                               | [`openspec/specs/`](./openspec/specs/)                                                                                     |
+| Experiment template and conventions        | [`experiments/EXP_TEMPLATE.md`](./experiments/EXP_TEMPLATE.md), [`experiments/EXP_README.md`](./experiments/EXP_README.md) |
+| Test suite quick-start and gotchas         | [`tests/TEST_README.md`](./tests/TEST_README.md)                                                                           |
+| Wider testing strategy and coverage policy | [`docs/guides/testing.md`](./docs/guides/testing.md)                                                                       |
+| Configuration variables                    | [`.env.example`](./.env.example) and `config.py`                                                                           |
+| CLI reference                              | [`docs/guides/cli-reference.md`](./docs/guides/cli-reference.md)                                                           |
+| MCP tool reference                         | [`docs/guides/mcp-tools.md`](./docs/guides/mcp-tools.md)                                                                   |
+| Architecture overview                      | [`docs/guides/architecture.md`](./docs/guides/architecture.md)                                                             |
 
 ---
 

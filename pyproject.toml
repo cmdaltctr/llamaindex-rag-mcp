@@ -84,7 +84,7 @@ build_command = "uv build"
 tag_format = "v{version}"
 
 [tool.semantic_release.branches.main]
-match = "master"
+match = "main"
 prerelease = false
 
 [tool.semantic_release.changelog]

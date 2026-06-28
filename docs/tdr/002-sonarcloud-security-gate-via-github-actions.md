@@ -11,7 +11,7 @@ The project had no automated code quality or security analysis. Secrets,
 vulnerabilities, and code smells could be merged without detection. A
 security gate was needed that:
 
-1. Runs automatically on PRs and pushes to `master`
+1. Runs automatically on PRs and pushes to `main`
 2. Scans for hardcoded secrets in source files
 3. Provides coverage reporting and code quality metrics
 4. Works locally for pre-commit secrets scanning
@@ -28,7 +28,7 @@ Use **SonarCloud** as the analysis backend with two integration layers:
 ### CI/CD: SonarScanner via GitHub Actions
 
 Created `.github/workflows/sonarcloud.yml` that runs on PRs and pushes to
-`master`. The workflow:
+`main`. The workflow:
 
 1. Checks out with full history (`fetch-depth: 0`) for blame analysis
 2. Installs `uv` and dependencies
@@ -131,9 +131,9 @@ sonar list issues -p cmdaltctr_llamaindex-rag-mcp  # query SonarCloud issues
 - **Project goes private**: SonarCloud free tier is open source only. Would
   need to either pay for SonarCloud or switch to self-hosted SonarQube.
 - **CI time becomes critical**: Consider running SonarCloud only on PRs,
-  not on every push to `master`.
+  not on every push to `main`.
 - **Need branch-specific analysis**: SonarCloud Developer Edition+ supports
-  branch analysis. Currently only `master` and PRs are analysed.
+  branch analysis. Currently only `main` and PRs are analysed.
 - **`sonar` CLI adds macOS Intel support**: Could then use on all developer
   machines, not just Apple Silicon.
 

@@ -83,7 +83,7 @@ OpenSpec (propose → implement → archive)
 3. **Implement** (`openspec-apply-change`) → work through `tasks.md` checkboxes
 4. **ADR** → `docs/adr/` once confirmed · **Archive** (`openspec-archive-change`) → `openspec/changes/archive/`
 
-**Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base master` → merge when green.
+**Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green.
 
 ### OpenSpec ↔ NiftyPM Sync
 
@@ -128,7 +128,7 @@ Long-running scripts **must** checkpoint after each cell (`--resume`), use `prin
 
 ## Release Automation
 
-Releases via `python-semantic-release` on every push to `master`. `feat:` → minor, `fix:`/`perf:` → patch, `feat!:` → major, `chore:`/`docs:`/`test:`/`refactor:` → no release. Never manually edit `version` in `pyproject.toml`.
+Releases via `python-semantic-release` on every push to `main`. `feat:` → minor, `fix:`/`perf:` → patch, `feat!:` → major, `chore:`/`docs:`/`test:`/`refactor:` → no release. Never manually edit `version` in `pyproject.toml`.
 
 ## Coverage Thresholds
 
