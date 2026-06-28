@@ -252,6 +252,37 @@ def delete_documents(
     result["mode"] = "collection"
     return result
 
+
+# ── Tool 6: Codebase map ----------------------------------------------------
+
+@mcp.tool(
+    description=(
+        "Generate a compact codebase map showing file types, code communities, "
+        "document communities, cross-links, and architectural hubs. Useful for "
+        "agents starting a session on an unfamiliar codebase. Results are cached "
+        "per-project keyed by git commit hash. Use refresh=true to force rebuild."
+    ),
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+    },
+)
+def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
+    """Generate a compact codebase map for the given project path.
+
+    Args:
+        path: Project directory path (default current directory).
+        refresh: If True, rebuild the map regardless of cache state.
+
+    Returns:
+        Formatted codebase map text string. On error, returns a JSON string
+        with ``{"status": "error", "message": "..."}``.
+    """
+    from .codebase_map import get_codebase_map_text
+
+    return get_codebase_map_text(path=path, refresh=refresh)
+
+
 def main() -> None:
     """Start the MCP server on stdio transport."""
     import logging

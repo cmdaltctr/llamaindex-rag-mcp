@@ -14,15 +14,16 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ## MCP Tools
 
-Five tools your AI can call:
+Six tools your AI can call:
 
-| Tool | What it does |
-|------|-------------|
-| `ingest_documents` | Index a file or directory (PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV) |
-| `search_documents` | Semantic search with optional reranking, hybrid BM25 fusion, and metadata filtering |
-| `list_indexed_documents` | See what's currently indexed |
-| `list_collections` | See all document collections and their sizes |
-| `delete_documents` | Remove documents by path, filter, or drop a whole collection |
+| Tool                     | What it does                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `ingest_documents`       | Index a file or directory (PDF, DOCX, PPTX, TXT, Markdown, HTML, CSV)                                           |
+| `search_documents`       | Semantic search with optional reranking, hybrid BM25 fusion, and metadata filtering                             |
+| `list_indexed_documents` | See what's currently indexed                                                                                    |
+| `list_collections`       | See all document collections and their sizes                                                                    |
+| `delete_documents`       | Remove documents by path, filter, or drop a whole collection                                                    |
+| `get_codebase_map`       | Generate a compact codebase map with file types, code communities, document communities, and architectural hubs |
 
 ---
 
@@ -30,16 +31,16 @@ Five tools your AI can call:
 
 The same `rag-mcp` command works as both an MCP server and a terminal tool:
 
-| Command | What it does |
-|---------|-------------|
-| `rag-mcp` | Start the MCP server |
-| `rag-mcp ingest <path>` | Index a file or directory |
-| `rag-mcp search <query>` | Search from the terminal (`--hybrid` enables dense+BM25 fusion) |
-| `rag-mcp list` | List indexed documents |
-| `rag-mcp list-collections` | List all collections |
-| `rag-mcp watch <dir>` | Auto-ingest new and changed files |
-| `rag-mcp delete` | Delete documents or drop a collection |
-| `rag-mcp benchmark` | Benchmark embedding throughput |
+| Command                    | What it does                                                    |
+| -------------------------- | --------------------------------------------------------------- |
+| `rag-mcp`                  | Start the MCP server                                            |
+| `rag-mcp ingest <path>`    | Index a file or directory                                       |
+| `rag-mcp search <query>`   | Search from the terminal (`--hybrid` enables dense+BM25 fusion) |
+| `rag-mcp list`             | List indexed documents                                          |
+| `rag-mcp list-collections` | List all collections                                            |
+| `rag-mcp watch <dir>`      | Auto-ingest new and changed files                               |
+| `rag-mcp delete`           | Delete documents or drop a collection                           |
+| `rag-mcp benchmark`        | Benchmark embedding throughput                                  |
 
 ---
 
@@ -75,7 +76,7 @@ uv run rag-mcp search "What fixes MCP-1138?" --hybrid
 MCP clients can pass the same option:
 
 ```json
-{"query": "What fixes MCP-1138?", "hybrid": true, "rerank": true}
+{ "query": "What fixes MCP-1138?", "hybrid": true, "rerank": true }
 ```
 
 The v1 sparse backend is in-memory BM25 (`HYBRID_SPARSE_BACKEND=bm25`) fused
@@ -106,20 +107,20 @@ uv sync
 
 ## Documentation
 
-| Guide | What's in it |
-|-------|-------------|
-| [Getting Started](docs/guides/getting-started.md) | Prerequisites, install, verify, enable reranker |
-| [Configuration](docs/guides/configuration.md) | All environment variables and `.env` settings |
-| [CLI Reference](docs/guides/cli-reference.md) | Every command, flag, and example |
-| [MCP Tools Reference](docs/guides/mcp-tools.md) | Tool parameters in detail |
-| [Ingestion Guide](docs/guides/ingestion.md) | How ingestion works, embedding models, chunk sizes |
-| [Metadata Extraction](docs/guides/metadata-extraction.md) | Auto-categorisation, keyword rules, filtering |
-| [Reranker](docs/guides/reranker.md) | Cross-encoder reranking and threshold scaling |
-| [MCP Client Setup](docs/guides/mcp-client-setup.md) | Register in OpenChamber, Claude Desktop, multi-project |
-| [Testing](docs/guides/testing.md) | Test suite, coverage, running tests |
-| [Architecture](docs/guides/architecture.md) | Why things are built the way they are (plain English) |
-| [Architecture Decisions](docs/adr/) | Full ADRs with alternatives and consequences |
-| [Contributing](CONTRIBUTING.md) | Workflow, conventions, and how to open a PR |
+| Guide                                                     | What's in it                                           |
+| --------------------------------------------------------- | ------------------------------------------------------ |
+| [Getting Started](docs/guides/getting-started.md)         | Prerequisites, install, verify, enable reranker        |
+| [Configuration](docs/guides/configuration.md)             | All environment variables and `.env` settings          |
+| [CLI Reference](docs/guides/cli-reference.md)             | Every command, flag, and example                       |
+| [MCP Tools Reference](docs/guides/mcp-tools.md)           | Tool parameters in detail                              |
+| [Ingestion Guide](docs/guides/ingestion.md)               | How ingestion works, embedding models, chunk sizes     |
+| [Metadata Extraction](docs/guides/metadata-extraction.md) | Auto-categorisation, keyword rules, filtering          |
+| [Reranker](docs/guides/reranker.md)                       | Cross-encoder reranking and threshold scaling          |
+| [MCP Client Setup](docs/guides/mcp-client-setup.md)       | Register in OpenChamber, Claude Desktop, multi-project |
+| [Testing](docs/guides/testing.md)                         | Test suite, coverage, running tests                    |
+| [Architecture](docs/guides/architecture.md)               | Why things are built the way they are (plain English)  |
+| [Architecture Decisions](docs/adr/)                       | Full ADRs with alternatives and consequences           |
+| [Contributing](CONTRIBUTING.md)                           | Workflow, conventions, and how to open a PR            |
 
 ---
 

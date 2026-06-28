@@ -49,6 +49,10 @@ coverage.xml
 *.swo
 *~
 
+# Codebase map cache (per-project, keyed by git commit)
+.opencode/codebase-graph.json
+.opencode/magika-inventory.json
+
 # Generated knowledge graph artifacts
 graphify-out/
 
