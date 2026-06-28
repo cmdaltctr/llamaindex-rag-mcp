@@ -29,8 +29,6 @@ import json
 import logging
 import re
 import threading
-from typing import TYPE_CHECKING
-
 from .config import (
     CHROMA_PERSIST_DIR,
     METADATA_EXTRACTION_MODE,
@@ -41,9 +39,6 @@ from .config import (
     OLLAMA_CLASSIFY_TIMEOUT,
 )
 from .chroma_utils import iter_collection_metadatas
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +210,7 @@ def _load_keyword_rules() -> list[dict[str, str]]:
             len(custom),
         )
         return custom
-    except (json.JSONDecodeError, ValueError) as exc:
+    except ValueError as exc:
         logger.warning(
             "Invalid METADATA_KEYWORD_RULES — falling back to defaults: %s",
             exc,
@@ -435,20 +430,13 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     Returns:
         A dict, e.g. ``{"category": "ai", "keywords": [...], "summary": "..."}``.
     """
-    # Default fallback dict
-    fallback = {
-        "category": "uncategorised",
-        "keywords": [],
-        "summary": "",
-    }
-
     cleaned = _strip_markdown_fence(raw_response)
 
     try:
         parsed = json.loads(cleaned)
         if not isinstance(parsed, dict):
             raise ValueError("Response is not a JSON object")
-    except (json.JSONDecodeError, ValueError):
+    except ValueError:
         # Couldn't parse JSON — use raw text as category.
         logger.warning(
             "Ollama returned non-JSON response. Using raw text as category. "

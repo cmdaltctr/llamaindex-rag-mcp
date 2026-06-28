@@ -108,27 +108,11 @@ class _CachedBM25:
 def _detect_native_sparse_capability() -> bool:
     """Return whether the active ChromaDB runtime can serve native sparse queries.
 
-    The check is intentionally conservative.  ChromaDB sparse-vector classes
-    may be importable in versions compatible with this project, but the
-    project uses ``PersistentClient`` and native sparse retrieval is not
-    available for that local embedded path.  Returning ``False`` keeps the
-    v1 default on BM25 and makes ``native`` fall back with a warning.
+    Conservative: this project uses ChromaDB ``PersistentClient`` where native
+    sparse retrieval is not available for the local embedded path.  Returning
+    ``False`` keeps the v1 default on BM25 and makes ``native`` fall back with
+    a warning.
     """
-    try:
-        from chromadb.api.types import Schema, SparseVectorIndexConfig  # noqa: F401
-        from chromadb.utils.embedding_functions import ChromaBm25EmbeddingFunction
-    except Exception as exc:
-        logger.debug("Native sparse capability import check failed: %s", exc)
-        return False
-
-    if not hasattr(ChromaBm25EmbeddingFunction, "tokenize"):
-        logger.debug("Native sparse capability check found no local BM25 tokeniser")
-        return False
-
-    logger.debug(
-        "Native sparse capability classes are importable, but this project "
-        "uses ChromaDB PersistentClient where native sparse retrieval is not enabled."
-    )
     return False
 
 

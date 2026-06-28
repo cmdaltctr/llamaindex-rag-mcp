@@ -9,7 +9,7 @@ import pytest
 
 from rag_mcp.ingestion import (
     _chunk_code_file_async,
-    _chunk_config_file_async,
+    _chunk_config_file,
     _read_and_chunk_file_async,
 )
 
@@ -49,11 +49,10 @@ class TestCodeSplitterDispatch:
 class TestConfigFileChunking:
     """Tests for config file whole-file chunking."""
 
-    @pytest.mark.asyncio
-    async def test_config_single_chunk(self, tmp_path: Path) -> None:
+    def test_config_single_chunk(self, tmp_path: Path) -> None:
         """Config files produce a single whole-file chunk."""
         (tmp_path / "config.yaml").write_text("key: value\n")
-        nodes = await _chunk_config_file_async(
+        nodes = _chunk_config_file(
             tmp_path / "config.yaml", "config/yaml",
         )
         assert len(nodes) == 1

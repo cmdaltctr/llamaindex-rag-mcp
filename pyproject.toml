@@ -111,3 +111,7 @@ ignore_merge_commits = true
 [tool.semantic_release.remote]
 type = "github"
 token = { env = "GH_TOKEN" }
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["**/.venv", "**/__pycache__", "**/.opencode", "experiments"]

@@ -138,21 +138,34 @@ def _pick(row: dict[str, Any], names: tuple[str, ...]) -> Any:
     return None
 
 
+def _extract_snippet_from_dict(item: dict[str, Any]) -> str | None:
+    """Extract a text snippet from a dict-shaped evidence item."""
+    text = _pick(item, ("text", "snippet", "evidence", "content", "span"))
+    if isinstance(text, str) and text.strip():
+        return text
+    return None
+
+
+def _normalise_snippet_list(items: list[Any]) -> list[str]:
+    """Extract text snippets from a list of str or dict items."""
+    snippets: list[str] = []
+    for item in items:
+        if isinstance(item, str) and item.strip():
+            snippets.append(item)
+        elif isinstance(item, dict):
+            text = _extract_snippet_from_dict(item)
+            if text:
+                snippets.append(text)
+    return snippets
+
+
 def _normalise_snippets(value: Any) -> list[str]:
     if value is None:
         return []
     if isinstance(value, str):
         return [value] if value.strip() else []
     if isinstance(value, list):
-        snippets: list[str] = []
-        for item in value:
-            if isinstance(item, str) and item.strip():
-                snippets.append(item)
-            elif isinstance(item, dict):
-                text = _pick(item, ("text", "snippet", "evidence", "content", "span"))
-                if isinstance(text, str) and text.strip():
-                    snippets.append(text)
-        return snippets
+        return _normalise_snippet_list(value)
     return []
 
 
@@ -197,6 +210,62 @@ def _walk_qa_files(raw_dir: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _build_hicbench_docs(documents: dict[str, str]) -> tuple[dict[str, str], list[tuple[str, str]]]:
+    """Convert raw text documents into Markdown corpus files."""
+    doc_files: dict[str, str] = {}
+    docs_out: list[tuple[str, str]] = []
+    for i, (doc_id, text) in enumerate(sorted(documents.items()), start=1):
+        file_name = f"{i:03d}-{_slug(doc_id, f'doc-{i}')}.md"
+        doc_files[doc_id] = file_name
+        body = text.strip()
+        if not body.lstrip().startswith("#"):
+            body = f"# {doc_id}\n\n{body}\n"
+        docs_out.append((file_name, body))
+    return doc_files, docs_out
+
+
+def _resolve_hierarchy(row: dict[str, Any]) -> list[str]:
+    """Resolve hierarchy from list-typed fields, falling back to section."""
+    for field in QA_HIERARCHY_FIELDS:
+        value = row.get(field)
+        if isinstance(value, list):
+            hierarchy = [str(v) for v in value if str(v).strip()]
+            if hierarchy:
+                return hierarchy
+    section_value = _pick(row, QA_SECTION_FIELDS)
+    if isinstance(section_value, str):
+        return [section_value]
+    return []
+
+
+def _build_hicbench_queries(
+    qa_rows: list[dict[str, Any]],
+    doc_files: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Normalise QA rows into the evaluation schema."""
+    queries: list[dict[str, Any]] = []
+    for i, row in enumerate(qa_rows, start=1):
+        question = _pick(row, QA_QUESTION_FIELDS)
+        if not isinstance(question, str) or not question.strip():
+            continue
+        doc_id = str(_pick(row, QA_DOC_ID_FIELDS) or "")
+        evidence_snippets = _normalise_snippets(_pick(row, QA_EVIDENCE_FIELDS))
+        answers = _normalise_snippets(_pick(row, QA_ANSWER_FIELDS))
+        hierarchy = _resolve_hierarchy(row)
+        queries.append({
+            "id": str(_pick(row, ("id", "qid", "question_id", "_id")) or f"q-{i}"),
+            "query": question,
+            "category": "hierarchy-targeted" if hierarchy else "general",
+            "expected_source": doc_files.get(doc_id, doc_id),
+            "expected_section": hierarchy[-1] if hierarchy else None,
+            "expected_answer": _first_answer(answers, evidence_snippets),
+            "evidence_ids": _normalise_snippets(_pick(row, ("evidence_ids", "evidence_id"))),
+            "evidence_snippets": evidence_snippets or answers,
+            "hierarchy_path": hierarchy,
+        })
+    return queries
+
+
 def _normalise_hicbench(raw_dir: Path) -> tuple[list[tuple[str, str]], list[dict[str, Any]]]:
     """Normalise HiCBench / HiChunk-style data into corpus + ground-truth.
 
@@ -229,48 +298,8 @@ def _normalise_hicbench(raw_dir: Path) -> tuple[list[tuple[str, str]], list[dict
             f"{HICBENCH_GITHUB_URL} for the canonical layout."
         )
 
-    doc_files: dict[str, str] = {}
-    docs_out: list[tuple[str, str]] = []
-    for i, (doc_id, text) in enumerate(sorted(documents.items()), start=1):
-        file_name = f"{i:03d}-{_slug(doc_id, f'doc-{i}')}.md"
-        doc_files[doc_id] = file_name
-        body = text.strip()
-        if not body.lstrip().startswith("#"):
-            body = f"# {doc_id}\n\n{body}\n"
-        docs_out.append((file_name, body))
-
-    queries: list[dict[str, Any]] = []
-    for i, row in enumerate(qa_rows, start=1):
-        question = _pick(row, QA_QUESTION_FIELDS)
-        if not isinstance(question, str) or not question.strip():
-            continue
-        doc_id = str(_pick(row, QA_DOC_ID_FIELDS) or "")
-        evidence_value = _pick(row, QA_EVIDENCE_FIELDS)
-        evidence_snippets = _normalise_snippets(evidence_value)
-        answers_value = _pick(row, QA_ANSWER_FIELDS)
-        answers = _normalise_snippets(answers_value)
-        # Hierarchy: prefer a list-typed field; fall back to single section.
-        hierarchy: list[str] = []
-        for field in QA_HIERARCHY_FIELDS:
-            value = row.get(field)
-            if isinstance(value, list):
-                hierarchy = [str(v) for v in value if str(v).strip()]
-                if hierarchy:
-                    break
-        section_value = _pick(row, QA_SECTION_FIELDS)
-        if not hierarchy and isinstance(section_value, str):
-            hierarchy = [section_value]
-        queries.append({
-            "id": str(_pick(row, ("id", "qid", "question_id", "_id")) or f"q-{i}"),
-            "query": question,
-            "category": "hierarchy-targeted" if hierarchy else "general",
-            "expected_source": doc_files.get(doc_id, doc_id),
-            "expected_section": hierarchy[-1] if hierarchy else None,
-            "expected_answer": answers[0] if answers else (evidence_snippets[0] if evidence_snippets else ""),
-            "evidence_ids": _normalise_snippets(_pick(row, ("evidence_ids", "evidence_id"))),
-            "evidence_snippets": evidence_snippets or answers,
-            "hierarchy_path": hierarchy,
-        })
+    doc_files, docs_out = _build_hicbench_docs(documents)
+    queries = _build_hicbench_queries(qa_rows, doc_files)
 
     if not queries:
         raise ValueError(
@@ -282,9 +311,23 @@ def _normalise_hicbench(raw_dir: Path) -> tuple[list[tuple[str, str]], list[dict
     return docs_out, queries
 
 
+_RETRIEVAL_ARCH_MD = "retrieval-architecture.md"
+_INGESTION_ARCH_MD = "ingestion-architecture.md"
+_EVALUATION_METHOD_MD = "evaluation-method.md"
+
+
+def _first_answer(answers: list[str], evidence_snippets: list[str]) -> str:
+    """Return the first available answer, falling back to evidence."""
+    if answers:
+        return answers[0]
+    if evidence_snippets:
+        return evidence_snippets[0]
+    return ""
+
+
 def _synthetic() -> tuple[list[tuple[str, str]], list[dict[str, Any]]]:
     docs = [
-        ("retrieval-architecture.md", """# Retrieval Architecture
+        (_RETRIEVAL_ARCH_MD, """# Retrieval Architecture
 
 ## Dense Candidate Search
 The dense candidate search embeds the user query once and asks ChromaDB for a vector-nearest candidate pool. Evidence marker RA-DENSE-POOL says the candidate pool is intentionally broader when a downstream filter will rerank it.
@@ -295,7 +338,7 @@ Metadata filtering is applied inside ChromaDB with a where clause before result 
 ## Result Formatting
 Result formatting returns source, score, page label, and chunk text so evaluators can inspect the evidence directly. Evidence marker RA-RESULT-TEXT states that chunk text is mandatory for evidence-level evaluation.
 """),
-        ("ingestion-architecture.md", """# Ingestion Architecture
+        (_INGESTION_ARCH_MD, """# Ingestion Architecture
 
 ## Markdown Branch
 Markdown files first pass through a heading-aware parser and then through a sentence splitter. Evidence marker IA-MARKDOWN-CHAIN states that heading boundaries are preserved when the section fits under the configured chunk size.
@@ -306,7 +349,7 @@ Long heading-bounded sections are split again by the sentence splitter. Evidence
 ## Metadata Attachment
 Document-level metadata is flattened before being copied onto every chunk. Evidence marker IA-METADATA-FLAT says list metadata is joined into comma-separated strings before storage.
 """),
-        ("evaluation-method.md", """# Evaluation Method
+        (_EVALUATION_METHOD_MD, """# Evaluation Method
 
 ## Evidence Density
 Evidence-dense evaluation labels the concrete snippets needed to answer each query. Evidence marker EM-EVIDENCE-DENSE states that source-file Hit@K alone cannot evaluate chunking quality.
@@ -319,14 +362,14 @@ Graded ranking uses nDCG so exact evidence outranks same-document but wrong-sect
 """),
     ]
     queries = [
-        ("q1", "Which pipeline preserves heading boundaries before applying the size cap?", "ingestion-architecture.md", "Markdown Branch", "IA-MARKDOWN-CHAIN", "hierarchy-targeted"),
-        ("q2", "Why is a heading parser alone insufficient for long H2 content?", "ingestion-architecture.md", "Long Section Cap", "IA-LONG-CAP", "hierarchy-targeted"),
-        ("q3", "Where is metadata filtering applied before formatting results?", "retrieval-architecture.md", "Metadata Filtering", "RA-METADATA-WHERE", "hierarchy-targeted"),
-        ("q4", "What result field is mandatory for evidence-level evaluation?", "retrieval-architecture.md", "Result Formatting", "RA-RESULT-TEXT", "hierarchy-targeted"),
-        ("q5", "What kind of labels prevent source-file Hit@K from being the only signal?", "evaluation-method.md", "Evidence Density", "EM-EVIDENCE-DENSE", "hierarchy-targeted"),
-        ("q6", "How should exact evidence compare with same-document wrong-section chunks?", "evaluation-method.md", "Graded Ranking", "EM-NDCG-GRADE", "hierarchy-targeted"),
-        ("q7", "What is copied onto every chunk after being flattened?", "ingestion-architecture.md", "Metadata Attachment", "IA-METADATA-FLAT", "general"),
-        ("q8", "When is section match useful as an evaluation signal?", "evaluation-method.md", "Section Metrics", "EM-SECTION-MATCH", "general"),
+        ("q1", "Which pipeline preserves heading boundaries before applying the size cap?", _INGESTION_ARCH_MD, "Markdown Branch", "IA-MARKDOWN-CHAIN", "hierarchy-targeted"),
+        ("q2", "Why is a heading parser alone insufficient for long H2 content?", _INGESTION_ARCH_MD, "Long Section Cap", "IA-LONG-CAP", "hierarchy-targeted"),
+        ("q3", "Where is metadata filtering applied before formatting results?", _RETRIEVAL_ARCH_MD, "Metadata Filtering", "RA-METADATA-WHERE", "hierarchy-targeted"),
+        ("q4", "What result field is mandatory for evidence-level evaluation?", _RETRIEVAL_ARCH_MD, "Result Formatting", "RA-RESULT-TEXT", "hierarchy-targeted"),
+        ("q5", "What kind of labels prevent source-file Hit@K from being the only signal?", _EVALUATION_METHOD_MD, "Evidence Density", "EM-EVIDENCE-DENSE", "hierarchy-targeted"),
+        ("q6", "How should exact evidence compare with same-document wrong-section chunks?", _EVALUATION_METHOD_MD, "Graded Ranking", "EM-NDCG-GRADE", "hierarchy-targeted"),
+        ("q7", "What is copied onto every chunk after being flattened?", _INGESTION_ARCH_MD, "Metadata Attachment", "IA-METADATA-FLAT", "general"),
+        ("q8", "When is section match useful as an evaluation signal?", _EVALUATION_METHOD_MD, "Section Metrics", "EM-SECTION-MATCH", "general"),
     ]
     gt = []
     for qid, query, source, section, marker, category in queries:
@@ -371,7 +414,10 @@ def _download_qasper(target_dir: Path, *, split: str) -> Path:
             for member in tar.getmembers():
                 if member.isfile() and member.name.endswith(".json"):
                     out_path = target_dir / Path(member.name).name
-                    with tar.extractfile(member) as src, out_path.open("wb") as dst:
+                    src = tar.extractfile(member)
+                    if src is None:
+                        continue
+                    with src, out_path.open("wb") as dst:
                         shutil.copyfileobj(src, dst)
     finally:
         tarball_path.unlink(missing_ok=True)
@@ -381,6 +427,23 @@ def _download_qasper(target_dir: Path, *, split: str) -> Path:
             f"contents were extracted to {target_dir} instead."
         )
     return json_path
+
+
+def _walk_qasper_section(
+    section: dict[str, Any],
+    parents: list[str],
+    pairs: list[tuple[str, str]],
+) -> None:
+    """Recursively walk a Qasper section, collecting (label, paragraph) pairs."""
+    name = section.get("section_name") or "Body"
+    path = parents + [str(name)]
+    label = " / ".join(path)
+    for paragraph in section.get("paragraphs", []) or []:
+        if isinstance(paragraph, str) and paragraph.strip():
+            pairs.append((label, paragraph.strip()))
+    for child in section.get("subsections", []) or []:
+        if isinstance(child, dict):
+            _walk_qasper_section(child, path, pairs)
 
 
 def _qasper_paragraphs(paper: dict[str, Any]) -> list[tuple[str, str]]:
@@ -393,22 +456,23 @@ def _qasper_paragraphs(paper: dict[str, Any]) -> list[tuple[str, str]]:
     abstract = paper.get("abstract") or ""
     if isinstance(abstract, str) and abstract.strip():
         pairs.append(("Abstract", abstract.strip()))
-
-    def _walk(section: dict[str, Any], parents: list[str]) -> None:
-        name = section.get("section_name") or "Body"
-        path = parents + [str(name)]
-        label = " / ".join(path)
-        for paragraph in section.get("paragraphs", []) or []:
-            if isinstance(paragraph, str) and paragraph.strip():
-                pairs.append((label, paragraph.strip()))
-        for child in section.get("subsections", []) or []:
-            if isinstance(child, dict):
-                _walk(child, path)
-
     for section in paper.get("full_text", []) or []:
         if isinstance(section, dict):
-            _walk(section, [])
+            _walk_qasper_section(section, [], pairs)
     return pairs
+
+
+def _emit_qasper_section(section: dict[str, Any], depth: int, lines: list[str]) -> None:
+    """Recursively emit a Qasper section as Markdown headings + paragraphs."""
+    name = section.get("section_name") or "Body"
+    prefix = "#" * min(depth, 6)
+    lines.append(f"{prefix} {name}\n")
+    for paragraph in section.get("paragraphs", []) or []:
+        if isinstance(paragraph, str) and paragraph.strip():
+            lines.append(paragraph.strip() + "\n")
+    for child in section.get("subsections", []) or []:
+        if isinstance(child, dict):
+            _emit_qasper_section(child, depth + 1, lines)
 
 
 def _qasper_markdown(paper_id: str, paper: dict[str, Any]) -> str:
@@ -424,21 +488,9 @@ def _qasper_markdown(paper_id: str, paper: dict[str, Any]) -> str:
     if isinstance(abstract, str) and abstract.strip():
         lines.append("## Abstract\n")
         lines.append(abstract.strip() + "\n")
-
-    def _emit(section: dict[str, Any], depth: int) -> None:
-        name = section.get("section_name") or "Body"
-        prefix = "#" * min(depth, 6)
-        lines.append(f"{prefix} {name}\n")
-        for paragraph in section.get("paragraphs", []) or []:
-            if isinstance(paragraph, str) and paragraph.strip():
-                lines.append(paragraph.strip() + "\n")
-        for child in section.get("subsections", []) or []:
-            if isinstance(child, dict):
-                _emit(child, depth + 1)
-
     for section in paper.get("full_text", []) or []:
         if isinstance(section, dict):
-            _emit(section, depth=2)
+            _emit_qasper_section(section, 2, lines)
     return "\n".join(lines).strip() + "\n"
 
 
@@ -461,6 +513,103 @@ def _section_for_evidence(evidence_text: str, sections: list[tuple[str, str]]) -
     return best_label
 
 
+def _collect_strs(values: Any) -> list[str]:
+    """Filter a list-like value into non-empty stripped strings."""
+    result: list[str] = []
+    for item in values or []:
+        if isinstance(item, str) and item.strip():
+            result.append(item.strip())
+    return result
+
+
+def _process_qasper_annotation(inner: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Extract (answers, evidences) from a single Qasper answer annotation."""
+    answers: list[str] = []
+    free_form = inner.get("free_form_answer")
+    if isinstance(free_form, str) and free_form.strip():
+        answers.append(free_form.strip())
+    answers.extend(_collect_strs(inner.get("extractive_spans")))
+    evidences = _collect_strs(inner.get("evidence"))
+    return answers, evidences
+
+
+def _extract_qasper_answers(qa: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Extract (answers, evidences) from a Qasper QA annotation."""
+    evidences: list[str] = []
+    answers: list[str] = []
+    for ann in qa.get("answers") or []:
+        inner = ann.get("answer") if isinstance(ann, dict) else None
+        if not isinstance(inner, dict):
+            continue
+        ann_answers, ann_evidences = _process_qasper_annotation(inner)
+        answers.extend(ann_answers)
+        evidences.extend(ann_evidences)
+    return answers, evidences
+
+
+def _build_qasper_query(
+    qa: dict[str, Any],
+    question: str,
+    answers: list[str],
+    evidences: list[str],
+    file_name: str,
+    sections: list[tuple[str, str]],
+    paper_id: str,
+    query_index: int,
+) -> dict[str, Any]:
+    """Build a single Qasper query record."""
+    primary_evidence = evidences[0]
+    section_label = _section_for_evidence(primary_evidence, sections)
+    hierarchy = section_label.split(" / ") if section_label else []
+    return {
+        "id": str(qa.get("question_id") or f"{paper_id}-{query_index}"),
+        "query": question.strip(),
+        "category": "hierarchy-targeted" if hierarchy else "general",
+        "expected_source": file_name,
+        "expected_section": hierarchy[-1] if hierarchy else None,
+        "expected_answer": answers[0] if answers else primary_evidence,
+        "evidence_ids": [],
+        "evidence_snippets": evidences,
+        "hierarchy_path": hierarchy,
+    }
+
+
+def _process_qasper_paper(
+    paper_id: str,
+    paper: dict[str, Any],
+    paper_count: int,
+    queries: list[dict[str, Any]],
+    max_queries: int | None,
+) -> tuple[str, str] | None:
+    """Process a single Qasper paper; return (file_name, markdown) or None."""
+    full_text = paper.get("full_text") or []
+    if not full_text:
+        return None
+
+    slug = _slug(paper_id, f"paper-{paper_count}")
+    file_name = f"{paper_count:03d}-{slug}.md"
+    markdown = _qasper_markdown(paper_id, paper)
+    sections = _qasper_paragraphs(paper)
+    if not sections:
+        return (file_name, markdown)
+
+    for qa in paper.get("qas", []) or []:
+        question = qa.get("question")
+        if not isinstance(question, str) or not question.strip():
+            continue
+        answers, evidences = _extract_qasper_answers(qa)
+        if not evidences:
+            continue
+        queries.append(_build_qasper_query(
+            qa, question, answers, evidences, file_name, sections,
+            paper_id, len(queries),
+        ))
+        if max_queries is not None and len(queries) >= max_queries:
+            break
+
+    return (file_name, markdown)
+
+
 def _normalise_qasper(
     raw_dir: Path,
     *,
@@ -480,65 +629,14 @@ def _normalise_qasper(
     for paper_id, paper in payload.items():
         if not isinstance(paper, dict):
             continue
-        full_text = paper.get("full_text") or []
-        if not full_text:
-            continue
         paper_count += 1
         if max_papers is not None and paper_count > max_papers:
             break
-
-        slug = _slug(paper_id, f"paper-{paper_count}")
-        file_name = f"{paper_count:03d}-{slug}.md"
-        markdown = _qasper_markdown(paper_id, paper)
-        docs_out.append((file_name, markdown))
-        sections = _qasper_paragraphs(paper)
-        if not sections:
-            continue
-
-        for qa in paper.get("qas", []) or []:
-            question = qa.get("question")
-            if not isinstance(question, str) or not question.strip():
-                continue
-
-            evidences: list[str] = []
-            answers: list[str] = []
-            for ann in qa.get("answers") or []:
-                inner = ann.get("answer") if isinstance(ann, dict) else None
-                if not isinstance(inner, dict):
-                    continue
-                # Free-form / extractive answers.
-                free_form = inner.get("free_form_answer")
-                if isinstance(free_form, str) and free_form.strip():
-                    answers.append(free_form.strip())
-                for span in inner.get("extractive_spans") or []:
-                    if isinstance(span, str) and span.strip():
-                        answers.append(span.strip())
-                for item in inner.get("evidence") or []:
-                    if isinstance(item, str) and item.strip():
-                        evidences.append(item.strip())
-
-            if not evidences:
-                # Skip QAs without evidence — they would re-introduce evidence
-                # sparsity and undermine the experiment's primary signal.
-                continue
-
-            primary_evidence = evidences[0]
-            section_label = _section_for_evidence(primary_evidence, sections)
-            hierarchy = section_label.split(" / ") if section_label else []
-            queries.append({
-                "id": str(qa.get("question_id") or f"{paper_id}-{len(queries)}"),
-                "query": question.strip(),
-                "category": "hierarchy-targeted" if hierarchy else "general",
-                "expected_source": file_name,
-                "expected_section": hierarchy[-1] if hierarchy else None,
-                "expected_answer": answers[0] if answers else primary_evidence,
-                "evidence_ids": [],
-                "evidence_snippets": evidences,
-                "hierarchy_path": hierarchy,
-            })
-
-            if max_queries is not None and len(queries) >= max_queries:
-                break
+        result = _process_qasper_paper(
+            paper_id, paper, paper_count, queries, max_queries,
+        )
+        if result:
+            docs_out.append(result)
         if max_queries is not None and len(queries) >= max_queries:
             break
 

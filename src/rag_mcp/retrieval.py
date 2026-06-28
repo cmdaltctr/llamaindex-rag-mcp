@@ -455,7 +455,6 @@ def _classify_query_technical(query: str) -> float:
             "endpoint", "http", "json", "yaml", "pip", "npm",
         }:
             technical_count += 1
-            continue
 
     return technical_count / len(tokens)
 

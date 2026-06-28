@@ -29,6 +29,7 @@ architecture), see the [ADR index](../adr/).
 | 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md)                    | Accepted | 2026-06-28 |
 | 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                               | Accepted | 2026-06-28 |
 | 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md) | Accepted | 2026-06-28 |
+| 004 | [`--no-build` flag incompatible with editable installs in CI](004-uv-no-build-incompatible-with-editable-installs.md)           | Accepted | 2026-06-28 |
 
 ## Status values
 
