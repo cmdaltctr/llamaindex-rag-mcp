@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        extra: ['', 'pdf-liteparse']
+        extra: ["", "pdf-liteparse"]
         exclude:
           - os: ubuntu-latest
-            extra: pdf-liteparse  # LiteParse native binary is macOS arm64 only for now
+            extra: pdf-liteparse # LiteParse native binary is macOS arm64 only for now
 
     steps:
       - uses: actions/checkout@v5
@@ -47,3 +47,31 @@ jobs:
         env:
           PDF_READER: liteparse
         run: uv run pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
+
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests with coverage
+        run: uv run pytest -m "not slow" --cov=rag_mcp --cov-report=xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
