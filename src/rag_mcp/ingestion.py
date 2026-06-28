@@ -288,7 +288,7 @@ async def _chunk_code_file_async(
     return nodes
 
 
-async def _chunk_config_file_async(
+def _chunk_config_file(
     file_path: Path,
     content_type: str,
 ) -> list:
@@ -368,13 +368,13 @@ async def _read_and_chunk_file_async(
 
     # Config files: whole-file as single chunk.
     if group == "config":
-        return await _chunk_config_file_async(
+        return _chunk_config_file(
             file_path, content_type,
         )
 
     # Documents: existing extension-based routing (task 6.2).
     # Azure Document Intelligence branch (task 7.8).
-    if group in ("document", "") and not group == "config":
+    if group in ("document", "") and group != "config":
         from .config import DOCUMENT_BACKEND
         if DOCUMENT_BACKEND == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
             try:

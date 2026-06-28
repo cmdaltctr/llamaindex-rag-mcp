@@ -215,11 +215,10 @@ def _resolve_import_path(
     return None
 
 
-def _extract_python_imports(tree, content_bytes: bytes) -> list[str]:
+def _extract_python_imports(content_bytes: bytes) -> list[str]:
     """Extract import paths from a Python AST.
 
     Args:
-        tree: Parsed tree-sitter tree.
         content_bytes: Source code as bytes.
 
     Returns:
@@ -268,14 +267,12 @@ def _extract_ts_imports(content_bytes: bytes) -> list[str]:
 
 
 def _extract_classes_and_inheritance(
-    tree,
     content_bytes: bytes,
     language: str,
 ) -> tuple[list[str], list[tuple[str, str]]]:
     """Extract class names and inheritance relationships.
 
     Args:
-        tree: Parsed tree-sitter tree.
         content_bytes: Source code as bytes.
         language: Language identifier.
 
@@ -330,11 +327,10 @@ def _extract_classes_and_inheritance(
     return classes, inheritance
 
 
-def _extract_functions(tree, content_bytes: bytes, language: str) -> list[str]:
+def _extract_functions(content_bytes: bytes, language: str) -> list[str]:
     """Extract function names from source code.
 
     Args:
-        tree: Parsed tree-sitter tree.
         content_bytes: Source code as bytes.
         language: Language identifier.
 
@@ -414,7 +410,7 @@ def extract_ast_relationships(
 
     # Extract imports based on language family.
     if ts_lang == "python":
-        result.imports = _extract_python_imports(tree, content_bytes)
+        result.imports = _extract_python_imports(content_bytes)
     elif ts_lang in ("typescript", "javascript", "tsx", "jsx"):
         result.imports = _extract_ts_imports(content_bytes)
     else:
@@ -428,11 +424,11 @@ def extract_ast_relationships(
 
     # Extract classes and inheritance.
     result.classes, result.inheritance = _extract_classes_and_inheritance(
-        tree, content_bytes, ts_lang,
+        content_bytes, ts_lang,
     )
 
     # Extract functions.
-    result.functions = _extract_functions(tree, content_bytes, ts_lang)
+    result.functions = _extract_functions(content_bytes, ts_lang)
 
     # Exports: for Python, all top-level definitions are "exported".
     # For TS/JS, look for `export` keyword.
@@ -613,7 +609,7 @@ def detect_hubs(graph: nx.DiGraph) -> list[Hub]:
     if not in_degrees:
         return []
 
-    max_degree = max(in_degrees.values()) if in_degrees else 0
+    max_degree = max(in_degrees.values())
     if max_degree == 0:
         return []
 

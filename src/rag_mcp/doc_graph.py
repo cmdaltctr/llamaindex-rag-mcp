@@ -153,6 +153,42 @@ def compute_similarity_edges(
 # ── Metadata edges ───────────────────────────────────────────────────────
 
 
+def _category_edges(doc_entries: list[tuple[str, dict]]) -> list[Edge]:
+    """Build edges between chunks sharing the same category."""
+    edges: list[Edge] = []
+    for i in range(len(doc_entries)):
+        for j in range(i + 1, len(doc_entries)):
+            cat_i = doc_entries[i][1].get("category")
+            cat_j = doc_entries[j][1].get("category")
+            if cat_i and cat_j and cat_i == cat_j:
+                edges.append(Edge(
+                    source=doc_entries[i][0],
+                    target=doc_entries[j][0],
+                    relation="category",
+                    weight=1.0,
+                ))
+    return edges
+
+
+def _keyword_edges(doc_entries: list[tuple[str, dict]]) -> list[Edge]:
+    """Build edges between chunks sharing keywords."""
+    edges: list[Edge] = []
+    for i in range(len(doc_entries)):
+        for j in range(i + 1, len(doc_entries)):
+            kw_i = set(doc_entries[i][1].get("keywords", []))
+            kw_j = set(doc_entries[j][1].get("keywords", []))
+            shared = kw_i & kw_j
+            if shared:
+                edges.append(Edge(
+                    source=doc_entries[i][0],
+                    target=doc_entries[j][0],
+                    relation="keyword",
+                    weight=0.5,
+                    shared_keywords=list(shared),
+                ))
+    return edges
+
+
 def compute_metadata_edges(collection) -> list[Edge]:
     """Build edges between chunks sharing metadata categories or keywords.
 
@@ -187,40 +223,29 @@ def compute_metadata_edges(collection) -> list[Edge]:
         if metadatas[i] and metadatas[i].get("content_type", "").startswith("document")
     ]
 
-    edges: list[Edge] = []
-
-    # Category edges.
-    for i in range(len(doc_entries)):
-        for j in range(i + 1, len(doc_entries)):
-            cat_i = doc_entries[i][1].get("category")
-            cat_j = doc_entries[j][1].get("category")
-            if cat_i and cat_j and cat_i == cat_j:
-                edges.append(Edge(
-                    source=doc_entries[i][0],
-                    target=doc_entries[j][0],
-                    relation="category",
-                    weight=1.0,
-                ))
-
-    # Keyword edges.
-    for i in range(len(doc_entries)):
-        for j in range(i + 1, len(doc_entries)):
-            kw_i = set(doc_entries[i][1].get("keywords", []))
-            kw_j = set(doc_entries[j][1].get("keywords", []))
-            shared = kw_i & kw_j
-            if shared:
-                edges.append(Edge(
-                    source=doc_entries[i][0],
-                    target=doc_entries[j][0],
-                    relation="keyword",
-                    weight=0.5,
-                    shared_keywords=list(shared),
-                ))
-
-    return edges
+    return _category_edges(doc_entries) + _keyword_edges(doc_entries)
 
 
 # ── Heading hierarchy edges ──────────────────────────────────────────────
+
+
+def _heading_prefix_edges(doc_chunks: list[tuple[str, str | None]]) -> list[Edge]:
+    """Build parent-child edges from header path prefix matching."""
+    edges: list[Edge] = []
+    for chunk_id, header_path in doc_chunks:
+        if not header_path:
+            continue
+        for other_id, other_path in doc_chunks:
+            if chunk_id == other_id or not other_path:
+                continue
+            if other_path.startswith(header_path + "/"):
+                edges.append(Edge(
+                    source=chunk_id,
+                    target=other_id,
+                    relation="heading_child",
+                    weight=1.0,
+                ))
+    return edges
 
 
 def compute_heading_edges(collection) -> list[Edge]:
@@ -263,28 +288,40 @@ def compute_heading_edges(collection) -> list[Edge]:
         if header_path:
             path_to_chunks.setdefault(header_path, []).append(ids[i])
 
-    edges: list[Edge] = []
-
-    # For each chunk, check if its header_path is a prefix of another's.
-    for chunk_id, header_path in doc_chunks:
-        if not header_path:
-            continue
-        for other_id, other_path in doc_chunks:
-            if chunk_id == other_id or not other_path:
-                continue
-            # If our path is a prefix of the other's, we're a parent.
-            if other_path.startswith(header_path + "/"):
-                edges.append(Edge(
-                    source=chunk_id,
-                    target=other_id,
-                    relation="heading_child",
-                    weight=1.0,
-                ))
-
-    return edges
+    return _heading_prefix_edges(doc_chunks)
 
 
 # ── Document graph construction ──────────────────────────────────────────
+
+
+def _add_doc_nodes(graph: nx.Graph, collection) -> None:
+    """Add document chunk nodes from ChromaDB collection to graph."""
+    try:
+        result = collection.get(include=["metadatas"])
+        ids = result.get("ids", [])
+        metadatas = result.get("metadatas", [])
+        for i, chunk_id in enumerate(ids):
+            meta = metadatas[i] if i < len(metadatas) else {}
+            if meta and meta.get("content_type", "").startswith("document"):
+                graph.add_node(
+                    chunk_id,
+                    category=meta.get("category", ""),
+                    keywords=meta.get("keywords", []),
+                    file_path=meta.get("file_path", ""),
+                    header_path=meta.get("header_path", ""),
+                )
+    except Exception as exc:
+        logger.warning("Failed to fetch nodes from ChromaDB: %s", exc)
+
+
+def _add_edges_safe(graph: nx.Graph, edges: list[Edge]) -> None:
+    """Add edges to graph only if both endpoints exist as nodes."""
+    for edge in edges:
+        if graph.has_node(edge.source) and graph.has_node(edge.target):
+            attrs: dict = {"relation": edge.relation, "weight": edge.weight}
+            if edge.shared_keywords:
+                attrs["shared_keywords"] = edge.shared_keywords
+            graph.add_edge(edge.source, edge.target, **attrs)
 
 
 def build_document_graph(
@@ -308,50 +345,13 @@ def build_document_graph(
     if collection is None:
         return graph
 
-    # Add nodes from collection.
-    try:
-        result = collection.get(include=["metadatas"])
-        ids = result.get("ids", [])
-        metadatas = result.get("metadatas", [])
-        for i, chunk_id in enumerate(ids):
-            meta = metadatas[i] if i < len(metadatas) else {}
-            if meta and meta.get("content_type", "").startswith("document"):
-                graph.add_node(
-                    chunk_id,
-                    category=meta.get("category", ""),
-                    keywords=meta.get("keywords", []),
-                    file_path=meta.get("file_path", ""),
-                    header_path=meta.get("header_path", ""),
-                )
-    except Exception as exc:
-        logger.warning("Failed to fetch nodes from ChromaDB: %s", exc)
+    _add_doc_nodes(graph, collection)
+    if graph.number_of_nodes() == 0:
         return graph
 
-    # Add edges from all sources.
-    for edge in compute_similarity_edges(collection, threshold):
-        if graph.has_node(edge.source) and graph.has_node(edge.target):
-            graph.add_edge(
-                edge.source, edge.target,
-                relation=edge.relation,
-                weight=edge.weight,
-            )
-
-    for edge in compute_metadata_edges(collection):
-        if graph.has_node(edge.source) and graph.has_node(edge.target):
-            graph.add_edge(
-                edge.source, edge.target,
-                relation=edge.relation,
-                weight=edge.weight,
-                shared_keywords=edge.shared_keywords,
-            )
-
-    for edge in compute_heading_edges(collection):
-        if graph.has_node(edge.source) and graph.has_node(edge.target):
-            graph.add_edge(
-                edge.source, edge.target,
-                relation=edge.relation,
-                weight=edge.weight,
-            )
+    _add_edges_safe(graph, compute_similarity_edges(collection, threshold))
+    _add_edges_safe(graph, compute_metadata_edges(collection))
+    _add_edges_safe(graph, compute_heading_edges(collection))
 
     logger.debug(
         "Document graph: %d nodes, %d edges",
@@ -429,6 +429,83 @@ def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
 # ── Cross-links between code and document communities ────────────────────
 
 
+def _filename_match_links(
+    code_files: list[str],
+    doc_chunks: list[tuple[str, str, str]],
+) -> list[CrossLink]:
+    """Detect cross-links via filename matching (≥2 path segments)."""
+    links: list[CrossLink] = []
+    for code_file in code_files:
+        code_parts = Path(code_file).parts
+        if len(code_parts) < 2:
+            continue
+        code_basename = Path(code_file).stem
+        for doc_id, doc_path, _ in doc_chunks:
+            if not doc_path:
+                continue
+            doc_parts = Path(doc_path).parts
+            if len(doc_parts) < 2:
+                continue
+            if code_file in doc_path or doc_path in code_file or (
+                code_basename and code_basename in doc_path
+            ):
+                links.append(CrossLink(
+                    code=code_file,
+                    doc=doc_id,
+                    relation="filename_match",
+                ))
+    return links
+
+
+def _symbol_match_links(
+    code_symbols: dict[str, list[str]],
+    doc_chunks: list[tuple[str, str, str]],
+) -> list[CrossLink]:
+    """Detect cross-links via exported symbol names in document paths."""
+    links: list[CrossLink] = []
+    for code_file, symbols in code_symbols.items():
+        for symbol in symbols:
+            for doc_id, doc_path, _ in doc_chunks:
+                if not doc_path:
+                    continue
+                if symbol and symbol in doc_path:
+                    links.append(CrossLink(
+                        code=code_file,
+                        doc=doc_id,
+                        relation="symbol_match",
+                    ))
+    return links
+
+
+def _keyword_overlap_links(
+    code_files: list[str],
+    doc_graph: nx.Graph,
+) -> list[CrossLink]:
+    """Detect cross-links via code directory names vs doc categories/keywords."""
+    code_dirs: dict[str, list[str]] = {}
+    for code_file in code_files:
+        parent = Path(code_file).parent.name
+        if parent:
+            code_dirs.setdefault(parent, []).append(code_file)
+
+    links: list[CrossLink] = []
+    for node in doc_graph.nodes():
+        category = doc_graph.nodes[node].get("category", "")
+        keywords = doc_graph.nodes[node].get("keywords", [])
+        if not category and not keywords:
+            continue
+        for dir_name, files in code_dirs.items():
+            if dir_name.lower() in [k.lower() for k in keywords] or \
+               dir_name.lower() == category.lower():
+                for code_file in files:
+                    links.append(CrossLink(
+                        code=code_file,
+                        doc=node,
+                        relation="keyword_overlap",
+                    ))
+    return links
+
+
 def compute_cross_links(
     code_graph: nx.DiGraph,
     doc_graph: nx.Graph,
@@ -445,87 +522,27 @@ def compute_cross_links(
     Returns:
         List of ``CrossLink`` objects.
     """
-    cross_links: list[CrossLink] = []
-
     if code_graph.number_of_nodes() == 0 or doc_graph.number_of_nodes() == 0:
-        return cross_links
+        return []
 
     # Collect code file paths and exported symbols.
     code_files: list[str] = []
     code_symbols: dict[str, list[str]] = {}
     for node in code_graph.nodes():
         code_files.append(node)
-        exports = code_graph.nodes[node].get("exports", [])
-        code_symbols[node] = exports
+        code_symbols[node] = code_graph.nodes[node].get("exports", [])
 
-    # Collect document file paths and text content.
-    doc_chunks: list[tuple[str, str, str]] = []  # (id, file_path, text)
+    # Collect document file paths.
+    doc_chunks: list[tuple[str, str, str]] = []
     for node in doc_graph.nodes():
         file_path = doc_graph.nodes[node].get("file_path", "")
-        # We don't have the text content in the graph; use file_path for matching.
         doc_chunks.append((node, file_path, ""))
 
-    # 1. Filename matching — require ≥2 path segments.
-    for code_file in code_files:
-        code_parts = Path(code_file).parts
-        if len(code_parts) < 2:
-            continue
-        code_basename = Path(code_file).stem
-        for doc_id, doc_path, _ in doc_chunks:
-            if not doc_path:
-                continue
-            doc_parts = Path(doc_path).parts
-            if len(doc_parts) < 2:
-                continue
-            # Check if the code file path appears in the document path or vice versa.
-            if code_file in doc_path or doc_path in code_file:
-                cross_links.append(CrossLink(
-                    code=code_file,
-                    doc=doc_id,
-                    relation="filename_match",
-                ))
-            # Check basename matching with at least 2 path segments overlap.
-            elif code_basename and code_basename in doc_path:
-                cross_links.append(CrossLink(
-                    code=code_file,
-                    doc=doc_id,
-                    relation="filename_match",
-                ))
-
-    # 2. Symbol matching — exported class/function names in document file paths.
-    for code_file, symbols in code_symbols.items():
-        for symbol in symbols:
-            for doc_id, doc_path, _ in doc_chunks:
-                if not doc_path:
-                    continue
-                if symbol and symbol in doc_path:
-                    cross_links.append(CrossLink(
-                        code=code_file,
-                        doc=doc_id,
-                        relation="symbol_match",
-                    ))
-
-    # 3. Category keyword overlap — code directory names vs doc categories.
-    code_dirs: dict[str, list[str]] = {}
-    for code_file in code_files:
-        parent = Path(code_file).parent.name
-        if parent:
-            code_dirs.setdefault(parent, []).append(code_file)
-
-    for node in doc_graph.nodes():
-        category = doc_graph.nodes[node].get("category", "")
-        keywords = doc_graph.nodes[node].get("keywords", [])
-        if not category and not keywords:
-            continue
-        for dir_name, files in code_dirs.items():
-            if dir_name.lower() in [k.lower() for k in keywords] or \
-               dir_name.lower() == category.lower():
-                for code_file in files:
-                    cross_links.append(CrossLink(
-                        code=code_file,
-                        doc=node,
-                        relation="keyword_overlap",
-                    ))
+    cross_links = (
+        _filename_match_links(code_files, doc_chunks)
+        + _symbol_match_links(code_symbols, doc_chunks)
+        + _keyword_overlap_links(code_files, doc_graph)
+    )
 
     # Deduplicate.
     seen: set[tuple[str, str, str]] = set()

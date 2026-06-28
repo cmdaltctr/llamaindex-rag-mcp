@@ -216,7 +216,7 @@ class CrossEncoderReranker:
                 )
                 outputs = self._session.run(
                     None,
-                    {k: v for k, v in encoded.items()},
+                    dict(encoded.items()),
                 )
                 batch_logits = np.asarray(outputs[0]).flatten()
                 all_logits.extend(float(v) for v in batch_logits)

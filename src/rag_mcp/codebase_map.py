@@ -230,7 +230,7 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
             return
         try:
             children = sorted(directory.iterdir())
-        except (OSError, PermissionError):
+        except OSError:
             return
         for child in children:
             if child.is_dir():
@@ -304,7 +304,7 @@ def detect_file_types(path: str) -> FileInventory:
 
         # Detect mismatches: Magika label differs from suffix-based label.
         if entry.suffix in _SUFFIX_MAP:
-            suffix_group, suffix_label = _SUFFIX_MAP[entry.suffix]
+            _, suffix_label = _SUFFIX_MAP[entry.suffix]
             if entry.label != suffix_label and entry.is_text:
                 inventory.mismatches.append(
                     (entry.path, suffix_label, entry.label)
@@ -410,7 +410,7 @@ def _get_git_commit_hash(path: str) -> str | None:
         )
         if result.returncode == 0:
             return result.stdout.strip()
-    except (FileNotFoundError, OSError):
+    except OSError:
         pass
     return None
 
@@ -737,7 +737,7 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
         return format_codebase_map(codebase_map)
 
     except Exception as exc:
-        logger.error("get_codebase_map failed: %s: %s", type(exc).__name__, exc)
+        logger.exception("get_codebase_map failed: %s: %s", type(exc).__name__, exc)
         return json.dumps({
             "status": "error",
             "message": f"{type(exc).__name__}: {exc}",

@@ -45,6 +45,8 @@ from rich.table import Table
 
 from .config import SUPPORTED_EXTENSIONS, TOP_K
 
+_JSON_HELP = "Output results as JSON."
+
 app = typer.Typer(
     name="rag-mcp",
     help=(
@@ -223,6 +225,14 @@ def callback(
         mcp_main()
 
 
+def _finalise_read_bar(progress: Progress, read_task_id: TaskID | None) -> None:
+    """Ensure the reading progress bar is fully complete."""
+    if read_task_id is not None:
+        task = progress.tasks[read_task_id]
+        if task.completed < task.total:
+            progress.update(read_task_id, completed=task.total)
+
+
 def _run_ingest_with_rich_progress(
     path: str,
     ingest_kwargs: dict,
@@ -262,18 +272,13 @@ def _run_ingest_with_rich_progress(
                 progress.update(read_task_id, completed=current)
 
             elif phase == "embed_start":
-                # Ensure the reading bar is fully complete.
-                if read_task_id is not None:
-                    task = progress.tasks[read_task_id]
-                    if task.completed < task.total:
-                        progress.update(read_task_id, completed=task.total)
+                _finalise_read_bar(progress, read_task_id)
                 embed_task_id = progress.add_task(
                     f"[cyan]Embedding {total} chunks…", total=total
                 )
 
-            elif phase == "embed":
-                if embed_task_id is not None:
-                    progress.update(embed_task_id, completed=total)
+            elif phase == "embed" and embed_task_id is not None:
+                progress.update(embed_task_id, completed=total)
 
         return asyncio.run(
             ingest_path_async(
@@ -378,35 +383,35 @@ def _write_report(
         )
     else:
         lines = [
-            f"# Ingestion Report",
-            f"",
+            "# Ingestion Report",
+            "",
             f"**Timestamp**: {timestamp}",
             f"**Input**: `{input_path}`",
-            f"",
-            f"## Summary",
-            f"",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "",
+            "## Summary",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Total files | {summary['total']} |",
             f"| Indexed | {summary['indexed']} |",
             f"| Failed | {summary['failed']} |",
             f"| Skipped | {summary['skipped']} |",
             f"| Total chunks | {summary['chunks']} |",
-            f"",
-            f"## Configuration",
-            f"",
-            f"| Setting | Value |",
-            f"|---------|-------|",
+            "",
+            "## Configuration",
+            "",
+            "| Setting | Value |",
+            "|---------|-------|",
             f"| Model | {config_info['model']} |",
             f"| Batch size | {config_info['batch_size']} |",
             f"| Concurrency | {config_info['concurrency']} |",
             f"| Chunk size | {config_info['chunk_size']} |",
             f"| Chunk overlap | {config_info['chunk_overlap']} |",
-            f"",
-            f"## Per-File Details",
-            f"",
-            f"| File | Status | Chunks | Error |",
-            f"|------|--------|--------|-------|",
+            "",
+            "## Per-File Details",
+            "",
+            "| File | Status | Chunks | Error |",
+            "|------|--------|--------|-------|",
         ]
         for fd in file_details:
             error = fd.get("error", "")
@@ -416,6 +421,104 @@ def _write_report(
             )
         lines.append("")
         report_file.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _install_sigint_handler():
+    """Install SIGINT handler for graceful shutdown during ingestion."""
+    from .ingestion import _shutdown_requested
+
+    _sigint_count = 0
+    _original_handler = signal.getsignal(signal.SIGINT)
+
+    def _on_sigint(signum: int, frame: object) -> None:
+        nonlocal _sigint_count
+        _sigint_count += 1
+        if _sigint_count == 1:
+            _shutdown_requested.set()
+            console.print(
+                "\n[yellow]Interrupt received — finishing current "
+                "file, then stopping…[/yellow] "
+                "(Ctrl+C again to force quit)"
+            )
+        else:
+            signal.signal(signal.SIGINT, _original_handler)
+            raise KeyboardInterrupt
+
+    signal.signal(signal.SIGINT, _on_sigint)
+    return _original_handler
+
+
+def _run_ingest(path: str, ingest_kwargs: dict, json_output: bool) -> dict:
+    """Execute ingestion with the appropriate progress display mode."""
+    import asyncio
+
+    from .ingestion import ingest_path_async
+
+    if json_output:
+        return asyncio.run(ingest_path_async(path, **ingest_kwargs))
+    elif console.is_terminal:
+        return _run_ingest_with_rich_progress(path, ingest_kwargs)
+    else:
+        return asyncio.run(
+            ingest_path_async(
+                path,
+                progress_callback=_make_plain_callback(),
+                **ingest_kwargs,
+            )
+        )
+
+
+def _handle_ingest_error(exc: Exception, json_output: bool) -> None:
+    """Handle unexpected errors during ingestion."""
+    err_msg = str(exc)
+    if "ollama" in err_msg.lower() or "embed" in err_msg.lower():
+        _print_ollama_error(err_msg, json_output)
+    else:
+        console.print(f"[red]Error:[/red] {err_msg}")
+
+
+def _print_interrupt_result(result: dict, total_files: int, json_output: bool) -> None:
+    """Print interruption message for interrupted ingestion."""
+    files_done = result.get("files_indexed", 0)
+    if json_output:
+        result["interrupted"] = True
+        result["message"] = (
+            f"Ingestion interrupted after "
+            f"{files_done}/{total_files} files"
+        )
+        typer.echo(json.dumps(result, indent=2))
+    else:
+        console.print(
+            f"[yellow]⚠ Ingestion interrupted after "
+            f"{files_done}/{total_files} files.[/yellow]"
+        )
+        chunks = result.get("chunks_created", 0)
+        if chunks > 0:
+            console.print(
+                f"  [dim]{chunks} chunk(s) were written before "
+                f"interruption.[/dim]"
+            )
+
+
+def _print_ingest_result(result: dict, json_output: bool) -> None:
+    """Print the final ingestion result."""
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+    else:
+        files = result.get("files_indexed", 0)
+        chunks = result.get("chunks_created", 0)
+        removed = result.get("chunks_removed", 0)
+        if removed > 0:
+            console.print(
+                f"[green]✓[/green] Indexed {files} file(s), "
+                f"{chunks} chunk(s) created, "
+                f"{removed} chunk(s) replaced."
+            )
+        else:
+            console.print(
+                f"[green]✓[/green] Indexed {files} file(s), "
+                f"{chunks} chunk(s) created."
+            )
 
 
 @app.command()
@@ -440,7 +543,7 @@ def ingest(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
     report: Optional[str] = typer.Option(
         None,
@@ -468,65 +571,19 @@ def ingest(
     if chunk_overlap is not None:
         ingest_kwargs["chunk_overlap"] = chunk_overlap
 
-    # Register SIGINT handler for graceful shutdown.
-        # The first Ctrl+C sets the shutdown flag so ingestion finishes the
-        # current file and stops. A second Ctrl+C raises KeyboardInterrupt
-    # for an immediate abort.
-    _sigint_count = 0
-    _original_handler = signal.getsignal(signal.SIGINT)
-
-    def _on_sigint(signum: int, frame: object) -> None:
-        nonlocal _sigint_count
-        _sigint_count += 1
-        if _sigint_count == 1:
-            _shutdown_requested.set()
-            console.print(
-                "\n[yellow]Interrupt received — finishing current "
-                "file, then stopping…[/yellow] "
-                "(Ctrl+C again to force quit)"
-            )
-        else:
-            # Second interrupt: restore default and re-raise
-            signal.signal(signal.SIGINT, _original_handler)
-            raise KeyboardInterrupt
-
-    signal.signal(signal.SIGINT, _on_sigint)
+    _original_handler = _install_sigint_handler()
 
     try:
-        # Select progress display mode.
-        # JSON mode: suppress progress entirely.
-        # TTY mode: Rich dual progress bars.
-        # Non-TTY (piped/CI): plain-text lines to stderr.
-        if json_output:
-            result = asyncio.run(ingest_path_async(path, **ingest_kwargs))
-        elif console.is_terminal:
-            result = _run_ingest_with_rich_progress(
-                path, ingest_kwargs
-            )
-        else:
-            result = asyncio.run(
-                ingest_path_async(
-                    path,
-                    progress_callback=_make_plain_callback(),
-                    **ingest_kwargs,
-                )
-            )
+        result = _run_ingest(path, ingest_kwargs, json_output)
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
         raise typer.Exit(code=1)
     except Exception as exc:
-        # Catch-all for unexpected errors (e.g. ChromaDB corruption).
-        err_msg = str(exc)
-        if "ollama" in err_msg.lower() or "embed" in err_msg.lower():
-            _print_ollama_error(err_msg, json_output)
-        else:
-            console.print(f"[red]Error:[/red] {err_msg}")
+        _handle_ingest_error(exc, json_output)
         raise typer.Exit(code=1)
     finally:
-        # Always restore original SIGINT handler
         signal.signal(signal.SIGINT, _original_handler)
 
-    # Check if we were interrupted
     was_interrupted = _shutdown_requested.is_set()
     total_files = (
         result.get("files_indexed", 0)
@@ -540,48 +597,12 @@ def ingest(
         console.print(f"[red]Error:[/red] {msg}")
         raise typer.Exit(code=1)
 
-    # Print interrupt message if applicable
     if was_interrupted:
-        files_done = result.get("files_indexed", 0)
-        if json_output:
-            result["interrupted"] = True
-            result["message"] = (
-                f"Ingestion interrupted after "
-                f"{files_done}/{total_files} files"
-            )
-            typer.echo(json.dumps(result, indent=2))
-        else:
-            console.print(
-                f"[yellow]⚠ Ingestion interrupted after "
-                f"{files_done}/{total_files} files.[/yellow]"
-            )
-            chunks = result.get("chunks_created", 0)
-            if chunks > 0:
-                console.print(
-                    f"  [dim]{chunks} chunk(s) were written before "
-                    f"interruption.[/dim]"
-                )
-        raise typer.Exit(code=130)  # 128 + SIGINT(2)
+        _print_interrupt_result(result, total_files, json_output)
+        raise typer.Exit(code=130)
 
-    if json_output:
-        typer.echo(json.dumps(result, indent=2))
-    else:
-        files = result.get("files_indexed", 0)
-        chunks = result.get("chunks_created", 0)
-        removed = result.get("chunks_removed", 0)
-        if removed > 0:
-            console.print(
-                f"[green]✓[/green] Indexed {files} file(s), "
-                f"{chunks} chunk(s) created, "
-                f"{removed} chunk(s) replaced."
-            )
-        else:
-            console.print(
-                f"[green]✓[/green] Indexed {files} file(s), "
-                f"{chunks} chunk(s) created."
-            )
+    _print_ingest_result(result, json_output)
 
-    # Write report if requested
     if report:
         try:
             _write_report(report, result, ingest_kwargs, path)
@@ -619,7 +640,7 @@ def search(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
@@ -690,7 +711,7 @@ def list_cmd(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
 ) -> None:
     """List all indexed documents with their chunk counts."""
@@ -726,6 +747,45 @@ def list_cmd(
     )
 
 
+def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
+    """Prepare chunks for benchmarking from inline text or file."""
+    from llama_index.core import Document
+    from llama_index.core.node_parser import SentenceSplitter
+
+    from .config import CHUNK_OVERLAP, CHUNK_SIZE
+
+    if file:
+        file_path = Path(file).expanduser().resolve()
+        if not file_path.exists():
+            console.print(f"[red]Error:[/red] File not found: {file}")
+            raise typer.Exit(code=1)
+        if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            console.print(
+                f"[red]Error:[/red] Unsupported file extension: "
+                f"{file_path.suffix}"
+            )
+            raise typer.Exit(code=1)
+
+        import asyncio
+
+        from .ingestion import read_and_chunk_file_async
+
+        nodes = asyncio.run(
+            read_and_chunk_file_async(
+                file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+            )
+        )
+        return [n.get_content() for n in nodes]
+
+    # Split inline text into chunks using the same splitter.
+    splitter = SentenceSplitter(
+        chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+    )
+    doc = Document(text=text)
+    nodes = splitter.get_nodes_from_documents([doc])
+    return [n.get_content() for n in nodes]
+
+
 @app.command()
 def benchmark(
     text: Optional[str] = typer.Option(
@@ -749,7 +809,7 @@ def benchmark(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
 ) -> None:
     """Benchmark embedding throughput (no ChromaDB writes).
@@ -784,41 +844,7 @@ def benchmark(
         )
         raise typer.Exit(code=1)
 
-    # Gather texts to embed.
-    chunks: list[str] = []
-
-    if file:
-        file_path = Path(file).expanduser().resolve()
-        if not file_path.exists():
-            console.print(f"[red]Error:[/red] File not found: {file}")
-            raise typer.Exit(code=1)
-        if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
-            console.print(
-                f"[red]Error:[/red] Unsupported file extension: "
-                f"{file_path.suffix}"
-            )
-            raise typer.Exit(code=1)
-
-        import asyncio
-
-        from .ingestion import read_and_chunk_file_async
-
-        nodes = asyncio.run(
-            read_and_chunk_file_async(
-                file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
-            )
-        )
-        chunks = [n.get_content() for n in nodes]
-    else:
-        # Split inline text into chunks using the same splitter.
-        splitter = SentenceSplitter(
-            chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
-        )
-        from llama_index.core import Document
-
-        doc = Document(text=text)
-        nodes = splitter.get_nodes_from_documents([doc])
-        chunks = [n.get_content() for n in nodes]
+    chunks = _prepare_benchmark_chunks(text, file)
 
     if not chunks:
         console.print("[yellow]No chunks produced from input.[/yellow]")
@@ -841,7 +867,7 @@ def benchmark(
     timings: list[float] = []
     vector_dim: int | None = None
 
-    for i in range(iterations):
+    for _ in range(iterations):
         start = time.perf_counter()
         try:
             embeddings = embed_model.get_text_embedding_batch(chunks)
@@ -936,13 +962,10 @@ def watch(
     """
     from .watcher import watch_directory
 
-    try:
-        watch_directory(
-            path, debounce=debounce, verbose=verbose,
-            collection_name=collection,
-        )
-    except SystemExit as exc:
-        raise typer.Exit(code=exc.code if exc.code else 1)
+    watch_directory(
+        path, debounce=debounce, verbose=verbose,
+        collection_name=collection,
+    )
 
 
 @app.command(name="list-collections")
@@ -950,7 +973,7 @@ def list_collections_cmd(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
 ) -> None:
     """List all ChromaDB collections with document and chunk counts."""
@@ -995,6 +1018,130 @@ def list_collections_cmd(
 # ── Delete subcommand ─────────────────────────────────────────────────────
 
 
+def _delete_by_path(
+    path: str,
+    coll_name: str,
+    dry_run: bool,
+    preview_delete,
+    remove_document,
+) -> dict:
+    """Delete chunks by source file path."""
+    file_path = str(Path(path).expanduser().resolve())
+    if dry_run:
+        result = preview_delete(
+            path=file_path, collection_name=coll_name,
+        )
+        result["path"] = file_path
+    else:
+        result = remove_document(file_path, collection_name=coll_name)
+        result["mode"] = "path"
+        result["path"] = file_path
+    return result
+
+
+def _delete_by_metadata(
+    metadata: str,
+    coll_name: str,
+    dry_run: bool,
+    preview_delete,
+    remove_by_metadata,
+) -> dict:
+    """Delete chunks by metadata filter."""
+    try:
+        metadata_filter = json.loads(metadata)
+    except json.JSONDecodeError as exc:
+        console.print(
+            f"[red]Error:[/red] Invalid JSON for --metadata: {exc}"
+        )
+        raise typer.Exit(code=1)
+
+    if not isinstance(metadata_filter, dict):
+        console.print(
+            "[red]Error:[/red] --metadata must be a JSON object "
+            "(e.g. '{\"category\":\"uncategorised\"}')."
+        )
+        raise typer.Exit(code=1)
+
+    if dry_run:
+        result = preview_delete(
+            metadata_filter=metadata_filter,
+            collection_name=coll_name,
+        )
+        result["metadata_filter"] = metadata_filter
+    else:
+        result = remove_by_metadata(
+            metadata_filter, collection_name=coll_name
+        )
+        result["mode"] = "metadata"
+        result["metadata_filter"] = metadata_filter
+    return result
+
+
+def _delete_by_collection(
+    coll_name: str,
+    dry_run: bool,
+    yes: bool,
+    preview_delete,
+    remove_collection,
+) -> dict:
+    """Drop an entire collection with confirmation."""
+    if not dry_run and not yes:
+        from rich.prompt import Confirm
+
+        confirmed = Confirm.ask(
+            f"Delete entire collection '[bold]{coll_name}[/bold]'? "
+            "This cannot be undone.",
+            default=False,
+        )
+        if not confirmed:
+            console.print("[yellow]Cancelled.[/yellow]")
+            raise typer.Exit(code=0)
+
+    if dry_run:
+        return preview_delete(collection_name=coll_name)
+    result = remove_collection(coll_name)
+    result["mode"] = "collection"
+    return result
+
+
+def _print_delete_result(
+    result: dict,
+    coll_name: str,
+    json_output: bool,
+    dry_run: bool,
+) -> None:
+    """Display delete command results."""
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+        return
+
+    if result.get("status") == "error":
+        console.print(
+            f"[red]Error:[/red] {result.get('message', 'Unknown error')}"
+        )
+        raise typer.Exit(code=1)
+
+    if dry_run:
+        mode_label = result.get("mode", "unknown")
+        would = result.get("would_delete", 0)
+        console.print(
+            f"[yellow]Dry run:[/yellow] Would delete [bold]{would}[/bold] "
+            f"chunk(s) by {mode_label}."
+        )
+        return
+
+    if result.get("mode") == "collection":
+        console.print(
+            f"[green]✓[/green] Collection '[bold]{coll_name}[/bold]' "
+            "deleted."
+        )
+    else:
+        removed = result.get("chunks_removed", 0)
+        console.print(
+            f"[green]✓[/green] Removed [bold]{removed}[/bold] chunk(s)."
+        )
+
+
 @app.command()
 def delete(
     path: Optional[str] = typer.Option(
@@ -1035,7 +1182,7 @@ def delete(
     json_output: bool = typer.Option(
         False,
         "--json",
-        help="Output results as JSON.",
+        help=_JSON_HELP,
     ),
 ) -> None:
     """Delete documents from the RAG vector store.
@@ -1072,100 +1219,14 @@ def delete(
         remove_collection,
     )
 
-    # ── Mode: delete by path ────────────────────────────────────────────
     if path is not None:
-        file_path = str(Path(path).expanduser().resolve())
-        if dry_run:
-            result = preview_delete(
-                path=file_path, collection_name=coll_name,
-            )
-            result["path"] = file_path
-        else:
-            result = remove_document(file_path, collection_name=coll_name)
-            result["mode"] = "path"
-            result["path"] = file_path
-
-    # ── Mode: delete by metadata ────────────────────────────────────────
+        result = _delete_by_path(path, coll_name, dry_run, preview_delete, remove_document)
     elif metadata is not None:
-        try:
-            metadata_filter = json.loads(metadata)
-        except json.JSONDecodeError as exc:
-            console.print(
-                f"[red]Error:[/red] Invalid JSON for --metadata: {exc}"
-            )
-            raise typer.Exit(code=1)
-
-        if not isinstance(metadata_filter, dict):
-            console.print(
-                "[red]Error:[/red] --metadata must be a JSON object "
-                "(e.g. '{\"category\":\"uncategorised\"}')."
-            )
-            raise typer.Exit(code=1)
-
-        if dry_run:
-            result = preview_delete(
-                metadata_filter=metadata_filter,
-                collection_name=coll_name,
-            )
-            result["metadata_filter"] = metadata_filter
-        else:
-            result = remove_by_metadata(
-                metadata_filter, collection_name=coll_name
-            )
-            result["mode"] = "metadata"
-            result["metadata_filter"] = metadata_filter
-
-    # ── Mode: delete by collection (drop) ───────────────────────────────
-    else:  # collection is not None
-        # Collection drop requires confirmation unless --yes is passed
-        if not dry_run and not yes:
-            from rich.prompt import Confirm
-
-            confirmed = Confirm.ask(
-                f"Delete entire collection '[bold]{coll_name}[/bold]'? "
-                "This cannot be undone.",
-                default=False,
-            )
-            if not confirmed:
-                console.print("[yellow]Cancelled.[/yellow]")
-                raise typer.Exit(code=0)
-
-        if dry_run:
-            result = preview_delete(collection_name=coll_name)
-        else:
-            result = remove_collection(coll_name)
-            result["mode"] = "collection"
-
-    # ── Display results ─────────────────────────────────────────────────
-    if json_output:
-        typer.echo(json.dumps(result, indent=2))
-        return
-
-    if result.get("status") == "error":
-        console.print(
-            f"[red]Error:[/red] {result.get('message', 'Unknown error')}"
-        )
-        raise typer.Exit(code=1)
-
-    if dry_run:
-        mode_label = result.get("mode", "unknown")
-        would = result.get("would_delete", 0)
-        console.print(
-            f"[yellow]Dry run:[/yellow] Would delete [bold]{would}[/bold] "
-            f"chunk(s) by {mode_label}."
-        )
-        return
-
-    if result.get("mode") == "collection":
-        console.print(
-            f"[green]✓[/green] Collection '[bold]{coll_name}[/bold]' "
-            "deleted."
-        )
+        result = _delete_by_metadata(metadata, coll_name, dry_run, preview_delete, remove_by_metadata)
     else:
-        removed = result.get("chunks_removed", 0)
-        console.print(
-            f"[green]✓[/green] Removed [bold]{removed}[/bold] chunk(s)."
-        )
+        result = _delete_by_collection(coll_name, dry_run, yes, preview_delete, remove_collection)
+
+    _print_delete_result(result, coll_name, json_output, dry_run)
 
 
 def run_cli() -> None:
