@@ -242,5 +242,90 @@ OLLAMA_CLASSIFY_TIMEOUT = _get_float_env("OLLAMA_CLASSIFY_TIMEOUT", 30.0)
 # metadata_extractor.py via os.getenv() so tests can override it
 # with monkeypatch.setenv after module load.  Default: 10.
 
+# ── Codebase map: Magika file-type detection ────────────────────────────
+# Path to the Magika CLI binary. If not on $PATH, the system falls back to
+# suffix-based detection. Install via `brew install magika`.
+MAGIKA_BINARY = os.getenv("MAGIKA_BINARY", "magika")
+
+# ── Codebase map: document similarity threshold ─────────────────────────
+# Cosine similarity threshold for document graph edges. Chunks with
+# similarity above this value get an edge in the document graph.
+# Default 0.85 — needs experiment calibration with qwen3-embedding:0.6b.
+DOC_SIMILARITY_THRESHOLD = _get_float_env("DOC_SIMILARITY_THRESHOLD", 0.85)
+
+# ── Codebase map: cache directory ───────────────────────────────────────
+# Per-project cache for codebase map, keyed by git commit hash.
+# Defaults to .opencode/ which is gitignored by convention.
+CODEBASE_MAP_CACHE_DIR = os.getenv("CODEBASE_MAP_CACHE_DIR", ".opencode")
+
+# ── Codebase map: file count and depth limits ───────────────────────────
+# Maximum number of files to scan before truncating (prevents hangs on
+# monorepos). When exceeded, scanning stops and a warning is logged.
+CODEBASE_MAP_MAX_FILES = int(os.getenv("CODEBASE_MAP_MAX_FILES", "5000"))
+# Maximum directory depth for recursive scanning.
+CODEBASE_MAP_MAX_DEPTH = int(os.getenv("CODEBASE_MAP_MAX_DEPTH", "10"))
+
+# ── Document backend selection ──────────────────────────────────────────
+# Controls which parser handles document files (PDF, DOCX) during
+# ingestion. Accepted values: "local" (default), "azure".
+# "local" uses the existing LiteParse → pypdfium2 → pypdf chain.
+# "azure" uses Azure Document Intelligence with automatic fallback to local.
+DOCUMENT_BACKEND = os.getenv("DOCUMENT_BACKEND", "local").lower()
+
+if DOCUMENT_BACKEND not in {"local", "azure"}:
+    logger.warning(
+        "Unknown DOCUMENT_BACKEND=%r; falling back to local",
+        DOCUMENT_BACKEND,
+    )
+    DOCUMENT_BACKEND = "local"
+
+# Azure Document Intelligence credentials (only used when DOCUMENT_BACKEND=azure).
+# These are validated at config load time — if missing, fallback to "local".
+AZURE_DOC_INTELLIGENCE_ENDPOINT = os.getenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "")
+AZURE_DOC_INTELLIGENCE_KEY = os.getenv("AZURE_DOC_INTELLIGENCE_KEY", "")
+AZURE_DOC_INTELLIGENCE_MODEL = os.getenv(
+    "AZURE_DOC_INTELLIGENCE_MODEL", "prebuilt-layout"
+)
+
+# Validate Azure credentials at config load time.
+if DOCUMENT_BACKEND == "azure":
+    if not AZURE_DOC_INTELLIGENCE_ENDPOINT or not AZURE_DOC_INTELLIGENCE_KEY:
+        logger.warning(
+            "DOCUMENT_BACKEND=azure but AZURE_DOC_INTELLIGENCE_ENDPOINT or "
+            "AZURE_DOC_INTELLIGENCE_KEY is not set. Falling back to local mode."
+        )
+        DOCUMENT_BACKEND = "local"
+
+# ── Magika label → tree-sitter language mapping ─────────────────────────
+# Maps Magika content-type labels to tree-sitter language identifiers
+# for CodeSplitter. Keys are Magika labels (e.g., "typescript", "python").
+# Labels not in this map fall back to SentenceSplitter.
+MAGIKA_LABEL_TO_TREESITTER: dict[str, str] = {
+    "python": "python",
+    "javascript": "javascript",
+    "typescript": "typescript",
+    "tsx": "tsx",
+    "jsx": "jsx",
+    "java": "java",
+    "c": "c",
+    "cpp": "cpp",
+    "csharp": "c_sharp",
+    "go": "go",
+    "rust": "rust",
+    "ruby": "ruby",
+    "php": "php",
+    "swift": "swift",
+    "kotlin": "kotlin",
+    "scala": "scala",
+    "html": "html",
+    "css": "css",
+    "sql": "sql",
+    "bash": "bash",
+    "shell": "bash",
+    "yaml": "yaml",
+    "toml": "toml",
+    "json": "json",
+}
+
 # ── File extensions we know how to handle ───────────────────────────────
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}

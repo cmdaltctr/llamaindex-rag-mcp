@@ -836,8 +836,10 @@ class TestLlamaindexExtraction:
         from unittest.mock import MagicMock
 
         # Mock imports so pipeline setup succeeds.
-        sys.modules["llama_index.llms.ollama"] = MagicMock()
-        sys.modules["llama_index.llms.ollama"].Ollama = MagicMock()
+        monkeypatch.setitem(sys.modules, "llama_index.llms.ollama", MagicMock())
+        monkeypatch.setattr(
+            sys.modules["llama_index.llms.ollama"], "Ollama", MagicMock(),
+        )
 
         # Mock extractor + node_parser modules to bypass Pydantic validation
         # on the llm= argument passed to TitleExtractor / KeywordExtractor /
@@ -846,15 +848,15 @@ class TestLlamaindexExtraction:
         mock_extractors.TitleExtractor = MagicMock()
         mock_extractors.KeywordExtractor = MagicMock()
         mock_extractors.SummaryExtractor = MagicMock()
-        sys.modules["llama_index.core.extractors"] = mock_extractors
-        sys.modules["llama_index.core.node_parser"] = MagicMock()
+        monkeypatch.setitem(sys.modules, "llama_index.core.extractors", mock_extractors)
+        monkeypatch.setitem(sys.modules, "llama_index.core.node_parser", MagicMock())
 
         # Make pipeline.arun() raise
         mock_pipeline = MagicMock()
         mock_pipeline.arun.side_effect = RuntimeError("Ollama timeout")
         mock_ingestion = MagicMock()
         mock_ingestion.IngestionPipeline = MagicMock(return_value=mock_pipeline)
-        sys.modules["llama_index.core.ingestion"] = mock_ingestion
+        monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
         async def _fake_ollama(text: str) -> dict:

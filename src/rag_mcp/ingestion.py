@@ -20,6 +20,7 @@ from .config import (
     COLLECTION_NAME,
     EMBED_BATCH_SIZE,
     EMBED_CONCURRENCY,
+    MAGIKA_LABEL_TO_TREESITTER,
     MARKDOWN_CHUNK_SIZE,
     MARKDOWN_HEADING_PREPEND,
     MARKDOWN_MIN_CHUNK_FRACTION,
@@ -231,10 +232,97 @@ def _drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
     return kept
 
 
+async def _chunk_code_file_async(
+    file_path: Path,
+    language: str,
+    chunk_size: int,
+    chunk_overlap: int,
+    content_type: str,
+) -> list:
+    """Chunk a code file using LlamaIndex's CodeSplitter.
+
+    Uses tree-sitter function/class boundaries for semantically coherent
+    chunks. Falls back to SentenceSplitter if CodeSplitter fails.
+
+    Args:
+        file_path: Path to the code file.
+        language: Tree-sitter language identifier (e.g., "python").
+        chunk_size: Maximum characters per chunk.
+        chunk_overlap: Overlap between chunks.
+        content_type: Magika content-type string for metadata.
+
+    Returns:
+        List of LlamaIndex Node objects with content_type metadata.
+    """
+    from llama_index.core.node_parser import CodeSplitter
+
+    def _read_and_split() -> list:
+        content = file_path.read_text(encoding="utf-8", errors="replace")
+        splitter = CodeSplitter(
+            language=language,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        from llama_index.core import Document
+        doc = Document(text=content, metadata={"file_path": str(file_path)})
+        return splitter.get_nodes_from_documents([doc])
+
+    try:
+        nodes = await asyncio.to_thread(_read_and_split)
+    except Exception as exc:
+        logger.warning(
+            "CodeSplitter failed for %s (language=%s): %s — falling back to SentenceSplitter",
+            file_path.name, language, exc,
+        )
+        # Fall back to SentenceSplitter.
+        content = file_path.read_text(encoding="utf-8", errors="replace")
+        from llama_index.core import Document
+        splitter = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        doc = Document(text=content, metadata={"file_path": str(file_path)})
+        nodes = splitter.get_nodes_from_documents([doc])
+
+    for node in nodes:
+        node.metadata.setdefault("content_type", content_type)
+        node.metadata.setdefault("file_path", str(file_path))
+
+    return nodes
+
+
+async def _chunk_config_file_async(
+    file_path: Path,
+    content_type: str,
+) -> list:
+    """Chunk a config file as a single whole-file chunk.
+
+    Config files (YAML, JSON, TOML, INI) are small enough to be a single chunk.
+
+    Args:
+        file_path: Path to the config file.
+        content_type: Magika content-type string for metadata.
+
+    Returns:
+        List containing a single LlamaIndex Node with the full file content.
+    """
+    from llama_index.core import Document
+    from llama_index.core.schema import TextNode
+
+    content = file_path.read_text(encoding="utf-8", errors="replace")
+    node = TextNode(
+        text=content,
+        metadata={
+            "content_type": content_type,
+            "file_path": str(file_path),
+            "file_name": file_path.name,
+        },
+    )
+    return [node]
+
+
 async def _read_and_chunk_file_async(
     file_path: Path,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
+    content_type: str | None = None,
 ) -> list:
     """Async version of ``_read_and_chunk_file``.
 
@@ -242,10 +330,18 @@ async def _read_and_chunk_file_async(
     calls ``extract_metadata_async`` for non-blocking metadata extraction,
     and returns chunked nodes with metadata attached.
 
+    When ``content_type`` is provided (from Magika detection), the chunking
+    strategy is selected based on content type: ``code/*`` uses
+    ``CodeSplitter``, ``config/*`` uses whole-file chunking, and documents
+    use the existing ``SentenceSplitter`` / ``MarkdownNodeParser`` path.
+    When ``content_type`` is None, falls back to extension-based routing.
+
     Args:
         file_path: Path to the document file.
         chunk_size: Maximum characters per chunk.
         chunk_overlap: Overlap between chunks.
+        content_type: Magika content-type string (e.g., ``"code/python"``).
+            When provided, takes precedence over file extension.
 
     Returns:
         List of LlamaIndex Node objects, each with metadata attached.
@@ -253,6 +349,60 @@ async def _read_and_chunk_file_async(
     Raises:
         Exception: If the file cannot be read or parsed.
     """
+    # Determine chunking strategy based on content_type (task 6.2, 6.6).
+    # Content_type takes precedence over extension when available.
+    if content_type:
+        group, _, label = content_type.partition("/")
+    else:
+        group, label = "", ""
+
+    # Code files: use CodeSplitter with tree-sitter boundaries.
+    if group == "code":
+        ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(label)
+        if ts_lang:
+            return await _chunk_code_file_async(
+                file_path, ts_lang, chunk_size, chunk_overlap, content_type,
+            )
+        # Unknown code language — fall through to default splitter.
+        logger.debug("No CodeSplitter mapping for code language %r", label)
+
+    # Config files: whole-file as single chunk.
+    if group == "config":
+        return await _chunk_config_file_async(
+            file_path, content_type,
+        )
+
+    # Documents: existing extension-based routing (task 6.2).
+    # Azure Document Intelligence branch (task 7.8).
+    if group in ("document", "") and not group == "config":
+        from .config import DOCUMENT_BACKEND
+        if DOCUMENT_BACKEND == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
+            try:
+                from .azure_reader import read_with_azure_fallback
+                documents = await read_with_azure_fallback(file_path)
+                # Add content_type metadata to Azure documents.
+                if content_type:
+                    for doc in documents:
+                        doc.metadata.setdefault("content_type", content_type)
+                # Chunk Azure documents with SentenceSplitter.
+                effective_chunk_size = MARKDOWN_CHUNK_SIZE if file_path.suffix.lower() == ".md" else chunk_size
+                splitter = SentenceSplitter(
+                    chunk_size=effective_chunk_size,
+                    chunk_overlap=chunk_overlap,
+                )
+                nodes = await asyncio.to_thread(
+                    lambda: splitter.get_nodes_from_documents(documents)
+                )
+                if content_type:
+                    for node in nodes:
+                        node.metadata.setdefault("content_type", content_type)
+                return nodes
+            except Exception as exc:
+                logger.warning(
+                    "Azure reader failed for %s: %s — falling back to local chain",
+                    file_path.name, exc,
+                )
+
     def _read_sync() -> list:
         from .readers import get_pdf_reader
 
@@ -312,6 +462,11 @@ async def _read_and_chunk_file_async(
         _apply_heading_prepend(nodes)
         nodes = _drop_small_markdown_chunks(nodes, effective_chunk_size)
 
+    # Add content_type metadata to all nodes (task 6.4).
+    if content_type:
+        for node in nodes:
+            node.metadata.setdefault("content_type", content_type)
+
     if doc_metadata:
         flat_metadata = {
             k: ", ".join(str(x) for x in v) if isinstance(v, list) else v
@@ -327,6 +482,7 @@ async def read_and_chunk_file_async(
     file_path: Path,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
+    content_type: str | None = None,
 ) -> list:
     """Read and chunk a file for internal ingestion and benchmark callers.
 
@@ -338,6 +494,7 @@ async def read_and_chunk_file_async(
         file_path,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
+        content_type=content_type,
     )
 
 
@@ -468,6 +625,19 @@ async def ingest_path_async(
             "collection": collection_name,
         }
 
+    # Type-aware ingestion: detect file types via Magika (task 6.3).
+    # Falls back to None (extension-based routing) when Magika unavailable.
+    from .codebase_map import detect_file_types
+
+    content_type_map: dict[str, str] = {}
+    try:
+        inventory = detect_file_types(str(path_obj))
+        for entry in inventory.entries:
+            ct = f"{entry.group}/{entry.label}"
+            content_type_map[entry.path] = ct
+    except Exception as exc:
+        logger.warning("Magika detection failed, using extension-based routing: %s", exc)
+
     # Delete old chunks for upsert semantics (via to_thread).
     chunks_removed_total = 0
     for _f in files_to_index:
@@ -488,11 +658,32 @@ async def ingest_path_async(
     for i, file_path in enumerate(files_to_index):
         if _shutdown_requested.is_set():
             break
+
+        # Determine content_type for this file (task 6.3, 6.7).
+        try:
+            rel_path = str(file_path.relative_to(path_obj))
+        except ValueError:
+            rel_path = str(file_path)
+        content_type = content_type_map.get(rel_path)
+
+        # Skip binary files (task 6.5).
+        if content_type and content_type.startswith("binary"):
+            file_details.append(_make_file_detail(
+                file_name=file_path.name,
+                status="skipped",
+                chunks=0,
+            ))
+            logger.info("⊘ %s — binary file skipped", file_path.name)
+            if progress_callback:
+                progress_callback("read", i + 1, len(files_to_index))
+            continue
+
         try:
             nodes = await _read_and_chunk_file_async(
                 file_path,
                 chunk_size=_chunk_size,
                 chunk_overlap=_chunk_overlap,
+                content_type=content_type,
             )
             all_nodes.extend(nodes)
             files_indexed += 1

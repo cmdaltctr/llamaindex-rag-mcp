@@ -44,7 +44,7 @@ The 0.6b model is 13× faster than the 8b model with identical retrieval quality
 
 ### Why a cross-encoder reranker? ([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md))
 
-Vector similarity search is fast but imprecise. It finds chunks that are *similar* to your query, but "similar" in vector space doesn't always mean "relevant" in human terms. A cross-encoder reranker reads each (query, chunk) pair together and scores them more accurately — the same way a human would judge relevance.
+Vector similarity search is fast but imprecise. It finds chunks that are _similar_ to your query, but "similar" in vector space doesn't always mean "relevant" in human terms. A cross-encoder reranker reads each (query, chunk) pair together and scores them more accurately — the same way a human would judge relevance.
 
 The challenge: most reranker implementations require PyTorch, a ~2 GB dependency. We use a pre-exported ONNX model (~23 MB) that runs via ONNX Runtime instead. No PyTorch, no GPU required. The reranker is optional and off by default — it adds ~90ms per query but improves accuracy from 87.5% to 100% in our experiments.
 
@@ -99,10 +99,39 @@ The MCP server runs an async event loop. When ingestion was synchronous, a long 
 A few constraints that shaped the design:
 
 - **No PyTorch at runtime.** The reranker uses ONNX Runtime instead. PyTorch is ~2 GB; the ONNX model is ~23 MB.
-- **No cloud services or API keys.** Every component — embeddings, classification, reranking, storage — runs locally via Ollama and ChromaDB.
+- **No cloud services or API keys.** Every component — embeddings, classification, reranking, storage — runs locally via Ollama and ChromaDB. (Exception: optional Azure Document Intelligence backend — see [ADR-024](../adr/024-dual-deployment-modes.md).)
 - **No breaking changes.** Every new feature (collections, metadata, deletion, the watcher) was added with backward-compatible defaults. `rag-mcp ingest ./docs` still works exactly as it did on day one.
 - **No new Python dependencies in default mode.** The keyword metadata extraction mode uses only Python's standard library (`re`, `json`). The Ollama mode uses `urllib` (also stdlib). New dependencies are only added when there's no reasonable alternative.
 
 ---
 
-*Each section above links to the full ADR for the complete context, alternatives considered, and consequences. The ADRs are the authoritative record; this document is the readable summary.*
+## Codebase map (ADR-022, ADR-023, ADR-024)
+
+The `get_codebase_map` MCP tool generates a compact, pre-computed map of a project's file types, code communities, document communities, cross-links, and architectural hubs. It is designed for agents starting a session on an unfamiliar codebase.
+
+### Data flow
+
+1. **Magika file-type detection** (`codebase_map.py`): Scans the project directory using the Magika CLI (with suffix-based fallback) to produce a file inventory with group/label classification.
+
+2. **Code graph** (`code_graph.py`): Extracts AST relationships (imports, classes, inheritance) via tree-sitter, builds a NetworkX DiGraph, and detects Louvain communities, hubs (high in-degree), and bridges (high betweenness).
+
+3. **Document graph** (`doc_graph.py`): Builds an undirected graph from ChromaDB embeddings (cosine similarity edges), metadata (category/keyword edges), and heading hierarchy. Detects document communities and cross-links to code communities.
+
+4. **Graph assembly** (`codebase_map.py`): Orchestrates all components, formats the result as compact text (≤800 tokens), and caches per-project keyed by git commit hash.
+
+5. **Type-aware ingestion** (`ingestion.py`): Uses Magika content-type detection to dispatch chunking — `CodeSplitter` for code, whole-file for config, existing chain for documents. Binary files are skipped.
+
+6. **Azure Document Intelligence** (`azure_reader.py`, optional): When `DOCUMENT_BACKEND=azure`, PDF/DOCX files are parsed by Azure with structured table extraction and heading hierarchy. Falls back to local chain on any error.
+
+### New modules
+
+| Module            | Responsibility                                                          |
+| ----------------- | ----------------------------------------------------------------------- |
+| `codebase_map.py` | Magika detection, graph assembly, formatting, caching                   |
+| `code_graph.py`   | Tree-sitter AST extraction, code graph, communities, hubs               |
+| `doc_graph.py`    | Embedding similarity, metadata edges, document communities, cross-links |
+| `azure_reader.py` | Azure Document Intelligence reader with fallback                        |
+
+---
+
+_Each section above links to the full ADR for the complete context, alternatives considered, and consequences. The ADRs are the authoritative record; this document is the readable summary._

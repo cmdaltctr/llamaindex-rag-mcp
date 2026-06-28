@@ -1,6 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ".opencode/plugins/graphify.js"
-  ]
+  "plugin": [".opencode/plugins/graphify.js"],
+  "mcp": {
+    "sonarqube": {
+      "type": "local",
+      "command": [
+        "java",
+        "-jar",
+        "/Users/aizat/Development/PROJECTS/sonarqube-mcp-server/build/libs/sonarqube-mcp-server-1.22-SNAPSHOT.jar"
+      ],
+      "env": {
+        "STORAGE_PATH": "/Users/aizat/Development/PROJECTS/sonarqube-mcp-server/storage",
+        "SONARQUBE_TOKEN": "${SONARQUBE_CLI_TOKEN}",
+        "SONARQUBE_ORG": "${SONARQUBE_CLI_ORG}"
+      }
+    }
+  }
 }
