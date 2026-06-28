@@ -7,6 +7,7 @@ flag handling, progress reporting, and error messages.
 from __future__ import annotations
 
 import json
+import re
 import signal
 import sys
 from io import StringIO
@@ -25,6 +26,13 @@ from rag_mcp.cli import (
 from rag_mcp.reranker import CrossEncoderReranker
 
 runner = CliRunner()
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from rich help output."""
+    return _ANSI_RE.sub("", text)
 
 
 # ── A: Foundation — entry point tests ──────────────────────────────────────
@@ -217,11 +225,12 @@ class TestIngestCLI:
         """--help lists all options."""
         result = runner.invoke(app, ["ingest", "--help"])
         assert result.exit_code == 0
-        assert "--workers" not in result.output
-        assert "--chunk-size" in result.output
-        assert "--chunk-overlap" in result.output
-        assert "--json" in result.output
-        assert "--report" in result.output
+        output = _strip_ansi(result.output)
+        assert "--workers" not in output
+        assert "--chunk-size" in output
+        assert "--chunk-overlap" in output
+        assert "--json" in output
+        assert "--report" in output
 
 
 # ── C + D: CLI search — JSON, Rich table, flags ────────────────────────────
@@ -302,11 +311,12 @@ class TestSearchCLI:
         """--help lists all options."""
         result = runner.invoke(app, ["search", "--help"])
         assert result.exit_code == 0
-        assert "--top-k" in result.output
-        assert "--threshold" in result.output
-        assert "--rerank" in result.output
-        assert "--hybrid" in result.output
-        assert "--json" in result.output
+        output = _strip_ansi(result.output)
+        assert "--top-k" in output
+        assert "--threshold" in output
+        assert "--rerank" in output
+        assert "--hybrid" in output
+        assert "--json" in output
 
 
 # ── C: CLI list — JSON and Rich table ──────────────────────────────────────
@@ -1314,12 +1324,13 @@ class TestDeleteCLI:
         """--help lists all delete options."""
         result = runner.invoke(app, ["delete", "--help"])
         assert result.exit_code == 0
-        assert "--path" in result.output
-        assert "--metadata" in result.output
-        assert "--collection" in result.output
-        assert "--dry-run" in result.output
-        assert "--yes" in result.output
-        assert "--json" in result.output
+        output = _strip_ansi(result.output)
+        assert "--path" in output
+        assert "--metadata" in output
+        assert "--collection" in output
+        assert "--dry-run" in output
+        assert "--yes" in output
+        assert "--json" in output
 
     def test_delete_no_flag_errors(self) -> None:
         """Delete without any flag must exit with error."""
