@@ -9,21 +9,21 @@
 
 ## Hypothesis / Purpose
 
-Does the full ingest → retrieval pipeline work correctly with a diverse real-world corpus
+The full ingest → retrieval pipeline works correctly with a diverse real-world corpus
 (PDFs + Markdown) under the current production configuration, including `llamaindex`
-metadata extraction mode?
+metadata extraction mode.
 
 ## Variables
 
-| Type                         | Variable                                                          | Values                                    |
-| ---------------------------- | ----------------------------------------------------------------- | ----------------------------------------- |
-| Independent (what we change) | Metadata extraction mode                                          | `llamaindex` (full per-chunk enrichment)  |
-| Dependent (what we measure)  | Ingest error count, chunk count, metadata field presence, Hit@1   | —                                         |
-| Controlled (held constant)   | Embedding model                                                   | `qwen3-embedding:0.6b` (1024-dim)        |
-| Controlled (held constant)   | Reranker                                                          | Enabled (cross-encoder)                   |
-| Controlled (held constant)   | Corpus                                                            | 6 documents (PDF + Markdown)              |
-| Controlled (held constant)   | Chunk size / overlap                                              | 512 / 64                                  |
-| Controlled (held constant)   | Similarity threshold                                              | 0.0 (no filtering)                        |
+| Type                         | Variable                                                        | Values                                   |
+| ---------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| Independent (what we change) | Metadata extraction mode                                        | `llamaindex` (full per-chunk enrichment) |
+| Dependent (what we measure)  | Ingest error count, chunk count, metadata field presence, Hit@1 | —                                        |
+| Controlled (held constant)   | Embedding model                                                 | `qwen3-embedding:0.6b` (1024-dim)        |
+| Controlled (held constant)   | Reranker                                                        | Enabled (cross-encoder)                  |
+| Controlled (held constant)   | Corpus                                                          | 6 documents (PDF + Markdown)             |
+| Controlled (held constant)   | Chunk size / overlap                                            | 512 / 64                                 |
+| Controlled (held constant)   | Similarity threshold                                            | 0.0 (no filtering)                       |
 
 ## Background
 
@@ -47,18 +47,18 @@ The goals are:
 
 ## Current Configuration (from `.env`)
 
-| Setting                    | Value                                    | Note                                      |
-| -------------------------- | ---------------------------------------- | ----------------------------------------- |
-| `EMBED_MODEL`              | `qwen3-embedding:0.6b`                   | 1024-dim; winner from experiment-2        |
-| `METADATA_EXTRACTION_MODE` | `llamaindex`                             | Per-chunk: title + keywords + summary     |
-| `OLLAMA_CLASSIFY_MODEL`    | `qwen3:0.6b`                             | LLM used by LlamaIndex extractors         |
-| `RERANK_ENABLED`           | `true`                                   | Cross-encoder reranker active             |
-| `CHUNK_SIZE`               | 512                                      |                                           |
-| `CHUNK_OVERLAP`            | 64                                       |                                           |
-| `EMBED_CONCURRENCY`        | 4                                        | Higher than default (2)                   |
-| `SIMILARITY_THRESHOLD`     | 0.0                                      | No filtering; reranker handles precision  |
-| `CHROMA_PERSIST_DIR`       | `./chroma_db_test`                       | **Experiment override** — not production  |
-| `COLLECTION_NAME`          | `documents`                              | Default                                   |
+| Setting                    | Value                  | Note                                     |
+| -------------------------- | ---------------------- | ---------------------------------------- |
+| `EMBED_MODEL`              | `qwen3-embedding:0.6b` | 1024-dim; winner from experiment-2       |
+| `METADATA_EXTRACTION_MODE` | `llamaindex`           | Per-chunk: title + keywords + summary    |
+| `OLLAMA_CLASSIFY_MODEL`    | `qwen3:0.6b`           | LLM used by LlamaIndex extractors        |
+| `RERANK_ENABLED`           | `true`                 | Cross-encoder reranker active            |
+| `CHUNK_SIZE`               | 512                    |                                          |
+| `CHUNK_OVERLAP`            | 64                     |                                          |
+| `EMBED_CONCURRENCY`        | 4                      | Higher than default (2)                  |
+| `SIMILARITY_THRESHOLD`     | 0.0                    | No filtering; reranker handles precision |
+| `CHROMA_PERSIST_DIR`       | `./chroma_db_test`     | **Experiment override** — not production |
+| `COLLECTION_NAME`          | `documents`            | Default                                  |
 
 > **Why `llamaindex` mode gives richer metadata**: Unlike `keyword` mode (regex → `category`
 > only) or `ollama` mode (`category` + `keywords` + `summary` per file), `llamaindex` mode
@@ -73,14 +73,14 @@ The goals are:
 
 6 documents in `experiments/e2e-smoke-test-metadata-2026-05-20/corpus/`:
 
-| File                                                                                        | Type     | Domain             | Queries |
-| ------------------------------------------------------------------------------------------- | -------- | ------------------ | ------- |
-| `Kalai et al. - 2025 - Why Language Models Hallucinate.pdf`                                 | PDF      | AI/ML              | 2       |
-| `Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf`    | PDF      | Education          | 3       |
-| `Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting...pdf`              | PDF      | Neuroscience       | 3       |
-| `paper-search-mcp-cf-README.md`                                                             | Markdown | Software/MCP       | 2       |
-| `grep-ai-README.md`                                                                         | Markdown | Software/AI        | 2       |
-| `Ghazali-Mustasfa.pdf`                                                                      | PDF      | Islamic philosophy | 3       |
+| File                                                                                     | Type     | Domain             | Queries |
+| ---------------------------------------------------------------------------------------- | -------- | ------------------ | ------- |
+| `Kalai et al. - 2025 - Why Language Models Hallucinate.pdf`                              | PDF      | AI/ML              | 2       |
+| `Popat and Starkey - 2019 - Learning to code or coding to learn A systematic review.pdf` | PDF      | Education          | 3       |
+| `Van Der Weel and Van Der Meer - 2024 - Handwriting but not typewriting...pdf`           | PDF      | Neuroscience       | 3       |
+| `paper-search-mcp-cf-README.md`                                                          | Markdown | Software/MCP       | 2       |
+| `grep-ai-README.md`                                                                      | Markdown | Software/AI        | 2       |
+| `Ghazali-Mustasfa.pdf`                                                                   | PDF      | Islamic philosophy | 3       |
 
 The corpus is intentionally diverse — different domains, file types, and lengths — to
 stress-test the pipeline's generality. The Ghazali and hallucination papers are
@@ -117,6 +117,7 @@ CHROMA_PERSIST_DIR=./chroma_db_test uv run rag-mcp ingest \
 ```
 
 Expected output:
+
 - Progress bar showing 6 files processed
 - No `ERROR` lines
 - Chunk count logged at completion (expect 80–350 chunks; PDFs chunk heavily)
@@ -160,20 +161,20 @@ CHROMA_PERSIST_DIR=./chroma_db_test uv run rag-mcp search --rerank \
 
 ### Ingest
 
-| Check                        | Pass Condition                                                        |
-| ---------------------------- | --------------------------------------------------------------------- |
-| No errors during ingest      | Zero `ERROR` lines in output                                          |
-| All 6 files indexed          | `list` command shows 6 distinct sources                               |
-| Chunk count reasonable       | 80–350 total chunks                                                   |
+| Check                        | Pass Condition                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| No errors during ingest      | Zero `ERROR` lines in output                                                                                                                |
+| All 6 files indexed          | `list` command shows 6 distinct sources                                                                                                     |
+| Chunk count reasonable       | 80–350 total chunks                                                                                                                         |
 | LlamaIndex metadata attached | Each chunk carries `document_title`, `keywords`, `summary` (lists flattened to comma-separated strings — ChromaDB requires scalar metadata) |
 
 ### Retrieval
 
-| Check                        | Pass Condition                                                        |
-| ---------------------------- | --------------------------------------------------------------------- |
-| Correct source returned      | Top-1 result comes from the expected document for all 3 spot queries  |
-| Reranker active              | Response includes reranker scores (not raw cosine only)               |
-| No cross-domain confusion    | Ghazali query returns Ghazali chunks, not ML paper chunks             |
+| Check                     | Pass Condition                                                       |
+| ------------------------- | -------------------------------------------------------------------- |
+| Correct source returned   | Top-1 result comes from the expected document for all 3 spot queries |
+| Reranker active           | Response includes reranker scores (not raw cosine only)              |
+| No cross-domain confusion | Ghazali query returns Ghazali chunks, not ML paper chunks            |
 
 ---
 
@@ -200,9 +201,9 @@ rm -rf ./chroma_db_test
 
 ## Artefacts
 
-| File             | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `protocol.md`   | This file — hypothesis, method, reproduction steps           |
-| `results.md`    | Full results with per-query detail and regression baseline   |
-| `questions.md`  | Human-readable ground-truth queries with full answers        |
-| `corpus/`       | Test documents (6 files: PDFs + Markdown)                    |
+| File           | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `protocol.md`  | This file — hypothesis, method, reproduction steps         |
+| `results.md`   | Full results with per-query detail and regression baseline |
+| `questions.md` | Human-readable ground-truth queries with full answers      |
+| `corpus/`      | Test documents (6 files: PDFs + Markdown)                  |

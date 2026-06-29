@@ -29,7 +29,7 @@ The decision under test is whether `HYBRID_ENABLED=true` can be recommended as
 a future default for realistic technical-document retrieval, or whether it must
 remain opt-in after Experiment 9's inconclusive ceiling result.
 
-## Hypothesis / Research question
+## Hypothesis
 
 With hybrid retrieval enabled (`HYBRID_ENABLED=true`, BM25 sparse side, RRF
 `k=60`) on the FreshStack LangChain corpus:
@@ -74,43 +74,43 @@ hit when any project-ingested chunk maps back to a relevant FreshStack corpus ID
 
 ## Variables
 
-| Type | Variable | Values / treatment |
-| --- | --- | --- |
-| Independent | Retrieval mode | `dense-only` / `hybrid_bm25` |
-| Independent | Reranker | Off / On, with production decision based on rerank-on cells |
-| Independent diagnostic | Query subset | all LangChain queries / identifier-heavy / non-identifier-heavy |
-| Dependent | FreshStack `alpha-nDCG@10` | Nugget-aware diversity/relevance metric from FreshStack |
-| Dependent | `Coverage@20` | Whether retrieved evidence covers answer nuggets |
-| Dependent | `Recall@50` | Fraction of relevant corpus IDs retrieved by rank 50 |
-| Dependent | Project metrics | Hit@5/Hit@10 over parent FreshStack IDs, MRR@10 |
-| Dependent | Latency | mean, P50, P95 per query and per cell |
-| Diagnostic | Fusion ranks | dense rank, sparse rank, fused rank for relevant parent IDs |
-| Controlled | Corpus | FreshStack LangChain October 2024 export plus Exp 9 continuity docs |
-| Controlled | Embedding model | `qwen3-embedding:0.6b` via Ollama, matching project default |
-| Controlled | Fusion | RRF `k=60` |
-| Controlled | Sparse backend | `HYBRID_SPARSE_BACKEND=bm25` |
-| Controlled | Chunking | Project defaults unless preparation disables re-chunking explicitly |
-| Controlled | Reranker | Existing ONNX cross-encoder and calibrated `÷30` scaling unchanged |
+| Type                   | Variable                   | Values / treatment                                                  |
+| ---------------------- | -------------------------- | ------------------------------------------------------------------- |
+| Independent            | Retrieval mode             | `dense-only` / `hybrid_bm25`                                        |
+| Independent            | Reranker                   | Off / On, with production decision based on rerank-on cells         |
+| Independent diagnostic | Query subset               | all LangChain queries / identifier-heavy / non-identifier-heavy     |
+| Dependent              | FreshStack `alpha-nDCG@10` | Nugget-aware diversity/relevance metric from FreshStack             |
+| Dependent              | `Coverage@20`              | Whether retrieved evidence covers answer nuggets                    |
+| Dependent              | `Recall@50`                | Fraction of relevant corpus IDs retrieved by rank 50                |
+| Dependent              | Project metrics            | Hit@5/Hit@10 over parent FreshStack IDs, MRR@10                     |
+| Dependent              | Latency                    | mean, P50, P95 per query and per cell                               |
+| Diagnostic             | Fusion ranks               | dense rank, sparse rank, fused rank for relevant parent IDs         |
+| Controlled             | Corpus                     | FreshStack LangChain October 2024 export plus Exp 9 continuity docs |
+| Controlled             | Embedding model            | `qwen3-embedding:0.6b` via Ollama, matching project default         |
+| Controlled             | Fusion                     | RRF `k=60`                                                          |
+| Controlled             | Sparse backend             | `HYBRID_SPARSE_BACKEND=bm25`                                        |
+| Controlled             | Chunking                   | Project defaults unless preparation disables re-chunking explicitly |
+| Controlled             | Reranker                   | Existing ONNX cross-encoder and calibrated `÷30` scaling unchanged  |
 
 Not changed: embedding model, reranker model, reranker threshold calibration,
 RRF constant, native ChromaDB sparse-vector path, and production ChromaDB data.
 
 ## Corpus and ground truth
 
-| Item | Value |
-| --- | --- |
-| Source corpus | `freshstack/corpus-oct-2024`, config `langchain`, split `train` |
-| Source queries | `freshstack/queries-oct-2024`, config `langchain`, split `test` |
-| Source corpus size | 49,514 FreshStack corpus chunks |
-| Continuity corpus | Exp 1/9 named cases: Colosseum and Exp 9 rare-term pack copied as labelled parent documents |
-| Source query size | 203 Stack Overflow questions plus Exp 9 named-case queries |
-| FreshStack corpus schema | `_id`, `text`, `metadata.url`, `metadata.start_byte`, `metadata.end_byte` |
-| FreshStack query schema | `query_id`, `query_title`, `query_text`, `nuggets`, `answer_id`, `answer_text`, `metadata.tags` |
-| Local path | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain/` |
-| Ground truth path | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/ground-truth.json` |
-| Evaluation qrels path | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/freshstack-qrels.json` |
-| Local cache path | `.cache/freshstack/` or HuggingFace default cache; do not commit raw Parquet files |
-| Symlinks? | No; exported files should be real files or metadata-preserving generated manifests |
+| Item                     | Value                                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------- |
+| Source corpus            | `freshstack/corpus-oct-2024`, config `langchain`, split `train`                                 |
+| Source queries           | `freshstack/queries-oct-2024`, config `langchain`, split `test`                                 |
+| Source corpus size       | 49,514 FreshStack corpus chunks                                                                 |
+| Continuity corpus        | Exp 1/9 named cases: Colosseum and Exp 9 rare-term pack copied as labelled parent documents     |
+| Source query size        | 203 Stack Overflow questions plus Exp 9 named-case queries                                      |
+| FreshStack corpus schema | `_id`, `text`, `metadata.url`, `metadata.start_byte`, `metadata.end_byte`                       |
+| FreshStack query schema  | `query_id`, `query_title`, `query_text`, `nuggets`, `answer_id`, `answer_text`, `metadata.tags` |
+| Local path               | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain/`             |
+| Ground truth path        | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/ground-truth.json`             |
+| Evaluation qrels path    | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/freshstack-qrels.json`         |
+| Local cache path         | `.cache/freshstack/` or HuggingFace default cache; do not commit raw Parquet files              |
+| Symlinks?                | No; exported files should be real files or metadata-preserving generated manifests              |
 
 The preparation script should write one project-ingestable file per FreshStack
 corpus record or a bounded sampled subset if full ingestion is too slow for
@@ -158,22 +158,23 @@ number of queries in each category and write the exact regex/rule hits to
 
 ## Environment and prerequisites
 
-| Requirement | Version / value |
-| --- | --- |
-| Python | 3.12 |
-| Package manager | `uv` |
-| Additional packages | `datasets`, `pandas`, `pyarrow`, `freshstack`, `beir`, `rank_bm25` |
-| Embedding model | `qwen3-embedding:0.6b` via Ollama |
-| Reranker | Existing `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX path |
-| Reranker pool | Record `RERANK_MAX_FETCH` and `RERANK_FETCH_MULTIPLIER`; production decision assumes `RERANK_MAX_FETCH=50` unless Exp 5 defaults changed |
-| Hardware | Apple Silicon Mac, 16 GB RAM; record exact model in `results.md` |
-| Key config | `HYBRID_ENABLED`, `HYBRID_SPARSE_BACKEND=bm25`, `HYBRID_RRF_K=60` |
+| Requirement         | Version / value                                                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Python              | 3.12                                                                                                                                     |
+| Package manager     | `uv`                                                                                                                                     |
+| Additional packages | `datasets`, `pandas`, `pyarrow`, `freshstack`, `beir`, `rank_bm25`                                                                       |
+| Embedding model     | `qwen3-embedding:0.6b` via Ollama                                                                                                        |
+| Reranker            | Existing `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX path                                                                                |
+| Reranker pool       | Record `RERANK_MAX_FETCH` and `RERANK_FETCH_MULTIPLIER`; production decision assumes `RERANK_MAX_FETCH=50` unless Exp 5 defaults changed |
+| Hardware            | Apple Silicon Mac, 16 GB RAM; record exact model in `results.md`                                                                         |
+| Key config          | `HYBRID_ENABLED`, `HYBRID_SPARSE_BACKEND=bm25`, `HYBRID_RRF_K=60`                                                                        |
 
 ```bash
 uv sync --extra hybrid
 uv run python -c "import datasets, pyarrow, pandas; import freshstack; import beir"
 ollama list | grep qwen3-embedding
 ```
+
 If these imports fail, install the experiment-only packages in a local
 experiment environment or add them as dev-only dependencies after review. Do not
 alter production runtime dependencies unless a follow-up OpenSpec change requires
@@ -181,12 +182,12 @@ it.
 
 ## Experimental design / cell matrix
 
-| Run ID | Purpose | Baseline / candidate | Key settings | Expected interpretation |
-| --- | --- | --- | --- | --- |
-| `1A-dense-no-rerank` | First-stage dense baseline | Baseline | `HYBRID_ENABLED=false`, `rerank=false` | Measures dense retrieval before reranker rescue |
-| `1B-hybrid-no-rerank` | Fusion isolation | Candidate | `HYBRID_ENABLED=true`, `HYBRID_SPARSE_BACKEND=bm25`, `rerank=false` | Shows pure BM25 + RRF effect |
-| `2A-dense-rerank` | Production baseline | Baseline | `HYBRID_ENABLED=false`, `rerank=true` | Matches current production-style pipeline |
-| `2B-hybrid-rerank` | Production candidate | Candidate | `HYBRID_ENABLED=true`, `HYBRID_SPARSE_BACKEND=bm25`, `rerank=true` | Main default-flip decision cell |
+| Run ID                | Purpose                    | Baseline / candidate | Key settings                                                        | Expected interpretation                         |
+| --------------------- | -------------------------- | -------------------- | ------------------------------------------------------------------- | ----------------------------------------------- |
+| `1A-dense-no-rerank`  | First-stage dense baseline | Baseline             | `HYBRID_ENABLED=false`, `rerank=false`                              | Measures dense retrieval before reranker rescue |
+| `1B-hybrid-no-rerank` | Fusion isolation           | Candidate            | `HYBRID_ENABLED=true`, `HYBRID_SPARSE_BACKEND=bm25`, `rerank=false` | Shows pure BM25 + RRF effect                    |
+| `2A-dense-rerank`     | Production baseline        | Baseline             | `HYBRID_ENABLED=false`, `rerank=true`                               | Matches current production-style pipeline       |
+| `2B-hybrid-rerank`    | Production candidate       | Candidate            | `HYBRID_ENABLED=true`, `HYBRID_SPARSE_BACKEND=bm25`, `rerank=true`  | Main default-flip decision cell                 |
 
 Run all cells on the same exported corpus and query set. Use fresh ChromaDB
 persist directories per mode to avoid cache bleed:
@@ -290,6 +291,7 @@ PYTHONUNBUFFERED=1 uv run python -u \
   --resume \
   --k-values 5 10 20 50
 ```
+
 The runner must assert that `retrieval.search()` exposes `hybrid` and must fail
 loudly if not. It must save raw per-query results, parent-ID mappings, latency,
 and fusion diagnostics to `eval_results.json`.
@@ -311,15 +313,15 @@ uv run python experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/su
 
 ## Success criteria / pass gates
 
-| Criterion | Threshold | Why this threshold matters |
-| --- | ---: | --- |
-| Corpus validity | `parent_docs >= 10000` | Prevents the Experiment 9 ceiling effect from recurring |
-| Production quality lift | `hybrid_rerank Coverage@20 >= dense_rerank Coverage@20 + 0.05` **and** `hybrid_rerank Recall@50 >= dense_rerank Recall@50 + 0.05` | Supports default flip on realistic technical retrieval |
-| Identifier-heavy lift | `hybrid_rerank Coverage@20 >= dense_rerank Coverage@20 + 0.08` on identifier-heavy queries | Tests the exact failure mode hybrid was built for |
-| Semantic guardrail | non-identifier `Coverage@20 >= dense_rerank - 0.02` | Avoids trading semantic retrieval quality for rare-token recall |
-| Latency guardrail | `hybrid_rerank P95 <= 1.5 * dense_rerank P95` | Keeps production responsiveness within Tier 3 budget |
-| BM25 contribution | For at least 25% of improved identifier-heavy queries, a relevant parent has `sparse_rank < dense_rank` or no dense rank in top 50 | Demonstrates BM25/RRF, not noise, caused the lift |
-| Continuity cases | Exp 9 named cases do not regress under hybrid rerank | Preserves original Colosseum and rare-term regression guarantees |
+| Criterion               |                                                                                                                          Threshold | Why this threshold matters                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------: | ---------------------------------------------------------------- |
+| Corpus validity         |                                                                                                             `parent_docs >= 10000` | Prevents the Experiment 9 ceiling effect from recurring          |
+| Production quality lift |  `hybrid_rerank Coverage@20 >= dense_rerank Coverage@20 + 0.05` **and** `hybrid_rerank Recall@50 >= dense_rerank Recall@50 + 0.05` | Supports default flip on realistic technical retrieval           |
+| Identifier-heavy lift   |                                         `hybrid_rerank Coverage@20 >= dense_rerank Coverage@20 + 0.08` on identifier-heavy queries | Tests the exact failure mode hybrid was built for                |
+| Semantic guardrail      |                                                                                non-identifier `Coverage@20 >= dense_rerank - 0.02` | Avoids trading semantic retrieval quality for rare-token recall  |
+| Latency guardrail       |                                                                                      `hybrid_rerank P95 <= 1.5 * dense_rerank P95` | Keeps production responsiveness within Tier 3 budget             |
+| BM25 contribution       | For at least 25% of improved identifier-heavy queries, a relevant parent has `sparse_rank < dense_rank` or no dense rank in top 50 | Demonstrates BM25/RRF, not noise, caused the lift                |
+| Continuity cases        |                                                                               Exp 9 named cases do not regress under hybrid rerank | Preserves original Colosseum and rare-term regression guarantees |
 
 A recommendation to flip `HYBRID_ENABLED=true` requires all gates to pass.
 A recommendation to keep hybrid opt-in requires any primary quality gate or
@@ -402,16 +404,16 @@ for git.
 **Recommendation**: KEEP `HYBRID_ENABLED=false` default; hybrid remains opt-in  
 **Pass gates**: 4 of 7 passed; 3 primary quality gates failed
 
-| Gate | Threshold | Observed | Pass? |
-| --- | --- | ---: | :--: |
-| Corpus validity | ≥ 10,000 parents | 10,025 | ✅ |
-| Production coverage lift (rerank) | ≥ +0.05 | +0.001 | ❌ |
-| Production recall lift (rerank) | ≥ +0.05 | +0.002 | ❌ |
-| Identifier-heavy coverage lift (rerank) | ≥ +0.08 | −0.002 | ❌ |
-| Semantic guardrail | ≥ −0.02 regression | +0.167 | ✅ |
-| Latency P95 ratio | ≤ 1.5× | 0.61× | ✅ |
-| BM25 contribution | ≥ 25% sparse-help | 100% (10/10) | ✅ |
-| Continuity non-regression | No regression | 0.9 = 0.9 | ✅ |
+| Gate                                    | Threshold          |     Observed | Pass? |
+| --------------------------------------- | ------------------ | -----------: | :---: |
+| Corpus validity                         | ≥ 10,000 parents   |       10,025 |  ✅   |
+| Production coverage lift (rerank)       | ≥ +0.05            |       +0.001 |  ❌   |
+| Production recall lift (rerank)         | ≥ +0.05            |       +0.002 |  ❌   |
+| Identifier-heavy coverage lift (rerank) | ≥ +0.08            |       −0.002 |  ❌   |
+| Semantic guardrail                      | ≥ −0.02 regression |       +0.167 |  ✅   |
+| Latency P95 ratio                       | ≤ 1.5×             |        0.61× |  ✅   |
+| BM25 contribution                       | ≥ 25% sparse-help  | 100% (10/10) |  ✅   |
+| Continuity non-regression               | No regression      |    0.9 = 0.9 |  ✅   |
 
 **Key finding**: Hybrid BM25 retrieval without reranking improves Coverage@20 by
 +4.6 pp over dense-only without reranking (0.738 vs 0.692), confirming that BM25
@@ -433,24 +435,24 @@ Files committed to git (✓) vs. gitignored generated artefacts (✗).
 Ignored files are reproducible from `prepare_freshstack.py` and `build_indexes.py`.
 See experiment-level `.gitignore` for the full ignore list.
 
-| File / directory | Description | In git? |
-| --- | --- | :--: |
-| `protocol.md` | This plan | ✅ |
-| `prepare_freshstack.py` | Downloads/exports FreshStack LangChain corpus and qrels | ✅ |
-| `run_eval.py` | Runs dense/hybrid × rerank grid through project retrieval pipeline | ✅ |
-| `summarise_eval.py` | Aggregates raw results into tables | ✅ |
-| `build_indexes.py` | Experiment-specific ChromaDB direct ingestion helper | ✅ |
-| `freshstack-qrels.json` | Nugget-level qrels preserving FreshStack structure (3.9 MB) | ✅ |
-| `output/results.md` | Human-readable result narrative and default recommendation | ✅ |
-| `output/eval_results.summary.json` | Aggregated metrics by cell and query category (8.3 KB) | ✅ |
-| `output/index_build.json` | Index build metadata and corpus counts | ✅ |
-| `ground-truth.json` | Query categories and relevant parent IDs (5.4 MB) | ✗ root rule |
-| `corpus/` | Exported corpus + continuity docs (66 MB, ~10k files) | ✗ root rule |
-| `output/eval_results.json` | Raw per-query results (21 MB) | ✗ root rule |
-| `output/eval_results_checkpoint.json` | Cell-by-cell checkpoint (21 MB) | ✗ local rule |
-| `output/chroma_dense/` | ChromaDB index for dense mode (315 MB) | ✗ local rule |
-| `output/chroma_hybrid_bm25/` | ChromaDB index for hybrid mode (310 MB) | ✗ local rule |
-| `output/*.log` | Run logs | ✗ local rule |
+| File / directory                      | Description                                                        |   In git?    |
+| ------------------------------------- | ------------------------------------------------------------------ | :----------: |
+| `protocol.md`                         | This plan                                                          |      ✅      |
+| `prepare_freshstack.py`               | Downloads/exports FreshStack LangChain corpus and qrels            |      ✅      |
+| `run_eval.py`                         | Runs dense/hybrid × rerank grid through project retrieval pipeline |      ✅      |
+| `summarise_eval.py`                   | Aggregates raw results into tables                                 |      ✅      |
+| `build_indexes.py`                    | Experiment-specific ChromaDB direct ingestion helper               |      ✅      |
+| `freshstack-qrels.json`               | Nugget-level qrels preserving FreshStack structure (3.9 MB)        |      ✅      |
+| `output/results.md`                   | Human-readable result narrative and default recommendation         |      ✅      |
+| `output/eval_results.summary.json`    | Aggregated metrics by cell and query category (8.3 KB)             |      ✅      |
+| `output/index_build.json`             | Index build metadata and corpus counts                             |      ✅      |
+| `ground-truth.json`                   | Query categories and relevant parent IDs (5.4 MB)                  | ✗ root rule  |
+| `corpus/`                             | Exported corpus + continuity docs (66 MB, ~10k files)              | ✗ root rule  |
+| `output/eval_results.json`            | Raw per-query results (21 MB)                                      | ✗ root rule  |
+| `output/eval_results_checkpoint.json` | Cell-by-cell checkpoint (21 MB)                                    | ✗ local rule |
+| `output/chroma_dense/`                | ChromaDB index for dense mode (315 MB)                             | ✗ local rule |
+| `output/chroma_hybrid_bm25/`          | ChromaDB index for hybrid mode (310 MB)                            | ✗ local rule |
+| `output/*.log`                        | Run logs                                                           | ✗ local rule |
 
 ## References
 
@@ -465,8 +467,8 @@ See experiment-level `.gitignore` for the full ignore list.
 - `docs/adr/017-hybrid-retrieval-rrf.md` — architectural record for BM25 + RRF
   hybrid retrieval and default-flip decision boundary.
 - Thakur, N., Lin, J., Havens, S., Carbin, M., Khattab, O. & Drozdov, A. (2025).
-  *FreshStack: Building Realistic Benchmarks for Evaluating Retrieval on
-  Technical Documents*. arXiv:2504.13128. https://arxiv.org/abs/2504.13128
+  _FreshStack: Building Realistic Benchmarks for Evaluating Retrieval on
+  Technical Documents_. arXiv:2504.13128. https://arxiv.org/abs/2504.13128
 - FreshStack HuggingFace organisation: https://huggingface.co/freshstack
 - FreshStack corpus dataset: `freshstack/corpus-oct-2024`, especially config
   `langchain`; dataset card reports 49,514 LangChain corpus documents and the
@@ -476,11 +478,11 @@ See experiment-level `.gitignore` for the full ignore list.
   relevant corpus IDs, accepted answers, and metadata tags.
 - FreshStack GitHub repository and evaluation examples:
   https://github.com/fresh-stack/freshstack
-- Cormack, G. V., Clarke, C. L. A. & Buettcher, S. (2009). *Reciprocal rank
-  fusion outperforms Condorcet and individual rank learning methods*.
+- Cormack, G. V., Clarke, C. L. A. & Buettcher, S. (2009). _Reciprocal rank
+  fusion outperforms Condorcet and individual rank learning methods_.
   Proceedings of SIGIR 2009, 758–759. DOI: `10.1145/1571941.1572114`.
-- Robertson, S. & Zaragoza, H. (2009). *The Probabilistic Relevance Framework:
-  BM25 and Beyond*. Foundations and Trends in Information Retrieval, 4(1–2),
+- Robertson, S. & Zaragoza, H. (2009). _The Probabilistic Relevance Framework:
+  BM25 and Beyond_. Foundations and Trends in Information Retrieval, 4(1–2),
   1–174. DOI: `10.1561/1500000019`.
 - FreshStack leaderboard snapshot cited from the project README: Qwen3-0.6B
   embedding average `alpha@10` 0.262, BM25 0.218, and fusion run 0.343.

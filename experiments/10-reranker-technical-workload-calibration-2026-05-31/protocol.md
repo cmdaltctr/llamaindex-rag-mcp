@@ -15,7 +15,7 @@ first-stage retrieval on realistic technical documentation (+4.6 pp Coverage@20
 over dense-only). However, the existing reranker (`cross-encoder/ms-marco-MiniLM-L-6-v2`
 with `RERANK_MAX_FETCH=50`) erased that advantage entirely, collapsing both
 dense and hybrid modes to near-identical coverage (~0.54). The reranker even
-hurt quality: both dense and hybrid modes scored *worse* with reranking than
+hurt quality: both dense and hybrid modes scored _worse_ with reranking than
 without on Coverage@20 and Recall@50.
 
 The most plausible explanation is domain mismatch plus aggressive filtering.
@@ -29,7 +29,7 @@ This experiment determines whether reranking should stay on by default for
 technical corpora, use different pool sizing, use a different reranker model,
 or be disabled when hybrid retrieval is active.
 
-## Hypothesis / Research question
+## Hypothesis
 
 On the FreshStack LangChain technical documentation corpus (10,025 parents):
 
@@ -65,36 +65,36 @@ On the FreshStack LangChain technical documentation corpus (10,025 parents):
 
 ## Variables
 
-| Type | Variable | Values / treatment |
-| --- | --- | --- |
-| Independent | Retrieval mode | `dense-only` / `hybrid_bm25` |
-| Independent | Reranker policy | `off` / `default` (max_fetch=50) / `gentle_200` (max_fetch=200) / `gentle_500` (max_fetch=500) |
-| Dependent | Coverage@20 | Proportion of answer nuggets covered in top 20 |
-| Dependent | Recall@50 | Fraction of relevant corpus IDs retrieved by rank 50 |
-| Dependent | alpha-nDCG@10 | Nugget-aware diversity/relevance metric |
-| Dependent | Hit@10 | Whether any relevant parent is in top 10 |
-| Dependent | MRR@10 | Mean reciprocal rank of first relevant hit |
-| Dependent | Latency | Mean, P50, P95 per query and per cell |
-| Controlled | Corpus | FreshStack LangChain 10,025 parents (reused from Exp 9a) |
-| Controlled | Embedding model | `qwen3-embedding:0.6b` via Ollama |
-| Controlled | Reranker model | `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX (unchanged) |
-| Controlled | Reranker threshold | ÷30 calibrated scaling (unchanged) |
-| Controlled | Fusion | RRF `k=60` |
-| Controlled | Top-k | 50 (to measure Recall@50) |
+| Type        | Variable           | Values / treatment                                                                             |
+| ----------- | ------------------ | ---------------------------------------------------------------------------------------------- |
+| Independent | Retrieval mode     | `dense-only` / `hybrid_bm25`                                                                   |
+| Independent | Reranker policy    | `off` / `default` (max_fetch=50) / `gentle_200` (max_fetch=200) / `gentle_500` (max_fetch=500) |
+| Dependent   | Coverage@20        | Proportion of answer nuggets covered in top 20                                                 |
+| Dependent   | Recall@50          | Fraction of relevant corpus IDs retrieved by rank 50                                           |
+| Dependent   | alpha-nDCG@10      | Nugget-aware diversity/relevance metric                                                        |
+| Dependent   | Hit@10             | Whether any relevant parent is in top 10                                                       |
+| Dependent   | MRR@10             | Mean reciprocal rank of first relevant hit                                                     |
+| Dependent   | Latency            | Mean, P50, P95 per query and per cell                                                          |
+| Controlled  | Corpus             | FreshStack LangChain 10,025 parents (reused from Exp 9a)                                       |
+| Controlled  | Embedding model    | `qwen3-embedding:0.6b` via Ollama                                                              |
+| Controlled  | Reranker model     | `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX (unchanged)                                        |
+| Controlled  | Reranker threshold | ÷30 calibrated scaling (unchanged)                                                             |
+| Controlled  | Fusion             | RRF `k=60`                                                                                     |
+| Controlled  | Top-k              | 50 (to measure Recall@50)                                                                      |
 
 ## Corpus and ground truth
 
-| Item | Value |
-| --- | --- |
-| Source | Reused from Experiment 9a |
-| Corpus path | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain/` |
-| Manifest | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain_manifest.jsonl` |
-| Ground truth | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/ground-truth.json` |
-| Qrels | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/freshstack-qrels.json` |
-| Parent documents | 10,025 (10,005 FreshStack LangChain + 20 continuity) |
-| Queries | 223 (203 FreshStack test + 20 continuity) |
-| Query categories | 200 identifier-heavy, 3 semantic, 20 continuity |
-| Selection mode | qrels-plus-distractors (deterministic, seed 20260530) |
+| Item             | Value                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| Source           | Reused from Experiment 9a                                                                         |
+| Corpus path      | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain/`               |
+| Manifest         | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/corpus/langchain_manifest.jsonl` |
+| Ground truth     | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/output/ground-truth.json`        |
+| Qrels            | `experiments/9a-hybrid-retrieval-freshstack-langchain-2026-05-30/freshstack-qrels.json`           |
+| Parent documents | 10,025 (10,005 FreshStack LangChain + 20 continuity)                                              |
+| Queries          | 223 (203 FreshStack test + 20 continuity)                                                         |
+| Query categories | 200 identifier-heavy, 3 semantic, 20 continuity                                                   |
+| Selection mode   | qrels-plus-distractors (deterministic, seed 20260530)                                             |
 
 We reuse the Experiment 9a data without modification. The corpus, ground truth,
 qrels, and Chroma indexes are symlinked or copied. The indexes are rebuilt only
@@ -102,14 +102,14 @@ if the manifest has changed (it has not).
 
 ## Environment and prerequisites
 
-| Requirement | Version / value |
-| --- | --- |
-| Python | 3.12 |
-| Package manager | `uv` |
-| Embedding model | `qwen3-embedding:0.6b` via Ollama |
-| Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX path |
-| Hardware | Apple Silicon Mac, 16 GB RAM; record exact model in `results.md` |
-| Key config | `HYBRID_RRF_K=60`, `HYBRID_SPARSE_BACKEND=bm25` |
+| Requirement     | Version / value                                                  |
+| --------------- | ---------------------------------------------------------------- |
+| Python          | 3.12                                                             |
+| Package manager | `uv`                                                             |
+| Embedding model | `qwen3-embedding:0.6b` via Ollama                                |
+| Reranker        | `cross-encoder/ms-marco-MiniLM-L-6-v2` ONNX path                 |
+| Hardware        | Apple Silicon Mac, 16 GB RAM; record exact model in `results.md` |
+| Key config      | `HYBRID_RRF_K=60`, `HYBRID_SPARSE_BACKEND=bm25`                  |
 
 ```bash
 uv sync --extra hybrid
@@ -120,16 +120,16 @@ ollama list | grep qwen3-embedding
 
 ### Minimum cells (8 cells)
 
-| Run ID | Purpose | Key settings | Expected interpretation |
-| --- | --- | --- | --- |
-| `1A-dense-off` | Dense first-stage baseline | `dense-only`, `rerank=false` | Dense quality ceiling |
-| `1B-dense-default` | Current production dense | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=50` | Current default behaviour |
-| `1C-dense-gentle-200` | Gentler pool dense | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=200` | Pool-size effect on dense |
-| `1D-dense-gentle-500` | Wide pool dense | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=500` | Diminishing returns ceiling |
-| `2A-hybrid-off` | Hybrid first-stage baseline | `hybrid_bm25`, `rerank=false` | Hybrid quality ceiling |
-| `2B-hybrid-default` | Current production hybrid | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=50` | Known-bad baseline from 9a |
-| `2C-hybrid-gentle-200` | Gentler pool hybrid | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=200` | Pool-size effect on hybrid |
-| `2D-hybrid-gentle-500` | Wide pool hybrid | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=500` | Diminishing returns ceiling |
+| Run ID                 | Purpose                     | Key settings                                         | Expected interpretation     |
+| ---------------------- | --------------------------- | ---------------------------------------------------- | --------------------------- |
+| `1A-dense-off`         | Dense first-stage baseline  | `dense-only`, `rerank=false`                         | Dense quality ceiling       |
+| `1B-dense-default`     | Current production dense    | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=50`   | Current default behaviour   |
+| `1C-dense-gentle-200`  | Gentler pool dense          | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=200`  | Pool-size effect on dense   |
+| `1D-dense-gentle-500`  | Wide pool dense             | `dense-only`, `rerank=true`, `RERANK_MAX_FETCH=500`  | Diminishing returns ceiling |
+| `2A-hybrid-off`        | Hybrid first-stage baseline | `hybrid_bm25`, `rerank=false`                        | Hybrid quality ceiling      |
+| `2B-hybrid-default`    | Current production hybrid   | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=50`  | Known-bad baseline from 9a  |
+| `2C-hybrid-gentle-200` | Gentler pool hybrid         | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=200` | Pool-size effect on hybrid  |
+| `2D-hybrid-gentle-500` | Wide pool hybrid            | `hybrid_bm25`, `rerank=true`, `RERANK_MAX_FETCH=500` | Diminishing returns ceiling |
 
 ### Phase stop rules
 
@@ -205,14 +205,14 @@ uv run python experiments/10-reranker-technical-workload-calibration-2026-05-31/
 
 ## Success criteria / pass gates
 
-| Criterion | Threshold | Why this threshold matters |
-| --- | ---: | --- |
-| Pool-size lift (hybrid, pool=200 vs pool=50) | Coverage@20 ≥ +0.03 | Confirms pool bottleneck is the cause of 9a failure |
-| Pool-size lift (dense, pool=200 vs pool=50) | Coverage@20 ≥ +0.02 | Confirms pool bottleneck affects both modes |
-| Diminishing returns (hybrid, pool=500 vs pool=200) | Coverage@20 lift ≤ +0.02 | Establishes practical pool-size ceiling |
-| Reranker-off ceiling | Reranker-off hybrid Coverage@20 ≥ best reranker-on cell | Reranker-off must be at least as good (reference cell) |
-| Latency guardrail | P95 for pool=200 ≤ 3× pool=50 P95 | Keeps latency within acceptable budget |
-| Non-regression on continuity | Continuity Coverage@20 ≥ 0.90 for all cells | Preserves Exp 9 named-case guarantees |
+| Criterion                                          |                                               Threshold | Why this threshold matters                             |
+| -------------------------------------------------- | ------------------------------------------------------: | ------------------------------------------------------ |
+| Pool-size lift (hybrid, pool=200 vs pool=50)       |                                     Coverage@20 ≥ +0.03 | Confirms pool bottleneck is the cause of 9a failure    |
+| Pool-size lift (dense, pool=200 vs pool=50)        |                                     Coverage@20 ≥ +0.02 | Confirms pool bottleneck affects both modes            |
+| Diminishing returns (hybrid, pool=500 vs pool=200) |                                Coverage@20 lift ≤ +0.02 | Establishes practical pool-size ceiling                |
+| Reranker-off ceiling                               | Reranker-off hybrid Coverage@20 ≥ best reranker-on cell | Reranker-off must be at least as good (reference cell) |
+| Latency guardrail                                  |                       P95 for pool=200 ≤ 3× pool=50 P95 | Keeps latency within acceptable budget                 |
+| Non-regression on continuity                       |             Continuity Coverage@20 ≥ 0.90 for all cells | Preserves Exp 9 named-case guarantees                  |
 
 ## Interpretation rules
 
@@ -266,17 +266,17 @@ and `results.md`. Do not delete the 9a corpus data.
 
 ## Artefacts expected
 
-| File / directory | Description | Required? |
-| --- | --- | :--: |
-| `protocol.md` | This plan | ✅ |
-| `results.md` | Human-readable result report | ✅ |
-| `run_eval.py` | Evaluation runner with pool-size sweep | ✅ |
-| `summarise_eval.py` | Aggregates raw results | ✅ |
-| `build_indexes.py` | Copies or builds Chroma indexes | ✅ |
-| `output/eval_results.json` | Raw per-query results | ✅ |
-| `output/eval_results.summary.json` | Aggregated metrics | ✅ |
-| `output/eval_results_checkpoint.json` | Cell-by-cell checkpoint | Usually |
-| `output/*.log` | Run logs | Optional |
+| File / directory                      | Description                            | Required? |
+| ------------------------------------- | -------------------------------------- | :-------: |
+| `protocol.md`                         | This plan                              |    ✅     |
+| `results.md`                          | Human-readable result report           |    ✅     |
+| `run_eval.py`                         | Evaluation runner with pool-size sweep |    ✅     |
+| `summarise_eval.py`                   | Aggregates raw results                 |    ✅     |
+| `build_indexes.py`                    | Copies or builds Chroma indexes        |    ✅     |
+| `output/eval_results.json`            | Raw per-query results                  |    ✅     |
+| `output/eval_results.summary.json`    | Aggregated metrics                     |    ✅     |
+| `output/eval_results_checkpoint.json` | Cell-by-cell checkpoint                |  Usually  |
+| `output/*.log`                        | Run logs                               | Optional  |
 
 ## References
 
@@ -289,5 +289,5 @@ and `results.md`. Do not delete the 9a corpus data.
 - `docs/adr/018-balanced-retrieval-defaults.md` — Current balanced defaults.
 - `openspec/changes/rag-reranker-technical-workload-calibration/` — OpenSpec
   change driving this experiment.
-- Thakur et al. (2025). *FreshStack: Building Realistic Benchmarks for
-  Evaluating Retrieval on Technical Documents*. arXiv:2504.13128.
+- Thakur et al. (2025). _FreshStack: Building Realistic Benchmarks for
+  Evaluating Retrieval on Technical Documents_. arXiv:2504.13128.

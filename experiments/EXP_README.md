@@ -31,7 +31,7 @@ Every experiment follows this structure, even if some sections are brief:
 Hypothesis → Variables → Method → Results → Conclusion
 ```
 
-- **Hypothesis**: What question are we answering?
+- **Hypothesis**: A testable statement predicting the outcome (e.g., "If X, then Y")
 - **Variables**: What's being changed (independent), measured (dependent), and held constant (controlled)?
 - **Method**: Step-by-step reproduction commands — copy-paste should work
 - **Results**: Data tables, key findings, score distributions

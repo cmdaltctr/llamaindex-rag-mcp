@@ -11,7 +11,7 @@
 
 Experiment 6b recorded a real negative result: the Markdown-aware chunker (`MarkdownNodeParser → SentenceSplitter`) regressed −5.66 percentage points on Evidence Recall@5 against a bare `SentenceSplitter` at `chunk_size=512` and `top_k=5`. The post-mortem identified the dominant cause as **chunk fragmentation at fixed `top_k`** — the candidate had 49% more chunks than the baseline, and the gold evidence was sitting at ranks 6–15, just outside the retrieval window.
 
-Experiment 6c asks: **which combination of small, cheap interventions — widening `top_k`, raising the Markdown branch's `chunk_size`, or both — flips that negative verdict?**
+Experiment 6c tests that one of the following interventions — widening `top_k`, raising the Markdown branch's `chunk_size`, or both — flips that negative verdict.
 
 The experiment deliberately stays small-bore. Bigger swings like `HierarchicalNodeParser` + `AutoMergingRetriever` or contextual retrieval are deferred to a separate OpenSpec change.
 
@@ -23,27 +23,27 @@ The original Markdown chunker shipped under OpenSpec change `2-rag-retrieval-qua
 
 ## Variables
 
-| Type                        | Variable                           | Values                                   |
-| --------------------------- | ---------------------------------- | ---------------------------------------- |
-| Independent (what we change) | `top_k` (retrieval depth)          | 5, 10, 20                                |
-| Independent (what we change) | Markdown branch `chunk_size`       | 512, 768, 1024                           |
-| Dependent (what we measure)  | Evidence Recall@5, MRR, nDCG@5, chunk stats | —                                |
-| Controlled (held constant)   | Corpus, ground truth, embed model, reranker config, `chunk_overlap=100` | — |
+| Type                         | Variable                                                                | Values         |
+| ---------------------------- | ----------------------------------------------------------------------- | -------------- |
+| Independent (what we change) | `top_k` (retrieval depth)                                               | 5, 10, 20      |
+| Independent (what we change) | Markdown branch `chunk_size`                                            | 512, 768, 1024 |
+| Dependent (what we measure)  | Evidence Recall@5, MRR, nDCG@5, chunk stats                             | —              |
+| Controlled (held constant)   | Corpus, ground truth, embed model, reranker config, `chunk_overlap=100` | —              |
 
-*Type = role of the variable in the experiment; Variable = configuration knob or measured outcome; Values = values swept or held constant.*
+_Type = role of the variable in the experiment; Variable = configuration knob or measured outcome; Values = values swept or held constant._
 
 The baseline (bare `SentenceSplitter`) is never re-tuned. Only the Markdown branch's `chunk_size` changes. This keeps the experiment's focus narrow: "does the Markdown branch deserve a different chunk size?"
 
 ## Environment & Prerequisites
 
-| Requirement   | Version / Value                          |
-| ------------- | ---------------------------------------- |
-| Python        | 3.12                                     |
-| Ollama models | `qwen3-embedding:0.6b` (embed), `qwen3:0.6b` (classification only, disabled here) |
-| Hardware      | Apple Silicon Mac, 16 GB                 |
+| Requirement   | Version / Value                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| Python        | 3.12                                                                                                          |
+| Ollama models | `qwen3-embedding:0.6b` (embed), `qwen3:0.6b` (classification only, disabled here)                             |
+| Hardware      | Apple Silicon Mac, 16 GB                                                                                      |
 | Key config    | `CHUNK_OVERLAP=100`, `METADATA_EXTRACTION_MODE=disabled`, `RERANK_MAX_FETCH=50`, `RERANK_FETCH_MULTIPLIER=10` |
 
-*Requirement = runtime dependency or environment detail; Version / Value = value used for this run.*
+_Requirement = runtime dependency or environment detail; Version / Value = value used for this run._
 
 ## Corpus
 
@@ -127,16 +127,16 @@ done
 
 ## Success Criteria
 
-| Check                                  | Pass condition                             |
-| -------------------------------------- | ------------------------------------------ |
-| Best-cell Evidence Recall@5 lift, Pass B | candidate ≥ baseline + 2 pp                |
-| Best-cell Evidence Recall@5, Pass A    | candidate ≥ baseline − 2 pp (non-regression) |
-| General/evidence-dense non-regression  | candidate ≥ baseline − 2 pp                |
-| Candidate chunk size P95               | ≤ `chunk_size * 1.1` token estimate        |
-| Source-only saturation guard            | source Hit@K reported as diagnostic         |
-| Evidence density of QA set              | ≥ 80% of records carry evidence             |
+| Check                                    | Pass condition                               |
+| ---------------------------------------- | -------------------------------------------- |
+| Best-cell Evidence Recall@5 lift, Pass B | candidate ≥ baseline + 2 pp                  |
+| Best-cell Evidence Recall@5, Pass A      | candidate ≥ baseline − 2 pp (non-regression) |
+| General/evidence-dense non-regression    | candidate ≥ baseline − 2 pp                  |
+| Candidate chunk size P95                 | ≤ `chunk_size * 1.1` token estimate          |
+| Source-only saturation guard             | source Hit@K reported as diagnostic          |
+| Evidence density of QA set               | ≥ 80% of records carry evidence              |
 
-*Check = success criterion; Pass condition = rule used to judge whether the experiment passes; pp = percentage points; P95 = 95th percentile.*
+_Check = success criterion; Pass condition = rule used to judge whether the experiment passes; pp = percentage points; P95 = 95th percentile._
 
 The threshold for Pass A is deliberately more lenient than 6b's ≥ 5 pp lift target. The 6b post-mortem established that the reranker does most of the heavy lifting; 6c's goal for Pass A is "do no harm," not "win on chunker isolation."
 
@@ -148,16 +148,16 @@ The threshold for Pass A is deliberately more lenient than 6b's ≥ 5 pp lift ta
 
 All candidate chunks here are the same as 6b's original candidate: `MarkdownNodeParser → SentenceSplitter(512, 100)`, 424 chunks, mean 296.3 tokens.
 
-| Run    | Pass           | k   | Baseline Rec@5 | Candidate Rec@5 | Candidate Rec@10 | Delta Rec@5  |
-| ------ | -------------- | --- | -------------: | --------------: | ---------------: | -----------: |
-| 1A-k5  | A (rerank OFF) | 5   |          47.2% |           45.3% |              —   | −1.9 pp      |
-| 1A-k10 | A (rerank OFF) | 10  |          47.2% |           45.3% |            52.8% | −1.9 pp      |
-| 1A-k20 | A (rerank OFF) | 20  |          47.2% |           41.5% |            54.7% | −5.7 pp      |
-| 1B-k5  | B (rerank ON)  | 5   |          60.4% |           58.5% |              —   | −1.9 pp      |
-| **1B-k10** | B (rerank ON)  | 10  |          60.4% |          **60.4%** |          **71.7%** | **0.0 pp** ✅ |
-| 1B-k20 | B (rerank ON)  | 20  |          64.2% |           56.6% |            67.9% | −7.6 pp      |
+| Run        | Pass           | k   | Baseline Rec@5 | Candidate Rec@5 | Candidate Rec@10 |   Delta Rec@5 |
+| ---------- | -------------- | --- | -------------: | --------------: | ---------------: | ------------: |
+| 1A-k5      | A (rerank OFF) | 5   |          47.2% |           45.3% |                — |       −1.9 pp |
+| 1A-k10     | A (rerank OFF) | 10  |          47.2% |           45.3% |            52.8% |       −1.9 pp |
+| 1A-k20     | A (rerank OFF) | 20  |          47.2% |           41.5% |            54.7% |       −5.7 pp |
+| 1B-k5      | B (rerank ON)  | 5   |          60.4% |           58.5% |                — |       −1.9 pp |
+| **1B-k10** | B (rerank ON)  | 10  |          60.4% |       **60.4%** |        **71.7%** | **0.0 pp** ✅ |
+| 1B-k20     | B (rerank ON)  | 20  |          64.2% |           56.6% |            67.9% |       −7.6 pp |
 
-*Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Baseline/Candidate Rec@k = evidence recall at k, percentage of queries where at least one retrieved chunk contains labelled evidence; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points.*
+_Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Baseline/Candidate Rec@k = evidence recall at k, percentage of queries where at least one retrieved chunk contains labelled evidence; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points._
 
 **Phase 1 finding**: widening `top_k` to 10 with the reranker on achieves exact parity on Evidence Recall@5 (60.4% both). The candidate also pulls ahead on Recall@10 (71.7% vs 69.8%), meaning the evidence chunks that were at ranks 6–10 in 6b are now being caught. However, Pass A remains negative even at `top_k=10` — the chunker alone still cannot match the baseline.
 
@@ -165,18 +165,18 @@ All candidate chunks here are the same as 6b's original candidate: `MarkdownNode
 
 Each cell is the Markdown branch at a larger `chunk_size`. Chunk counts drop as chunk_size rises, and mean token estimates recover.
 
-| Run          | Pass | k   | Size | Baseline Rec@5 | Candidate Rec@5 | Candidate Rec@10 | Chunks | Mean tokens | Delta Rec@5  |
-| ------------ | ---- | --- | ---- | -------------: | --------------: | ---------------: | -----: | ----------: | -----------: |
-| 2A-c768-k5   | A    | 5   | 768  |          47.2% |           37.7% |              —   |    355 |       336.8 | −9.5 pp      |
-| 2A-c768-k10  | A    | 10  | 768  |          47.2% |           37.7% |            54.7% |    355 |       336.8 | −9.5 pp      |
-| 2A-c1024-k5  | A    | 5   | 1024 |          47.2% |           37.7% |              —   |    330 |       355.0 | −9.5 pp      |
-| 2A-c1024-k10 | A    | 10  | 1024 |          47.2% |           37.7% |            56.6% |    330 |       355.0 | −9.5 pp      |
-| 2B-c768-k5   | B    | 5   | 768  |          60.4% |           56.6% |              —   |    355 |       336.8 | −3.8 pp      |
-| 2B-c768-k10  | B    | 10  | 768  |          60.4% |          **60.4%** |          **73.6%** |    355 |       336.8 | **0.0 pp** ✅ |
-| **2B-c1024-k5**  | B    | 5   | 1024 |          60.4% |          **62.3%** |              —   |    330 |       355.0 | **+1.9 pp** ✅ |
-| **2B-c1024-k10** | B    | 10  | 1024 |          60.4% |          **62.3%** |          **73.6%** |    330 |       355.0 | **+1.9 pp** ✅ |
+| Run              | Pass | k   | Size | Baseline Rec@5 | Candidate Rec@5 | Candidate Rec@10 | Chunks | Mean tokens |    Delta Rec@5 |
+| ---------------- | ---- | --- | ---- | -------------: | --------------: | ---------------: | -----: | ----------: | -------------: |
+| 2A-c768-k5       | A    | 5   | 768  |          47.2% |           37.7% |                — |    355 |       336.8 |        −9.5 pp |
+| 2A-c768-k10      | A    | 10  | 768  |          47.2% |           37.7% |            54.7% |    355 |       336.8 |        −9.5 pp |
+| 2A-c1024-k5      | A    | 5   | 1024 |          47.2% |           37.7% |                — |    330 |       355.0 |        −9.5 pp |
+| 2A-c1024-k10     | A    | 10  | 1024 |          47.2% |           37.7% |            56.6% |    330 |       355.0 |        −9.5 pp |
+| 2B-c768-k5       | B    | 5   | 768  |          60.4% |           56.6% |                — |    355 |       336.8 |        −3.8 pp |
+| 2B-c768-k10      | B    | 10  | 768  |          60.4% |       **60.4%** |        **73.6%** |    355 |       336.8 |  **0.0 pp** ✅ |
+| **2B-c1024-k5**  | B    | 5   | 1024 |          60.4% |       **62.3%** |                — |    330 |       355.0 | **+1.9 pp** ✅ |
+| **2B-c1024-k10** | B    | 10  | 1024 |          60.4% |       **62.3%** |        **73.6%** |    330 |       355.0 | **+1.9 pp** ✅ |
 
-*Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Size = Markdown branch chunk size in tokens; Baseline/Candidate Rec@k = evidence recall at k; Chunks = candidate index chunk count; Mean tokens = average candidate chunk size estimate; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points.*
+_Run = evaluation cell identifier; Pass = A (reranker off) or B (reranker on); k = retrieval depth (`top_k`); Size = Markdown branch chunk size in tokens; Baseline/Candidate Rec@k = evidence recall at k; Chunks = candidate index chunk count; Mean tokens = average candidate chunk size estimate; Delta Rec@5 = candidate minus baseline Evidence Recall@5; pp = percentage points._
 
 **Phase 2 finding**: `chunk_size=1024` on the Markdown branch, with the reranker on, is the first configuration where the candidate meaningfully beats the baseline. At both `top_k=5` and `top_k=10`, Evidence Recall@5 lands at 62.3% vs 60.4% (+1.9 pp gain). The chunk count rise is only +16% (284 → 330), much tamer than 6b's original +49% (284 → 424), so the embedder gets more keyword surface area per chunk and the sibling-crowding problem is reduced.
 
@@ -188,16 +188,16 @@ In plain English: the Markdown chunker forces the text into smaller, more focuse
 
 ### Pass/fail against the criteria
 
-| Criterion                                  | Threshold                  | Best cell (2B-c1024-k5)   |
-| ------------------------------------------ | -------------------------: | ------------------------: |
-| Best-cell Evidence Recall@5 lift, Pass B   | candidate ≥ baseline + 2 pp | **+1.9 pp** ✅             |
-| Best-cell Evidence Recall@5, Pass A        | candidate ≥ baseline − 2 pp | −9.5 pp ❌                |
-| General non-regression                     | candidate ≥ baseline − 2 pp | 0.0 pp ✅                 |
-| Candidate chunk size P95                   | ≤ `1024 * 1.1 = 1126`      | within cap ✅             |
-| Source-only saturation guard                | diagnostic reported         | ✅                        |
-| Evidence density of QA set                 | ≥ 80%                       | 100% ✅                   |
+| Criterion                                |                   Threshold | Best cell (2B-c1024-k5) |
+| ---------------------------------------- | --------------------------: | ----------------------: |
+| Best-cell Evidence Recall@5 lift, Pass B | candidate ≥ baseline + 2 pp |          **+1.9 pp** ✅ |
+| Best-cell Evidence Recall@5, Pass A      | candidate ≥ baseline − 2 pp |              −9.5 pp ❌ |
+| General non-regression                   | candidate ≥ baseline − 2 pp |               0.0 pp ✅ |
+| Candidate chunk size P95                 |       ≤ `1024 * 1.1 = 1126` |           within cap ✅ |
+| Source-only saturation guard             |         diagnostic reported |                      ✅ |
+| Evidence density of QA set               |                       ≥ 80% |                 100% ✅ |
 
-*Criterion = protocol success condition; Threshold = required value; Best cell = measured value for the best production-shaped cell; pp = percentage points; P95 = 95th percentile.*
+_Criterion = protocol success condition; Threshold = required value; Best cell = measured value for the best production-shaped cell; pp = percentage points; P95 = 95th percentile._
 
 The Pass B criterion just barely clears. Pass A does not. This matches the "reranker-driven, not chunker-driven" interpretation from the protocol: the chunker change alone is not enough, but the combination with the reranker at a larger chunk size works.
 
@@ -206,6 +206,7 @@ The Pass B criterion just barely clears. Pass A does not. This matches the "rera
 **The Markdown-aware chunker can beat the bare splitter in production shape, but only with a larger chunk size and the reranker enabled.**
 
 The winning configuration is:
+
 - `MARKDOWN_CHUNK_SIZE=1024` (the Markdown branch gets a bigger chunk budget)
 - `RERANK_ENABLED=true` (the reranker's wider candidate pool catches the right section)
 - `top_k=5` (the smaller `top_k` is fine because the chunk count rise is only +16%)
@@ -245,22 +246,22 @@ If heading-prepend at chunk_size=1024 lifts Pass A into the "do no harm" zone (�
 
 ## Artefacts
 
-| File                                       | Description                                     |
-| ------------------------------------------ | ----------------------------------------------- |
-| `protocol.md`                              | Full methodology, run plan, pass criteria       |
-| `README.md`                                | Quick reference with workflow and stop rules    |
-| `results.md`                               | This file                                       |
-| `ingest_baseline.py`                       | Parameterised baseline builder                  |
-| `ingest_candidate.py`                      | Parameterised candidate builder (all interventions) |
-| `run_eval.py`                              | Evaluator with `--top-k` and `--candidate-dir`     |
-| `eval_results.1A/B-k{5,10,20}.json`       | Phase 1 raw results (6 files)                   |
-| `eval_results.2A/B-c{768,1024}-k{5,10}.json` | Phase 2 raw results (8 files)                |
-| `corpus/`                                  | 20 Qasper papers (copied from 6b, self-contained) |
-| `ground-truth.json`                        | 53 evidence-bearing QA records (copied from 6b) |
-| `chroma_baseline/`                         | Rebuilt baseline index with 6c-local paths      |
-| `chroma_candidate_runs/`                   | Per-run candidate indexes                       |
+| File                                         | Description                                         |
+| -------------------------------------------- | --------------------------------------------------- |
+| `protocol.md`                                | Full methodology, run plan, pass criteria           |
+| `README.md`                                  | Quick reference with workflow and stop rules        |
+| `results.md`                                 | This file                                           |
+| `ingest_baseline.py`                         | Parameterised baseline builder                      |
+| `ingest_candidate.py`                        | Parameterised candidate builder (all interventions) |
+| `run_eval.py`                                | Evaluator with `--top-k` and `--candidate-dir`      |
+| `eval_results.1A/B-k{5,10,20}.json`          | Phase 1 raw results (6 files)                       |
+| `eval_results.2A/B-c{768,1024}-k{5,10}.json` | Phase 2 raw results (8 files)                       |
+| `corpus/`                                    | 20 Qasper papers (copied from 6b, self-contained)   |
+| `ground-truth.json`                          | 53 evidence-bearing QA records (copied from 6b)     |
+| `chroma_baseline/`                           | Rebuilt baseline index with 6c-local paths          |
+| `chroma_candidate_runs/`                     | Per-run candidate indexes                           |
 
-*File = tracked or generated experiment artefact; Description = role of that artefact in the experiment.*
+_File = tracked or generated experiment artefact; Description = role of that artefact in the experiment._
 
 ## References
 
@@ -270,7 +271,7 @@ If heading-prepend at chunk_size=1024 lifts Pass A into the "do no harm" zone (�
 - Parent OpenSpec change: `openspec/changes/2-rag-retrieval-quality-improvements/`
 - ADR-016: RAG Retrieval Quality Improvements
 - ADR-005: Cross-Encoder Reranker with ONNX Runtime
-- Lu et al. (2025), *HiChunk*, arXiv:2509.11552 — methodology inspiration; paper withdrawn from ICLR 2026
-- Zhou et al. (2026), *Beyond Chunk-Then-Embed*, arXiv:2602.16974 — "right document, wrong section" pathology
-- Bhat et al. (2025), *Rethinking Chunk Size*, arXiv:2505.21700 — chunk size trade-off
-- Dasigi et al. (2021), *Qasper*, Allen AI, NAACL — evaluation corpus
+- Lu et al. (2025), _HiChunk_, arXiv:2509.11552 — methodology inspiration; paper withdrawn from ICLR 2026
+- Zhou et al. (2026), _Beyond Chunk-Then-Embed_, arXiv:2602.16974 — "right document, wrong section" pathology
+- Bhat et al. (2025), _Rethinking Chunk Size_, arXiv:2505.21700 — chunk size trade-off
+- Dasigi et al. (2021), _Qasper_, Allen AI, NAACL — evaluation corpus

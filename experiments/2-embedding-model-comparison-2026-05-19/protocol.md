@@ -9,20 +9,20 @@
 
 ## Hypothesis / Purpose
 
-Which embedding model produces the best retrieval results — `nomic-embed-text` (768-dim),
-`qwen3-embedding:0.6b` (1024-dim), or `qwen3-embedding:8b` (4096-dim) — and is the
-quality difference worth the throughput trade-off?
+`qwen3-embedding:0.6b` produces retrieval results at least as good as `nomic-embed-text`
+(768-dim) and `qwen3-embedding:8b` (4096-dim), while offering significantly better
+throughput.
 
 ## Variables
 
-| Type                         | Variable                                    | Values                                                         |
-| ---------------------------- | ------------------------------------------- | -------------------------------------------------------------- |
+| Type                         | Variable                                    | Values                                                           |
+| ---------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
 | Independent (what we change) | Embedding model                             | `nomic-embed-text`, `qwen3-embedding:0.6b`, `qwen3-embedding:8b` |
-| Dependent (what we measure)  | Hit@1, Hit@3, Hit@5, MRR, avg query latency | —                                                              |
-| Controlled (held constant)   | Reranker                                    | Disabled                                                       |
-| Controlled (held constant)   | Corpus                                      | 6 documents, 207 chunks                                        |
-| Controlled (held constant)   | Chunk size / overlap                        | 512 / 64                                                       |
-| Controlled (held constant)   | Similarity threshold                        | 0.0 (no filtering)                                             |
+| Dependent (what we measure)  | Hit@1, Hit@3, Hit@5, MRR, avg query latency | —                                                                |
+| Controlled (held constant)   | Reranker                                    | Disabled                                                         |
+| Controlled (held constant)   | Corpus                                      | 6 documents, 207 chunks                                          |
+| Controlled (held constant)   | Chunk size / overlap                        | 512 / 64                                                         |
+| Controlled (held constant)   | Similarity threshold                        | 0.0 (no filtering)                                               |
 
 ## Background
 
@@ -33,11 +33,11 @@ answers a different question: **which embedding model produces better retrieval 
 Throughput benchmarking (via `rag-mcp benchmark`, with `ScientificAdvertising.pdf`, 117 chunks)
 shows:
 
-| Model                  | Throughput | Dimensions | Query Latency |
-| ---------------------- | ---------- | ---------- | ------------- |
-| `nomic-embed-text`       | 15.3 chunks/sec | 768  | ~36 ms        |
-| `qwen3-embedding:0.6b`   | 4.5 chunks/sec  | 1024 | ~104 ms       |
-| `qwen3-embedding:8b`     | 0.63 chunks/sec | 4096 | ~259 ms       |
+| Model                  | Throughput      | Dimensions | Query Latency |
+| ---------------------- | --------------- | ---------- | ------------- |
+| `nomic-embed-text`     | 15.3 chunks/sec | 768        | ~36 ms        |
+| `qwen3-embedding:0.6b` | 4.5 chunks/sec  | 1024       | ~104 ms       |
+| `qwen3-embedding:8b`   | 0.63 chunks/sec | 4096       | ~259 ms       |
 
 But throughput is only half the story. A slower model is acceptable if it retrieves
 more relevant results. This experiment measures that trade-off.
@@ -108,11 +108,11 @@ Edit `ground-truth.json` and replace the example entries with your own.
 
 **Guidance for writing good queries**:
 
-| Query Type | Description | Example |
-|---|---|---|
-| **Easy** | Contains keywords from the document | "What does the attention mechanism in the transformer do?" |
-| **Hard** | Paraphrased, conceptual, no exact keywords | "How can a neural network process sequences without using recurrence?" |
-| **Cross-topical** | Could match multiple documents | "What training objective is used?" (matches several ML papers) |
+| Query Type        | Description                                | Example                                                                |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| **Easy**          | Contains keywords from the document        | "What does the attention mechanism in the transformer do?"             |
+| **Hard**          | Paraphrased, conceptual, no exact keywords | "How can a neural network process sequences without using recurrence?" |
+| **Cross-topical** | Could match multiple documents             | "What training objective is used?" (matches several ML papers)         |
 
 Aim for:
 
@@ -193,13 +193,13 @@ Key questions to answer:
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---|---|
-| `Ollama is not reachable` | Run `ollama serve` in another terminal |
-| `Model not found` | Run `ollama pull <model-name>` |
-| `corpus/ is empty` warning | This is fine — the script uses test fixtures as fallback |
+| Problem                      | Solution                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `Ollama is not reachable`    | Run `ollama serve` in another terminal                                   |
+| `Model not found`            | Run `ollama pull <model-name>`                                           |
+| `corpus/ is empty` warning   | This is fine — the script uses test fixtures as fallback                 |
 | Embedding dimension mismatch | The script creates a fresh ChromaDB per model, so this should not happen |
-| Script crashes on import | Ensure you run from the project root or use `uv run` |
+| Script crashes on import     | Ensure you run from the project root or use `uv run`                     |
 
 ---
 
@@ -216,12 +216,12 @@ Key questions to answer:
 
 ## Artefacts
 
-| File                | Description                                              |
-| ------------------- | -------------------------------------------------------- |
-| `protocol.md`       | This file — hypothesis, method, reproduction steps       |
-| `results.md`        | Full results with per-query detail and score tables      |
-| `run_eval.py`       | Automation script (17 queries × 3 models)                |
-| `eval_results.json` | Raw per-query results (scores, sources, latency)         |
-| `ground-truth.json` | Pre-written queries with expected sources and answers    |
-| `questions.md`      | Human-readable ground-truth queries with full answers    |
-| `corpus/`           | Test documents (6 files: PDFs + Markdown)                |
+| File                | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| `protocol.md`       | This file — hypothesis, method, reproduction steps    |
+| `results.md`        | Full results with per-query detail and score tables   |
+| `run_eval.py`       | Automation script (17 queries × 3 models)             |
+| `eval_results.json` | Raw per-query results (scores, sources, latency)      |
+| `ground-truth.json` | Pre-written queries with expected sources and answers |
+| `questions.md`      | Human-readable ground-truth queries with full answers |
+| `corpus/`           | Test documents (6 files: PDFs + Markdown)             |
