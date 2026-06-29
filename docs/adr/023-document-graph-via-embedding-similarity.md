@@ -1,7 +1,7 @@
 # ADR-023: Document graph via embedding similarity
 
 **Date:** 2026-01-15  
-**Status:** Proposed  
+**Status:** Accepted  
 **Change:** `add-fast-context-codebase-map`
 
 ## Context
@@ -29,6 +29,7 @@ Louvain community detection on the undirected document graph. Communities are la
 ### Cross-Links
 
 Cross-links between code and document communities use three matching strategies:
+
 - **Filename matching** (≥2 path segments required to avoid false positives)
 - **Symbol matching** (exported class/function names appearing in document file paths)
 - **Category keyword overlap** (code directory names matching document categories/keywords)

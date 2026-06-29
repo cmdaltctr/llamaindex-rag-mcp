@@ -1,7 +1,7 @@
 # ADR-022: Code graph via tree-sitter AST extraction
 
 **Date:** 2026-01-15  
-**Status:** Proposed  
+**Status:** Accepted  
 **Change:** `add-fast-context-codebase-map`
 
 ## Context

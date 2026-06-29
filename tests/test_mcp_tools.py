@@ -126,7 +126,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
 async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
     """MCP omitted rerank should pass None so retrieval resolves policy."""
-    from rag_mcp.config import TOP_K
+    from rag_mcp.config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
 
     expected = [{
         "score": 0.9,
@@ -148,9 +148,9 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
     mock_search.assert_called_once_with(
         "fixture",
         top_k=TOP_K,
-        similarity_threshold=0.0,
+        similarity_threshold=SIMILARITY_THRESHOLD,
         rerank=None,
-        hybrid=False,
+        hybrid=HYBRID_ENABLED,
         collection_name="documents",
         metadata_filter=None,
     )

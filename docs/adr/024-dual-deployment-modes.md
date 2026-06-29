@@ -1,12 +1,13 @@
 # ADR-024: Dual deployment modes — Full Local vs Hybrid
 
 **Date:** 2026-01-15  
-**Status:** Proposed  
+**Status:** Accepted  
 **Change:** `add-fast-context-codebase-map`
 
 ## Context
 
 The codebase map feature introduces an optional Azure Document Intelligence backend for document parsing. This creates two deployment modes:
+
 1. **Full Local** — all parsing done locally (LiteParse → pypdfium2 → pypdf chain)
 2. **Hybrid** — documents parsed by Azure Document Intelligence, with local fallback
 
@@ -22,6 +23,7 @@ Use a `DOCUMENT_BACKEND` environment variable in `config.py` to select the parsi
 ### Azure SDK as Optional Dependency
 
 `azure-ai-documentintelligence` is an optional dependency under the `azure` extra:
+
 ```bash
 uv sync --extra azure
 ```
@@ -35,6 +37,7 @@ The SDK is imported **lazily** at runtime in `azure_reader.py` — never at modu
 ### Runtime Fallback
 
 `azure_reader.py` implements a three-tier fallback:
+
 1. **ImportError** (SDK not installed) → immediate fallback to local chain
 2. **Network error** → retry once after 5s, then fallback to local chain
 3. **Any other error** → fallback to local chain

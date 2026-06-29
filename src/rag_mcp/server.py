@@ -17,8 +17,9 @@ import logging
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
-from .config import TOP_K
+from .config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
 from .ingestion import ingest_path_async, list_documents as _list_documents
 from .retrieval import search
 
@@ -38,7 +39,8 @@ mcp = FastMCP("rag-mcp", log_level="WARNING")
         "Accepts a file path or directory path. Optionally specify a "
         "target ChromaDB collection. Supported formats: PDF, "
         "DOCX, PPTX, TXT, Markdown, HTML, CSV."
-    )
+    ),
+    annotations=ToolAnnotations(destructiveHint=True),
 )
 async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store."""
@@ -56,14 +58,15 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         "a minimum similarity threshold. Accepts an optional "
         "collection name to scope the search and an optional "
         "metadata_filter to restrict results by metadata fields."
-    )
+    ),
+    annotations=ToolAnnotations(readOnlyHint=True),
 )
 async def search_documents(
     query: str,
     top_k: int = TOP_K,
-    similarity_threshold: float = 0.0,
+    similarity_threshold: float = SIMILARITY_THRESHOLD,
     rerank: bool | None = None,
-    hybrid: bool = False,
+    hybrid: bool = HYBRID_ENABLED,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -151,7 +154,8 @@ async def search_documents(
         "List all documents currently indexed in the RAG store, "
         "with their source paths and chunk counts. Optionally "
         "scope to a specific ChromaDB collection."
-    )
+    ),
+    annotations=ToolAnnotations(readOnlyHint=True),
 )
 def list_indexed_documents(collection: str = "documents") -> list[dict]:
     """List all documents that have been indexed so far."""
@@ -164,7 +168,8 @@ def list_indexed_documents(collection: str = "documents") -> list[dict]:
     description=(
         "List all available ChromaDB collections with their document "
         "and chunk counts."
-    )
+    ),
+    annotations=ToolAnnotations(readOnlyHint=True),
 )
 def list_collections() -> list[dict]:
     """List all ChromaDB collections with counts."""
@@ -184,7 +189,8 @@ def list_collections() -> list[dict]:
         "or collection (delete an entire collection — when provided "
         "without path or metadata_filter, the collection itself is "
         "dropped). Use dry_run=true to preview without modifying data."
-    )
+    ),
+    annotations=ToolAnnotations(destructiveHint=True),
 )
 def delete_documents(
     path: str | None = None,
@@ -262,10 +268,7 @@ def delete_documents(
         "agents starting a session on an unfamiliar codebase. Results are cached "
         "per-project keyed by git commit hash. Use refresh=true to force rebuild."
     ),
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-    },
+    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False),
 )
 def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """Generate a compact codebase map for the given project path.
