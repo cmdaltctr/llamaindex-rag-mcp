@@ -51,92 +51,92 @@ EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
 
 ## All settings by category
 
-Each row below pairs an **env var** (what you set in `.env` or your shell) with its **config.py constant** (what modules import at runtime). The **Default** column is the hardcoded fallback in `config.py` used when the env var is absent.
+Each row below pairs an **env var** (what you set in `.env` or your shell) with its **config.py constant** (what modules import at runtime). The **Default** column is the hardcoded fallback in `config.py` used when the env var is absent. The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the `config.py` default is used.
 
 ### Embedding (required)
 
-| Env var             | Default                  | Config constant     | Purpose                            |
-| ------------------- | ------------------------ | ------------------- | ---------------------------------- |
-| `EMBED_MODEL`       | _(none — required)_      | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
-| `OLLAMA_BASE_URL`   | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
-| `EMBED_BATCH_SIZE`  | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
-| `EMBED_CONCURRENCY` | `2`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
+| Env var             | Default                  | `.env.example`           | Config constant     | Purpose                            |
+| ------------------- | ------------------------ | ------------------------ | ------------------- | ---------------------------------- |
+| `EMBED_MODEL`       | _(none — required)_      | `qwen3-embedding:0.6b`   | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
+| `OLLAMA_BASE_URL`   | `http://localhost:11434` | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
+| `EMBED_BATCH_SIZE`  | `100`                    | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
+| `EMBED_CONCURRENCY` | `2`                      | `4`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
 
 ### ChromaDB storage
 
-| Env var                 | Default       | Config constant         | Purpose                        |
-| ----------------------- | ------------- | ----------------------- | ------------------------------ |
-| `CHROMA_PERSIST_DIR`    | `./chroma_db` | `CHROMA_PERSIST_DIR`    | Vector DB disk path            |
-| `COLLECTION_NAME`       | `documents`   | `COLLECTION_NAME`       | Default collection name        |
-| `CHROMA_SCAN_PAGE_SIZE` | `10000`       | `CHROMA_SCAN_PAGE_SIZE` | Page size for collection scans |
+| Env var                 | Default       | `.env.example` | Config constant         | Purpose                        |
+| ----------------------- | ------------- | -------------- | ----------------------- | ------------------------------ |
+| `CHROMA_PERSIST_DIR`    | `./chroma_db` | `./chroma_db`  | `CHROMA_PERSIST_DIR`    | Vector DB disk path            |
+| `COLLECTION_NAME`       | `documents`   | `documents`    | `COLLECTION_NAME`       | Default collection name        |
+| `CHROMA_SCAN_PAGE_SIZE` | `10000`       | _(not set)_    | `CHROMA_SCAN_PAGE_SIZE` | Page size for collection scans |
 
 ### Chunking
 
-| Env var                       | Default | Config constant               | Purpose                                  |
-| ----------------------------- | ------- | ----------------------------- | ---------------------------------------- |
-| `CHUNK_SIZE`                  | `512`   | `CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
-| `CHUNK_OVERLAP`               | `100`   | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
-| `MARKDOWN_CHUNK_SIZE`         | `1024`  | `MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
-| `MARKDOWN_HEADING_PREPEND`    | `false` | `MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
-| `MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | `MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNK_SIZE |
+| Env var                       | Default | `.env.example` | Config constant               | Purpose                                  |
+| ----------------------------- | ------- | -------------- | ----------------------------- | ---------------------------------------- |
+| `CHUNK_SIZE`                  | `512`   | `512`          | `CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
+| `CHUNK_OVERLAP`               | `100`   | `64`           | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
+| `MARKDOWN_CHUNK_SIZE`         | `1024`  | `1024`         | `MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
+| `MARKDOWN_HEADING_PREPEND`    | `false` | _(not set)_    | `MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
+| `MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | _(not set)_    | `MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNK_SIZE |
 
 ### Retrieval
 
-| Env var                 | Default | Config constant         | Purpose                         |
-| ----------------------- | ------- | ----------------------- | ------------------------------- |
-| `TOP_K`                 | `10`    | `TOP_K`                 | Default results count (ADR-018) |
-| `SIMILARITY_THRESHOLD`  | `0.0`   | `SIMILARITY_THRESHOLD`  | Min relevance score             |
-| `HYBRID_ENABLED`        | `false` | `HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
-| `HYBRID_RRF_K`          | `60`    | `HYBRID_RRF_K`          | RRF constant                    |
-| `HYBRID_SPARSE_BACKEND` | `bm25`  | `HYBRID_SPARSE_BACKEND` | `bm25` / `native` / `auto`      |
+| Env var                 | Default | `.env.example` | Config constant         | Purpose                         |
+| ----------------------- | ------- | -------------- | ----------------------- | ------------------------------- |
+| `TOP_K`                 | `10`    | `5`            | `TOP_K`                 | Default results count (ADR-018) |
+| `SIMILARITY_THRESHOLD`  | `0.0`   | `0.0`          | `SIMILARITY_THRESHOLD`  | Min relevance score             |
+| `HYBRID_ENABLED`        | `false` | `false`        | `HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
+| `HYBRID_RRF_K`          | `60`    | `60`           | `HYBRID_RRF_K`          | RRF constant                    |
+| `HYBRID_SPARSE_BACKEND` | `bm25`  | `bm25`         | `HYBRID_SPARSE_BACKEND` | `bm25` / `native` / `auto`      |
 
 ### Reranker policy
 
-| Env var                       | Default | Config constant               | Purpose                              |
-| ----------------------------- | ------- | ----------------------------- | ------------------------------------ |
-| `RERANK_ENABLED`              | `false` | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
-| `RERANK_ENABLED_FOR_SEMANTIC` | `true`  | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
-| `HARD_TECHNICAL_THRESHOLD`    | `0.3`   | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
-| `RERANK_FETCH_MULTIPLIER`     | `3`     | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
-| `RERANK_MAX_FETCH`            | `100`   | `RERANK_MAX_FETCH`            | Max candidate pool size              |
+| Env var                       | Default | `.env.example` | Config constant               | Purpose                              |
+| ----------------------------- | ------- | -------------- | ----------------------------- | ------------------------------------ |
+| `RERANK_ENABLED`              | `false` | `true`         | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
+| `RERANK_ENABLED_FOR_SEMANTIC` | `true`  | `true`         | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
+| `HARD_TECHNICAL_THRESHOLD`    | `0.3`   | `0.3`          | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
+| `RERANK_FETCH_MULTIPLIER`     | `3`     | _(not set)_    | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
+| `RERANK_MAX_FETCH`            | `100`   | _(not set)_    | `RERANK_MAX_FETCH`            | Max candidate pool size              |
 
 ### PDF reader
 
-| Env var                 | Default  | Config constant                      | Purpose                                                |
-| ----------------------- | -------- | ------------------------------------ | ------------------------------------------------------ |
-| `PDF_READER`            | `auto`   | `PDF_READER` / `RESOLVED_PDF_READER` | `auto` / `liteparse` / `pypdfium2` / `pypdf` (ADR-020) |
-| `LITEPARSE_OCR_ENABLED` | `false`  | `LITEPARSE_OCR_ENABLED`              | OCR in LiteParse                                       |
-| `LITEPARSE_NUM_WORKERS` | _(none)_ | `LITEPARSE_NUM_WORKERS`              | LiteParse worker threads                               |
+| Env var                 | Default  | `.env.example` | Config constant                      | Purpose                                                |
+| ----------------------- | -------- | -------------- | ------------------------------------ | ------------------------------------------------------ |
+| `PDF_READER`            | `auto`   | `auto`         | `PDF_READER` / `RESOLVED_PDF_READER` | `auto` / `liteparse` / `pypdfium2` / `pypdf` (ADR-020) |
+| `LITEPARSE_OCR_ENABLED` | `false`  | `false`        | `LITEPARSE_OCR_ENABLED`              | OCR in LiteParse                                       |
+| `LITEPARSE_NUM_WORKERS` | _(none)_ | _(not set)_    | `LITEPARSE_NUM_WORKERS`              | LiteParse worker threads                               |
 
 ### Metadata extraction
 
-| Env var                          | Default      | Config constant                                  | Purpose                                          |
-| -------------------------------- | ------------ | ------------------------------------------------ | ------------------------------------------------ |
-| `METADATA_EXTRACTION_MODE`       | `keyword`    | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `ollama` / `llamaindex` |
-| `METADATA_KEYWORD_RULES`         | _(none)_     | `METADATA_KEYWORD_RULES`                         | JSON override for keyword rules                  |
-| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification                  |
-| `OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
-| `OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | `OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
-| `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` | `10`         | _(read at call-time in `metadata_extractor.py`)_ | Max chunks for LlamaIndex extractor              |
+| Env var                          | Default      | `.env.example` | Config constant                                  | Purpose                                          |
+| -------------------------------- | ------------ | -------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `METADATA_EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `ollama` / `llamaindex` |
+| `METADATA_KEYWORD_RULES`         | _(none)_     | _(not set)_    | `METADATA_KEYWORD_RULES`                         | JSON override for keyword rules                  |
+| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification                  |
+| `OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | _(not set)_    | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
+| `OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | _(not set)_    | `OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
+| `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` | `10`         | _(not set)_    | _(read at call-time in `metadata_extractor.py`)_ | Max chunks for LlamaIndex extractor              |
 
 ### Codebase map
 
-| Env var                    | Default     | Config constant            | Purpose                       |
-| -------------------------- | ----------- | -------------------------- | ----------------------------- |
-| `MAGIKA_BINARY`            | `magika`    | `MAGIKA_BINARY`            | Path to Magika CLI            |
-| `DOC_SIMILARITY_THRESHOLD` | `0.85`      | `DOC_SIMILARITY_THRESHOLD` | Document graph edge threshold |
-| `CODEBASE_MAP_CACHE_DIR`   | `.opencode` | `CODEBASE_MAP_CACHE_DIR`   | Cache directory               |
-| `CODEBASE_MAP_MAX_FILES`   | `5000`      | `CODEBASE_MAP_MAX_FILES`   | Max files to scan             |
-| `CODEBASE_MAP_MAX_DEPTH`   | `10`        | `CODEBASE_MAP_MAX_DEPTH`   | Max directory depth           |
+| Env var                    | Default     | `.env.example` | Config constant            | Purpose                       |
+| -------------------------- | ----------- | -------------- | -------------------------- | ----------------------------- |
+| `MAGIKA_BINARY`            | `magika`    | _(not set)_    | `MAGIKA_BINARY`            | Path to Magika CLI            |
+| `DOC_SIMILARITY_THRESHOLD` | `0.85`      | _(not set)_    | `DOC_SIMILARITY_THRESHOLD` | Document graph edge threshold |
+| `CODEBASE_MAP_CACHE_DIR`   | `.opencode` | _(not set)_    | `CODEBASE_MAP_CACHE_DIR`   | Cache directory               |
+| `CODEBASE_MAP_MAX_FILES`   | `5000`      | _(not set)_    | `CODEBASE_MAP_MAX_FILES`   | Max files to scan             |
+| `CODEBASE_MAP_MAX_DEPTH`   | `10`        | _(not set)_    | `CODEBASE_MAP_MAX_DEPTH`   | Max directory depth           |
 
 ### Document backend (Azure)
 
-| Env var                           | Default           | Config constant                   | Purpose                     |
-| --------------------------------- | ----------------- | --------------------------------- | --------------------------- |
-| `DOCUMENT_BACKEND`                | `local`           | `DOCUMENT_BACKEND`                | `local` / `azure` (ADR-024) |
-| `AZURE_DOC_INTELLIGENCE_ENDPOINT` | _(empty)_         | `AZURE_DOC_INTELLIGENCE_ENDPOINT` | Azure endpoint URL          |
-| `AZURE_DOC_INTELLIGENCE_KEY`      | _(empty)_         | `AZURE_DOC_INTELLIGENCE_KEY`      | Azure API key               |
-| `AZURE_DOC_INTELLIGENCE_MODEL`    | `prebuilt-layout` | `AZURE_DOC_INTELLIGENCE_MODEL`    | Azure model                 |
+| Env var                           | Default           | `.env.example` | Config constant                   | Purpose                     |
+| --------------------------------- | ----------------- | -------------- | --------------------------------- | --------------------------- |
+| `DOCUMENT_BACKEND`                | `local`           | `local`        | `DOCUMENT_BACKEND`                | `local` / `azure` (ADR-024) |
+| `AZURE_DOC_INTELLIGENCE_ENDPOINT` | _(empty)_         | _(not set)_    | `AZURE_DOC_INTELLIGENCE_ENDPOINT` | Azure endpoint URL          |
+| `AZURE_DOC_INTELLIGENCE_KEY`      | _(empty)_         | _(redacted)_   | `AZURE_DOC_INTELLIGENCE_KEY`      | Azure API key               |
+| `AZURE_DOC_INTELLIGENCE_MODEL`    | `prebuilt-layout` | _(not set)_    | `AZURE_DOC_INTELLIGENCE_MODEL`    | Azure model                 |
 
 ### Hardcoded (not env-configurable)
 
