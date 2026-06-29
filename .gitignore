@@ -36,6 +36,12 @@ experiments/**/*.log
 experiments/**/ground-truth.json
 experiments/**/*.pdf
 
+# Experiment analysis notebooks (derived from analysis.py via jupytext)
+experiments/**/analysis.ipynb
+
+# Experiment Notes
+/experiments/notes/
+
 # Testing
 .pytest_cache/
 .coverage
