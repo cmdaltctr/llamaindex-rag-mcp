@@ -69,3 +69,66 @@ def test_clamp_floors_at_one() -> None:
     # ``search()`` before this helper is called.
     fetch_k = _resolve_fetch_k(top_k=0, rerank=True, collection_count=10)
     assert fetch_k >= 1
+
+
+# ── fetch_k_override (experiment escape hatch) ────────────────────────────
+
+
+def test_override_bypasses_formula() -> None:
+    """An explicit fetch_k_override SHALL bypass the max() formula.
+
+    This is the fix for the Experiment 10 confound where labelled pool
+    sizes 50, 200, 500 all collapsed to effective fetch_k=500 because
+    ``max(50/200/500, 50×10) = 500``.
+    """
+    # With defaults (max=100, mult=3), top_k=50 would compute fetch_k=150.
+    # Override to 50 → must get 50, not 150.
+    fetch_k = _resolve_fetch_k(
+        top_k=50, rerank=True, collection_count=10000,
+        fetch_k_override=50,
+    )
+    assert fetch_k == 50
+
+    # Override to 200 → must get 200.
+    fetch_k = _resolve_fetch_k(
+        top_k=50, rerank=True, collection_count=10000,
+        fetch_k_override=200,
+    )
+    assert fetch_k == 200
+
+
+def test_override_distinct_values_no_collapse() -> None:
+    """The four Exp 10b pool sizes SHALL all produce distinct effective values.
+
+    Regression test for the Experiment 10 design flaw.  Before the override,
+    all four values collapsed to 500.  With the override, each is distinct.
+    """
+    values = [
+        _resolve_fetch_k(
+            top_k=50, rerank=True, collection_count=10000,
+            fetch_k_override=v,
+        )
+        for v in (50, 100, 200, 500)
+    ]
+    assert values == [50, 100, 200, 500]
+    assert len(set(values)) == 4, f"Pool sizes collapsed: {values}"
+
+
+def test_override_still_clamps_to_collection() -> None:
+    """An override larger than the collection SHALL be clamped down."""
+    fetch_k = _resolve_fetch_k(
+        top_k=50, rerank=True, collection_count=30,
+        fetch_k_override=500,
+    )
+    assert fetch_k == 30
+
+
+def test_override_none_preserves_formula() -> None:
+    """When fetch_k_override is None, the formula SHALL be used (backward compat)."""
+    # Same as test_default_pool_is_at_least_50_when_reranking but with
+    # explicit fetch_k_override=None to prove the default path is unchanged.
+    fetch_k = _resolve_fetch_k(
+        top_k=5, rerank=True, collection_count=1000,
+        fetch_k_override=None,
+    )
+    assert fetch_k == 100

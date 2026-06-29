@@ -84,17 +84,25 @@ def _resolve_fetch_k(
     top_k: int,
     rerank: bool,
     collection_count: int,
+    fetch_k_override: int | None = None,
 ) -> int:
     """Compute the candidate pool size, applying the reranker fetch rules.
 
-    When ``rerank`` is False, ``fetch_k`` equals ``top_k`` (the original
-    behaviour).  When ``rerank`` is True, the pool follows the
+    When ``fetch_k_override`` is provided, it is used directly instead of
+    the formula.  This is the escape hatch that prevents experiment
+    pool-size sweeps from collapsing to the same effective value (the
+    bug that voided Experiment 10 — see TDR-015 and OpenSpec change
+    ``calibrate-rag-retrieval-defaults``).
+
+    When ``fetch_k_override`` is None and ``rerank`` is False, ``fetch_k``
+    equals ``top_k`` (the original behaviour).  When ``fetch_k_override``
+    is None and ``rerank`` is True, the pool follows the
     "Wide Net, Tight Filter" pattern:
 
         fetch_k = max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)
 
-    The result is clamped to ``min(fetch_k, collection_count)`` so an
-    unbounded ``top_k`` on a small collection does not produce a fetch
+    The result is always clamped to ``min(fetch_k, collection_count)`` so
+    an unbounded value on a small collection does not produce a fetch
     larger than the collection itself.  See ADR-016 / OpenSpec change
     ``rag-retrieval-quality-improvements`` Decision 2.
 
@@ -103,11 +111,17 @@ def _resolve_fetch_k(
         rerank: Whether the cross-encoder reranker is active.
         collection_count: ``collection.count()`` for the target
             ChromaDB collection.
+        fetch_k_override: When set, bypasses the formula and uses this
+            value directly.  Intended for experiment runners that need
+            genuinely distinct pool sizes.  Production callers leave this
+            as None.
 
     Returns:
         The effective candidate pool size to fetch from the vector store.
     """
-    if rerank:
+    if fetch_k_override is not None:
+        fetch_k = fetch_k_override
+    elif rerank:
         # Re-read env-derived values from config at call time so tests
         # that monkeypatch ``rag_mcp.config.RERANK_*`` are honoured.
         from . import config as _config
@@ -540,6 +554,7 @@ def search(
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
     technical_fraction: float | None = None,
+    fetch_k: int | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -574,6 +589,11 @@ def search(
         technical_fraction: Optional workload-level identifier-heavy fraction
             (0.0–1.0). When provided, it overrides the single-query classifier
             for policy resolution.
+        fetch_k: Optional override for the candidate pool size.  When set,
+            bypasses the ``max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)``
+            formula so experiment runners can test genuinely distinct pool
+            sizes.  Production callers leave this as None.  The value is
+            still clamped to the collection size.
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -609,15 +629,20 @@ def search(
 
     # Fetch more candidates when reranking so the cross-encoder
     # has a meaningful pool to re-score.  See ADR-016 Decision 2.
-    fetch_k = _resolve_fetch_k(top_k, effective_rerank, collection.count())
+    # When fetch_k is explicitly provided (experiment runners), it
+    # bypasses the formula to allow genuinely distinct pool sizes.
+    resolved_fetch_k = _resolve_fetch_k(
+        top_k, effective_rerank, collection.count(),
+        fetch_k_override=fetch_k,
+    )
 
     if hybrid:
         results = _hybrid_query_rows(
-            collection, collection_name, query, fetch_k, metadata_filter,
+            collection, collection_name, query, resolved_fetch_k, metadata_filter,
         )
     else:
         results = _dense_query_rows(
-            collection, query, fetch_k, metadata_filter,
+            collection, query, resolved_fetch_k, metadata_filter,
         )
 
     # Optional: re-score with cross-encoder reranker.
