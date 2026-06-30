@@ -1,0 +1,7 @@
+output/chroma_*/
+output/eval_results.json
+output/eval_results.summary.json
+output/manual_ratings.json
+output/run_eval.log
+corpus/
+analysis.ipynb

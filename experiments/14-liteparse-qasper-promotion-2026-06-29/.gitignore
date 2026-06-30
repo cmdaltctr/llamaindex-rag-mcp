@@ -1,0 +1,9 @@
+output/chroma_*/
+output/eval_results.json
+output/eval_results_checkpoint.json
+output/eval_results.summary.json
+output/run_eval.log
+output/index_build.json
+qasper_pdfs/
+qasper_qrels.json
+analysis.ipynb
