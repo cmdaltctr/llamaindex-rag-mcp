@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-11
 **Status:** Accepted
+**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Git Commits:** `5594176`
 
@@ -33,6 +34,7 @@ implemented via the **FastMCP** Python library.
 ## Consequences
 
 ### Positive
+
 - Standardised protocol: works with Claude Desktop, OpenCode, Cursor, Windsurf,
   and any MCP-compatible host without custom integration code
 - FastMCP handles JSON-RPC framing, schema generation, and error wrapping
@@ -40,22 +42,24 @@ implemented via the **FastMCP** Python library.
 - Tool descriptions (from Python docstrings) are auto-exposed to AI assistants
 
 ### Negative
+
 - MCP is a relatively new protocol; breaking changes are possible
 - stdio transport limits the server to a single host process (no web UI)
 - Debugging requires the MCP Inspector (`npx @modelcontextprotocol/inspector`)
 
 ### Neutral
+
 - All new MCP tool parameters must be optional with sensible defaults to
   preserve backward compatibility with existing clients
 
 ## Alternatives Considered
 
-| Tool | Rejected Because |
-|------|-----------------|
+| Tool                   | Rejected Because                                                          |
+| ---------------------- | ------------------------------------------------------------------------- |
 | **REST API (FastAPI)** | Requires running an HTTP server, open port, and custom client integration |
-| **gRPC** | Over-engineered for a single-user local tool; complex setup |
-| **CLI only** | No AI assistant integration; manual invocation required |
-| **LangChain Tools** | Locks the project into the LangChain ecosystem |
+| **gRPC**               | Over-engineered for a single-user local tool; complex setup               |
+| **CLI only**           | No AI assistant integration; manual invocation required                   |
+| **LangChain Tools**    | Locks the project into the LangChain ecosystem                            |
 
 ## References
 

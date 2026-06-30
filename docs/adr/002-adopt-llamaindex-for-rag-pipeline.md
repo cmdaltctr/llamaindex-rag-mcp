@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-11
 **Status:** Accepted
+**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Git Commits:** `5594176`
 
@@ -30,6 +31,7 @@ Use **LlamaIndex** (`llama-index` ≥ 0.11.0) as the RAG orchestration framework
 ## Consequences
 
 ### Positive
+
 - Production-grade document readers for all supported formats out of the box
 - Clean abstraction over embedding and retrieval; swapping models or vector
   stores requires minimal code changes
@@ -37,22 +39,24 @@ Use **LlamaIndex** (`llama-index` ≥ 0.11.0) as the RAG orchestration framework
 - Local-first: works entirely with Ollama, no API keys needed
 
 ### Negative
+
 - LlamaIndex dependency tree is large (transitive dependencies)
 - Tight coupling to LlamaIndex abstractions (`VectorStoreIndex`, `StorageContext`)
   means migrating away would require rewriting ingestion and retrieval layers
 
 ### Neutral
+
 - `Settings.embed_model` is set globally via LlamaIndex's global settings;
   tests must mock this before importing application modules
 
 ## Alternatives Considered
 
-| Tool | Rejected Because |
-|------|-----------------|
-| **LangChain** | Heavier, more opinionated, steeper learning curve for simple RAG |
-| **Haystack** | More suited to production pipelines with multiple processing stages |
+| Tool                      | Rejected Because                                                             |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| **LangChain**             | Heavier, more opinionated, steeper learning curve for simple RAG             |
+| **Haystack**              | More suited to production pipelines with multiple processing stages          |
 | **Custom implementation** | Significant effort for document parsing, chunking, and vector store adapters |
-| **txtai** | Smaller ecosystem, fewer document readers |
+| **txtai**                 | Smaller ecosystem, fewer document readers                                    |
 
 ## References
 

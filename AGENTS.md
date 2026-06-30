@@ -60,16 +60,16 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 
 ## Hard Boundaries
 
-| Type      | Rule                                                                         |
-| --------- | ---------------------------------------------------------------------------- |
-| 🚫 Never  | API keys, cloud services, or any dependency needing remote sign-up           |
-| 🚫 Never  | PyTorch at runtime. ONNX Runtime only.                                       |
-| 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                           |
-| 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.         |
-| ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims). |
-| ✅ Always | Type annotations + `from __future__ import annotations` in new modules.      |
-| ✅ Always | Google-style docstrings on public functions and classes.                     |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.   |
+| Type      | Rule                                                                                                                                                |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⚠️ Ask    | Cloud dependencies & API keys — local-first by default, cloud allowed as opt-in (see ADR-024). All cloud features must degrade gracefully to local. |
+| 🚫 Never  | PyTorch at runtime. ONNX Runtime only.                                                                                                              |
+| 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                                                                                                  |
+| 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                                                                                |
+| ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
+| ✅ Always | Type annotations + `from __future__ import annotations` in new modules.                                                                             |
+| ✅ Always | Google-style docstrings on public functions and classes.                                                                                            |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.                                                                          |
 
 ## Change Workflow
 

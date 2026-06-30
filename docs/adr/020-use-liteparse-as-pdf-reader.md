@@ -2,6 +2,7 @@
 
 **Date:** 2026-06-23
 **Status:** Accepted
+**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -33,15 +34,15 @@ Experiment 11 (`experiments/11-liteparse-pdf-quality-2026-06-20/`) compared
 pypdf vs LiteParse on a 20-paper academic corpus (895 pages, 25 queries)
 across 4 cells (parser × reranker). Results:
 
-| Gate | Result | Evidence |
-|------|--------|----------|
-| **H1 — Quality win** | ✅ PASS | LiteParse nDCG@10 +6.9% over pypdf (3.207 vs 3.000). Hit@5: 100% vs 96%. |
-| **H2 — Speed win** | ❌ FAIL | LiteParse 990.6s vs pypdf 932.8s (+6%). Parsing is 5.5× faster (5.6s vs 30.9s) but embedding dominates at 99% of wall-clock. LiteParse extracts 15% more chunks (3280 vs 2858), increasing embedding cost. |
-| **H3 — Reranker helps** | ❌ FAIL | Corpus saturation — Hit@5 already 100% without reranking. Inconclusive, not a LiteParse regression. |
-| **H4 — No regression** | ✅ PASS | Zero queries lost. |
+| Gate                    | Result  | Evidence                                                                                                                                                                                                   |
+| ----------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **H1 — Quality win**    | ✅ PASS | LiteParse nDCG@10 +6.9% over pypdf (3.207 vs 3.000). Hit@5: 100% vs 96%.                                                                                                                                   |
+| **H2 — Speed win**      | ❌ FAIL | LiteParse 990.6s vs pypdf 932.8s (+6%). Parsing is 5.5× faster (5.6s vs 30.9s) but embedding dominates at 99% of wall-clock. LiteParse extracts 15% more chunks (3280 vs 2858), increasing embedding cost. |
+| **H3 — Reranker helps** | ❌ FAIL | Corpus saturation — Hit@5 already 100% without reranking. Inconclusive, not a LiteParse regression.                                                                                                        |
+| **H4 — No regression**  | ✅ PASS | Zero queries lost.                                                                                                                                                                                         |
 
 **Verdict: PARTIAL.** Quality win confirmed; speed win failed because
-LiteParse extracts *more* text (a positive signal misread as a speed
+LiteParse extracts _more_ text (a positive signal misread as a speed
 regression by the total-wall-clock gate). H3 is a saturation artefact.
 
 ### Key insight on H2
@@ -105,13 +106,13 @@ install it.
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-|--------|-----------------|
-| **PyMuPDF4LLM** | AGPL-3 licence incompatible with self-hosted distribution. Blocked by hard constraint. |
-| **pypdfium2 only** | Same PDFium engine as LiteParse but no bounding-box metadata, no column-aware reading order. Useful as a fallback tier (shipped as `[pdf-pypdfium2]` extra) but not as the primary parser. |
-| **Docling** | Requires PyTorch at runtime. Blocked by hard constraint (`🚫 Never: PyTorch at runtime`). |
-| **spdf** | MIT-licensed Rust clone of LiteParse, but immature (few users, limited track record). Worth re-evaluating if it stabilises. |
-| **Keep pypdf** | 6.9% quality regression on academic PDFs. Two-column reading order is broken. Not acceptable for this project's corpus. |
+| Option                       | Rejected Because                                                                                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PyMuPDF4LLM**              | AGPL-3 licence incompatible with self-hosted distribution. Blocked by hard constraint.                                                                                                                  |
+| **pypdfium2 only**           | Same PDFium engine as LiteParse but no bounding-box metadata, no column-aware reading order. Useful as a fallback tier (shipped as `[pdf-pypdfium2]` extra) but not as the primary parser.              |
+| **Docling**                  | Requires PyTorch at runtime. Blocked by hard constraint (`🚫 Never: PyTorch at runtime`).                                                                                                               |
+| **spdf**                     | MIT-licensed Rust clone of LiteParse, but immature (few users, limited track record). Worth re-evaluating if it stabilises.                                                                             |
+| **Keep pypdf**               | 6.9% quality regression on academic PDFs. Two-column reading order is broken. Not acceptable for this project's corpus.                                                                                 |
 | **Adopt without experiment** | Third-party benchmarks report two-column reading-order regressions on some layouts. Without our own measurement, we cannot distinguish "LiteParse helped" from "LiteParse hurt on our specific corpus". |
 
 ## References

@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-11
 **Status:** Accepted
+**Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Git Commits:** `5594176`, `9a1b310`
 
@@ -38,6 +39,7 @@ Implement an optional **cross-encoder reranker** using **pure ONNX Runtime**
 ## Consequences
 
 ### Positive
+
 - 100% accuracy (8/8 queries) in experiments — the reranker fixed the only
   failure case
 - Lightweight: ~23 MB ONNX model vs ~2 GB PyTorch dependency
@@ -46,6 +48,7 @@ Implement an optional **cross-encoder reranker** using **pure ONNX Runtime**
 - The ÷30 auto-scaling hides score-range differences from users
 
 ### Negative
+
 - Adds ~7 seconds cold-start latency on first query (model loading)
 - ~3× latency increase per query (30 ms vector-only vs 120 ms with reranker)
 - Additional dependencies: `onnxruntime`, `transformers` (tokenizer only),
@@ -54,18 +57,19 @@ Implement an optional **cross-encoder reranker** using **pure ONNX Runtime**
   may need adjustment for different reranker models
 
 ### Neutral
+
 - Reranker is disabled by default (`RERANK_ENABLED=false`); users opt in
 - The singleton pattern requires test teardown to reset `_instance = None`
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-|--------|-----------------|
-| **PyTorch-based reranker** | ~2 GB dependency; violates "no PyTorch at runtime" constraint |
-| **Cohere/Jina reranker API** | Requires cloud API key; violates fully-local constraint |
-| **No reranker at all** | 87.5% accuracy insufficient for precision-critical use cases |
-| **Sentence-transformers cross-encoder** | Pulls in PyTorch as a transitive dependency |
-| **BM25 hybrid search** | Does not solve the semantic misranking problem |
+| Option                                  | Rejected Because                                              |
+| --------------------------------------- | ------------------------------------------------------------- |
+| **PyTorch-based reranker**              | ~2 GB dependency; violates "no PyTorch at runtime" constraint |
+| **Cohere/Jina reranker API**            | Requires cloud API key; violates fully-local constraint       |
+| **No reranker at all**                  | 87.5% accuracy insufficient for precision-critical use cases  |
+| **Sentence-transformers cross-encoder** | Pulls in PyTorch as a transitive dependency                   |
+| **BM25 hybrid search**                  | Does not solve the semantic misranking problem                |
 
 ## References
 

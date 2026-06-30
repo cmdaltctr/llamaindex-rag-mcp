@@ -42,6 +42,9 @@ experiments/**/analysis.ipynb
 # Experiment Notes
 /experiments/notes/
 
+# Research Notes
+/docs/brainstorm/
+
 # Testing
 .pytest_cache/
 .coverage
