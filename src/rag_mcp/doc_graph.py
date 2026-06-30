@@ -105,7 +105,7 @@ def compute_similarity_edges(
     embeddings = result.get("embeddings", [])
     metadatas = result.get("metadatas", [])
 
-    if not ids or not embeddings:
+    if not ids or len(embeddings) == 0:
         return []
 
     # Filter to document-type chunks only (skip code chunks).
