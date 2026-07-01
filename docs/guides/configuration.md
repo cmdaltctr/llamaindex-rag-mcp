@@ -53,6 +53,42 @@ EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
 
 Each row below pairs an **env var** (what you set in `.env` or your shell) with its **config.py constant** (what modules import at runtime). The **Default** column is the hardcoded fallback in `config.py` used when the env var is absent. The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the `config.py` default is used.
 
+### Provider selection
+
+| Env var                 | Default                                   | `.env.example` | Config constant         | Purpose                                                           |
+| ----------------------- | ----------------------------------------- | -------------- | ----------------------- | ----------------------------------------------------------------- |
+| `EMBED_PROVIDER`        | `ollama`                                  | `ollama`       | `EMBED_PROVIDER`        | `ollama` / `llamacpp` / `openrouter` (ADR-026)                    |
+| `METADATA_LLM_PROVIDER` | `ollama`                                  | _(not set)_    | `METADATA_LLM_PROVIDER` | Metadata LLM provider — independent of `EMBED_PROVIDER` (ADR-026) |
+| `INFERENCE_BACKEND`     | _(deprecated — maps to `EMBED_PROVIDER`)_ | _(not set)_    | `INFERENCE_BACKEND`     | Legacy alias, warns on use                                        |
+
+When `EMBED_PROVIDER=llamacpp` or `openrouter`, install optional deps first:
+
+```bash
+uv sync --extra llamacpp     # for llama.cpp
+uv sync --extra openrouter   # for OpenRouter
+```
+
+See [Providers](providers.md) for full setup instructions for each provider.
+
+### llama.cpp
+
+| Env var                | Default                          | `.env.example` | Config constant        | Purpose                                              |
+| ---------------------- | -------------------------------- | -------------- | ---------------------- | ---------------------------------------------------- |
+| `LLAMACPP_EMBED_URL`   | `http://localhost:8080/v1`       | _(not set)_    | `LLAMACPP_EMBED_URL`   | llama-server embedding endpoint (llamacpp only)      |
+| `LLAMACPP_EMBED_MODEL` | _(none — required for llamacpp)_ | _(not set)_    | `LLAMACPP_EMBED_MODEL` | GGUF filename for embeddings (llamacpp only)         |
+| `LLAMACPP_CHAT_URL`    | `http://localhost:8081/v1`       | _(not set)_    | `LLAMACPP_CHAT_URL`    | llama-server chat endpoint (llamacpp only)           |
+| `LLAMACPP_CHAT_MODEL`  | _(none — required for llamacpp)_ | _(not set)_    | `LLAMACPP_CHAT_MODEL`  | GGUF filename for metadata extraction LLM (llamacpp) |
+
+### OpenRouter (cloud)
+
+| Env var                  | Default                                       | `.env.example` | Config constant          | Purpose                                                          |
+| ------------------------ | --------------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`     | _(none — required for openrouter)_            | _(not set)_    | `OPENROUTER_API_KEY`     | OpenRouter API key                                               |
+| `OPENROUTER_EMBED_MODEL` | _(none — required for openrouter embeddings)_ | _(not set)_    | `OPENROUTER_EMBED_MODEL` | OpenRouter embedding model (e.g., `text-embedding-3-small`)      |
+| `OPENROUTER_LLM_MODEL`   | _(none — required for openrouter LLM)_        | _(not set)_    | `OPENROUTER_LLM_MODEL`   | OpenRouter chat model (e.g., `meta-llama/llama-3.1-8b-instruct`) |
+
+The `ollama` provider uses `OLLAMA_BASE_URL` and `EMBED_MODEL` (below). The `llamacpp` provider uses `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`. The `openrouter` provider uses `OPENROUTER_EMBED_MODEL` and `OPENROUTER_API_KEY`.
+
 ### Embedding (required)
 
 | Env var             | Default                  | `.env.example`           | Config constant     | Purpose                            |
@@ -75,7 +111,7 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 | Env var                       | Default | `.env.example` | Config constant               | Purpose                                  |
 | ----------------------------- | ------- | -------------- | ----------------------------- | ---------------------------------------- |
 | `CHUNK_SIZE`                  | `512`   | `512`          | `CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
-| `CHUNK_OVERLAP`               | `100`   | `64`           | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
+| `CHUNK_OVERLAP`               | `100`   | `100`          | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
 | `MARKDOWN_CHUNK_SIZE`         | `1024`  | `1024`         | `MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
 | `MARKDOWN_HEADING_PREPEND`    | `false` | _(not set)_    | `MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
 | `MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | _(not set)_    | `MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNK_SIZE |
@@ -84,7 +120,7 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 
 | Env var                 | Default | `.env.example` | Config constant         | Purpose                         |
 | ----------------------- | ------- | -------------- | ----------------------- | ------------------------------- |
-| `TOP_K`                 | `10`    | `5`            | `TOP_K`                 | Default results count (ADR-018) |
+| `TOP_K`                 | `10`    | `10`           | `TOP_K`                 | Default results count (ADR-018) |
 | `SIMILARITY_THRESHOLD`  | `0.0`   | `0.0`          | `SIMILARITY_THRESHOLD`  | Min relevance score             |
 | `HYBRID_ENABLED`        | `false` | `false`        | `HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
 | `HYBRID_RRF_K`          | `60`    | `60`           | `HYBRID_RRF_K`          | RRF constant                    |
@@ -94,11 +130,11 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 
 | Env var                       | Default | `.env.example` | Config constant               | Purpose                              |
 | ----------------------------- | ------- | -------------- | ----------------------------- | ------------------------------------ |
-| `RERANK_ENABLED`              | `false` | `true`         | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
+| `RERANK_ENABLED`              | `false` | `false`        | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
 | `RERANK_ENABLED_FOR_SEMANTIC` | `true`  | `true`         | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
 | `HARD_TECHNICAL_THRESHOLD`    | `0.3`   | `0.3`          | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
-| `RERANK_FETCH_MULTIPLIER`     | `3`     | _(not set)_    | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
-| `RERANK_MAX_FETCH`            | `100`   | _(not set)_    | `RERANK_MAX_FETCH`            | Max candidate pool size              |
+| `RERANK_FETCH_MULTIPLIER`     | `3`     | `3`            | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
+| `RERANK_MAX_FETCH`            | `100`   | `100`          | `RERANK_MAX_FETCH`            | Max candidate pool size              |
 
 ### PDF reader
 
@@ -112,9 +148,9 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 
 | Env var                          | Default      | `.env.example` | Config constant                                  | Purpose                                          |
 | -------------------------------- | ------------ | -------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `METADATA_EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `ollama` / `llamaindex` |
+| `METADATA_EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `local` / `llamaindex`  |
 | `METADATA_KEYWORD_RULES`         | _(none)_     | _(not set)_    | `METADATA_KEYWORD_RULES`                         | JSON override for keyword rules                  |
-| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification                  |
+| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification (ollama backend) |
 | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | _(not set)_    | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
 | `OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | _(not set)_    | `OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
 | `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` | `10`         | _(not set)_    | _(read at call-time in `metadata_extractor.py`)_ | Max chunks for LlamaIndex extractor              |
@@ -156,7 +192,14 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 
 `config.py` also performs validation at import time:
 
-- **`EMBED_MODEL`** missing → raises `ValueError` (only hard failure)
+- **`EMBED_MODEL`** missing → raises `ValueError` (only hard failure for ollama provider)
+- **`EMBED_PROVIDER`** invalid → warns + falls back to `ollama`
+- **`EMBED_PROVIDER=llamacpp`** without `llama-index-embeddings-openai` → raises `ImportError` with install hint
+- **`EMBED_PROVIDER=llamacpp`** without `LLAMACPP_EMBED_MODEL` → raises `ValueError`
+- **`EMBED_PROVIDER=openrouter`** without `OPENROUTER_API_KEY` → raises `ValueError`
+- **`EMBED_PROVIDER=openrouter`** without optional deps → raises `ImportError` with install hint
+- **`INFERENCE_BACKEND`** set without `EMBED_PROVIDER` → copies value with `DeprecationWarning`
+- **`METADATA_EXTRACTION_MODE=ollama`** → silently maps to `local`
 - **`HYBRID_SPARSE_BACKEND`** invalid → warns + falls back to `bm25`
 - **`PDF_READER`** invalid → warns + falls back to `auto`
 - **`DOCUMENT_BACKEND`** invalid → warns + falls back to `local`

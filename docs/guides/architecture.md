@@ -92,6 +92,20 @@ The solution: before classifying each document, query ChromaDB for all categorie
 
 The MCP server runs an async event loop. When ingestion was synchronous, a long ingest (a large PDF, or Ollama-based metadata extraction) would block the entire server — search queries would queue up and wait. Making the ingest path async means the server stays responsive to search, list, and delete calls while ingestion runs in the background. ChromaDB's sync API is wrapped in `asyncio.to_thread()` to yield the loop during database writes.
 
+### Pluggable inference backend ([ADR-025](../adr/025-pluggable-inference-backend.md), [ADR-026](../adr/026-provider-registry-and-openrouter.md))
+
+Ollama is a convenience wrapper over llama.cpp. It's easy to use (`ollama pull`), but adds ~20-27% overhead and serialises concurrent requests. For researchers who want raw performance, the server supports switching to llama.cpp's `llama-server` directly. For cloud users, OpenRouter provides OpenAI-compatible endpoints without running any local servers.
+
+ADR-025 introduced a single `INFERENCE_BACKEND` env var. ADR-026 split this into two independent env vars — `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER` — so users can mix and match (e.g., cloud embeddings with a free local LLM). A config-based provider registry (`EMBED_PROVIDERS`, `LLM_PROVIDERS`) replaced the if/elif chains, making it trivial to add new providers.
+
+| Provider             | Embeddings        | Metadata LLM           |
+| -------------------- | ----------------- | ---------------------- |
+| `ollama` (default)   | `OllamaEmbedding` | `Ollama` / `httpx`     |
+| `llamacpp`           | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
+| `openrouter` (cloud) | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
+
+The `METADATA_EXTRACTION_MODE=ollama` was also renamed to `local` (silent backward-compat mapping) since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
+
 ---
 
 ## What we deliberately didn't do
@@ -99,7 +113,7 @@ The MCP server runs an async event loop. When ingestion was synchronous, a long 
 A few constraints that shaped the design:
 
 - **No PyTorch at runtime.** The reranker uses ONNX Runtime instead. PyTorch is ~2 GB; the ONNX model is ~23 MB.
-- **No cloud services or API keys.** Every component — embeddings, classification, reranking, storage — runs locally via Ollama and ChromaDB. (Exception: optional Azure Document Intelligence backend — see [ADR-024](../adr/024-dual-deployment-modes.md).)
+- **No cloud services or API keys (by default).** Every component — embeddings, classification, reranking, storage — runs locally via Ollama or llama.cpp and ChromaDB. Cloud providers (OpenRouter, Azure Document Intelligence) are opt-in and require explicit configuration. See [ADR-024](../adr/024-dual-deployment-modes.md) and [ADR-026](../adr/026-provider-registry-and-openrouter.md).
 - **No breaking changes.** Every new feature (collections, metadata, deletion, the watcher) was added with backward-compatible defaults. `rag-mcp ingest ./docs` still works exactly as it did on day one.
 - **No new Python dependencies in default mode.** The keyword metadata extraction mode uses only Python's standard library (`re`, `json`). The Ollama mode uses `urllib` (also stdlib). New dependencies are only added when there's no reasonable alternative.
 

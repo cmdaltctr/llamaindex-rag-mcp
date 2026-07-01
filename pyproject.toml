@@ -42,6 +42,14 @@ pdf-pypdfium2 = [
 azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
+llamacpp = [
+    "llama-index-embeddings-openai>=0.2.0",
+    "llama-index-llms-openai-like>=0.2.0",
+]
+openrouter = [
+    "llama-index-embeddings-openai>=0.2.0",
+    "llama-index-llms-openai-like>=0.2.0",
+]
 
 [project.scripts]
 rag-mcp = "rag_mcp.cli:run_cli"

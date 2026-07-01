@@ -5,29 +5,34 @@ development of the LlamaIndex RAG MCP Server.
 
 ## Index
 
-| ADR | Title | Date | Status |
-|-----|-------|------|--------|
-| [001](./001-use-uv-as-package-manager.md) | Use uv as Package Manager | 2026-05-11 | Accepted |
-| [002](./002-adopt-llamaindex-for-rag-pipeline.md) | Adopt LlamaIndex for RAG Pipeline | 2026-05-11 | Accepted |
-| [003](./003-use-chromadb-as-vector-store.md) | Use ChromaDB as Vector Store | 2026-05-11 | Accepted |
-| [004](./004-adopt-mcp-protocol-for-server-interface.md) | Adopt MCP Protocol for Server Interface | 2026-05-11 | Accepted |
-| [005](./005-cross-encoder-reranker-with-onnx-runtime.md) | Cross-Encoder Reranker with ONNX Runtime | 2026-05-11 | Accepted |
-| [006](./006-config-as-single-source-of-truth.md) | Config as Single Source of Truth | 2026-05-12 | Accepted |
-| [007](./007-cli-and-parallel-ingestion.md) | CLI Interface and Parallel Ingestion | 2026-05-15 | Accepted |
-| [008](./008-cli-folder-embed-progress.md) | CLI Folder Embedding with Progress and Reports | 2026-05-19 | Accepted |
-| [009](./009-switch-to-qwen3-embedding-0-6b.md) | Switch to `qwen3-embedding:0.6b` as the Default Embedding Model | 2026-05-19 | Accepted |
-| [010](./010-file-watcher-auto-ingestion.md) | File Watcher for Automatic Document Ingestion | 2026-05-19 | Accepted |
-| [011](./011-multi-collection-and-metadata-extraction.md) | Multi-Collection Support and Metadata Extraction | 2026-05-19 | Accepted |
-| [012](./012-document-deletion.md) | Document Deletion | 2026-05-20 | Accepted |
-| [013](./013-hybrid-category-taxonomy-for-ollama-metadata.md) | Hybrid Category Taxonomy for Ollama Metadata Extraction | 2026-05-20 | Proposed |
-| [014](./014-async-ingestion-path.md) | Async Ingestion Path | 2026-05-20 | Accepted |
-| [015](./015-rag-reliability-correctness-fixes.md) | RAG Reliability and Correctness Fixes | 2026-05-27 | Accepted |
-| [016](./016-rag-retrieval-quality-improvements.md) | RAG Retrieval Quality Improvements | 2026-05-27 | Accepted |
-| [017](./017-hybrid-retrieval-rrf.md) | Hybrid Retrieval with Reciprocal Rank Fusion | 2026-05-27 | Proposed |
-| [018](./018-balanced-retrieval-defaults.md) | Balanced Retrieval Defaults | 2026-05-29 | Accepted |
-| [019](./019-reranker-disabled-for-technical-workloads.md) | Disable Reranker for Technical Workloads | 2026-06-01 | Accepted |
-| [020](./020-use-liteparse-as-pdf-reader.md) | Adopt LiteParse as Pluggable PDF Reader | 2026-06-23 | Accepted |
-| [021](./021-reranker-inference-optimisation.md) | Reranker Inference Optimisation — CoreML, Batching, and Reduced Fetch Pool | 2026-06-23 | Accepted |
+| ADR                                                          | Title                                                                      | Date       | Status   |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------- | ---------- | -------- |
+| [001](./001-use-uv-as-package-manager.md)                    | Use uv as Package Manager                                                  | 2026-05-11 | Accepted |
+| [002](./002-adopt-llamaindex-for-rag-pipeline.md)            | Adopt LlamaIndex for RAG Pipeline                                          | 2026-05-11 | Accepted |
+| [003](./003-use-chromadb-as-vector-store.md)                 | Use ChromaDB as Vector Store                                               | 2026-05-11 | Accepted |
+| [004](./004-adopt-mcp-protocol-for-server-interface.md)      | Adopt MCP Protocol for Server Interface                                    | 2026-05-11 | Accepted |
+| [005](./005-cross-encoder-reranker-with-onnx-runtime.md)     | Cross-Encoder Reranker with ONNX Runtime                                   | 2026-05-11 | Accepted |
+| [006](./006-config-as-single-source-of-truth.md)             | Config as Single Source of Truth                                           | 2026-05-12 | Accepted |
+| [007](./007-cli-and-parallel-ingestion.md)                   | CLI Interface and Parallel Ingestion                                       | 2026-05-15 | Accepted |
+| [008](./008-cli-folder-embed-progress.md)                    | CLI Folder Embedding with Progress and Reports                             | 2026-05-19 | Accepted |
+| [009](./009-switch-to-qwen3-embedding-0-6b.md)               | Switch to `qwen3-embedding:0.6b` as the Default Embedding Model            | 2026-05-19 | Accepted |
+| [010](./010-file-watcher-auto-ingestion.md)                  | File Watcher for Automatic Document Ingestion                              | 2026-05-19 | Accepted |
+| [011](./011-multi-collection-and-metadata-extraction.md)     | Multi-Collection Support and Metadata Extraction                           | 2026-05-19 | Accepted |
+| [012](./012-document-deletion.md)                            | Document Deletion                                                          | 2026-05-20 | Accepted |
+| [013](./013-hybrid-category-taxonomy-for-ollama-metadata.md) | Hybrid Category Taxonomy for Ollama Metadata Extraction                    | 2026-05-20 | Proposed |
+| [014](./014-async-ingestion-path.md)                         | Async Ingestion Path                                                       | 2026-05-20 | Accepted |
+| [015](./015-rag-reliability-correctness-fixes.md)            | RAG Reliability and Correctness Fixes                                      | 2026-05-27 | Accepted |
+| [016](./016-rag-retrieval-quality-improvements.md)           | RAG Retrieval Quality Improvements                                         | 2026-05-27 | Accepted |
+| [017](./017-hybrid-retrieval-rrf.md)                         | Hybrid Retrieval with Reciprocal Rank Fusion                               | 2026-05-27 | Proposed |
+| [018](./018-balanced-retrieval-defaults.md)                  | Balanced Retrieval Defaults                                                | 2026-05-29 | Accepted |
+| [019](./019-reranker-disabled-for-technical-workloads.md)    | Disable Reranker for Technical Workloads                                   | 2026-06-01 | Accepted |
+| [020](./020-use-liteparse-as-pdf-reader.md)                  | Adopt LiteParse as Pluggable PDF Reader                                    | 2026-06-23 | Accepted |
+| [021](./021-reranker-inference-optimisation.md)              | Reranker Inference Optimisation — CoreML, Batching, and Reduced Fetch Pool | 2026-06-23 | Accepted |
+| [022](./022-code-graph-via-tree-sitter-ast.md)               | Code Graph via Tree-Sitter AST                                             | 2026-06-28 | Accepted |
+| [023](./023-document-graph-via-embedding-similarity.md)      | Document Graph via Embedding Similarity                                    | 2026-06-28 | Accepted |
+| [024](./024-dual-deployment-modes.md)                        | Dual Deployment Modes — Full Local vs Hybrid                               | 2026-01-15 | Accepted |
+| [025](./025-pluggable-inference-backend.md)                  | Pluggable Inference Backend — Ollama and llama.cpp                         | 2026-07-01 | Accepted |
+| [026](./026-provider-registry-and-openrouter.md)             | Provider Registry Pattern and OpenRouter Cloud Provider                    | 2026-07-15 | Accepted |
 
 ## Convention
 

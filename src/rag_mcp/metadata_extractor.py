@@ -8,18 +8,21 @@ Modes
 -----
 - ``"disabled"`` — returns an empty dict (no metadata).
 - ``"keyword"`` — regex pattern matching against user-overridable rules.
-- ``"ollama"`` — Ollama chat API call per file with hybrid category taxonomy
+- ``"local"`` — LLM chat API call per file with hybrid category taxonomy
   (queries ChromaDB for existing categories, prefers reuse, allows new labels).
+  Uses Ollama's /api/generate, llama.cpp's /v1/chat/completions, or OpenRouter's
+  /v1/chat/completions depending on METADATA_LLM_PROVIDER.
 - ``"llamaindex"`` — LlamaIndex IngestionPipeline with TitleExtractor,
-  KeywordExtractor, and SummaryExtractor (per-chunk enrichment via Ollama).
-  Falls back to ollama mode if ``llama-index-llms-ollama`` is not installed,
-  then to keyword mode if Ollama is also unreachable.
+  KeywordExtractor, and SummaryExtractor (per-chunk enrichment via LLM).
+  Uses Ollama, OpenAILike (llamacpp), or OpenAILike (openrouter) LLM depending
+  on METADATA_LLM_PROVIDER.  Falls back to local mode if the LLM package is
+  not installed, then to keyword mode if the backend is also unreachable.
 
 Degradation ladder
 ------------------
 ``llamaindex`` (richest — per-chunk extractors) →
-``ollama`` (middle — per-file Ollama classification) →
-``keyword`` (last resort — regex only, no Ollama required)
+``local`` (middle — per-file LLM classification) →
+``keyword`` (last resort — regex only, no LLM required)
 """
 
 from __future__ import annotations
@@ -31,12 +34,17 @@ import re
 import threading
 from .config import (
     CHROMA_PERSIST_DIR,
+    LLAMACPP_CHAT_MODEL,
+    LLAMACPP_CHAT_URL,
     METADATA_EXTRACTION_MODE,
     METADATA_KEYWORD_RULES,
+    METADATA_LLM_PROVIDER,
     OLLAMA_BASE_URL,
     OLLAMA_CLASSIFY_MAX_ATTEMPTS,
     OLLAMA_CLASSIFY_MODEL,
     OLLAMA_CLASSIFY_TIMEOUT,
+    OPENROUTER_API_KEY,
+    OPENROUTER_LLM_MODEL,
 )
 from .chroma_utils import iter_collection_metadatas
 
@@ -683,6 +691,98 @@ async def _extract_keyword_async(text: str) -> dict:
     return await asyncio.to_thread(_extract_keyword, text)
 
 
+async def _extract_llamacpp_chat_async(text: str) -> dict:
+    """Classify text using llama.cpp's OpenAI-compatible /v1/chat/completions.
+
+    Mirrors ``_extract_ollama_async`` but uses the OpenAI chat format instead
+    of Ollama's /api/generate.  Shares the same retry/backoff logic and
+    fallback behaviour.
+
+    Args:
+        text: The full document text (only the first 3000 chars are sent).
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary``.
+    """
+    import httpx
+
+    fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
+
+    try:
+        prompt = _build_ollama_prompt(text)
+    except Exception as exc:
+        logger.warning(
+            "llama.cpp classification failed — could not build prompt: %s",
+            exc,
+        )
+        return fallback
+
+    data = {
+        "model": LLAMACPP_CHAT_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+    }
+    url = f"{LLAMACPP_CHAT_URL}/chat/completions"
+
+    max_attempts = _get_ollama_max_attempts()
+    timeout_s = _get_ollama_timeout()
+    last_error: Exception | None = None
+
+    for attempt in range(max_attempts):
+        try:
+            async with httpx.AsyncClient(timeout=timeout_s) as client:
+                resp = await client.post(
+                    url,
+                    json=data,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer no-key",
+                    },
+                )
+                resp.raise_for_status()
+                body = resp.json()
+                raw = body["choices"][0]["message"]["content"].strip()
+
+            result = _parse_ollama_json_response(raw)
+
+            logger.info(
+                "llama.cpp classified document as: %s (keywords=%d, "
+                "summary=%d chars, attempt=%d/%d)",
+                result["category"],
+                len(result.get("keywords", [])),
+                len(result.get("summary", "")),
+                attempt + 1,
+                max_attempts,
+            )
+            return result
+
+        except Exception as exc:
+            last_error = exc
+            logger.debug(
+                "llama.cpp classification attempt %d/%d failed: %s: %s",
+                attempt + 1,
+                max_attempts,
+                type(exc).__name__,
+                exc,
+            )
+
+            if attempt + 1 < max_attempts:
+                backoff = 2 ** attempt
+                await _retry_sleep(backoff)
+
+    logger.warning(
+        "llama.cpp classification failed after %d attempt(s) — "
+        "falling back to uncategorised: %s: %s",
+        max_attempts,
+        type(last_error).__name__ if last_error else "Unknown",
+        last_error,
+    )
+    return fallback
+
+
 async def _extract_ollama_async(text: str) -> dict:
     """Classify text using Ollama via async HTTP (httpx).
 
@@ -791,13 +891,37 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         optionally ``document_title``.  Falls back to keyword mode on failure.
     """
     try:
-        from llama_index.llms.ollama import Ollama
+        if METADATA_LLM_PROVIDER == "llamacpp":
+            from llama_index.llms.openai_like import OpenAILike
+            llm = OpenAILike(
+                model=LLAMACPP_CHAT_MODEL,
+                api_base=LLAMACPP_CHAT_URL,
+                api_key="no-key",
+                request_timeout=180.0,
+            )
+        elif METADATA_LLM_PROVIDER == "openrouter":
+            from llama_index.llms.openai_like import OpenAILike
+            llm = OpenAILike(
+                model=OPENROUTER_LLM_MODEL,
+                api_base="https://openrouter.ai/api/v1",
+                api_key=OPENROUTER_API_KEY,
+                request_timeout=180.0,
+            )
+        else:
+            from llama_index.llms.ollama import Ollama
+            llm = Ollama(
+                model=OLLAMA_CLASSIFY_MODEL,
+                base_url=OLLAMA_BASE_URL,
+                request_timeout=180.0,
+            )
     except ImportError:
         logger.warning(
-            "llama-index-llms-ollama not installed — "
-            "falling back to ollama mode"
+            "Required LLM package not installed for METADATA_LLM_PROVIDER=%s — "
+            "falling back to %s mode",
+            METADATA_LLM_PROVIDER,
+            METADATA_LLM_PROVIDER,
         )
-        return await _extract_ollama_async(text)
+        return await _dispatch_local_extraction(text)
 
     try:
         from llama_index.core import Document
@@ -807,12 +931,6 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
             KeywordExtractor,
             SummaryExtractor,
             TitleExtractor,
-        )
-
-        llm = Ollama(
-            model=OLLAMA_CLASSIFY_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            request_timeout=180.0,
         )
 
         max_chunks = _get_max_chunks()
@@ -841,12 +959,124 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
     except Exception as exc:
         logger.warning(
             "LlamaIndex async metadata extraction failed: %s: %s — "
-            "falling back to ollama mode",
+            "falling back to %s mode",
             type(exc).__name__,
             exc,
+            METADATA_LLM_PROVIDER,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
+        return await _dispatch_local_extraction(text)
+
+
+async def _dispatch_local_extraction(text: str) -> dict:
+    """Dispatch to the appropriate local extraction function based on METADATA_LLM_PROVIDER.
+
+    Routes to ``_extract_ollama_async`` (ollama), ``_extract_llamacpp_chat_async``
+    (llamacpp), or ``_extract_openrouter_chat_async`` (openrouter).
+
+    Args:
+        text: The full document text.
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary``.
+    """
+    if METADATA_LLM_PROVIDER == "llamacpp":
+        return await _extract_llamacpp_chat_async(text)
+    elif METADATA_LLM_PROVIDER == "openrouter":
+        return await _extract_openrouter_chat_async(text)
+    else:
         return await _extract_ollama_async(text)
+
+
+async def _extract_openrouter_chat_async(text: str) -> dict:
+    """Classify text using OpenRouter's OpenAI-compatible /v1/chat/completions.
+
+    Mirrors ``_extract_llamacpp_chat_async`` but targets OpenRouter's API
+    with ``OPENROUTER_API_KEY`` auth and ``OPENROUTER_LLM_MODEL``.
+
+    Args:
+        text: The full document text (only the first 3000 chars are sent).
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary``.
+    """
+    import httpx
+
+    fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
+
+    try:
+        prompt = _build_ollama_prompt(text)
+    except Exception as exc:
+        logger.warning(
+            "OpenRouter classification failed — could not build prompt: %s",
+            exc,
+        )
+        return fallback
+
+    data = {
+        "model": OPENROUTER_LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+    }
+    url = "https://openrouter.ai/api/v1/chat/completions"
+
+    max_attempts = _get_ollama_max_attempts()
+    timeout_s = _get_ollama_timeout()
+    last_error: Exception | None = None
+
+    for attempt in range(max_attempts):
+        try:
+            async with httpx.AsyncClient(timeout=timeout_s) as client:
+                resp = await client.post(
+                    url,
+                    json=data,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    },
+                )
+                resp.raise_for_status()
+                body = resp.json()
+                raw = body["choices"][0]["message"]["content"].strip()
+
+            result = _parse_ollama_json_response(raw)
+
+            logger.info(
+                "OpenRouter classified document as: %s (keywords=%d, "
+                "summary=%d chars, attempt=%d/%d)",
+                result["category"],
+                len(result.get("keywords", [])),
+                len(result.get("summary", "")),
+                attempt + 1,
+                max_attempts,
+            )
+            return result
+
+        except Exception as exc:
+            last_error = exc
+            logger.debug(
+                "OpenRouter classification attempt %d/%d failed: %s: %s",
+                attempt + 1,
+                max_attempts,
+                type(exc).__name__,
+                exc,
+            )
+
+            if attempt + 1 < max_attempts:
+                backoff = 2 ** attempt
+                await _retry_sleep(backoff)
+
+    logger.warning(
+        "OpenRouter classification failed after %d attempt(s) — "
+        "falling back to uncategorised: %s: %s",
+        max_attempts,
+        type(last_error).__name__ if last_error else "Unknown",
+        last_error,
+    )
+    return fallback
 
 
 async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
@@ -864,12 +1094,16 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
     """
     mode = METADATA_EXTRACTION_MODE.lower()
 
+    # Silent backward-compat mapping: "ollama" → "local" (pure rename).
+    if mode == "ollama":
+        mode = "local"
+
     if mode == "disabled":
         return _extract_disabled()
     elif mode == "keyword":
         return await _extract_keyword_async(file_text)
-    elif mode == "ollama":
-        return await _extract_ollama_async(file_text)
+    elif mode == "local":
+        return await _dispatch_local_extraction(file_text)
     elif mode == "llamaindex":
         return await _extract_llamaindex_async(file_text, file_name)
     else:

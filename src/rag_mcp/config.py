@@ -14,7 +14,6 @@ import os
 
 from dotenv import load_dotenv
 from llama_index.core import Settings
-from llama_index.embeddings.ollama import OllamaEmbedding
 
 load_dotenv()
 
@@ -37,30 +36,231 @@ def _get_float_env(name: str, default: float) -> float:
     except ValueError:
         raise ValueError(f"{name} must be a number, got: {raw!r}") from None
 
-# ── Embedding model (local via Ollama) ──────────────────────────────────
-# The model name MUST come from a .env file or ENV var — there is no
-# hardcoded fallback.  Create or edit .env in the project root:
-#
-#   EMBED_MODEL=qwen3-embedding:8b
-#
-# See .env.example for more options.
+# ── Provider registries ────────────────────────────────────────────────
+# Config-based provider selection.  Adding a new provider = one dict entry.
+# No if/elif changes needed in consuming modules.
+
+from typing import Any, TypedDict
+
+
+class _ProviderConfig(TypedDict):
+    """Registry entry for an embedding or LLM provider."""
+    module: str
+    cls: str
+    required_env: dict[str, str]
+    optional_env: dict[str, str]
+    default_env: dict[str, str]
+    static_params: dict[str, Any]
+    extra_dep: str
+
+
+EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
+    "ollama": {
+        "module": "llama_index.embeddings.ollama",
+        "cls": "OllamaEmbedding",
+        "required_env": {"EMBED_MODEL": "model_name", "OLLAMA_BASE_URL": "base_url"},
+        "optional_env": {"EMBED_BATCH_SIZE": "embed_batch_size"},
+        "default_env": {},
+        "static_params": {},
+        "extra_dep": "llama-index-embeddings-ollama",
+    },
+    "llamacpp": {
+        "module": "llama_index.embeddings.openai",
+        "cls": "OpenAIEmbedding",
+        "required_env": {"LLAMACPP_EMBED_MODEL": "model"},
+        "optional_env": {"EMBED_BATCH_SIZE": "embed_batch_size"},
+        "default_env": {"LLAMACPP_EMBED_URL": "api_base"},
+        "static_params": {"api_key": "no-key"},
+        "extra_dep": "llama-index-embeddings-openai",
+    },
+    "openrouter": {
+        "module": "llama_index.embeddings.openai",
+        "cls": "OpenAIEmbedding",
+        "required_env": {
+            "OPENROUTER_EMBED_MODEL": "model",
+            "OPENROUTER_API_KEY": "api_key",
+        },
+        "optional_env": {"EMBED_BATCH_SIZE": "embed_batch_size"},
+        "default_env": {},
+        "static_params": {"api_base": "https://openrouter.ai/api/v1"},
+        "extra_dep": "llama-index-embeddings-openai",
+    },
+}
+
+LLM_PROVIDERS: dict[str, _ProviderConfig] = {
+    "ollama": {
+        "module": "llama_index.llms.ollama",
+        "cls": "Ollama",
+        "required_env": {"OLLAMA_CLASSIFY_MODEL": "model", "OLLAMA_BASE_URL": "base_url"},
+        "optional_env": {},
+        "default_env": {},
+        "static_params": {"request_timeout": 180.0},
+        "extra_dep": "llama-index-llms-ollama",
+    },
+    "llamacpp": {
+        "module": "llama_index.llms.openai_like",
+        "cls": "OpenAILike",
+        "required_env": {"LLAMACPP_CHAT_MODEL": "model"},
+        "optional_env": {},
+        "default_env": {"LLAMACPP_CHAT_URL": "api_base"},
+        "static_params": {"api_key": "no-key", "request_timeout": 180.0},
+        "extra_dep": "llama-index-llms-openai-like",
+    },
+    "openrouter": {
+        "module": "llama_index.llms.openai_like",
+        "cls": "OpenAILike",
+        "required_env": {
+            "OPENROUTER_LLM_MODEL": "model",
+            "OPENROUTER_API_KEY": "api_key",
+        },
+        "optional_env": {},
+        "default_env": {},
+        "static_params": {
+            "api_base": "https://openrouter.ai/api/v1",
+            "request_timeout": 180.0,
+        },
+        "extra_dep": "llama-index-llms-openai-like",
+    },
+}
+
+
+def _build_provider(registry: dict[str, _ProviderConfig], provider_name: str) -> Any:
+    """Resolve a provider from the registry, dynamic-import, and instantiate.
+
+    Args:
+        registry: The provider registry dict (EMBED_PROVIDERS or LLM_PROVIDERS).
+        provider_name: Provider key to look up.
+
+    Returns:
+        Instantiated provider object.
+
+    Raises:
+        ValueError: If a required env var is missing.
+        ImportError: If the optional dependency is not installed.
+    """
+    import importlib
+
+    entry = registry.get(provider_name)
+    if entry is None:
+        raise ValueError(f"Unknown provider: {provider_name!r}")
+
+    # Resolve required env vars → constructor params.
+    params: dict[str, Any] = dict(entry["static_params"])
+    for env_name, param_name in entry["required_env"].items():
+        value = os.getenv(env_name)
+        if not value:
+            raise ValueError(
+                f"{env_name} environment variable is required for "
+                f"provider {provider_name!r}."
+            )
+        params[param_name] = value
+
+    # Resolve optional env vars → constructor params.
+    for env_name, param_name in entry["optional_env"].items():
+        value = os.getenv(env_name)
+        if value is not None:
+            params[param_name] = int(value) if env_name == "EMBED_BATCH_SIZE" else value
+
+    # Resolve env vars with defaults → constructor params.
+    for env_name, param_name in entry.get("default_env", {}).items():
+        value = os.getenv(env_name)
+        if value:
+            params[param_name] = value
+        else:
+            # Fall back to module-level constant if available.
+            params[param_name] = globals().get(env_name, "")
+
+    # Dynamic import + instantiate.
+    try:
+        mod = importlib.import_module(entry["module"])
+    except ImportError as exc:
+        raise ImportError(
+            f"Provider {provider_name!r} requires {entry['extra_dep']}. "
+            f"Install it with:  uv sync --extra {provider_name}"
+        ) from exc
+
+    cls = getattr(mod, entry["cls"])
+    return cls(**params)
+
+
+# ── Embedding provider selection ────────────────────────────────────────
+# Replaces the old INFERENCE_BACKEND single-knob.  EMBED_PROVIDER controls
+# embeddings only; METADATA_LLM_PROVIDER controls metadata extraction LLM.
+_legacy_backend = os.getenv("INFERENCE_BACKEND")
+_embed_provider_env = os.getenv("EMBED_PROVIDER")
+
+if _embed_provider_env:
+    EMBED_PROVIDER = _embed_provider_env.lower()
+    if _legacy_backend:
+        logger.warning(
+            "Both EMBED_PROVIDER and INFERENCE_BACKEND are set — "
+            "EMBED_PROVIDER takes precedence. Remove INFERENCE_BACKEND "
+            "from your .env to silence this warning."
+        )
+elif _legacy_backend:
+    EMBED_PROVIDER = _legacy_backend.lower()
+    logger.warning(
+        "INFERENCE_BACKEND is deprecated — use EMBED_PROVIDER instead. "
+        "Update your .env:  INFERENCE_BACKEND → EMBED_PROVIDER"
+    )
+else:
+    EMBED_PROVIDER = "ollama"
+
+if EMBED_PROVIDER not in EMBED_PROVIDERS:
+    logger.warning(
+        "Unknown EMBED_PROVIDER=%r; falling back to ollama",
+        EMBED_PROVIDER,
+    )
+    EMBED_PROVIDER = "ollama"
+
+# ── Metadata LLM provider selection ─────────────────────────────────────
+# Defaults to "ollama" (safe, local, free) — does NOT inherit EMBED_PROVIDER.
+# This prevents surprising cloud API costs when a user sets
+# EMBED_PROVIDER=openrouter without explicitly opting into cloud LLM.
+METADATA_LLM_PROVIDER = os.getenv("METADATA_LLM_PROVIDER", "ollama").lower()
+
+if METADATA_LLM_PROVIDER not in LLM_PROVIDERS:
+    logger.warning(
+        "Unknown METADATA_LLM_PROVIDER=%r; falling back to ollama",
+        METADATA_LLM_PROVIDER,
+    )
+    METADATA_LLM_PROVIDER = "ollama"
+
+# ── llamacpp backend URLs and models ────────────────────────────────────
+LLAMACPP_EMBED_URL = os.getenv("LLAMACPP_EMBED_URL", "http://localhost:8080/v1")
+LLAMACPP_EMBED_MODEL = os.getenv("LLAMACPP_EMBED_MODEL", "")
+LLAMACPP_CHAT_URL = os.getenv("LLAMACPP_CHAT_URL", "http://localhost:8081/v1")
+LLAMACPP_CHAT_MODEL = os.getenv("LLAMACPP_CHAT_MODEL", "")
+
+# ── OpenRouter env vars ─────────────────────────────────────────────────
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_EMBED_MODEL = os.getenv("OPENROUTER_EMBED_MODEL", "")
+OPENROUTER_LLM_MODEL = os.getenv("OPENROUTER_LLM_MODEL", "")
+
+# ── Embedding model ─────────────────────────────────────────────────────
+# EMBED_MODEL is required only for the ollama provider.  llamacpp and
+# openrouter have their own model env vars (LLAMACPP_EMBED_MODEL,
+# OPENROUTER_EMBED_MODEL).
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL_NAME = os.getenv("EMBED_MODEL")
-if not EMBED_MODEL_NAME:
+if EMBED_PROVIDER == "ollama" and not EMBED_MODEL_NAME:
     raise ValueError(
-        "EMBED_MODEL environment variable is required. "
-        "Set it in a .env file:\n\n"
+        "EMBED_MODEL environment variable is required when "
+        "EMBED_PROVIDER=ollama. Set it in a .env file:\n\n"
         "    EMBED_MODEL=qwen3-embedding:8b\n\n"
         "See .env.example for alternatives."
     )
 
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))
 
-Settings.embed_model = OllamaEmbedding(
-    model_name=EMBED_MODEL_NAME,
-    base_url=OLLAMA_BASE_URL,
-    embed_batch_size=EMBED_BATCH_SIZE,
-)
+# Build the embedding model from the registry.
+Settings.embed_model = _build_provider(EMBED_PROVIDERS, EMBED_PROVIDER)
+
+# ── Backward compatibility alias ────────────────────────────────────────
+# Existing code and tests that import INFERENCE_BACKEND will get the
+# EMBED_PROVIDER value.  This is a read-only alias — setting it has no
+# effect on provider selection.
+INFERENCE_BACKEND = EMBED_PROVIDER
 
 # ── Shared paths and collection ─────────────────────────────────────────
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
@@ -219,8 +419,9 @@ RESOLVED_PDF_READER = _resolve_pdf_reader()
 
 # ── Metadata extraction ─────────────────────────────────────────────────
 # Controls how document metadata (e.g., category) is extracted during
-# ingestion.  Allowed values: "disabled", "keyword", "ollama", "llamaindex".
-METADATA_EXTRACTION_MODE = os.getenv("METADATA_EXTRACTION_MODE", "keyword")
+# ingestion.  Allowed values: "disabled", "keyword", "local", "llamaindex".
+# "ollama" is silently mapped to "local" for backward compatibility.
+METADATA_EXTRACTION_MODE = os.getenv("METADATA_EXTRACTION_MODE", "llamaindex")
 
 # Optional JSON string of [{"pattern": "regex", "category": "name"}, ...]
 # overriding the built-in default keyword rules.  Falls back to defaults
@@ -228,7 +429,7 @@ METADATA_EXTRACTION_MODE = os.getenv("METADATA_EXTRACTION_MODE", "keyword")
 METADATA_KEYWORD_RULES = os.getenv("METADATA_KEYWORD_RULES", None)
 
 # Chat model used for Ollama-based classification (only when
-# METADATA_EXTRACTION_MODE is "ollama" or "llamaindex").
+# METADATA_EXTRACTION_MODE is "local" or "llamaindex").
 OLLAMA_CLASSIFY_MODEL = os.getenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 
 # Bounded retry / per-attempt timeout for Ollama metadata extraction.

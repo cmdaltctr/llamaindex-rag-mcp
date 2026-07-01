@@ -8,26 +8,28 @@ Extraction runs **once per file** (not per chunk), so overhead is O(files), not 
 
 Set `METADATA_EXTRACTION_MODE` in `.env`:
 
-| Mode | What it does | Speed | Status |
-|------|-------------|-------|--------|
-| `keyword` (default) | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords. | Instant | Ready |
-| `ollama` | Sends the first 3000 chars to a lightweight chat model (default `qwen3:0.6b`) via Ollama. Returns `category`, `keywords`, and `summary`. | ~2s/file | Ready |
-| `llamaindex` | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`. | ~5–30s/file | Ready |
-| `disabled` | No metadata extracted. No `category` field written to chunks. | N/A | Ready |
+| Mode                | What it does                                                                                                                                                         | Speed       | Status |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------ |
+| `keyword` (default) | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords.                                                                             | Instant     | Ready  |
+| `local`             | Sends the first 3000 chars to a lightweight chat model via the configured `METADATA_LLM_PROVIDER` (default `ollama`). Returns `category`, `keywords`, and `summary`. | ~2s/file    | Ready  |
+| `llamaindex`        | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`.  | ~5–30s/file | Ready  |
+| `disabled`          | No metadata extracted. No `category` field written to chunks.                                                                                                        | N/A         | Ready  |
 
 ```bash
 # In .env
 METADATA_EXTRACTION_MODE=keyword   # default
-METADATA_EXTRACTION_MODE=ollama
+METADATA_EXTRACTION_MODE=local
 METADATA_EXTRACTION_MODE=disabled
 
 # Or inline for a single run
 METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 ```
 
-## Ollama mode
+> **Backward compat:** `METADATA_EXTRACTION_MODE=ollama` silently maps to `local` — no warning, no breakage.
 
-Uses a **separate chat model** (not the embedding model) set via `OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). Pull it first:
+## Local mode
+
+Uses a **separate chat model** (not the embedding model) set via `METADATA_LLM_PROVIDER` (default `ollama`). When `METADATA_LLM_PROVIDER=ollama`, the model is configured via `OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). Pull it first:
 
 ```bash
 ollama pull qwen3:0.6b
@@ -35,21 +37,23 @@ ollama pull qwen3:0.6b
 
 This tiny 0.6B model is purpose-built for fast classification. It only sees the first 2000 characters per file — good enough for category classification, not comprehensive content extraction.
 
+> **Other providers:** When `METADATA_LLM_PROVIDER=llamacpp`, this mode routes to llama.cpp's `/v1/chat/completions` endpoint using `LLAMACPP_CHAT_URL` and `LLAMACPP_CHAT_MODEL`. When `METADATA_LLM_PROVIDER=openrouter`, it routes to OpenRouter's chat API using `OPENROUTER_API_KEY` and `OPENROUTER_LLM_MODEL`. See [Providers](providers.md) for setup.
+
 Rich metadata output example:
 
 ```json
-{"category": "ai", "keywords": ["transformer", "attention"], "summary": "..."}
+{ "category": "ai", "keywords": ["transformer", "attention"], "summary": "..." }
 ```
 
 ## Built-in keyword rules
 
-| Category | Keywords matched (case-insensitive) |
-|----------|-------------------------------------|
-| AI | `attention`, `transformer`, `token`, `embedding`, `llm`, `rag`, `neural`, `deep learning` |
-| Philosophy | `mantiq`, `logic`, `reasoning`, `ontology`, `epistemology`, `ghazali`, `usul` |
-| Biology | `crispr`, `genome`, `protein`, `cell`, `biology`, `cancer`, `gene` |
-| Marketing | `marketing`, `seo`, `campaign`, `brand`, `pricing`, `funnel`, `conversion` |
-| Programming | `javascript`, `python`, `rust`, `api`, `frontend`, `backend`, `compiler` |
+| Category    | Keywords matched (case-insensitive)                                                       |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| AI          | `attention`, `transformer`, `token`, `embedding`, `llm`, `rag`, `neural`, `deep learning` |
+| Philosophy  | `mantiq`, `logic`, `reasoning`, `ontology`, `epistemology`, `ghazali`, `usul`             |
+| Biology     | `crispr`, `genome`, `protein`, `cell`, `biology`, `cancer`, `gene`                        |
+| Marketing   | `marketing`, `seo`, `campaign`, `brand`, `pricing`, `funnel`, `conversion`                |
+| Programming | `javascript`, `python`, `rust`, `api`, `frontend`, `backend`, `compiler`                  |
 
 If no keywords match, the category is `"uncategorised"`.
 
@@ -69,7 +73,7 @@ Use the `metadata_filter` parameter on the `search_documents` MCP tool:
 {
   "query": "deep learning architectures",
   "collection": "research",
-  "metadata_filter": {"category": "AI"}
+  "metadata_filter": { "category": "AI" }
 }
 ```
 

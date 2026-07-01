@@ -65,6 +65,9 @@ coverage.xml
 # Generated knowledge graph artifacts
 graphify-out/
 
+# GGUF model files (downloaded by llama-server -hf to ~/.cache/huggingface/hub)
+models/
+
 # OS
 .DS_Store
 Thumbs.db

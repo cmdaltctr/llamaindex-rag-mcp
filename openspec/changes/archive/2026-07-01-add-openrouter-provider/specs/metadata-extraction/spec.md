@@ -1,9 +1,5 @@
-# Specification: metadata-extraction
+## MODIFIED Requirements
 
-## Purpose
-
-Define metadata extraction modes and fallback behaviour for enriching indexed document chunks with categories, keywords, and summaries.
-## Requirements
 ### Requirement: Ollama LLM-based categorisation with hybrid category lookup
 
 When `METADATA_EXTRACTION_MODE` is `"local"`, the system SHALL make bounded HTTP requests to classify the document using the provider selected by `METADATA_LLM_PROVIDER`. When `METADATA_LLM_PROVIDER=ollama`, the system SHALL use Ollama's `/api/generate` endpoint with the model specified by `OLLAMA_CLASSIFY_MODEL`. When `METADATA_LLM_PROVIDER=llamacpp`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `LLAMACPP_CHAT_URL` with the model specified by `LLAMACPP_CHAT_MODEL`. When `METADATA_LLM_PROVIDER=openrouter`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `https://openrouter.ai/api/v1` with the model specified by `OPENROUTER_LLM_MODEL` and `OPENROUTER_API_KEY` for authentication. Before sending the prompt, the system SHALL query ChromaDB for all unique category values currently in use across all metadata scan pages and SHALL include them in the prompt as "existing categories" alongside the seed categories from keyword mode. The prompt SHALL instruct the model to prefer an existing category when applicable, but to propose a new concise category label (1-3 words, lowercase) when no existing category fits. The prompt SHALL instruct the model to return a JSON object with keys `category`, `keywords`, and `summary`. On transient HTTP failure or invalid JSON response, the system SHALL retry within configured limits. After retries are exhausted, the system SHALL fall back to `{"category": "uncategorised", "keywords": [], "summary": ""}` and log a WARNING.
@@ -151,4 +147,3 @@ Before each classification call in `local` mode, the system SHALL query ChromaDB
 - **WHEN** the query returns `["AI", "ai", "Artificial_Intelligence", "biology"]`
 - **AND** these are merged with seed categories `["ai", "philosophy"]`
 - **THEN** the deduplicated set SHALL be `["ai", "artificial_intelligence", "biology", "philosophy"]`
-

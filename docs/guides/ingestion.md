@@ -11,7 +11,7 @@ Source file (PDF, DOCX, TXT, ...)
 [1] Load & parse  -----> Metadata extraction (optional)
       |                      |
       |                      +-- keyword:    regex (instant, no model)
-      |                      +-- ollama:     chat model (~2s/file)
+      |                      +-- local:      chat model via METADATA_LLM_PROVIDER (~2s/file)
       |                      +-- llamaindex: per-chunk pipeline (~5–30s/file)
       |
       v
@@ -38,12 +38,12 @@ Re-ingesting a file is an **upsert** — old chunks are removed before new ones 
 The PDF parser is a pluggable factory controlled by the `PDF_READER`
 environment variable. Accepted values:
 
-| Value        | Description                                              | Extra required          |
-| ------------ | -------------------------------------------------------- | ----------------------- |
-| `pypdf`      | Default. Always available via `llama-index-readers-file`. | None                    |
-| `liteparse`  | Column-aware reading order + bounding-box metadata.       | `[pdf-liteparse]`       |
-| `pypdfium2`  | Same PDFium engine as LiteParse, no bbox. Fallback tier.  | `[pdf-pypdfium2]`       |
-| `auto`       | Probes in order: liteparse → pypdfium2 → pypdf.            | Depends on what's installed |
+| Value       | Description                                               | Extra required              |
+| ----------- | --------------------------------------------------------- | --------------------------- |
+| `pypdf`     | Default. Always available via `llama-index-readers-file`. | None                        |
+| `liteparse` | Column-aware reading order + bounding-box metadata.       | `[pdf-liteparse]`           |
+| `pypdfium2` | Same PDFium engine as LiteParse, no bbox. Fallback tier.  | `[pdf-pypdfium2]`           |
+| `auto`      | Probes in order: liteparse → pypdfium2 → pypdf.           | Depends on what's installed |
 
 The default is `auto`, which resolves to LiteParse (installed as a core
 dependency), then pypdfium2, then pypdf.
@@ -66,24 +66,26 @@ For directories, the server recursively finds all supported files.
 
 Set `EMBED_MODEL` in `.env` to any Ollama embedding model:
 
-| Model | Params | Dims | Context | MTEB | Pull command | Notes |
-|-------|--------|------|---------|------|-------------|-------|
-| **qwen3-embedding:0.6b** | ~600M | 1,024 | 32,768 | — | `ollama pull qwen3-embedding:0.6b` | **Default** — 100% Hit@1 in experiments, practical ingest times |
-| nomic-embed-text | 137M | 768 | 8,192 | 62.4 | `ollama pull nomic-embed-text` | Fastest query latency (~36ms), but lower retrieval quality (94.1% Hit@1) |
-| mxbai-embed-large | 334M | 1,024 | 512 | 64.7 | `ollama pull mxbai-embed-large` | Highest MTEB score for short chunks |
-| all-minilm | 23M | 384 | 256 | ~58 | `ollama pull all-minilm` | Blazing fast, tiny footprint |
+| Model                    | Params | Dims  | Context | MTEB | Pull command                       | Notes                                                                    |
+| ------------------------ | ------ | ----- | ------- | ---- | ---------------------------------- | ------------------------------------------------------------------------ |
+| **qwen3-embedding:0.6b** | ~600M  | 1,024 | 32,768  | —    | `ollama pull qwen3-embedding:0.6b` | **Default** — 100% Hit@1 in experiments, practical ingest times          |
+| nomic-embed-text         | 137M   | 768   | 8,192   | 62.4 | `ollama pull nomic-embed-text`     | Fastest query latency (~36ms), but lower retrieval quality (94.1% Hit@1) |
+| mxbai-embed-large        | 334M   | 1,024 | 512     | 64.7 | `ollama pull mxbai-embed-large`    | Highest MTEB score for short chunks                                      |
+| all-minilm               | 23M    | 384   | 256     | ~58  | `ollama pull all-minilm`           | Blazing fast, tiny footprint                                             |
 
 See [ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md) for the full evidence behind the default model choice.
+
+> **llama.cpp provider:** When `EMBED_PROVIDER=llamacpp`, set `LLAMACPP_EMBED_MODEL` to the GGUF filename instead of `EMBED_MODEL`. The same models are available in GGUF format from HuggingFace. When `EMBED_PROVIDER=openrouter`, set `OPENROUTER_EMBED_MODEL` to a cloud embedding model (e.g., `text-embedding-3-small`). See [Providers](providers.md) for setup.
 
 ### How long will ingestion take?
 
 Practical timings on Apple Silicon (M-series) with `qwen3-embedding:0.6b`, default settings (`EMBED_CONCURRENCY=2`, `EMBED_BATCH_SIZE=100`, `CHUNK_SIZE=512`):
 
-| Scenario | Time |
-|----------|------|
-| 1 PDF (~117 chunks) | ~14 seconds |
-| 5 PDFs (~585 chunks) | ~70 seconds |
-| 20 PDFs (~2,340 chunks) | ~5 minutes |
+| Scenario                                     | Time        |
+| -------------------------------------------- | ----------- |
+| 1 PDF (~117 chunks)                          | ~14 seconds |
+| 5 PDFs (~585 chunks)                         | ~70 seconds |
+| 20 PDFs (~2,340 chunks)                      | ~5 minutes  |
 | Full Zotero library (57 PDFs, ~6,600 chunks) | ~13 minutes |
 
 For comparison, the larger `qwen3-embedding:8b` model (4,096-dim vectors) takes ~3 hours for the same Zotero library — the 0.6b model is **13× faster** with identical retrieval quality in our tests.
@@ -116,12 +118,12 @@ rag-mcp ingest /path/to/docs/
 
 `--chunk-size` controls how many **characters** go into each chunk. The embedding model has a **context length** in **tokens**. A rough guide: ~4 characters ≈ 1 token for English.
 
-| Model | Context (tokens) | Max safe chunk-size | Default 512 safe? |
-|-------|-----------------|---------------------|-------------------|
-| qwen3-embedding:0.6b | 32,768 | ~130,000 chars | Yes |
-| nomic-embed-text | 8,192 | ~32,000 chars | Yes |
-| mxbai-embed-large | 512 | ~1,500 chars | Yes |
-| all-minilm | 256 | ~1,000 chars | Yes |
+| Model                | Context (tokens) | Max safe chunk-size | Default 512 safe? |
+| -------------------- | ---------------- | ------------------- | ----------------- |
+| qwen3-embedding:0.6b | 32,768           | ~130,000 chars      | Yes               |
+| nomic-embed-text     | 8,192            | ~32,000 chars       | Yes               |
+| mxbai-embed-large    | 512              | ~1,500 chars        | Yes               |
+| all-minilm           | 256              | ~1,000 chars        | Yes               |
 
 The default 512-character chunk size is safe for all models. For models with large context windows:
 
@@ -136,11 +138,11 @@ Progress bars appear automatically in TTY terminals (Rich). In non-TTY contexts 
 
 ## Which model runs when
 
-| Stage | Model type | What it does | Speed impact |
-|-------|-----------|-------------|-------------|
-| Metadata extraction (ollama mode) | Chat/LLM (e.g. qwen3:0.6b) | Classifies document category | ~2s per file |
-| Metadata extraction (keyword mode) | None (regex) | Pattern matching | Instant |
-| Embedding | Embedding model (e.g. qwen3-embedding:0.6b) | Converts text to vectors | ~50–500ms per chunk |
-| Search (rerank) | Cross-encoder (ms-marco-MiniLM-L-6-v2) | Re-scores top results | ~10–50ms per query pair |
+| Stage                              | Model type                                  | What it does                 | Speed impact            |
+| ---------------------------------- | ------------------------------------------- | ---------------------------- | ----------------------- |
+| Metadata extraction (local mode)   | Chat/LLM (e.g. qwen3:0.6b)                  | Classifies document category | ~2s per file            |
+| Metadata extraction (keyword mode) | None (regex)                                | Pattern matching             | Instant                 |
+| Embedding                          | Embedding model (e.g. qwen3-embedding:0.6b) | Converts text to vectors     | ~50–500ms per chunk     |
+| Search (rerank)                    | Cross-encoder (ms-marco-MiniLM-L-6-v2)      | Re-scores top results        | ~10–50ms per query pair |
 
 The embedding model and chat/classification model are **separate** — each pulled independently via Ollama.
