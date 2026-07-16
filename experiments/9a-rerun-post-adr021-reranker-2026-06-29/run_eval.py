@@ -33,28 +33,22 @@ def _load_ground_truth(path: Path) -> dict[str, Any]:
     return data
 
 
-def _setup_environment(mode: str, chroma_dir: Path) -> None:
-    os.environ["HYBRID_ENABLED"] = "false" if mode == "dense-only" else "true"
-    os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
-    os.environ["CHROMA_PERSIST_DIR"] = str(chroma_dir)
+def _patch_module_attrs(mod: Any, mode: str, chroma_dir: Path) -> None:
+    if hasattr(mod, "CHROMA_PERSIST_DIR"):
+        mod.CHROMA_PERSIST_DIR = str(chroma_dir)
+    if hasattr(mod, "HYBRID_ENABLED"):
+        mod.HYBRID_ENABLED = mode != "dense-only"
+    if hasattr(mod, "HYBRID_SPARSE_BACKEND"):
+        mod.HYBRID_SPARSE_BACKEND = "bm25"
+    if hasattr(mod, "RESOLVED_HYBRID_SPARSE_BACKEND"):
+        mod.RESOLVED_HYBRID_SPARSE_BACKEND = "bm25"
+    if hasattr(mod, "RERANK_FETCH_MULTIPLIER"):
+        mod.RERANK_FETCH_MULTIPLIER = 3
+    if hasattr(mod, "RERANK_MAX_FETCH"):
+        mod.RERANK_MAX_FETCH = 100
 
-    for mod_name in ("rag_mcp.config", "rag_mcp.retrieval", "rag_mcp.ingestion"):
-        mod = sys.modules.get(mod_name)
-        if mod is None:
-            continue
-        if hasattr(mod, "CHROMA_PERSIST_DIR"):
-            mod.CHROMA_PERSIST_DIR = str(chroma_dir)
-        if hasattr(mod, "HYBRID_ENABLED"):
-            mod.HYBRID_ENABLED = mode != "dense-only"
-        if hasattr(mod, "HYBRID_SPARSE_BACKEND"):
-            mod.HYBRID_SPARSE_BACKEND = "bm25"
-        if hasattr(mod, "RESOLVED_HYBRID_SPARSE_BACKEND"):
-            mod.RESOLVED_HYBRID_SPARSE_BACKEND = "bm25"
-        if hasattr(mod, "RERANK_FETCH_MULTIPLIER"):
-            mod.RERANK_FETCH_MULTIPLIER = 3
-        if hasattr(mod, "RERANK_MAX_FETCH"):
-            mod.RERANK_MAX_FETCH = 100
 
+def _clear_caches() -> None:
     try:
         from rag_mcp.retrieval import _cached_query_embedding
         _cached_query_embedding.cache_clear()
@@ -65,6 +59,19 @@ def _setup_environment(mode: str, chroma_dir: Path) -> None:
         BM25SparseRetriever.clear_all_caches()
     except Exception:
         pass
+
+
+def _setup_environment(mode: str, chroma_dir: Path) -> None:
+    os.environ["HYBRID_ENABLED"] = "false" if mode == "dense-only" else "true"
+    os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
+    os.environ["CHROMA_PERSIST_DIR"] = str(chroma_dir)
+
+    for mod_name in ("rag_mcp.config", "rag_mcp.retrieval", "rag_mcp.ingestion"):
+        mod = sys.modules.get(mod_name)
+        if mod is not None:
+            _patch_module_attrs(mod, mode, chroma_dir)
+
+    _clear_caches()
 
 
 def _parent_id(result: dict[str, Any]) -> str:
@@ -79,34 +86,35 @@ def _rank_map(parent_ids: list[str]) -> dict[str, int]:
     return ranks
 
 
+def _dcg(ranking: list[str], nugget_rels: list[set[str]], k: int, alpha: float) -> float:
+    import math
+    seen = [0 for _ in nugget_rels]
+    total = 0.0
+    for rank, doc_id in enumerate(ranking[:k], start=1):
+        gain = 0.0
+        for idx, rels in enumerate(nugget_rels):
+            if doc_id in rels:
+                gain += (1.0 - alpha) ** seen[idx]
+                seen[idx] += 1
+        if gain:
+            total += gain / math.log2(rank + 1)
+    return total
+
+
 def _alpha_ndcg(parent_ids: list[str], nuggets: list[dict[str, Any]], k: int = 10, alpha: float = 0.5) -> float:
     nugget_rels = [set(n.get("relevant_corpus_ids") or []) for n in nuggets]
     if not nugget_rels:
         return 0.0
 
-    def dcg(ranking: list[str]) -> float:
-        seen = [0 for _ in nugget_rels]
-        total = 0.0
-        import math
-        for rank, doc_id in enumerate(ranking[:k], start=1):
-            gain = 0.0
-            for idx, rels in enumerate(nugget_rels):
-                if doc_id in rels:
-                    gain += (1.0 - alpha) ** seen[idx]
-                    seen[idx] += 1
-            if gain:
-                total += gain / math.log2(rank + 1)
-        return total
-
-    observed = dcg(parent_ids)
+    observed = _dcg(parent_ids, nugget_rels, k, alpha)
     candidate_docs = sorted(set().union(*nugget_rels))
     ideal: list[str] = []
     remaining = candidate_docs[:]
     while remaining and len(ideal) < k:
-        best_doc = max(remaining, key=lambda doc: dcg(ideal + [doc]))
+        best_doc = max(remaining, key=lambda doc: _dcg(ideal + [doc], nugget_rels, k, alpha))
         ideal.append(best_doc)
         remaining.remove(best_doc)
-    ideal_score = dcg(ideal)
+    ideal_score = _dcg(ideal, nugget_rels, k, alpha)
     return observed / ideal_score if ideal_score else 0.0
 
 

@@ -35,22 +35,46 @@ class OllamaEmbedder:
     def close(self) -> None:
         self.client.close()
 
-    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+    def embed_batch(self, texts: list[str], max_retries: int = 3) -> tuple[list[list[float]], list[int]]:
+        """Embed texts one at a time, skipping files that consistently fail.
+
+        Ollama's inference backend drops connections intermittently under
+        sustained load. Rather than crashing, we skip persistently-failing
+        texts and return the indices of skipped items so the caller can
+        filter them out.
+
+        Returns (embeddings, skipped_indices).
+        """
         all_embeddings: list[list[float]] = []
-        for text in texts:
+        skipped: list[int] = []
+        for idx, text in enumerate(texts):
             truncated = text[:8000]
-            response = self.client.post(
-                f"{self.base_url}/api/embed",
-                json={"model": self.model, "input": truncated},
-            )
-            response.raise_for_status()
-            payload = response.json()
-            batch_embs = payload.get("embeddings")
-            if batch_embs is not None:
-                all_embeddings.extend(batch_embs)
+            success = False
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.post(
+                        f"{self.base_url}/api/embed",
+                        json={"model": self.model, "input": truncated},
+                    )
+                    response.raise_for_status()
+                    payload = response.json()
+                    batch_embs = payload.get("embeddings")
+                    if batch_embs is not None:
+                        all_embeddings.extend(batch_embs)
+                    else:
+                        all_embeddings.append(payload["embedding"])
+                    success = True
+                    break
+                except Exception:
+                    if attempt < max_retries - 1:
+                        wait = min(2 ** (attempt + 1), 15)
+                        time.sleep(wait)
+            if not success:
+                print(f"  SKIP text {idx + 1}/{len(texts)} (failed {max_retries} retries)", flush=True)
+                skipped.append(idx)
             else:
-                all_embeddings.append(payload["embedding"])
-        return all_embeddings
+                time.sleep(0.2)
+        return all_embeddings, skipped
 
 
 def _collect_files(project_root: Path) -> list[dict[str, Any]]:
@@ -166,6 +190,7 @@ def main() -> None:
     embedder = OllamaEmbedder(model=model, base_url=base_url, timeout=timeout)
 
     started = time.perf_counter()
+    total_skipped: list[str] = []
     try:
         for offset in range(0, len(files), args.batch_size):
             batch = files[offset: offset + args.batch_size]
@@ -173,8 +198,18 @@ def main() -> None:
             docs = [f["text"] for f in batch]
             metas = [_clean_metadata(f["metadata"]) for f in batch]
             print(f"  embedding batch {offset // args.batch_size + 1}: {offset + 1}-{offset + len(batch)}/{len(files)}", flush=True)
-            embeddings = embedder.embed_batch(docs)
-            collection.add(ids=ids, documents=docs, metadatas=metas, embeddings=embeddings)
+            embeddings, skipped = embedder.embed_batch(docs)
+            if skipped:
+                kept_ids = [i for j, i in enumerate(ids) if j not in skipped]
+                kept_docs = [d for j, d in enumerate(docs) if j not in skipped]
+                kept_metas = [m for j, m in enumerate(metas) if j not in skipped]
+                kept_embs = [e for j, e in enumerate(embeddings) if j not in skipped]
+                skipped_names = [ids[j] for j in skipped]
+                total_skipped.extend(skipped_names)
+                print(f"  {len(skipped)} files skipped in this batch", flush=True)
+                ids, docs, metas, embeddings = kept_ids, kept_docs, kept_metas, kept_embs
+            if ids:
+                collection.add(ids=ids, documents=docs, metadatas=metas, embeddings=embeddings)
     finally:
         embedder.close()
 
@@ -187,6 +222,8 @@ def main() -> None:
         "chroma_dir": str(chroma_dir),
         "embedding_model": model,
         "elapsed_seconds": round(elapsed, 2),
+        "skipped_files": total_skipped,
+        "skipped_count": len(total_skipped),
     }
     (output_dir / "corpus_build.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))

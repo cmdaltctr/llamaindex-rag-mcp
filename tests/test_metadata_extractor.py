@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import asyncio
 import json
+from typing import Any
 
 import pytest
 
@@ -227,9 +228,9 @@ class TestLlamaindexStub:
             and "not installed" in r.message.lower()
             for r in caplog.records
         )
-        # Warning must mention ollama mode, not keyword mode
+        # Warning must mention local mode, not keyword mode
         assert any(
-            "ollama mode" in r.message.lower()
+            "local mode" in r.message.lower()
             for r in caplog.records
             if r.levelno == logging.WARNING
         )
@@ -268,8 +269,8 @@ class TestOllamaExtraction:
 
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch) -> None:
-        """Set mode to ollama for all tests in this class."""
-        _set_mode(monkeypatch, "ollama")
+        """Set mode to local for all tests in this class."""
+        _set_mode(monkeypatch, "local")
 
     # ── Helpers ─────────────────────────────────────────────────────────
 
@@ -369,6 +370,7 @@ class TestOllamaExtraction:
             raise ConnectionError("Ollama not running")
 
         class _MockClient:
+            post: Any
             async def __aenter__(self): return self
             async def __aexit__(self, *args): pass
 
@@ -463,8 +465,8 @@ class TestHybridCategoryTaxonomy:
 
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch) -> None:
-        """Set mode to ollama for all tests in this class."""
-        _set_mode(monkeypatch, "ollama")
+        """Set mode to local for all tests in this class."""
+        _set_mode(monkeypatch, "local")
 
     def _mock_ollama(self, monkeypatch, response_text: str) -> None:
         """Mock Ollama to return controlled response via httpx."""
@@ -749,14 +751,14 @@ class TestLlamaindexExtraction:
         assert "keywords" in result
         assert "summary" in result
 
-        # Must log a WARNING mentioning ollama mode
+        # Must log a WARNING mentioning local mode
         assert any(
             r.levelno == logging.WARNING
             and "not installed" in r.message.lower()
             for r in caplog.records
         )
         assert any(
-            "ollama mode" in r.message.lower()
+            "local mode" in r.message.lower()
             for r in caplog.records
             if r.levelno == logging.WARNING
         )
@@ -878,10 +880,10 @@ class TestLlamaindexExtraction:
         assert "keywords" in result
         assert "summary" in result
 
-        # Must log a WARNING mentioning ollama mode
+        # Must log a WARNING mentioning local mode
         assert any(
             r.levelno == logging.WARNING
-            and "falling back to ollama mode" in r.message.lower()
+            and "falling back to local mode" in r.message.lower()
             for r in caplog.records
         )
 
@@ -926,10 +928,10 @@ class TestLlamaindexExtraction:
         assert result["keywords"] == []
         assert result["summary"] == ""
 
-        # llamaindex must have logged a WARNING about falling back to ollama
+        # llamaindex must have logged a WARNING about falling back to local
         assert any(
             r.levelno == logging.WARNING
-            and "ollama mode" in r.message.lower()
+            and "local mode" in r.message.lower()
             for r in caplog.records
         )
 
@@ -1218,7 +1220,7 @@ class TestOllamaRetry:
 
     @pytest.fixture(autouse=True)
     def _ollama_mode(self, monkeypatch) -> None:
-        _set_mode(monkeypatch, "ollama")
+        _set_mode(monkeypatch, "local")
         # Avoid real time.sleep / asyncio.sleep delays in tests.
         async def _noop_sleep(_seconds):
             return None

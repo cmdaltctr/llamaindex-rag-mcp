@@ -1,9 +1,11 @@
 {
-  "total_files": 68,
+  "total_files": 80,
   "code_files": 21,
-  "doc_files": 47,
-  "collection_count": 68,
+  "doc_files": 59,
+  "collection_count": 80,
   "chroma_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp/experiments/10.1-doc-similarity-threshold-calibration-2026-06-29/output/chroma_mixed",
   "embedding_model": "qwen3-embedding:0.6b",
-  "elapsed_seconds": 52.58
+  "elapsed_seconds": 136.83,
+  "skipped_files": [],
+  "skipped_count": 0
 }

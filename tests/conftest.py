@@ -16,10 +16,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 # ── IMPORTANT: EMBED_MODEL for test collection ─────────────────────────
-# config.py now requires EMBED_MODEL (no hardcoded fallback), and test
+# config.py now requires EMBED_MODEL when LOCAL_BACKEND=ollama, and test
 # files import rag_mcp modules at module level (before fixtures run).
 # This setdefault ensures tests can be collected without a .env file.
+# LOCAL_BACKEND is set to ollama (core deps) so tests don't require
+# the llamacpp optional dependency group.
+os.environ.setdefault("EMBED_PROVIDER", "local")
+os.environ.setdefault("LOCAL_BACKEND", "ollama")
 os.environ.setdefault("EMBED_MODEL", "nomic-embed-text")
+os.environ.setdefault("METADATA_LLM_PROVIDER", "local")
 # ────────────────────────────────────────────────────────────────────────
 
 import chromadb
@@ -109,8 +114,11 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
     monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
+    monkeypatch.setenv("EMBED_PROVIDER", "local")
+    monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
+    monkeypatch.setenv("METADATA_LLM_PROVIDER", "local")
     monkeypatch.setenv("METADATA_EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
     monkeypatch.setenv("METADATA_KEYWORD_RULES", "")
     monkeypatch.setenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")

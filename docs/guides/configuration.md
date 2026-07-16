@@ -55,13 +55,14 @@ Each row below pairs an **env var** (what you set in `.env` or your shell) with 
 
 ### Provider selection
 
-| Env var                 | Default                                   | `.env.example` | Config constant         | Purpose                                                           |
-| ----------------------- | ----------------------------------------- | -------------- | ----------------------- | ----------------------------------------------------------------- |
-| `EMBED_PROVIDER`        | `ollama`                                  | `ollama`       | `EMBED_PROVIDER`        | `ollama` / `llamacpp` / `openrouter` (ADR-026)                    |
-| `METADATA_LLM_PROVIDER` | `ollama`                                  | _(not set)_    | `METADATA_LLM_PROVIDER` | Metadata LLM provider — independent of `EMBED_PROVIDER` (ADR-026) |
-| `INFERENCE_BACKEND`     | _(deprecated — maps to `EMBED_PROVIDER`)_ | _(not set)_    | `INFERENCE_BACKEND`     | Legacy alias, warns on use                                        |
+| Env var                 | Default      | `.env.example` | Config constant         | Purpose                                                           |
+| ----------------------- | ------------ | -------------- | ----------------------- | ----------------------------------------------------------------- |
+| `EMBED_PROVIDER`        | `local`      | `local`        | `EMBED_PROVIDER`        | `local` / `cloud` category (ADR-026)                              |
+| `METADATA_LLM_PROVIDER` | `local`      | `local`        | `METADATA_LLM_PROVIDER` | Metadata LLM category — independent of `EMBED_PROVIDER` (ADR-026) |
+| `LOCAL_BACKEND`         | `llamacpp`   | `llamacpp`     | `LOCAL_BACKEND`         | Local sub-provider: `llamacpp` / `ollama`                         |
+| `CLOUD_BACKEND`         | `openrouter` | _(commented)_  | `CLOUD_BACKEND`         | Cloud sub-provider: `openrouter`                                  |
 
-When `EMBED_PROVIDER=llamacpp` or `openrouter`, install optional deps first:
+When `LOCAL_BACKEND=llamacpp` or `CLOUD_BACKEND=openrouter`, install optional deps first:
 
 ```bash
 uv sync --extra llamacpp     # for llama.cpp
@@ -70,7 +71,7 @@ uv sync --extra openrouter   # for OpenRouter
 
 See [Providers](providers.md) for full setup instructions for each provider.
 
-### llama.cpp
+### llama.cpp (local sub-provider)
 
 | Env var                | Default                          | `.env.example` | Config constant        | Purpose                                              |
 | ---------------------- | -------------------------------- | -------------- | ---------------------- | ---------------------------------------------------- |
@@ -79,7 +80,7 @@ See [Providers](providers.md) for full setup instructions for each provider.
 | `LLAMACPP_CHAT_URL`    | `http://localhost:8081/v1`       | _(not set)_    | `LLAMACPP_CHAT_URL`    | llama-server chat endpoint (llamacpp only)           |
 | `LLAMACPP_CHAT_MODEL`  | _(none — required for llamacpp)_ | _(not set)_    | `LLAMACPP_CHAT_MODEL`  | GGUF filename for metadata extraction LLM (llamacpp) |
 
-### OpenRouter (cloud)
+### OpenRouter (cloud sub-provider)
 
 | Env var                  | Default                                       | `.env.example` | Config constant          | Purpose                                                          |
 | ------------------------ | --------------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------- |
@@ -87,16 +88,16 @@ See [Providers](providers.md) for full setup instructions for each provider.
 | `OPENROUTER_EMBED_MODEL` | _(none — required for openrouter embeddings)_ | _(not set)_    | `OPENROUTER_EMBED_MODEL` | OpenRouter embedding model (e.g., `text-embedding-3-small`)      |
 | `OPENROUTER_LLM_MODEL`   | _(none — required for openrouter LLM)_        | _(not set)_    | `OPENROUTER_LLM_MODEL`   | OpenRouter chat model (e.g., `meta-llama/llama-3.1-8b-instruct`) |
 
-The `ollama` provider uses `OLLAMA_BASE_URL` and `EMBED_MODEL` (below). The `llamacpp` provider uses `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`. The `openrouter` provider uses `OPENROUTER_EMBED_MODEL` and `OPENROUTER_API_KEY`.
+When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODEL` (below). When `LOCAL_BACKEND=llamacpp`, it uses `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`. When `CLOUD_BACKEND=openrouter`, it uses `OPENROUTER_EMBED_MODEL` and `OPENROUTER_API_KEY`.
 
-### Embedding (required)
+### Embedding (required for ollama sub-provider)
 
-| Env var             | Default                  | `.env.example`           | Config constant     | Purpose                            |
-| ------------------- | ------------------------ | ------------------------ | ------------------- | ---------------------------------- |
-| `EMBED_MODEL`       | _(none — required)_      | `qwen3-embedding:0.6b`   | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
-| `OLLAMA_BASE_URL`   | `http://localhost:11434` | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
-| `EMBED_BATCH_SIZE`  | `100`                    | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
-| `EMBED_CONCURRENCY` | `2`                      | `4`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
+| Env var             | Default                        | `.env.example`           | Config constant     | Purpose                            |
+| ------------------- | ------------------------------ | ------------------------ | ------------------- | ---------------------------------- |
+| `EMBED_MODEL`       | _(none — required for ollama)_ | `qwen3-embedding:0.6b`   | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
+| `OLLAMA_BASE_URL`   | `http://localhost:11434`       | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
+| `EMBED_BATCH_SIZE`  | `100`                          | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
+| `EMBED_CONCURRENCY` | `2`                            | `4`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
 
 ### ChromaDB storage
 
@@ -192,14 +193,13 @@ The `ollama` provider uses `OLLAMA_BASE_URL` and `EMBED_MODEL` (below). The `lla
 
 `config.py` also performs validation at import time:
 
-- **`EMBED_MODEL`** missing → raises `ValueError` (only hard failure for ollama provider)
-- **`EMBED_PROVIDER`** invalid → warns + falls back to `ollama`
-- **`EMBED_PROVIDER=llamacpp`** without `llama-index-embeddings-openai` → raises `ImportError` with install hint
-- **`EMBED_PROVIDER=llamacpp`** without `LLAMACPP_EMBED_MODEL` → raises `ValueError`
-- **`EMBED_PROVIDER=openrouter`** without `OPENROUTER_API_KEY` → raises `ValueError`
-- **`EMBED_PROVIDER=openrouter`** without optional deps → raises `ImportError` with install hint
-- **`INFERENCE_BACKEND`** set without `EMBED_PROVIDER` → copies value with `DeprecationWarning`
-- **`METADATA_EXTRACTION_MODE=ollama`** → silently maps to `local`
+- **`EMBED_MODEL`** missing → raises `ValueError` (only when `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`)
+- **`EMBED_PROVIDER`** invalid → warns + falls back to `local`
+- **`LOCAL_BACKEND`** invalid → warns + falls back to `llamacpp`
+- **`LOCAL_BACKEND=llamacpp`** without `llama-index-embeddings-openai` → raises `ImportError` with install hint
+- **`LOCAL_BACKEND=llamacpp`** without `LLAMACPP_EMBED_MODEL` → raises `ValueError`
+- **`CLOUD_BACKEND=openrouter`** without `OPENROUTER_API_KEY` → raises `ValueError`
+- **`CLOUD_BACKEND=openrouter`** without optional deps → raises `ImportError` with install hint
 - **`HYBRID_SPARSE_BACKEND`** invalid → warns + falls back to `bm25`
 - **`PDF_READER`** invalid → warns + falls back to `auto`
 - **`DOCUMENT_BACKEND`** invalid → warns + falls back to `local`

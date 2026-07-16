@@ -65,34 +65,35 @@ def _rank_map(parent_ids: list[str]) -> dict[str, int]:
     return ranks
 
 
+def _dcg(ranking: list[str], nugget_rels: list[set[str]], k: int, alpha: float) -> float:
+    import math
+    seen = [0 for _ in nugget_rels]
+    total = 0.0
+    for rank, doc_id in enumerate(ranking[:k], start=1):
+        gain = 0.0
+        for idx, rels in enumerate(nugget_rels):
+            if doc_id in rels:
+                gain += (1.0 - alpha) ** seen[idx]
+                seen[idx] += 1
+        if gain:
+            total += gain / math.log2(rank + 1)
+    return total
+
+
 def _alpha_ndcg(parent_ids: list[str], nuggets: list[dict[str, Any]], k: int = 10, alpha: float = 0.5) -> float:
     nugget_rels = [set(n.get("relevant_corpus_ids") or []) for n in nuggets]
     if not nugget_rels:
         return 0.0
 
-    def dcg(ranking: list[str]) -> float:
-        seen = [0 for _ in nugget_rels]
-        total = 0.0
-        import math
-        for rank, doc_id in enumerate(ranking[:k], start=1):
-            gain = 0.0
-            for idx, rels in enumerate(nugget_rels):
-                if doc_id in rels:
-                    gain += (1.0 - alpha) ** seen[idx]
-                    seen[idx] += 1
-            if gain:
-                total += gain / math.log2(rank + 1)
-        return total
-
-    observed = dcg(parent_ids)
+    observed = _dcg(parent_ids, nugget_rels, k, alpha)
     candidate_docs = sorted(set().union(*nugget_rels))
     ideal: list[str] = []
     remaining = candidate_docs[:]
     while remaining and len(ideal) < k:
-        best_doc = max(remaining, key=lambda doc: dcg(ideal + [doc]))
+        best_doc = max(remaining, key=lambda doc: _dcg(ideal + [doc], nugget_rels, k, alpha))
         ideal.append(best_doc)
         remaining.remove(best_doc)
-    ideal_score = dcg(ideal)
+    ideal_score = _dcg(ideal, nugget_rels, k, alpha)
     return observed / ideal_score if ideal_score else 0.0
 
 

@@ -75,7 +75,7 @@ Set `EMBED_MODEL` in `.env` to any Ollama embedding model:
 
 See [ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md) for the full evidence behind the default model choice.
 
-> **llama.cpp provider:** When `EMBED_PROVIDER=llamacpp`, set `LLAMACPP_EMBED_MODEL` to the GGUF filename instead of `EMBED_MODEL`. The same models are available in GGUF format from HuggingFace. When `EMBED_PROVIDER=openrouter`, set `OPENROUTER_EMBED_MODEL` to a cloud embedding model (e.g., `text-embedding-3-small`). See [Providers](providers.md) for setup.
+> **llama.cpp provider:** When `EMBED_PROVIDER=local` and `LOCAL_BACKEND=llamacpp`, set `LLAMACPP_EMBED_MODEL` to the GGUF filename instead of `EMBED_MODEL`. The same models are available in GGUF format from HuggingFace. When `EMBED_PROVIDER=cloud` and `CLOUD_BACKEND=openrouter`, set `OPENROUTER_EMBED_MODEL` to a cloud embedding model (e.g., `text-embedding-3-small`). See [Providers](providers.md) for setup.
 
 ### How long will ingestion take?
 

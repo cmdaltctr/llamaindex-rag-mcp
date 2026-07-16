@@ -25,9 +25,9 @@
 - [x] 3.4 Write `run_eval.py` that builds the document graph for each threshold value using `rag_mcp.doc_graph.build_document_graph()` and records structural metrics
 - [x] 3.5 Manually rate 10 random edges per threshold as "meaningful link" or "noise" to compute false-positive rate (record in a `manual_ratings.json`)
 - [x] 3.6 Write `summarise_eval.py` that identifies the threshold maximising modularity with FP < 20%
-- [ ] 3.7 Run evaluation and write `results.md` with executive summary, per-threshold table, pass gate evaluation, recommendation (is 0.85 acceptable?)
-- [ ] 3.8 Update `experiments/EXP_README.md` index with Exp 10.1 entry
-- [ ] 3.9 If results warrant an ADR-023 amendment, draft the amendment text (separate change)
+- [x] 3.7 Run evaluation and write `results.md` with executive summary, per-threshold table, pass gate evaluation, recommendation (is 0.85 acceptable?) — **Result: 0.85 validated (PASS). FP=0%, modularity within 0.4% of optimum. No ADR-023 amendment needed.**
+- [x] 3.8 Update `experiments/EXP_README.md` index with Exp 10.1 entry — **Updated to PASS with summary.**
+- [x] 3.9 If results warrant an ADR-023 amendment, draft the amendment text (separate change) — **No amendment warranted; current default validated.**
 
 ## 4. Experiment 12 — Hybrid default promotion (post-ADR-019)
 

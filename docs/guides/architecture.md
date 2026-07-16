@@ -94,17 +94,19 @@ The MCP server runs an async event loop. When ingestion was synchronous, a long 
 
 ### Pluggable inference backend ([ADR-025](../adr/025-pluggable-inference-backend.md), [ADR-026](../adr/026-provider-registry-and-openrouter.md))
 
-Ollama is a convenience wrapper over llama.cpp. It's easy to use (`ollama pull`), but adds ~20-27% overhead and serialises concurrent requests. For researchers who want raw performance, the server supports switching to llama.cpp's `llama-server` directly. For cloud users, OpenRouter provides OpenAI-compatible endpoints without running any local servers.
+Ollama is a convenience wrapper over llama.cpp. It's easy to use (`ollama pull`), but adds ~20-27% overhead and serialises concurrent requests. For researchers who want raw performance, the server supports switching to llama.cpp's `llama-server` directly. For cloud users, OpenRouter provides OpenAI-compatible endpoints without running any local servers. Both `llamacpp` and `openrouter` use the same LlamaIndex classes (`OpenAIEmbedding`, `OpenAILike`) because both implement the OpenAI-compatible API — the pattern supports any endpoint that does (vLLM, TGI, LocalAI, Azure OpenAI).
 
-ADR-025 introduced a single `INFERENCE_BACKEND` env var. ADR-026 split this into two independent env vars — `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER` — so users can mix and match (e.g., cloud embeddings with a free local LLM). A config-based provider registry (`EMBED_PROVIDERS`, `LLM_PROVIDERS`) replaced the if/elif chains, making it trivial to add new providers.
+ADR-025 introduced a single `INFERENCE_BACKEND` env var. ADR-026 split this into two independent env vars — `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER` — so users can mix and match (e.g., cloud embeddings with a free local LLM). A config-based provider registry replaced the if/elif chains, making it trivial to add new providers. The registry uses a two-tier system: category (`local`|`cloud`) + sub-provider (`LOCAL_BACKEND`|`CLOUD_BACKEND`).
 
-| Provider             | Embeddings        | Metadata LLM           |
-| -------------------- | ----------------- | ---------------------- |
-| `ollama` (default)   | `OllamaEmbedding` | `Ollama` / `httpx`     |
-| `llamacpp`           | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
-| `openrouter` (cloud) | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
+> **Note:** This registry covers embeddings and metadata LLM only. Document parsing (`DOCUMENT_BACKEND=azure`, Azure Document Intelligence) is a separate orthogonal axis — see [ADR-024](../adr/024-dual-deployment-modes.md).
 
-The `METADATA_EXTRACTION_MODE=ollama` was also renamed to `local` (silent backward-compat mapping) since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
+| Category | Sub-provider         | Embeddings        | Metadata LLM           |
+| -------- | -------------------- | ----------------- | ---------------------- |
+| `local`  | `llamacpp` (default) | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
+| `local`  | `ollama`             | `OllamaEmbedding` | `Ollama` / `httpx`     |
+| `cloud`  | `openrouter`         | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
+
+The `METADATA_EXTRACTION_MODE=ollama` was renamed to `local` since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
 
 ---
 

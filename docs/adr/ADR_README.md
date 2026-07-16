@@ -32,7 +32,8 @@ development of the LlamaIndex RAG MCP Server.
 | [023](./023-document-graph-via-embedding-similarity.md)      | Document Graph via Embedding Similarity                                    | 2026-06-28 | Accepted |
 | [024](./024-dual-deployment-modes.md)                        | Dual Deployment Modes — Full Local vs Hybrid                               | 2026-01-15 | Accepted |
 | [025](./025-pluggable-inference-backend.md)                  | Pluggable Inference Backend — Ollama and llama.cpp                         | 2026-07-01 | Accepted |
-| [026](./026-provider-registry-and-openrouter.md)             | Provider Registry Pattern and OpenRouter Cloud Provider                    | 2026-07-15 | Accepted |
+| [026](./026-provider-registry-and-openrouter.md)             | Provider Registry Pattern and OpenAI-Compatible API Providers              | 2026-07-15 | Accepted |
+| [027](./027-local-cloud-provider-naming.md)                  | Local/Cloud Provider Naming Taxonomy                                       | 2026-07-16 | Accepted |
 
 ## Convention
 

@@ -2,7 +2,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Requires Ollama, llama.cpp, or OpenRouter](https://img.shields.io/badge/requires-Ollama_or_llama.cpp_or_OpenRouter-000000?logo=ollama)](https://ollama.com)
+[![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
 A local document search server for AI assistants. Point it at your files — PDFs, Word docs, notes, research papers — and your AI can search them by meaning, not just keywords. Everything runs on your machine by default — no cloud, no API keys, no recurring costs. Cloud providers (OpenRouter) are available as an opt-in alternative.
 
@@ -46,15 +46,16 @@ The same `rag-mcp` command works as both an MCP server and a terminal tool:
 
 ## Quick install
 
-You need [uv](https://docs.astral.sh/uv/) and either [Ollama](https://ollama.com) (default), [llama.cpp](https://github.com/ggml-org/llama.cpp), or an [OpenRouter](https://openrouter.ai) API key.
+You need [uv](https://docs.astral.sh/uv/) and either [llama.cpp](https://github.com/ggml-org/llama.cpp) (default), [Ollama](https://ollama.com), or an [OpenRouter](https://openrouter.ai) API key.
 
 ```bash
-# Pull the embedding model (Ollama — default backend)
-ollama pull qwen3-embedding:0.6b
-
 # Set up the project
 cp .env.example .env    # then edit .env to match your setup
-uv sync
+uv sync --extra llamacpp  # install llama.cpp provider deps
+
+# Start llama-server (downloads GGUF from HuggingFace automatically)
+llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
+llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081 &
 
 # Verify it works — Ctrl-C to stop
 uv run rag-mcp
@@ -64,7 +65,7 @@ All settings live in `.env` — see [Configuration](docs/guides/configuration.md
 
 No output means it's working. It's waiting silently for MCP messages on stdin.
 
-To use llama.cpp or OpenRouter instead, see [Providers](docs/guides/providers.md) for all options.
+To use Ollama or OpenRouter instead, see [Providers](docs/guides/providers.md) for all options.
 
 Then register it in your AI client — see [MCP Client Setup](docs/guides/mcp-client-setup.md).
 
@@ -88,48 +89,33 @@ with dense results via RRF (`HYBRID_RRF_K=60`). The BM25 index is cached per
 collection and rebuilt lazily after ingestion or deletion; its memory footprint
 scales with the collection's chunk count.
 
-### Optional llama.cpp backend
+### Using Ollama instead
 
-For raw performance, switch from Ollama to [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server`. No wrapper overhead, better concurrency via parallel slots, OpenAI-compatible API.
-
-```bash
-# Install optional deps
-uv sync --extra llamacpp
-
-# Start two llama-server processes (embedding + chat)
-# -hf downloads GGUF from HuggingFace automatically to ~/.cache/huggingface/hub
-llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings
-llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081
-```
-
-Then set in `.env`:
+Prefer [Ollama](https://ollama.com)'s one-command model pulling? Set `LOCAL_BACKEND=ollama` in `.env`:
 
 ```bash
-EMBED_PROVIDER=llamacpp
-METADATA_LLM_PROVIDER=llamacpp
-LLAMACPP_EMBED_URL=http://localhost:8080/v1
-LLAMACPP_EMBED_MODEL=Qwen3-Embedding-0.6B-Q8_0.gguf
-LLAMACPP_CHAT_URL=http://localhost:8081/v1
-LLAMACPP_CHAT_MODEL=Qwen3-0.6B-Q8_0.gguf
+uv sync                # ollama uses core deps — no extra flag needed
+ollama pull qwen3-embedding:0.6b
+ollama pull qwen3:0.6b  # for metadata classification
 ```
 
-> **Offline / air-gapped?** Pre-download GGUF files with `hf download` (the replacement for the deprecated `huggingface-cli`) to the default HF cache, then use `-hf` as normal:
->
-> ```bash
-> # Install the new hf CLI: pip install -U huggingface_hub
-> hf download Qwen/Qwen3-Embedding-0.6B-GGUF Qwen3-Embedding-0.6B-Q8_0.gguf
-> hf download Qwen/Qwen3-0.6B-GGUF Qwen3-0.6B-Q8_0.gguf
-> # Files are cached in ~/.cache/huggingface/hub — llama-server -hf will find them there
-> ```
+```bash
+# .env
+EMBED_PROVIDER=local
+METADATA_LLM_PROVIDER=local
+LOCAL_BACKEND=ollama
+EMBED_MODEL=qwen3-embedding:0.6b
+OLLAMA_CLASSIFY_MODEL=qwen3:0.6b
+```
 
 See [ADR-025](docs/adr/025-pluggable-inference-backend.md) for the full rationale.
 
 ### Optional OpenRouter cloud provider
 
-Use [OpenRouter](https://openrouter.ai) for cloud embeddings and/or metadata LLM without running any local model servers. OpenRouter provides OpenAI-compatible endpoints.
+Use [OpenRouter](https://openrouter.ai) for cloud embeddings and/or metadata LLM without running any local model servers. OpenRouter implements the OpenAI-compatible API — the same LlamaIndex classes as llama.cpp, just a different `api_base` and `api_key`.
 
 ```bash
-# Install optional deps (same packages as llamacpp)
+# Install optional deps (same packages as llamacpp — both use the OpenAI-compatible API)
 uv sync --extra openrouter
 ```
 
@@ -137,12 +123,13 @@ Then set in `.env`:
 
 ```bash
 # Cloud embeddings + local LLM (cost-efficient)
-EMBED_PROVIDER=openrouter
+EMBED_PROVIDER=cloud
+CLOUD_BACKEND=openrouter
 OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_EMBED_MODEL=text-embedding-3-small
 
 # Or fully cloud — also set:
-METADATA_LLM_PROVIDER=openrouter
+METADATA_LLM_PROVIDER=cloud
 OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct
 ```
 
@@ -179,7 +166,7 @@ uv sync
 | [Configuration](docs/guides/configuration.md)             | All environment variables and `.env` settings                  |
 | [CLI Reference](docs/guides/cli-reference.md)             | Every command, flag, and example                               |
 | [MCP Tools Reference](docs/guides/mcp-tools.md)           | Tool parameters in detail                                      |
-| [Providers](docs/guides/providers.md)                     | Embedding & LLM provider setup (Ollama, llama.cpp, OpenRouter) |
+| [Providers](docs/guides/providers.md)                     | Embedding & LLM provider setup (llama.cpp, Ollama, OpenRouter) |
 | [Ingestion Guide](docs/guides/ingestion.md)               | How ingestion works, embedding models, chunk sizes             |
 | [Metadata Extraction](docs/guides/metadata-extraction.md) | Auto-categorisation, keyword rules, filtering                  |
 | [Reranker](docs/guides/reranker.md)                       | Cross-encoder reranking and threshold scaling                  |

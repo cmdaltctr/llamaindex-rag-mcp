@@ -38,6 +38,8 @@ from .config import (
     LLAMACPP_CHAT_URL,
     METADATA_EXTRACTION_MODE,
     METADATA_KEYWORD_RULES,
+    CLOUD_BACKEND,
+    LOCAL_BACKEND,
     METADATA_LLM_PROVIDER,
     OLLAMA_BASE_URL,
     OLLAMA_CLASSIFY_MAX_ATTEMPTS,
@@ -275,6 +277,27 @@ def _get_seed_categories() -> frozenset[str]:
     return frozenset(seen)
 
 
+def _collect_categories_from_collection(collection) -> set[str]:
+    """Extract normalised category names from a single ChromaDB collection.
+
+    Args:
+        collection: A ChromaDB collection object.
+
+    Returns:
+        Set of normalised category strings (excluding "uncategorised").
+    """
+    categories: set[str] = set()
+    for meta in iter_collection_metadatas(collection):
+        if not isinstance(meta, dict):
+            continue
+        cat = meta.get("category")
+        if cat and isinstance(cat, str):
+            normalised = _normalise_category(cat)
+            if normalised != "uncategorised":
+                categories.add(normalised)
+    return categories
+
+
 def _gather_existing_categories() -> list[str]:
     """Query ChromaDB across all collections for unique category values.
 
@@ -294,15 +317,7 @@ def _gather_existing_categories() -> list[str]:
         categories: set[str] = set()
         for collection in client.list_collections():
             try:
-                for meta in iter_collection_metadatas(collection):
-                    if isinstance(meta, dict):
-                        cat = meta.get("category")
-                        if cat and isinstance(cat, str):
-                            # Normalise here so duplicates from different
-                            # capitalisations merge.
-                            normalised = _normalise_category(cat)
-                            if normalised != "uncategorised":
-                                categories.add(normalised)
+                categories.update(_collect_categories_from_collection(collection))
             except Exception as col_exc:
                 logger.debug(
                     "Skipping collection '%s' during category lookup: %s",
@@ -596,6 +611,64 @@ def _get_ollama_timeout() -> float:
 _retry_sleep = asyncio.sleep
 
 
+def _parse_keywords_from_meta(kws: str) -> list[str]:
+    """Parse a keywords string into a list of cleaned, lowercased keywords.
+
+    Strips LLM-emitted prefixes, splits on commas/newlines, and filters
+    out empty values.
+
+    Args:
+        kws: Raw keywords string from LlamaIndex metadata.
+
+    Returns:
+        List of cleaned keyword strings.
+    """
+    kws_clean = _strip_llm_prefix(kws)
+    return [
+        stripped.lower()
+        for kw in kws_clean.replace("\n", ",").split(",")
+        if (stripped := _strip_llm_prefix(kw.strip()))
+    ]
+
+
+def _derive_category(keywords_all: list[str], title: str) -> str:
+    """Derive a category from keywords or title.
+
+    Tries each keyword in order, falling back to the first 1-2 words
+    of the title.
+
+    Args:
+        keywords_all: List of keyword strings.
+        title: Document title string (may be empty).
+
+    Returns:
+        Normalised category string, or "uncategorised".
+    """
+    for kw in keywords_all:
+        candidate = _normalise_category(kw)
+        if candidate != "uncategorised":
+            return candidate
+    if title:
+        return _normalise_category(" ".join(title.split()[:2]))
+    return "uncategorised"
+
+
+def _first_nonempty_str_field(meta: dict, key: str) -> str:
+    """Get the first non-empty string value for a metadata key.
+
+    Args:
+        meta: Node metadata dict.
+        key: Metadata field name.
+
+    Returns:
+        Stripped value with LLM prefix removed, or empty string.
+    """
+    val = meta.get(key, "")
+    if isinstance(val, str) and val.strip():
+        return _strip_llm_prefix(val.strip())
+    return ""
+
+
 def _aggregate_llamaindex_metadata(nodes: list) -> dict:
     """Aggregate per-node metadata into a single metadata dict.
 
@@ -613,52 +686,24 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
     keywords_all: list[str] = []
     summary = ""
     title = ""
-    category = ""
 
     for node in nodes:
         meta = getattr(node, "metadata", {}) if hasattr(node, "metadata") else {}
         if not meta:
             continue
 
-        # Collect keywords from all nodes - strip any "Keywords:" prefix
-        # the LLM may have emitted before splitting on commas, then strip
-        # any per-keyword label prefix (LLMs sometimes embed sub-labels
-        # like ``Title:`` or ``Summary:`` mid-list).
         if not keywords_all:
-            kws = meta.get("excerpt_keywords", "")
-            if isinstance(kws, str) and kws.strip():
-                kws_clean = _strip_llm_prefix(kws)
-                keywords_all = [
-                    stripped.lower()
-                    for kw in kws_clean.replace("\n", ",").split(",")
-                    if (stripped := _strip_llm_prefix(kw.strip()))
-                ]
+            kws = _first_nonempty_str_field(meta, "excerpt_keywords")
+            if kws:
+                keywords_all = _parse_keywords_from_meta(kws)
 
-        # Use the first non-empty summary, with prefix stripped.
         if not summary:
-            s = meta.get("section_summary", "")
-            if isinstance(s, str) and s.strip():
-                summary = _strip_llm_prefix(s.strip())
+            summary = _first_nonempty_str_field(meta, "section_summary")
 
-        # Use the first non-empty title, with prefix stripped.
         if not title:
-            t = meta.get("document_title", "")
-            if isinstance(t, str) and t.strip():
-                title = _strip_llm_prefix(t.strip())
+            title = _first_nonempty_str_field(meta, "document_title")
 
-    # Derive category from the first keyword that normalises cleanly -
-    # keywords are short by design (1-3 words each).  Skip keywords that
-    # are too long or contain markdown noise (e.g. table syntax) and
-    # fall through to subsequent ones.  As a final fallback, try the
-    # first 1-2 words of the title before declaring "uncategorised".
-    category = "uncategorised"
-    for kw in keywords_all:
-        candidate = _normalise_category(kw)
-        if candidate != "uncategorised":
-            category = candidate
-            break
-    if category == "uncategorised" and title:
-        category = _normalise_category(" ".join(title.split()[:2]))
+    category = _derive_category(keywords_all, title)
 
     result: dict = {
         "category": category,
@@ -891,15 +936,23 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         optionally ``document_title``.  Falls back to keyword mode on failure.
     """
     try:
-        if METADATA_LLM_PROVIDER == "llamacpp":
-            from llama_index.llms.openai_like import OpenAILike
-            llm = OpenAILike(
-                model=LLAMACPP_CHAT_MODEL,
-                api_base=LLAMACPP_CHAT_URL,
-                api_key="no-key",
-                request_timeout=180.0,
-            )
-        elif METADATA_LLM_PROVIDER == "openrouter":
+        if METADATA_LLM_PROVIDER == "local":
+            if LOCAL_BACKEND == "llamacpp":
+                from llama_index.llms.openai_like import OpenAILike
+                llm = OpenAILike(
+                    model=LLAMACPP_CHAT_MODEL,
+                    api_base=LLAMACPP_CHAT_URL,
+                    api_key="no-key",
+                    request_timeout=180.0,
+                )
+            else:
+                from llama_index.llms.ollama import Ollama
+                llm = Ollama(
+                    model=OLLAMA_CLASSIFY_MODEL,
+                    base_url=OLLAMA_BASE_URL,
+                    request_timeout=180.0,
+                )
+        else:
             from llama_index.llms.openai_like import OpenAILike
             llm = OpenAILike(
                 model=OPENROUTER_LLM_MODEL,
@@ -907,19 +960,12 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
                 api_key=OPENROUTER_API_KEY,
                 request_timeout=180.0,
             )
-        else:
-            from llama_index.llms.ollama import Ollama
-            llm = Ollama(
-                model=OLLAMA_CLASSIFY_MODEL,
-                base_url=OLLAMA_BASE_URL,
-                request_timeout=180.0,
-            )
     except ImportError:
         logger.warning(
-            "Required LLM package not installed for METADATA_LLM_PROVIDER=%s — "
-            "falling back to %s mode",
+            "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
+            "(backend=%s) — falling back to local mode",
             METADATA_LLM_PROVIDER,
-            METADATA_LLM_PROVIDER,
+            LOCAL_BACKEND if METADATA_LLM_PROVIDER == "local" else CLOUD_BACKEND,
         )
         return await _dispatch_local_extraction(text)
 
@@ -969,10 +1015,10 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
 
 
 async def _dispatch_local_extraction(text: str) -> dict:
-    """Dispatch to the appropriate local extraction function based on METADATA_LLM_PROVIDER.
+    """Dispatch to the appropriate extraction function based on provider config.
 
-    Routes to ``_extract_ollama_async`` (ollama), ``_extract_llamacpp_chat_async``
-    (llamacpp), or ``_extract_openrouter_chat_async`` (openrouter).
+    Routes based on ``METADATA_LLM_PROVIDER`` (local|cloud) and the
+    corresponding ``LOCAL_BACKEND`` or ``CLOUD_BACKEND`` sub-provider.
 
     Args:
         text: The full document text.
@@ -980,10 +1026,13 @@ async def _dispatch_local_extraction(text: str) -> dict:
     Returns:
         A dict with ``category``, ``keywords``, ``summary``.
     """
-    if METADATA_LLM_PROVIDER == "llamacpp":
-        return await _extract_llamacpp_chat_async(text)
-    elif METADATA_LLM_PROVIDER == "openrouter":
+    if METADATA_LLM_PROVIDER == "cloud":
+        if CLOUD_BACKEND == "openrouter":
+            return await _extract_openrouter_chat_async(text)
+        # Future cloud sub-providers would dispatch here.
         return await _extract_openrouter_chat_async(text)
+    elif LOCAL_BACKEND == "llamacpp":
+        return await _extract_llamacpp_chat_async(text)
     else:
         return await _extract_ollama_async(text)
 
@@ -1093,10 +1142,6 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
         A dict of metadata key-value pairs (same shape as sync version).
     """
     mode = METADATA_EXTRACTION_MODE.lower()
-
-    # Silent backward-compat mapping: "ollama" → "local" (pure rename).
-    if mode == "ollama":
-        mode = "local"
 
     if mode == "disabled":
         return _extract_disabled()

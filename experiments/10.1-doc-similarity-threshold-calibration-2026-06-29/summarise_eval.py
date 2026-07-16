@@ -109,9 +109,10 @@ def _pass_criteria(
             f"FP rate={optimal_fp_rate:.1%}. No change needed."
         )
     elif not fp_pass and default_fp_pass:
+        fp_desc = f"{optimal_fp_rate:.1%}" if optimal_fp_rate is not None else "N/A (no edges)"
         recommendation = (
             f"Optimal modularity at {optimal_threshold:.2f} but FP rate too high "
-            f"({optimal_fp_rate:.1%} ≥ 20%). Current default (0.85) is acceptable "
+            f"({fp_desc} ≥ 20% or unrated). Current default (0.85) is acceptable "
             f"with FP rate {default_fp_rate:.1%}. No change."
         )
     elif default_within_10pct and default_fp_pass:

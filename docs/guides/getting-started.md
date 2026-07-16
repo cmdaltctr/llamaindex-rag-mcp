@@ -59,7 +59,7 @@ See [Reranker](reranker.md) for details.
 
 ## Alternative providers
 
-Ollama is the default, but you can also use [llama.cpp](https://github.com/ggml-org/llama.cpp) for raw performance or [OpenRouter](https://openrouter.ai) for cloud embeddings. See [Providers](providers.md) for setup instructions.
+llama.cpp is the default, but you can also use [Ollama](https://ollama.com) for convenience or [OpenRouter](https://openrouter.ai) for cloud embeddings. See [Providers](providers.md) for setup instructions.
 
 For rare terms, citations, error codes, and exact identifiers, try opt-in hybrid retrieval:
 

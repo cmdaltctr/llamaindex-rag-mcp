@@ -37,8 +37,8 @@ def _get_float_env(name: str, default: float) -> float:
         raise ValueError(f"{name} must be a number, got: {raw!r}") from None
 
 # ── Provider registries ────────────────────────────────────────────────
-# Config-based provider selection.  Adding a new provider = one dict entry.
-# No if/elif changes needed in consuming modules.
+# Two-tier provider selection: category (local|cloud) + sub-provider.
+# Adding a new provider = one dict entry. No if/elif changes needed.
 
 from typing import Any, TypedDict
 
@@ -54,16 +54,8 @@ class _ProviderConfig(TypedDict):
     extra_dep: str
 
 
-EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
-    "ollama": {
-        "module": "llama_index.embeddings.ollama",
-        "cls": "OllamaEmbedding",
-        "required_env": {"EMBED_MODEL": "model_name", "OLLAMA_BASE_URL": "base_url"},
-        "optional_env": {"EMBED_BATCH_SIZE": "embed_batch_size"},
-        "default_env": {},
-        "static_params": {},
-        "extra_dep": "llama-index-embeddings-ollama",
-    },
+# ── Embedding provider registries ──────────────────────────────────────
+LOCAL_EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
     "llamacpp": {
         "module": "llama_index.embeddings.openai",
         "cls": "OpenAIEmbedding",
@@ -73,6 +65,18 @@ EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
         "static_params": {"api_key": "no-key"},
         "extra_dep": "llama-index-embeddings-openai",
     },
+    "ollama": {
+        "module": "llama_index.embeddings.ollama",
+        "cls": "OllamaEmbedding",
+        "required_env": {"EMBED_MODEL": "model_name", "OLLAMA_BASE_URL": "base_url"},
+        "optional_env": {"EMBED_BATCH_SIZE": "embed_batch_size"},
+        "default_env": {},
+        "static_params": {},
+        "extra_dep": "llama-index-embeddings-ollama",
+    },
+}
+
+CLOUD_EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
     "openrouter": {
         "module": "llama_index.embeddings.openai",
         "cls": "OpenAIEmbedding",
@@ -87,16 +91,8 @@ EMBED_PROVIDERS: dict[str, _ProviderConfig] = {
     },
 }
 
-LLM_PROVIDERS: dict[str, _ProviderConfig] = {
-    "ollama": {
-        "module": "llama_index.llms.ollama",
-        "cls": "Ollama",
-        "required_env": {"OLLAMA_CLASSIFY_MODEL": "model", "OLLAMA_BASE_URL": "base_url"},
-        "optional_env": {},
-        "default_env": {},
-        "static_params": {"request_timeout": 180.0},
-        "extra_dep": "llama-index-llms-ollama",
-    },
+# ── LLM provider registries (for metadata extraction) ──────────────────
+LOCAL_LLM_PROVIDERS: dict[str, _ProviderConfig] = {
     "llamacpp": {
         "module": "llama_index.llms.openai_like",
         "cls": "OpenAILike",
@@ -106,6 +102,18 @@ LLM_PROVIDERS: dict[str, _ProviderConfig] = {
         "static_params": {"api_key": "no-key", "request_timeout": 180.0},
         "extra_dep": "llama-index-llms-openai-like",
     },
+    "ollama": {
+        "module": "llama_index.llms.ollama",
+        "cls": "Ollama",
+        "required_env": {"OLLAMA_CLASSIFY_MODEL": "model", "OLLAMA_BASE_URL": "base_url"},
+        "optional_env": {},
+        "default_env": {},
+        "static_params": {"request_timeout": 180.0},
+        "extra_dep": "llama-index-llms-ollama",
+    },
+}
+
+CLOUD_LLM_PROVIDERS: dict[str, _ProviderConfig] = {
     "openrouter": {
         "module": "llama_index.llms.openai_like",
         "cls": "OpenAILike",
@@ -123,13 +131,59 @@ LLM_PROVIDERS: dict[str, _ProviderConfig] = {
     },
 }
 
+# Category → registry mapping for embeddings.
+_EMBED_REGISTRIES: dict[str, dict[str, _ProviderConfig]] = {
+    "local": LOCAL_EMBED_PROVIDERS,
+    "cloud": CLOUD_EMBED_PROVIDERS,
+}
 
-def _build_provider(registry: dict[str, _ProviderConfig], provider_name: str) -> Any:
-    """Resolve a provider from the registry, dynamic-import, and instantiate.
+# Category → registry mapping for LLMs.
+_LLM_REGISTRIES: dict[str, dict[str, _ProviderConfig]] = {
+    "local": LOCAL_LLM_PROVIDERS,
+    "cloud": CLOUD_LLM_PROVIDERS,
+}
+
+
+def _resolve_optional_env(entry: _ProviderConfig) -> dict[str, Any]:
+    """Resolve optional env vars into constructor params.
 
     Args:
-        registry: The provider registry dict (EMBED_PROVIDERS or LLM_PROVIDERS).
-        provider_name: Provider key to look up.
+        entry: Provider registry entry.
+
+    Returns:
+        Dict of param name → value for env vars that are set.
+    """
+    result: dict[str, Any] = {}
+    for env_name, param_name in entry["optional_env"].items():
+        value = os.getenv(env_name)
+        if value is not None:
+            result[param_name] = int(value) if env_name == "EMBED_BATCH_SIZE" else value
+    return result
+
+
+def _resolve_default_env(entry: _ProviderConfig) -> dict[str, Any]:
+    """Resolve env vars with module-level defaults into constructor params.
+
+    Args:
+        entry: Provider registry entry.
+
+    Returns:
+        Dict of param name → value (env value or module-level constant).
+    """
+    result: dict[str, Any] = {}
+    for env_name, param_name in entry.get("default_env", {}).items():
+        value = os.getenv(env_name)
+        result[param_name] = value if value else globals().get(env_name, "")
+    return result
+
+
+def _build_provider(category: str, sub_provider: str, registry_type: str) -> Any:
+    """Resolve a provider from the nested registries, dynamic-import, and instantiate.
+
+    Args:
+        category: Provider category — "local" or "cloud".
+        sub_provider: Sub-provider name (e.g. "llamacpp", "ollama", "openrouter").
+        registry_type: "embed" or "llm" — selects which registry set to use.
 
     Returns:
         Instantiated provider object.
@@ -140,91 +194,84 @@ def _build_provider(registry: dict[str, _ProviderConfig], provider_name: str) ->
     """
     import importlib
 
-    entry = registry.get(provider_name)
-    if entry is None:
-        raise ValueError(f"Unknown provider: {provider_name!r}")
+    registries = _EMBED_REGISTRIES if registry_type == "embed" else _LLM_REGISTRIES
+    registry = registries.get(category)
+    if registry is None:
+        raise ValueError(f"Unknown provider category: {category!r}")
 
-    # Resolve required env vars → constructor params.
+    entry = registry.get(sub_provider)
+    if entry is None:
+        raise ValueError(f"Unknown {category} sub-provider: {sub_provider!r}")
+
+    # Resolve env vars → constructor params.
     params: dict[str, Any] = dict(entry["static_params"])
     for env_name, param_name in entry["required_env"].items():
         value = os.getenv(env_name)
         if not value:
             raise ValueError(
                 f"{env_name} environment variable is required for "
-                f"provider {provider_name!r}."
+                f"provider {sub_provider!r}."
             )
         params[param_name] = value
 
-    # Resolve optional env vars → constructor params.
-    for env_name, param_name in entry["optional_env"].items():
-        value = os.getenv(env_name)
-        if value is not None:
-            params[param_name] = int(value) if env_name == "EMBED_BATCH_SIZE" else value
-
-    # Resolve env vars with defaults → constructor params.
-    for env_name, param_name in entry.get("default_env", {}).items():
-        value = os.getenv(env_name)
-        if value:
-            params[param_name] = value
-        else:
-            # Fall back to module-level constant if available.
-            params[param_name] = globals().get(env_name, "")
+    params.update(_resolve_optional_env(entry))
+    params.update(_resolve_default_env(entry))
 
     # Dynamic import + instantiate.
     try:
         mod = importlib.import_module(entry["module"])
     except ImportError as exc:
         raise ImportError(
-            f"Provider {provider_name!r} requires {entry['extra_dep']}. "
-            f"Install it with:  uv sync --extra {provider_name}"
+            f"Provider {sub_provider!r} requires {entry['extra_dep']}. "
+            f"Install it with:  uv sync --extra {sub_provider}"
         ) from exc
 
     cls = getattr(mod, entry["cls"])
     return cls(**params)
 
 
-# ── Embedding provider selection ────────────────────────────────────────
-# Replaces the old INFERENCE_BACKEND single-knob.  EMBED_PROVIDER controls
-# embeddings only; METADATA_LLM_PROVIDER controls metadata extraction LLM.
-_legacy_backend = os.getenv("INFERENCE_BACKEND")
-_embed_provider_env = os.getenv("EMBED_PROVIDER")
+# ── Provider category selection ────────────────────────────────────────
+# EMBED_PROVIDER: local|cloud (default: local)
+# METADATA_LLM_PROVIDER: local|cloud (default: local — safe, free)
+# LOCAL_BACKEND: llamacpp|ollama (default: llamacpp)
+# CLOUD_BACKEND: openrouter (default: openrouter)
+EMBED_PROVIDER = os.getenv("EMBED_PROVIDER", "local").lower()
 
-if _embed_provider_env:
-    EMBED_PROVIDER = _embed_provider_env.lower()
-    if _legacy_backend:
-        logger.warning(
-            "Both EMBED_PROVIDER and INFERENCE_BACKEND are set — "
-            "EMBED_PROVIDER takes precedence. Remove INFERENCE_BACKEND "
-            "from your .env to silence this warning."
-        )
-elif _legacy_backend:
-    EMBED_PROVIDER = _legacy_backend.lower()
+if EMBED_PROVIDER not in ("local", "cloud"):
     logger.warning(
-        "INFERENCE_BACKEND is deprecated — use EMBED_PROVIDER instead. "
-        "Update your .env:  INFERENCE_BACKEND → EMBED_PROVIDER"
-    )
-else:
-    EMBED_PROVIDER = "ollama"
-
-if EMBED_PROVIDER not in EMBED_PROVIDERS:
-    logger.warning(
-        "Unknown EMBED_PROVIDER=%r; falling back to ollama",
+        "Unknown EMBED_PROVIDER=%r; falling back to local",
         EMBED_PROVIDER,
     )
-    EMBED_PROVIDER = "ollama"
+    EMBED_PROVIDER = "local"
 
-# ── Metadata LLM provider selection ─────────────────────────────────────
-# Defaults to "ollama" (safe, local, free) — does NOT inherit EMBED_PROVIDER.
-# This prevents surprising cloud API costs when a user sets
-# EMBED_PROVIDER=openrouter without explicitly opting into cloud LLM.
-METADATA_LLM_PROVIDER = os.getenv("METADATA_LLM_PROVIDER", "ollama").lower()
+METADATA_LLM_PROVIDER = os.getenv("METADATA_LLM_PROVIDER", "local").lower()
 
-if METADATA_LLM_PROVIDER not in LLM_PROVIDERS:
+if METADATA_LLM_PROVIDER not in ("local", "cloud"):
     logger.warning(
-        "Unknown METADATA_LLM_PROVIDER=%r; falling back to ollama",
+        "Unknown METADATA_LLM_PROVIDER=%r; falling back to local",
         METADATA_LLM_PROVIDER,
     )
-    METADATA_LLM_PROVIDER = "ollama"
+    METADATA_LLM_PROVIDER = "local"
+
+_LOCAL_SUB_PROVIDERS = set(LOCAL_EMBED_PROVIDERS) | set(LOCAL_LLM_PROVIDERS)
+LOCAL_BACKEND = os.getenv("LOCAL_BACKEND", "llamacpp").lower()
+
+if LOCAL_BACKEND not in _LOCAL_SUB_PROVIDERS:
+    logger.warning(
+        "Unknown LOCAL_BACKEND=%r; falling back to llamacpp",
+        LOCAL_BACKEND,
+    )
+    LOCAL_BACKEND = "llamacpp"
+
+_CLOUD_SUB_PROVIDERS = set(CLOUD_EMBED_PROVIDERS) | set(CLOUD_LLM_PROVIDERS)
+CLOUD_BACKEND = os.getenv("CLOUD_BACKEND", "openrouter").lower()
+
+if CLOUD_BACKEND not in _CLOUD_SUB_PROVIDERS:
+    logger.warning(
+        "Unknown CLOUD_BACKEND=%r; falling back to openrouter",
+        CLOUD_BACKEND,
+    )
+    CLOUD_BACKEND = "openrouter"
 
 # ── llamacpp backend URLs and models ────────────────────────────────────
 LLAMACPP_EMBED_URL = os.getenv("LLAMACPP_EMBED_URL", "http://localhost:8080/v1")
@@ -238,15 +285,13 @@ OPENROUTER_EMBED_MODEL = os.getenv("OPENROUTER_EMBED_MODEL", "")
 OPENROUTER_LLM_MODEL = os.getenv("OPENROUTER_LLM_MODEL", "")
 
 # ── Embedding model ─────────────────────────────────────────────────────
-# EMBED_MODEL is required only for the ollama provider.  llamacpp and
-# openrouter have their own model env vars (LLAMACPP_EMBED_MODEL,
-# OPENROUTER_EMBED_MODEL).
+# EMBED_MODEL is required only when LOCAL_BACKEND=ollama.
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL_NAME = os.getenv("EMBED_MODEL")
-if EMBED_PROVIDER == "ollama" and not EMBED_MODEL_NAME:
+if EMBED_PROVIDER == "local" and LOCAL_BACKEND == "ollama" and not EMBED_MODEL_NAME:
     raise ValueError(
         "EMBED_MODEL environment variable is required when "
-        "EMBED_PROVIDER=ollama. Set it in a .env file:\n\n"
+        "EMBED_PROVIDER=local and LOCAL_BACKEND=ollama. Set it in a .env file:\n\n"
         "    EMBED_MODEL=qwen3-embedding:8b\n\n"
         "See .env.example for alternatives."
     )
@@ -254,13 +299,8 @@ if EMBED_PROVIDER == "ollama" and not EMBED_MODEL_NAME:
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))
 
 # Build the embedding model from the registry.
-Settings.embed_model = _build_provider(EMBED_PROVIDERS, EMBED_PROVIDER)
-
-# ── Backward compatibility alias ────────────────────────────────────────
-# Existing code and tests that import INFERENCE_BACKEND will get the
-# EMBED_PROVIDER value.  This is a read-only alias — setting it has no
-# effect on provider selection.
-INFERENCE_BACKEND = EMBED_PROVIDER
+_embed_sub = LOCAL_BACKEND if EMBED_PROVIDER == "local" else CLOUD_BACKEND
+Settings.embed_model = _build_provider(EMBED_PROVIDER, _embed_sub, "embed")
 
 # ── Shared paths and collection ─────────────────────────────────────────
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
