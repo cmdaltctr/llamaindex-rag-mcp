@@ -12,6 +12,22 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ---
 
+## Planned Major Refactoring
+
+The codebase is evolving into a **modular, swappable RAG framework** that serves two distinct use cases through one shared core: **document grounding** (facts from papers, reports, financial statements) and **codebase context** (code understanding for AI agents).
+
+**Key changes planned:**
+
+- **Three-layer separation** — declarative config (`config.py`), composition root (`compose.py`), dependency injection throughout. Slims `config.py` from 572 to ~150 lines.
+- **Strategy folders** — `chunking/`, `retrieval/`, `metadata/`, `providers/`. Add a strategy by dropping in one `.py` file and registering it; no editing of large existing modules.
+- **Profiles system** — named presets (`documents`, `codebase`, `hybrid`) bound per-collection, making the dual use cases first-class instead of implicit env-var combinations.
+- **Thin transports** — MCP, CLI, and a future REST API all call the same `core/`. None contains business logic.
+- **Five-phase migration** — each phase independently shippable and revertible via its own OpenSpec change. Backward-compatible re-export shims throughout.
+
+> **⚠️ Timeline:** The refactor targets **v2.0.0**. Until then, v1.x continues with the current flat-module structure. No breaking changes until the deprecation window opens. Existing ChromaDB collections, CLI commands, and MCP tool signatures remain stable.
+
+---
+
 ## MCP Tools
 
 Six tools your AI can call:
