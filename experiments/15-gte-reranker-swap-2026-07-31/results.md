@@ -102,7 +102,9 @@ but still harmful, and its CPU latency (24.6s P95) is impractical.
 **Root cause:** CoreML execution provider doesn't support dynamic sequence lengths
 produced by cross-encoder tokenisation (variable batch padding).
 **Fix:** Default to `CPUExecutionProvider` (`RERANK_ONNX_PROVIDER=cpu`).
-**Impact:** ALL prior reranker experiments (Exp 10, 12) were invalid.
+**Impact:** Post-ADR-021 reranker experiments (Exp 12, 9a-rerun, 13) had
+invalid rerank-on cells. Exp 10 (May 31, pre-ADR-021) was valid — the
+reranker ran on CPU and genuinely degraded quality.
 
 ### Bug 2: max_length exceeds model limit (introduced by this change)
 
@@ -118,5 +120,29 @@ embedding limit.
 - Exp 12: `experiments/12-hybrid-default-promotion-2026-06-29/` (prior hybrid test — reranker cells INVALID)
 - ADR-019: Disable Reranker for Technical Workloads
 - ADR-021: Reranker Inference Optimisation (÷30 threshold scaling)
-- ADR-028: Swap Default Reranker (Proposed → should be Rejected)
+- ADR-028: Swap Default Reranker (Rejected — this experiment)
+- ADR-029: Disable CoreML for Reranker — Silent Fallback Lesson (Accepted)
 - OpenSpec: `openspec/changes/swap-reranker-to-gte-modernbert/`
+
+## Remaining OpenSpec tasks
+
+26 of 35 tasks complete. The 9 remaining tasks and why they are blocked:
+
+| Task | Status | Reason |
+| --- | --- | --- |
+| 2.4 Evaluate on Qasper | Not done | Only FreshStack LangChain evaluated. Qasper corpus requires index preparation (Exp 14 was planned but never run). |
+| 2.8 Record raw logit distributions | Not done | `record_logits.py` timed out — the script used CoreML provider (not yet fixed in the standalone script). Re-run with `RERANK_ONNX_PROVIDER=cpu`. |
+| 3.1 Compare logit std devs | Blocked | Depends on 2.8 (logit data not collected). |
+| 3.2 Run threshold calibration | Moot | Swap rejected — no need to calibrate thresholds for a model we're not adopting. |
+| 3.3 Update `_effective_threshold()` | Moot | Same — recalibration only relevant if gte is adopted. |
+| 3.4 Document recalibration results | Moot | Same. |
+| 7.1 Update AIE-20 subtasks in NiftyPM | Not done | NiftyPM sync not started. Should reflect rejection, not completion. |
+| 7.2 Mark AIE-20 task in NiftyPM | Not done | Same — AIE-20 should be marked as rejected/closed, not completed. |
+| 7.3 Update local JSON | Not done | Same. |
+
+**Recommendation:** Close the OpenSpec change as rejected. Sections 3
+(threshold recalibration) and 7 (NiftyPM sync) are moot — there is no
+point calibrating thresholds or marking AIE-20 as complete for a swap
+that the experiment rejected. If a future experiment tests gte on a
+semantic-heavy corpus and finds improvement, a new OpenSpec change
+should be created fresh.

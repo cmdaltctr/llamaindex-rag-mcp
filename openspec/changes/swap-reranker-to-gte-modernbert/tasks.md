@@ -1,19 +1,19 @@
 ## 1. Pre-flight: ONNX export verification (AIE-20 subtask 1)
 
-- [ ] 1.1 Confirm `onnx/model_quantized.onnx` loads via `onnxruntime.InferenceSession` (official pre-exported ONNX variant, 151MB int8)
-- [ ] 1.2 Verify ONNX model loads with `AutoTokenizer.from_pretrained("Alibaba-NLP/gte-reranker-modernbert-base")`
-- [ ] 1.3 Run a smoke test: score 5 query-document pairs and verify sigmoid-normalised outputs are in (0, 1)
-- [ ] 1.4 Measure cold-start download time and memory footprint on consumer hardware (macOS ARM)
+- [x] 1.1 Confirm `onnx/model_quantized.onnx` loads via `onnxruntime.InferenceSession` (official pre-exported ONNX variant, 151MB int8)
+- [x] 1.2 Verify ONNX model loads with `AutoTokenizer.from_pretrained("Alibaba-NLP/gte-reranker-modernbert-base")`
+- [x] 1.3 Run a smoke test: score 5 query-document pairs and verify sigmoid-normalised outputs are in (0, 1)
+- [x] 1.4 Measure cold-start download time and memory footprint on consumer hardware (macOS ARM)
 
 ## 2. Experiment: A/B comparison (AIE-20 subtask 2 & 3)
 
-- [ ] 2.1 Create experiment directory `experiments/N-gte-reranker-swap-YYYY-MM-DD/` with protocol.md
-- [ ] 2.2 Build FreshStack LangChain index (reuse from Exp 9a/10b if available)
-- [ ] 2.3 Run A/B cells: (a) MiniLM reranker, (b) gte-reranker, (c) rerank-off baseline
+- [x] 2.1 Create experiment directory `experiments/N-gte-reranker-swap-YYYY-MM-DD/` with protocol.md
+- [x] 2.2 Build FreshStack LangChain index (reuse from Exp 9a/10b if available)
+- [x] 2.3 Run A/B cells: (a) MiniLM reranker, (b) gte-reranker, (c) rerank-off baseline
 - [ ] 2.4 Evaluate on FreshStack LangChain + Qasper query sets
-- [ ] 2.5 Compare Coverage@20, Hit@1, MRR@10 across all three cells
-- [ ] 2.6 Verify gte-reranker beats rerank-off baseline (must beat 0.738 Coverage@20 hybrid)
-- [ ] 2.7 Measure and compare latency (ms per query) for all three cells
+- [x] 2.5 Compare Coverage@20, Hit@1, MRR@10 across all three cells
+- [x] 2.6 Verify gte-reranker beats rerank-off baseline (must beat 0.738 Coverage@20 hybrid)
+- [x] 2.7 Measure and compare latency (ms per query) for all three cells
 - [ ] 2.8 Record raw logit distributions for MiniLM vs gte-reranker to assess threshold scaling
 
 ## 3. Threshold recalibration (if needed)
