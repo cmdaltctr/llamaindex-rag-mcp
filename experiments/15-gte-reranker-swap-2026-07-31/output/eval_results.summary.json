@@ -1,0 +1,151 @@
+{
+  "experiment": "15-gte-reranker-swap-2026-07-31",
+  "metrics_by_cell": {
+    "hybrid_off": {
+      "all": {
+        "n": 30,
+        "coverage_at_20": 0.585556,
+        "recall_at_50": 0.198509,
+        "alpha_ndcg_at_10": 0.339637,
+        "hit_at_1": 0.3,
+        "hit_at_5": 0.6,
+        "hit_at_10": 0.733333,
+        "mrr_at_10": 0.445648,
+        "mean_latency_ms": 5686.61,
+        "p95_latency_ms": 39169.09,
+        "reranker_model": "N/A"
+      },
+      "identifier-heavy": {
+        "n": 29,
+        "coverage_at_20": 0.605747,
+        "recall_at_50": 0.205355,
+        "alpha_ndcg_at_10": 0.351348,
+        "hit_at_1": 0.310345,
+        "hit_at_5": 0.62069,
+        "hit_at_10": 0.758621,
+        "mrr_at_10": 0.461015,
+        "mean_latency_ms": 5875.25,
+        "p95_latency_ms": 39236.13
+      },
+      "semantic": {
+        "n": 1,
+        "coverage_at_20": 0.0,
+        "recall_at_50": 0.0,
+        "alpha_ndcg_at_10": 0.0,
+        "hit_at_1": 0.0,
+        "hit_at_5": 0.0,
+        "hit_at_10": 0.0,
+        "mrr_at_10": 0.0,
+        "mean_latency_ms": 215.86,
+        "p95_latency_ms": 215.86
+      }
+    },
+    "hybrid_minilm": {
+      "all": {
+        "n": 30,
+        "coverage_at_20": 0.382778,
+        "recall_at_50": 0.132197,
+        "alpha_ndcg_at_10": 0.188063,
+        "hit_at_1": 0.1,
+        "hit_at_5": 0.433333,
+        "hit_at_10": 0.533333,
+        "mrr_at_10": 0.221984,
+        "mean_latency_ms": 3379.46,
+        "p95_latency_ms": 5015.09,
+        "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+      },
+      "identifier-heavy": {
+        "n": 29,
+        "coverage_at_20": 0.395977,
+        "recall_at_50": 0.136756,
+        "alpha_ndcg_at_10": 0.194548,
+        "hit_at_1": 0.103448,
+        "hit_at_5": 0.448276,
+        "hit_at_10": 0.551724,
+        "mrr_at_10": 0.229639,
+        "mean_latency_ms": 3408.55,
+        "p95_latency_ms": 5052.39
+      },
+      "semantic": {
+        "n": 1,
+        "coverage_at_20": 0.0,
+        "recall_at_50": 0.0,
+        "alpha_ndcg_at_10": 0.0,
+        "hit_at_1": 0.0,
+        "hit_at_5": 0.0,
+        "hit_at_10": 0.0,
+        "mrr_at_10": 0.0,
+        "mean_latency_ms": 2536.05,
+        "p95_latency_ms": 2536.05
+      }
+    },
+    "hybrid_gte": {
+      "all": {
+        "n": 30,
+        "coverage_at_20": 0.424444,
+        "recall_at_50": 0.080354,
+        "alpha_ndcg_at_10": 0.193269,
+        "hit_at_1": 0.133333,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.5,
+        "mrr_at_10": 0.233003,
+        "mean_latency_ms": 21218.92,
+        "p95_latency_ms": 24579.99,
+        "reranker_model": "Alibaba-NLP/gte-reranker-modernbert-base"
+      },
+      "identifier-heavy": {
+        "n": 29,
+        "coverage_at_20": 0.404598,
+        "recall_at_50": 0.076228,
+        "alpha_ndcg_at_10": 0.171169,
+        "hit_at_1": 0.103448,
+        "hit_at_5": 0.310345,
+        "hit_at_10": 0.482759,
+        "mrr_at_10": 0.206554,
+        "mean_latency_ms": 21270.05,
+        "p95_latency_ms": 24585.13
+      },
+      "semantic": {
+        "n": 1,
+        "coverage_at_20": 1.0,
+        "recall_at_50": 0.2,
+        "alpha_ndcg_at_10": 0.834146,
+        "hit_at_1": 1.0,
+        "hit_at_5": 1.0,
+        "hit_at_10": 1.0,
+        "mrr_at_10": 1.0,
+        "mean_latency_ms": 19736.14,
+        "p95_latency_ms": 19736.14
+      }
+    }
+  },
+  "pass_criteria": {
+    "gte_beats_baseline_0_738": {
+      "value": 0.424444,
+      "threshold": 0.738,
+      "pass": false
+    },
+    "gte_beats_rerank_off": {
+      "value": 0.424444,
+      "baseline": 0.585556,
+      "pass": false
+    },
+    "gte_beats_minilm": {
+      "value": 0.424444,
+      "minilm": 0.382778,
+      "pass": true
+    },
+    "coverage_lift_3pp": {
+      "value": -0.161112,
+      "threshold": 0.03,
+      "pass": false
+    },
+    "latency_guardrail_3x": {
+      "value": 0.627535,
+      "threshold": 3.0,
+      "pass": true
+    },
+    "all_gates_pass": false,
+    "recommendation": "REJECT — gte does not beat rerank-off baseline. Document negative result."
+  }
+}

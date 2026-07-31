@@ -37,9 +37,9 @@ The reranker runs entirely through ONNX Runtime — no PyTorch at runtime. The s
 
 ### Decision 2: ONNX variant selection strategy
 
-**Rationale**: `gte-reranker-modernbert-base` does not ship pre-exported ARM-quantised ONNX variants like MiniLM does. The design uses `optimum` CLI to export ONNX at first use if no pre-built ONNX is available on the Hub, or downloads a community-exported ONNX if available. Falls back to fp32 ONNX if quantisation is not available.
+**Rationale**: The official HF repo ships eight pre-exported ONNX variants for this model (uploaded by thenlper, 2025-01): `onnx/model.onnx` (599MB fp32), `model_fp16.onnx` (300MB), `model_int8.onnx` (151MB), `model_quantized.onnx` (151MB), `model_q4.onnx`, `model_q4f16.onnx`, `model_uint8.onnx`, and `model_bnb4.onnx`. No `optimum` export is needed. The model-specific ARM-tuned variant (`model_qint8_arm64.onnx`) that MiniLM ships does not exist, but `model_quantized.onnx` and `model_int8.onnx` are standard ONNX quantised graphs that work cross-platform including ARM64 via `onnxruntime`.
 
-**Approach**: Update `_select_onnx_variant()` to check for model-specific ONNX paths. For `gte-reranker-modernbert-base`, look for `onnx/model.onnx` (fp32). If ARM quantisation is desired later, it can be added as a community contribution or via `optimum` export.
+**Approach**: Update `_select_onnx_variant()` to be model-aware. For `gte-reranker-modernbert-base`, prefer `onnx/model_quantized.onnx` (151MB int8) on all platforms. This keeps memory footprint reasonable while retaining full precision in the quantised graph. Fall back to `onnx/model_int8.onnx` if quantized unavailable, `onnx/model_fp16.onnx` (300MB) as second fallback, and `onnx/model.onnx` (599MB fp32) as last resort. The existing `onnx/model_qint8_arm64.onnx` path for MiniLM is preserved when `RERANK_MODEL` points to the old model.
 
 ### Decision 3: Tokenizer max_length cap at 2048
 
@@ -53,8 +53,8 @@ The reranker runs entirely through ONNX Runtime — no PyTorch at runtime. The s
 
 ## Risks / Trade-offs
 
-- **[Larger model download (~300MB vs ~23MB)]** → First-use latency increases. Mitigation: log download progress, cache locally. Acceptable trade-off for quality improvement.
+- **[Larger model download (~151MB int8 quantised vs ~23MB current)]** → First-use download is ~7× larger with the quantised ONNX variant. Mitigation: log download progress, cache locally on first use. Acceptable trade-off for quality improvement.
 - **[Threshold scaling may not transfer]** → ÷30 factor calibrated for MiniLM. Mitigation: Experiment measures logit distribution; recalibrate if needed before adoption.
-- **[No ARM-quantised ONNX variant]** → Larger memory footprint on Apple Silicon (fp32 vs QInt8). Mitigation: Monitor memory usage; consider community ONNX quantisation or `optimum` export if memory is a concern.
+- **[No ARM-tuned ONNX variant (`qint8_arm64`)]** → The model ships standard int8 quantised ONNX variants (`model_quantized.onnx`, 151MB) that work cross-platform including ARM64, but lacks the ARM-optimised `qint8_arm64` flavour that MiniLM ships. Mitigation: prefer `model_quantized.onnx` (standard int8); monitor memory usage on first run; if memory pressure occurs, the fp16 variant (300MB) or q4 variants are available as fallback.
 - **[ModernBERT tokenizer differences]** → Tokenization behaviour may differ from BERT-family. Mitigation: Experiment includes tokenization sanity checks on technical queries.
 - **[Experiment may not confirm improvement]** → If A/B shows no improvement or regression on our specific corpora, the swap is not adopted. Mitigation: Proposal is conditional on experiment results.

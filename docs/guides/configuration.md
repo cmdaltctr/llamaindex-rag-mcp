@@ -129,13 +129,14 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 
 ### Reranker policy
 
-| Env var                       | Default | `.env.example` | Config constant               | Purpose                              |
-| ----------------------------- | ------- | -------------- | ----------------------------- | ------------------------------------ |
-| `RERANK_ENABLED`              | `false` | `false`        | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
-| `RERANK_ENABLED_FOR_SEMANTIC` | `true`  | `true`         | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
-| `HARD_TECHNICAL_THRESHOLD`    | `0.3`   | `0.3`          | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
-| `RERANK_FETCH_MULTIPLIER`     | `3`     | `3`            | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
-| `RERANK_MAX_FETCH`            | `100`   | `100`          | `RERANK_MAX_FETCH`            | Max candidate pool size              |
+| Env var                       | Default                                  | `.env.example`                            | Config constant               | Purpose                              |
+| ----------------------------- | ---------------------------------------- | ----------------------------------------- | ----------------------------- | ------------------------------------ |
+| `RERANK_MODEL`                | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `RERANK_MODEL` (in reranker.py) | HuggingFace model ID              |
+| `RERANK_ENABLED`              | `false`                                  | `false`                                   | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
+| `RERANK_ENABLED_FOR_SEMANTIC` | `true`                                   | `true`                                    | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
+| `HARD_TECHNICAL_THRESHOLD`    | `0.3`                                    | `0.3`                                     | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
+| `RERANK_FETCH_MULTIPLIER`     | `3`                                      | `3`                                       | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
+| `RERANK_MAX_FETCH`            | `100`                                    | `100`                                     | `RERANK_MAX_FETCH`            | Max candidate pool size              |
 
 ### PDF reader
 

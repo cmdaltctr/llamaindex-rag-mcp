@@ -55,6 +55,8 @@ rag-mcp search "machine learning" --rerank --threshold 0.3
 
 The first time you call `search_documents` with `rerank=True`, the ~23 MB quantised ONNX model downloads from HuggingFace Hub and caches in `~/.cache/huggingface/`. On macOS ARM64, the `model_qint8_arm64.onnx` variant is used automatically. Subsequent calls use the cached model — it's a singleton, loaded once and reused across all calls.
 
+> **Note:** CoreML is disabled by default (ADR-029) — it doesn't support the dynamic sequence lengths that cross-encoder tokenisation produces. CPU-only inference is used instead. Override with `RERANK_ONNX_PROVIDER=coreml` to experiment.
+
 ## When to use
 
 | Scenario | Recommendation |
