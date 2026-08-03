@@ -112,8 +112,20 @@ def _detect_native_sparse_capability() -> bool:
     sparse retrieval is not available for the local embedded path.  Returning
     ``False`` keeps the v1 default on BM25 and makes ``native`` fall back with
     a warning.
+
+    The check is runtime-dynamic (not a hardcoded ``False``) so it will
+    automatically return ``True`` when a future ChromaDB release adds
+    native sparse query support to ``PersistentClient``.
     """
-    return False
+    try:
+        import chromadb
+
+        # PersistentClient (local embedded mode) does not expose native
+        # sparse retrieval in current ChromaDB versions.  Check for the
+        # query_sparse method that would indicate native sparse support.
+        return hasattr(chromadb.PersistentClient, "query_sparse")
+    except Exception:
+        return False
 
 
 class BM25SparseRetriever:
