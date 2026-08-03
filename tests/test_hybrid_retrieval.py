@@ -270,14 +270,15 @@ def test_remove_collection_generation_invalidates_cache() -> None:
 def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     """The dense-only default must remain byte-for-byte compatible."""
     import chromadb
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "documents",
         [{"id": "dense", "text": "dense text", "metadata": {"file_path": "dense.txt"}, "distance": 1.0}],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
 
     implicit = retrieval.search("query", top_k=1, rerank=False)
     explicit = retrieval.search("query", top_k=1, rerank=False, hybrid=False)
@@ -289,7 +290,8 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     """Hybrid + rerank must feed the reranker the fused dense+sparse pool."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
 
     dense_rows = [
@@ -298,7 +300,7 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     ]
     collection = FakeCollection("documents", dense_rows)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
     monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
 
@@ -324,7 +326,8 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     """MCP/CLI public result shape should not leak internal fusion fields."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "documents",
@@ -334,7 +337,7 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
         ],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
     monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
 
@@ -353,14 +356,15 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     """Experiment 9 can opt into fusion rank diagnostics explicitly."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "documents",
         [{"id": "target", "text": "Colosseum exact identifier", "metadata": {"file_path": "target.txt"}, "distance": 5.0}],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config, "RERANK_MAX_FETCH", 1)
     monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 1)
 
@@ -381,7 +385,8 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     """Native sparse mixed coverage should warn once with remediation text."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "mixed_native",
@@ -391,7 +396,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
         ],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "native")
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
     if hasattr(retrieval, "_warned_collections"):
@@ -416,7 +421,8 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     """Native coverage checks must respect CHROMA_SCAN_PAGE_SIZE paging."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     rows = [
         {"id": "with_sparse", "text": "has sparse", "metadata": {"file_path": "a.txt", "has_sparse_vector": True}},
@@ -426,7 +432,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     collection = FakeCollection("paged_native", rows)
     monkeypatch.setattr(config, "CHROMA_SCAN_PAGE_SIZE", 1)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
     retrieval._warned_collections.clear()
     retrieval._warned_native_fallback_collections.clear()
@@ -442,7 +448,8 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     """Selected native without real query support must use BM25 sparse results."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "native_fallback",
@@ -454,7 +461,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
     monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"native_fallback": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
     retrieval._warned_native_fallback_collections.clear()
 
@@ -475,7 +482,8 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
 def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> None:
     """BM25 indexes all chunks it sees and must not warn about sparse coverage."""
     import chromadb
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "bm25_no_warn",
@@ -485,7 +493,7 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
         ],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"bm25_no_warn": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "bm25")
 
     with caplog.at_level(logging.WARNING):
@@ -541,7 +549,8 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     """Dense top_k can miss the exact Colosseum chunk; hybrid recovers it."""
     import chromadb
     import rag_mcp.config as config
-    import rag_mcp.retrieval as retrieval
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
 
     collection = FakeCollection(
         "colosseum_regression",
@@ -551,7 +560,7 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
         ],
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"colosseum_regression": collection}))
-    monkeypatch.setattr(retrieval, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
     monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
 

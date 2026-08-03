@@ -23,7 +23,7 @@ from rag_mcp.cli import (
     _make_plain_callback,
     app,
 )
-from rag_mcp.reranker import CrossEncoderReranker
+from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
 runner = CliRunner()
 

@@ -33,16 +33,16 @@
 
 ## 4. Retrieval subpackage grouping
 
-- [ ] 4.1 Create `core/retrieval/` skeleton
-- [ ] 4.2 Move dense vector search to `core/retrieval/dense.py`
-- [ ] 4.3 Move BM25 sparse retrieval from `sparse_retriever.py` to `core/retrieval/sparse.py`
-- [ ] 4.4 Move Reciprocal Rank Fusion to `core/retrieval/fusion.py`
-- [ ] 4.5 Move `search()` orchestration to `core/retrieval/pipeline.py` (dense + sparse + RRF + rerank policy)
-- [ ] 4.6 Move the `HARD_TECHNICAL_THRESHOLD = 0.3` ÷30 rerank threshold policy to `core/retrieval/policy.py` — numerically identical, no recalibration
-- [ ] 4.7 Move the CrossEncoder reranker unchanged to `core/retrieval/reranker.py`, preserving the `__new__` singleton, module-level `RERANK_MODEL`, and independent `load_dotenv()` (gotcha #4 — DI conversion is Phase 2)
-- [ ] 4.8 Convert `retrieval.py`, `sparse_retriever.py`, and `reranker.py` to compat shims with `DeprecationWarning`
-- [ ] 4.9 Verify tests resetting `CrossEncoderReranker._instance = None` still pass unmodified (the shim re-exports the same class object)
-- [ ] 4.10 Run `uv run pytest -m "not slow"` — must be green before continuing
+- [x] 4.1 Create `core/retrieval/` skeleton
+- [x] 4.2 Move dense vector search to `core/retrieval/dense.py`
+- [x] 4.3 Move BM25 sparse retrieval from `sparse_retriever.py` to `core/retrieval/sparse.py`
+- [x] 4.4 Move Reciprocal Rank Fusion to `core/retrieval/fusion.py`
+- [x] 4.5 Move `search()` orchestration to `core/retrieval/pipeline.py` (dense + sparse + RRF + rerank policy)
+- [x] 4.6 Move the `HARD_TECHNICAL_THRESHOLD = 0.3` ÷30 rerank threshold policy to `core/retrieval/policy.py` — numerically identical, no recalibration
+- [x] 4.7 Move the CrossEncoder reranker unchanged to `core/retrieval/reranker.py`, preserving the `__new__` singleton, module-level `RERANK_MODEL`, and independent `load_dotenv()` (gotcha #4 — DI conversion is Phase 2)
+- [x] 4.8 Convert `retrieval.py`, `sparse_retriever.py`, and `reranker.py` to compat shims with `DeprecationWarning`
+- [x] 4.9 Verify tests resetting `CrossEncoderReranker._instance = None` still pass unmodified (the shim re-exports the same class object)
+- [x] 4.10 Run `uv run pytest -m "not slow"` — must be green before continuing
 
 ## 5. Test import migration
 

@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from rag_mcp.reranker import (
+from rag_mcp.core.retrieval.reranker import (
     CrossEncoderReranker,
     TOKENIZER_MAX_LENGTH,
     _select_onnx_variant,
@@ -73,13 +73,13 @@ class TestSelectOnnxVariant:
 
     def test_modernbert_prefers_quantized_on_arm64(self) -> None:
         """ModernBERT models prefer model_quantized.onnx on ARM64."""
-        with patch("rag_mcp.reranker.platform.machine", return_value="arm64"):
+        with patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="arm64"):
             result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
         assert result[0] == "onnx/model_quantized.onnx"
 
     def test_modernbert_prefers_quantized_on_x86(self) -> None:
         """ModernBERT models prefer model_quantized.onnx on x86_64."""
-        with patch("rag_mcp.reranker.platform.machine", return_value="x86_64"):
+        with patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="x86_64"):
             result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
         assert result[0] == "onnx/model_quantized.onnx"
 
@@ -95,31 +95,31 @@ class TestSelectOnnxVariant:
 
     def test_default_model_is_modernbert(self) -> None:
         """Default (no arg) selects ModernBERT variants."""
-        with patch("rag_mcp.reranker.RERANK_MODEL", "Alibaba-NLP/gte-reranker-modernbert-base"):
+        with patch("rag_mcp.core.retrieval.reranker.RERANK_MODEL", "Alibaba-NLP/gte-reranker-modernbert-base"):
             result = _select_onnx_variant()
         assert result[0] == "onnx/model_quantized.onnx"
 
     # ── Legacy MiniLM model ──────────────────────────────────────────
 
-    @patch("rag_mcp.reranker.platform.machine", return_value="arm64")
+    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="arm64")
     def test_minilm_arm64_selects_quantised(self, mock_machine: MagicMock) -> None:
         """MiniLM on ARM64 selects the ARM-tuned quantised variant."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result[0] == "onnx/model_qint8_arm64.onnx"
 
-    @patch("rag_mcp.reranker.platform.machine", return_value="aarch64")
+    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="aarch64")
     def test_minilm_aarch64_selects_quantised(self, mock_machine: MagicMock) -> None:
         """MiniLM on AArch64 selects the ARM-tuned quantised variant."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result[0] == "onnx/model_qint8_arm64.onnx"
 
-    @patch("rag_mcp.reranker.platform.machine", return_value="x86_64")
+    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="x86_64")
     def test_minilm_x86_64_selects_generic(self, mock_machine: MagicMock) -> None:
         """MiniLM on x86_64 falls back to the generic fp32 model."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result == ["onnx/model.onnx"]
 
-    @patch("rag_mcp.reranker.platform.machine", return_value="AMD64")
+    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="AMD64")
     def test_minilm_unknown_platform_selects_generic(self, mock_machine: MagicMock) -> None:
         """MiniLM on unknown platforms falls back to the generic model."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -134,7 +134,7 @@ class TestModuleDocstring:
 
     def test_docstring_references_default_model(self) -> None:
         """Module docstring must reference the default MiniLM model."""
-        import rag_mcp.reranker as reranker_mod
+        import rag_mcp.core.retrieval.reranker as reranker_mod
 
         assert reranker_mod.__doc__ is not None
         assert "ms-marco-MiniLM-L-6-v2" in reranker_mod.__doc__
@@ -497,7 +497,7 @@ class TestCrossEncoderRerankerModelLoading:
         mock_session = MagicMock()
         mock_tokenizer_cls = MagicMock()
 
-        with patch("rag_mcp.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
             with patch(
                 "huggingface_hub.hf_hub_download",
                 return_value="/fake/model.onnx",
