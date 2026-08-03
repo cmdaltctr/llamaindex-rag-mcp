@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
+> **⚠️ Under heavy refactoring (v2.0.0).** The codebase is being restructured into a modular RAG framework across five phases. Phase 1 (subpackage extraction) is complete. Phase 2 (config/core split) is next. Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
+
 A local document search server for AI assistants. Point it at your files — PDFs, Word docs, notes, research papers — and your AI can search them by meaning, not just keywords. Everything runs on your machine by default — no cloud, no API keys, no recurring costs. Cloud providers (OpenRouter) are available as an opt-in alternative.
 
 **What it is:** An [MCP](https://modelcontextprotocol.io) server that gives AI assistants (Claude, GPT, Cursor, and others) the ability to search your documents using natural language.
@@ -12,7 +14,9 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ---
 
-## Planned Major Refactoring
+## Active Refactoring (v2.0.0)
+
+**Progress:** Phase 1 of 5 complete ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)). Phase 2 (config/core split) is next.
 
 The codebase is evolving into a **modular, swappable RAG framework** that serves two distinct use cases through one shared core: **document grounding** (facts from papers, reports, financial statements) and **codebase context** (code understanding for AI agents).
 
