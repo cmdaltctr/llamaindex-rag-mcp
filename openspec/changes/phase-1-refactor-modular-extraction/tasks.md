@@ -55,9 +55,9 @@
 
 ## 6. Acceptance and wrap-up
 
-- [ ] 6.1 Verify every old import path still resolves (spot-check: `from rag_mcp.metadata_extractor import ...`, `from rag_mcp.ingestion import ...`, `from rag_mcp.retrieval import ...`, `from rag_mcp.sparse_retriever import ...`, `from rag_mcp.reranker import ...`) and emits `DeprecationWarning`
-- [ ] 6.2 Verify no file under `core/` exceeds 500 lines
-- [ ] 6.3 Verify all public function signatures, CLI subcommands, and MCP tool signatures are unchanged
-- [ ] 6.4 Run `openspec validate phase-1-refactor-modular-extraction --strict`
-- [ ] 6.5 Run `graphify update .` to refresh the knowledge graph
+- [x] 6.1 Verify every old import path still resolves (spot-check: `from rag_mcp.metadata_extractor import ...`, `from rag_mcp.ingestion import ...`, `from rag_mcp.retrieval import ...`, `from rag_mcp.sparse_retriever import ...`, `from rag_mcp.reranker import ...`) and emits `DeprecationWarning`
+- [x] 6.2 Verify no file under `core/` exceeds 500 lines
+- [x] 6.3 Verify all public function signatures, CLI subcommands, and MCP tool signatures are unchanged
+- [x] 6.4 Run `openspec validate phase-1-refactor-modular-extraction --strict`
+- [x] 6.5 Run `graphify update .` to refresh the knowledge graph
 - [ ] 6.6 Commit with Conventional Commits (`refactor:` — no release) and open PR with `gh pr create --base main`
