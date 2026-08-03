@@ -60,4 +60,5 @@
 - [x] 6.3 Verify all public function signatures, CLI subcommands, and MCP tool signatures are unchanged
 - [x] 6.4 Run `openspec validate phase-1-refactor-modular-extraction --strict`
 - [x] 6.5 Run `graphify update .` to refresh the knowledge graph
-- [ ] 6.6 Commit with Conventional Commits (`refactor:` — no release) and open PR with `gh pr create --base main`
+- [x] 6.6 Commit with Conventional Commits (`refactor:` — no release) and open PR with `gh pr create --base main`
+  - **PR:** https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12
