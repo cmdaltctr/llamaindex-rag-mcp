@@ -25,7 +25,6 @@ from rag_mcp.reranker import (
     _sigmoid,
 )
 
-
 # ── _sigmoid tests ─────────────────────────────────────────────────────────
 
 
