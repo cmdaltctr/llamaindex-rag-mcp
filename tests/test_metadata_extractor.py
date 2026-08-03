@@ -11,12 +11,20 @@ import pytest
 
 
 def _set_mode(monkeypatch, mode: str, keyword_rules: str | None = None):
-    """Helper: monkeypatch metadata_extractor module-level variables."""
-    import rag_mcp.metadata_extractor as _me
+    """Helper: monkeypatch metadata module-level variables.
 
-    monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", mode)
+    After the Phase 1 split, ``METADATA_EXTRACTION_MODE`` lives in
+    ``rag_mcp.core.metadata.extractor`` and ``METADATA_KEYWORD_RULES``
+    lives in ``rag_mcp.core.metadata.keyword``.  The legacy shim
+    re-exports both but monkeypatching the shim's copy does not
+    propagate to the submodule globals the functions actually read.
+    """
+    import rag_mcp.core.metadata.extractor as _ext
+    import rag_mcp.core.metadata.keyword as _kw
+
+    monkeypatch.setattr(_ext, "METADATA_EXTRACTION_MODE", mode)
     if keyword_rules is not None:
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", keyword_rules)
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", keyword_rules)
 
 
 # ── 9.1 Keyword mode tests ──────────────────────────────────────────────────
@@ -207,7 +215,7 @@ class TestLlamaindexStub:
             return {"category": "biology", "keywords": ["protein", "deep_learning"], "summary": "A biology paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.extractor._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -554,10 +562,10 @@ class TestHybridCategoryTaxonomy:
     def test_chromadb_query_failure_falls_back_to_seeds(self, monkeypatch, caplog) -> None:
         """ChromaDB query fails → WARNING log, prompt uses seeds only."""
         import chromadb
-        import rag_mcp.metadata_extractor as _me
+        import rag_mcp.core.metadata.taxonomy as _tax
 
         # Reset the cached client so the patched PersistentClient is used.
-        monkeypatch.setattr(_me, "_chroma_client", None)
+        monkeypatch.setattr(_tax, "_chroma_client", None)
 
         # Make PersistentClient always raise
         monkeypatch.setattr(chromadb, "PersistentClient", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("db locked")))
@@ -736,7 +744,7 @@ class TestLlamaindexExtraction:
             return {"category": "ai", "keywords": ["deep_learning", "neural"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.extractor._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -781,7 +789,7 @@ class TestLlamaindexExtraction:
             return _aggregate_llamaindex_metadata([mock_node])
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
@@ -865,7 +873,7 @@ class TestLlamaindexExtraction:
             return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.extractor._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -911,7 +919,7 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.extractor._extract_ollama_async",
             _failing_ollama,
         )
 
@@ -951,7 +959,7 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.metadata_extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
@@ -1017,16 +1025,16 @@ class TestCoverageGaps:
 
     def test_load_keyword_rules_empty_list(self, monkeypatch) -> None:
         """An empty JSON array must be accepted and returned as-is."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        import rag_mcp.core.metadata.keyword as _kw
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
         from rag_mcp.metadata_extractor import _load_keyword_rules
         result = _load_keyword_rules()
         assert result == []
 
     def test_load_keyword_rules_missing_keys(self, monkeypatch) -> None:
         """Rules missing 'pattern' or 'category' keys must fall back to defaults."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", '[{"pattern": "foo"}]')
+        import rag_mcp.core.metadata.keyword as _kw
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", '[{"pattern": "foo"}]')
         from rag_mcp.metadata_extractor import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
         result = _load_keyword_rules()
         assert result == _DEFAULT_KEYWORD_RULES
@@ -1035,8 +1043,8 @@ class TestCoverageGaps:
 
     def test_extract_keyword_empty_rules(self, monkeypatch) -> None:
         """Empty rules list must return uncategorised immediately."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        import rag_mcp.core.metadata.keyword as _kw
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
         from rag_mcp.metadata_extractor import _extract_keyword
         result = _extract_keyword("transformer attention neural network")
         assert result == {"category": "uncategorised"}
@@ -1045,9 +1053,9 @@ class TestCoverageGaps:
 
     def test_extract_keyword_invalid_regex_skipped(self, monkeypatch, caplog) -> None:
         """A rule with an invalid regex pattern must be skipped with a WARNING."""
-        import rag_mcp.metadata_extractor as _me
+        import rag_mcp.core.metadata.keyword as _kw
         bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", bad_rules)
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", bad_rules)
         from rag_mcp.metadata_extractor import _extract_keyword
         result = _extract_keyword("neural network transformer")
         # The valid rule still fires
@@ -1059,7 +1067,7 @@ class TestCoverageGaps:
     def test_gather_existing_categories_collection_error_skipped(self, monkeypatch) -> None:
         """A collection that raises during get() must be skipped gracefully."""
         from unittest.mock import MagicMock
-        import rag_mcp.metadata_extractor as _me
+        import rag_mcp.core.metadata.taxonomy as _tax
 
         bad_col = MagicMock()
         bad_col.name = "bad_collection"
@@ -1071,7 +1079,7 @@ class TestCoverageGaps:
 
         mock_client = MagicMock()
         mock_client.list_collections.return_value = [bad_col, good_col]
-        monkeypatch.setattr(_me, "_chroma_client", mock_client)
+        monkeypatch.setattr(_tax, "_chroma_client", mock_client)
 
         from rag_mcp.metadata_extractor import _gather_existing_categories
         result = _gather_existing_categories()
@@ -1084,11 +1092,11 @@ class TestCoverageGaps:
         """Categories beyond the first metadata scan page must be discovered."""
         import chromadb
         import rag_mcp.config as _config
-        import rag_mcp.metadata_extractor as _me
+        import rag_mcp.core.metadata.taxonomy as _tax
 
         monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
 
-        db = chromadb.PersistentClient(path=_me.CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_config.CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_categories")
         collection.add(
             ids=["1", "2", "3"],
@@ -1100,23 +1108,24 @@ class TestCoverageGaps:
                 {"category": "philosophy"},
             ],
         )
-        monkeypatch.setattr(_me, "_chroma_client", db)
+        monkeypatch.setattr(_tax, "_chroma_client", db)
 
-        result = _me._gather_existing_categories()
+        result = _tax._gather_existing_categories()
         assert result == ["ai", "biology", "philosophy"]
 
     # ── _build_ollama_prompt: empty merged taxonomy (line 338) ────────────
 
     def test_build_ollama_prompt_empty_merged_taxonomy(self, monkeypatch) -> None:
         """With empty custom rules and empty ChromaDB, prompt uses only uncategorised."""
-        import rag_mcp.metadata_extractor as _me
+        import rag_mcp.core.metadata.keyword as _kw
+        import rag_mcp.core.metadata.taxonomy as _tax
         # Empty custom rules → no seed categories
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", "[]")
+        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
         # Empty ChromaDB → no existing categories
-        monkeypatch.setattr(_me, "_chroma_client", None)
+        monkeypatch.setattr(_tax, "_chroma_client", None)
         mock_client = __import__("unittest.mock", fromlist=["MagicMock"]).MagicMock()
         mock_client.list_collections.return_value = []
-        monkeypatch.setattr(_me, "_chroma_client", mock_client)
+        monkeypatch.setattr(_tax, "_chroma_client", mock_client)
 
         from rag_mcp.metadata_extractor import _build_ollama_prompt
         prompt = _build_ollama_prompt("some document text")
@@ -1224,8 +1233,8 @@ class TestOllamaRetry:
         # Avoid real time.sleep / asyncio.sleep delays in tests.
         async def _noop_sleep(_seconds):
             return None
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "_retry_sleep", _noop_sleep)
+        import rag_mcp.core.metadata.ollama as _ollama
+        monkeypatch.setattr(_ollama, "_retry_sleep", _noop_sleep)
 
     def _mock_async_client(self, monkeypatch, side_effects: list) -> list:
         """Patch httpx.AsyncClient so each ``post`` call consumes one side_effect.
@@ -1325,8 +1334,8 @@ class TestOllamaRetry:
         async def _record_sleep(seconds):
             sleeps.append(seconds)
 
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "_retry_sleep", _record_sleep)
+        import rag_mcp.core.metadata.ollama as _ollama
+        monkeypatch.setattr(_ollama, "_retry_sleep", _record_sleep)
 
         self._mock_async_client(
             monkeypatch,
@@ -1354,8 +1363,8 @@ class TestOllamaRetry:
         async def _record_sleep(seconds):
             sleeps.append(seconds)
 
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "_retry_sleep", _record_sleep)
+        import rag_mcp.core.metadata.ollama as _ollama
+        monkeypatch.setattr(_ollama, "_retry_sleep", _record_sleep)
 
         self._mock_async_client(
             monkeypatch,

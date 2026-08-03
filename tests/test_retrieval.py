@@ -245,9 +245,10 @@ class TestMetadataFiltering:
 
     async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
         from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
@@ -275,9 +276,10 @@ class TestMetadataFiltering:
 
     async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
         from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
@@ -376,9 +378,10 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
         from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search
@@ -425,9 +428,10 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
         from rag_mcp.ingestion import ingest_path_async
         from rag_mcp.retrieval import search

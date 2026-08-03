@@ -1,20 +1,20 @@
 ## 1. Preparation
 
-- [ ] 1.1 Create branch `git switch -c feat/phase-1-refactor-modular-extraction`
-- [ ] 1.2 Run baseline: `uv run pytest -m "not slow" --cov=rag_mcp` and record the pass/coverage numbers as the phase gate reference
-- [ ] 1.3 Grep for hidden cross-imports between `ingestion.py` and `retrieval.py` and between the three target files and their consumers; record findings in the change notes (fix strategy per design D4 — surface, never merge)
+- [x] 1.1 Create branch `git switch -c feat/phase-1-refactor-modular-extraction`
+- [x] 1.2 Run baseline: `uv run pytest -m "not slow" --cov=rag_mcp` and record the pass/coverage numbers as the phase gate reference
+- [x] 1.3 Grep for hidden cross-imports between `ingestion.py` and `retrieval.py` and between the three target files and their consumers; record findings in the change notes (fix strategy per design D4 — surface, never merge)
 
 ## 2. Metadata subpackage extraction
 
-- [ ] 2.1 Create `core/metadata/` skeleton with `__init__.py`
-- [ ] 2.2 Move keyword-regex backend to `core/metadata/keyword.py`
-- [ ] 2.3 Move Ollama LLM backend to `core/metadata/ollama.py`
-- [ ] 2.4 Move LlamaIndex Extractor backend to `core/metadata/llamaindex.py`
-- [ ] 2.5 Move llama.cpp backend to `core/metadata/llamacpp.py`
-- [ ] 2.6 Move hybrid category taxonomy (ADR-013) to `core/metadata/taxonomy.py`
-- [ ] 2.7 Create `core/metadata/extractor.py` orchestrator dispatching to backends (including the `disabled` sentinel), preserving every public function signature
-- [ ] 2.8 Convert `metadata_extractor.py` to a compat shim re-exporting from `core/metadata/` with `DeprecationWarning` (removal: v2.0.0)
-- [ ] 2.9 Run `uv run pytest -m "not slow"` — must be green before continuing
+- [x] 2.1 Create `core/metadata/` skeleton with `__init__.py`
+- [x] 2.2 Move keyword-regex backend to `core/metadata/keyword.py`
+- [x] 2.3 Move Ollama LLM backend to `core/metadata/ollama.py`
+- [x] 2.4 Move LlamaIndex Extractor backend to `core/metadata/llamaindex.py`
+- [x] 2.5 Move llama.cpp backend to `core/metadata/llamacpp.py`
+- [x] 2.6 Move hybrid category taxonomy (ADR-013) to `core/metadata/taxonomy.py`
+- [x] 2.7 Create `core/metadata/extractor.py` orchestrator dispatching to backends (including the `disabled` sentinel), preserving every public function signature
+- [x] 2.8 Convert `metadata_extractor.py` to a compat shim re-exporting from `core/metadata/` with `DeprecationWarning` (removal: v2.0.0)
+- [x] 2.9 Run `uv run pytest -m "not slow"` — must be green before continuing
 
 ## 3. Ingestion and chunking subpackage extraction
 
