@@ -128,9 +128,9 @@ class TestBinarySkip:
 
         with patch("rag_mcp.codebase_map._is_magika_available", return_value=False), \
              patch("rag_mcp.codebase_map.detect_file_types", return_value=mock_inventory), \
-             patch("rag_mcp.ingestion._gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
-             patch("rag_mcp.ingestion.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \
-             patch("rag_mcp.ingestion._embed_and_write_async", new_callable=AsyncMock, return_value=1):
+             patch("rag_mcp.core.ingestion.pipeline.gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
+             patch("rag_mcp.core.ingestion.pipeline.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \
+             patch("rag_mcp.core.ingestion.pipeline.embed_and_write_async", new_callable=AsyncMock, return_value=1):
             from rag_mcp.ingestion import ingest_path_async
             result = await ingest_path_async(str(tmp_path))
 

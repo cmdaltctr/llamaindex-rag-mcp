@@ -1028,7 +1028,7 @@ class TestIngestPathAllFilesFail:
         assert result["status"] == "error"
         assert result["error_type"] == "file"
 
-    @patch("rag_mcp.ingestion._gather_supported_files")
+    @patch("rag_mcp.core.ingestion.pipeline.gather_supported_files")
     async def test_no_files_returns_ok(self, mock_gather, tmp_path):
         """When no supported files exist, returns ok not error."""
         from rag_mcp.ingestion import ingest_path_async
@@ -1048,11 +1048,11 @@ class TestIngestPathAllFilesFail:
         test_file.write_text("fake pdf content")
 
         with patch(
-            "rag_mcp.ingestion._gather_supported_files",
+            "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
                 side_effect=ConnectionError("No route to host"),
             ):
                 result = await ingest_path_async(str(test_file))
@@ -1068,11 +1068,11 @@ class TestIngestPathAllFilesFail:
         test_file.write_text("fake pdf content")
 
         with patch(
-            "rag_mcp.ingestion._gather_supported_files",
+            "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
                 side_effect=RuntimeError("Model inference failed"),
             ):
                 result = await ingest_path_async(str(test_file))

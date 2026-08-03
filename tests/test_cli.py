@@ -1204,7 +1204,7 @@ class TestPerFileLogging:
 
         from rag_mcp.ingestion import ingest_path_async
 
-        with patch("rag_mcp.ingestion.logger") as mock_logger:
+        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(dir_with_docs))
             assert result["status"] == "ok"
 
@@ -1226,7 +1226,7 @@ class TestPerFileLogging:
         """Failed files produce WARNING-level log lines."""
         from rag_mcp.ingestion import ingest_path_async
 
-        with patch("rag_mcp.ingestion.logger") as mock_logger:
+        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(corrupt_dir))
             assert result["status"] == "ok"
             # The corrupt.pdf should at minimum appear in warnings

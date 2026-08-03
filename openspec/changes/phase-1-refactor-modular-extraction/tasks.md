@@ -18,18 +18,18 @@
 
 ## 3. Ingestion and chunking subpackage extraction
 
-- [ ] 3.1 Create `core/ingestion/` and `core/chunking/` skeletons
-- [ ] 3.2 Move the code chunking strategy to `core/chunking/code.py`
-- [ ] 3.3 Move the markdown chunking strategy (heading-aware, small-chunk dropping, heading prepend) to `core/chunking/markdown.py`
-- [ ] 3.4 Move the sentence chunking strategy to `core/chunking/sentence.py`
-- [ ] 3.5 Move the whole-file config chunking strategy to `core/chunking/config_file.py`
-- [ ] 3.6 Move file gathering and reader dispatch to `core/ingestion/loader.py`
-- [ ] 3.7 Move content_type → strategy dispatch to `core/ingestion/chunker.py` (content-type precedence unchanged)
-- [ ] 3.8 Move embed + ChromaDB write (including `_bump_collection_generation()`) to `core/ingestion/writer.py`
-- [ ] 3.9 Expose `ingest_path_async()` from `core/ingestion/__init__.py` with an unchanged signature
-- [ ] 3.10 Convert `ingestion.py` to a compat shim with `DeprecationWarning`
-- [ ] 3.11 Confirm NO `structural.py` or `evidence_md.py` was created (deferred per H5)
-- [ ] 3.12 Run `uv run pytest -m "not slow"` — must be green before continuing
+- [x] 3.1 Create `core/ingestion/` and `core/chunking/` skeletons
+- [x] 3.2 Move the code chunking strategy to `core/chunking/code.py`
+- [x] 3.3 Move the markdown chunking strategy (heading-aware, small-chunk dropping, heading prepend) to `core/chunking/markdown.py`
+- [x] 3.4 Move the sentence chunking strategy to `core/chunking/sentence.py`
+- [x] 3.5 Move the whole-file config chunking strategy to `core/chunking/config_file.py`
+- [x] 3.6 Move file gathering and reader dispatch to `core/ingestion/loader.py`
+- [x] 3.7 Move content_type → strategy dispatch to `core/ingestion/chunker.py` (content-type precedence unchanged)
+- [x] 3.8 Move embed + ChromaDB write (including `_bump_collection_generation()`) to `core/ingestion/writer.py`
+- [x] 3.9 Expose `ingest_path_async()` from `core/ingestion/__init__.py` with an unchanged signature
+- [x] 3.10 Convert `ingestion.py` to a compat shim with `DeprecationWarning`
+- [x] 3.11 Confirm NO `structural.py` or `evidence_md.py` was created (deferred per H5)
+- [x] 3.12 Run `uv run pytest -m "not slow"` — must be green before continuing
 
 ## 4. Retrieval subpackage grouping
 

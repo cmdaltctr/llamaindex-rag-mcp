@@ -101,9 +101,9 @@ async def test_markdown_long_section_is_split(
     """
     long_md = fixtures_dir / "markdown_long_section.md"
     small_chunk_size = 64
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.ingestion.chunker as _chunker
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_CHUNK_SIZE", small_chunk_size)
+    monkeypatch.setattr(_chunker, "MARKDOWN_CHUNK_SIZE", small_chunk_size)
     nodes = await read_and_chunk_file_async(long_md, chunk_overlap=10)
 
     assert len(nodes) > 1, (
@@ -186,9 +186,9 @@ async def test_markdown_multi_chunk_nodes_keep_heading_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Every Markdown chunk emitted after second-stage splitting has headings."""
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.ingestion.chunker as _chunker
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_CHUNK_SIZE", 64)
+    monkeypatch.setattr(_chunker, "MARKDOWN_CHUNK_SIZE", 64)
     long_md = fixtures_dir / "markdown_long_section.md"
     nodes = await read_and_chunk_file_async(long_md, chunk_overlap=10)
 
@@ -236,9 +236,9 @@ async def test_heading_prepend_enabled_adds_heading_prefix(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The experimental heading-prepend knob prefixes Markdown node text."""
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_HEADING_PREPEND", True)
+    monkeypatch.setattr(_md, "MARKDOWN_HEADING_PREPEND", True)
     nodes = await read_and_chunk_file_async(sample_md)
 
     assert nodes
@@ -252,9 +252,9 @@ def test_heading_prepend_is_not_applied_twice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The heading prepend helper guards against double-prefixing text."""
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_HEADING_PREPEND", True)
+    monkeypatch.setattr(_md, "MARKDOWN_HEADING_PREPEND", True)
     node = SimpleNamespace(
         metadata={"header_path": "/Paper/Methods/"},
         text="Methods text",
@@ -271,9 +271,9 @@ def test_min_size_floor_drops_tiny_markdown_chunks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The experimental min-size floor drops tiny Markdown chunks."""
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_MIN_CHUNK_FRACTION", 0.5)
+    monkeypatch.setattr(_md, "MARKDOWN_MIN_CHUNK_FRACTION", 0.5)
     small = SimpleNamespace(text="## Introduction\n\nWe study X.")
     large = SimpleNamespace(text="x" * 1200)
 
@@ -288,10 +288,10 @@ async def test_markdown_experimental_knobs_default_to_existing_chunks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Unset 6c knobs preserve the 6b Markdown chunk text for a small fixture."""
-    import rag_mcp.ingestion as _ingestion
+    import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_ingestion, "MARKDOWN_HEADING_PREPEND", False)
-    monkeypatch.setattr(_ingestion, "MARKDOWN_MIN_CHUNK_FRACTION", 0.0)
+    monkeypatch.setattr(_md, "MARKDOWN_HEADING_PREPEND", False)
+    monkeypatch.setattr(_md, "MARKDOWN_MIN_CHUNK_FRACTION", 0.0)
 
     nodes = await read_and_chunk_file_async(sample_md)
     texts = [_node_text(node) for node in nodes]
