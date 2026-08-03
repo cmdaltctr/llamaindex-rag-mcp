@@ -2,9 +2,11 @@
 
 Tests cover:
 - _sigmoid() edge cases and monotonicity
-- _select_onnx_variant() platform-aware model selection
+- _select_onnx_variant() model-aware variant selection (ModernBERT + legacy)
 - CrossEncoderReranker singleton pattern and graceful fallback
 - Rerank with mocked ONNX session for score normalisation
+- Module docstring model reference
+- Tokenizer max_length configuration
 """
 
 from __future__ import annotations
@@ -18,10 +20,10 @@ import pytest
 
 from rag_mcp.reranker import (
     CrossEncoderReranker,
+    TOKENIZER_MAX_LENGTH,
     _select_onnx_variant,
     _sigmoid,
 )
-
 
 # ── _sigmoid tests ─────────────────────────────────────────────────────────
 
@@ -65,31 +67,78 @@ class TestSigmoid:
 
 
 class TestSelectOnnxVariant:
-    """Tests for platform-aware ONNX model variant selection."""
+    """Tests for model-aware ONNX model variant selection."""
+
+    # ── ModernBERT models (new default) ──────────────────────────────
+
+    def test_modernbert_prefers_quantized_on_arm64(self) -> None:
+        """ModernBERT models prefer model_quantized.onnx on ARM64."""
+        with patch("rag_mcp.reranker.platform.machine", return_value="arm64"):
+            result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
+        assert result[0] == "onnx/model_quantized.onnx"
+
+    def test_modernbert_prefers_quantized_on_x86(self) -> None:
+        """ModernBERT models prefer model_quantized.onnx on x86_64."""
+        with patch("rag_mcp.reranker.platform.machine", return_value="x86_64"):
+            result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
+        assert result[0] == "onnx/model_quantized.onnx"
+
+    def test_modernbert_fallback_chain(self) -> None:
+        """ModernBERT variant list includes the full fallback chain."""
+        result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
+        assert result == [
+            "onnx/model_quantized.onnx",
+            "onnx/model_int8.onnx",
+            "onnx/model_fp16.onnx",
+            "onnx/model.onnx",
+        ]
+
+    def test_default_model_is_modernbert(self) -> None:
+        """Default (no arg) selects ModernBERT variants."""
+        with patch("rag_mcp.reranker.RERANK_MODEL", "Alibaba-NLP/gte-reranker-modernbert-base"):
+            result = _select_onnx_variant()
+        assert result[0] == "onnx/model_quantized.onnx"
+
+    # ── Legacy MiniLM model ──────────────────────────────────────────
 
     @patch("rag_mcp.reranker.platform.machine", return_value="arm64")
-    def test_arm64_selects_quantised(self, mock_machine: MagicMock) -> None:
-        """ARM64 platforms should select the quantised model variant."""
-        result = _select_onnx_variant()
-        assert result == "onnx/model_qint8_arm64.onnx"
+    def test_minilm_arm64_selects_quantised(self, mock_machine: MagicMock) -> None:
+        """MiniLM on ARM64 selects the ARM-tuned quantised variant."""
+        result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        assert result[0] == "onnx/model_qint8_arm64.onnx"
 
     @patch("rag_mcp.reranker.platform.machine", return_value="aarch64")
-    def test_aarch64_selects_quantised(self, mock_machine: MagicMock) -> None:
-        """AArch64 platforms should select the quantised model variant."""
-        result = _select_onnx_variant()
-        assert result == "onnx/model_qint8_arm64.onnx"
+    def test_minilm_aarch64_selects_quantised(self, mock_machine: MagicMock) -> None:
+        """MiniLM on AArch64 selects the ARM-tuned quantised variant."""
+        result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        assert result[0] == "onnx/model_qint8_arm64.onnx"
 
     @patch("rag_mcp.reranker.platform.machine", return_value="x86_64")
-    def test_x86_64_selects_generic(self, mock_machine: MagicMock) -> None:
-        """x86_64 platforms should select the generic fp32 model."""
-        result = _select_onnx_variant()
-        assert result == "onnx/model.onnx"
+    def test_minilm_x86_64_selects_generic(self, mock_machine: MagicMock) -> None:
+        """MiniLM on x86_64 falls back to the generic fp32 model."""
+        result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        assert result == ["onnx/model.onnx"]
 
     @patch("rag_mcp.reranker.platform.machine", return_value="AMD64")
-    def test_unknown_platform_selects_generic(self, mock_machine: MagicMock) -> None:
-        """Unknown platforms should fall back to the generic model."""
-        result = _select_onnx_variant()
-        assert result == "onnx/model.onnx"
+    def test_minilm_unknown_platform_selects_generic(self, mock_machine: MagicMock) -> None:
+        """MiniLM on unknown platforms falls back to the generic model."""
+        result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        assert result == ["onnx/model.onnx"]
+
+
+# ── Module docstring tests ─────────────────────────────────────────────────
+
+
+class TestModuleDocstring:
+    """Tests for the module docstring model reference."""
+
+    def test_docstring_references_default_model(self) -> None:
+        """Module docstring must reference the default MiniLM model."""
+        import rag_mcp.reranker as reranker_mod
+
+        assert reranker_mod.__doc__ is not None
+        assert "ms-marco-MiniLM-L-6-v2" in reranker_mod.__doc__
+        assert "cross-encoder" in reranker_mod.__doc__
 
 
 # ── CrossEncoderReranker tests ─────────────────────────────────────────────
@@ -366,6 +415,32 @@ class TestCrossEncoderRerankerMockedInference:
         scores = [r["score"] for r in out]
         assert scores == sorted(scores, reverse=True)
 
+    def test_tokenizer_max_length_is_2048(self) -> None:
+        """Tokenizer must be called with max_length=TOKENIZER_MAX_LENGTH (2048)."""
+        assert TOKENIZER_MAX_LENGTH == 2048
+
+        reranker = CrossEncoderReranker()
+
+        mock_session = MagicMock()
+        mock_session.run.return_value = [np.array([[1.0]])]
+
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+
+        results = [{"text": "doc", "score": 0.5}]
+        reranker.rerank("query", results, top_k=1)
+
+        # Verify max_length kwarg was passed through
+        call_kwargs = mock_tokenizer.call_args.kwargs
+        assert call_kwargs["max_length"] == 2048
+
 
 # ── Model loading tests ─────────────────────────────────────────────────────
 
@@ -422,7 +497,7 @@ class TestCrossEncoderRerankerModelLoading:
         mock_session = MagicMock()
         mock_tokenizer_cls = MagicMock()
 
-        with patch("rag_mcp.reranker._select_onnx_variant", return_value="onnx/model.onnx"):
+        with patch("rag_mcp.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
             with patch(
                 "huggingface_hub.hf_hub_download",
                 return_value="/fake/model.onnx",

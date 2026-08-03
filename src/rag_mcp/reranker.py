@@ -37,6 +37,11 @@ RERANK_MODEL = os.getenv(
     "RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2",
 )
 
+# Tokenizer max sequence length.  ModernBERT supports 8,192 tokens but
+# processing full-length pairs increases latency.  2,048 balances context
+# window utilisation with latency — most RAG chunks are 512-1,024 tokens.
+TOKENIZER_MAX_LENGTH = int(os.getenv("RERANK_TOKENIZER_MAX_LENGTH", "2048"))
+
 
 def _sigmoid(value: float) -> float:
     """Normalise a raw logit to (0, 1) via the sigmoid function.
@@ -49,18 +54,50 @@ def _sigmoid(value: float) -> float:
     return exp_val / (1.0 + exp_val)
 
 
-def _select_onnx_variant() -> str:
-    """Pick the best ONNX model variant for the current platform.
+def _select_onnx_variant(model_id: str | None = None) -> list[str]:
+    """Return candidate ONNX model paths in priority order.
 
-    Returns the Hub-relative path (e.g. ``"onnx/model_qint8_arm64.onnx"``).
-    Falls back to the generic fp32 model if no platform-specific
-    quantised variant is available.
+    For ModernBERT-based models (e.g. ``gte-reranker-modernbert-base``),
+    prefers standard quantised variants that work cross-platform via
+    ``onnxruntime`` — no ARM-tuned ``qint8_arm64`` variant exists for
+    these models.
+
+    For legacy models that ship ARM-tuned variants (e.g.
+    ``cross-encoder/ms-marco-MiniLM-L-6-v2``), uses the platform-specific
+    preference on ARM64 and falls back to the generic fp32 model elsewhere.
+
+    Args:
+        model_id: HuggingFace model ID to select a variant for.
+            If ``None``, defaults to the module-level ``RERANK_MODEL``
+            (resolved at call time so env overrides are honoured).
+
+    Returns:
+        List of Hub-relative paths (e.g. ``"onnx/model_quantized.onnx"``)
+        in priority order.  The caller should try each in turn until one
+        downloads successfully.
     """
+    if model_id is None:
+        model_id = RERANK_MODEL
+    model_lower = model_id.lower()
+
+    # ModernBERT models ship eight pre-exported ONNX variants.  Prefer the
+    # standard int8 quantised graph (151 MB) on all platforms, then fall
+    # back through smaller quantisation options to fp32.
+    if "modernbert" in model_lower or "gte-reranker" in model_lower:
+        return [
+            "onnx/model_quantized.onnx",
+            "onnx/model_int8.onnx",
+            "onnx/model_fp16.onnx",
+            "onnx/model.onnx",
+        ]
+
+    # Legacy models with ARM-tuned quantised variants.
     machine = platform.machine().lower()
     if machine in ("arm64", "aarch64"):
-        return "onnx/model_qint8_arm64.onnx"
+        return ["onnx/model_qint8_arm64.onnx", "onnx/model.onnx"]
+
     # Generic fallback — fp32, works everywhere.
-    return "onnx/model.onnx"
+    return ["onnx/model.onnx"]
 
 
 class CrossEncoderReranker:
@@ -85,6 +122,7 @@ class CrossEncoderReranker:
                     cls._instance._loaded: bool = False
                     cls._instance._load_attempted: bool = False
                     cls._instance._load_error: str | None = None
+                    cls._instance._effective_max_length: int = TOKENIZER_MAX_LENGTH
         return cls._instance
 
     # ── Model loading ──────────────────────────────────────────────────
@@ -123,21 +161,62 @@ class CrossEncoderReranker:
                 )
 
                 # Download the pre-exported ONNX model from HuggingFace Hub.
-                onnx_filename = _select_onnx_variant()
-                onnx_path = hf_hub_download(
-                    repo_id=RERANK_MODEL,
-                    filename=onnx_filename,
-                )
+                # Try candidate variants in priority order — the preferred
+                # quantised variant may occasionally be unavailable.
+                candidates = _select_onnx_variant()
+                onnx_path = None
+                onnx_filename = None
+                for candidate in candidates:
+                    try:
+                        onnx_path = hf_hub_download(
+                            repo_id=RERANK_MODEL,
+                            filename=candidate,
+                        )
+                        onnx_filename = candidate
+                        break
+                    except Exception as download_exc:
+                        logger.debug(
+                            "ONNX variant %s unavailable for %s: %s",
+                            candidate, RERANK_MODEL, download_exc,
+                        )
+
+                if onnx_path is None:
+                    raise RuntimeError(
+                        f"No ONNX variant available for {RERANK_MODEL}. "
+                        f"Tried: {', '.join(candidates)}"
+                    )
 
                 self._tokenizer = AutoTokenizer.from_pretrained(
                     RERANK_MODEL,
                 )
-                # Prefer CoreML (Apple Neural Engine) on macOS, fall back to CPU.
+                # Cap max_length at the model's own limit.  MiniLM supports
+                # 512 tokens; ModernBERT supports 8192.  Using a max_length
+                # larger than the model's position embeddings causes an ONNX
+                # broadcast error at runtime.
+                model_max = getattr(
+                    self._tokenizer, "model_max_length", TOKENIZER_MAX_LENGTH
+                )
+                # Some tokenizers return a sentinel (e.g. 1000000) for
+                # "very large" — cap at our configured default in that case.
+                if not isinstance(model_max, int) or model_max > 100000:
+                    model_max = TOKENIZER_MAX_LENGTH
+                self._effective_max_length = min(TOKENIZER_MAX_LENGTH, model_max)
+                # CoreML does not support the dynamic sequence lengths that
+                # cross-encoder tokenisation produces (variable batch padding).
+                # It fails with "Error in dynamically resizing for sequence
+                # length" and silently degrades to un-reranked results.
+                # Default to CPU-only, which handles dynamic shapes correctly.
+                # Override with RERANK_ONNX_PROVIDER=coreml to re-enable CoreML
+                # (e.g. for fixed-input models or future CoreML versions).
+                _onnx_provider = os.getenv("RERANK_ONNX_PROVIDER", "cpu")
                 available = ort.get_available_providers()
-                providers = []
-                if "CoreMLExecutionProvider" in available:
-                    providers.append("CoreMLExecutionProvider")
-                providers.append("CPUExecutionProvider")
+                if (
+                    _onnx_provider == "coreml"
+                    and "CoreMLExecutionProvider" in available
+                ):
+                    providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+                else:
+                    providers = ["CPUExecutionProvider"]
                 self._session = ort.InferenceSession(
                     onnx_path,
                     providers=providers,
@@ -211,7 +290,7 @@ class CrossEncoderReranker:
                     batch,
                     padding=True,
                     truncation=True,
-                    max_length=256,
+                    max_length=self._effective_max_length,
                     return_tensors="np",
                 )
                 outputs = self._session.run(

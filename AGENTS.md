@@ -40,7 +40,7 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 2. **No cross-imports** between `ingestion.py` and `retrieval.py` — they share only `config.py`.
 3. **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`, `retrieval.py`, `reranker.py`, `metadata_extractor.py`, `codebase_map.py`, `code_graph.py`, `doc_graph.py`, `azure_reader.py`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
-5. **Balanced retrieval defaults are intentional** (ADR-018): `TOP_K=10`, `RERANK_ENABLED=true`, `CHUNK_OVERLAP=100`. Read from `config.py`, never hardcode.
+5. **Balanced retrieval defaults are intentional** (ADR-018): `TOP_K=10`, `CHUNK_OVERLAP=100`. Read from `config.py`, never hardcode. **Note:** the current code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, see `config.py:327-337`); ADR-018's "balanced" intent is restored by the `documents` profile in the refactor proposal. Do not assume `true`.
 6. **Codebase map modules share only `config.py`** — `codebase_map.py`, `code_graph.py`, `doc_graph.py` have no cross-imports with `ingestion.py` or `retrieval.py`.
 7. **Azure SDK import is lazy** (ADR-024) — `azure_reader.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
@@ -54,7 +54,7 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 5. **CLI output goes to stderr.** stdout is the MCP protocol channel.
 6. **PDF reader is a factory** (ADR-020). Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
 7. **MCP tool annotations are mandatory.** Use `ToolAnnotations` (`readOnlyHint`, `destructiveHint`) on every tool.
-8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (ADR-022).
+8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (implemented in `ingestion.py`; no dedicated ADR — ADR-022 is "Code Graph via Tree-Sitter AST", not content-type dispatch).
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
 
@@ -150,7 +150,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 | CLI reference                 | [`docs/guides/cli-reference.md`](docs/guides/cli-reference.md)             |
 | Configuration                 | [`docs/guides/configuration.md`](docs/guides/configuration.md)             |
 | Testing                       | [`docs/guides/testing.md`](docs/guides/testing.md)                         |
-| ADRs (21 decisions)           | [`docs/adr/`](docs/adr/)                                                   |
+| ADRs (27 decisions)           | [`docs/adr/`](docs/adr/)                                                   |
 | Config vars                   | `.env.example` + defaults in `config.py`                                   |
 | OpenSpec specs                | `openspec/specs/` + `openspec/changes/`                                    |
 | NiftyPM local source of truth | `niftypm/llamaindex-rag-mcp.json`                                          |
