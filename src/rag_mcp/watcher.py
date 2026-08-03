@@ -153,7 +153,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
         # Remove vectors from ChromaDB
         try:
-            from .ingestion import remove_document
+            from .core.ingestion import remove_document
 
             result = remove_document(
                 file_path, collection_name=self._collection_name
@@ -298,7 +298,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
     def _dispatch_ingest(self, file_path: str, current_hash: str) -> None:
         """Run ingestion via asyncio.run from the watcher thread."""
-        from .ingestion import ingest_path_async
+        from .core.ingestion import ingest_path_async
 
         try:
             result = asyncio.run(

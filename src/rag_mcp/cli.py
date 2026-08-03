@@ -247,7 +247,7 @@ def _run_ingest_with_rich_progress(
     """
     import asyncio
 
-    from .ingestion import ingest_path_async
+    from .core.ingestion import ingest_path_async
 
     with Progress(
         SpinnerColumn(),
@@ -425,7 +425,7 @@ def _write_report(
 
 def _install_sigint_handler():
     """Install SIGINT handler for graceful shutdown during ingestion."""
-    from .ingestion import _shutdown_requested
+    from .core.ingestion._state import shutdown_requested as _shutdown_requested
 
     _sigint_count = 0
     _original_handler = signal.getsignal(signal.SIGINT)
@@ -452,7 +452,7 @@ def _run_ingest(path: str, ingest_kwargs: dict, json_output: bool) -> dict:
     """Execute ingestion with the appropriate progress display mode."""
     import asyncio
 
-    from .ingestion import ingest_path_async
+    from .core.ingestion import ingest_path_async
 
     if json_output:
         return asyncio.run(ingest_path_async(path, **ingest_kwargs))
@@ -562,7 +562,8 @@ def ingest(
     """
     import asyncio
 
-    from .ingestion import _shutdown_requested, ingest_path_async
+    from .core.ingestion._state import shutdown_requested as _shutdown_requested
+    from .core.ingestion import ingest_path_async
 
     # Build kwargs for overrides
     ingest_kwargs: dict = {"collection_name": collection}
@@ -644,7 +645,7 @@ def search(
     ),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
-    from .retrieval import search as do_search
+    from .core.retrieval import search as do_search
 
     try:
         output_guard = (
@@ -715,7 +716,7 @@ def list_cmd(
     ),
 ) -> None:
     """List all indexed documents with their chunk counts."""
-    from .ingestion import list_documents
+    from .core.ingestion import list_documents
 
     docs = list_documents(collection_name=collection)
 
@@ -768,7 +769,7 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
 
         import asyncio
 
-        from .ingestion import read_and_chunk_file_async
+        from .core.ingestion import read_and_chunk_file_async
 
         nodes = asyncio.run(
             read_and_chunk_file_async(
@@ -977,7 +978,7 @@ def list_collections_cmd(
     ),
 ) -> None:
     """List all ChromaDB collections with document and chunk counts."""
-    from .retrieval import list_collections
+    from .core.retrieval import list_collections
 
     collections = list_collections()
 
@@ -1212,7 +1213,7 @@ def delete(
     # Resolve collection name
     coll_name = "documents" if collection is None else collection
 
-    from .ingestion import (
+    from .core.ingestion import (
         preview_delete,
         remove_document,
         remove_by_metadata,

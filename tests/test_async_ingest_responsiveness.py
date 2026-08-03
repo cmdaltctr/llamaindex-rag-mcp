@@ -48,7 +48,7 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent MCP search returns while ingest is blocked mid-flight."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.server import search_documents
 
         # Pre-populate so search has data to find.
@@ -91,8 +91,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent ``list_collections`` returns during in-flight ingest."""
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import list_collections
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import list_collections
 
         coll = "list_resp"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -183,7 +183,7 @@ class TestResponsivenessRegression:
             _blocking_patched,
         )
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         coll = "regress_test"
 
@@ -235,7 +235,7 @@ class TestSplitterOffload:
         """A slow splitter must not stall a concurrent search call."""
         from llama_index.core.node_parser import SentenceSplitter
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.server import search_documents
 
         coll = "splitter_offload"

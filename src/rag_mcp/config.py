@@ -380,7 +380,7 @@ def _resolve_sparse_backend() -> str:
     if HYBRID_SPARSE_BACKEND == "bm25":
         return "bm25"
 
-    from .sparse_retriever import _detect_native_sparse_capability
+    from .core.retrieval.sparse import _detect_native_sparse_capability
 
     native_available = _detect_native_sparse_capability()
     if HYBRID_SPARSE_BACKEND == "auto":

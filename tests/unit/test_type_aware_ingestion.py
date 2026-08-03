@@ -7,11 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_mcp.ingestion import (
-    _chunk_code_file_async,
-    _chunk_config_file,
-    _read_and_chunk_file_async,
-)
+from rag_mcp.core.chunking.code import chunk_code_file_async as _chunk_code_file_async
+from rag_mcp.core.chunking.config_file import chunk_config_file as _chunk_config_file
+from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
 
 class TestCodeSplitterDispatch:
@@ -131,7 +129,7 @@ class TestBinarySkip:
              patch("rag_mcp.core.ingestion.pipeline.gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
              patch("rag_mcp.core.ingestion.pipeline.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \
              patch("rag_mcp.core.ingestion.pipeline.embed_and_write_async", new_callable=AsyncMock, return_value=1):
-            from rag_mcp.ingestion import ingest_path_async
+            from rag_mcp.core.ingestion import ingest_path_async
             result = await ingest_path_async(str(tmp_path))
 
         skipped = [d for d in result["file_details"] if d.get("status") == "skipped"]

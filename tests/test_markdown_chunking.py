@@ -16,12 +16,12 @@ from types import SimpleNamespace
 import pytest
 
 from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE, MARKDOWN_CHUNK_SIZE
-from rag_mcp.ingestion import (
-    _apply_heading_prepend,
-    _drop_small_markdown_chunks,
-    _ensure_heading_metadata,
-    read_and_chunk_file_async,
+from rag_mcp.core.chunking.markdown import (
+    apply_heading_prepend as _apply_heading_prepend,
+    drop_small_markdown_chunks as _drop_small_markdown_chunks,
+    ensure_heading_metadata as _ensure_heading_metadata,
 )
+from rag_mcp.core.ingestion import read_and_chunk_file_async
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────

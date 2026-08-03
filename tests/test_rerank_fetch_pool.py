@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 
 from rag_mcp import config as _config
-from rag_mcp.retrieval import _resolve_fetch_k
+from rag_mcp.core.retrieval.policy import _resolve_fetch_k
 
 
 # ── Defaults ────────────────────────────────────────────────────────────────

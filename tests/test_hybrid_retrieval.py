@@ -61,7 +61,7 @@ class FakePersistentClient:
 
 def test_search_signature_exposes_hybrid_default_false() -> None:
     """``retrieval.search`` must expose opt-in ``hybrid=False``."""
-    from rag_mcp.retrieval import search
+    from rag_mcp.core.retrieval import search
 
     param = inspect.signature(search).parameters.get("hybrid")
 
@@ -104,7 +104,7 @@ def test_hybrid_config_defaults() -> None:
 
 def test_rrf_worked_example_from_spec() -> None:
     """A chunk ranked 3rd and 5th scores ``1/(60+3)+1/(60+5)``."""
-    from rag_mcp.retrieval import reciprocal_rank_fusion
+    from rag_mcp.core.retrieval import reciprocal_rank_fusion
 
     scores = reciprocal_rank_fusion(
         [["d1", "d2", "target"], ["a", "b", "c", "d", "target"]],
@@ -116,7 +116,7 @@ def test_rrf_worked_example_from_spec() -> None:
 
 def test_rrf_chunk_present_in_only_one_ranking() -> None:
     """Missing sparse/dense ranks contribute no term to the RRF score."""
-    from rag_mcp.retrieval import reciprocal_rank_fusion
+    from rag_mcp.core.retrieval import reciprocal_rank_fusion
 
     scores = reciprocal_rank_fusion([["dense_only"], ["other"]], k=60)
 
@@ -126,7 +126,7 @@ def test_rrf_chunk_present_in_only_one_ranking() -> None:
 
 def test_rrf_with_metadata_empty_sparse_ranking_keeps_dense_order() -> None:
     """Empty sparse rankings must not error or disturb dense-only order."""
-    from rag_mcp.retrieval import rrf_with_metadata
+    from rag_mcp.core.retrieval import rrf_with_metadata
 
     dense = [
         {"id": "a", "text": "alpha", "metadata": {"source": "a.txt"}},
@@ -141,7 +141,7 @@ def test_rrf_with_metadata_empty_sparse_ranking_keeps_dense_order() -> None:
 
 def test_default_english_tokenizer_lowercases_splits_and_removes_stopwords() -> None:
     """BM25 tokenisation should be deterministic and useful for rare terms."""
-    from rag_mcp.sparse_retriever import tokenize_english
+    from rag_mcp.core.retrieval.sparse import tokenize_english
 
     tokens = tokenize_english("The Colosseum identifier ZXQ-77 appears in Rome.")
 
@@ -155,7 +155,7 @@ def test_default_english_tokenizer_lowercases_splits_and_removes_stopwords() -> 
 
 def test_bm25_sparse_retriever_empty_collection_returns_empty() -> None:
     """The BM25 fallback must gracefully handle empty collections."""
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection("empty", [])
     retriever = BM25SparseRetriever(collection_name="empty", collection=collection)
@@ -165,7 +165,7 @@ def test_bm25_sparse_retriever_empty_collection_returns_empty() -> None:
 
 def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
     """Rare exact-match identifiers should be promoted by BM25."""
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "rare_terms",
@@ -189,8 +189,8 @@ def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
 
 def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> None:
     """Two consecutive queries without writes should scan Chroma only once."""
-    from rag_mcp.ingestion import _collection_generations
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_reuse",
@@ -207,8 +207,8 @@ def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> N
 
 def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
     """A generation bump from ingest/delete must invalidate the BM25 cache."""
-    from rag_mcp.ingestion import _collection_generations
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_rebuild",
@@ -230,8 +230,8 @@ def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
 
 def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     """Deleting between sparse queries bumps generation and rebuilds cache."""
-    from rag_mcp.ingestion import _collection_generations
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "delete_rebuild",
@@ -250,8 +250,8 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
 
 def test_remove_collection_generation_invalidates_cache() -> None:
     """Collection removal generation bump invalidates the cached BM25 index."""
-    from rag_mcp.ingestion import _collection_generations
-    from rag_mcp.sparse_retriever import BM25SparseRetriever
+    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "drop_rebuild",
@@ -504,7 +504,7 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
 
 def test_detect_native_sparse_capability_is_conservative() -> None:
     """Current PersistentClient runtime should not auto-select native sparse."""
-    from rag_mcp.sparse_retriever import _detect_native_sparse_capability
+    from rag_mcp.core.retrieval.sparse import _detect_native_sparse_capability
 
     assert _detect_native_sparse_capability() is False
 
@@ -512,7 +512,7 @@ def test_detect_native_sparse_capability_is_conservative() -> None:
 def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) -> None:
     """Capability detection controls auto backend selection."""
     import rag_mcp.config as config
-    import rag_mcp.sparse_retriever as sparse
+    import rag_mcp.core.retrieval.sparse as sparse
 
     monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "auto")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
@@ -523,7 +523,7 @@ def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) ->
 def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
     """If native sparse support is detected, auto selects native."""
     import rag_mcp.config as config
-    import rag_mcp.sparse_retriever as sparse
+    import rag_mcp.core.retrieval.sparse as sparse
 
     monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "auto")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
@@ -534,7 +534,7 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
 def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) -> None:
     """Explicit native override falls back gracefully with a warning."""
     import rag_mcp.config as config
-    import rag_mcp.sparse_retriever as sparse
+    import rag_mcp.core.retrieval.sparse as sparse
 
     monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "native")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)

@@ -37,7 +37,7 @@ class TestKeywordExtraction:
         """Text with AI keywords must categorise as 'AI'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "This document discusses attention mechanisms and transformer models."
@@ -48,7 +48,7 @@ class TestKeywordExtraction:
         """Text with more AI matches than Philosophy must choose AI."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "This neural network uses embedding-based RAG for logic problems."
@@ -59,7 +59,7 @@ class TestKeywordExtraction:
         """Text with no keyword matches must return 'uncategorised'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The quick brown fox jumps over the lazy dog. Nothing technical here."
@@ -70,7 +70,7 @@ class TestKeywordExtraction:
         """Text with mantiq/logic keywords must categorise as 'Philosophy'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "This paper explores mantiq and epistemology in classical Islamic logic."
@@ -81,7 +81,7 @@ class TestKeywordExtraction:
         """Text with biology keywords must categorise as 'Biology'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The crispr gene editing tool revolutionises cancer research."
@@ -92,7 +92,7 @@ class TestKeywordExtraction:
         """Text with marketing keywords must categorise as 'Marketing'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "Our SEO campaign increased conversion rates across the sales funnel."
@@ -103,7 +103,7 @@ class TestKeywordExtraction:
         """Text with programming keywords must categorise as 'Programming'."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The Rust compiler uses an LLVM backend for code generation."
@@ -121,7 +121,7 @@ class TestDisabledExtraction:
         """Disabled mode must return an empty dict."""
         _set_mode(monkeypatch, "disabled")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("Any text content here."))
         assert result == {}
@@ -141,7 +141,7 @@ class TestCustomKeywordRules:
         ])
         _set_mode(monkeypatch, "keyword", keyword_rules=custom_rules)
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "Formula 1 Grand Prix at Monaco is the highlight of the motorsport calendar."
@@ -155,7 +155,7 @@ class TestCustomKeywordRules:
         ])
         _set_mode(monkeypatch, "keyword", keyword_rules=custom_rules)
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         # Has AI keywords but custom rules don't include AI → uncategorised
         result = asyncio.run(extract_metadata_async("The transformer model uses attention heads."))
@@ -167,7 +167,7 @@ class TestCustomKeywordRules:
         """Invalid JSON in METADATA_KEYWORD_RULES must fall back to defaults."""
         _set_mode(monkeypatch, "keyword", keyword_rules="not valid json {{{")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The transformer attention mechanism is key to modern AI."
@@ -219,7 +219,7 @@ class TestLlamaindexStub:
             _fake_ollama,
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "The protein folding problem was solved by deep learning.",
@@ -256,7 +256,7 @@ class TestUnknownMode:
         """An unrecognised mode must log WARNING and fall back to keyword."""
         _set_mode(monkeypatch, "nonexistent_mode")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention transformer neural network"))
         assert result == {"category": "AI"}
@@ -333,7 +333,7 @@ class TestOllamaExtraction:
             "summary": "A paper about transformer architectures in NLP.",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention transformer model architecture"))
         assert result["category"] == "ai"
@@ -344,7 +344,7 @@ class TestOllamaExtraction:
         """Ollama returns JSON missing keywords/summary → default to empty."""
         self._mock_ollama(monkeypatch, json.dumps({"category": "biology"}))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("crispr gene editing"))
         assert result["category"] == "biology"
@@ -355,7 +355,7 @@ class TestOllamaExtraction:
         """Ollama returns plain text (not JSON) → use raw text as category."""
         self._mock_ollama(monkeypatch, "AI")
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
         assert result["category"] == "ai"
@@ -387,7 +387,7 @@ class TestOllamaExtraction:
 
         monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: _mock_instance)
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("any text"))
         assert result["category"] == "uncategorised"
@@ -406,7 +406,7 @@ class TestOllamaExtraction:
         # Test normal response
         self._mock_ollama(monkeypatch, json.dumps({"category": "philosophy"}))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("logic and ontology"))
         assert "category" in result
@@ -419,7 +419,7 @@ class TestOllamaExtraction:
             "summary": "",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("ai document"))
         assert result["category"] == "artificial_intelligence"
@@ -432,7 +432,7 @@ class TestOllamaExtraction:
             "summary": "",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("some document"))
         assert result["category"] == "uncategorised"
@@ -446,7 +446,7 @@ class TestOllamaExtraction:
             "summary": "test",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("test"))
         assert len(result["keywords"]) == 10
@@ -461,7 +461,7 @@ class TestOllamaExtraction:
             "summary": long_summary,
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("test"))
         assert "summary" in result
@@ -533,7 +533,7 @@ class TestHybridCategoryTaxonomy:
 
         monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
         asyncio.run(extract_metadata_async("test document"))
         return prompt_container[0] if prompt_container else ""
 
@@ -610,7 +610,7 @@ class TestHybridCategoryTaxonomy:
             "summary": "Quantum physics paper",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("quantum mechanics and wave functions"))
         assert result["category"] == "physics"
@@ -627,7 +627,7 @@ class TestHybridCategoryTaxonomy:
             "summary": "An introduction to music theory.",
         }))
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("music theory composition harmony scales"))
         assert result["category"] == "music_theory"
@@ -641,27 +641,27 @@ class TestCategoryNormalisation:
     """Unit tests for the _normalise_category helper."""
 
     def test_lowercase_and_underscores(self) -> None:
-        from rag_mcp.metadata_extractor import _normalise_category
+        from rag_mcp.core.metadata._common import _normalise_category
 
         assert _normalise_category("Artificial Intelligence") == "artificial_intelligence"
         assert _normalise_category("  ML  ") == "ml"
         assert _normalise_category('"deep_learning"') == "deep_learning"
 
     def test_max_three_words(self) -> None:
-        from rag_mcp.metadata_extractor import _normalise_category
+        from rag_mcp.core.metadata._common import _normalise_category
 
         assert _normalise_category("one two three") == "one_two_three"
         assert _normalise_category("one two three four") == "uncategorised"
         assert _normalise_category("one two three four five") == "uncategorised"
 
     def test_empty_or_whitespace(self) -> None:
-        from rag_mcp.metadata_extractor import _normalise_category
+        from rag_mcp.core.metadata._common import _normalise_category
 
         assert _normalise_category("") == "uncategorised"
         assert _normalise_category("   ") == "uncategorised"
 
     def test_special_characters_stripped(self) -> None:
-        from rag_mcp.metadata_extractor import _normalise_category
+        from rag_mcp.core.metadata._common import _normalise_category
 
         assert _normalise_category("AI.") == "ai"
         assert _normalise_category("machine_learning;") == "machine_learning"
@@ -674,7 +674,7 @@ class TestSeedCategories:
         """Seed categories must cover all default keyword rule categories."""
         _set_mode(monkeypatch, "keyword")
 
-        from rag_mcp.metadata_extractor import _get_seed_categories
+        from rag_mcp.core.metadata.taxonomy import _get_seed_categories
 
         seeds = _get_seed_categories()
         assert "ai" in seeds
@@ -692,7 +692,7 @@ class TestSeedCategories:
         ])
         _set_mode(monkeypatch, "keyword", keyword_rules=custom)
 
-        from rag_mcp.metadata_extractor import _get_seed_categories
+        from rag_mcp.core.metadata.taxonomy import _get_seed_categories
 
         seeds = _get_seed_categories()
         assert "motorsport" in seeds
@@ -748,7 +748,7 @@ class TestLlamaindexExtraction:
             _fake_ollama,
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "deep learning neural networks",
@@ -783,7 +783,7 @@ class TestLlamaindexExtraction:
             "section_summary": "A comprehensive review of deep learning.",
         })
 
-        from rag_mcp.metadata_extractor import _aggregate_llamaindex_metadata
+        from rag_mcp.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         async def fake_extract_llamaindex_async(text: str, file_name: str) -> dict:
             return _aggregate_llamaindex_metadata([mock_node])
@@ -793,7 +793,7 @@ class TestLlamaindexExtraction:
             fake_extract_llamaindex_async,
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "deep learning transformer attention neural networks",
@@ -809,7 +809,7 @@ class TestLlamaindexExtraction:
 
     def test_aggregation_first_non_empty(self, monkeypatch) -> None:
         """Metadata aggregation takes first non-empty value per key."""
-        from rag_mcp.metadata_extractor import _aggregate_llamaindex_metadata
+        from rag_mcp.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node1 = self._make_mock_node({
             "document_title": "",
@@ -831,7 +831,7 @@ class TestLlamaindexExtraction:
 
     def test_aggregation_empty_nodes_returns_uncategorised(self) -> None:
         """No metadata from any node → uncategorised with empty keywords."""
-        from rag_mcp.metadata_extractor import _aggregate_llamaindex_metadata
+        from rag_mcp.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node = self._make_mock_node({})
         result = _aggregate_llamaindex_metadata([node])
@@ -877,7 +877,7 @@ class TestLlamaindexExtraction:
             _fake_ollama,
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "transformer attention neural network",
@@ -924,7 +924,7 @@ class TestLlamaindexExtraction:
         )
 
         _set_mode(monkeypatch, "llamaindex")
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
             "transformer attention neural network",
@@ -963,7 +963,7 @@ class TestLlamaindexExtraction:
             fake_extract_llamaindex_async,
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         # Long text — the function receives full text, caps internally
         long_text = "x" * 5000
@@ -983,39 +983,39 @@ class TestCoverageGaps:
 
     def test_strip_llm_prefix_empty_string(self) -> None:
         """Empty string input must be returned unchanged."""
-        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        from rag_mcp.core.metadata._common import _strip_llm_prefix
         assert _strip_llm_prefix("") == ""
         assert _strip_llm_prefix(None) is None  # type: ignore[arg-type]
 
     def test_strip_llm_prefix_bold_markers(self) -> None:
         """Surrounding ** bold markers must be stripped."""
-        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        from rag_mcp.core.metadata._common import _strip_llm_prefix
         assert _strip_llm_prefix('** "Hallucinations in Language Models" **') == "Hallucinations in Language Models"
         assert _strip_llm_prefix("**Deep Learning Review**") == "Deep Learning Review"
         assert _strip_llm_prefix("* Single asterisk *") == "Single asterisk"
 
     def test_strip_llm_prefix_trailing_explanation(self) -> None:
         """Text after a double-newline must be truncated."""
-        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        from rag_mcp.core.metadata._common import _strip_llm_prefix
         raw = '** "Hallucinations in Language Models"  \n\nThis title encapsulates the key themes.'
         assert _strip_llm_prefix(raw) == "Hallucinations in Language Models"
 
     def test_strip_llm_prefix_combined_label_and_bold(self) -> None:
         """Label prefix + bold markers + trailing explanation all stripped."""
-        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        from rag_mcp.core.metadata._common import _strip_llm_prefix
         raw = '**Title:** ** "Deep Learning Review" **\n\nThis covers the main topics.'
         assert _strip_llm_prefix(raw) == "Deep Learning Review"
 
     def test_strip_llm_prefix_plain_text_unchanged(self) -> None:
         """Plain text without any LLM noise must pass through unchanged."""
-        from rag_mcp.metadata_extractor import _strip_llm_prefix
+        from rag_mcp.core.metadata._common import _strip_llm_prefix
         assert _strip_llm_prefix("A normal title") == "A normal title"
 
     # ── _normalise_category: invalid char rejection (lines 95-100) ────────
 
     def test_normalise_category_invalid_chars_rejected(self) -> None:
         """Labels with non-[a-z0-9_-] chars must return 'uncategorised'."""
-        from rag_mcp.metadata_extractor import _normalise_category
+        from rag_mcp.core.metadata._common import _normalise_category
         # Starts with a digit — invalid
         assert _normalise_category("4._[pubmed_api]") == "uncategorised"
         # Contains slash
@@ -1027,7 +1027,7 @@ class TestCoverageGaps:
         """An empty JSON array must be accepted and returned as-is."""
         import rag_mcp.core.metadata.keyword as _kw
         monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
-        from rag_mcp.metadata_extractor import _load_keyword_rules
+        from rag_mcp.core.metadata.keyword import _load_keyword_rules
         result = _load_keyword_rules()
         assert result == []
 
@@ -1035,7 +1035,7 @@ class TestCoverageGaps:
         """Rules missing 'pattern' or 'category' keys must fall back to defaults."""
         import rag_mcp.core.metadata.keyword as _kw
         monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", '[{"pattern": "foo"}]')
-        from rag_mcp.metadata_extractor import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
+        from rag_mcp.core.metadata.keyword import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
         result = _load_keyword_rules()
         assert result == _DEFAULT_KEYWORD_RULES
 
@@ -1045,7 +1045,7 @@ class TestCoverageGaps:
         """Empty rules list must return uncategorised immediately."""
         import rag_mcp.core.metadata.keyword as _kw
         monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
-        from rag_mcp.metadata_extractor import _extract_keyword
+        from rag_mcp.core.metadata.keyword import _extract_keyword
         result = _extract_keyword("transformer attention neural network")
         assert result == {"category": "uncategorised"}
 
@@ -1056,7 +1056,7 @@ class TestCoverageGaps:
         import rag_mcp.core.metadata.keyword as _kw
         bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'
         monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", bad_rules)
-        from rag_mcp.metadata_extractor import _extract_keyword
+        from rag_mcp.core.metadata.keyword import _extract_keyword
         result = _extract_keyword("neural network transformer")
         # The valid rule still fires
         assert result["category"] == "AI"
@@ -1081,7 +1081,7 @@ class TestCoverageGaps:
         mock_client.list_collections.return_value = [bad_col, good_col]
         monkeypatch.setattr(_tax, "_chroma_client", mock_client)
 
-        from rag_mcp.metadata_extractor import _gather_existing_categories
+        from rag_mcp.core.metadata.taxonomy import _gather_existing_categories
         result = _gather_existing_categories()
         # bad_col skipped, good_col processed
         assert "biology" in result
@@ -1127,7 +1127,7 @@ class TestCoverageGaps:
         mock_client.list_collections.return_value = []
         monkeypatch.setattr(_tax, "_chroma_client", mock_client)
 
-        from rag_mcp.metadata_extractor import _build_ollama_prompt
+        from rag_mcp.core.metadata.ollama import _build_ollama_prompt
         prompt = _build_ollama_prompt("some document text")
         assert "uncategorised" in prompt
         assert "EXISTING CATEGORIES" in prompt
@@ -1136,21 +1136,21 @@ class TestCoverageGaps:
 
     def test_parse_ollama_json_non_list_keywords(self) -> None:
         """Non-list keywords field must be treated as empty list."""
-        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        from rag_mcp.core.metadata.ollama import _parse_ollama_json_response
         raw = json.dumps({"category": "ai", "keywords": "not_a_list", "summary": "test"})
         result = _parse_ollama_json_response(raw)
         assert result["keywords"] == []
 
     def test_parse_ollama_json_empty_summary(self) -> None:
         """Empty summary field must produce empty string."""
-        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        from rag_mcp.core.metadata.ollama import _parse_ollama_json_response
         raw = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         result = _parse_ollama_json_response(raw)
         assert result["summary"] == ""
 
     def test_parse_ollama_json_non_dict_response(self) -> None:
         """A JSON array (not object) must fall back to raw text as category."""
-        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        from rag_mcp.core.metadata.ollama import _parse_ollama_json_response
         raw = json.dumps(["not", "a", "dict"])
         result = _parse_ollama_json_response(raw)
         assert result["category"] == "uncategorised"
@@ -1161,7 +1161,7 @@ class TestCoverageGaps:
     def test_aggregate_llamaindex_title_fallback_category(self) -> None:
         """When all keywords are invalid, category falls back to first 2 words of title."""
         from unittest.mock import MagicMock
-        from rag_mcp.metadata_extractor import _aggregate_llamaindex_metadata
+        from rag_mcp.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
         node = MagicMock()
         # Keywords that all fail normalisation:
@@ -1185,7 +1185,7 @@ class TestOllamaMarkdownFenceStripping:
     """qwen3:0.6b often wraps JSON in a markdown fence; we must unwrap it."""
 
     def test_strip_json_fence(self) -> None:
-        from rag_mcp.metadata_extractor import _strip_markdown_fence
+        from rag_mcp.core.metadata.ollama import _strip_markdown_fence
 
         wrapped = '```json\n{"category": "ai", "keywords": [], "summary": ""}\n```'
         assert _strip_markdown_fence(wrapped) == (
@@ -1193,25 +1193,25 @@ class TestOllamaMarkdownFenceStripping:
         )
 
     def test_strip_bare_fence(self) -> None:
-        from rag_mcp.metadata_extractor import _strip_markdown_fence
+        from rag_mcp.core.metadata.ollama import _strip_markdown_fence
 
         wrapped = '```\n{"category": "ai"}\n```'
         assert _strip_markdown_fence(wrapped) == '{"category": "ai"}'
 
     def test_unfenced_text_returned_unchanged(self) -> None:
-        from rag_mcp.metadata_extractor import _strip_markdown_fence
+        from rag_mcp.core.metadata.ollama import _strip_markdown_fence
 
         bare = '{"category": "ai"}'
         assert _strip_markdown_fence(bare) == bare
 
     def test_empty_input_returns_empty(self) -> None:
-        from rag_mcp.metadata_extractor import _strip_markdown_fence
+        from rag_mcp.core.metadata.ollama import _strip_markdown_fence
 
         assert _strip_markdown_fence("") == ""
 
     def test_parse_ollama_json_with_markdown_fence(self) -> None:
         """Parser must unwrap a fenced JSON payload before json.loads."""
-        from rag_mcp.metadata_extractor import _parse_ollama_json_response
+        from rag_mcp.core.metadata.ollama import _parse_ollama_json_response
 
         raw = (
             '```json\n'
@@ -1288,7 +1288,7 @@ class TestOllamaRetry:
             [ConnectionError("transient"), good],
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("transformer attention"))
         assert result["category"] == "ai"
@@ -1308,7 +1308,7 @@ class TestOllamaRetry:
             ],
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         with caplog.at_level(logging.WARNING):
             result = asyncio.run(extract_metadata_async("any text"))
@@ -1347,7 +1347,7 @@ class TestOllamaRetry:
             ],
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         asyncio.run(extract_metadata_async("text"))
 
@@ -1371,7 +1371,7 @@ class TestOllamaRetry:
             [ConnectionError("one and done")],
         )
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         asyncio.run(extract_metadata_async("text"))
 
@@ -1384,7 +1384,7 @@ class TestOllamaRetry:
         good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         log = self._mock_async_client(monkeypatch, [good])
 
-        from rag_mcp.metadata_extractor import extract_metadata_async
+        from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async("attention"))
         assert result["category"] == "ai"

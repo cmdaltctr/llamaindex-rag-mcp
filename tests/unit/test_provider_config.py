@@ -73,7 +73,7 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
 @pytest.mark.asyncio
 async def test_llamacpp_chat_parses_openai_response() -> None:
     """_extract_llamacpp_chat_async parses OpenAI /v1/chat/completions format."""
-    from rag_mcp.metadata_extractor import _extract_llamacpp_chat_async
+    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -118,7 +118,7 @@ async def test_llamacpp_chat_parses_openai_response() -> None:
 @pytest.mark.asyncio
 async def test_llamacpp_chat_retries_on_failure() -> None:
     """_extract_llamacpp_chat_async falls back to uncategorised on retry exhaustion."""
-    from rag_mcp.metadata_extractor import _extract_llamacpp_chat_async
+    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()

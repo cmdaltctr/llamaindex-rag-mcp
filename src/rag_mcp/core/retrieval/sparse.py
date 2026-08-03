@@ -166,7 +166,7 @@ class BM25SparseRetriever:
         return db.get_collection(self.collection_name)
 
     def _get_generation(self) -> int:
-        from ...ingestion import get_collection_generation
+        from ..ingestion import get_collection_generation
 
         return get_collection_generation(self.collection_name)
 

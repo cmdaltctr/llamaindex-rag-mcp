@@ -17,16 +17,15 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.ingestion import (
-    _read_and_chunk_file_async,
-    _gather_supported_files,
-    _shutdown_requested,
-    _write_lock,
-    _embed_semaphore,
-    ingest_path_async,
-    list_documents,
-    read_and_chunk_file_async,
+from rag_mcp.core.ingestion import ingest_path_async, list_documents
+from rag_mcp.core.ingestion._state import (
+    embed_semaphore as _embed_semaphore,
+    shutdown_requested as _shutdown_requested,
+    write_lock as _write_lock,
 )
+from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
+from rag_mcp.core.ingestion.loader import gather_supported_files as _gather_supported_files
 
 
 # ── _gather_supported_files ──────────────────────────────────────────────
