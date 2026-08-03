@@ -34,6 +34,11 @@ jobs:
       - name: Run tests (fast)
         env:
           PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "not slow" --tb=short -q
 
       - name: Run tests (slow, liteparse on macOS)
@@ -65,6 +70,13 @@ jobs:
         run: uv sync --frozen
 
       - name: Run tests with coverage
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-report=xml
 
       - name: SonarCloud Scan

@@ -24,6 +24,7 @@ from unittest.mock import patch
 os.environ.setdefault("EMBED_PROVIDER", "local")
 os.environ.setdefault("LOCAL_BACKEND", "ollama")
 os.environ.setdefault("EMBED_MODEL", "nomic-embed-text")
+os.environ.setdefault("OLLAMA_BASE_URL", "http://localhost:11434")
 os.environ.setdefault("METADATA_LLM_PROVIDER", "local")
 # ────────────────────────────────────────────────────────────────────────
 
