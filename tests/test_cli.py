@@ -23,7 +23,7 @@ from rag_mcp.cli import (
     _make_plain_callback,
     app,
 )
-from rag_mcp.reranker import CrossEncoderReranker
+from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
 runner = CliRunner()
 
@@ -407,7 +407,7 @@ class TestProgressReporting:
         import asyncio
         from unittest.mock import AsyncMock
 
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
@@ -446,7 +446,7 @@ class TestIngestErrorHandling:
     @patch("rag_mcp.cli.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -456,7 +456,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception with 'ollama' in message triggers Ollama error."""
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("ollama service unavailable")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -466,7 +466,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception with 'embed' in message triggers Ollama error."""
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("embed operation failed")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -476,7 +476,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("Something went wrong")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -486,10 +486,10 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
         """Interrupt during ingest shows interruption message."""
-        from rag_mcp.ingestion import _shutdown_requested
+        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         # Simulate: ingest succeeds but shutdown was requested
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -509,9 +509,9 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
         """Interrupt during ingest with --json outputs JSON with interrupted flag."""
-        from rag_mcp.ingestion import _shutdown_requested
+        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -533,9 +533,9 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
         """Interrupt message mentions chunks written before interruption."""
-        from rag_mcp.ingestion import _shutdown_requested
+        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -554,7 +554,7 @@ class TestIngestErrorHandling:
         self, mock_signal: MagicMock
     ) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(
                 app, ["ingest", "/fake/path", "--json"]
@@ -578,7 +578,7 @@ class TestSearchErrorHandling:
             "reranked": False,
         }]
 
-        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
                 app,
                 [
@@ -618,7 +618,7 @@ class TestSearchErrorHandling:
             "reranked": False,
         }]
 
-        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(app, ["search", "cli query", "--json"])
 
         assert result.exit_code == 0
@@ -642,7 +642,7 @@ class TestSearchErrorHandling:
             "reranked": False,
         }]
 
-        with patch("rag_mcp.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
                 app,
                 ["search", "cli query", "--hybrid", "--json"],
@@ -654,28 +654,28 @@ class TestSearchErrorHandling:
 
     def test_search_connection_error(self) -> None:
         """ConnectionError in search triggers Ollama error message."""
-        with patch("rag_mcp.retrieval.search") as mock_search:
+        with patch("rag_mcp.core.retrieval.search") as mock_search:
             mock_search.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_generic_exception_ollama(self) -> None:
         """Generic exception with 'ollama' in search triggers Ollama error."""
-        with patch("rag_mcp.retrieval.search") as mock_search:
+        with patch("rag_mcp.core.retrieval.search") as mock_search:
             mock_search.side_effect = Exception("ollama error occurred")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_generic_exception_other(self) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch("rag_mcp.retrieval.search") as mock_search:
+        with patch("rag_mcp.core.retrieval.search") as mock_search:
             mock_search.side_effect = Exception("Something broke")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_connection_error_json(self) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch("rag_mcp.retrieval.search") as mock_search:
+        with patch("rag_mcp.core.retrieval.search") as mock_search:
             mock_search.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(
                 app, ["search", "test query", "--json"]
@@ -722,7 +722,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("read", 3, 3)
             return {"status": "ok", "files_indexed": 3, "chunks_created": 9}
 
-        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
@@ -742,7 +742,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 5, 5)
             return {"status": "ok", "files_indexed": 2, "chunks_created": 5}
 
-        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 5
@@ -764,7 +764,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 4, 4)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 4}
 
-        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
@@ -784,7 +784,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 10, 10)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 10}
 
-        with patch("rag_mcp.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 10
@@ -799,11 +799,11 @@ class TestSigintHandler:
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
         """First SIGINT sets _shutdown_requested and prints message."""
-        from rag_mcp.ingestion import _shutdown_requested
+        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -846,11 +846,11 @@ class TestSigintHandler:
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
         """Second SIGINT raises KeyboardInterrupt."""
-        from rag_mcp.ingestion import _shutdown_requested
+        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -891,7 +891,7 @@ class TestConsoleIsTerminal:
         """When console.is_terminal is True, Rich progress is used."""
         with (
             patch("rag_mcp.cli.console") as mock_console,
-            patch("rag_mcp.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
+            patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
         ):
             mock_console.is_terminal = True
             mock_console.print = MagicMock()
@@ -921,7 +921,7 @@ class TestFileDetails:
         self, sample_txt: Path
     ) -> None:
         """Single file ingest returns file_details with one indexed entry."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(sample_txt))
         assert result["status"] == "ok"
@@ -936,7 +936,7 @@ class TestFileDetails:
         self, dir_with_docs: Path
     ) -> None:
         """Folder ingest returns file_details for each file."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
@@ -950,7 +950,7 @@ class TestFileDetails:
         self, corrupt_dir: Path
     ) -> None:
         """Corrupt file in folder has status 'failed' with error message."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(corrupt_dir))
         assert "file_details" in result
@@ -1202,9 +1202,9 @@ class TestPerFileLogging:
         """Folder ingest produces per-file INFO log lines."""
         import logging
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
-        with patch("rag_mcp.ingestion.logger") as mock_logger:
+        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(dir_with_docs))
             assert result["status"] == "ok"
 
@@ -1224,9 +1224,9 @@ class TestPerFileLogging:
         self, corrupt_dir: Path
     ) -> None:
         """Failed files produce WARNING-level log lines."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
-        with patch("rag_mcp.ingestion.logger") as mock_logger:
+        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(corrupt_dir))
             assert result["status"] == "ok"
             # The corrupt.pdf should at minimum appear in warnings
@@ -1255,7 +1255,7 @@ class TestUnsupportedFileExclusion:
         bad_file = tmp_path / "not_supported.xyz"
         bad_file.write_text("This file should be skipped.")
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(tmp_path))
         assert "file_details" in result
@@ -1284,7 +1284,7 @@ class TestMakeFileDetail:
 
     def test_indexed_entry(self) -> None:
         """Indexed entry has file, status, chunks, no error."""
-        from rag_mcp.ingestion import _make_file_detail
+        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail("doc.pdf", "indexed", 15)
         assert fd == {"file": "doc.pdf", "status": "indexed", "chunks": 15}
@@ -1292,7 +1292,7 @@ class TestMakeFileDetail:
 
     def test_failed_entry(self) -> None:
         """Failed entry includes error message."""
-        from rag_mcp.ingestion import _make_file_detail
+        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail(
             "bad.pdf", "failed", 0, error="Not a valid PDF"
@@ -1304,7 +1304,7 @@ class TestMakeFileDetail:
 
     def test_skipped_entry(self) -> None:
         """Skipped entry has chunks=0 with an error reason."""
-        from rag_mcp.ingestion import _make_file_detail
+        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail(
             "data.exe", "skipped", 0, error="Unsupported extension: .exe"
@@ -1375,7 +1375,7 @@ class TestDeleteCLI:
         # JSON output goes to stdout via typer.echo; RichHandler logs go to
         # stderr.  When mix_stderr=True, finding the JSON requires scanning.
         # Fallback: verify the operation worked via exit code + list check.
-        from rag_mcp.ingestion import list_documents
+        from rag_mcp.core.ingestion import list_documents
         docs = list_documents()
         assert docs == []  # chunks were removed
 
@@ -1402,7 +1402,7 @@ class TestDeleteCLI:
         ])
         assert result.exit_code == 0
         # Verify chunks still exist (dry-run didn't delete)
-        from rag_mcp.ingestion import list_documents
+        from rag_mcp.core.ingestion import list_documents
         docs = list_documents()
         assert len(docs) > 0
 
@@ -1573,7 +1573,7 @@ class TestListCollectionsCLI:
     def test_list_collections_empty(self) -> None:
         """Empty result shows 'No collections found' message."""
         with patch(
-            "rag_mcp.retrieval.list_collections", return_value=[],
+            "rag_mcp.core.retrieval.list_collections", return_value=[],
         ):
             result = runner.invoke(app, ["list-collections"])
         assert result.exit_code == 0
@@ -1582,7 +1582,7 @@ class TestListCollectionsCLI:
     def test_list_collections_empty_json(self) -> None:
         """Empty result with --json outputs '[]'."""
         with patch(
-            "rag_mcp.retrieval.list_collections", return_value=[],
+            "rag_mcp.core.retrieval.list_collections", return_value=[],
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
         assert result.exit_code == 0
@@ -1595,7 +1595,7 @@ class TestListCollectionsCLI:
             {"name": "research", "document_count": 1, "chunk_count": 7},
         ]
         with patch(
-            "rag_mcp.retrieval.list_collections",
+            "rag_mcp.core.retrieval.list_collections",
             return_value=fake_collections,
         ):
             result = runner.invoke(app, ["list-collections"])
@@ -1611,7 +1611,7 @@ class TestListCollectionsCLI:
             {"name": "documents", "document_count": 3, "chunk_count": 15},
         ]
         with patch(
-            "rag_mcp.retrieval.list_collections",
+            "rag_mcp.core.retrieval.list_collections",
             return_value=fake_collections,
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
@@ -1633,7 +1633,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_collection_with_yes_flag(self) -> None:
         """Delete --collection with --yes skips prompt and removes collection."""
         with patch(
-            "rag_mcp.ingestion.remove_collection",
+            "rag_mcp.core.ingestion.remove_collection",
             return_value={"status": "ok", "collection": "test_coll"},
         ) as mock_remove:
             result = runner.invoke(app, [
@@ -1646,7 +1646,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_collection_confirm_yes(self) -> None:
         """Delete --collection with Confirm.ask returning True proceeds."""
         with patch(
-            "rag_mcp.ingestion.remove_collection",
+            "rag_mcp.core.ingestion.remove_collection",
             return_value={"status": "ok", "collection": "test_coll"},
         ) as mock_remove, patch(
             "rich.prompt.Confirm.ask", return_value=True,
@@ -1670,7 +1670,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_metadata_real_execution(self) -> None:
         """Delete --metadata with valid JSON performs real removal."""
         with patch(
-            "rag_mcp.ingestion.remove_by_metadata",
+            "rag_mcp.core.ingestion.remove_by_metadata",
             return_value={
                 "status": "ok",
                 "chunks_removed": 5,
@@ -1687,7 +1687,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_error_result_display(self) -> None:
         """Delete with an error result displays the error and exits 1."""
         with patch(
-            "rag_mcp.ingestion.remove_document",
+            "rag_mcp.core.ingestion.remove_document",
             return_value={
                 "status": "error",
                 "message": "boom",

@@ -30,7 +30,7 @@ from rag_mcp.watcher import (
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 # The lazy import in _do_ingest means we must patch at the source module.
-_INGEST_PATH_TARGET = "rag_mcp.ingestion.ingest_path_async"
+_INGEST_PATH_TARGET = "rag_mcp.core.ingestion.ingest_path_async"
 
 
 def _patch_ingest(**kwargs):
@@ -1018,7 +1018,7 @@ class TestIngestPathAllFilesFail:
     ):
         """When all files fail to index, ingest_path_async returns
         error_type: "file" with a descriptive message."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         # Create a real temp file with unsupported content that will fail parsing
         test_file = tmp_path / "test.txt"
@@ -1028,10 +1028,10 @@ class TestIngestPathAllFilesFail:
         assert result["status"] == "error"
         assert result["error_type"] == "file"
 
-    @patch("rag_mcp.ingestion._gather_supported_files")
+    @patch("rag_mcp.core.ingestion.pipeline.gather_supported_files")
     async def test_no_files_returns_ok(self, mock_gather, tmp_path):
         """When no supported files exist, returns ok not error."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         test_dir = tmp_path / "empty"
         test_dir.mkdir()
@@ -1042,17 +1042,17 @@ class TestIngestPathAllFilesFail:
 
     async def test_connection_error_type(self, tmp_path):
         """ConnectionError from embedding returns error_type: "connection"."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         test_file = tmp_path / "test.pdf"
         test_file.write_text("fake pdf content")
 
         with patch(
-            "rag_mcp.ingestion._gather_supported_files",
+            "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
                 side_effect=ConnectionError("No route to host"),
             ):
                 result = await ingest_path_async(str(test_file))
@@ -1062,17 +1062,17 @@ class TestIngestPathAllFilesFail:
 
     async def test_embedding_error_type(self, tmp_path):
         """RuntimeError from embedding returns error_type: "embedding"."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         test_file = tmp_path / "test.pdf"
         test_file.write_text("fake pdf content")
 
         with patch(
-            "rag_mcp.ingestion._gather_supported_files",
+            "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.ingestion._embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
                 side_effect=RuntimeError("Model inference failed"),
             ):
                 result = await ingest_path_async(str(test_file))
@@ -1198,7 +1198,7 @@ class TestShutdownRequestedBypass:
 class TestOnDeletedHandler:
     """Tests for the on_deleted event handler."""
 
-    _REMOVE_DOC_TARGET = "rag_mcp.ingestion.remove_document"
+    _REMOVE_DOC_TARGET = "rag_mcp.core.ingestion.remove_document"
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)

@@ -20,8 +20,8 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from .config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
-from .ingestion import ingest_path_async, list_documents as _list_documents
-from .retrieval import search
+from .core.ingestion import ingest_path_async, list_documents as _list_documents
+from .core.retrieval import search
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ def list_indexed_documents(collection: str = "documents") -> list[dict]:
 )
 def list_collections() -> list[dict]:
     """List all ChromaDB collections with counts."""
-    from .retrieval import list_collections as _list_collections
+    from .core.retrieval import list_collections as _list_collections
 
     return _list_collections()
 
@@ -216,7 +216,7 @@ def delete_documents(
         A dict summarising the operation: ``status``, ``mode``,
         ``collection``, and relevant counts.
     """
-    from .ingestion import (
+    from .core.ingestion import (
         preview_delete,
         remove_document,
         remove_by_metadata,

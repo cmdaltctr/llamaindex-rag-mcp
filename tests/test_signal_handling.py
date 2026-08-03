@@ -15,11 +15,9 @@ from unittest.mock import patch
 
 import pytest
 
-from rag_mcp.ingestion import (
-    _embed_and_write_async,
-    _shutdown_requested,
-    ingest_path_async,
-)
+from rag_mcp.core.ingestion import ingest_path_async
+from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+from rag_mcp.core.ingestion.writer import embed_and_write_async as _embed_and_write_async
 
 
 class TestShutdownFlag:

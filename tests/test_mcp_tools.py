@@ -592,9 +592,10 @@ async def test_search_documents_returns_filter_matches(
     mcp_server, tmp_path: Path, monkeypatch,
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
-    import rag_mcp.metadata_extractor as _me
-    monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-    monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+    import rag_mcp.core.metadata.extractor as _md_ext
+    import rag_mcp.core.metadata.keyword as _md_kw
+    monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+    monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
     ai_doc = tmp_path / "ai.txt"
     ai_doc.write_text(

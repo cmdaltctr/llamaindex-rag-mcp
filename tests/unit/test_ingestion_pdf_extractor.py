@@ -26,7 +26,7 @@ class TestIngestionPDFExtractor:
             pytest.skip("Corpus PDF not available")
 
         import asyncio
-        from rag_mcp.ingestion import _read_and_chunk_file_async
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
         nodes = asyncio.run(
             _read_and_chunk_file_async(CORPUS_PDF)
@@ -54,7 +54,7 @@ class TestIngestionLiteParsePath:
         monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
 
         import asyncio
-        from rag_mcp.ingestion import _read_and_chunk_file_async
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
         nodes = asyncio.run(
             _read_and_chunk_file_async(CORPUS_PDF)

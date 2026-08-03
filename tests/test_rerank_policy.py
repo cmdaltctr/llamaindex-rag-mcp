@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.retrieval import (
+from rag_mcp.core.retrieval.policy import (
     _classify_query_technical,
     _resolve_rerank_policy,
 )
@@ -349,7 +349,7 @@ class TestPolicyDiagnostics:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """include_diagnostics=True adds rerank_reason to results."""
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.retrieval import search
 
         import rag_mcp.config as config
 
@@ -371,7 +371,7 @@ class TestPolicyDiagnostics:
 
     def test_diagnostics_excluded_by_default(self) -> None:
         """include_diagnostics=False (default) excludes rerank_reason."""
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.retrieval import search
 
         results = search(
             query="test query",

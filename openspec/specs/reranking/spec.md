@@ -31,6 +31,8 @@ the fused dense+sparse candidate list. When reranking is enabled and hybrid
 retrieval is disabled, the reranker SHALL receive the dense-only candidate
 list. The fetch pool size SHALL be governed by `RERANK_MAX_FETCH` and
 `RERANK_FETCH_MULTIPLIER` regardless of whether hybrid retrieval is active.
+The tokenizer `max_length` SHALL default to 2048 tokens to balance
+context window utilisation with latency.
 
 #### Scenario: Rerank over dense-only candidates
 - **GIVEN** documents have been indexed
@@ -74,13 +76,14 @@ HuggingFace Hub.
 #### Scenario: platform-aware ONNX variant selection
 - **GIVEN** the reranker is running on macOS ARM
 - **WHEN** the reranker downloads the ONNX model
-- **THEN** it SHALL prefer `model_qint8_arm64.onnx` (~23 MB quantised variant)
-- **AND** fall back to `model.onnx` if the ARM variant is unavailable
+- **THEN** for the default model `cross-encoder/ms-marco-MiniLM-L-6-v2` on ARM64, it SHALL prefer `onnx/model_qint8_arm64.onnx` (~23 MB quantised variant)
+- **AND** fall back to `onnx/model.onnx` if the ARM variant is unavailable
+- **AND** for ModernBERT-based models (e.g. `Alibaba-NLP/gte-reranker-modernbert-base`), it SHALL prefer `onnx/model_quantized.onnx` (int8) with a fallback chain through `model_int8.onnx` → `model_fp16.onnx` → `model.onnx`
 
 #### Scenario: module docstring reflects correct model
 - **GIVEN** `reranker.py` is loaded
 - **WHEN** the module docstring is read
-- **THEN** it SHALL reference `cross-encoder/ms-marco-MiniLM-L-6-v2`
+- **THEN** it SHALL reference `cross-encoder/ms-marco-MiniLM-L-6-v2` as the default
 - **AND** it SHALL NOT reference `Xenova/ms-marco-MiniLM-L-6-v2`
 
 ### Requirement: similarity threshold filtering
@@ -114,8 +117,8 @@ The system SHALL support the following environment variables for reranker config
 | `RERANK_ENABLED_FOR_SEMANTIC` | `true` | Policy knob allowing omitted rerank requests to enable reranking for semantic workloads below the technical threshold |
 | `HARD_TECHNICAL_THRESHOLD` | `0.3` | Identifier-heavy workload fraction at or above which semantic policy reranking SHALL NOT be enabled |
 | `SIMILARITY_THRESHOLD` | `0.0` | Default minimum score to include a result |
-| `RERANK_FETCH_MULTIPLIER` | `10` | Multiplier applied to `top_k` when reranking is enabled |
-| `RERANK_MAX_FETCH` | `50` | Lower bound on the rerank candidate pool size |
+| `RERANK_FETCH_MULTIPLIER` | `3` | Multiplier applied to `top_k` when reranking is enabled |
+| `RERANK_MAX_FETCH` | `100` | Lower bound on the rerank candidate pool size |
 
 #### Scenario: env vars set defaults
 - **GIVEN** `SIMILARITY_THRESHOLD=0.25` is set in `.env`

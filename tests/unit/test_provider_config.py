@@ -73,7 +73,7 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
 @pytest.mark.asyncio
 async def test_llamacpp_chat_parses_openai_response() -> None:
     """_extract_llamacpp_chat_async parses OpenAI /v1/chat/completions format."""
-    from rag_mcp.metadata_extractor import _extract_llamacpp_chat_async
+    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -98,12 +98,12 @@ async def test_llamacpp_chat_parses_openai_response() -> None:
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_cls.return_value = mock_client
 
-        from rag_mcp import metadata_extractor
-        original_chat_url = metadata_extractor.LLAMACPP_CHAT_URL
-        original_chat_model = metadata_extractor.LLAMACPP_CHAT_MODEL
-        metadata_extractor.LLAMACPP_CHAT_URL = "http://localhost:8081/v1"
-        metadata_extractor.LLAMACPP_CHAT_MODEL = "test.gguf"
-        metadata_extractor._retry_sleep = AsyncMock()
+        from rag_mcp.core.metadata import llamacpp as _llamacpp
+        original_chat_url = _llamacpp.LLAMACPP_CHAT_URL
+        original_chat_model = _llamacpp.LLAMACPP_CHAT_MODEL
+        _llamacpp.LLAMACPP_CHAT_URL = "http://localhost:8081/v1"
+        _llamacpp.LLAMACPP_CHAT_MODEL = "test.gguf"
+        _llamacpp._retry_sleep = AsyncMock()
 
         try:
             result = await _extract_llamacpp_chat_async("Some text about AI.")
@@ -111,14 +111,14 @@ async def test_llamacpp_chat_parses_openai_response() -> None:
             assert "ml" in result["keywords"]
             assert result["summary"] == "A paper about AI."
         finally:
-            metadata_extractor.LLAMACPP_CHAT_URL = original_chat_url
-            metadata_extractor.LLAMACPP_CHAT_MODEL = original_chat_model
+            _llamacpp.LLAMACPP_CHAT_URL = original_chat_url
+            _llamacpp.LLAMACPP_CHAT_MODEL = original_chat_model
 
 
 @pytest.mark.asyncio
 async def test_llamacpp_chat_retries_on_failure() -> None:
     """_extract_llamacpp_chat_async falls back to uncategorised on retry exhaustion."""
-    from rag_mcp.metadata_extractor import _extract_llamacpp_chat_async
+    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()
@@ -127,10 +127,10 @@ async def test_llamacpp_chat_retries_on_failure() -> None:
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_cls.return_value = mock_client
 
-        from rag_mcp import metadata_extractor
-        metadata_extractor.LLAMACPP_CHAT_URL = "http://localhost:8081/v1"
-        metadata_extractor.LLAMACPP_CHAT_MODEL = "test.gguf"
-        metadata_extractor._retry_sleep = AsyncMock()
+        from rag_mcp.core.metadata import llamacpp as _llamacpp
+        _llamacpp.LLAMACPP_CHAT_URL = "http://localhost:8081/v1"
+        _llamacpp.LLAMACPP_CHAT_MODEL = "test.gguf"
+        _llamacpp._retry_sleep = AsyncMock()
 
         result = await _extract_llamacpp_chat_async("Some text.")
         assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
@@ -139,78 +139,86 @@ async def test_llamacpp_chat_retries_on_failure() -> None:
 @pytest.mark.asyncio
 async def test_local_mode_dispatches_to_llamacpp_when_configured() -> None:
     """extract_metadata_async with mode=local routes to llamacpp chat when LOCAL_BACKEND=llamacpp."""
-    from rag_mcp import metadata_extractor
+    from rag_mcp.core.metadata import extractor as _ext
 
-    original_llm_provider = metadata_extractor.METADATA_LLM_PROVIDER
-    original_local_backend = metadata_extractor.LOCAL_BACKEND
-    original_mode = metadata_extractor.METADATA_EXTRACTION_MODE
-    metadata_extractor.METADATA_LLM_PROVIDER = "local"
-    metadata_extractor.LOCAL_BACKEND = "llamacpp"
-    metadata_extractor.METADATA_EXTRACTION_MODE = "local"
+    original_llm_provider = _ext.METADATA_LLM_PROVIDER
+    original_local_backend = _ext.LOCAL_BACKEND
+    original_mode = _ext.METADATA_EXTRACTION_MODE
+    _ext.METADATA_LLM_PROVIDER = "local"
+    _ext.LOCAL_BACKEND = "llamacpp"
+    _ext.METADATA_EXTRACTION_MODE = "local"
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(metadata_extractor, "_extract_llamacpp_chat_async", mock_fn):
+    with patch.object(_ext, "_extract_llamacpp_chat_async", mock_fn):
         try:
-            await metadata_extractor.extract_metadata_async("text", "file.txt")
+            await _ext.extract_metadata_async("text", "file.txt")
             mock_fn.assert_called_once_with("text")
         finally:
-            metadata_extractor.METADATA_LLM_PROVIDER = original_llm_provider
-            metadata_extractor.LOCAL_BACKEND = original_local_backend
-            metadata_extractor.METADATA_EXTRACTION_MODE = original_mode
+            _ext.METADATA_LLM_PROVIDER = original_llm_provider
+            _ext.LOCAL_BACKEND = original_local_backend
+            _ext.METADATA_EXTRACTION_MODE = original_mode
 
 
 @pytest.mark.asyncio
 async def test_local_mode_dispatches_to_ollama_when_configured() -> None:
     """extract_metadata_async with mode=local routes to ollama when LOCAL_BACKEND=ollama."""
-    from rag_mcp import metadata_extractor
+    from rag_mcp.core.metadata import extractor as _ext
 
-    original_llm_provider = metadata_extractor.METADATA_LLM_PROVIDER
-    original_local_backend = metadata_extractor.LOCAL_BACKEND
-    original_mode = metadata_extractor.METADATA_EXTRACTION_MODE
-    metadata_extractor.METADATA_LLM_PROVIDER = "local"
-    metadata_extractor.LOCAL_BACKEND = "ollama"
-    metadata_extractor.METADATA_EXTRACTION_MODE = "local"
+    original_llm_provider = _ext.METADATA_LLM_PROVIDER
+    original_local_backend = _ext.LOCAL_BACKEND
+    original_mode = _ext.METADATA_EXTRACTION_MODE
+    _ext.METADATA_LLM_PROVIDER = "local"
+    _ext.LOCAL_BACKEND = "ollama"
+    _ext.METADATA_EXTRACTION_MODE = "local"
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(metadata_extractor, "_extract_ollama_async", mock_fn):
+    with patch.object(_ext, "_extract_ollama_async", mock_fn):
         try:
-            await metadata_extractor.extract_metadata_async("text", "file.txt")
+            await _ext.extract_metadata_async("text", "file.txt")
             mock_fn.assert_called_once_with("text")
         finally:
-            metadata_extractor.METADATA_LLM_PROVIDER = original_llm_provider
-            metadata_extractor.LOCAL_BACKEND = original_local_backend
-            metadata_extractor.METADATA_EXTRACTION_MODE = original_mode
+            _ext.METADATA_LLM_PROVIDER = original_llm_provider
+            _ext.LOCAL_BACKEND = original_local_backend
+            _ext.METADATA_EXTRACTION_MODE = original_mode
 
 
 @pytest.mark.asyncio
 async def test_cloud_mode_dispatches_to_openrouter() -> None:
     """extract_metadata_async with mode=local routes to openrouter when METADATA_LLM_PROVIDER=cloud."""
-    from rag_mcp import metadata_extractor
+    from rag_mcp.core.metadata import extractor as _ext
 
-    original_llm_provider = metadata_extractor.METADATA_LLM_PROVIDER
-    original_mode = metadata_extractor.METADATA_EXTRACTION_MODE
-    metadata_extractor.METADATA_LLM_PROVIDER = "cloud"
-    metadata_extractor.METADATA_EXTRACTION_MODE = "local"
+    original_llm_provider = _ext.METADATA_LLM_PROVIDER
+    original_mode = _ext.METADATA_EXTRACTION_MODE
+    _ext.METADATA_LLM_PROVIDER = "cloud"
+    _ext.METADATA_EXTRACTION_MODE = "local"
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(metadata_extractor, "_extract_openrouter_chat_async", mock_fn):
+    with patch.object(_ext, "_extract_openrouter_chat_async", mock_fn):
         try:
-            await metadata_extractor.extract_metadata_async("text", "file.txt")
+            await _ext.extract_metadata_async("text", "file.txt")
             mock_fn.assert_called_once_with("text")
         finally:
-            metadata_extractor.METADATA_LLM_PROVIDER = original_llm_provider
-            metadata_extractor.METADATA_EXTRACTION_MODE = original_mode
+            _ext.METADATA_LLM_PROVIDER = original_llm_provider
+            _ext.METADATA_EXTRACTION_MODE = original_mode
 
 
 @pytest.mark.asyncio
 async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error() -> None:
     """llamaindex mode with local llamacpp falls back to chat mode when OpenAILike not installed."""
-    from rag_mcp import metadata_extractor
+    from rag_mcp.core.metadata import llamaindex as _lli
+    from rag_mcp.core.metadata import extractor as _ext
 
-    original_llm_provider = metadata_extractor.METADATA_LLM_PROVIDER
-    original_local_backend = metadata_extractor.LOCAL_BACKEND
-    metadata_extractor.METADATA_LLM_PROVIDER = "local"
-    metadata_extractor.LOCAL_BACKEND = "llamacpp"
+    # Patch both modules — llamaindex.py reads its own copy to decide
+    # which LLM class to import, and extractor.py reads its own copy
+    # in _dispatch_local_extraction to route the fallback.
+    original_ext_provider = _ext.METADATA_LLM_PROVIDER
+    original_ext_backend = _ext.LOCAL_BACKEND
+    original_lli_provider = _lli.METADATA_LLM_PROVIDER
+    original_lli_backend = _lli.LOCAL_BACKEND
+    _ext.METADATA_LLM_PROVIDER = "local"
+    _ext.LOCAL_BACKEND = "llamacpp"
+    _lli.METADATA_LLM_PROVIDER = "local"
+    _lli.LOCAL_BACKEND = "llamacpp"
 
     mock_fn = AsyncMock(return_value={"category": "fallback", "keywords": [], "summary": ""})
 
@@ -222,14 +230,16 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error() -> Non
             raise ImportError("not installed")
         return real_import(name, *args, **kwargs)
 
-    with patch.object(metadata_extractor, "_extract_llamacpp_chat_async", mock_fn), \
+    with patch.object(_ext, "_extract_llamacpp_chat_async", mock_fn), \
          patch("builtins.__import__", side_effect=_failing_import):
         try:
-            await metadata_extractor._extract_llamaindex_async("text", "file.txt")
+            await _lli._extract_llamaindex_async("text", "file.txt")
             mock_fn.assert_called_once_with("text")
         finally:
-            metadata_extractor.METADATA_LLM_PROVIDER = original_llm_provider
-            metadata_extractor.LOCAL_BACKEND = original_local_backend
+            _ext.METADATA_LLM_PROVIDER = original_ext_provider
+            _ext.LOCAL_BACKEND = original_ext_backend
+            _lli.METADATA_LLM_PROVIDER = original_lli_provider
+            _lli.LOCAL_BACKEND = original_lli_backend
 
 
 # ── Provider registry tests ──────────────────────────────────────────────

@@ -17,9 +17,9 @@ HuggingFace Hub.
 #### Scenario: platform-aware ONNX variant selection
 - **GIVEN** the reranker is running on macOS ARM
 - **WHEN** the reranker downloads the ONNX model
-- **THEN** it SHALL prefer `onnx/model.onnx` (fp32) for `gte-reranker-modernbert-base`
-- **AND** fall back to `onnx/model.onnx` if no platform-specific variant is available
-- **AND** for models that ship ARM-quantised variants (e.g. `cross-encoder/ms-marco-MiniLM-L-6-v2`), it SHALL still prefer the quantised variant
+- **THEN** it SHALL prefer `onnx/model_quantized.onnx` (int8, 151MB) for `gte-reranker-modernbert-base`
+- **AND** fall back through `model_int8.onnx` → `model_fp16.onnx` → `model.onnx` if the preferred variant is unavailable
+- **AND** for models that ship ARM-tuned quantised variants (e.g. `cross-encoder/ms-marco-MiniLM-L-6-v2` → `onnx/model_qint8_arm64.onnx`), it SHALL use the model-specific preference
 
 #### Scenario: module docstring reflects correct model
 - **GIVEN** `reranker.py` is loaded

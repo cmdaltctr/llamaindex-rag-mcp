@@ -135,31 +135,31 @@ class TestThresholdScaling:
 
     def test_no_rerank_threshold_unchanged(self) -> None:
         """Without reranking, the threshold must not be scaled."""
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=False) == 0.3
 
     def test_rerank_threshold_scaled_down(self) -> None:
         """With reranking, the threshold must be scaled down 30×."""
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=True) == pytest.approx(0.01)
 
     def test_zero_threshold_stays_zero_no_rerank(self) -> None:
         """Zero threshold (no filtering) must stay zero without rerank."""
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.0, rerank=False) == 0.0
 
     def test_zero_threshold_stays_zero_with_rerank(self) -> None:
         """Zero threshold (no filtering) must stay zero with rerank."""
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.0, rerank=True) == 0.0
 
     def test_moderate_threshold_with_rerank(self) -> None:
         """A moderate threshold (0.5) should become ~0.0167 with rerank."""
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.5, rerank=True) == pytest.approx(
             0.5 / 30
@@ -172,7 +172,7 @@ class TestThresholdScaling:
         the Colosseum chunk but gave it a low sigmoid score (0.015).
         With 30× scaling, threshold 0.3 → 0.01, so 0.015 passes.
         """
-        from rag_mcp.retrieval import _effective_threshold
+        from rag_mcp.core.retrieval.policy import _effective_threshold
 
         threshold = _effective_threshold(0.3, rerank=True)
         assert 0.015 >= threshold  # Colosseum score should pass
@@ -203,8 +203,8 @@ class TestCollectionAwareSearch:
 
     async def test_search_named_collection(self, sample_txt, sample_md):
         """Search must return results only from the specified collection."""
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         # Ingest into two different collections
         await ingest_path_async(str(sample_txt), collection_name="research")
@@ -231,8 +231,8 @@ class TestCollectionAwareSearch:
 
     async def test_default_collection_search(self, sample_txt):
         """Search without collection_name must use 'documents'."""
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         await ingest_path_async(str(sample_txt))
 
@@ -245,12 +245,13 @@ class TestMetadataFiltering:
 
     async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         ai_file = tmp_path / "ai_content.txt"
         ai_file.write_text(
@@ -275,12 +276,13 @@ class TestMetadataFiltering:
 
     async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         ai_file = tmp_path / "ai.txt"
         ai_file.write_text("attention transformer neural network deep learning")
@@ -295,8 +297,8 @@ class TestListCollections:
 
     async def test_list_collections_with_data(self, sample_txt, sample_md):
         """list_collections must return collection names and counts."""
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import list_collections
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import list_collections
 
         await ingest_path_async(str(sample_txt), collection_name="research")
         await ingest_path_async(str(sample_md), collection_name="code")
@@ -316,7 +318,7 @@ class TestListCollections:
 
     def test_list_collections_empty(self):
         """list_collections on fresh store must return empty list."""
-        from rag_mcp.retrieval import list_collections
+        from rag_mcp.core.retrieval import list_collections
 
         # Note: EphemeralClient is shared between tests,
         # but collections from other tests might be visible.
@@ -332,12 +334,12 @@ class TestListCollections:
         """Collection document counts must include all metadata pages."""
         import chromadb
         import rag_mcp.config as _config
-        import rag_mcp.retrieval as _retrieval
-        from rag_mcp.retrieval import list_collections
+        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.core.retrieval import list_collections
 
         monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
 
-        db = chromadb.PersistentClient(path=_retrieval.CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_collection_stats")
         collection.add(
             ids=["1", "2", "3", "4", "5"],
@@ -376,12 +378,13 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         ai_file = tmp_path / "ai_only.txt"
         ai_file.write_text(
@@ -425,12 +428,13 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
-        import rag_mcp.metadata_extractor as _me
-        monkeypatch.setattr(_me, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_me, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.core.metadata.extractor as _md_ext
+        import rag_mcp.core.metadata.keyword as _md_kw
+        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
+        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
 
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import search
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
 
         ai_file = tmp_path / "ai_threshold.txt"
         ai_file.write_text(
@@ -476,7 +480,7 @@ class TestScoreConsistency:
 
     def test_distance_to_score_canonical_formula(self) -> None:
         """``_distance_to_score`` follows ``1 / (1 + d)`` exactly."""
-        from rag_mcp.retrieval import _distance_to_score
+        from rag_mcp.core.retrieval.dense import _distance_to_score
 
         assert _distance_to_score(0.0) == pytest.approx(1.0)
         assert _distance_to_score(1.0) == pytest.approx(0.5)

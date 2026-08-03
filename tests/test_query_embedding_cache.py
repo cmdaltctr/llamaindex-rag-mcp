@@ -14,8 +14,9 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from rag_mcp import retrieval as _retrieval
-from rag_mcp.ingestion import ingest_path_async
+from rag_mcp.core.retrieval import dense as _dense
+from rag_mcp.core.retrieval import search as _retrieval_search
+from rag_mcp.core.ingestion import ingest_path_async
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ def counting_embed():
     counts are isolated. Each test gets a unique ``model_name`` so the
     cache key cannot leak across tests.
     """
-    _retrieval._cached_query_embedding.cache_clear()
+    _dense._cached_query_embedding.cache_clear()
     previous = Settings.embed_model
 
     counter = _CountingMockEmbedding.make(model_name="counting-mock-1")
@@ -72,7 +73,7 @@ def counting_embed():
     yield counter
 
     Settings.embed_model = previous
-    _retrieval._cached_query_embedding.cache_clear()
+    _dense._cached_query_embedding.cache_clear()
 
 
 # ── 4.4: unfiltered repeat hits cache ─────────────────────────────────────
@@ -88,11 +89,11 @@ async def test_unfiltered_repeat_query_embeds_once(
     # Reset the counter so ingestion-time embed calls don't leak in.
     counting_embed._call_counter[0] = 0
 
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_unfiltered",
     )
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_unfiltered",
     )
@@ -114,12 +115,12 @@ async def test_filtered_repeat_query_embeds_once(
     await ingest_path_async(str(sample_md), collection_name="cache_filtered")
     counting_embed._call_counter[0] = 0
 
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_filtered",
         metadata_filter={"category": "AI"},
     )
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_filtered",
         metadata_filter={"category": "AI"},
@@ -139,8 +140,8 @@ async def test_filtered_and_unfiltered_share_cache(
     await ingest_path_async(str(sample_md), collection_name="cache_shared")
     counting_embed._call_counter[0] = 0
 
-    _retrieval.search("capital of France", collection_name="cache_shared")
-    _retrieval.search(
+    _retrieval_search("capital of France", collection_name="cache_shared")
+    _retrieval_search(
         "capital of France",
         collection_name="cache_shared",
         metadata_filter={"category": "AI"},
@@ -160,8 +161,8 @@ async def test_distinct_queries_do_not_collide(
     await ingest_path_async(str(sample_md), collection_name="cache_distinct")
     counting_embed._call_counter[0] = 0
 
-    _retrieval.search("capital of France", collection_name="cache_distinct")
-    _retrieval.search("capital of Germany", collection_name="cache_distinct")
+    _retrieval_search("capital of France", collection_name="cache_distinct")
+    _retrieval_search("capital of Germany", collection_name="cache_distinct")
 
     assert counting_embed.calls == 2
 
@@ -171,7 +172,7 @@ async def test_distinct_queries_do_not_collide(
 
 def test_lru_eviction_caps_cache_at_maxsize() -> None:
     """The cache SHALL evict least-recently-used entries past maxsize=128."""
-    cache = _retrieval._cached_query_embedding
+    cache = _dense._cached_query_embedding
     cache.cache_clear()
 
     previous = Settings.embed_model
@@ -180,10 +181,10 @@ def test_lru_eviction_caps_cache_at_maxsize() -> None:
 
     try:
         for i in range(200):
-            _retrieval._embed_query(f"query-{i}")
+            _dense._embed_query(f"query-{i}")
 
         info = cache.cache_info()
-        assert info.maxsize == _retrieval._QUERY_EMBED_CACHE_MAXSIZE == 128
+        assert info.maxsize == _dense._QUERY_EMBED_CACHE_MAXSIZE == 128
         assert info.currsize <= 128, (
             f"Cache currsize {info.currsize} exceeded maxsize 128"
         )
@@ -202,11 +203,11 @@ async def test_unfiltered_repeat_query_embeds_once(
     """Two identical unfiltered searches SHALL embed the query only once."""
     await ingest_path_async(str(sample_md), collection_name="cache_unfiltered")
 
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_unfiltered",
     )
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_unfiltered",
     )
@@ -227,12 +228,12 @@ async def test_filtered_repeat_query_embeds_once(
     """Two identical filtered searches SHALL embed the query only once."""
     await ingest_path_async(str(sample_md), collection_name="cache_filtered")
 
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_filtered",
         metadata_filter={"category": "AI"},
     )
-    _retrieval.search(
+    _retrieval_search(
         "capital of France",
         collection_name="cache_filtered",
         metadata_filter={"category": "AI"},
@@ -251,8 +252,8 @@ async def test_filtered_and_unfiltered_share_cache(
     """An unfiltered call and a filtered call with the same query embed once."""
     await ingest_path_async(str(sample_md), collection_name="cache_shared")
 
-    _retrieval.search("capital of France", collection_name="cache_shared")
-    _retrieval.search(
+    _retrieval_search("capital of France", collection_name="cache_shared")
+    _retrieval_search(
         "capital of France",
         collection_name="cache_shared",
         metadata_filter={"category": "AI"},
@@ -271,8 +272,8 @@ async def test_distinct_queries_do_not_collide(
     """Two different queries SHALL each get their own embedding."""
     await ingest_path_async(str(sample_md), collection_name="cache_distinct")
 
-    _retrieval.search("capital of France", collection_name="cache_distinct")
-    _retrieval.search("capital of Germany", collection_name="cache_distinct")
+    _retrieval_search("capital of France", collection_name="cache_distinct")
+    _retrieval_search("capital of Germany", collection_name="cache_distinct")
 
     assert counting_embed.calls == 2
 
@@ -284,7 +285,7 @@ def test_lru_eviction_caps_cache_at_maxsize(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The cache SHALL evict least-recently-used entries past maxsize=128."""
-    cache = _retrieval._cached_query_embedding
+    cache = _dense._cached_query_embedding
     cache.cache_clear()
 
     # Use a stable model_name so all 200 entries land in the same cache
@@ -295,10 +296,10 @@ def test_lru_eviction_caps_cache_at_maxsize(
 
     try:
         for i in range(200):
-            _retrieval._embed_query(f"query-{i}")
+            _dense._embed_query(f"query-{i}")
 
         info = cache.cache_info()
-        assert info.maxsize == _retrieval._QUERY_EMBED_CACHE_MAXSIZE == 128
+        assert info.maxsize == _dense._QUERY_EMBED_CACHE_MAXSIZE == 128
         assert info.currsize <= 128, (
             f"Cache currsize {info.currsize} exceeded maxsize 128"
         )

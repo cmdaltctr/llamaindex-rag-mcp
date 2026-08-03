@@ -33,10 +33,10 @@ async def _patched_read_and_chunk(file_path, *, chunk_size=None, chunk_overlap=N
 
     Grabs the global ``_pause`` event set by the test fixture.
     """
-    import rag_mcp.ingestion as _ing
+    import rag_mcp.core.ingestion.pipeline as _ing
 
     await _pause.wait()
-    return await _ing._read_and_chunk_file_async(
+    return await _ing.read_and_chunk_file_async(
         file_path, chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
 
@@ -48,7 +48,7 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent MCP search returns while ingest is blocked mid-flight."""
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.server import search_documents
 
         # Pre-populate so search has data to find.
@@ -60,7 +60,7 @@ class TestIngestResponsiveness:
         _pause = asyncio.Event()
 
         monkeypatch.setattr(
-            "rag_mcp.ingestion._read_and_chunk_file_async",
+            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -91,8 +91,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent ``list_collections`` returns during in-flight ingest."""
-        from rag_mcp.ingestion import ingest_path_async
-        from rag_mcp.retrieval import list_collections
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import list_collections
 
         coll = "list_resp"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -100,7 +100,7 @@ class TestIngestResponsiveness:
         global _pause
         _pause = asyncio.Event()
         monkeypatch.setattr(
-            "rag_mcp.ingestion._read_and_chunk_file_async",
+            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -170,20 +170,20 @@ class TestResponsivenessRegression:
         for 2 s.  If the test completes quickly, the patch was not
         triggered, meaning the safety net is broken.
         """
-        import rag_mcp.ingestion as _ing
+        import rag_mcp.core.ingestion.pipeline as _ing
 
-        original = _ing._read_and_chunk_file_async
+        original = _ing.read_and_chunk_file_async
 
         async def _blocking_patched(file_path, chunk_size=None, chunk_overlap=None, content_type=None):
             time.sleep(2)
             return await original(file_path, chunk_size, chunk_overlap, content_type=content_type)
 
         monkeypatch.setattr(
-            "rag_mcp.ingestion._read_and_chunk_file_async",
+            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _blocking_patched,
         )
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
 
         coll = "regress_test"
 
@@ -235,7 +235,7 @@ class TestSplitterOffload:
         """A slow splitter must not stall a concurrent search call."""
         from llama_index.core.node_parser import SentenceSplitter
 
-        from rag_mcp.ingestion import ingest_path_async
+        from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.server import search_documents
 
         coll = "splitter_offload"
