@@ -31,8 +31,8 @@ the fused dense+sparse candidate list. When reranking is enabled and hybrid
 retrieval is disabled, the reranker SHALL receive the dense-only candidate
 list. The fetch pool size SHALL be governed by `RERANK_MAX_FETCH` and
 `RERANK_FETCH_MULTIPLIER` regardless of whether hybrid retrieval is active.
-The tokenizer `max_length` SHALL default to 2048 tokens to leverage the
-larger context window of ModernBERT-based rerankers while bounding latency.
+The tokenizer `max_length` SHALL default to 2048 tokens to balance
+context window utilisation with latency.
 
 #### Scenario: Rerank over dense-only candidates
 - **GIVEN** documents have been indexed
@@ -67,7 +67,7 @@ runtime dependencies. Pre-exported ONNX models are downloaded from
 HuggingFace Hub.
 
 #### Scenario: ONNX model loads successfully
-- **GIVEN** the reranker model ID is `Alibaba-NLP/gte-reranker-modernbert-base`
+- **GIVEN** the reranker model ID is `cross-encoder/ms-marco-MiniLM-L-6-v2`
 - **WHEN** the reranker initialises for the first time
 - **THEN** the system SHALL load the model via `onnxruntime.InferenceSession`
 - **AND** the tokenizer SHALL be loaded via `AutoTokenizer.from_pretrained()`
@@ -76,15 +76,15 @@ HuggingFace Hub.
 #### Scenario: platform-aware ONNX variant selection
 - **GIVEN** the reranker is running on macOS ARM
 - **WHEN** the reranker downloads the ONNX model
-- **THEN** it SHALL prefer `onnx/model_quantized.onnx` (int8, 151MB) for `gte-reranker-modernbert-base`
-- **AND** fall back through `model_int8.onnx` → `model_fp16.onnx` → `model.onnx` if the preferred variant is unavailable
-- **AND** for models that ship ARM-tuned quantised variants (e.g. `cross-encoder/ms-marco-MiniLM-L-6-v2` → `onnx/model_qint8_arm64.onnx`), it SHALL use the model-specific preference
+- **THEN** for the default model `cross-encoder/ms-marco-MiniLM-L-6-v2` on ARM64, it SHALL prefer `onnx/model_qint8_arm64.onnx` (~23 MB quantised variant)
+- **AND** fall back to `onnx/model.onnx` if the ARM variant is unavailable
+- **AND** for ModernBERT-based models (e.g. `Alibaba-NLP/gte-reranker-modernbert-base`), it SHALL prefer `onnx/model_quantized.onnx` (int8) with a fallback chain through `model_int8.onnx` → `model_fp16.onnx` → `model.onnx`
 
 #### Scenario: module docstring reflects correct model
 - **GIVEN** `reranker.py` is loaded
 - **WHEN** the module docstring is read
-- **THEN** it SHALL reference `Alibaba-NLP/gte-reranker-modernbert-base` as the default
-- **AND** it SHALL NOT reference `cross-encoder/ms-marco-MiniLM-L-6-v2` as the default
+- **THEN** it SHALL reference `cross-encoder/ms-marco-MiniLM-L-6-v2` as the default
+- **AND** it SHALL NOT reference `Xenova/ms-marco-MiniLM-L-6-v2`
 
 ### Requirement: similarity threshold filtering
 
@@ -112,13 +112,13 @@ The system SHALL support the following environment variables for reranker config
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RERANK_MODEL` | `Alibaba-NLP/gte-reranker-modernbert-base` | HuggingFace model ID for reranker |
+| `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | HuggingFace model ID for reranker |
 | `RERANK_ENABLED` | `false` | Global default rerank behaviour for omitted rerank requests |
 | `RERANK_ENABLED_FOR_SEMANTIC` | `true` | Policy knob allowing omitted rerank requests to enable reranking for semantic workloads below the technical threshold |
 | `HARD_TECHNICAL_THRESHOLD` | `0.3` | Identifier-heavy workload fraction at or above which semantic policy reranking SHALL NOT be enabled |
 | `SIMILARITY_THRESHOLD` | `0.0` | Default minimum score to include a result |
-| `RERANK_FETCH_MULTIPLIER` | `10` | Multiplier applied to `top_k` when reranking is enabled |
-| `RERANK_MAX_FETCH` | `50` | Lower bound on the rerank candidate pool size |
+| `RERANK_FETCH_MULTIPLIER` | `3` | Multiplier applied to `top_k` when reranking is enabled |
+| `RERANK_MAX_FETCH` | `100` | Lower bound on the rerank candidate pool size |
 
 #### Scenario: env vars set defaults
 - **GIVEN** `SIMILARITY_THRESHOLD=0.25` is set in `.env`
