@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-> **⚠️ Under heavy refactoring (v2.0.0).** The codebase is being restructured into a modular RAG framework across five phases. Phases 1–2 are complete: subpackage extraction and the config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)). Phase 3 (VectorStore abstraction) is next. Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
+> **⚠️ Under heavy refactoring (v2.0.0).** The codebase is being restructured into a modular RAG framework across five phases. Phases 1–4 are complete: subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)), VectorStore abstraction ([#14](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)), and profiles for dual use cases ([#16](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/16)). Phase 5 (transport reorganisation) is next. Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
 
 A local document search server for AI assistants. Point it at your files — PDFs, Word docs, notes, research papers — and your AI can search them by meaning, not just keywords. Everything runs on your machine by default — no cloud, no API keys, no recurring costs. Cloud providers (OpenRouter) are available as an opt-in alternative.
 
@@ -16,19 +16,23 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ## Active Refactoring (v2.0.0)
 
-**Progress:** Phases 1–2 of 5 complete: Phase 1 subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), Phase 2 config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)). Phase 3 (VectorStore abstraction) is next.
+**Progress:** Phases 1–4 of 5 complete: Phase 1 subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), Phase 2 config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)), Phase 3 VectorStore abstraction ([#14](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)), Phase 4 profiles for dual use cases ([#16](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/16)). Phase 5 (transport reorganisation) is next.
 
 The codebase is evolving into a **modular, swappable RAG framework** that serves two distinct use cases through one shared core: **document grounding** (facts from papers, reports, financial statements) and **codebase context** (code understanding for AI agents).
 
-**Key changes planned:**
+**Delivered (Phases 1–4):**
 
-- **Three-layer separation** — declarative config (a typed `config/` resolver package), composition root (`compose.py`), dependency injection throughout. The 572-line `config.py` monolith becomes a resolver with zero object construction (ADR-031/032).
+- **Three-layer separation** — declarative config resolver package, composition root (`compose.py`), dependency injection throughout. The former `config.py` monolith is now a resolver with zero object construction ([ADR-031](docs/adr/031-three-layer-config-compose-di.md), [032](docs/adr/032-phase-1-refactor-modular-extraction.md), [033](docs/adr/033-phase-2-refactor-di-refinement.md)).
 - **Strategy folders** — `chunking/`, `retrieval/`, `metadata/`, `providers/`. Add a strategy by dropping in one `.py` file and registering it; no editing of large existing modules.
-- **Profiles system** — named presets (`documents`, `codebase`, `hybrid`) bound per-collection, making the dual use cases first-class instead of implicit env-var combinations.
+- **VectorStore abstraction** — a store interface decoupling the pipeline from ChromaDB, enabling future backend swaps without touching retrieval or ingestion logic ([ADR-034](docs/adr/034-phase-3-refactor-vectordb-abstraction.md)).
+- **Profiles system** — named presets (`documents`, `codebase`, `hybrid`) bound per-collection via `RAG_PROFILE` or ChromaDB collection metadata, making the dual use cases first-class instead of implicit env-var combinations. See [Configuration](docs/guides/configuration.md) and [ADR-035](docs/adr/035-phase-4-refactor-profiles-dual-use-case.md).
+
+**Remaining (Phase 5):**
+
 - **Thin transports** — MCP, CLI, and a future REST API all call the same `core/`. None contains business logic.
 - **Five-phase migration** — each phase independently shippable and revertible via its own OpenSpec change. Backward-compatible re-export shims throughout.
 
-> **⚠️ Timeline:** The refactor targets **v2.0.0**. Until then, v1.x continues with the current flat-module structure. No breaking changes until the deprecation window opens. Existing ChromaDB collections, CLI commands, and MCP tool signatures remain stable.
+> **⚠️ Timeline:** The refactor targets **v2.0.0**. Four of five phases are merged to main; the modular `core/` structure is live behind backward-compatible deprecation shims. No breaking changes until the deprecation window opens. Existing ChromaDB collections, CLI commands, and MCP tool signatures remain stable.
 
 ---
 
