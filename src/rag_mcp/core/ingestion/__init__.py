@@ -22,14 +22,11 @@ __all__ = [
     "remove_document",
     "remove_by_metadata",
     "remove_collection",
-    "get_collection_generation",
 ]
 
 # Legacy name -> owning submodule (imported on demand).
 _NAMES: dict[str, str] = {
-    "collection_generations": "._state",
     "embed_semaphore": "._state",
-    "get_collection_generation": "._state",
     "shutdown_requested": "._state",
     "write_lock": "._state",
     "read_and_chunk_file_async": ".chunker",

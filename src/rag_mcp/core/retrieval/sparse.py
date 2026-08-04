@@ -1,13 +1,13 @@
 """Sparse retrieval helpers for optional hybrid search.
 
 The v1 sparse path is an in-memory BM25 fallback.  It scans all chunks in
-the target ChromaDB collection on first use, builds a process-local BM25
-index, and reuses that index until the collection generation counter in
-``ingestion.py`` advances.  Memory footprint is therefore proportional to
-the number of chunks in the active collection: tokenised chunk text,
+the target collection on first use, builds a process-local BM25 index,
+and reuses that index until the collection generation counter in the
+:class:`VectorStore` advances.  Memory footprint is therefore proportional
+to the number of chunks in the active collection: tokenised chunk text,
 metadata, IDs, and BM25 document-frequency tables are retained in Python
-for each queried collection.  This is acceptable for the local single-user
-MCP server and is deliberately not persisted to disk in v1.
+for each queried collection.  This is acceptable for the local
+single-user MCP server and is deliberately not persisted to disk in v1.
 
 The code is structured around a simple tokeniser function so a future
 env-var-selected tokeniser can be plugged in without changing retrieval.

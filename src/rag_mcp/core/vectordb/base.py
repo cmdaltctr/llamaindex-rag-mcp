@@ -83,8 +83,8 @@ class VectorStore(ABC):
         """Permanently delete an entire collection and all its chunks.
 
         Raises:
-            KeyError: If the collection does not exist (implementations
-                may wrap the underlying store's error).
+            ValueError: If the collection does not exist (ChromaDB's
+                native error type).
         """
 
     @abstractmethod

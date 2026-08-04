@@ -44,14 +44,9 @@ from llama_index.core import Settings  # noqa: F401
 
 # ── Thread-safety primitives (old names with underscore prefix) ─────────
 from .core.ingestion._state import (  # noqa: F401
-    collection_generations as _collection_generations,
     embed_semaphore as _embed_semaphore,
-    get_collection_generation,
     shutdown_requested as _shutdown_requested,
     write_lock as _write_lock,
-)
-from .core.ingestion._state import (  # noqa: F401
-    bump_collection_generation as _bump_collection_generation,
 )
 
 # ── Chunking helpers (old names with underscore prefix) ─────────────────

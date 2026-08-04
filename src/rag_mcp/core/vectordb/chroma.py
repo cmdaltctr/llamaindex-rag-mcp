@@ -80,12 +80,26 @@ class ChromaVectorStore(VectorStore):
         return self._client
 
     def _get_collection(self, name: str):
-        """Return the raw ChromaDB collection, or ``None`` if absent."""
+        """Return the raw ChromaDB collection, or ``None`` if absent.
+
+        Catches only the not-found case so genuine DB errors (corruption,
+        I/O, tenant issues) propagate to the caller rather than being
+        silently masked as "collection missing".
+        """
         client = self._get_client()
         try:
             return client.get_collection(name)
-        except Exception:
-            return None
+        except Exception as exc:
+            # ChromaDB raises NotFoundError (newer versions) or
+            # ValueError (older versions) for missing collections.
+            # Narrow to these so real DB errors propagate.
+            if isinstance(exc, (KeyError, ValueError)):
+                return None
+            # Check for chromadb.errors.NotFoundError without importing
+            # the errors module at module level (keeps the import lazy).
+            if type(exc).__name__ == "NotFoundError":
+                return None
+            raise
 
     # ── Collection lifecycle ────────────────────────────────────────
 
@@ -263,13 +277,15 @@ class ChromaVectorStore(VectorStore):
     # ── Count ───────────────────────────────────────────────────────
 
     def count(self, collection_name: str) -> int:
+        """Return the total number of chunks in a collection.
+
+        Returns 0 if the collection does not exist.  Other errors
+        propagate so callers can distinguish "absent" from "broken".
+        """
         collection = self._get_collection(collection_name)
         if collection is None:
             return 0
-        try:
-            return collection.count()
-        except Exception:
-            return 0
+        return collection.count()
 
     def count_where(self, collection_name: str, where: dict) -> int:
         collection = self._get_collection(collection_name)

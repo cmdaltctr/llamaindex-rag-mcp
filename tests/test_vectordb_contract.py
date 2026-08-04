@@ -284,3 +284,61 @@ class TestGenerationCounter:
         store.bump_generation("b")
         assert store.get_generation("a") == 2
         assert store.get_generation("b") == 1
+
+
+# ── Dimension locking (spec MUST scenario) ────────────────────────────
+
+
+class TestDimensionLocking:
+    def test_dimension_locked_on_first_write(self, store: VectorStore) -> None:
+        """Writing nodes of a different dimension MUST fail with a clear error.
+
+        Verifies the spec's dimension-locking scenario: the vector
+        dimension is fixed at creation time and mismatched writes raise.
+        """
+        from llama_index.core import Settings
+        from llama_index.core.schema import TextNode
+
+        # First write with the test MockEmbedding (384 dims).
+        store.write_nodes(
+            [TextNode(text="initial")], "dimlock"
+        )
+
+        # Swap to a different embedding dimension and try again.
+        from llama_index.core.embeddings import MockEmbedding
+
+        original = Settings.embed_model
+        try:
+            Settings.embed_model = MockEmbedding(embed_dim=128)
+            with pytest.raises(Exception):
+                store.write_nodes(
+                    [TextNode(text="wrong dim")], "dimlock"
+                )
+        finally:
+            Settings.embed_model = original
+
+
+# ── Missing-collection behaviour ──────────────────────────────────────
+
+
+class TestMissingCollection:
+    def test_count_missing_returns_zero(self, store: VectorStore) -> None:
+        assert store.count("does_not_exist") == 0
+
+    def test_count_where_missing_returns_zero(self, store: VectorStore) -> None:
+        assert store.count_where("nope", {"k": "v"}) == 0
+
+    def test_delete_where_missing_no_error(self, store: VectorStore) -> None:
+        store.delete_where("nope", {"k": "v"})
+
+    def test_get_collection_metadata_missing(self, store: VectorStore) -> None:
+        assert store.get_collection_metadata("nope") is None
+
+    def test_iter_metadatas_missing_empty(self, store: VectorStore) -> None:
+        assert list(store.iter_metadatas("nope")) == []
+
+    def test_iter_documents_missing_empty(self, store: VectorStore) -> None:
+        assert list(store.iter_documents("nope")) == []
+
+    def test_query_dense_missing_empty(self, store: VectorStore) -> None:
+        assert store.query_dense("nope", [0.0] * 384, 5) == []

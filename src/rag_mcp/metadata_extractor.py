@@ -9,8 +9,8 @@ into ``rag_mcp.core.metadata`` submodules as part of Phase 1.  This file
 re-exports every public and private name so existing imports continue to
 resolve.  Tests that monkeypatch module-level variables
 (``METADATA_EXTRACTION_MODE``, ``METADATA_KEYWORD_RULES``,
-``_chroma_client``, ``_retry_sleep``) must patch the corresponding
-submodule after the split — see ``notes/cross-imports.md``.
+``_retry_sleep``) must patch the corresponding submodule after the split
+— see ``notes/cross-imports.md``.
 """
 
 from __future__ import annotations
