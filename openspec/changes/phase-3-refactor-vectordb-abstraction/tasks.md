@@ -52,4 +52,5 @@ Frozen operation list (from call-site enumeration):
 - [x] 5.3 Update `docs/guides/architecture.md` with the vectordb layer
 - [x] 5.4 Run `openspec validate phase-3-refactor-vectordb-abstraction --strict`
 - [x] 5.5 Run `graphify update .`
-- [ ] 5.6 Commit (`refactor:`) and open PR with `gh pr create --base main`
+- [x] 5.6 Commit (`refactor:`) and open PR with `gh pr create --base main`
+      (PR #14: https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)
