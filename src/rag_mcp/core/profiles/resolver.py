@@ -92,6 +92,10 @@ def _bundle_to_effective(
     levers, preserving the "env still wins" precedence established by
     the startup Settings resolver (spec task 4.1: "applies env overrides").
 
+    Validates each lever value and raises a clear error naming the
+    offending key if validation fails (spec: "fail at resolution time
+    with a clear validation error naming the offending key").
+
     Args:
         profile_name: The operational profile name (``documents`` or
             ``codebase``).
@@ -99,15 +103,31 @@ def _bundle_to_effective(
 
     Returns:
         Frozen :class:`EffectiveSettings` instance.
+
+    Raises:
+        ValueError: If any lever value fails type validation, with a
+            message naming the offending key.
     """
     # Tier 2 lever env-var overrides (env wins over profile bundle).
-    top_k = int(os.environ.get("TOP_K", bundle.get("TOP_K", 10)))
-    reranker_enabled = _parse_profile_bool(
-        os.environ.get("RERANK_ENABLED", bundle.get("RERANK_ENABLED", "false"))
+    raw_top_k = os.environ.get("TOP_K", bundle.get("TOP_K", 10))
+    try:
+        top_k = int(raw_top_k)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(
+            f"Profile {profile_name!r} has invalid TOP_K={raw_top_k!r}: "
+            f"must be an integer ({exc})"
+        ) from exc
+
+    raw_reranker = os.environ.get(
+        "RERANK_ENABLED", bundle.get("RERANK_ENABLED", "false")
     )
-    hybrid_enabled = _parse_profile_bool(
-        os.environ.get("HYBRID_ENABLED", bundle.get("HYBRID_ENABLED", "false"))
+    reranker_enabled = _parse_profile_bool(raw_reranker)
+
+    raw_hybrid = os.environ.get(
+        "HYBRID_ENABLED", bundle.get("HYBRID_ENABLED", "false")
     )
+    hybrid_enabled = _parse_profile_bool(raw_hybrid)
+
     chunk_strategy_fallback = str(
         os.environ.get(
             "CHUNK_STRATEGY_FALLBACK",
@@ -120,6 +140,13 @@ def _bundle_to_effective(
             bundle.get("METADATA_TAXONOMY_MODE", "category"),
         )
     )
+
+    # Validate taxonomy mode against known values.
+    if metadata_taxonomy_mode not in ("category", "file_type"):
+        raise ValueError(
+            f"Profile {profile_name!r} has invalid METADATA_TAXONOMY_MODE="
+            f"{metadata_taxonomy_mode!r}: must be 'category' or 'file_type'"
+        )
 
     return EffectiveSettings(
         profile_name=profile_name,

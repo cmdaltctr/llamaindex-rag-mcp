@@ -1,117 +1,95 @@
-# Security & Code Review: phase-4-refactor-profiles-dual-use-case
+# Security & Code Review: phase-4-refactor-profiles-dual-use-case (v2)
 
 ## Summary
 - **Date**: 2026-08-04
-- **Scope**: PR #15 (`feat/phase-4-refactor-profiles-dual-use-case`, c3bc5b7) — profiles system: `core/profiles/resolver.py`, `core/profiles/contract.py`, `config/__init__.py` (`_ProfileYamlSettingsSource`, `_load_profile_bundle`), `core/retrieval/policy.py` + `pipeline.py`, `core/ingestion/pipeline.py` + `chunker.py`, `server.py` (`change_collection_profile`), `cli.py` (`set-profile`), `config/profiles/*.yaml`, `tests/test_profiles.py`
+- **Scope**: PR #16 (`feat/phase-4-refactor-profiles-dual-use-case-v2`, 33b2c64) — profiles system: `core/profiles/resolver.py`, `core/profiles/contract.py`, `config/__init__.py` (`_ProfileYamlSettingsSource`, `_load_profile_bundle`), `core/retrieval/policy.py` + `pipeline.py`, `core/ingestion/pipeline.py` + `chunker.py`, `server.py` (`change_collection_profile`, resolver wiring), `cli.py` (`set-profile`, ingest/search transports), `config/profiles/*.yaml`, `tests/test_profiles.py`. Full review: security, spec compliance, architecture, test quality, code quality.
 - **Auditor**: a-security
-- **Verdict**: NEEDS FIXES
+- **Verdict**: NEEDS CHANGES
+
+## Prior-Finding Verification (PR #15 review)
+
+| # | Prior finding | Status |
+|---|---|---|
+| 1 | HIGH: `change_collection_profile` could raise from MCP handler | **FIXED** — both preview and confirm paths wrap in `except Exception` (`server.py:376-390`); invalid profile short-circuits before any store access |
+| 2 | MEDIUM: invalid profile tags silently swallowed | **FIXED** — `ingest_documents` (`server.py:64-67`) and `search_documents` (`server.py:129-136`) return `{"status": "error", ...}` on resolver `ValueError` |
+| 3 | MEDIUM: `metadata_taxonomy_mode` dead lever | **NOT FIXED** — see Finding 1 below |
+| 4 | MEDIUM: `apply_profile_change` creates missing collections | **FIXED** — `collection_exists` guard (`contract.py:210-214`); regression test `test_apply_profile_change_rejects_nonexistent_collection` present |
+| 5 | MEDIUM: operation-time bundle validation gap | **PARTIALLY FIXED** — `yaml.YAMLError` now caught (`config/__init__.py:127-131`); the remaining gaps are Finding 2 below |
 
 ## Findings
 
-### [HIGH] MCP `change_collection_profile` confirm path can raise — violates "never raise from MCP tool handlers" (gotcha #1)
+### [MEDIUM] Finding 1 (prior #3, unfixed): `metadata_taxonomy_mode` is resolved, documented, and diffed — but has zero consumers
 
-**Location**: `src/rag_mcp/server.py:380-386` (`change_collection_profile`)
-**Vulnerability**: The `confirm=True` path wraps `apply_profile_change` in `except ValueError` only. `apply_profile_change` calls `store.update_collection_metadata()` → ChromaDB `collection.modify()` and `store.count()`, which raise ChromaDB/runtime exceptions (not `ValueError`) on store failure. Any such exception propagates out of the tool handler. The preview path (`confirm=False`) calls `generate_safety_contract` with no guard at all — it survives store errors only by accident of its internal try/excepts; `get_default_store()` outside those guards can still raise.
-**Attack Vector**: MCP client invokes the tool against a corrupted/locked ChromaDB persist dir or a collection name ChromaDB rejects at `modify()` time — handler raises instead of returning `{"status": "error"}`.
-**Impact**: Broken MCP protocol contract; unhandled exception surfaces to the client as a transport-level failure. Violates the project's explicit critical invariant.
-**Mitigation**:
-
-```diff
-     if not confirm:
--        contract = generate_safety_contract(collection, profile)
--        return {"status": "preview", "contract": contract, "confirm_required": True}
-+        try:
-+            contract = generate_safety_contract(collection, profile)
-+        except Exception as exc:
-+            return {"status": "error", "message": f"Could not generate preview: {exc}"}
-+        return {"status": "preview", "contract": contract, "confirm_required": True}
-
-     try:
-         return apply_profile_change(collection, profile)
--    except ValueError as exc:
-+    except Exception as exc:
-         return {"status": "error", "message": str(exc)}
-```
-
-**Regression test needed** (`@a-test`): `change_collection_profile(confirm=True)` with a store whose `update_collection_metadata` raises `RuntimeError` must return `{"status": "error", ...}`, not raise. Same for the preview path with `generate_safety_contract` raising.
+**Location**: `src/rag_mcp/core/ingestion/pipeline.py:44-48,151-155`; `src/rag_mcp/core/metadata/extractor.py:172`; `src/rag_mcp/core/metadata/settings.py:39`
+**Defect**: `EffectiveSettings.metadata_taxonomy_mode` (`category` vs `file_type`) is resolved per operation, compared in the safety contract, exposed as a Settings field, and claimed by the `ingest_path_async` docstring to "supply the defaults for … metadata classification". Grep confirms no consumer outside resolver/contract/settings: `extract_metadata_async(file_text, file_name)` has no taxonomy parameter and the ingest pipeline never passes the lever anywhere. The codebase profile's headline `file_type` taxonomy is a no-op — ingests into a codebase-tagged collection classify with the category taxonomy regardless of profile. Task 4.4 ("Thread resolved levers … chunking fallback + taxonomy mode") is checked off with the taxonomy half unimplemented, and the `ingest_path_async` docstring actively misdescribes the code.
+**Impact**: Spec non-compliance — the spec's Tier 2 lever list ("metadata taxonomy mode") and the codebase bundle's `METADATA_TAXONOMY_MODE: file_type` are inert. The safety contract shows users a `metadata_taxonomy_mode: category → file_type` "impact" that never takes effect, which is worse than absent: it promises a behaviour change that does not happen.
+**Mitigation**: Either (a) thread `effective_settings.metadata_taxonomy_mode` from `ingest_path_async` into the metadata extraction stage and implement the `file_type` classification path, or (b) formally descope the lever: remove it from `EffectiveSettings`, the bundles, the safety-contract diff, the spec lever list, and the docstring. Silence is not an option — the current state is a checked-off task over unimplemented behaviour.
 
 ---
 
-### [MEDIUM] Invalid collection profile tag is silently swallowed by `ingest_documents` and `search_documents`
+### [MEDIUM] Finding 2 (prior #5, residual): operation-time bundle validation still fails open and never names the offending key
 
-**Location**: `src/rag_mcp/server.py:64-68` and `:128-132`
-**Vulnerability**: Both handlers do `try: effective = _profile_resolver.resolve(collection) except ValueError: effective = None`. The spec scenario "Invalid collection profile tag rejected" requires a clear error naming the invalid tag and listing available profiles. The resolver raises correctly, but the transport discards the error and proceeds with global defaults. A typo'd tag (`profile: "documetns"`) or a `hybrid` tag silently runs the operation under the wrong profile — a silent misconfiguration that returns plausible-looking results.
-**Impact**: User believes a collection is codebase-tagged (reranker off, hybrid on) but searches actually run with document defaults, or vice versa. Spec non-compliance by silent degradation.
-**Mitigation**: Return `{"status": "error", "message": str(exc)}` from the `except ValueError` branch in both tools instead of `effective = None`.
-**Regression test needed** (`@a-test`): `search_documents` and `ingest_documents` against a collection tagged `hybrid` / `nonexistent` must return an error dict naming the tag and available profiles.
+**Location**: `src/rag_mcp/config/__init__.py:103-143`; `src/rag_mcp/core/profiles/resolver.py:86-131,317-340`
+**Defect**: Three residual gaps against the spec scenario "Invalid bundle rejected … the system MUST fail at resolution time with a clear validation error naming the offending key":
+1. **Malformed YAML now fails open.** The `yaml.YAMLError` catch returns `{}`, and `_load_effective` degrades to field defaults with a log warning. A syntax-corrupted bundle silently runs operations under defaults — the opposite of the spec's MUST-fail requirement. (The catch is correct for gotcha #1; the degradation is the problem.)
+2. **Bare coercion.** `int(os.environ.get("TOP_K", bundle.get("TOP_K", 10)))` raises `ValueError: invalid literal for int() with base 10: 'abc'` — no bundle name, no key name. Surfaced to MCP clients as an opaque validation error.
+3. **No model validation at operation time.** The spec requires bundles to be "validated against the same Pydantic settings models as global configuration". Only the startup `RAG_PROFILE` bundle passes through `Settings`; per-collection bundles loaded by `ProfileResolver._load_effective` are raw-dict coerced, and unknown keys are silently ignored.
 
----
-
-### [MEDIUM] `metadata_taxonomy_mode` lever is plumbed but never consumed — dead spec lever
-
-**Location**: `src/rag_mcp/core/ingestion/pipeline.py:146-160`
-**Vulnerability**: `EffectiveSettings.metadata_taxonomy_mode` (`category` vs `file_type`) is resolved by the resolver, compared in the safety contract, and documented in the `ingest_path_async` docstring ("its `chunk_strategy_fallback` and `metadata_taxonomy_mode` supply the defaults for … metadata classification"), but grep confirms zero consumers outside resolver/contract/settings. The ingest pipeline passes only `chunk_strategy_fallback` to the chunker; the metadata extractor never receives the taxonomy mode. Task 4.4 ("Thread resolved levers … chunking fallback + taxonomy mode") is checked off but the taxonomy half is not implemented.
-**Impact**: The codebase profile's headline `file_type` taxonomy is a no-op. Ingests into a codebase-profile collection classify with the category taxonomy regardless of profile. Spec Tier-2 lever list unmet.
-**Mitigation**: Thread `effective_settings.metadata_taxonomy_mode` into the metadata extraction stage (or explicitly descope the lever from the spec/tasks and remove it from the contract diff).
+**Impact**: A mistyped bundle edit (the intended user-facing configuration surface for this phase) either silently degrades retrieval behaviour or crashes resolution with an error that gives the user no path to the offending key.
+**Mitigation**: Validate the loaded bundle dict against the `Settings` model inside `_load_profile_bundle` (e.g. `Settings.model_validate` over the mapped keys) and raise `ValueError(f"profile bundle {name!r}: field {key}: {err}")` on failure; let the resolver propagate that `ValueError` so the MCP transports return a named, actionable error instead of degrading.
 
 ---
 
-### [MEDIUM] `apply_profile_change` on a non-existent collection silently creates it
+### [MEDIUM] Finding 3 (new): CLI and watcher transports bypass profile resolution — every Tier 2 lever resolves wrong for non-default collections
 
-**Location**: `src/rag_mcp/core/vectordb/chroma.py:323-326` (via `core/profiles/contract.py:208-210`)
-**Vulnerability**: `update_collection_metadata` falls back to `client.get_or_create_collection(collection_name)` when the collection doesn't exist. Confirming a profile change against a typo'd collection name creates a new empty collection carrying only the profile tag. The spec requires the change to be "only the collection's metadata dict … updated" — collection creation is a mutation beyond that contract, and the preview's `chunk_count: 0` gives no signal that the target does not exist.
-**Impact**: Junk empty collections accumulate; user believes they retagged an existing collection.
-**Mitigation**: In `apply_profile_change` (or the store method), raise/return an error when `get_collection_metadata` returns `None` (collection absent), and surface "collection does not exist" in the preview contract.
-
----
-
-### [MEDIUM] Operation-time bundle validation gap: raw coercion, uncaught YAML errors, no key-named validation errors
-
-**Location**: `src/rag_mcp/config/__init__.py:103-138`, `src/rag_mcp/core/profiles/resolver.py:86-131`
-**Vulnerability**: Three gaps against the spec scenario "Invalid bundle rejected … clear validation error naming the offending key":
-1. `_load_profile_bundle` catches only `FileNotFoundError`/`ModuleNotFoundError`. A malformed YAML raises `yaml.YAMLError`, which propagates through `resolve()` and — being non-`ValueError` — escapes the MCP tools' `except ValueError` guards (compounds finding 1).
-2. `_bundle_to_effective` coerces with bare `int(bundle.get("TOP_K", …))`. A bad value raises `ValueError: invalid literal for int()` without naming `TOP_K` or the bundle.
-3. Bundles are not validated "against the same Pydantic settings models" at operation time — the ad-hoc dict coercion in the resolver duplicates (and diverges from) the startup `Settings` path. An unknown key in a bundle is silently ignored by `_ProfileYamlSettingsSource.__call__` (only model-field names are copied).
-**Impact**: Corrupted/mistyped bundle edits crash resolution or fail with opaque errors; spec validation requirement unmet on the per-operation path.
-**Mitigation**: Validate the loaded bundle dict against the `Settings` model (e.g. `Settings.model_validate` on the mapped keys) inside `_load_profile_bundle` and re-raise as `ValueError(f"profile bundle {name!r}: field {key}: {err}")`; catch `yaml.YAMLError` alongside `FileNotFoundError`.
+**Location**: `src/rag_mcp/cli.py:657-664` (search), `src/rag_mcp/cli.py:568,577` (ingest), `src/rag_mcp/watcher.py:301-305`
+**Defect**: Only the MCP transport constructs `EffectiveSettings`. `cli.py search` calls `do_search(...)` with no `effective_settings` and hardcodes `hybrid=False` via the typer flag default; `cli.py ingest` and the watcher call `ingest_path_async` with no `effective_settings`. Against a `codebase`-tagged collection, the CLI therefore applies: `top_k=10` (not 20), reranker ON (not off — see below), hybrid OFF (not on), and never applies the `code` chunking fallback. Every Tier 2 lever inverts for the codebase use case on the CLI path. The spec requires Tier 2 levers to be "resolved per operation by a `ProfileResolver` and passed as parameters to `search()` and `ingest_path_async()`" without a transport carve-out, and the content-type dispatch scenarios ("ingested into a `codebase`-profile collection") are transport-agnostic.
+**Compounding factor**: the default `RAG_PROFILE=documents` bundle now sits above field defaults in the startup precedence chain, so `settings.rerank_enabled` resolves **True** globally (pinned by the changed expectation in `tests/test_settings_resolver.py:53-57`). Pre-Phase-4, CLI search defaulted to reranker OFF (Experiment 10). CLI search against a codebase-tagged collection now reranks — the exact behaviour Experiment 10 showed degrades technical workloads by 19–27%.
+**Impact**: The dual-use-case feature works only over MCP. CLI users (and the watcher's auto-ingest) get documents-profile behaviour on codebase collections: slower queries, worse technical retrieval, wrong chunking fallback, wrong taxonomy (Finding 1) — while the collection tag suggests otherwise.
+**Mitigation**: Resolve `EffectiveSettings` in the CLI search/ingest commands and the watcher dispatch (mirroring `server.py`), and change the CLI `--hybrid` flag default from `False` to `None` so the profile/global default can apply. If CLI profile support is deliberately out of scope, the spec and `docs/guides/configuration.md` must say so explicitly, and the CLI should warn when operating on a non-default-tagged collection.
 
 ---
 
-### [LOW] Read-modify-write race in `update_collection_metadata`
+### [LOW] Finding 4: dead code and uncached file re-read in `_resolve_hybrid_default`
 
-**Location**: `src/rag_mcp/core/vectordb/chroma.py:314-329`
-ChromaDB `modify(metadata=…)` replaces the whole dict; the implementation reads, merges, writes. Two concurrent metadata writers lose each other's keys. Single-process local ChromaDB with the generation counter kept separately makes this unlikely — noted for the Phase 5 multi-transport future.
+**Location**: `src/rag_mcp/core/profiles/resolver.py:266-286`
+`bundle = _load_profile_bundle("hybrid")` (line 268) is assigned and never used — the comment explains why, but the call itself is dead work. The method then re-reads and re-parses `hybrid.yaml` from disk on every untagged resolve under `RAG_PROFILE=hybrid`, bypassing the resolver's bundle cache. Remove the dead call and cache the resolved default.
 
-### [LOW] Synchronous store I/O in async MCP handlers
+### [LOW] Finding 5: signature-only tests for content-type dispatch (carried over, unfixed)
 
-**Location**: `src/rag_mcp/server.py:65`, `:129`
-`_profile_resolver.resolve()` performs a synchronous ChromaDB metadata read inside the async handler body (`search_documents` previously deferred all blocking work via `asyncio.to_thread`). A slow store blocks the event loop for every other concurrent tool call. Wrap the resolve in `asyncio.to_thread` alongside `search`.
+**Location**: `tests/test_profiles.py:305-331`
+`TestContentTypeDispatch` asserts only that `read_and_chunk_file_async` has a `fallback_strategy` parameter. The test passes even if the dispatch logic in `chunker.py:87-96` is deleted or inverted — spec scenarios "Known types ignore profile strategy" and "Ambiguous types use profile fallback" have no functional verification, yet task 5.5 is checked off. Similarly `test_invalid_bundle_key_rejected_at_validation` (line 122-131) patches the `TOP_K` **env var**, not a bundle — the bundle-rejection path is untested (and currently fails open, per Finding 2). These tests do not satisfy the "fails when the code is broken" bar.
 
-### [LOW] Test quality gaps against spec scenarios
+### [LOW] Finding 6: CLI `set-profile` leaks raw tracebacks on store errors
 
-**Location**: `tests/test_profiles.py`
-- `TestContentTypeDispatch` asserts only that the `fallback_strategy` parameter exists — the test cannot fail if the chunker's dispatch logic breaks (spec scenarios "Known types ignore profile strategy" / "Ambiguous types use profile fallback" unverified functionally; task 5.5 is checked off on a signature test).
-- Task 5.4's "byte-identical embeddings/content" is verified against a `MagicMock` store only.
-- Task 2.4's "rejection test for an invalid bundle key" (`test_invalid_bundle_key_rejected_at_validation`) patches the `TOP_K` env var, not a bundle — the bundle-key rejection path is untested.
+**Location**: `src/rag_mcp/cli.py:1272,1276,1314`
+`generate_safety_contract` and `apply_profile_change` are called with no `try/except`. The new `collection_exists` guard raises `ValueError` for a typo'd collection — the MCP tool converts this to an error dict, but the CLI shows an uncaught traceback. Not gotcha #1 (CLI, not an MCP handler), but the two transports now diverge in error behaviour.
 
-### [LOW] Stale ADR reference in package docstring
+### [LOW] Finding 7: sync store I/O in async MCP handlers (carried over, unfixed)
 
-**Location**: `src/rag_mcp/core/profiles/__init__.py:1,13`
-Docstring cites "ADR-030" / `docs/adr/030-phase-4-refactor-profiles-dual-use-case.md`; the merged ADR is `035-phase-4-refactor-profiles-dual-use-case.md` (ADR numbering shifted per the reserved-range convention).
+**Location**: `src/rag_mcp/server.py:65,130`
+`_profile_resolver.resolve()` performs a synchronous ChromaDB metadata read inside the async handler body, before `asyncio.to_thread`. A slow store blocks the event loop for all concurrent tool calls. Wrap the resolve in `asyncio.to_thread`.
 
-### [LOW] Duplicate import
+### [LOW] Finding 8: minor code-quality items
 
-**Location**: `src/rag_mcp/core/retrieval/pipeline.py:15-17` — `from typing import Any` appears twice.
+- `src/rag_mcp/core/profiles/__init__.py:1` — docstring still cites "ADR-030"; line 13 correctly references ADR-035.
+- `src/rag_mcp/core/profiles/contract.py:76,81` — calls the resolver's private `_load_effective`; either make it public or inject pre-loaded `EffectiveSettings`.
+- `search()` / `ingest_path_async()` type `effective_settings` as `Any` — `EffectiveSettings` is importable without a cycle (profiles does not import retrieval/ingestion), so the type safety loss is unnecessary.
+- `ProfileResolver._cache` never invalidates: mid-process bundle edits or env changes are invisible until restart. Acceptable for a server process; noted.
 
-### [INFO] Env-var-only path-traversal surface in `_load_profile_bundle`
+### [INFO] Finding 9: env-var path interpolation in `_load_profile_bundle`
 
-`RAG_PROFILE` interpolates directly into the bundle path (`profiles/{name}.yaml`). Not reachable from untrusted input (collection tags are allowlist-validated before `_load_effective`; env vars are trusted local config). No action needed; noted for completeness if Phase 5 ever exposes profile selection over a network transport.
+`RAG_PROFILE` interpolates into `profiles/{name}.yaml` before the Settings validator clamps it (`config/__init__.py:122,165`). Env vars are trusted local config, so not exploitable today; noted for Phase 5 if profile selection is ever exposed over a network transport. Collection tags are allowlist-validated before bundle load, so the untrusted-input path is closed.
+
+### [INFO] Finding 10: global `settings.rerank_enabled` now resolves True by default
+
+By design (documents profile above field defaults), the startup singleton's `rerank_enabled` is now `True`. Only `core/retrieval/policy.py:246` reads it at runtime, and the profile path overrides it correctly on the MCP transport. Recorded so future consumers of `settings.rerank_enabled` do not assume the Experiment-10 default; the interaction with the un-resolved CLI path is Finding 3.
 
 ## Dependency CVE Audit
 
 ```
-uv pip check:   Checked 197 packages — all compatible
-uvx pip-audit:  No known vulnerabilities found
+uv pip check:  Checked 197 packages — all compatible
+uvx pip-audit: No known vulnerabilities found
 ```
 
 **CVEs requiring action**: none.
@@ -122,28 +100,62 @@ uvx pip-audit:  No known vulnerabilities found
 |---|---|---|
 | A01 | Broken Access Control | N/A — local stdio MCP server, no auth boundary introduced |
 | A02 | Cryptographic Failures | N/A — no new crypto/credential handling; bundles contain no credentials (test-pinned) |
-| A03 | Injection | ✓ — profile names allowlist-validated; `yaml.safe_load`; no SQL/shell; collection names validated by ChromaDB |
-| A04 | Insecure Design | ✗ — silent-fallback design on invalid tags (finding 2); create-on-tag side effect (finding 4) |
-| A05 | Security Misconfiguration | ✗ — invalid tags/bundles degrade silently instead of failing closed (findings 2, 5) |
-| A06 | Vulnerable Components | ✓ — pip-audit clean |
+| A03 | Injection | ✓ — profile names allowlist-validated at resolver, contract, and both transports; `yaml.safe_load`; no SQL/shell interpolation; CLI `--metadata` JSON-parsed with type check |
+| A04 | Insecure Design | ✗ — fail-open bundle degradation (Finding 2); dead spec lever advertised in the safety contract (Finding 1); transport-split behaviour (Finding 3) |
+| A05 | Security Misconfiguration | ✗ — invalid bundles degrade silently to defaults instead of failing closed (Finding 2) |
+| A06 | Vulnerable Components | ✓ — pip-audit clean, uv pip check clean |
 | A07 | Identification & Auth Failures | N/A |
-| A08 | Software & Data Integrity | ✗ — read-modify-write metadata race (finding, LOW); non-atomic create-on-tag (finding 4) |
-| A09 | Security Logging & Monitoring | ✓ — resolver logs degraded paths at warning/debug; no PII in logs |
+| A08 | Software & Data Integrity | ✓ — create-on-tag side effect fixed via `collection_exists` guard; read-modify-write metadata merge race remains theoretical (single-process local ChromaDB) |
+| A09 | Security Logging & Monitoring | ✓ — degraded paths logged at warning/error; MCP error returns carry no stack traces or internals beyond exception type/message |
 | A10 | SSRF | N/A — no server-side URL fetching in the change |
 
 ## Cloudflare Workers Specific
 
 N/A — not a Workers project.
 
+## Secrets Scan
+
+`sk-`/`AKIA`/`xoxb-`/`ghp_`/key/password/secret patterns over all changed files: no hits. Profile bundles and `defaults.yaml` carry no credentials (also test-pinned in `test_profiles.py:112-120`).
+
+## Spec Compliance Matrix (profiles-dual-use-case)
+
+| Requirement / Scenario | Status |
+|---|---|
+| Three version-controlled bundles under `config/profiles/` | ✓ |
+| Bundles contain no credentials | ✓ (test-pinned) |
+| Bundles validated against the same Pydantic models as global config | ✗ — startup path only; operation-time bundles raw-coerced (Finding 2) |
+| Documents / codebase profile values | ✓ (test-pinned) |
+| Invalid bundle rejected with key-named error at resolution time | ✗ — fails open on YAML errors; bare `int()` coercion names no key (Finding 2) |
+| `RAG_PROFILE` selection + collection metadata binding + inheritance | ✓ (test-pinned) |
+| Hybrid mode selector: untagged → `default_profile`; `hybrid` tag rejected; invalid tag rejected listing available profiles | ✓ (test-pinned) |
+| Existing untagged collections unaffected (no migration) | ✓ |
+| Two-tier resolution; Tier 2 resolved per operation and passed as parameters | ✗ — MCP path only; CLI/watcher bypass (Finding 3); taxonomy lever inert (Finding 1) |
+| Reranker model loaded at most once (Tier 1) | ✓ (process-wide ONNX cache; test-pinned) |
+| Content-type dispatch precedence over profile fallback | ✓ implemented (`chunker.py:87-96`); ✗ tests are signature-only (Finding 5) |
+| Non-destructive O(1) profile change; metadata-only mutation | ✓ — `collection_exists` guard + metadata-only `modify` |
+| Safety contract surfaced; CLI prompts; MCP preview/confirm | ✓ (contract, CLI prompt, and MCP flow test-pinned) — with the caveat that the contract advertises an inert lever (Finding 1) |
+| M1 revalidation recorded; AGENTS.md invariant #5 corrected | ✓ — ADR-035 §M1 records the outcome; AGENTS.md updated |
+
+## Reranking Spec (MODIFIED requirements)
+
+| Scenario | Status |
+|---|---|
+| Env-var defaults table | ✓ |
+| Profile-resolved enablement takes precedence over global default; explicit flags bypass both | ✓ implemented and test-pinned (`policy.py:240-243`; `test_profiles.py:273-302`) |
+| Per-operation per-collection reranker decisions in one process | ✓ on the MCP path; ✗ CLI path resolves global defaults (Finding 3) |
+
 ## Gates Run
 
 | Gate | Result |
 |---|---|
-| `uv run pytest tests/test_profiles.py` | 36 passed |
-| `uv run pytest -m "not slow"` (full suite) | 899 passed, 8 deselected |
-| `openspec validate phase-4-refactor-profiles-dual-use-case --strict` | valid |
-| `uv pip check` / `pip-audit` | clean |
+| `uv run pytest tests/test_profiles.py` | 37 passed |
+| `uv run pytest -m "not slow"` (full suite) | 900 passed, 8 deselected |
+| `openspec validate --all --strict` | 24 passed, 0 failed |
+| `uv pip check` / `pip-audit` | clean / no known vulnerabilities |
+| Secrets pattern scan (changed files) | no hits |
 
 ## Verdict Justification
 
-NEEDS FIXES. No CRITICAL findings: no secrets, no injection vectors, no dependency CVEs, input validation on profile names is allowlist-based, and the two-tier resolution itself is correct (verified: per-profile reranker/top_k/hybrid resolution, hybrid-mode fallback, tag rejection at the resolver, cache correctness with immediate post-change effect, no harmful race in the resolver cache). The blockers are one HIGH invariant violation (MCP tool can raise on store errors) and four MEDIUM correctness/spec-compliance gaps (silent tag swallowing at the transport, the dead `metadata_taxonomy_mode` lever, create-on-tag side effect, and the operation-time bundle validation gap). All fixes are small and localised; none require redesign. Verdict upgrades to APPROVED once findings 1–5 are fixed with the regression tests noted.
+**NEEDS CHANGES.** No CRITICAL findings: no secrets, no injection vectors, no dependency CVEs, profile-name input is allowlist-validated at every boundary, the MCP never-raise invariant now holds on the new tool, and the two-tier resolution itself is architecturally correct on the MCP path (verified: per-profile reranker/top_k/hybrid resolution, hybrid-mode fallback, tag rejection, cache behaviour, non-destructive O(1) mutation with existence guard). The prior review's HIGH and two of its MEDIUMs are genuinely fixed with regression tests.
+
+Three MEDIUMs remain open. Finding 1 is a checked-off spec task over an inert lever whose safety contract misleads users. Finding 2 leaves the spec's invalid-bundle MUST scenario unmet and now fails open. Finding 3 (new) means the feature's headline use case — different behaviour per collection — silently does not apply on the CLI and watcher transports, with every Tier 2 lever inverted for codebase collections there. All three fixes are small and localised; none require redesign. The verdict upgrades to APPROVED once: (1) `metadata_taxonomy_mode` is wired or formally descoped, (2) bundle validation fails closed with key-named errors, (3) CLI/watcher resolve profiles or the spec explicitly scopes them out. Per the project's merge-gate rule, this verdict is a hard gate independent of CI green.

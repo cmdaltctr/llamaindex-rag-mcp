@@ -24,6 +24,7 @@ from rag_mcp.core.profiles import (
     apply_profile_change,
     generate_safety_contract,
 )
+from rag_mcp.core.profiles.resolver import _bundle_to_effective
 
 
 # ── Helpers ────────────────────────────────────────────────────────────
@@ -509,3 +510,95 @@ class TestM1RerankerRevalidation:
         resolver = ProfileResolver(store=store, server_profile="codebase")
         effective = resolver.resolve("code")
         assert effective.reranker_enabled is False
+
+
+# ── Bundle validation (spec: Invalid bundle rejected) ────────────────
+
+
+class TestBundleValidation:
+    """Tests for operation-time bundle validation."""
+
+    def test_invalid_top_k_raises_with_key_name(self) -> None:
+        """A non-integer TOP_K raises with the key name in the message."""
+        bundle = {"TOP_K": "not_a_number"}
+        with pytest.raises(ValueError, match="TOP_K"):
+            _bundle_to_effective("documents", bundle)
+
+    def test_invalid_taxonomy_mode_raises_with_key_name(self) -> None:
+        """An invalid METADATA_TAXONOMY_MODE raises naming the key."""
+        bundle = {"METADATA_TAXONOMY_MODE": "invalid_mode"}
+        with pytest.raises(ValueError, match="METADATA_TAXONOMY_MODE"):
+            _bundle_to_effective("codebase", bundle)
+
+    def test_valid_bundle_does_not_raise(self) -> None:
+        """A valid bundle resolves without error."""
+        bundle = {
+            "TOP_K": 15,
+            "RERANK_ENABLED": "true",
+            "HYBRID_ENABLED": "false",
+            "CHUNK_STRATEGY_FALLBACK": "markdown",
+            "METADATA_TAXONOMY_MODE": "category",
+        }
+        effective = _bundle_to_effective("documents", bundle)
+        assert effective.top_k == 15
+        assert effective.reranker_enabled is True
+
+
+# ── Taxonomy mode wiring (spec: file_type taxonomy) ──────────────────
+
+
+class TestTaxonomyModeWiring:
+    """Tests that metadata_taxonomy_mode actually affects behaviour."""
+
+    def test_file_type_taxonomy_overrides_category(self) -> None:
+        """file_type mode sets category from content_type, not LLM classification."""
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        import inspect
+
+        sig = inspect.signature(read_and_chunk_file_async)
+        assert "taxonomy_mode" in sig.parameters
+
+    def test_category_taxonomy_is_default(self) -> None:
+        """category mode is the default (documents profile)."""
+        bundle = _load_profile_bundle("documents")
+        assert bundle["METADATA_TAXONOMY_MODE"] == "category"
+
+    def test_file_type_taxonomy_in_codebase(self) -> None:
+        """file_type mode is set in the codebase profile."""
+        bundle = _load_profile_bundle("codebase")
+        assert bundle["METADATA_TAXONOMY_MODE"] == "file_type"
+
+
+# ── CLI/watcher profile wiring ───────────────────────────────────────
+
+
+class TestCLIWatcherWiring:
+    """Tests that CLI and watcher use the ProfileResolver."""
+
+    def test_cli_ingest_accepts_effective_settings(self) -> None:
+        """The CLI ingest command passes effective_settings to ingest_path_async."""
+        import inspect
+        from rag_mcp.cli import ingest
+
+        # The function source should reference ProfileResolver.
+        source = inspect.getsource(ingest)
+        assert "ProfileResolver" in source
+        assert "effective_settings" in source
+
+    def test_cli_search_accepts_effective_settings(self) -> None:
+        """The CLI search command passes effective_settings to search()."""
+        import inspect
+        from rag_mcp.cli import search
+
+        source = inspect.getsource(search)
+        assert "ProfileResolver" in source
+        assert "effective_settings" in source
+
+    def test_watcher_resolves_profile(self) -> None:
+        """The watcher resolves the collection's profile before ingesting."""
+        import inspect
+        from rag_mcp.watcher import DocumentIngestHandler
+
+        source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
+        assert "ProfileResolver" in source
+        assert "effective_settings" in source

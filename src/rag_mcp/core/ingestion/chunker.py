@@ -40,6 +40,7 @@ async def read_and_chunk_file_async(
     chunk_overlap: int | None = None,
     content_type: str | None = None,
     fallback_strategy: str | None = None,
+    taxonomy_mode: str | None = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
@@ -168,6 +169,14 @@ async def read_and_chunk_file_async(
             "No documents loaded from %s — skipping metadata extraction",
             file_path.name,
         )
+
+    # Phase 4: file_type taxonomy mode overrides the category with the
+    # Magika-detected file type label (e.g. "python", "yaml").  This is
+    # the codebase profile's taxonomy — files are classified by language
+    # rather than by semantic category.
+    if taxonomy_mode == "file_type" and content_type:
+        _label = content_type.partition("/")[2] or content_type
+        doc_metadata["category"] = _label
 
     # Markdown files use a heading-aware parser chained with the sentence
     # splitter so heading boundaries are preserved wherever the

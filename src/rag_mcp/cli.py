@@ -563,9 +563,17 @@ def ingest(
 
     from .core.ingestion._state import shutdown_requested as _shutdown_requested
     from .core.ingestion import ingest_path_async
+    from .core.profiles import ProfileResolver
+
+    # Phase 4: resolve the collection's profile for per-operation levers.
+    try:
+        effective = ProfileResolver().resolve(collection)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1)
 
     # Build kwargs for overrides
-    ingest_kwargs: dict = {"collection_name": collection}
+    ingest_kwargs: dict = {"collection_name": collection, "effective_settings": effective}
     if chunk_size is not None:
         ingest_kwargs["chunk_size"] = chunk_size
     if chunk_overlap is not None:
@@ -644,7 +652,15 @@ def search(
     ),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
+    from .core.profiles import ProfileResolver
     from .core.retrieval import search as do_search
+
+    # Phase 4: resolve the collection's profile for per-operation levers.
+    try:
+        effective = ProfileResolver().resolve(collection)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1)
 
     try:
         output_guard = (
@@ -661,6 +677,7 @@ def search(
                 rerank=rerank,
                 hybrid=hybrid,
                 collection_name=collection,
+                effective_settings=effective,
             )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)

@@ -147,9 +147,15 @@ async def ingest_path_async(
 
         try:
             # Phase 4: pass the profile's chunking fallback for ambiguous
-            # types.  Content-type dispatch still wins for known types.
+            # types and the taxonomy mode for metadata classification.
+            # Content-type dispatch still wins for known types.
             fallback_strategy = (
                 effective_settings.chunk_strategy_fallback
+                if effective_settings is not None
+                else None
+            )
+            taxonomy_mode = (
+                effective_settings.metadata_taxonomy_mode
                 if effective_settings is not None
                 else None
             )
@@ -159,6 +165,7 @@ async def ingest_path_async(
                 chunk_overlap=_chunk_overlap,
                 content_type=content_type,
                 fallback_strategy=fallback_strategy,
+                taxonomy_mode=taxonomy_mode,
             )
             all_nodes.extend(nodes)
             files_indexed += 1
