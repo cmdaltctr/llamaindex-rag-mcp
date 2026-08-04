@@ -49,7 +49,7 @@ class TestIngestResponsiveness:
     ) -> None:
         """Concurrent MCP search returns while ingest is blocked mid-flight."""
         from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.server import search_documents
+        from rag_mcp.transports.mcp import search_documents
 
         # Pre-populate so search has data to find.
         coll = "resp_test"
@@ -125,7 +125,7 @@ class TestIngestResponsiveness:
         self, monkeypatch
     ) -> None:
         """Slow synchronous retrieval runs in a worker, not the event loop."""
-        from rag_mcp.server import search_documents
+        from rag_mcp.transports.mcp import search_documents
 
         def slow_search(*args, **kwargs):
             time.sleep(0.3)
@@ -137,7 +137,7 @@ class TestIngestResponsiveness:
                 "reranked": False,
             }]
 
-        monkeypatch.setattr("rag_mcp.server.search", slow_search)
+        monkeypatch.setattr("rag_mcp.transports.mcp.search", slow_search)
 
         search_task = asyncio.create_task(search_documents("slow"))
         await asyncio.sleep(0.05)
@@ -236,7 +236,7 @@ class TestSplitterOffload:
         from llama_index.core.node_parser import SentenceSplitter
 
         from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.server import search_documents
+        from rag_mcp.transports.mcp import search_documents
 
         coll = "splitter_offload"
 

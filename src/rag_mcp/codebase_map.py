@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import settings
+from .integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -85,30 +86,10 @@ _BINARY_SUFFIXES: set[str] = {
     ".pyc", ".pyo", ".class", ".jar",
 }
 
-# Directories excluded from both Magika and suffix scanning.
-_EXCLUDED_DIRS: set[str] = {
-    ".git", "node_modules", "__pycache__", ".venv", ".pytest_cache",
-    "dist", "build", ".opencode",
-}
-
-
-@dataclass
-class FileEntry:
-    """A single file detected by Magika or suffix fallback.
-
-    Attributes:
-        path: Relative path from the project root.
-        group: Magika group (e.g., "code", "document", "config", "binary").
-        label: Magika label (e.g., "typescript", "markdown", "yaml").
-        is_text: Whether the file is text (vs binary).
-        suffix: File extension including the dot (e.g., ".py").
-    """
-
-    path: str
-    group: str
-    label: str
-    is_text: bool
-    suffix: str
+# FileEntry and _EXCLUDED_DIRS are detection primitives owned by
+# integrations.magika (extracted in Phase 5). They are imported at the
+# top of this module and re-exported here so existing
+# ``from rag_mcp.codebase_map import FileEntry`` consumers keep working.
 
 
 @dataclass
@@ -130,78 +111,21 @@ class FileInventory:
 
 
 def _is_magika_available() -> bool:
-    """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(settings.magika_binary) is not None
+    """Check if the Magika CLI binary is on $PATH.
+
+    Delegates to ``integrations.magika`` (extracted in Phase 5).
+    """
+    from .integrations.magika import _is_magika_available as _check
+    return _check()
 
 
 def scan_with_magika(path: str) -> list[FileEntry]:
     """Scan a directory using the Magika CLI binary.
 
-    Runs ``magika -r <path> --jsonl`` and parses each JSONL line to extract
-    ``output.group``, ``output.label``, ``output.is_text``, and ``path``.
-
-    Args:
-        path: Directory path to scan.
-
-    Returns:
-        List of ``FileEntry`` objects for each detected file.
-
-    Raises:
-        FileNotFoundError: If the Magika binary is not on $PATH.
-        subprocess.CalledProcessError: If the Magika process fails.
+    Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
-    if not _is_magika_available():
-        raise FileNotFoundError(f"Magika CLI binary not found: {settings.magika_binary}")
-
-    try:
-        result = subprocess.run(
-            [settings.magika_binary, "-r", path, "--jsonl"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired:
-        logger.warning("Magika scan timed out after 30s, falling back to suffix detection")
-        raise FileNotFoundError("Magika scan timed out")
-
-    entries: list[FileEntry] = []
-    project_root = Path(path)
-    for line in result.stdout.strip().splitlines():
-        if not line:
-            continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError:
-            logger.debug("Skipping unparseable Magika line: %s", line[:80])
-            continue
-
-        file_path = obj.get("path", "")
-        output = obj.get("output", {})
-        group = output.get("group", "unknown")
-        label = output.get("label", "unknown")
-        is_text = output.get("is_text", True)
-
-        # Skip excluded directories.
-        if any(part in _EXCLUDED_DIRS for part in Path(file_path).parts):
-            continue
-
-        # Make path relative to the scanned root.
-        try:
-            rel_path = str(Path(file_path).relative_to(project_root))
-        except ValueError:
-            rel_path = file_path
-
-        suffix = Path(file_path).suffix.lower()
-        entries.append(FileEntry(
-            path=rel_path,
-            group=group,
-            label=label,
-            is_text=is_text,
-            suffix=suffix,
-        ))
-
-    return entries
+    from .integrations.magika import scan_with_magika as _scan
+    return _scan(path)
 
 
 def scan_with_suffix(path: str) -> list[FileEntry]:

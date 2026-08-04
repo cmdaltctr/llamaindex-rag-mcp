@@ -47,6 +47,10 @@ jobs:
       - name: Run import-linter contracts
         run: uv run --no-sync lint-imports
 
+      # Phase 5: validate the OpenAPI 3.1 contract on every push.
+      - name: Validate OpenAPI contract
+        run: uv run --no-sync python -c "import yaml; from openapi_spec_validator import validate; validate(yaml.safe_load(open('src/rag_mcp/transports/api/openapi.yaml')))" && echo "OpenAPI contract valid"
+
       - name: Run tests (slow, liteparse on macOS)
         if: matrix.os == 'macos-latest'
         env:

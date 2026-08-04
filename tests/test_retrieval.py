@@ -157,7 +157,7 @@ class TestPersistentRerankFailureFallback:
         monkeypatch.setattr(reranker_mod.CrossEncoderReranker, "_load_model", _fail_load)
 
         # Inject the failing reranker through the DI parameter.
-        import rag_mcp.server as server
+        import rag_mcp.transports.mcp as server
 
         original_search = server.search
         from rag_mcp.core.retrieval import search as _search

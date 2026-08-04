@@ -419,7 +419,7 @@ class TestMCPProfileChangeFlow:
 
     def test_mcp_preview_returns_confirm_required(self) -> None:
         """The MCP tool returns a preview with confirm_required=True."""
-        from rag_mcp.server import change_collection_profile
+        from rag_mcp.transports.mcp import change_collection_profile
 
         with patch(
             "rag_mcp.core.profiles.generate_safety_contract"
@@ -434,7 +434,7 @@ class TestMCPProfileChangeFlow:
 
     def test_mcp_confirm_applies_change(self) -> None:
         """The MCP tool applies the change when confirm=True."""
-        from rag_mcp.server import change_collection_profile
+        from rag_mcp.transports.mcp import change_collection_profile
 
         with patch(
             "rag_mcp.core.profiles.apply_profile_change"
@@ -453,7 +453,7 @@ class TestMCPProfileChangeFlow:
 
     def test_mcp_rejects_invalid_profile(self) -> None:
         """The MCP tool rejects an invalid profile name."""
-        from rag_mcp.server import change_collection_profile
+        from rag_mcp.transports.mcp import change_collection_profile
 
         result = change_collection_profile(
             collection="coll", profile="invalid", confirm=False
@@ -462,7 +462,7 @@ class TestMCPProfileChangeFlow:
 
     def test_mcp_rejects_hybrid_profile(self) -> None:
         """The MCP tool rejects 'hybrid' as a target profile."""
-        from rag_mcp.server import change_collection_profile
+        from rag_mcp.transports.mcp import change_collection_profile
 
         result = change_collection_profile(
             collection="coll", profile="hybrid", confirm=False
@@ -578,7 +578,7 @@ class TestCLIWatcherWiring:
     def test_cli_ingest_accepts_effective_settings(self) -> None:
         """The CLI ingest command passes effective_settings to ingest_path_async."""
         import inspect
-        from rag_mcp.cli import ingest
+        from rag_mcp.transports.cli import ingest
 
         # The function source should reference ProfileResolver.
         source = inspect.getsource(ingest)
@@ -588,7 +588,7 @@ class TestCLIWatcherWiring:
     def test_cli_search_accepts_effective_settings(self) -> None:
         """The CLI search command passes effective_settings to search()."""
         import inspect
-        from rag_mcp.cli import search
+        from rag_mcp.transports.cli import search
 
         source = inspect.getsource(search)
         assert "ProfileResolver" in source
@@ -597,7 +597,7 @@ class TestCLIWatcherWiring:
     def test_watcher_resolves_profile(self) -> None:
         """The watcher resolves the collection's profile before ingesting."""
         import inspect
-        from rag_mcp.watcher import DocumentIngestHandler
+        from rag_mcp.daemon.watcher import DocumentIngestHandler
 
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
         assert "ProfileResolver" in source
