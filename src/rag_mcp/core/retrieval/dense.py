@@ -94,48 +94,41 @@ def _result_source(meta: dict) -> str:
 
 
 def _dense_query_rows(
-    collection: Any,
+    store: Any,
+    collection_name: str,
     query: str,
     fetch_k: int,
     metadata_filter: dict | None = None,
 ) -> list[dict]:
-    """Query ChromaDB for dense vector matches and return result rows.
+    """Query the vector store for dense matches and return result rows.
 
     Args:
-        collection: ChromaDB collection object.
+        store: A :class:`VectorStore` instance.
+        collection_name: Name of the collection to query.
         query: Free-text search query.
         fetch_k: Number of candidates to fetch.
-        metadata_filter: Optional ChromaDB ``where`` clause.
+        metadata_filter: Optional store ``where`` clause.
 
     Returns:
         List of result dicts with keys ``id``, ``score``, ``source``,
         ``page_label``, ``text``, ``metadata``, ``reranked``.
     """
-    query_kwargs: dict = {
-        "query_embeddings": [_embed_query(query)],
-        "n_results": fetch_k,
-        "include": ["metadatas", "documents", "distances"],
-    }
-    if metadata_filter:
-        query_kwargs["where"] = metadata_filter
-
-    raw = collection.query(**query_kwargs)
-    ids = raw.get("ids", [[]])[0]
-    documents = raw.get("documents", [[]])[0]
-    metadatas = raw.get("metadatas", [[]])[0]
-    distances = raw.get("distances", [[]])[0]
+    raw_rows = store.query_dense(
+        collection_name=collection_name,
+        query_embedding=_embed_query(query),
+        n_results=fetch_k,
+        where=metadata_filter,
+    )
 
     rows: list[dict] = []
-    for i, chunk_id in enumerate(ids):
-        meta = metadatas[i] if i < len(metadatas) and isinstance(metadatas[i], dict) else {}
-        text = documents[i] if i < len(documents) else ""
-        distance = distances[i] if i < len(distances) else None
+    for row in raw_rows:
+        meta = row.get("metadata", {})
         rows.append({
-            "id": str(chunk_id),
-            "score": _distance_to_score(distance),
+            "id": row.get("id", ""),
+            "score": _distance_to_score(row.get("distance")),
             "source": _result_source(meta),
             "page_label": meta.get("page_label"),
-            "text": text,
+            "text": row.get("document", ""),
             "metadata": dict(meta),
             "reranked": False,
         })

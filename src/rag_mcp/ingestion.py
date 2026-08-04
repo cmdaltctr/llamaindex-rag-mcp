@@ -41,7 +41,6 @@ from .config import (  # noqa: F401
 # ``Settings`` as the LlamaIndex global (``Settings.embed_model``), whereas
 # ``rag_mcp.config.Settings`` is the new pydantic resolver model (ADR-031).
 from llama_index.core import Settings  # noqa: F401
-from .chroma_utils import iter_collection_metadatas  # noqa: F401
 
 # ── Thread-safety primitives (old names with underscore prefix) ─────────
 from .core.ingestion._state import (  # noqa: F401
@@ -67,7 +66,6 @@ from .core.chunking.markdown import (  # noqa: F401
 # ── Loader (old names with underscore prefix) ───────────────────────────
 from .core.ingestion.loader import (  # noqa: F401
     gather_supported_files as _gather_supported_files,
-    get_chroma_collection as _get_chroma_collection,
     list_documents,
     make_file_detail as _make_file_detail,
 )
@@ -88,7 +86,6 @@ from .core.ingestion.writer import (  # noqa: F401
     remove_collection,
     remove_document,
 )
-from .core.ingestion.writer import _count_chunks  # noqa: F401
 
 # ── Pipeline orchestrator ───────────────────────────────────────────────
 from .core.ingestion.pipeline import ingest_path_async  # noqa: F401

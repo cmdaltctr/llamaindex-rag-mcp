@@ -1,8 +1,9 @@
 """File gathering and reader dispatch for the ingestion pipeline.
 
 Discovers supported files, identifies skipped (unsupported) files, and
-provides the ChromaDB collection accessor.  Extracted from the original
-``ingestion.py`` monolith as part of Phase 1.
+provides the document-listing accessor.  Extracted from the original
+``ingestion.py`` monolith as part of Phase 1; rewired through the
+vector store ABC in Phase 3.
 """
 
 from __future__ import annotations
@@ -10,10 +11,9 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import chromadb
-
-from ...chroma_utils import iter_collection_metadatas
-from ...config import settings, SUPPORTED_EXTENSIONS
+from ...config import SUPPORTED_EXTENSIONS
+from ..vectordb import get_default_store
+from ..vectordb.base import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -40,22 +40,6 @@ def make_file_detail(
     if error:
         detail["error"] = error
     return detail
-
-
-def get_chroma_collection(
-    collection_name: str = "documents",
-) -> chromadb.Collection:
-    """Return (or create) a named ChromaDB collection.
-
-    Args:
-        collection_name: Name of the ChromaDB collection.  Defaults to
-            ``"documents"`` for backward compatibility.
-
-    Returns:
-        The ChromaDB collection object (created if it did not exist).
-    """
-    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    return db.get_or_create_collection(collection_name)
 
 
 def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
@@ -95,28 +79,28 @@ def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
     return files, skipped
 
 
-def list_documents(collection_name: str = "documents") -> list[dict]:
+def list_documents(
+    collection_name: str = "documents",
+    store: VectorStore | None = None,
+) -> list[dict]:
     """Return unique source file paths and their chunk counts from the index.
 
     Args:
-        collection_name: Name of the ChromaDB collection to query
+        collection_name: Name of the collection to query
             (default ``"documents"`` for backward compatibility).
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         List of dicts, each with: ``{"source": str, "chunks": int}``.
     """
-    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-    try:
-        collection = db.get_collection(collection_name)
-    except Exception:
-        return []  # collection hasn't been created yet
+    resolved_store = store if store is not None else get_default_store()
 
-    count = collection.count()
+    count = resolved_store.count(collection_name)
     if count == 0:
         return []
 
     source_counts: dict[str, int] = {}
-    for meta in iter_collection_metadatas(collection):
+    for meta in resolved_store.iter_metadatas(collection_name):
         if meta is None:
             continue
         source = meta.get("file_path") or meta.get("file_name") or "unknown"

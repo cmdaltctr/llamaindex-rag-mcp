@@ -34,7 +34,6 @@ _NAMES: dict[str, str] = {
     "write_lock": "._state",
     "read_and_chunk_file_async": ".chunker",
     "gather_supported_files": ".loader",
-    "get_chroma_collection": ".loader",
     "list_documents": ".loader",
     "make_file_detail": ".loader",
     "ingest_path_async": ".pipeline",

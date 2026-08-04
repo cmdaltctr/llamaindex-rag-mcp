@@ -23,8 +23,6 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-import chromadb
-
 logger = logging.getLogger(__name__)
 
 
@@ -106,37 +104,30 @@ class _CachedBM25:
 
 
 def _detect_native_sparse_capability() -> bool:
-    """Return whether the active ChromaDB runtime can serve native sparse queries.
+    """Delegate to the vectordb module's capability probe.
 
-    Conservative: this project uses ChromaDB ``PersistentClient`` where native
-    sparse retrieval is not available for the local embedded path.  Returning
-    ``False`` keeps the v1 default on BM25 and makes ``native`` fall back with
-    a warning.
-
-    The check is runtime-dynamic (not a hardcoded ``False``) so it will
-    automatically return ``True`` when a future ChromaDB release adds
-    native sparse query support to ``PersistentClient``.
+    Kept as a thin wrapper so existing imports from
+    ``config.resolve_sparse_backend`` continue to resolve without
+    touching ChromaDB directly in this module.
     """
-    try:
-        import chromadb
+    from ..vectordb.chroma import detect_native_sparse_capability
 
-        # PersistentClient (local embedded mode) does not expose native
-        # sparse retrieval in current ChromaDB versions.  Check for the
-        # query_sparse method that would indicate native sparse support.
-        return hasattr(chromadb.PersistentClient, "query_sparse")
-    except Exception:
-        return False
+    return detect_native_sparse_capability()
 
 
 class BM25SparseRetriever:
-    """Generation-aware BM25 retriever for one ChromaDB collection."""
+    """Generation-aware BM25 retriever for one collection."""
 
     _cache: dict[str, _CachedBM25] = {}
     _cache_lock = threading.Lock()
 
-    def __init__(self, collection_name: str, collection: Any | None = None) -> None:
+    def __init__(
+        self,
+        collection_name: str,
+        store: Any | None = None,
+    ) -> None:
         self.collection_name = collection_name
-        self._collection = collection
+        self._store = store
 
     @classmethod
     def clear_all_caches(cls) -> None:
@@ -169,18 +160,15 @@ class BM25SparseRetriever:
             results.append((rank, row.doc_id, row.text, dict(row.metadata)))
         return results
 
-    def _get_collection(self):
-        if self._collection is not None:
-            return self._collection
-        from ...config import settings
+    def _get_store(self):
+        if self._store is not None:
+            return self._store
+        from ..vectordb import get_default_store
 
-        db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-        return db.get_collection(self.collection_name)
+        return get_default_store()
 
     def _get_generation(self) -> int:
-        from ..ingestion import get_collection_generation
-
-        return get_collection_generation(self.collection_name)
+        return self._get_store().get_generation(self.collection_name)
 
     def _get_or_build_index(self) -> _CachedBM25:
         generation = self._get_generation()
@@ -189,8 +177,8 @@ class BM25SparseRetriever:
             if cached is not None and cached.generation == generation:
                 return cached
 
-            collection = self._get_collection()
-            rows = _read_collection_rows(collection)
+            store = self._get_store()
+            rows = _read_collection_rows(store, self.collection_name)
             tokenised = [tokenize_english(row.text) for row in rows]
             index = _make_bm25(tokenised)
             cached = _CachedBM25(generation=generation, index=index, rows=rows)
@@ -198,36 +186,13 @@ class BM25SparseRetriever:
             return cached
 
 
-def _read_collection_rows(collection: Any) -> list[_ChunkRow]:
+def _read_collection_rows(store: Any, collection_name: str) -> list[_ChunkRow]:
     """Read all collection chunks into row objects with bounded paging."""
-    try:
-        count = collection.count()
-    except Exception:
-        count = 0
+    count = store.count(collection_name)
     if count == 0:
         return []
 
-    from ...config import settings
-
     rows: list[_ChunkRow] = []
-    offset = 0
-    page_size = settings.chroma_scan_page_size
-    while True:
-        batch = collection.get(
-            include=["documents", "metadatas"],
-            limit=page_size,
-            offset=offset,
-        )
-        ids = batch.get("ids") or []
-        docs = batch.get("documents") or []
-        metas = batch.get("metadatas") or []
-        if not ids:
-            break
-        for idx, doc_id in enumerate(ids):
-            metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
-            text = docs[idx] if idx < len(docs) and docs[idx] is not None else ""
-            rows.append(_ChunkRow(str(doc_id), str(text), dict(metadata)))
-        if len(ids) < page_size:
-            break
-        offset += len(ids)
+    for doc_id, text, metadata in store.iter_documents(collection_name):
+        rows.append(_ChunkRow(doc_id, text, metadata))
     return rows

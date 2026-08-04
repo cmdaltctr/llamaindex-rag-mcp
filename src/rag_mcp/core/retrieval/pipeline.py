@@ -4,7 +4,7 @@ The main ``search()`` entry point that ties together dense vector search,
 sparse BM25/native retrieval, Reciprocal Rank Fusion, and cross-encoder
 reranking.  Also hosts ``list_collections()`` and the hybrid query
 machinery.  Extracted from the original ``retrieval.py`` monolith as
-part of Phase 1.
+part of Phase 1; rewired through the vector store ABC in Phase 3.
 """
 
 from __future__ import annotations
@@ -13,10 +13,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-import chromadb
-
-from ...chroma_utils import iter_collection_metadatas
 from ...config import settings
+from ..vectordb import get_default_store
+from ..vectordb.base import VectorStore
 from .dense import _dense_query_rows, _result_source
 from .fusion import rrf_with_metadata
 from .policy import (
@@ -32,6 +31,11 @@ _warned_collections: set[str] = set()
 _warned_native_fallback_collections: set[str] = set()
 
 
+def _resolve_store(store: VectorStore | None) -> VectorStore:
+    """Return the given store or the process-wide default."""
+    return store if store is not None else get_default_store()
+
+
 def _selected_sparse_backend() -> str:
     from ...config import resolve_sparse_backend, settings
 
@@ -40,13 +44,13 @@ def _selected_sparse_backend() -> str:
 
 def _sparse_bm25_query(
     collection_name: str,
-    collection: Any,
+    store: VectorStore,
     query: str,
     fetch_k: int,
 ) -> list[dict]:
     from .sparse import BM25SparseRetriever
 
-    rows = BM25SparseRetriever(collection_name, collection=collection).query(query, fetch_k)
+    rows = BM25SparseRetriever(collection_name, store=store).query(query, fetch_k)
     return [
         {
             "id": doc_id,
@@ -60,13 +64,15 @@ def _sparse_bm25_query(
     ]
 
 
-def _emit_mixed_coverage_warning(collection_name: str, collection: Any) -> None:
+def _emit_mixed_coverage_warning(
+    collection_name: str, store: VectorStore
+) -> None:
     if collection_name in _warned_collections:
         return
     total = 0
     covered = 0
     try:
-        for meta in iter_collection_metadatas(collection):
+        for meta in store.iter_metadatas(collection_name):
             total += 1
             if isinstance(meta, dict) and meta.get("has_sparse_vector"):
                 covered += 1
@@ -86,7 +92,7 @@ def _emit_mixed_coverage_warning(collection_name: str, collection: Any) -> None:
 
 def _native_sparse_query(
     collection_name: str,
-    collection: Any,
+    store: VectorStore,
     query: str,
     fetch_k: int,
 ) -> list[dict]:
@@ -100,11 +106,11 @@ def _native_sparse_query(
             "silently degrade to dense-only results.",
             collection_name,
         )
-    return _sparse_bm25_query(collection_name, collection, query, fetch_k)
+    return _sparse_bm25_query(collection_name, store, query, fetch_k)
 
 
 def _hybrid_query_rows(
-    collection: Any,
+    store: VectorStore,
     collection_name: str,
     query: str,
     fetch_k: int,
@@ -113,16 +119,17 @@ def _hybrid_query_rows(
     backend = _selected_sparse_backend()
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
-            _dense_query_rows, collection, query, fetch_k, metadata_filter,
+            _dense_query_rows, store, collection_name, query, fetch_k,
+            metadata_filter,
         )
         if backend == "native":
-            _emit_mixed_coverage_warning(collection_name, collection)
+            _emit_mixed_coverage_warning(collection_name, store)
             sparse_future = executor.submit(
-                _native_sparse_query, collection_name, collection, query, fetch_k,
+                _native_sparse_query, collection_name, store, query, fetch_k,
             )
         else:
             sparse_future = executor.submit(
-                _sparse_bm25_query, collection_name, collection, query, fetch_k,
+                _sparse_bm25_query, collection_name, store, query, fetch_k,
             )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
@@ -150,6 +157,7 @@ def search(
     technical_fraction: float | None = None,
     fetch_k: int | None = None,
     reranker: CrossEncoderReranker | None = None,
+    store: VectorStore | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -171,13 +179,12 @@ def search(
         hybrid: If True, fuse dense vector results with sparse BM25/native
             sparse rankings via Reciprocal Rank Fusion before reranking.
             When ``None``, the resolved ``settings.hybrid_enabled`` applies.
-        collection_name: Name of the ChromaDB collection to search
+        collection_name: Name of the collection to search
             (default ``"documents"`` for backward compatibility).
-        metadata_filter: Optional ChromaDB ``where`` clause to filter
+        metadata_filter: Optional store ``where`` clause to filter
             results by metadata fields (e.g. ``{"category": "AI"}``).
-            When provided, the filter is applied server-side via
-            ChromaDB's native ``where`` parameter — only matching
-            chunks are returned from the vector store.
+            When provided, the filter is applied server-side — only
+            matching chunks are returned from the vector store.
         include_diagnostics: If True, preserve hybrid rank diagnostic
             fields (``id``, ``fused_score``, ``dense_rank``, ``sparse_rank``,
             ``fused_rank``) and policy resolution reason for experiments.
@@ -197,6 +204,8 @@ def search(
             cached process-wide keyed by model ID, so the model is loaded
             at most once per process regardless of how many instances are
             created.
+        store: Optional injected :class:`VectorStore` (defaults to the
+            process-wide store constructed by ``compose``).
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -210,10 +219,10 @@ def search(
             rerank_reason – string explaining the policy decision
 
     Raises:
-        ValueError: If ``metadata_filter`` is rejected by ChromaDB
+        ValueError: If ``metadata_filter`` is rejected by the store
             (unsupported operator, type mismatch, etc.).  Other
-            ChromaDB-side failures propagate as their original
-            exception types so the MCP layer can classify them.
+            store-side failures propagate as their original exception
+            types so the MCP layer can classify them.
     """
     # Resolve effective rerank behaviour from policy.
     effective_rerank, rerank_reason = _resolve_rerank_policy(
@@ -227,14 +236,10 @@ def search(
     if hybrid is None:
         hybrid = settings.hybrid_enabled
 
-    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+    resolved_store = _resolve_store(store)
 
-    try:
-        collection = db.get_collection(collection_name)
-    except Exception:
-        return []
-
-    if collection.count() == 0:
+    chunk_count = resolved_store.count(collection_name)
+    if chunk_count == 0:
         return []
 
     # Fetch more candidates when reranking so the cross-encoder
@@ -242,17 +247,19 @@ def search(
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
     resolved_fetch_k = _resolve_fetch_k(
-        top_k, effective_rerank, collection.count(),
+        top_k, effective_rerank, chunk_count,
         fetch_k_override=fetch_k,
     )
 
     if hybrid:
         results = _hybrid_query_rows(
-            collection, collection_name, query, resolved_fetch_k, metadata_filter,
+            resolved_store, collection_name, query, resolved_fetch_k,
+            metadata_filter,
         )
     else:
         results = _dense_query_rows(
-            collection, query, resolved_fetch_k, metadata_filter,
+            resolved_store, collection_name, query, resolved_fetch_k,
+            metadata_filter,
         )
 
     # Optional: re-score with cross-encoder reranker.
@@ -289,8 +296,13 @@ def search(
     return results
 
 
-def list_collections() -> list[dict]:
-    """List all ChromaDB collections with document and chunk counts.
+def list_collections(
+    store: VectorStore | None = None,
+) -> list[dict]:
+    """List all collections with document and chunk counts.
+
+    Args:
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         A list of dicts, each with:
@@ -298,17 +310,17 @@ def list_collections() -> list[dict]:
         - ``document_count`` — approximate number of unique source files
         - ``chunk_count`` — total number of chunks in the collection
     """
-    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+    resolved_store = _resolve_store(store)
 
     collections: list[dict] = []
-    for coll in db.list_collections():
+    for name in resolved_store.list_collections():
         try:
-            chunk_count = coll.count()
+            chunk_count = resolved_store.count(name)
             # Estimate unique documents by counting distinct file_path/file_name
             # values in metadata.
             doc_sources: set[str] = set()
             if chunk_count > 0:
-                for meta in iter_collection_metadatas(coll):
+                for meta in resolved_store.iter_metadatas(name):
                     if meta is None:
                         continue
                     source = (
@@ -319,7 +331,7 @@ def list_collections() -> list[dict]:
                     doc_sources.add(source)
 
             collections.append({
-                "name": coll.name,
+                "name": name,
                 "document_count": len(doc_sources),
                 "chunk_count": chunk_count,
             })

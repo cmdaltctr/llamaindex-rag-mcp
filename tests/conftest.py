@@ -73,6 +73,12 @@ def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(chromadb, "PersistentClient", _ephemeral_singleton)
     monkeypatch.setattr(chromadb, "EphemeralClient", _ephemeral_singleton)
 
+    # Reset the default vector store so each test picks up the current
+    # monkeypatch when it lazily constructs a fresh store.
+    from rag_mcp.core.vectordb import reset_default_store
+
+    reset_default_store()
+
 
 @pytest.fixture(autouse=True)
 def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:

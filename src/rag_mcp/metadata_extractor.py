@@ -42,7 +42,6 @@ from .config import (  # noqa: F401
     OPENROUTER_API_KEY,
     OPENROUTER_LLM_MODEL,
 )
-from .chroma_utils import iter_collection_metadatas  # noqa: F401
 
 # ── Shared helpers ──────────────────────────────────────────────────────
 from .core.metadata._common import (  # noqa: F401
@@ -65,10 +64,8 @@ from .core.metadata.keyword import (  # noqa: F401
 
 # ── Taxonomy (ADR-013) ──────────────────────────────────────────────────
 from .core.metadata.taxonomy import (  # noqa: F401
-    _chroma_client,
     _collect_categories_from_collection,
     _gather_existing_categories,
-    _get_chroma_client,
     _get_seed_categories,
 )
 

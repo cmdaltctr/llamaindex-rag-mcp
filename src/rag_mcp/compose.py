@@ -94,11 +94,48 @@ def build_reranker(settings: Settings | None = None) -> Any:
     return CrossEncoderReranker(model_id=settings.rerank_model)
 
 
-def ensure_runtime_setup() -> None:
-    """Assign ``LlamaIndexSettings.embed_model`` (once per process).
+def build_vector_store(settings: Settings | None = None) -> Any:
+    """Construct the vector store from the ``VECTOR_STORE`` setting.
 
-    This replaces the import-time side effect previously in ``config.py``.
-    Safe to call multiple times — only runs once.
+    Phase 3 (ADR-034): the store is constructed in the composition root
+    and injected into the ingestion writer and retrieval pipeline.
+    Only ``chroma`` is registered today; the Settings validator rejects
+    unknown values at construction time with a clear error.
+
+    Args:
+        settings: Resolved settings (defaults to the singleton).
+
+    Returns:
+        A :class:`rag_mcp.core.vectordb.base.VectorStore` instance.
+
+    Raises:
+        ValueError: If ``VECTOR_STORE`` names an unregistered impl.
+    """
+    if settings is None:
+        settings = get_settings()
+
+    if settings.vector_store == "chroma":
+        from .core.vectordb.chroma import build_chroma_vector_store
+
+        return build_chroma_vector_store()
+
+    # The Settings validator should have caught this already, but guard
+    # defensively in case Settings was constructed with _env_file=None
+    # bypassing validation.
+    raise ValueError(
+        f"VECTOR_STORE={settings.vector_store!r} is not registered. "
+        f"Available: chroma"
+    )
+
+
+def ensure_runtime_setup() -> None:
+    """Assign ``LlamaIndexSettings.embed_model`` and the default vector store.
+
+    Replaces the import-time side effect previously in ``config.py``.
+    Constructs the vector store from the ``VECTOR_STORE`` setting and
+    registers it as the process-wide default so all pipeline callers
+    share one instance (and one generation counter dict).  Safe to call
+    multiple times — only runs once.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -108,6 +145,12 @@ def ensure_runtime_setup() -> None:
         LlamaIndexSettings.embed_model = build_embed_model(settings)
     except (ImportError, ValueError) as exc:
         logger.warning("Failed to construct embedding model: %s", exc)
+    try:
+        from .core.vectordb import set_default_store
+
+        set_default_store(build_vector_store(settings))
+    except (ImportError, ValueError) as exc:
+        logger.warning("Failed to construct vector store: %s", exc)
     _runtime_setup_done = True
 
 
