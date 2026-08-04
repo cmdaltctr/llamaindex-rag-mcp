@@ -125,6 +125,7 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
     chroma_persist_dir: str = "./chroma_db"
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
+    vector_store: str = "chroma"
 
     # ── Provider selection ────────────────────────────────────────
     embed_provider: str = "local"
@@ -209,6 +210,15 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
         if self.document_backend not in ("local", "azure"):
             logger.warning("Unknown DOCUMENT_BACKEND=%r; falling back to local", self.document_backend)
             object.__setattr__(self, "document_backend", "local")
+
+        # Vector store selection (Phase 3, ADR-034).  Only "chroma" is
+        # registered today; unknown values raise at compose time with a
+        # clear error listing available implementations.
+        if self.vector_store not in ("chroma",):
+            raise ValueError(
+                f"VECTOR_STORE={self.vector_store!r} is not a registered "
+                f"implementation. Available: chroma"
+            )
 
         # Azure credential check.
         if self.document_backend == "azure":
@@ -407,6 +417,7 @@ _LEGACY_ALIASES: dict[str, str] = {
     "CHROMA_PERSIST_DIR": "chroma_persist_dir",
     "COLLECTION_NAME": "collection_name",
     "CHROMA_SCAN_PAGE_SIZE": "chroma_scan_page_size",
+    "VECTOR_STORE": "vector_store",
     "EMBED_PROVIDER": "embed_provider",
     "METADATA_LLM_PROVIDER": "metadata_llm_provider",
     "LOCAL_BACKEND": "local_backend",

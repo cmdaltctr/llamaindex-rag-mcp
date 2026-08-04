@@ -1,10 +1,11 @@
-"""Embedding, ChromaDB write, and deletion operations.
+"""Embedding, vector store write, and deletion operations.
 
-Handles embedding nodes via the configured embed model, writing to
-ChromaDB, and all deletion operations (per-file, per-metadata-filter,
-per-collection).  Includes the collection generation bumping for BM25
-cache invalidation.  Extracted from the original ``ingestion.py``
-monolith as part of Phase 1.
+Handles embedding nodes via the configured embed model, writing to the
+vector store through the :class:`VectorStore` interface, and all
+deletion operations (per-file, per-metadata-filter, per-collection).
+Includes the collection generation bumping for BM25 cache
+invalidation.  Extracted from the original ``ingestion.py`` monolith
+as part of Phase 1; rewired through the vector store ABC in Phase 3.
 """
 
 from __future__ import annotations
@@ -13,38 +14,37 @@ import asyncio
 import logging
 from typing import Callable
 
-import chromadb
-from llama_index.core import StorageContext, VectorStoreIndex
-from llama_index.vector_stores.chroma import ChromaVectorStore
-
 from llama_index.core import Settings as LlamaIndexSettings
 
-from ...config import settings as _cfg
-from ._state import (
-    bump_collection_generation,
-    embed_semaphore,
-    shutdown_requested,
-    write_lock,
-)
-from .loader import get_chroma_collection
+from ..vectordb import get_default_store
+from ..vectordb.base import VectorStore
+from ._state import embed_semaphore, shutdown_requested, write_lock
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_store(store: VectorStore | None) -> VectorStore:
+    """Return the given store or the process-wide default."""
+    return store if store is not None else get_default_store()
 
 
 async def embed_and_write_async(
     nodes: list,
     progress_callback: Callable | None = None,
     collection_name: str = "documents",
+    store: VectorStore | None = None,
 ) -> int:
-    """Async version of embed and write to ChromaDB.
+    """Async version of embed and write to the vector store.
 
-    Wraps ChromaDB sync calls in ``asyncio.to_thread`` to yield the
+    Wraps the store's sync write in ``asyncio.to_thread`` to yield the
     event loop during writes.
 
     Args:
         nodes: List of LlamaIndex Node objects.
         progress_callback: Optional callable for progress updates.
-        collection_name: ChromaDB collection to write to.
+        collection_name: Vector store collection to write to.
+        store: Optional injected :class:`VectorStore` (defaults to the
+            process-wide store constructed by ``compose``).
 
     Returns:
         Number of chunks written.
@@ -58,16 +58,12 @@ async def embed_and_write_async(
     if progress_callback:
         progress_callback("embed_start", 0, len(nodes))
 
+    resolved_store = _resolve_store(store)
+
     def _write_sync() -> int:
         with write_lock:
             if shutdown_requested.is_set():
                 return 0
-
-            collection = get_chroma_collection(collection_name)
-            vector_store = ChromaVectorStore(chroma_collection=collection)
-            storage_context = StorageContext.from_defaults(
-                vector_store=vector_store
-            )
 
             with embed_semaphore:
                 logger.info(
@@ -75,14 +71,10 @@ async def embed_and_write_async(
                     len(nodes),
                     LlamaIndexSettings.embed_model.model_name,
                 )
-                VectorStoreIndex(
-                    nodes,
-                    storage_context=storage_context,
-                    show_progress=False,
-                )
-                bump_collection_generation(collection_name)
+                resolved_store.write_nodes(nodes, collection_name)
+                resolved_store.bump_generation(collection_name)
                 logger.info(
-                    "Successfully stored %d chunks in ChromaDB", len(nodes)
+                    "Successfully stored %d chunks in vector store", len(nodes)
                 )
             return len(nodes)
 
@@ -97,30 +89,14 @@ async def embed_and_write_async(
 # ── Deletion functions ─────────────────────────────────────────────────────
 
 
-def _count_chunks(
-    collection: chromadb.Collection,
-    where: dict,
-) -> int:
-    """Count chunks matching a ChromaDB ``where`` filter.
-
-    Args:
-        collection: A ChromaDB collection object.
-        where: A ChromaDB-compatible ``where`` clause.
-
-    Returns:
-        Number of matching chunks.
-    """
-    result = collection.get(where=where, include=[])
-    return len(result.get("ids", []))
-
-
 def preview_delete(
     *,
     path: str | None = None,
     metadata_filter: dict | None = None,
     collection_name: str = "documents",
+    store: VectorStore | None = None,
 ) -> dict:
-    """Preview a delete operation without modifying ChromaDB.
+    """Preview a delete operation without modifying the vector store.
 
     Supports the three delete modes used by the CLI and MCP tool:
     deleting chunks for a source file path, deleting chunks matching a
@@ -131,9 +107,10 @@ def preview_delete(
     Args:
         path: Source file path used as ``file_path`` metadata. Mutually
             exclusive with ``metadata_filter``.
-        metadata_filter: ChromaDB-compatible ``where`` clause. Mutually
+        metadata_filter: Store-compatible ``where`` clause. Mutually
             exclusive with ``path``.
-        collection_name: ChromaDB collection to preview against.
+        collection_name: Collection to preview against.
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         Dict with keys ``status``, ``dry_run``, ``mode``, ``collection``, and
@@ -148,6 +125,8 @@ def preview_delete(
             "would_delete": 0,
         }
 
+    resolved_store = _resolve_store(store)
+
     if path is not None:
         mode = "path"
         where = {"file_path": str(path)}
@@ -158,12 +137,11 @@ def preview_delete(
         mode = "collection"
         where = None
 
-    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
     try:
-        collection = db.get_collection(collection_name)
-        count = collection.count() if where is None else _count_chunks(
-            collection, where,
-        )
+        if where is None:
+            count = resolved_store.count(collection_name)
+        else:
+            count = resolved_store.count_where(collection_name, where)
     except Exception:
         count = 0
 
@@ -179,6 +157,7 @@ def preview_delete(
 def remove_document(
     file_path: str,
     collection_name: str = "documents",
+    store: VectorStore | None = None,
 ) -> dict:
     """Remove all chunks for a source file from the vector store.
 
@@ -187,17 +166,16 @@ def remove_document(
 
     Args:
         file_path: The source file path used as ``file_path`` metadata.
-        collection_name: ChromaDB collection to delete from
+        collection_name: Collection to delete from
             (default ``"documents"``).
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         Dict with keys ``status``, ``chunks_removed``, and ``collection``.
         On error, includes ``message``.
     """
-    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
-    try:
-        collection = db.get_collection(collection_name)
-    except Exception:
+    resolved_store = _resolve_store(store)
+    if not resolved_store.collection_exists(collection_name):
         return {
             "status": "error",
             "message": f"Collection '{collection_name}' does not exist.",
@@ -207,11 +185,11 @@ def remove_document(
 
     where = {"file_path": file_path}
     try:
-        chunks_removed = _count_chunks(collection, where)
+        chunks_removed = resolved_store.count_where(collection_name, where)
         if chunks_removed > 0:
             with write_lock:
-                collection.delete(where=where)
-                bump_collection_generation(collection_name)
+                resolved_store.delete_where(collection_name, where)
+                resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -236,13 +214,15 @@ def remove_document(
 def remove_by_metadata(
     metadata_filter: dict,
     collection_name: str = "documents",
+    store: VectorStore | None = None,
 ) -> dict:
     """Remove all chunks matching an arbitrary metadata filter.
 
     Args:
-        metadata_filter: A ChromaDB-compatible ``where`` clause.
-        collection_name: ChromaDB collection to delete from
+        metadata_filter: A store-compatible ``where`` clause.
+        collection_name: Collection to delete from
             (default ``"documents"``).
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         Dict with keys ``status``, ``chunks_removed``, and ``collection``.
@@ -256,10 +236,8 @@ def remove_by_metadata(
             "collection": collection_name,
         }
 
-    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
-    try:
-        collection = db.get_collection(collection_name)
-    except Exception:
+    resolved_store = _resolve_store(store)
+    if not resolved_store.collection_exists(collection_name):
         return {
             "status": "error",
             "message": f"Collection '{collection_name}' does not exist.",
@@ -268,11 +246,13 @@ def remove_by_metadata(
         }
 
     try:
-        chunks_removed = _count_chunks(collection, metadata_filter)
+        chunks_removed = resolved_store.count_where(
+            collection_name, metadata_filter
+        )
         if chunks_removed > 0:
             with write_lock:
-                collection.delete(where=metadata_filter)
-                bump_collection_generation(collection_name)
+                resolved_store.delete_where(collection_name, metadata_filter)
+                resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -295,21 +275,23 @@ def remove_by_metadata(
 
 def remove_collection(
     collection_name: str,
+    store: VectorStore | None = None,
 ) -> dict:
-    """Permanently delete an entire ChromaDB collection.
+    """Permanently delete an entire collection.
 
     Args:
         collection_name: Name of the collection to drop.
+        store: Optional injected :class:`VectorStore`.
 
     Returns:
         Dict with keys ``status`` and ``collection``.
         On error, includes ``message``.
     """
-    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
+    resolved_store = _resolve_store(store)
     try:
         with write_lock:
-            db.delete_collection(collection_name)
-            bump_collection_generation(collection_name)
+            resolved_store.delete_collection(collection_name)
+            resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",

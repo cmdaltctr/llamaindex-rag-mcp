@@ -50,10 +50,8 @@ _NAMES: dict[str, str] = {
     "_parse_ollama_json_response": ".ollama",
     "_retry_sleep": ".ollama",
     "_strip_markdown_fence": ".ollama",
-    "_chroma_client": ".taxonomy",
     "_collect_categories_from_collection": ".taxonomy",
     "_gather_existing_categories": ".taxonomy",
-    "_get_chroma_client": ".taxonomy",
     "_get_seed_categories": ".taxonomy",
 }
 

@@ -9,8 +9,8 @@ into ``rag_mcp.core.metadata`` submodules as part of Phase 1.  This file
 re-exports every public and private name so existing imports continue to
 resolve.  Tests that monkeypatch module-level variables
 (``METADATA_EXTRACTION_MODE``, ``METADATA_KEYWORD_RULES``,
-``_chroma_client``, ``_retry_sleep``) must patch the corresponding
-submodule after the split — see ``notes/cross-imports.md``.
+``_retry_sleep``) must patch the corresponding submodule after the split
+— see ``notes/cross-imports.md``.
 """
 
 from __future__ import annotations
@@ -42,7 +42,6 @@ from .config import (  # noqa: F401
     OPENROUTER_API_KEY,
     OPENROUTER_LLM_MODEL,
 )
-from .chroma_utils import iter_collection_metadatas  # noqa: F401
 
 # ── Shared helpers ──────────────────────────────────────────────────────
 from .core.metadata._common import (  # noqa: F401
@@ -65,10 +64,8 @@ from .core.metadata.keyword import (  # noqa: F401
 
 # ── Taxonomy (ADR-013) ──────────────────────────────────────────────────
 from .core.metadata.taxonomy import (  # noqa: F401
-    _chroma_client,
     _collect_categories_from_collection,
     _gather_existing_categories,
-    _get_chroma_client,
     _get_seed_categories,
 )
 

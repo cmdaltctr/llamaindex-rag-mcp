@@ -25,7 +25,6 @@ from .config import (  # noqa: F401
     SIMILARITY_THRESHOLD,
     TOP_K,
 )
-from .chroma_utils import iter_collection_metadatas  # noqa: F401
 
 # ── Dense ───────────────────────────────────────────────────────────────
 from .core.retrieval.dense import (  # noqa: F401

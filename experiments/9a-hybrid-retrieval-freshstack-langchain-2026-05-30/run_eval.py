@@ -143,7 +143,7 @@ def _prewarm_sparse_index() -> float | None:
         db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_collection("documents")
         started = time.perf_counter()
-        BM25SparseRetriever("documents", collection=collection).query("langchain", 1)
+        BM25SparseRetriever("documents").query("langchain", 1)
         return round((time.perf_counter() - started) * 1000, 2)
     except Exception:
         return None

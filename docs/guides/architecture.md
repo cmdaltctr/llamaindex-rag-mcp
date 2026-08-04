@@ -12,9 +12,11 @@ The one principle that shapes every decision here: **everything runs on your mac
 
 Reading a PDF, a Word document, a PowerPoint, and a CSV file all require completely different parsing logic. LlamaIndex handles all of that out of the box. Rather than building our own document readers for seven file formats, we use LlamaIndex's `SimpleDirectoryReader` and focus on the parts that are specific to this project. The trade-off is a large dependency tree, but the alternative — writing our own parsers — would have taken weeks and been worse.
 
-### Why ChromaDB? ([ADR-003](../adr/003-use-chromadb-as-vector-store.md))
+### Why ChromaDB? ([ADR-003](../adr/003-use-chromadb-as-vector-store.md), [ADR-034](../adr/034-vector-store-abstraction-interface.md))
 
 When you search for documents, the server compares your query against thousands of stored text chunks using vector similarity. Those vectors need to be stored somewhere. ChromaDB stores them in a folder on your disk — no server process, no configuration, no network. It just works. The main limitation is that it locks the vector dimension when you first create a collection, so switching embedding models requires deleting the store and re-indexing. That's a known trade-off, documented in the [Ingestion Guide](../guides/ingestion.md).
+
+Since Phase 3, every ChromaDB call goes through a `VectorStore` abstract interface (`core/vectordb/base.py`). The ABC encodes the three ChromaDB behaviours the pipeline depends on — dimension locking, metadata filter syntax, and generation bumping for BM25 cache invalidation — as documented contract behaviour rather than hidden implementation detail. ChromaDB is the first and currently only implementation; the ABC exists so future stores (LanceDB, Qdrant, pgvector) can be added behind the same interface without touching pipeline code. Store selection is via the `VECTOR_STORE` env var (default `chroma`), constructed in the composition root.
 
 ### Why MCP? ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md))
 

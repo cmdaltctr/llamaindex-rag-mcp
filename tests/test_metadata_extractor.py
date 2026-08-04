@@ -558,22 +558,22 @@ class TestHybridCategoryTaxonomy:
         assert "ai" in prompt.lower()  # seed, not in ChromaDB yet
 
     def test_chromadb_query_failure_falls_back_to_seeds(self, monkeypatch, caplog) -> None:
-        """ChromaDB query fails → WARNING log, prompt uses seeds only."""
-        import chromadb
-        import rag_mcp.core.metadata.taxonomy as _tax
+        """Vector store query fails → WARNING log, prompt uses seeds only."""
+        from unittest.mock import MagicMock
 
-        # Reset the cached client so the patched PersistentClient is used.
-        monkeypatch.setattr(_tax, "_chroma_client", None)
+        from rag_mcp.core.vectordb import set_default_store
 
-        # Make PersistentClient always raise
-        monkeypatch.setattr(chromadb, "PersistentClient", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("db locked")))
+        # Make the default store raise on list_collections.
+        broken_store = MagicMock()
+        broken_store.list_collections.side_effect = RuntimeError("db locked")
+        set_default_store(broken_store)
 
         prompt = self._get_prompt_sent(monkeypatch)
 
-        # Must log a WARNING about ChromaDB failure
+        # Must log a WARNING about vector store failure
         assert any(
             r.levelno == logging.WARNING
-            and "failed to query chromadb" in r.message.lower()
+            and "failed to query vector store" in r.message.lower()
             for r in caplog.records
         )
 
@@ -1063,21 +1063,21 @@ class TestCoverageGaps:
     # ── _gather_existing_categories: per-collection exception (lines 287-293) ─
 
     def test_gather_existing_categories_collection_error_skipped(self, monkeypatch) -> None:
-        """A collection that raises during get() must be skipped gracefully."""
+        """A collection that raises during iter_metadatas must be skipped gracefully."""
         from unittest.mock import MagicMock
-        import rag_mcp.core.metadata.taxonomy as _tax
 
-        bad_col = MagicMock()
-        bad_col.name = "bad_collection"
-        bad_col.get.side_effect = RuntimeError("collection locked")
+        from rag_mcp.core.vectordb import set_default_store
 
-        good_col = MagicMock()
-        good_col.name = "good_collection"
-        good_col.get.return_value = {"metadatas": [{"category": "biology"}]}
+        mock_store = MagicMock()
+        mock_store.list_collections.return_value = ["bad_collection", "good_collection"]
 
-        mock_client = MagicMock()
-        mock_client.list_collections.return_value = [bad_col, good_col]
-        monkeypatch.setattr(_tax, "_chroma_client", mock_client)
+        def _iter_metadatas(name, page_size=None):
+            if name == "bad_collection":
+                raise RuntimeError("collection locked")
+            yield {"category": "biology"}
+
+        mock_store.iter_metadatas.side_effect = _iter_metadatas
+        set_default_store(mock_store)
 
         from rag_mcp.core.metadata.taxonomy import _gather_existing_categories
         result = _gather_existing_categories()
@@ -1090,7 +1090,9 @@ class TestCoverageGaps:
         """Categories beyond the first metadata scan page must be discovered."""
         import chromadb
         import rag_mcp.config as _config
-        import rag_mcp.core.metadata.taxonomy as _tax
+
+        from rag_mcp.core.vectordb import set_default_store
+        from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 
         monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
 
@@ -1106,24 +1108,28 @@ class TestCoverageGaps:
                 {"category": "philosophy"},
             ],
         )
-        monkeypatch.setattr(_tax, "_chroma_client", db)
+        store = ChromaVectorStore()
+        set_default_store(store)
 
-        result = _tax._gather_existing_categories()
+        from rag_mcp.core.metadata.taxonomy import _gather_existing_categories
+        result = _gather_existing_categories()
         assert result == ["ai", "biology", "philosophy"]
 
     # ── _build_ollama_prompt: empty merged taxonomy (line 338) ────────────
 
     def test_build_ollama_prompt_empty_merged_taxonomy(self, monkeypatch) -> None:
-        """With empty custom rules and empty ChromaDB, prompt uses only uncategorised."""
+        """With empty custom rules and empty store, prompt uses only uncategorised."""
+        from unittest.mock import MagicMock
+
+        from rag_mcp.core.vectordb import set_default_store
+
         import rag_mcp.config as _config
-        import rag_mcp.core.metadata.taxonomy as _tax
         # Empty custom rules → no seed categories
         monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
-        # Empty ChromaDB → no existing categories
-        monkeypatch.setattr(_tax, "_chroma_client", None)
-        mock_client = __import__("unittest.mock", fromlist=["MagicMock"]).MagicMock()
-        mock_client.list_collections.return_value = []
-        monkeypatch.setattr(_tax, "_chroma_client", mock_client)
+        # Empty store → no existing categories
+        mock_store = MagicMock()
+        mock_store.list_collections.return_value = []
+        set_default_store(mock_store)
 
         from rag_mcp.core.metadata.ollama import _build_ollama_prompt
         prompt = _build_ollama_prompt("some document text")

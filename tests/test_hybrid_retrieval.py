@@ -58,6 +58,66 @@ class FakePersistentClient:
             raise ValueError(f"missing collection: {name}")
         return self.collections[name]
 
+    def get_or_create_collection(self, name: str) -> FakeCollection:
+        if name not in self.collections:
+            self.collections[name] = FakeCollection(name, [])
+        return self.collections[name]
+
+    def list_collections(self):
+        return list(self.collections.values())
+
+    def delete_collection(self, name: str) -> None:
+        self.collections.pop(name, None)
+
+
+class FakeStore:
+    """Minimal VectorStore test double wrapping a FakeCollection.
+
+    Implements just the methods ``BM25SparseRetriever`` calls: ``count``,
+    ``iter_documents``, ``get_generation``, and ``bump_generation``.
+    Delegates paging to ``FakeCollection.get`` so ``get_calls`` is
+    incremented exactly as the real store would.
+    """
+
+    def __init__(self, collection: FakeCollection) -> None:
+        self._collection = collection
+        self._generations: dict[str, int] = {}
+
+    def count(self, name: str) -> int:
+        return self._collection.count()
+
+    def iter_documents(self, name: str, page_size: int | None = None):
+        page_size = page_size or 10000
+        offset = 0
+        while True:
+            batch = self._collection.get(
+                include=["documents", "metadatas"],
+                limit=page_size,
+                offset=offset,
+            )
+            ids = batch.get("ids") or []
+            docs = batch.get("documents") or []
+            metas = batch.get("metadatas") or []
+            if not ids:
+                break
+            for idx, doc_id in enumerate(ids):
+                metadata = (
+                    metas[idx]
+                    if idx < len(metas) and isinstance(metas[idx], dict)
+                    else {}
+                )
+                text = docs[idx] if idx < len(docs) else ""
+                yield (str(doc_id), str(text), dict(metadata))
+            if len(ids) < page_size:
+                break
+            offset += len(ids)
+
+    def get_generation(self, name: str) -> int:
+        return self._generations.get(name, 0)
+
+    def bump_generation(self, name: str) -> None:
+        self._generations[name] = self._generations.get(name, 0) + 1
+
 
 def test_search_signature_exposes_hybrid_opt_in() -> None:
     """``retrieval.search`` must expose an opt-in ``hybrid`` parameter.
@@ -163,7 +223,8 @@ def test_bm25_sparse_retriever_empty_collection_returns_empty() -> None:
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection("empty", [])
-    retriever = BM25SparseRetriever(collection_name="empty", collection=collection)
+    store = FakeStore(collection)
+    retriever = BM25SparseRetriever(collection_name="empty", store=store)
 
     assert retriever.query("anything", top_n=5) == []
 
@@ -180,7 +241,8 @@ def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
             {"id": "noise", "text": "Modern stadium design uses concrete.", "metadata": {"file_path": "noise.txt"}},
         ],
     )
-    retriever = BM25SparseRetriever(collection_name="rare_terms", collection=collection)
+    store = FakeStore(collection)
+    retriever = BM25SparseRetriever(collection_name="rare_terms", store=store)
 
     results = retriever.query("ZXQ-77", top_n=3)
 
@@ -193,16 +255,16 @@ def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
 
 
 def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> None:
-    """Two consecutive queries without writes should scan Chroma only once."""
-    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
+    """Two consecutive queries without writes should scan the store only once."""
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_reuse",
         [{"id": "a", "text": "alpha rareterm", "metadata": {}}],
     )
-    _collection_generations["cache_reuse"] = 0
-    retriever = BM25SparseRetriever(collection_name="cache_reuse", collection=collection)
+    store = FakeStore(collection)
+    store._generations["cache_reuse"] = 0
+    retriever = BM25SparseRetriever(collection_name="cache_reuse", store=store)
 
     retriever.query("rareterm", top_n=1)
     retriever.query("rareterm", top_n=1)
@@ -212,20 +274,20 @@ def test_bm25_reuses_cached_index_when_generation_is_unchanged(monkeypatch) -> N
 
 def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
     """A generation bump from ingest/delete must invalidate the BM25 cache."""
-    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "cache_rebuild",
         [{"id": "old", "text": "old token", "metadata": {}}],
     )
-    _collection_generations["cache_rebuild"] = 0
-    retriever = BM25SparseRetriever(collection_name="cache_rebuild", collection=collection)
+    store = FakeStore(collection)
+    store._generations["cache_rebuild"] = 0
+    retriever = BM25SparseRetriever(collection_name="cache_rebuild", store=store)
 
     assert retriever.query("newtoken", top_n=5) == []
 
     collection.rows.append({"id": "new", "text": "newtoken appears", "metadata": {}})
-    _collection_generations["cache_rebuild"] += 1
+    store.bump_generation("cache_rebuild")
 
     rebuilt = retriever.query("newtoken", top_n=5)
 
@@ -235,19 +297,19 @@ def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
 
 def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     """Deleting between sparse queries bumps generation and rebuilds cache."""
-    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "delete_rebuild",
         [{"id": "gone", "text": "raredelete token", "metadata": {}}],
     )
-    _collection_generations["delete_rebuild"] = 0
-    retriever = BM25SparseRetriever("delete_rebuild", collection=collection)
+    store = FakeStore(collection)
+    store._generations["delete_rebuild"] = 0
+    retriever = BM25SparseRetriever("delete_rebuild", store=store)
 
     assert [row[1] for row in retriever.query("raredelete", top_n=5)] == ["gone"]
     collection.rows.clear()
-    _collection_generations["delete_rebuild"] += 1
+    store.bump_generation("delete_rebuild")
 
     assert retriever.query("raredelete", top_n=5) == []
     assert BM25SparseRetriever._cache["delete_rebuild"].generation == 1
@@ -255,19 +317,19 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
 
 def test_remove_collection_generation_invalidates_cache() -> None:
     """Collection removal generation bump invalidates the cached BM25 index."""
-    from rag_mcp.core.ingestion._state import collection_generations as _collection_generations
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
 
     collection = FakeCollection(
         "drop_rebuild",
         [{"id": "old", "text": "dropme token", "metadata": {}}],
     )
-    _collection_generations["drop_rebuild"] = 0
-    retriever = BM25SparseRetriever("drop_rebuild", collection=collection)
+    store = FakeStore(collection)
+    store._generations["drop_rebuild"] = 0
+    retriever = BM25SparseRetriever("drop_rebuild", store=store)
 
     retriever.query("dropme", top_n=5)
     collection.rows[:] = [{"id": "new", "text": "replacement token", "metadata": {}}]
-    _collection_generations["drop_rebuild"] += 1
+    store.bump_generation("drop_rebuild")
 
     assert [row[1] for row in retriever.query("replacement", top_n=5)] == ["new"]
 
