@@ -184,24 +184,19 @@ def _resolve_rerank_policy(
     rerank: bool | None,
     query: str,
     technical_fraction: float | None = None,
-    profile_reranker_enabled: bool | None = None,
 ) -> tuple[bool, str]:
     """Resolve effective rerank behaviour from explicit intent and policy.
 
     Implements tri-state rerank logic:
     - ``rerank=True``: force reranking (explicit opt-in)
     - ``rerank=False``: force no reranking (explicit opt-out)
-    - ``rerank=None``: apply policy defaults
+    - ``rerank=None``: apply config/policy defaults
 
-    Policy resolution for omitted rerank (precedence high → low):
-    1. If ``profile_reranker_enabled`` is provided (Phase 4 profiles),
-       it takes precedence over the global default.  ``documents`` profile
-       enables reranking; ``codebase`` profile disables it.  The semantic
-       policy does NOT override a profile decision.
-    2. If ``RERANK_ENABLED=True``, rerank by default.
-    3. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=False``,
+    Policy resolution for omitted rerank:
+    1. If ``RERANK_ENABLED=True``, rerank by default.
+    2. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=False``,
        do not rerank.
-    4. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=True``:
+    3. If ``RERANK_ENABLED=False`` and ``RERANK_ENABLED_FOR_SEMANTIC=True``:
        - Classify the query as technical or semantic.
        - If technical fraction >= ``HARD_TECHNICAL_THRESHOLD``, do not rerank.
        - Otherwise, enable reranking (semantic workload override).
@@ -211,10 +206,6 @@ def _resolve_rerank_policy(
         query: The search query (used for technical classification).
         technical_fraction: Optional pre-computed technical fraction. If
             None, the query is classified on demand.
-        profile_reranker_enabled: When provided (Phase 4), the resolved
-            profile's reranker default takes precedence over the global
-            ``RERANK_ENABLED`` setting.  Explicit ``rerank`` flags still
-            bypass this.
 
     Returns:
         Tuple of ``(effective_rerank, reason)`` where ``effective_rerank``
@@ -233,15 +224,6 @@ def _resolve_rerank_policy(
         return (False, "explicit rerank=False override")
 
     # Omitted/None: apply policy.
-
-    # Phase 4: profile-resolved enablement takes precedence over the
-    # global default.  When a profile is active, its reranker decision
-    # is the answer — the semantic policy does not override it.
-    if profile_reranker_enabled is not None:
-        if profile_reranker_enabled:
-            return (True, "profile-resolved reranker enabled")
-        return (False, "profile-resolved reranker disabled")
-
     # Step 1: Check global default.
     if settings.rerank_enabled:
         return (True, "global default RERANK_ENABLED=true")

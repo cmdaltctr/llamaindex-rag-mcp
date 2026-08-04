@@ -59,10 +59,3 @@ CODEBASE_MAP_MAX_DEPTH: 10
 # ── Document backend ──────────────────────────────────────────────────
 DOCUMENT_BACKEND: local
 AZURE_DOC_INTELLIGENCE_MODEL: prebuilt-layout
-
-# ── Profiles (Phase 4) ────────────────────────────────────────────────
-# Server-wide default profile.  Individual collections override via
-# metadata tags.  See config/profiles/ for the bundle YAMLs.
-RAG_PROFILE: documents
-CHUNK_STRATEGY_FALLBACK: markdown
-METADATA_TAXONOMY_MODE: category

@@ -20,9 +20,8 @@ below it; the highest layer wins:
 ```
 subpackage model field defaults            (lowest — lives next to the code that owns the knob)
   → config/defaults.yaml                    (shipped as package data, non-secret global defaults)
-    → config/profiles/<RAG_PROFILE>.yaml    (Phase 4 profile bundle — Tier 2 lever overrides)
-      → environment variables / .env        (your shell and .env file)
-        → explicit instantiation args       (highest — passed when constructing Settings)
+    → environment variables / .env          (your shell and .env file)
+      → explicit instantiation args         (highest — passed when constructing Settings)
 ```
 
 A typed Pydantic `Settings` object composes per-subpackage settings models
@@ -247,76 +246,6 @@ Most settings are resolved once into the `Settings` object at import time. One k
 - **`LLAMANDEX_EXTRACTOR_MAX_CHUNKS`** — read at call-time inside `metadata_extractor.py` rather than imported from `config`. This is intentional so tests can override it with `monkeypatch.setenv` after module load.
 
 > **Historical note.** Earlier revisions listed a second exception: `reranker.py` imported `dotenv` independently and read `RERANK_MODEL` directly to dodge a circular import with `config.py` (gotcha #4 in AGENTS.md). That exception is **gone** since ADR-031 — the reranker now receives its model ID via dependency injection from `compose.py`, and `RERANK_MODEL` is a structured settings field. There is no longer a `dotenv` import outside the resolver.
-
-## Profiles (Phase 4, ADR-035)
-
-Profiles make the project's dual use cases first-class: **document grounding**
-(research papers, reports) and **codebase context** (source code for coding
-agents). Each profile is a version-controlled YAML bundle of Tier 2 retrieval
-levers. Profiles bind to ChromaDB collections via metadata tags, so one server
-process can serve both use cases simultaneously.
-
-### The three profiles
-
-| Profile | Use case | Reranker | Hybrid | Top_k | Chunking fallback | Taxonomy |
-|---------|----------|----------|--------|-------|-------------------|----------|
-| `documents` | Document grounding (papers, reports) | ON | OFF | 10 | markdown | category |
-| `codebase` | Codebase context (coding agents) | OFF | ON | 20 | code | file_type |
-| `hybrid` | Mode selector (NOT operational) | — | — | — | — | — |
-
-The `documents` profile restores ADR-018's balanced intent (reranker-on for
-semantic workloads). The `codebase` profile formalises Experiment 10's finding
-(reranker-off for technical workloads). See ADR-035 for the full rationale.
-
-### Selecting a profile
-
-Set `RAG_PROFILE` to choose the server-wide default:
-
-```bash
-# .env
-RAG_PROFILE=documents  # or codebase, or hybrid
-```
-
-When `RAG_PROFILE=hybrid`, untagged collections resolve to `hybrid.yaml`'s
-`default_profile` (default: `documents`). Individual collections override the
-server default via metadata tags.
-
-### Binding a profile to a collection
-
-```bash
-# CLI (interactive prompt)
-rag-mcp set-profile --collection my-papers --profile documents
-
-# MCP (preview then confirm)
-change_collection_profile(collection="my-code", profile="codebase", confirm=False)
-# → {"status": "preview", "contract": ..., "confirm_required": true}
-change_collection_profile(collection="my-code", profile="codebase", confirm=True)
-# → {"status": "ok", "profile": "codebase", ...}
-```
-
-Profile changes are **non-destructive**: existing chunks are NOT re-chunked or
-re-embedded. Query-time levers (reranker, top_k, hybrid) apply immediately;
-ingest-time levers (taxonomy, chunking fallback) apply to future ingests only.
-
-### Two-tier resolution
-
-* **Tier 1** (constructed once at startup): embedder, registries, vector store
-  handle, reranker model. Shared across all collections.
-* **Tier 2** (resolved per operation by `ProfileResolver`): reranker toggle,
-  top_k, hybrid/RRF, chunking fallback, taxonomy mode. Passed as parameters to
-  `search()` and `ingest_path_async()`.
-
-### Precedence
-
-Environment variables always override profile bundles. The profile source sits
-between `defaults.yaml` and environment sources in the resolution chain:
-
-```
-field defaults < defaults.yaml < profile bundle < .env / env vars < explicit args
-```
-
-This means `.env` can override any profile value for deployment-specific tweaks
-without editing the YAML bundles.
 
 ## Config-time validation
 

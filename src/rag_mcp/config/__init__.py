@@ -97,89 +97,6 @@ class _YamlDefaultsSource(PydanticBaseSettingsSource):
         return result
 
 
-# ── Profile YAML source (Phase 4) ───────────────────────────────────
-
-
-def _load_profile_bundle(profile_name: str) -> dict[str, Any]:
-    """Load a profile bundle from ``config/profiles/<name>.yaml``.
-
-    Operational profiles (``documents``, ``codebase``) return their Tier 2
-    lever overrides as a flat dict keyed by SCREAMING_SNAKE_CASE env names.
-
-    The ``hybrid`` profile is a mode selector: it declares only a
-    ``default_profile`` key.  This function resolves hybrid to the named
-    default profile's bundle so the startup Settings carries concrete
-    retrieval levers.
-
-    Args:
-        profile_name: One of ``documents``, ``codebase``, ``hybrid``.
-
-    Returns:
-        Flat dict of profile overrides, or an empty dict if the bundle
-        cannot be loaded (graceful degradation).
-    """
-    try:
-        yaml_path = files("rag_mcp.config") / "profiles" / f"{profile_name}.yaml"
-        with yaml_path.open("r") as fh:
-            data = yaml.safe_load(fh)
-    except (FileNotFoundError, ModuleNotFoundError):
-        return {}
-    except yaml.YAMLError as exc:
-        logger.error(
-            "Profile bundle %r has invalid YAML: %s — ignoring", profile_name, exc
-        )
-        return {}
-
-    if not isinstance(data, dict):
-        return {}
-
-    # Hybrid is a mode selector — resolve to its default_profile's bundle.
-    if profile_name == "hybrid":
-        default_profile = data.get("default_profile", "documents")
-        if default_profile not in ("documents", "codebase"):
-            default_profile = "documents"
-        return _load_profile_bundle(default_profile)
-
-    return data
-
-
-class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
-    """Settings source reading the selected profile bundle.
-
-    Sits between ``_YamlDefaultsSource`` (defaults.yaml, lower) and the
-    environment sources (higher) in the precedence chain.  The profile
-    bundle supplies Tier 2 lever overrides for the server-wide default
-    profile selected by ``RAG_PROFILE``.
-
-    Per-collection profile resolution at operation time is handled by
-    :class:`rag_mcp.core.profiles.resolver.ProfileResolver`, not by this
-    source.  This source only affects the startup ``Settings`` singleton.
-    """
-
-    def __init__(self, settings_cls: type[BaseSettings]) -> None:
-        super().__init__(settings_cls)
-        self._data: dict[str, Any] = self._load_profile()
-
-    def _load_profile(self) -> dict[str, Any]:
-        """Load the profile bundle selected by ``RAG_PROFILE``."""
-        profile = os.environ.get("RAG_PROFILE", "documents")
-        return _load_profile_bundle(profile)
-
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
-        value = self._data.get(field_name.upper())
-        return value, field_name.upper(), False
-
-    def __call__(self) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for field_name in self.settings_cls.model_fields:
-            env_key = field_name.upper()
-            if env_key in self._data:
-                result[field_name] = self._data[env_key]
-        return result
-
-
 # ── Root Settings model ─────────────────────────────────────────────
 
 
@@ -244,12 +161,6 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
     azure_doc_intelligence_endpoint: str = ""
     azure_doc_intelligence_key: str = ""
     azure_doc_intelligence_model: str = "prebuilt-layout"
-
-    # ── Profiles (Phase 4) ────────────────────────────────────────
-    # Server-wide default profile: "documents", "codebase", or "hybrid".
-    # When "hybrid", untagged collections resolve to hybrid.yaml's
-    # default_profile.  Individual collections override via metadata tags.
-    rag_profile: str = "documents"
 
     # ── Validation ────────────────────────────────────────────────
     @model_validator(mode="after")
@@ -318,16 +229,6 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
                 )
                 object.__setattr__(self, "document_backend", "local")
 
-        # Profile selection (Phase 4).  Unknown values fall back to
-        # "documents" with a warning rather than raising — the profile
-        # system degrades gracefully to the document-grounding default.
-        if self.rag_profile not in ("documents", "codebase", "hybrid"):
-            logger.warning(
-                "Unknown RAG_PROFILE=%r; falling back to documents",
-                self.rag_profile,
-            )
-            object.__setattr__(self, "rag_profile", "documents")
-
         return self
 
     @classmethod
@@ -339,18 +240,12 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        """Layer sources: field defaults < YAML < profile < .env < env < explicit.
-
-        The profile source (Phase 4) sits between defaults.yaml and the
-        environment sources so env vars still win over profile bundles.
-        """
+        """Layer sources: field defaults < YAML < .env < env < explicit."""
         yaml_source = _YamlDefaultsSource(settings_cls)
-        profile_source = _ProfileYamlSettingsSource(settings_cls)
         return (
             init_settings,        # explicit args (highest)
             env_settings,         # env vars
             dotenv_settings,      # .env file
-            profile_source,       # config/profiles/<RAG_PROFILE>.yaml
             yaml_source,          # defaults.yaml
             file_secret_settings, # unused (lowest)
         )
@@ -546,9 +441,6 @@ _LEGACY_ALIASES: dict[str, str] = {
     "AZURE_DOC_INTELLIGENCE_ENDPOINT": "azure_doc_intelligence_endpoint",
     "AZURE_DOC_INTELLIGENCE_KEY": "azure_doc_intelligence_key",
     "AZURE_DOC_INTELLIGENCE_MODEL": "azure_doc_intelligence_model",
-    "RAG_PROFILE": "rag_profile",
-    "CHUNK_STRATEGY_FALLBACK": "chunk_strategy_fallback",
-    "METADATA_TAXONOMY_MODE": "metadata_taxonomy_mode",
     # Special alias: EMBED_MODEL_NAME was the old constant for the EMBED_MODEL env var.
     "EMBED_MODEL_NAME": "embed_model",
     # LITEPARSE_NUM_WORKERS needs int parsing.

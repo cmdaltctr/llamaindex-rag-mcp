@@ -174,7 +174,7 @@ class TestResponsivenessRegression:
 
         original = _ing.read_and_chunk_file_async
 
-        async def _blocking_patched(file_path, chunk_size=None, chunk_overlap=None, content_type=None, **kwargs):
+        async def _blocking_patched(file_path, chunk_size=None, chunk_overlap=None, content_type=None):
             time.sleep(2)
             return await original(file_path, chunk_size, chunk_overlap, content_type=content_type)
 

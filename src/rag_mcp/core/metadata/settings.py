@@ -32,8 +32,3 @@ class MetadataSettings(BaseModel):
 
     # Per-attempt timeout (seconds) for Ollama metadata extraction.
     ollama_classify_timeout: float = 30.0
-
-    # Taxonomy mode for metadata classification (Phase 4 profiles).
-    # "category" uses the ADR-013 hybrid category taxonomy (documents profile).
-    # "file_type" classifies by Magika-detected file type (codebase profile).
-    metadata_taxonomy_mode: str = "category"

@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 from ...config import settings, SUPPORTED_EXTENSIONS
 from ._state import shutdown_requested
@@ -28,7 +28,6 @@ async def ingest_path_async(
     chunk_overlap: int | None = None,
     progress_callback: Callable | None = None,
     collection_name: str = "documents",
-    effective_settings: Any = None,
 ) -> dict:
     """Async ingestion entry point — indexes files into ChromaDB.
 
@@ -41,11 +40,6 @@ async def ingest_path_async(
         chunk_overlap: Override CHUNK_OVERLAP for this ingestion.
         progress_callback: Optional callable ``(phase, current, total)``.
         collection_name: Name of the ChromaDB collection to write to.
-        effective_settings: Optional :class:`EffectiveSettings` resolved
-            by :class:`ProfileResolver` for this collection (Phase 4).
-            When provided, its ``chunk_strategy_fallback`` and
-            ``metadata_taxonomy_mode`` supply the defaults for ambiguous
-            file types and metadata classification.
 
     Returns:
         Same dict shape as the former sync ``ingest_path()``.
@@ -146,19 +140,11 @@ async def ingest_path_async(
             continue
 
         try:
-            # Phase 4: pass the profile's chunking fallback for ambiguous
-            # types.  Content-type dispatch still wins for known types.
-            fallback_strategy = (
-                effective_settings.chunk_strategy_fallback
-                if effective_settings is not None
-                else None
-            )
             nodes = await read_and_chunk_file_async(
                 file_path,
                 chunk_size=_chunk_size,
                 chunk_overlap=_chunk_overlap,
                 content_type=content_type,
-                fallback_strategy=fallback_strategy,
             )
             all_nodes.extend(nodes)
             files_indexed += 1

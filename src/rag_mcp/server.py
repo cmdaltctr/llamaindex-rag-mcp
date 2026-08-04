@@ -21,7 +21,6 @@ from mcp.types import ToolAnnotations
 
 from .config import settings
 from .core.ingestion import ingest_path_async, list_documents as _list_documents
-from .core.profiles import ProfileResolver
 from .core.retrieval import search
 
 # Import the composition root early so the LlamaIndex global
@@ -43,10 +42,6 @@ mcp = FastMCP("rag-mcp", log_level="WARNING")
 # model cache preserves load-once semantics regardless of instance count.
 _reranker = compose.build_reranker()
 
-# Phase 4: profile resolver for per-collection profile resolution.
-# Reads collection metadata tags through the vector store interface.
-_profile_resolver = ProfileResolver()
-
 
 # ── Tool 1: Ingest ----------------------------------------------------------
 
@@ -61,13 +56,7 @@ _profile_resolver = ProfileResolver()
 )
 async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store."""
-    try:
-        effective = _profile_resolver.resolve(collection)
-    except ValueError as exc:
-        return {"status": "error", "message": str(exc)}
-    return await ingest_path_async(
-        path, collection_name=collection, effective_settings=effective
-    )
+    return await ingest_path_async(path, collection_name=collection)
 
 
 # ── Tool 2: Search ----------------------------------------------------------
@@ -125,23 +114,11 @@ async def search_documents(
         or ``"internal"``.  The handler never raises.
     """
     try:
-        # Phase 4: resolve the collection's profile for per-operation levers.
-        try:
-            effective = _profile_resolver.resolve(collection)
-        except ValueError as exc:
-            return [{
-                "status": "error",
-                "error_type": "validation",
-                "message": str(exc),
-            }]
-
-        if top_k is None and effective is not None:
-            top_k = effective.top_k
+        if top_k is None:
+            top_k = settings.top_k
         if similarity_threshold is None:
             similarity_threshold = settings.similarity_threshold
-        if hybrid is None and effective is not None:
-            hybrid = effective.hybrid_enabled
-        elif hybrid is None:
+        if hybrid is None:
             hybrid = settings.hybrid_enabled
         return await asyncio.to_thread(
             search,
@@ -153,7 +130,6 @@ async def search_documents(
             collection_name=collection,
             metadata_filter=metadata_filter,
             reranker=_reranker,
-            effective_settings=effective,
         )
     except ValueError as exc:
         # ChromaDB raises ValueError for malformed ``where`` clauses
@@ -328,66 +304,6 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     from .codebase_map import get_codebase_map_text
 
     return get_codebase_map_text(path=path, refresh=refresh)
-
-
-# ── Tool 7: Change collection profile (Phase 4) ─────────────────────
-
-
-@mcp.tool(
-    description=(
-        "Change the profile bound to a ChromaDB collection. Profiles "
-        "control retrieval behaviour: 'documents' (quality-first, reranker "
-        "on, dense-only) or 'codebase' (speed-first, reranker off, hybrid). "
-        "The change is non-destructive — existing chunks are NOT re-chunked "
-        "or re-embedded. Query-time levers apply immediately; ingest-time "
-        "levers apply to future ingests only. Returns a preview on first "
-        "call; pass confirm=true to apply."
-    ),
-    annotations=ToolAnnotations(destructiveHint=True),
-)
-def change_collection_profile(
-    collection: str,
-    profile: str,
-    confirm: bool = False,
-) -> dict:
-    """Change the profile bound to a collection.
-
-    Args:
-        collection: Name of the ChromaDB collection.
-        profile: Target operational profile (``documents`` or ``codebase``).
-        confirm: When False (default), returns a preview without mutating.
-            When True, applies the profile change.
-
-    Returns:
-        When ``confirm=False``: a preview object with the safety contract
-        and ``confirm_required: True``.  When ``confirm=True``: the
-        applied change confirmation.
-    """
-    from .core.profiles import apply_profile_change, generate_safety_contract
-
-    if profile not in ("documents", "codebase"):
-        return {
-            "status": "error",
-            "message": (
-                f"Invalid profile {profile!r}. Available: documents, codebase."
-            ),
-        }
-
-    if not confirm:
-        try:
-            contract = generate_safety_contract(collection, profile)
-        except Exception as exc:
-            return {"status": "error", "message": str(exc)}
-        return {
-            "status": "preview",
-            "contract": contract,
-            "confirm_required": True,
-        }
-
-    try:
-        return apply_profile_change(collection, profile)
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
 
 
 def main() -> None:
