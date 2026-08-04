@@ -1,4 +1,4 @@
-# ADR-032: DI Refinement — Inject Constructed Objects, Resolve Settings at Call Time
+# ADR-033: Phase 2 Refactor — DI Refinement (Inject Constructed Objects, Resolve Settings at Call Time)
 
 **Date:** 2026-08-04
 **Status:** Accepted
