@@ -6,7 +6,7 @@ Define how the RAG MCP server selects between inference backends (Ollama and lla
 ## Requirements
 ### Requirement: Inference backend selection
 
-The system SHALL support three embedding providers selected via the `EMBED_PROVIDER` environment variable: `ollama` (default), `llamacpp`, and `openrouter`. The system SHALL validate the provider value at import time and fall back to `ollama` with a warning on unknown values. The system SHALL maintain a provider registry dict in `config.py` that maps each provider name to its module, class, required env vars, and optional dependency group. A single `_build_provider()` function SHALL resolve the registry entry, dynamically import the class, and instantiate it.
+The system SHALL support three embedding providers selected via the `EMBED_PROVIDER` environment variable: `ollama` (default), `llamacpp`, and `openrouter`. The system SHALL validate the provider value at settings-resolution time and fall back to `ollama` with a warning on unknown values. The system SHALL maintain a provider registry in `core/providers/` that maps each provider name to its module, class, required env vars, and optional dependency group, following the shared registry contract (lazy `"module:attr"` import strings resolved on first `get()`). Provider objects SHALL be constructed exclusively in `compose.py` (the composition root), which resolves the registry entry against the validated `Settings` and instantiates the provider; `config.py` SHALL NOT construct provider objects.
 
 The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_PROVIDER` is not set but `INFERENCE_BACKEND` is, the system SHALL map the value and log a deprecation warning.
 
@@ -52,6 +52,13 @@ The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_
 - **AND** `EMBED_PROVIDER` is not set
 - **THEN** the system SHALL set `EMBED_PROVIDER=llamacpp`
 - **THEN** the system SHALL log a deprecation WARNING advising migration to `EMBED_PROVIDER`
+
+#### Scenario: Registry relocated to core/providers
+
+- **WHEN** the provider registry is inspected after the refactor
+- **THEN** it MUST live under `core/providers/` (embeddings and LLM sub-registries)
+- **AND** `config.py` MUST NOT contain the registry or any provider construction logic
+- **AND** provider behaviour (classes used, env vars read, fallback rules) MUST be identical to the pre-refactor registry
 
 ### Requirement: llamacpp embedding configuration
 
