@@ -13,7 +13,7 @@ from __future__ import annotations
 import inspect
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -121,6 +121,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         hybrid=False,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
+        reranker=ANY,
     )
 
 
@@ -153,6 +154,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         hybrid=HYBRID_ENABLED,
         collection_name="documents",
         metadata_filter=None,
+        reranker=ANY,
     )
 
 

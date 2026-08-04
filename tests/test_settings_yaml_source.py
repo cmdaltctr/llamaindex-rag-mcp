@@ -162,3 +162,44 @@ def test_yaml_resolves_from_temporary_working_directory(
         assert settings.chroma_persist_dir == "./chroma_db"
     finally:
         os.chdir(original_cwd)
+
+
+# ── Drift guard: defaults.yaml vs model field defaults ───────────────────
+
+
+def _normalise_yaml_value(field_name: str, yaml_value: object) -> object:
+    """Normalise a raw YAML value for comparison with the model field default.
+
+    Boolean knobs are stored as the strings ``"true"``/``"false"`` in
+    defaults.yaml (matching the legacy env-parsing contract); the model
+    declares real booleans.  Everything else compares as-is.
+    """
+    default = Settings.model_fields[field_name].default
+    if isinstance(default, bool):
+        if isinstance(yaml_value, str):
+            return yaml_value.lower() == "true"
+        return bool(yaml_value)
+    return yaml_value
+
+
+def test_yaml_defaults_match_model_field_defaults() -> None:
+    """Every key in defaults.yaml SHALL agree with its model field default.
+
+    Guard against drift between the two default locations: the subpackage
+    settings models declare the authoritative default, and defaults.yaml
+    ships a copy as a resolution layer.  If they diverge, this fails.
+    """
+    data = _load_packaged_yaml()
+    assert data, "defaults.yaml must not be empty"
+    for env_name, yaml_value in data.items():
+        field_name = env_name.lower()
+        assert field_name in Settings.model_fields, (
+            f"defaults.yaml key {env_name} has no Settings field {field_name!r}"
+        )
+        assert (
+            _normalise_yaml_value(field_name, yaml_value)
+            == Settings.model_fields[field_name].default
+        ), (
+            f"defaults.yaml {env_name}={yaml_value!r} disagrees with the "
+            f"model default {Settings.model_fields[field_name].default!r}"
+        )

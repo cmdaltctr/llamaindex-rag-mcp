@@ -59,24 +59,29 @@ class FakePersistentClient:
         return self.collections[name]
 
 
-def test_search_signature_exposes_hybrid_default_false() -> None:
-    """``retrieval.search`` must expose opt-in ``hybrid=False``."""
+def test_search_signature_exposes_hybrid_opt_in() -> None:
+    """``retrieval.search`` must expose an opt-in ``hybrid`` parameter.
+
+    The default is ``None`` — the effective value resolves from
+    ``settings.hybrid_enabled`` at call time (ADR-031), so a post-import
+    settings patch is honoured.
+    """
     from rag_mcp.core.retrieval import search
 
     param = inspect.signature(search).parameters.get("hybrid")
 
     assert param is not None
-    assert param.default is False
+    assert param.default is None
 
 
-def test_mcp_search_documents_signature_exposes_hybrid_default_false() -> None:
+def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
     """The MCP tool must expose the same opt-in ``hybrid`` parameter."""
     from rag_mcp.server import search_documents
 
     param = inspect.signature(search_documents).parameters.get("hybrid")
 
     assert param is not None
-    assert param.default is False
+    assert param.default is None
 
 
 

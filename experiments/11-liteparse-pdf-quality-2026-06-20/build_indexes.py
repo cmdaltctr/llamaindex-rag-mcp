@@ -37,13 +37,20 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # Import project internals. We use the existing chunking + embedding pipeline
 # so the only variable is the parser, not downstream processing.
-from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE, Settings  # noqa: E402
+from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: E402
 from rag_mcp.ingestion import (  # noqa: E402
     _embed_and_write_async,
     _gather_supported_files,
 )
-from llama_index.core import Document  # noqa: E402
+from llama_index.core import Document, Settings  # noqa: E402
 from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
+
+# Phase 2 (ADR-031): importing ``compose`` performs the runtime setup the old
+# ``config.py`` did at import time — LlamaIndex ``Settings.embed_model`` must
+# be assigned before embedding.  ``Settings`` itself now lives on
+# ``llama_index.core`` (``rag_mcp.config.Settings`` is the pydantic resolver,
+# not the LlamaIndex global).
+from rag_mcp import compose  # noqa: E402
 
 
 CORPUS_DIR = SCRIPT_DIR / "corpus"

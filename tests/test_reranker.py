@@ -95,9 +95,20 @@ class TestSelectOnnxVariant:
         ]
 
     def test_default_model_is_modernbert(self) -> None:
-        """Default (no arg) selects ModernBERT variants."""
-        with patch("rag_mcp.core.retrieval.reranker.RERANK_MODEL", "Alibaba-NLP/gte-reranker-modernbert-base"):
+        """Default (no arg) selects ModernBERT variants.
+
+        The default model ID is read from ``settings.rerank_model`` at call
+        time (Phase 2, ADR-031), so the singleton is patched here rather
+        than the module-level ``RERANK_MODEL`` alias.
+        """
+        from rag_mcp.config import settings
+
+        original = settings.rerank_model
+        try:
+            settings.rerank_model = "Alibaba-NLP/gte-reranker-modernbert-base"
             result = _select_onnx_variant()
+        finally:
+            settings.rerank_model = original
         assert result[0] == "onnx/model_quantized.onnx"
 
     # ── Legacy MiniLM model ──────────────────────────────────────────
@@ -173,6 +184,22 @@ class TestCrossEncoderRerankerSingleton:
         from rag_mcp.config import settings
 
         assert reranker._model_id == settings.rerank_model
+
+    def test_default_model_id_read_at_call_time(self) -> None:
+        """A settings patch after import SHALL be honoured by the default.
+
+        The default must resolve ``settings.rerank_model`` at construction
+        time rather than from an import-time snapshot of the module alias.
+        """
+        from rag_mcp.config import settings
+
+        original = settings.rerank_model
+        try:
+            settings.rerank_model = "patched/model"
+            reranker = CrossEncoderReranker()
+            assert reranker._model_id == "patched/model"
+        finally:
+            settings.rerank_model = original
 
     def test_injected_model_id_is_honoured(self) -> None:
         """A caller-provided model_id must override the settings default."""

@@ -25,9 +25,13 @@ parameters and SHALL NOT import concrete provider classes.
 
 #### Scenario: Components receive dependencies
 
-- **WHEN** any `core/` component is instantiated in a test
-- **THEN** the test MUST be able to pass mock dependencies directly without
-  mocking the global config
+- **WHEN** any `core/` component that consumes a constructed object (provider,
+  reranker) is instantiated in a test
+- **THEN** the test MUST pass that object as a parameter, without mocking the
+  global config and without constructing it inside the component
+- **AND** resolved settings SHALL be read from the `settings` singleton at
+  call time, so tests override individual knobs by patching singleton
+  attributes rather than mocking the config module
 
 ---
 

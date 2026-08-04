@@ -4,10 +4,11 @@
     Import from ``rag_mcp.core.retrieval.reranker`` instead.  This shim
     will be removed in v2.0.0 after all five refactor phases land.
 
-Note: ``reranker.py`` imports ``dotenv`` independently of ``config.py``
-(gotcha #4 — don't "fix", circular import risk).  The actual module at
-``core/retrieval/reranker.py`` retains this independent ``load_dotenv()``
-call.
+Note: since ADR-031 (Phase 2) the reranker is a plain class constructed
+by the composition root (``rag_mcp.compose.build_reranker``) with an
+injected model ID.  The former independent ``load_dotenv()`` (gotcha #4)
+was removed — settings are now injected, so the circular-import risk that
+motivated it no longer exists.
 """
 
 from __future__ import annotations

@@ -148,6 +148,14 @@ cycle and to align with the lazy-registry design.
 - The PEP 562 shim emits a `DeprecationWarning` on each legacy constant access,
   which is noisy in logs until consumers migrate. The shim is removed in
   v2.0.0, so the debt is bounded.
+- The legacy `Settings` name changed meaning: `from rag_mcp.config import
+  Settings` now yields the pydantic resolver model, not the LlamaIndex global.
+  Because it is a real module attribute, the PEP 562 shim cannot intercept it
+  or warn. Consumers needing the LlamaIndex global must import
+  `from llama_index.core import Settings` and trigger runtime setup via
+  `rag_mcp.compose` (or `server`/`cli`). In-repo experiment scripts were
+  migrated; third-party or experimental code importing `Settings` from
+  `rag_mcp.config` or `rag_mcp.ingestion` must be updated.
 
 ### Neutral
 

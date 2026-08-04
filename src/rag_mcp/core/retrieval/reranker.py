@@ -92,8 +92,8 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
 
     Args:
         model_id: HuggingFace model ID to select a variant for.
-            If ``None``, defaults to the module-level ``RERANK_MODEL``
-            (resolved at call time so env overrides are honoured).
+            If ``None``, defaults to the resolved ``settings.rerank_model``
+            (read at call time so patches to the singleton are honoured).
 
     Returns:
         List of Hub-relative paths (e.g. ``"onnx/model_quantized.onnx"``)
@@ -101,7 +101,7 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
         downloads successfully.
     """
     if model_id is None:
-        model_id = RERANK_MODEL
+        model_id = settings.rerank_model
     model_lower = model_id.lower()
 
     # ModernBERT models ship eight pre-exported ONNX variants.  Prefer the
@@ -146,12 +146,14 @@ class CrossEncoderReranker:
 
         Args:
             model_id: HuggingFace model ID to use.  When ``None``,
-                defaults to the resolved ``settings.rerank_model``.
+                defaults to the resolved ``settings.rerank_model``
+                (read at call time, so tests patching the singleton
+                after import are honoured).
             tokenizer_max_length: Tokenizer sequence-length cap.  When
                 ``None``, defaults to the module-level
                 ``TOKENIZER_MAX_LENGTH``.
         """
-        self._model_id: str = model_id or RERANK_MODEL
+        self._model_id: str = model_id or settings.rerank_model
         self._session: Any = None
         self._tokenizer: Any = None
         self._loaded: bool = False

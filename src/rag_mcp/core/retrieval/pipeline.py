@@ -143,7 +143,7 @@ def search(
     top_k: int | None = None,
     similarity_threshold: float | None = None,
     rerank: bool | None = None,
-    hybrid: bool = settings.hybrid_enabled,
+    hybrid: bool | None = None,
     collection_name: str = "documents",
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
@@ -170,6 +170,7 @@ def search(
             to decide whether to enable reranking based on query type.
         hybrid: If True, fuse dense vector results with sparse BM25/native
             sparse rankings via Reciprocal Rank Fusion before reranking.
+            When ``None``, the resolved ``settings.hybrid_enabled`` applies.
         collection_name: Name of the ChromaDB collection to search
             (default ``"documents"`` for backward compatibility).
         metadata_filter: Optional ChromaDB ``where`` clause to filter
@@ -223,6 +224,8 @@ def search(
         top_k = settings.top_k
     if similarity_threshold is None:
         similarity_threshold = settings.similarity_threshold
+    if hybrid is None:
+        hybrid = settings.hybrid_enabled
 
     db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
 
