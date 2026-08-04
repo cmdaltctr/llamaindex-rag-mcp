@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-> **⚠️ Under heavy refactoring (v2.0.0).** The codebase is being restructured into a modular RAG framework across five phases. Phase 1 (subpackage extraction) is complete. Phase 2 (config/core split) is next. Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
+> **⚠️ Under heavy refactoring (v2.0.0).** The codebase is being restructured into a modular RAG framework across five phases. Phases 1–2 are complete: subpackage extraction and the config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)). Phase 3 (VectorStore abstraction) is next. Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
 
 A local document search server for AI assistants. Point it at your files — PDFs, Word docs, notes, research papers — and your AI can search them by meaning, not just keywords. Everything runs on your machine by default — no cloud, no API keys, no recurring costs. Cloud providers (OpenRouter) are available as an opt-in alternative.
 
@@ -16,13 +16,13 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ## Active Refactoring (v2.0.0)
 
-**Progress:** Phase 1 of 5 complete ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)). Phase 2 (config/core split) is next.
+**Progress:** Phases 1–2 of 5 complete: Phase 1 subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), Phase 2 config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)). Phase 3 (VectorStore abstraction) is next.
 
 The codebase is evolving into a **modular, swappable RAG framework** that serves two distinct use cases through one shared core: **document grounding** (facts from papers, reports, financial statements) and **codebase context** (code understanding for AI agents).
 
 **Key changes planned:**
 
-- **Three-layer separation** — declarative config (`config.py`), composition root (`compose.py`), dependency injection throughout. Slims `config.py` from 572 to ~150 lines.
+- **Three-layer separation** — declarative config (a typed `config/` resolver package), composition root (`compose.py`), dependency injection throughout. The 572-line `config.py` monolith becomes a resolver with zero object construction (ADR-031/032).
 - **Strategy folders** — `chunking/`, `retrieval/`, `metadata/`, `providers/`. Add a strategy by dropping in one `.py` file and registering it; no editing of large existing modules.
 - **Profiles system** — named presets (`documents`, `codebase`, `hybrid`) bound per-collection, making the dual use cases first-class instead of implicit env-var combinations.
 - **Thin transports** — MCP, CLI, and a future REST API all call the same `core/`. None contains business logic.
