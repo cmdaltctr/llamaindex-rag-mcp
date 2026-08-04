@@ -40,7 +40,7 @@
 - [x] 6.2 Correct AGENTS.md invariant #5 (stale `RERANK_ENABLED=true` claim) to state the true code default and the profile-level restoration
 - [x] 6.3 Write ADR 035 (Profiles: Dual Use Cases) covering bundles, collection binding, two-tier resolution, and non-destructive changes
 - [x] 6.4 Update `docs/guides/configuration.md` with the profiles section (bundles, `RAG_PROFILE`, precedence)
-- [ ] 6.5 Run `uv run pytest -m "not slow" --cov=rag_mcp` — green, coverage thresholds hold
-- [ ] 6.6 Run `openspec validate phase-4-refactor-profiles-dual-use-case --strict`
-- [ ] 6.7 Run `graphify update .`
-- [ ] 6.8 Commit (`feat:` — new user-facing capability) and open PR with `gh pr create --base main`
+- [x] 6.5 Run `uv run pytest -m "not slow" --cov=rag_mcp` — green, coverage thresholds hold
+- [x] 6.6 Run `openspec validate phase-4-refactor-profiles-dual-use-case --strict`
+- [x] 6.7 Run `graphify update .`
+- [x] 6.8 Commit (`feat:` — new user-facing capability) and open PR with `gh pr create --base main`

@@ -120,6 +120,8 @@ The system SHALL support the following environment variables for reranker config
 | `RERANK_FETCH_MULTIPLIER` | `3` | Multiplier applied to `top_k` when reranking is enabled |
 | `RERANK_MAX_FETCH` | `100` | Lower bound on the rerank candidate pool size |
 
+In addition to the global `RERANK_ENABLED` default, the effective rerank enablement for an omitted rerank request SHALL be resolvable per operation from the target collection's profile (e.g. `documents` enables, `codebase` disables). Profile-resolved enablement SHALL take precedence over the global default for that operation. Explicit per-request rerank flags SHALL continue to bypass both profile and semantic policy.
+
 #### Scenario: env vars set defaults
 - **GIVEN** `SIMILARITY_THRESHOLD=0.25` is set in `.env`
 - **WHEN** `search_documents` is called with no explicit threshold
@@ -139,6 +141,15 @@ The system SHALL support the following environment variables for reranker config
 - **GIVEN** `RERANK_ENABLED_FOR_SEMANTIC=false`
 - **WHEN** `search_documents` is called with `rerank=True`
 - **THEN** reranking SHALL be applied regardless of the semantic policy setting
+
+#### Scenario: profile-resolved enablement for omitted requests
+- **GIVEN** a query against a `documents`-profile collection with no explicit
+  rerank flag
+- **WHEN** the effective rerank enablement is resolved
+- **THEN** reranking SHALL be enabled (documents profile) even though the
+  global `RERANK_ENABLED` default is `false`
+- **AND** a query against a `codebase`-profile collection in the same process
+  SHALL resolve to reranking disabled
 
 ### Requirement: reranker as singleton with recovery
 
