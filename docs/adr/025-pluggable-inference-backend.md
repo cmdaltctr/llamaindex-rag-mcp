@@ -99,3 +99,34 @@ Files go to `~/.cache/huggingface/hub` — `llama-server -hf` will find them the
 - [`docs/guides/configuration.md`](../guides/configuration.md) — Inference backend configuration table
 - [llama.cpp GitHub](https://github.com/ggml-org/llama.cpp)
 - [HuggingFace GGUF docs](https://huggingface.co/docs/hub/en/gguf-llamacpp)
+
+---
+
+## Update (2026-08-04, Phase 2)
+
+**Amended by:** [ADR-031](./031-three-layer-config-compose-di.md) — Three-Layer
+Architecture — Config, Compose, DI.
+
+The provider registry this ADR introduced has been **physically relocated**.
+The nested registry dicts and the `_build_provider` function that previously
+lived in `config.py` have moved into a dedicated `core/providers/` package:
+`common.py` holds shared connection config, and `embeddings/` and `llm/`
+subpackages hold their respective registries and provider modules.
+
+What changed:
+
+- **Location only, not interface.** The registry's resolution behaviour, the
+  `local`/`cloud` + sub-provider selection, and every env var are unchanged.
+  `_build_provider`'s logic now lives in `compose.py` (`build_embed_model`,
+  `build_llm_model`) as part of the composition root.
+- **Registries are now lazy.** Each registry is a `Dict[str, str]` mapping a
+  name to a `"module:attr"` import string, resolved and cached on first
+  `get()`. Importing a registry no longer imports the provider modules, so a
+  missing optional dependency degrades to "provider unavailable" instead of
+  breaking import.
+- **The same lazy contract is reused** by `core/chunking/registry.py`,
+  `core/retrieval/registry.py`, and `core/metadata/registry.py` — every
+  strategy folder now uses one registry shape.
+
+See ADR-031 for the composition-root design and the `import-linter` contracts
+that confine provider construction to `compose.py`.

@@ -13,7 +13,7 @@ from __future__ import annotations
 import inspect
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -121,6 +121,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         hybrid=False,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
+        reranker=ANY,
     )
 
 
@@ -153,6 +154,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         hybrid=HYBRID_ENABLED,
         collection_name="documents",
         metadata_filter=None,
+        reranker=ANY,
     )
 
 
@@ -592,10 +594,9 @@ async def test_search_documents_returns_filter_matches(
     mcp_server, tmp_path: Path, monkeypatch,
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
-    import rag_mcp.core.metadata.extractor as _md_ext
-    import rag_mcp.core.metadata.keyword as _md_kw
-    monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-    monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+    import rag_mcp.config as _config
+    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+    monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
     ai_doc = tmp_path / "ai.txt"
     ai_doc.write_text(

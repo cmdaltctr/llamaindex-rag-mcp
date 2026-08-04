@@ -13,11 +13,7 @@ import logging
 from pathlib import Path
 from typing import Callable
 
-from ...config import (
-    CHUNK_OVERLAP,
-    CHUNK_SIZE,
-    SUPPORTED_EXTENSIONS,
-)
+from ...config import settings, SUPPORTED_EXTENSIONS
 from ._state import shutdown_requested
 from .chunker import read_and_chunk_file_async
 from .loader import gather_supported_files, make_file_detail
@@ -74,9 +70,9 @@ async def ingest_path_async(
             "chunks_removed": 0,
         }
 
-    _chunk_size = chunk_size if chunk_size is not None else CHUNK_SIZE
+    _chunk_size = chunk_size if chunk_size is not None else settings.chunk_size
     _chunk_overlap = (
-        chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP
+        chunk_overlap if chunk_overlap is not None else settings.chunk_overlap
     )
 
     files_to_index, skipped_details = gather_supported_files(path_obj)

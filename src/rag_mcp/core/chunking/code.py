@@ -13,8 +13,6 @@ from pathlib import Path
 
 from llama_index.core.node_parser import SentenceSplitter
 
-from ...config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: F401 — re-exported
-
 logger = logging.getLogger(__name__)
 
 

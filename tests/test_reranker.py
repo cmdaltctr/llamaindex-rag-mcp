@@ -3,7 +3,7 @@
 Tests cover:
 - _sigmoid() edge cases and monotonicity
 - _select_onnx_variant() model-aware variant selection (ModernBERT + legacy)
-- CrossEncoderReranker singleton pattern and graceful fallback
+- CrossEncoderReranker plain-class DI + process-wide model cache and graceful fallback
 - Rerank with mocked ONNX session for score normalisation
 - Module docstring model reference
 - Tokenizer max_length configuration
@@ -23,6 +23,7 @@ from rag_mcp.core.retrieval.reranker import (
     TOKENIZER_MAX_LENGTH,
     _select_onnx_variant,
     _sigmoid,
+    reset_model_cache,
 )
 
 # ── _sigmoid tests ─────────────────────────────────────────────────────────
@@ -94,9 +95,20 @@ class TestSelectOnnxVariant:
         ]
 
     def test_default_model_is_modernbert(self) -> None:
-        """Default (no arg) selects ModernBERT variants."""
-        with patch("rag_mcp.core.retrieval.reranker.RERANK_MODEL", "Alibaba-NLP/gte-reranker-modernbert-base"):
+        """Default (no arg) selects ModernBERT variants.
+
+        The default model ID is read from ``settings.rerank_model`` at call
+        time (Phase 2, ADR-031), so the singleton is patched here rather
+        than the module-level ``RERANK_MODEL`` alias.
+        """
+        from rag_mcp.config import settings
+
+        original = settings.rerank_model
+        try:
+            settings.rerank_model = "Alibaba-NLP/gte-reranker-modernbert-base"
             result = _select_onnx_variant()
+        finally:
+            settings.rerank_model = original
         assert result[0] == "onnx/model_quantized.onnx"
 
     # ── Legacy MiniLM model ──────────────────────────────────────────
@@ -145,26 +157,111 @@ class TestModuleDocstring:
 
 
 class TestCrossEncoderRerankerSingleton:
-    """Tests for the singleton pattern."""
+    """Tests for plain-class construction + process-wide model cache."""
 
     def setup_method(self) -> None:
-        """Reset the singleton before each test."""
-        CrossEncoderReranker._instance = None
+        """Reset the process-wide model cache before each test."""
+        reset_model_cache()
 
     def teardown_method(self) -> None:
-        """Reset the singleton after each test."""
-        CrossEncoderReranker._instance = None
+        """Reset the process-wide model cache after each test."""
+        reset_model_cache()
 
-    def test_singleton_identity(self) -> None:
-        """Two instantiations must return the same object."""
+    def test_plain_class_constructs_distinct_instances(self) -> None:
+        """Two constructions must return distinct objects (not a singleton)."""
         a = CrossEncoderReranker()
         b = CrossEncoderReranker()
-        assert a is b
+        assert a is not b
 
     def test_initial_state_not_loaded(self) -> None:
         """New instance must have _loaded=False."""
         reranker = CrossEncoderReranker()
         assert reranker._loaded is False
+
+    def test_default_model_id_from_settings(self) -> None:
+        """Unspecified model_id defaults to the resolved settings value."""
+        reranker = CrossEncoderReranker()
+        from rag_mcp.config import settings
+
+        assert reranker._model_id == settings.rerank_model
+
+    def test_default_model_id_read_at_call_time(self) -> None:
+        """A settings patch after import SHALL be honoured by the default.
+
+        The default must resolve ``settings.rerank_model`` at construction
+        time rather than from an import-time snapshot of the module alias.
+        """
+        from rag_mcp.config import settings
+
+        original = settings.rerank_model
+        try:
+            settings.rerank_model = "patched/model"
+            reranker = CrossEncoderReranker()
+            assert reranker._model_id == "patched/model"
+        finally:
+            settings.rerank_model = original
+
+    def test_injected_model_id_is_honoured(self) -> None:
+        """A caller-provided model_id must override the settings default."""
+        reranker = CrossEncoderReranker(model_id="custom/model")
+        assert reranker._model_id == "custom/model"
+
+    def test_process_wide_cache_shares_loaded_model(self) -> None:
+        """A successful load must populate the cache for reuse by other instances.
+
+        Simulates the load-once semantics: the first instance loads and
+        caches the session/tokenizer; a second instance with the same
+        model ID reuses them without re-downloading.
+        """
+        mock_session = MagicMock()
+        mock_tokenizer = MagicMock()
+        # model_max_length sentinel > 100000 is capped to TOKENIZER_MAX_LENGTH.
+        mock_tokenizer.model_max_length = 1000000
+
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+            with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
+                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                    with patch("onnxruntime.InferenceSession", return_value=mock_session):
+                        first = CrossEncoderReranker(model_id="cache-test/model")
+                        first._load_model()
+
+        assert first._loaded is True
+
+        # Second instance, same model ID: must be served from the cache.
+        second = CrossEncoderReranker(model_id="cache-test/model")
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant") as variant_mock:
+            second._load_model()
+            variant_mock.assert_not_called()
+
+        assert second._loaded is True
+        assert second._session is mock_session
+        assert second._tokenizer is mock_tokenizer
+
+    def test_reset_model_cache_forces_reload(self) -> None:
+        """After reset_model_cache(), a new instance must reload from scratch."""
+        mock_session = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.model_max_length = 1000000
+
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+            with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
+                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                    with patch("onnxruntime.InferenceSession", return_value=mock_session):
+                        first = CrossEncoderReranker(model_id="cache-reset/model")
+                        first._load_model()
+
+        assert first._loaded is True
+        reset_model_cache()
+
+        second = CrossEncoderReranker(model_id="cache-reset/model")
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]) as variant_mock:
+            with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
+                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                    with patch("onnxruntime.InferenceSession", return_value=mock_session):
+                        second._load_model()
+            variant_mock.assert_called_once()
+
+        assert second._loaded is True
 
 
 class TestCrossEncoderRerankerFallback:
@@ -172,11 +269,11 @@ class TestCrossEncoderRerankerFallback:
 
     def setup_method(self) -> None:
         """Reset the singleton before each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def teardown_method(self) -> None:
         """Reset the singleton after each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def _make_unloaded_reranker(self) -> CrossEncoderReranker:
         """Create a reranker that fails to load (simulates unavailable model)."""
@@ -223,11 +320,11 @@ class TestCrossEncoderRerankerMockedInference:
 
     def setup_method(self) -> None:
         """Reset the singleton before each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def teardown_method(self) -> None:
         """Reset the singleton after each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def test_rerank_normalises_scores(self) -> None:
         """With mocked ONNX session, scores must be in (0, 1) range."""
@@ -450,11 +547,11 @@ class TestCrossEncoderRerankerModelLoading:
 
     def setup_method(self) -> None:
         """Reset the singleton before each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def teardown_method(self) -> None:
         """Reset the singleton after each test."""
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def test_load_model_skips_when_already_loaded(self) -> None:
         """_load_model() must return immediately if _loaded is True."""

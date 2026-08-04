@@ -128,3 +128,41 @@ Both groups install the same packages because both providers implement the OpenA
 - [`src/rag_mcp/metadata_extractor.py`](../../src/rag_mcp/metadata_extractor.py) — `_dispatch_local_extraction` and provider-specific extraction functions
 - [`openspec/changes/add-openrouter-provider/`](../../openspec/changes/add-openrouter-provider/) — OpenSpec change with full design rationale
 - [OpenRouter API documentation](https://openrouter.ai/docs) — OpenAI-compatible endpoints
+
+---
+
+## Update (2026-08-04, Phase 2)
+
+**Amended by:** [ADR-031](./031-three-layer-config-compose-di.md) — Three-Layer
+Architecture — Config, Compose, DI.
+
+The nested registry dicts this ADR specified (`LOCAL_EMBED_PROVIDERS`,
+`CLOUD_EMBED_PROVIDERS`, `LOCAL_LLM_PROVIDERS`, `CLOUD_LLM_PROVIDERS`) and the
+`_build_provider` function have been **physically relocated** out of
+`config.py` into `core/providers/`:
+
+- `core/providers/common.py` — shared connection config (`_ProviderConfig`
+  fields reused across providers).
+- `core/providers/embeddings/` — `registry.py` plus `ollama.py`,
+  `llamacpp.py`, `openrouter.py`.
+- `core/providers/llm/` — `registry.py` plus `ollama.py`, `llamacpp.py`.
+
+What changed:
+
+- **Interface and resolution behaviour are unchanged.** The two-tier
+  `local`/`cloud` + sub-provider taxonomy (ADR-027) and every env var are
+  preserved. Adding a provider still costs one registry entry plus an optional
+  dependency group.
+- **Registries are now lazy `"module:attr"` import strings** resolved and
+  cached on first `get()`, so importing a registry never imports a provider
+  module and a missing optional dependency degrades gracefully.
+- **`_build_provider`'s construction logic moved to `compose.py`**
+  (`build_embed_model`, `build_llm_model`). Provider construction is now
+  confined to the composition root and enforced by `import-linter`.
+- The **known gap this ADR flagged** (LLM registries not yet wired to
+  `_build_provider`) is structurally easier to close now that registries and
+  construction share a home, though the LLM dispatch path itself was not
+  rewritten in this phase.
+
+See ADR-031 for the full three-layer design and the lint contracts that keep
+provider construction inside `compose.py`.

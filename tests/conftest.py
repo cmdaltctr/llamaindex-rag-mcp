@@ -139,6 +139,17 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(config_mod, "METADATA_KEYWORD_RULES", None)
         monkeypatch.setattr(config_mod, "OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
 
+        # Migrated consumers read the resolved settings singleton rather
+        # than the legacy module constants, so the module-attr patches
+        # above would be no-ops for them.  Patch the singleton attributes
+        # directly — Settings is a mutable BaseSettings (not frozen), so
+        # instance assignment works and monkeypatch restores on teardown.
+        monkeypatch.setattr(config_mod.settings, "chroma_persist_dir", _TEST_PERSIST_DIR)
+        monkeypatch.setattr(config_mod.settings, "collection_name", _TEST_COLLECTION)
+        monkeypatch.setattr(config_mod.settings, "metadata_extraction_mode", "disabled")
+        monkeypatch.setattr(config_mod.settings, "metadata_keyword_rules", None)
+        monkeypatch.setattr(config_mod.settings, "ollama_classify_model", "qwen3:0.6b")
+
     # Also patch the leaf modules for backward compatibility in case
     # any test imports them before config is loaded.
     for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):

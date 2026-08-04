@@ -17,7 +17,9 @@ import chromadb
 from llama_index.core import StorageContext, VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-from ...config import CHROMA_PERSIST_DIR, Settings
+from llama_index.core import Settings as LlamaIndexSettings
+
+from ...config import settings as _cfg
 from ._state import (
     bump_collection_generation,
     embed_semaphore,
@@ -71,7 +73,7 @@ async def embed_and_write_async(
                 logger.info(
                     "Embedding %d chunks via %s...",
                     len(nodes),
-                    Settings.embed_model.model_name,
+                    LlamaIndexSettings.embed_model.model_name,
                 )
                 VectorStoreIndex(
                     nodes,
@@ -156,7 +158,7 @@ def preview_delete(
         mode = "collection"
         where = None
 
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
     try:
         collection = db.get_collection(collection_name)
         count = collection.count() if where is None else _count_chunks(
@@ -192,7 +194,7 @@ def remove_document(
         Dict with keys ``status``, ``chunks_removed``, and ``collection``.
         On error, includes ``message``.
     """
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
     try:
         collection = db.get_collection(collection_name)
     except Exception:
@@ -254,7 +256,7 @@ def remove_by_metadata(
             "collection": collection_name,
         }
 
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
     try:
         collection = db.get_collection(collection_name)
     except Exception:
@@ -303,7 +305,7 @@ def remove_collection(
         Dict with keys ``status`` and ``collection``.
         On error, includes ``message``.
     """
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=_cfg.chroma_persist_dir)
     try:
         with write_lock:
             db.delete_collection(collection_name)

@@ -11,20 +11,18 @@ import pytest
 
 
 def _set_mode(monkeypatch, mode: str, keyword_rules: str | None = None):
-    """Helper: monkeypatch metadata module-level variables.
+    """Helper: monkeypatch the settings singleton that metadata reads.
 
-    After the Phase 1 split, ``METADATA_EXTRACTION_MODE`` lives in
-    ``rag_mcp.core.metadata.extractor`` and ``METADATA_KEYWORD_RULES``
-    lives in ``rag_mcp.core.metadata.keyword``.  The legacy shim
-    re-exports both but monkeypatching the shim's copy does not
-    propagate to the submodule globals the functions actually read.
+    After the config-core split, ``metadata_extraction_mode`` and
+    ``metadata_keyword_rules`` live on the resolved ``settings``
+    singleton, so tests patch ``config.settings`` attributes rather
+    than module globals.
     """
-    import rag_mcp.core.metadata.extractor as _ext
-    import rag_mcp.core.metadata.keyword as _kw
+    import rag_mcp.config as _config
 
-    monkeypatch.setattr(_ext, "METADATA_EXTRACTION_MODE", mode)
+    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", mode)
     if keyword_rules is not None:
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", keyword_rules)
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", keyword_rules)
 
 
 # ── 9.1 Keyword mode tests ──────────────────────────────────────────────────
@@ -1025,16 +1023,16 @@ class TestCoverageGaps:
 
     def test_load_keyword_rules_empty_list(self, monkeypatch) -> None:
         """An empty JSON array must be accepted and returned as-is."""
-        import rag_mcp.core.metadata.keyword as _kw
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
         from rag_mcp.core.metadata.keyword import _load_keyword_rules
         result = _load_keyword_rules()
         assert result == []
 
     def test_load_keyword_rules_missing_keys(self, monkeypatch) -> None:
         """Rules missing 'pattern' or 'category' keys must fall back to defaults."""
-        import rag_mcp.core.metadata.keyword as _kw
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", '[{"pattern": "foo"}]')
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", '[{"pattern": "foo"}]')
         from rag_mcp.core.metadata.keyword import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
         result = _load_keyword_rules()
         assert result == _DEFAULT_KEYWORD_RULES
@@ -1043,8 +1041,8 @@ class TestCoverageGaps:
 
     def test_extract_keyword_empty_rules(self, monkeypatch) -> None:
         """Empty rules list must return uncategorised immediately."""
-        import rag_mcp.core.metadata.keyword as _kw
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
         from rag_mcp.core.metadata.keyword import _extract_keyword
         result = _extract_keyword("transformer attention neural network")
         assert result == {"category": "uncategorised"}
@@ -1053,9 +1051,9 @@ class TestCoverageGaps:
 
     def test_extract_keyword_invalid_regex_skipped(self, monkeypatch, caplog) -> None:
         """A rule with an invalid regex pattern must be skipped with a WARNING."""
-        import rag_mcp.core.metadata.keyword as _kw
+        import rag_mcp.config as _config
         bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", bad_rules)
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", bad_rules)
         from rag_mcp.core.metadata.keyword import _extract_keyword
         result = _extract_keyword("neural network transformer")
         # The valid rule still fires
@@ -1094,7 +1092,7 @@ class TestCoverageGaps:
         import rag_mcp.config as _config
         import rag_mcp.core.metadata.taxonomy as _tax
 
-        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
 
         db = chromadb.PersistentClient(path=_config.CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_categories")
@@ -1117,10 +1115,10 @@ class TestCoverageGaps:
 
     def test_build_ollama_prompt_empty_merged_taxonomy(self, monkeypatch) -> None:
         """With empty custom rules and empty ChromaDB, prompt uses only uncategorised."""
-        import rag_mcp.core.metadata.keyword as _kw
+        import rag_mcp.config as _config
         import rag_mcp.core.metadata.taxonomy as _tax
         # Empty custom rules → no seed categories
-        monkeypatch.setattr(_kw, "METADATA_KEYWORD_RULES", "[]")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
         # Empty ChromaDB → no existing categories
         monkeypatch.setattr(_tax, "_chroma_client", None)
         mock_client = __import__("unittest.mock", fromlist=["MagicMock"]).MagicMock()

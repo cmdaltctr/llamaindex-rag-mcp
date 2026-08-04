@@ -48,9 +48,9 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 ## Critical Gotchas (silent breakage if violated)
 
 1. **Never raise from MCP tool handlers.** Return `{"status": "error", "message": "..."}`.
-2. **The reranker is a singleton.** Tests MUST reset `CrossEncoderReranker._instance = None` in setup/teardown.
+2. **The reranker is a DI plain class with a process-wide model cache** (ADR-031, Phase 2). Tests MUST call `reset_model_cache()` in setup/teardown — it replaced the old `CrossEncoderReranker._instance = None` hook.
 3. **The ÷30 threshold scaling is empirically calibrated.** Don't change without re-running `experiments/1-reranker-threshold-calibration-2026-05-12/`.
-4. **`reranker.py` imports `dotenv` independently** of `config.py`. Don't "fix" — circular import risk.
+4. **The reranker no longer imports `dotenv` independently** — settings are injected via the composition root (Phase 2, ADR-031). The old circular-import workaround (gotcha #4 pre-Phase-2) is gone; don't reintroduce it.
 5. **CLI output goes to stderr.** stdout is the MCP protocol channel.
 6. **PDF reader is a factory** (ADR-020). Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
 7. **MCP tool annotations are mandatory.** Use `ToolAnnotations` (`readOnlyHint`, `destructiveHint`) on every tool.

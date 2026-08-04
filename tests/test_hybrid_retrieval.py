@@ -59,24 +59,29 @@ class FakePersistentClient:
         return self.collections[name]
 
 
-def test_search_signature_exposes_hybrid_default_false() -> None:
-    """``retrieval.search`` must expose opt-in ``hybrid=False``."""
+def test_search_signature_exposes_hybrid_opt_in() -> None:
+    """``retrieval.search`` must expose an opt-in ``hybrid`` parameter.
+
+    The default is ``None`` — the effective value resolves from
+    ``settings.hybrid_enabled`` at call time (ADR-031), so a post-import
+    settings patch is honoured.
+    """
     from rag_mcp.core.retrieval import search
 
     param = inspect.signature(search).parameters.get("hybrid")
 
     assert param is not None
-    assert param.default is False
+    assert param.default is None
 
 
-def test_mcp_search_documents_signature_exposes_hybrid_default_false() -> None:
+def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
     """The MCP tool must expose the same opt-in ``hybrid`` parameter."""
     from rag_mcp.server import search_documents
 
     param = inspect.signature(search_documents).parameters.get("hybrid")
 
     assert param is not None
-    assert param.default is False
+    assert param.default is None
 
 
 
@@ -301,8 +306,8 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     collection = FakeCollection("documents", dense_rows)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
-    monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
+    monkeypatch.setattr(config.settings, "rerank_max_fetch", 2)
+    monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 2)
 
     captured: dict[str, list[dict]] = {}
 
@@ -338,8 +343,8 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
-    monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
+    monkeypatch.setattr(config.settings, "rerank_max_fetch", 2)
+    monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 2)
 
     public_results = retrieval.search("Colosseum", top_k=2, rerank=False, hybrid=True)
 
@@ -365,8 +370,8 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(config, "RERANK_MAX_FETCH", 1)
-    monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 1)
+    monkeypatch.setattr(config.settings, "rerank_max_fetch", 1)
+    monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 1)
 
     results = retrieval.search(
         "Colosseum",
@@ -397,7 +402,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "native")
+    monkeypatch.setattr(config.settings, "hybrid_sparse_backend", "native")
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
     if hasattr(retrieval, "_warned_collections"):
         retrieval._warned_collections.clear()
@@ -430,7 +435,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
         {"id": "without_sparse_2", "text": "missing sparse again", "metadata": {"file_path": "c.txt"}},
     ]
     collection = FakeCollection("paged_native", rows)
-    monkeypatch.setattr(config, "CHROMA_SCAN_PAGE_SIZE", 1)
+    monkeypatch.setattr(config.settings, "chroma_scan_page_size", 1)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
@@ -458,8 +463,8 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
             {"id": "bm25", "text": "Colosseum exact rare term", "metadata": {"file_path": "bm25.txt"}, "distance": 9.0},
         ],
     )
-    monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
-    monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
+    monkeypatch.setattr(config.settings, "rerank_max_fetch", 2)
+    monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 2)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"native_fallback": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
@@ -514,10 +519,10 @@ def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) ->
     import rag_mcp.config as config
     import rag_mcp.core.retrieval.sparse as sparse
 
-    monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "auto")
+    monkeypatch.setattr(config.settings, "hybrid_sparse_backend", "auto")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
 
-    assert config._resolve_sparse_backend() == "bm25"
+    assert config.resolve_sparse_backend(config.settings) == "bm25"
 
 
 def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
@@ -525,10 +530,10 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
     import rag_mcp.config as config
     import rag_mcp.core.retrieval.sparse as sparse
 
-    monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "auto")
+    monkeypatch.setattr(config.settings, "hybrid_sparse_backend", "auto")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
 
-    assert config._resolve_sparse_backend() == "native"
+    assert config.resolve_sparse_backend(config.settings) == "native"
 
 
 def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) -> None:
@@ -536,11 +541,11 @@ def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) 
     import rag_mcp.config as config
     import rag_mcp.core.retrieval.sparse as sparse
 
-    monkeypatch.setattr(config, "HYBRID_SPARSE_BACKEND", "native")
+    monkeypatch.setattr(config.settings, "hybrid_sparse_backend", "native")
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
 
     with caplog.at_level(logging.WARNING):
-        assert config._resolve_sparse_backend() == "bm25"
+        assert config.resolve_sparse_backend(config.settings) == "bm25"
 
     assert any("Falling back to bm25" in record.message for record in caplog.records)
 
@@ -561,8 +566,8 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"colosseum_regression": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(config, "RERANK_MAX_FETCH", 2)
-    monkeypatch.setattr(config, "RERANK_FETCH_MULTIPLIER", 2)
+    monkeypatch.setattr(config.settings, "rerank_max_fetch", 2)
+    monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 2)
 
     dense_only = retrieval.search(
         "Where was the Colosseum built?",

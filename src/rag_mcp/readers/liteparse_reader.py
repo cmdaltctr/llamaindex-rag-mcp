@@ -42,13 +42,13 @@ class LiteParseReader:
         """
         from llama_index.core import Document
 
-        from ..config import LITEPARSE_OCR_ENABLED, LITEPARSE_NUM_WORKERS
+        from ..config import settings
 
         from liteparse import LiteParse
 
         parser = LiteParse(
-            ocr_enabled=LITEPARSE_OCR_ENABLED,
-            num_workers=LITEPARSE_NUM_WORKERS,
+            ocr_enabled=settings.liteparse_ocr_enabled,
+            num_workers=settings.liteparse_num_workers,
             quiet=True,
         )
         result = parser.parse(str(file))

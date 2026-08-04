@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import MARKDOWN_HEADING_PREPEND, MARKDOWN_MIN_CHUNK_FRACTION
+from ...config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def apply_heading_prepend(nodes: list) -> None:
     Args:
         nodes: Markdown nodes after heading metadata propagation.
     """
-    if not MARKDOWN_HEADING_PREPEND:
+    if not settings.markdown_heading_prepend:
         return
     for node in nodes:
         header_path = node.metadata.get("header_path") or node.metadata.get("heading_path")
@@ -71,9 +71,9 @@ def drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
         The original node list when disabled, otherwise only nodes meeting
         the configured minimum estimated size.
     """
-    if MARKDOWN_MIN_CHUNK_FRACTION <= 0:
+    if settings.markdown_min_chunk_fraction <= 0:
         return nodes
-    min_chars = int(chunk_size * 4 * MARKDOWN_MIN_CHUNK_FRACTION)
+    min_chars = int(chunk_size * 4 * settings.markdown_min_chunk_fraction)
     kept = [node for node in nodes if len(getattr(node, "text", "")) >= min_chars]
     dropped = len(nodes) - len(kept)
     if dropped:

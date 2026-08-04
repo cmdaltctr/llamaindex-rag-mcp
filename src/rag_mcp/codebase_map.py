@@ -16,12 +16,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import (
-    CODEBASE_MAP_CACHE_DIR,
-    CODEBASE_MAP_MAX_DEPTH,
-    CODEBASE_MAP_MAX_FILES,
-    MAGIKA_BINARY,
-)
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +131,7 @@ class FileInventory:
 
 def _is_magika_available() -> bool:
     """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(MAGIKA_BINARY) is not None
+    return shutil.which(settings.magika_binary) is not None
 
 
 def scan_with_magika(path: str) -> list[FileEntry]:
@@ -156,11 +151,11 @@ def scan_with_magika(path: str) -> list[FileEntry]:
         subprocess.CalledProcessError: If the Magika process fails.
     """
     if not _is_magika_available():
-        raise FileNotFoundError(f"Magika CLI binary not found: {MAGIKA_BINARY}")
+        raise FileNotFoundError(f"Magika CLI binary not found: {settings.magika_binary}")
 
     try:
         result = subprocess.run(
-            [MAGIKA_BINARY, "-r", path, "--jsonl"],
+            [settings.magika_binary, "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
             check=True,
@@ -226,7 +221,7 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
-        if current_depth > CODEBASE_MAP_MAX_DEPTH:
+        if current_depth > settings.codebase_map_max_depth:
             return
         try:
             children = sorted(directory.iterdir())
@@ -311,12 +306,12 @@ def detect_file_types(path: str) -> FileInventory:
                 )
 
     # Enforce file count limit.
-    if len(entries) > CODEBASE_MAP_MAX_FILES:
+    if len(entries) > settings.codebase_map_max_files:
         logger.warning(
             "File count %d exceeds CODEBASE_MAP_MAX_FILES=%d, truncating",
-            len(entries), CODEBASE_MAP_MAX_FILES,
+            len(entries), settings.codebase_map_max_files,
         )
-        entries = entries[:CODEBASE_MAP_MAX_FILES]
+        entries = entries[:settings.codebase_map_max_files]
 
     inventory.entries = entries
     return inventory
@@ -428,7 +423,7 @@ def _load_cache(path: str) -> CodebaseMap | None:
         A ``CodebaseMap`` if the cache exists and the commit hash matches,
         otherwise None.
     """
-    cache_dir = Path(path) / CODEBASE_MAP_CACHE_DIR
+    cache_dir = Path(path) / settings.codebase_map_cache_dir
     cache_file = cache_dir / "codebase-graph.json"
 
     if not cache_file.exists():
@@ -460,7 +455,7 @@ def _save_cache(path: str, codebase_map: CodebaseMap) -> None:
     if codebase_map.commit_hash is None:
         return
 
-    cache_dir = Path(path) / CODEBASE_MAP_CACHE_DIR
+    cache_dir = Path(path) / settings.codebase_map_cache_dir
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cache_dir / "codebase-graph.json"
 
@@ -555,8 +550,8 @@ def build_codebase_map(path: str) -> CodebaseMap:
     collection = None
     try:
         import chromadb
-        from .config import CHROMA_PERSIST_DIR
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        from .config import settings
+        db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
         collection = db.get_collection("documents")
         if collection.count() == 0:
             logger.debug("ChromaDB 'documents' collection is empty")

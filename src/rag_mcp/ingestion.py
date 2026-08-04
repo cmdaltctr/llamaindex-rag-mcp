@@ -35,8 +35,12 @@ from .config import (  # noqa: F401
     MARKDOWN_HEADING_PREPEND,
     MARKDOWN_MIN_CHUNK_FRACTION,
     SUPPORTED_EXTENSIONS,
-    Settings,
 )
+# ``Settings`` is re-exported from ``llama_index.core`` (not
+# ``rag_mcp.config``) to preserve the legacy meaning: pre-refactor code used
+# ``Settings`` as the LlamaIndex global (``Settings.embed_model``), whereas
+# ``rag_mcp.config.Settings`` is the new pydantic resolver model (ADR-031).
+from llama_index.core import Settings  # noqa: F401
 from .chroma_utils import iter_collection_metadatas  # noqa: F401
 
 # ── Thread-safety primitives (old names with underscore prefix) ─────────

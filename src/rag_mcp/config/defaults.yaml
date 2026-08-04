@@ -1,0 +1,61 @@
+# Non-secret global defaults for the RAG MCP server.
+#
+# This file is loaded by the Settings resolver at a LOWER priority than
+# environment variables and .env.  Override any value by setting the
+# matching environment variable (key names are identical).
+#
+# NEVER put API keys, tokens, passwords, or machine-specific absolute
+# paths in this file — those belong in .env (gitignored).
+
+# ── Chunking ──────────────────────────────────────────────────────────
+CHUNK_SIZE: 512
+CHUNK_OVERLAP: 100
+MARKDOWN_CHUNK_SIZE: 1024
+MARKDOWN_HEADING_PREPEND: "false"
+MARKDOWN_MIN_CHUNK_FRACTION: 0.0
+EMBED_CONCURRENCY: 2
+EMBED_BATCH_SIZE: 100
+
+# ── Retrieval ─────────────────────────────────────────────────────────
+TOP_K: 10
+SIMILARITY_THRESHOLD: 0.0
+RERANK_ENABLED: "false"
+RERANK_ENABLED_FOR_SEMANTIC: "true"
+HARD_TECHNICAL_THRESHOLD: 0.3
+RERANK_FETCH_MULTIPLIER: 3
+RERANK_MAX_FETCH: 100
+HYBRID_ENABLED: "false"
+HYBRID_RRF_K: 60
+HYBRID_SPARSE_BACKEND: bm25
+
+# ── Metadata extraction ──────────────────────────────────────────────
+METADATA_EXTRACTION_MODE: llamaindex
+OLLAMA_CLASSIFY_MODEL: "qwen3:0.6b"
+OLLAMA_CLASSIFY_MAX_ATTEMPTS: 3
+OLLAMA_CLASSIFY_TIMEOUT: 30.0
+
+# ── Storage ───────────────────────────────────────────────────────────
+CHROMA_PERSIST_DIR: ./chroma_db
+COLLECTION_NAME: documents
+CHROMA_SCAN_PAGE_SIZE: 10000
+
+# ── Provider selection (two-tier) ─────────────────────────────────────
+EMBED_PROVIDER: local
+METADATA_LLM_PROVIDER: local
+LOCAL_BACKEND: llamacpp
+CLOUD_BACKEND: openrouter
+
+# ── PDF reader ────────────────────────────────────────────────────────
+PDF_READER: auto
+LITEPARSE_OCR_ENABLED: "false"
+
+# ── Codebase map ──────────────────────────────────────────────────────
+MAGIKA_BINARY: magika
+DOC_SIMILARITY_THRESHOLD: 0.85
+CODEBASE_MAP_CACHE_DIR: .opencode
+CODEBASE_MAP_MAX_FILES: 5000
+CODEBASE_MAP_MAX_DEPTH: 10
+
+# ── Document backend ──────────────────────────────────────────────────
+DOCUMENT_BACKEND: local
+AZURE_DOC_INTELLIGENCE_MODEL: prebuilt-layout

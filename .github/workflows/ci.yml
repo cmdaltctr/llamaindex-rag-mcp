@@ -41,6 +41,12 @@ jobs:
           METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "not slow" --tb=short -q
 
+      # Phase 2 (config/compose/DI layering): import-linter contracts must
+      # pass — settings models stay pure data, providers are constructed
+      # only in compose.py, and core business modules avoid providers.
+      - name: Run import-linter contracts
+        run: uv run --no-sync lint-imports
+
       - name: Run tests (slow, liteparse on macOS)
         if: matrix.os == 'macos-latest'
         env:

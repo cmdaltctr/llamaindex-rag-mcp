@@ -1,0 +1,60 @@
+"""Chunking settings — pure data model, no upward imports.
+
+Declares the configuration knobs and defaults for the chunking subpackage.
+This model is consumed by the root ``Settings`` resolver in
+``rag_mcp.config``.  It MUST NOT import from ``config``, ``compose``, or
+any other ``core/`` module (enforced by import-linter).
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator
+
+
+def _parse_legacy_bool(value: object) -> object:
+    """Parse booleans using the legacy ``.lower() == "true"`` semantics.
+
+    Only the literal string ``"true"`` (case-insensitive) is ``True``.
+    Every other string — including ``"1"``, ``"yes"``, ``"on"`` — is
+    ``False``.  This matches the pre-refactor ``os.getenv`` parsing.
+    """
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return value
+
+
+# Drop-in replacement for ``bool`` that preserves legacy env-var parsing.
+LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
+
+
+class ChunkingSettings(BaseModel):
+    """Configuration knobs for the document chunking pipeline.
+
+    Defaults mirror the pre-refactor ``config.py`` values exactly.
+    """
+
+    # SentenceSplitter / CodeSplitter chunk size (tokens).
+    chunk_size: int = 512
+
+    # Token overlap between adjacent chunks.  Raised from 64 → 100
+    # after Stäbler et al. 2025 (see ADR-018).
+    chunk_overlap: int = 100
+
+    # Markdown-specific chunk size (Experiment 6c).  Non-markdown files
+    # continue to use ``chunk_size``.
+    markdown_chunk_size: int = 1024
+
+    # Experimental: prepend heading text to each markdown chunk.
+    markdown_heading_prepend: LegacyBool = False
+
+    # Experimental: minimum chunk size as a fraction of ``markdown_chunk_size``.
+    # Chunks below this fraction are merged with neighbours.
+    markdown_min_chunk_fraction: float = 0.0
+
+    # Embedding pipeline concurrency (number of parallel embedding requests).
+    embed_concurrency: int = 2
+
+    # Embedding batch size (documents per API call).
+    embed_batch_size: int = 100

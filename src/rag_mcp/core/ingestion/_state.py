@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import threading
 
-from ...config import EMBED_CONCURRENCY
+from ...config import settings
 
 # ── Thread-safety primitives ─────────────────────────────────────────────
 write_lock = threading.Lock()
-embed_semaphore = threading.BoundedSemaphore(value=EMBED_CONCURRENCY)
+embed_semaphore = threading.BoundedSemaphore(value=settings.embed_concurrency)
 collection_generations: dict[str, int] = {}
 
 # ── Shutdown flag for graceful SIGINT handling ───────────────────────────

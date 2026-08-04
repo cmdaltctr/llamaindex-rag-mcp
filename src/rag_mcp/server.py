@@ -19,9 +19,16 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from .config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
+from .config import settings
 from .core.ingestion import ingest_path_async, list_documents as _list_documents
 from .core.retrieval import search
+
+# Import the composition root early so the LlamaIndex global
+# ``Settings.embed_model`` is assigned before any retrieval call
+# (previously done at import time in ``config.py``; see ADR-031).
+# The composition root also owns construction of the reranker (spec:
+# all provider/pipeline instantiation happens in ``compose.py``).
+from . import compose  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +36,11 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 mcp = FastMCP("rag-mcp", log_level="WARNING")
+
+# Pre-constructed reranker wired by the composition root.  Construction is
+# cheap (the ONNX session loads lazily on first rerank), and the process-wide
+# model cache preserves load-once semantics regardless of instance count.
+_reranker = compose.build_reranker()
 
 
 # ── Tool 1: Ingest ----------------------------------------------------------
@@ -63,10 +75,10 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
 )
 async def search_documents(
     query: str,
-    top_k: int = TOP_K,
-    similarity_threshold: float = SIMILARITY_THRESHOLD,
+    top_k: int | None = None,
+    similarity_threshold: float | None = None,
     rerank: bool | None = None,
-    hybrid: bool = HYBRID_ENABLED,
+    hybrid: bool | None = None,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -85,7 +97,8 @@ async def search_documents(
             ``RERANK_ENABLED_FOR_SEMANTIC`` and ``HARD_TECHNICAL_THRESHOLD``
             to decide whether to enable reranking based on query type.
         hybrid: If True, fuse dense vector retrieval with sparse keyword
-            retrieval via Reciprocal Rank Fusion before reranking.
+            retrieval via Reciprocal Rank Fusion before reranking.  When
+            omitted, the resolved ``settings.hybrid_enabled`` applies.
         collection: Name of the ChromaDB collection to search
             (default "documents").
         metadata_filter: Optional ChromaDB-compatible ``where`` clause
@@ -101,6 +114,12 @@ async def search_documents(
         or ``"internal"``.  The handler never raises.
     """
     try:
+        if top_k is None:
+            top_k = settings.top_k
+        if similarity_threshold is None:
+            similarity_threshold = settings.similarity_threshold
+        if hybrid is None:
+            hybrid = settings.hybrid_enabled
         return await asyncio.to_thread(
             search,
             query,
@@ -110,6 +129,7 @@ async def search_documents(
             hybrid=hybrid,
             collection_name=collection,
             metadata_filter=metadata_filter,
+            reranker=_reranker,
         )
     except ValueError as exc:
         # ChromaDB raises ValueError for malformed ``where`` clauses

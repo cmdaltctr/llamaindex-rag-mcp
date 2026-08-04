@@ -17,7 +17,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from .config import DOC_SIMILARITY_THRESHOLD
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class CrossLink:
 
 def compute_similarity_edges(
     collection,
-    threshold: float = DOC_SIMILARITY_THRESHOLD,
+    threshold: float | None = None,
 ) -> list[Edge]:
     """Compute pairwise cosine similarity edges between document chunks.
 
@@ -93,6 +93,9 @@ def compute_similarity_edges(
     """
     if collection is None:
         return []
+
+    if threshold is None:
+        threshold = settings.doc_similarity_threshold
 
     # Fetch all embeddings and metadata from ChromaDB.
     try:
@@ -326,7 +329,7 @@ def _add_edges_safe(graph: nx.Graph, edges: list[Edge]) -> None:
 
 def build_document_graph(
     collection,
-    threshold: float = DOC_SIMILARITY_THRESHOLD,
+    threshold: float | None = None,
 ) -> nx.Graph:
     """Build an undirected document graph from all edge types.
 
@@ -344,6 +347,9 @@ def build_document_graph(
 
     if collection is None:
         return graph
+
+    if threshold is None:
+        threshold = settings.doc_similarity_threshold
 
     _add_doc_nodes(graph, collection)
     if graph.number_of_nodes() == 0:

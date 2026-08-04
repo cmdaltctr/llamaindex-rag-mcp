@@ -66,7 +66,7 @@ class TestListDocuments:
         import rag_mcp.config as _config
         from rag_mcp.config import CHROMA_PERSIST_DIR
 
-        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
 
         db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_docs")
@@ -155,10 +155,9 @@ class TestMetadataAttachment:
     ):
         """Metadata must be attached to chunks when METADATA_EXTRACTION_MODE=keyword."""
         # Enable keyword extraction for this test
-        import rag_mcp.core.metadata.extractor as _md_ext
-        import rag_mcp.core.metadata.keyword as _md_kw
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
         # Create a test file with AI-related content
         test_file = tmp_path / "ai_paper.txt"
@@ -194,8 +193,8 @@ class TestMetadataAttachment:
     ):
         """When METADATA_EXTRACTION_MODE=disabled, no category metadata."""
         # Disable keyword extraction
-        import rag_mcp.core.metadata.extractor as _md_ext
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "disabled")
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "disabled")
 
         test_file = tmp_path / "whatever.txt"
         test_file.write_text("Some random content about biology and proteins.")
