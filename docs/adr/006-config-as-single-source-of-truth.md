@@ -64,3 +64,34 @@ Create **`config.py`** as the single source of truth for all configuration.
 - `src/rag_mcp/config.py` — centralised configuration module
 - `tests/conftest.py` — `_patch_embed_model`, `_isolate_env` fixtures
 - `AGENTS.md` — "Architecture (3 lines)" section documenting this decision
+
+---
+
+## Update (2026-08-04, Phase 2)
+
+**Amended by:** [ADR-031](./031-three-layer-config-compose-di.md) — Three-Layer
+Architecture — Config, Compose, DI.
+
+This ADR's intent is preserved but its scope is narrowed. `config.py` remains
+the single source of truth for **resolved settings values** — the typed
+`Settings` object is still the one place every knob's parsed value lives, and
+no other module re-parses environment variables.
+
+What changed in Phase 2:
+
+- `config.py` is **no longer the aggregation point for objects**. All provider
+  and pipeline construction (`_build_provider`, `_ProviderConfig`, the
+  `Settings.embed_model` mutation) moved to `compose.py`, the composition root.
+  `config` now performs parsing and validation only — zero construction.
+- The bare module-level constants this ADR described (`TOP_K`, `CHUNK_SIZE`,
+  `EMBED_MODEL`, …) are now a **PEP 562 `__getattr__` shim** over the
+  structured `Settings` singleton. Each legacy read resolves to its
+  `settings.*` counterpart and emits a `DeprecationWarning`. The shim is
+  removed in v2.0.0; new code reads `from rag_mcp.config import settings` and
+  accesses `settings.top_k` etc.
+- The `reranker.py` independent `dotenv` import — the deliberate exception this
+  ADR called out — is **removed**. Settings are now injected, so the
+  circular-import risk that motivated the exception no longer exists.
+
+See ADR-031 for the full three-layer design, the resolution precedence chain,
+and the `import-linter` contracts that enforce the boundaries.

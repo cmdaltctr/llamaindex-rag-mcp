@@ -31,14 +31,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import (
-    CLOUD_BACKEND,
-    LOCAL_BACKEND,
-    METADATA_EXTRACTION_MODE,
-    METADATA_LLM_PROVIDER,
-    OPENROUTER_API_KEY,
-    OPENROUTER_LLM_MODEL,
-)
+from ...config import settings
 from ._common import logger
 from .keyword import _extract_keyword_async
 from .llamacpp import _extract_llamacpp_chat_async
@@ -74,12 +67,12 @@ async def _dispatch_local_extraction(text: str) -> dict:
     Returns:
         A dict with ``category``, ``keywords``, ``summary``.
     """
-    if METADATA_LLM_PROVIDER == "cloud":
-        if CLOUD_BACKEND == "openrouter":
+    if settings.metadata_llm_provider == "cloud":
+        if settings.cloud_backend == "openrouter":
             return await _extract_openrouter_chat_async(text)
         # Future cloud sub-providers would dispatch here.
         return await _extract_openrouter_chat_async(text)
-    elif LOCAL_BACKEND == "llamacpp":
+    elif settings.local_backend == "llamacpp":
         return await _extract_llamacpp_chat_async(text)
     else:
         return await _extract_ollama_async(text)
@@ -111,7 +104,7 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": OPENROUTER_LLM_MODEL,
+        "model": settings.openrouter_llm_model,
         "messages": [
             {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
             {"role": "user", "content": prompt},
@@ -132,7 +125,7 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
                     json=data,
                     headers={
                         "Content-Type": "application/json",
-                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Authorization": f"Bearer {settings.openrouter_api_key}",
                     },
                 )
                 resp.raise_for_status()
@@ -189,7 +182,7 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
     Returns:
         A dict of metadata key-value pairs (same shape as sync version).
     """
-    mode = METADATA_EXTRACTION_MODE.lower()
+    mode = settings.metadata_extraction_mode.lower()
 
     if mode == "disabled":
         return _extract_disabled()
@@ -202,6 +195,6 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
     else:
         logger.warning(
             "Unknown METADATA_EXTRACTION_MODE '%s' — falling back to keyword",
-            METADATA_EXTRACTION_MODE,
+            settings.metadata_extraction_mode,
         )
         return await _extract_keyword_async(file_text)

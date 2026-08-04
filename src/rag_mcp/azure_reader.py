@@ -15,11 +15,7 @@ import logging
 import time
 from pathlib import Path
 
-from .config import (
-    AZURE_DOC_INTELLIGENCE_ENDPOINT,
-    AZURE_DOC_INTELLIGENCE_KEY,
-    AZURE_DOC_INTELLIGENCE_MODEL,
-)
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +38,9 @@ class AzureDocReader:
 
     def __init__(
         self,
-        endpoint: str = AZURE_DOC_INTELLIGENCE_ENDPOINT,
-        key: str = AZURE_DOC_INTELLIGENCE_KEY,
-        model: str = AZURE_DOC_INTELLIGENCE_MODEL,
+        endpoint: str | None = None,
+        key: str | None = None,
+        model: str | None = None,
     ) -> None:
         """Initialise the Azure Document Intelligence reader.
 
@@ -53,6 +49,12 @@ class AzureDocReader:
             key: Azure Document Intelligence API key.
             model: Azure model ID (default: "prebuilt-layout").
         """
+        if endpoint is None:
+            endpoint = settings.azure_doc_intelligence_endpoint
+        if key is None:
+            key = settings.azure_doc_intelligence_key
+        if model is None:
+            model = settings.azure_doc_intelligence_model
         self.endpoint = endpoint
         self.key = key
         self.model = model

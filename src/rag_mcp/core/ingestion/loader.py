@@ -13,7 +13,7 @@ from pathlib import Path
 import chromadb
 
 from ...chroma_utils import iter_collection_metadatas
-from ...config import CHROMA_PERSIST_DIR, SUPPORTED_EXTENSIONS
+from ...config import settings, SUPPORTED_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def get_chroma_collection(
     Returns:
         The ChromaDB collection object (created if it did not exist).
     """
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
     return db.get_or_create_collection(collection_name)
 
 
@@ -105,7 +105,7 @@ def list_documents(collection_name: str = "documents") -> list[dict]:
     Returns:
         List of dicts, each with: ``{"source": str, "chunks": int}``.
     """
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
     try:
         collection = db.get_collection(collection_name)
     except Exception:

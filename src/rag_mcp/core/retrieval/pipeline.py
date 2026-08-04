@@ -16,13 +16,7 @@ from typing import Any
 import chromadb
 
 from ...chroma_utils import iter_collection_metadatas
-from ...config import (
-    CHROMA_PERSIST_DIR,
-    HYBRID_ENABLED,
-    HYBRID_RRF_K,
-    SIMILARITY_THRESHOLD,
-    TOP_K,
-)
+from ...config import settings
 from .dense import _dense_query_rows, _result_source
 from .fusion import rrf_with_metadata
 from .policy import (
@@ -39,13 +33,9 @@ _warned_native_fallback_collections: set[str] = set()
 
 
 def _selected_sparse_backend() -> str:
-    from ... import config as _config
+    from ...config import resolve_sparse_backend, settings
 
-    return getattr(
-        _config,
-        "RESOLVED_HYBRID_SPARSE_BACKEND",
-        getattr(_config, "HYBRID_SPARSE_BACKEND", "bm25"),
-    )
+    return resolve_sparse_backend(settings)
 
 
 def _sparse_bm25_query(
@@ -137,7 +127,7 @@ def _hybrid_query_rows(
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
-    return rrf_with_metadata(dense_rows, sparse_rows, k=HYBRID_RRF_K)[:fetch_k]
+    return rrf_with_metadata(dense_rows, sparse_rows, k=settings.hybrid_rrf_k)[:fetch_k]
 
 
 def _strip_internal_result_fields(result: dict) -> dict:
@@ -150,15 +140,16 @@ def _strip_internal_result_fields(result: dict) -> dict:
 
 def search(
     query: str,
-    top_k: int = TOP_K,
-    similarity_threshold: float = SIMILARITY_THRESHOLD,
+    top_k: int | None = None,
+    similarity_threshold: float | None = None,
     rerank: bool | None = None,
-    hybrid: bool = HYBRID_ENABLED,
+    hybrid: bool = settings.hybrid_enabled,
     collection_name: str = "documents",
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
     technical_fraction: float | None = None,
     fetch_k: int | None = None,
+    reranker: CrossEncoderReranker | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -198,6 +189,13 @@ def search(
             formula so experiment runners can test genuinely distinct pool
             sizes.  Production callers leave this as None.  The value is
             still clamped to the collection size.
+        reranker: Optional pre-constructed ``CrossEncoderReranker``
+            (dependency injection — the composition root builds one via
+            ``rag_mcp.compose.build_reranker``).  When ``None``, a fresh
+            instance is constructed; the underlying ONNX session is still
+            cached process-wide keyed by model ID, so the model is loaded
+            at most once per process regardless of how many instances are
+            created.
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -221,7 +219,12 @@ def search(
         rerank, query, technical_fraction=technical_fraction,
     )
 
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    if top_k is None:
+        top_k = settings.top_k
+    if similarity_threshold is None:
+        similarity_threshold = settings.similarity_threshold
+
+    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
 
     try:
         collection = db.get_collection(collection_name)
@@ -251,7 +254,8 @@ def search(
 
     # Optional: re-score with cross-encoder reranker.
     if effective_rerank and results:
-        reranker = CrossEncoderReranker()
+        if reranker is None:
+            reranker = CrossEncoderReranker()
         results = reranker.rerank(query, results, top_k=top_k)
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:
@@ -291,7 +295,7 @@ def list_collections() -> list[dict]:
         - ``document_count`` — approximate number of unique source files
         - ``chunk_count`` — total number of chunks in the collection
     """
-    db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
 
     collections: list[dict] = []
     for coll in db.list_collections():

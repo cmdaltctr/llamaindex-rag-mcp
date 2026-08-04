@@ -15,12 +15,7 @@ import json
 import logging
 import re
 
-from ...config import (
-    OLLAMA_BASE_URL,
-    OLLAMA_CLASSIFY_MAX_ATTEMPTS,
-    OLLAMA_CLASSIFY_MODEL,
-    OLLAMA_CLASSIFY_TIMEOUT,
-)
+from ...config import settings
 from ._common import _normalise_category, _truncate_keywords, _truncate_summary, logger
 from .taxonomy import _gather_existing_categories, _get_seed_categories
 
@@ -194,11 +189,11 @@ def _get_ollama_max_attempts() -> int:
     import os
     raw = os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS")
     if raw is None:
-        return OLLAMA_CLASSIFY_MAX_ATTEMPTS
+        return settings.ollama_classify_max_attempts
     try:
         value = int(raw)
     except (TypeError, ValueError):
-        return OLLAMA_CLASSIFY_MAX_ATTEMPTS
+        return settings.ollama_classify_max_attempts
     return max(1, value)
 
 
@@ -214,11 +209,11 @@ def _get_ollama_timeout() -> float:
     import os
     raw = os.getenv("OLLAMA_CLASSIFY_TIMEOUT")
     if raw is None:
-        return OLLAMA_CLASSIFY_TIMEOUT
+        return settings.ollama_classify_timeout
     try:
         return float(raw)
     except (TypeError, ValueError):
-        return OLLAMA_CLASSIFY_TIMEOUT
+        return settings.ollama_classify_timeout
 
 
 # Sleep hook used between Ollama retry attempts.  Module-level so tests
@@ -259,11 +254,11 @@ async def _extract_ollama_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": OLLAMA_CLASSIFY_MODEL,
+        "model": settings.ollama_classify_model,
         "prompt": prompt,
         "stream": False,
     }
-    url = f"{OLLAMA_BASE_URL}/api/generate"
+    url = f"{settings.ollama_base_url}/api/generate"
 
     max_attempts = _get_ollama_max_attempts()
     timeout_s = _get_ollama_timeout()

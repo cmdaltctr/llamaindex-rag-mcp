@@ -12,7 +12,13 @@ Raw logit outputs are normalised to the (0, 1) range with a sigmoid
 transform so that scores are directly comparable with vector cosine
 similarity.
 
-The model is loaded once (singleton) and reused across calls.
+The reranker is a plain class constructed by ``rag_mcp.compose`` with
+injected settings (model ID).  The underlying ONNX session and tokenizer
+are cached **process-wide** keyed by model ID, preserving the load-once
+semantics of the former ``__new__`` singleton: the model is downloaded
+and loaded exactly once per process regardless of how many reranker
+instances are constructed.
+
 If loading fails transiently, the next call will retry.  If it
 fails permanently, ``rerank()`` gracefully falls back to returning
 the original results un-reranked.
@@ -27,20 +33,38 @@ import platform
 import threading
 from typing import Any
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from ...config import settings
 
 logger = logging.getLogger(__name__)
 
-RERANK_MODEL = os.getenv(
-    "RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2",
-)
+# Model ID resolved from the structured settings (injected).  Kept as a
+# module-level alias so legacy imports (and the ``rag_mcp.reranker``
+# compat shim) keep working during migration.
+RERANK_MODEL = settings.rerank_model
 
 # Tokenizer max sequence length.  ModernBERT supports 8,192 tokens but
 # processing full-length pairs increases latency.  2,048 balances context
 # window utilisation with latency — most RAG chunks are 512-1,024 tokens.
 TOKENIZER_MAX_LENGTH = int(os.getenv("RERANK_TOKENIZER_MAX_LENGTH", "2048"))
+
+# ── Process-wide model cache ──────────────────────────────────────────
+# Maps model ID -> (onnx session, tokenizer, effective max length).
+# Populated on first successful load; reused by every reranker instance
+# so the model is loaded once per process (former singleton semantics).
+
+_MODEL_CACHE: dict[str, tuple[Any, Any, int]] = {}
+_CACHE_LOCK: threading.Lock = threading.Lock()
+
+
+def reset_model_cache() -> None:
+    """Clear the process-wide model cache (test isolation hook).
+
+    Replaces the former ``CrossEncoderReranker._instance = None`` reset.
+    Tests that need a fresh model-load path call this in setup/teardown
+    so no loaded session leaks across test cases.
+    """
+    with _CACHE_LOCK:
+        _MODEL_CACHE.clear()
 
 
 def _sigmoid(value: float) -> float:
@@ -101,44 +125,63 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
 
 
 class CrossEncoderReranker:
-    """Singleton cross-encoder reranker backed by pure ONNX Runtime.
+    """Plain-class cross-encoder reranker backed by pure ONNX Runtime.
+
+    Constructed by the composition root (``rag_mcp.compose``) with an
+    injected model ID.  The underlying ONNX session and tokenizer are
+    cached process-wide keyed by model ID, so the model is loaded at
+    most once per process (former ``__new__`` singleton semantics).
 
     Loads the model lazily on first use.  Thread-safe via a lock.
     If model loading fails, ``rerank()`` returns inputs unchanged
     and will retry on the next call (transient failure recovery).
     """
 
-    _instance: CrossEncoderReranker | None = None
-    _lock: threading.Lock = threading.Lock()
+    def __init__(
+        self,
+        model_id: str | None = None,
+        tokenizer_max_length: int | None = None,
+    ) -> None:
+        """Initialise the reranker with injected settings.
 
-    def __new__(cls) -> CrossEncoderReranker:
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    # Per-instance state (set here so __init__ is not needed)
-                    cls._instance._session: Any = None
-                    cls._instance._tokenizer: Any = None
-                    cls._instance._loaded: bool = False
-                    cls._instance._load_attempted: bool = False
-                    cls._instance._load_error: str | None = None
-                    cls._instance._effective_max_length: int = TOKENIZER_MAX_LENGTH
-        return cls._instance
+        Args:
+            model_id: HuggingFace model ID to use.  When ``None``,
+                defaults to the resolved ``settings.rerank_model``.
+            tokenizer_max_length: Tokenizer sequence-length cap.  When
+                ``None``, defaults to the module-level
+                ``TOKENIZER_MAX_LENGTH``.
+        """
+        self._model_id: str = model_id or RERANK_MODEL
+        self._session: Any = None
+        self._tokenizer: Any = None
+        self._loaded: bool = False
+        self._load_attempted: bool = False
+        self._load_error: str | None = None
+        self._effective_max_length: int = (
+            tokenizer_max_length or TOKENIZER_MAX_LENGTH
+        )
 
     # ── Model loading ──────────────────────────────────────────────────
 
     def _load_model(self) -> None:
         """Attempt to load the cross-encoder ONNX model.
 
-        Retries on each call if the previous attempt failed (transient
-        error recovery).  Once loaded successfully, the model is reused
-        for the process lifetime.
+        Consults the process-wide model cache first: if another instance
+        already loaded the same model ID, the session and tokenizer are
+        reused without re-downloading.  Retries on each call if the
+        previous attempt failed (transient error recovery).  Once loaded
+        successfully, the model is reused for the process lifetime.
         """
         if self._loaded:
             return
 
-        with self._lock:
-            if self._loaded:
+        with _CACHE_LOCK:
+            cached = _MODEL_CACHE.get(self._model_id)
+            if cached is not None:
+                self._session, self._tokenizer, self._effective_max_length = cached
+                self._loaded = True
+                self._load_attempted = True
+                self._load_error = None
                 return
 
             # If a previous attempt failed, allow retry — the failure
@@ -157,19 +200,19 @@ class CrossEncoderReranker:
                 from transformers import AutoTokenizer
 
                 logger.info(
-                    "Loading reranker model: %s", RERANK_MODEL,
+                    "Loading reranker model: %s", self._model_id,
                 )
 
                 # Download the pre-exported ONNX model from HuggingFace Hub.
                 # Try candidate variants in priority order — the preferred
                 # quantised variant may occasionally be unavailable.
-                candidates = _select_onnx_variant()
+                candidates = _select_onnx_variant(self._model_id)
                 onnx_path = None
                 onnx_filename = None
                 for candidate in candidates:
                     try:
                         onnx_path = hf_hub_download(
-                            repo_id=RERANK_MODEL,
+                            repo_id=self._model_id,
                             filename=candidate,
                         )
                         onnx_filename = candidate
@@ -177,17 +220,17 @@ class CrossEncoderReranker:
                     except Exception as download_exc:
                         logger.debug(
                             "ONNX variant %s unavailable for %s: %s",
-                            candidate, RERANK_MODEL, download_exc,
+                            candidate, self._model_id, download_exc,
                         )
 
                 if onnx_path is None:
                     raise RuntimeError(
-                        f"No ONNX variant available for {RERANK_MODEL}. "
+                        f"No ONNX variant available for {self._model_id}. "
                         f"Tried: {', '.join(candidates)}"
                     )
 
                 self._tokenizer = AutoTokenizer.from_pretrained(
-                    RERANK_MODEL,
+                    self._model_id,
                 )
                 # Cap max_length at the model's own limit.  MiniLM supports
                 # 512 tokens; ModernBERT supports 8192.  Using a max_length
@@ -223,6 +266,11 @@ class CrossEncoderReranker:
                 )
                 self._loaded = True
                 self._load_error = None
+                _MODEL_CACHE[self._model_id] = (
+                    self._session,
+                    self._tokenizer,
+                    self._effective_max_length,
+                )
                 logger.info(
                     "Reranker model loaded successfully "
                     "(variant: %s)", onnx_filename,
@@ -232,7 +280,7 @@ class CrossEncoderReranker:
                 logger.warning(
                     "Failed to load reranker model '%s': %s. "
                     "Falling back to un-reranked results.",
-                    RERANK_MODEL, exc,
+                    self._model_id, exc,
                 )
 
     # ── Public API ─────────────────────────────────────────────────────

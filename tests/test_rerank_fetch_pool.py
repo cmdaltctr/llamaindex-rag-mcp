@@ -41,8 +41,8 @@ def test_rerank_disabled_uses_top_k_directly() -> None:
 
 def test_env_overrides_pool_size(monkeypatch: pytest.MonkeyPatch) -> None:
     """RERANK_FETCH_MULTIPLIER and RERANK_MAX_FETCH SHALL be respected."""
-    monkeypatch.setattr(_config, "RERANK_FETCH_MULTIPLIER", 4)
-    monkeypatch.setattr(_config, "RERANK_MAX_FETCH", 20)
+    monkeypatch.setattr(_config.settings, "rerank_fetch_multiplier", 4)
+    monkeypatch.setattr(_config.settings, "rerank_max_fetch", 20)
 
     # Spec scenario: top_k=3 → max(20, 3*4) = 20
     fetch_k = _resolve_fetch_k(top_k=3, rerank=True, collection_count=1000)

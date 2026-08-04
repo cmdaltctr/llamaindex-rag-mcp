@@ -13,7 +13,7 @@ import logging
 import threading
 
 from ...chroma_utils import iter_collection_metadatas
-from ...config import CHROMA_PERSIST_DIR
+from ...config import settings
 from ._common import _normalise_category, logger
 from .keyword import _load_keyword_rules
 
@@ -38,7 +38,7 @@ def _get_chroma_client():
             if _chroma_client is None:
                 import chromadb
                 _chroma_client = chromadb.PersistentClient(
-                    path=CHROMA_PERSIST_DIR
+                    path=settings.chroma_persist_dir
                 )
     return _chroma_client
 

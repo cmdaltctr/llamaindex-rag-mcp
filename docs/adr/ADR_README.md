@@ -37,6 +37,7 @@ development of the LlamaIndex RAG MCP Server.
 | [028](./028-swap-reranker-to-gte-modernbert.md)              | Swap Default Reranker to gte-reranker-modernbert-base                      | 2026-07-31 | Rejected |
 | [029](./029-disable-coreml-for-reranker-silent-fallback-lesson.md) | Disable CoreML for Reranker — Silent Fallback Lesson                | 2026-07-31 | Accepted |
 | [030](./030-prefer-int8-onnx-variant-for-modernbert-rerankers.md) | Prefer int8 Quantised ONNX Variant for ModernBERT Rerankers          | 2026-08-03 | Proposed |
+| [031](./031-three-layer-config-compose-di.md)               | Three-Layer Architecture — Config, Compose, DI                             | 2026-08-04 | Accepted |
 
 ## Convention
 

@@ -9,6 +9,7 @@ Tests cover:
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -120,6 +121,90 @@ async def test_rerank_enabled_sets_flag(
         # fell back. Either way, the call must succeed.
         for r in data:
             assert "reranked" in r
+
+
+# ── Threshold scaling with reranker ────────────────────────────────────────
+
+
+class TestPersistentRerankFailureFallback:
+    """Regression: a permanently unavailable reranker must degrade gracefully.
+
+    Mirrors the reranking spec scenario "persistent failure still falls
+    back gracefully": search_documents with rerank=True must NOT crash or
+    raise; it returns un-reranked results and emits a warning.
+    """
+
+    async def test_persistent_failure_falls_back_without_crash(
+        self, mcp_server, fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A permanently failing reranker yields un-reranked results + warning."""
+        import logging
+
+        import rag_mcp.core.retrieval.reranker as reranker_mod
+        from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+
+        # Build a reranker whose model load fails permanently.
+        failing = CrossEncoderReranker(model_id="invalid/model-id")
+        failing._loaded = False
+        failing._load_attempted = True
+        failing._load_error = "model permanently unavailable"
+
+        # The retry path must also keep failing.
+        def _fail_load(self) -> None:
+            self._load_attempted = True
+            self._load_error = "model permanently unavailable"
+
+        monkeypatch.setattr(reranker_mod.CrossEncoderReranker, "_load_model", _fail_load)
+
+        # Inject the failing reranker through the DI parameter.
+        import rag_mcp.server as server
+
+        original_search = server.search
+        from rag_mcp.core.retrieval import search as _search
+
+        def _search_with_failing_reranker(*args, **kwargs):
+            kwargs["reranker"] = failing
+            return original_search(*args, **kwargs)
+
+        monkeypatch.setattr(server, "search", _search_with_failing_reranker)
+
+        async with connected_client(mcp_server) as client:
+            await _ingest_fixtures(client, fixtures_dir)
+            result = await client.call_tool(
+                "search_documents",
+                {"query": "capital", "rerank": True},
+            )
+            data = _extract_result(result)
+            assert isinstance(data, list)
+            assert len(data) > 0
+            # Graceful fallback: results returned, reranked flag False,
+            # no error status dict.
+            for r in data:
+                assert "reranked" in r
+                assert r["reranked"] is False
+
+    def test_transient_failure_retries_then_succeeds(self) -> None:
+        """A transient load failure must retry on the next call and recover."""
+        from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+
+        reranker = CrossEncoderReranker(model_id="transient/model")
+        reranker._loaded = False
+        reranker._load_attempted = True
+        reranker._load_error = "transient network timeout"
+
+        mock_session = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.model_max_length = 1000000
+
+        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+            with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
+                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                    with patch("onnxruntime.InferenceSession", return_value=mock_session):
+                        reranker._load_model()
+
+        # Retry succeeded: model loaded, error cleared, cache populated.
+        assert reranker._loaded is True
+        assert reranker._load_error is None
 
 
 # ── Threshold scaling with reranker ────────────────────────────────────────
@@ -245,10 +330,9 @@ class TestMetadataFiltering:
 
     async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        import rag_mcp.core.metadata.extractor as _md_ext
-        import rag_mcp.core.metadata.keyword as _md_kw
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -276,10 +360,9 @@ class TestMetadataFiltering:
 
     async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
-        import rag_mcp.core.metadata.extractor as _md_ext
-        import rag_mcp.core.metadata.keyword as _md_kw
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -337,7 +420,7 @@ class TestListCollections:
         from rag_mcp.config import CHROMA_PERSIST_DIR
         from rag_mcp.core.retrieval import list_collections
 
-        monkeypatch.setattr(_config, "CHROMA_SCAN_PAGE_SIZE", 2)
+        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
 
         db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_collection_stats")
@@ -378,10 +461,9 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
-        import rag_mcp.core.metadata.extractor as _md_ext
-        import rag_mcp.core.metadata.keyword as _md_kw
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -428,10 +510,9 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
-        import rag_mcp.core.metadata.extractor as _md_ext
-        import rag_mcp.core.metadata.keyword as _md_kw
-        monkeypatch.setattr(_md_ext, "METADATA_EXTRACTION_MODE", "keyword")
-        monkeypatch.setattr(_md_kw, "METADATA_KEYWORD_RULES", None)
+        import rag_mcp.config as _config
+        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
+        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search

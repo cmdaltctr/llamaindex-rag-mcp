@@ -19,9 +19,14 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from .config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
+from .config import settings
 from .core.ingestion import ingest_path_async, list_documents as _list_documents
 from .core.retrieval import search
+
+# Import the composition root early so the LlamaIndex global
+# ``Settings.embed_model`` is assigned before any retrieval call
+# (previously done at import time in ``config.py``; see ADR-031).
+from . import compose  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +68,10 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
 )
 async def search_documents(
     query: str,
-    top_k: int = TOP_K,
-    similarity_threshold: float = SIMILARITY_THRESHOLD,
+    top_k: int | None = None,
+    similarity_threshold: float | None = None,
     rerank: bool | None = None,
-    hybrid: bool = HYBRID_ENABLED,
+    hybrid: bool = settings.hybrid_enabled,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -101,6 +106,10 @@ async def search_documents(
         or ``"internal"``.  The handler never raises.
     """
     try:
+        if top_k is None:
+            top_k = settings.top_k
+        if similarity_threshold is None:
+            similarity_threshold = settings.similarity_threshold
         return await asyncio.to_thread(
             search,
             query,

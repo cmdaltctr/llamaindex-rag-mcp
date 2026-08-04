@@ -24,9 +24,9 @@ def iter_collection_metadatas(
         ValueError: If the effective page size is not positive.
     """
     if page_size is None:
-        from .config import CHROMA_SCAN_PAGE_SIZE
+        from .config import settings
 
-        page_size = CHROMA_SCAN_PAGE_SIZE
+        page_size = settings.chroma_scan_page_size
 
     if page_size <= 0:
         raise ValueError("CHROMA_SCAN_PAGE_SIZE must be a positive integer")

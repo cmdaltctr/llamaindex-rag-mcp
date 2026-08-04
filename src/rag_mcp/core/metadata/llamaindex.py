@@ -11,17 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import (
-    CLOUD_BACKEND,
-    LLAMACPP_CHAT_MODEL,
-    LLAMACPP_CHAT_URL,
-    LOCAL_BACKEND,
-    METADATA_LLM_PROVIDER,
-    OLLAMA_BASE_URL,
-    OLLAMA_CLASSIFY_MODEL,
-    OPENROUTER_API_KEY,
-    OPENROUTER_LLM_MODEL,
-)
+from ...config import settings
 from ._common import (
     _normalise_category,
     _strip_llm_prefix,
@@ -165,36 +155,36 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         optionally ``document_title``.  Falls back to keyword mode on failure.
     """
     try:
-        if METADATA_LLM_PROVIDER == "local":
-            if LOCAL_BACKEND == "llamacpp":
+        if settings.metadata_llm_provider == "local":
+            if settings.local_backend == "llamacpp":
                 from llama_index.llms.openai_like import OpenAILike
                 llm = OpenAILike(
-                    model=LLAMACPP_CHAT_MODEL,
-                    api_base=LLAMACPP_CHAT_URL,
+                    model=settings.llamacpp_chat_model,
+                    api_base=settings.llamacpp_chat_url,
                     api_key="no-key",
                     request_timeout=180.0,
                 )
             else:
                 from llama_index.llms.ollama import Ollama
                 llm = Ollama(
-                    model=OLLAMA_CLASSIFY_MODEL,
-                    base_url=OLLAMA_BASE_URL,
+                    model=settings.ollama_classify_model,
+                    base_url=settings.ollama_base_url,
                     request_timeout=180.0,
                 )
         else:
             from llama_index.llms.openai_like import OpenAILike
             llm = OpenAILike(
-                model=OPENROUTER_LLM_MODEL,
+                model=settings.openrouter_llm_model,
                 api_base="https://openrouter.ai/api/v1",
-                api_key=OPENROUTER_API_KEY,
+                api_key=settings.openrouter_api_key,
                 request_timeout=180.0,
             )
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
             "(backend=%s) — falling back to local mode",
-            METADATA_LLM_PROVIDER,
-            LOCAL_BACKEND if METADATA_LLM_PROVIDER == "local" else CLOUD_BACKEND,
+            settings.metadata_llm_provider,
+            settings.local_backend if settings.metadata_llm_provider == "local" else settings.cloud_backend,
         )
         # Lazy import to avoid a circular dependency: extractor.py imports
         # this module at load time, but the fallback dispatch lives in
@@ -213,16 +203,15 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         )
 
         max_chunks = _get_max_chunks()
-        from ...config import CHUNK_SIZE, CHUNK_OVERLAP
-        capped_text = text[:max_chunks * CHUNK_SIZE]
+        capped_text = text[:max_chunks * settings.chunk_size]
 
         doc = Document(text=capped_text, metadata={"file_name": file_name})
 
         pipeline = IngestionPipeline(
             transformations=[
                 SentenceSplitter(
-                    chunk_size=CHUNK_SIZE,
-                    chunk_overlap=CHUNK_OVERLAP,
+                    chunk_size=settings.chunk_size,
+                    chunk_overlap=settings.chunk_overlap,
                 ),
                 TitleExtractor(nodes=5, llm=llm),
                 KeywordExtractor(keywords=10, llm=llm),
@@ -241,7 +230,7 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
             "falling back to %s mode",
             type(exc).__name__,
             exc,
-            METADATA_LLM_PROVIDER,
+            settings.metadata_llm_provider,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
         # Lazy import — see note above.

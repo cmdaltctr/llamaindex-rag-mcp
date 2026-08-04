@@ -139,9 +139,9 @@ class TestResolveRerankPolicyExplicit:
         """rerank=True forces reranking even when policy disables it."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", False)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", False)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=True, query="semantic query about machine learning"
@@ -155,9 +155,9 @@ class TestResolveRerankPolicyExplicit:
         """rerank=False disables reranking even when policy enables it."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", True)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", True)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=False, query="semantic query about machine learning"
@@ -171,9 +171,9 @@ class TestResolveRerankPolicyExplicit:
         """rerank=True forces reranking even for technical queries."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=True, query="`calculateTotal` `processData` function"
@@ -194,9 +194,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None follows RERANK_ENABLED=True."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", True)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", False)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", True)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", False)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=None, query="any query"
@@ -210,9 +210,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None with RERANK_ENABLED=False and semantic disabled."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", False)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", False)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=None, query="semantic query about machine learning"
@@ -226,9 +226,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None enables reranking for semantic queries below threshold."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         effective, reason = _resolve_rerank_policy(
             rerank=None, query="what is machine learning"
@@ -243,9 +243,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None disables reranking for technical queries above threshold."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         # Query with 2 of 3 tokens technical = 0.667 fraction > 0.3 threshold
         effective, reason = _resolve_rerank_policy(
@@ -261,9 +261,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None at exactly the threshold disables reranking."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.5)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.5)
 
         # Query with 1 of 2 tokens technical = 0.5 fraction == 0.5 threshold
         effective, reason = _resolve_rerank_policy(
@@ -279,9 +279,9 @@ class TestResolveRerankPolicyOmitted:
         """rerank=None just below threshold enables reranking."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.6)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.6)
 
         # Query with 1 of 2 tokens technical = 0.5 fraction < 0.6 threshold
         effective, reason = _resolve_rerank_policy(
@@ -304,9 +304,9 @@ class TestResolveRerankPolicyFractionOverride:
         """technical_fraction parameter overrides classifier."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         # Semantic query but override with high fraction
         effective, reason = _resolve_rerank_policy(
@@ -324,9 +324,9 @@ class TestResolveRerankPolicyFractionOverride:
         """technical_fraction parameter can force low fraction."""
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         # Technical query but override with low fraction
         effective, reason = _resolve_rerank_policy(
@@ -353,9 +353,9 @@ class TestPolicyDiagnostics:
 
         import rag_mcp.config as config
 
-        monkeypatch.setattr(config, "RERANK_ENABLED", False)
-        monkeypatch.setattr(config, "RERANK_ENABLED_FOR_SEMANTIC", True)
-        monkeypatch.setattr(config, "HARD_TECHNICAL_THRESHOLD", 0.3)
+        monkeypatch.setattr(config.settings, "rerank_enabled", False)
+        monkeypatch.setattr(config.settings, "rerank_enabled_for_semantic", True)
+        monkeypatch.setattr(config.settings, "hard_technical_threshold", 0.3)
 
         # This will attempt actual search; we're testing the diagnostics
         # structure, not the search itself. Use a non-existent collection

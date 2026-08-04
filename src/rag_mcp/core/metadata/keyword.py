@@ -13,7 +13,7 @@ import json
 import logging
 import re
 
-from ...config import METADATA_KEYWORD_RULES
+from ...config import settings
 from ._common import logger
 
 # ── Default keyword rules ──────────────────────────────────────────────
@@ -58,11 +58,11 @@ def _load_keyword_rules() -> list[dict[str, str]]:
         Falls back to ``_DEFAULT_KEYWORD_RULES`` if
         ``METADATA_KEYWORD_RULES`` is not set or contains invalid JSON.
     """
-    if not METADATA_KEYWORD_RULES:
+    if not settings.metadata_keyword_rules:
         return _DEFAULT_KEYWORD_RULES
 
     try:
-        custom = json.loads(METADATA_KEYWORD_RULES)
+        custom = json.loads(settings.metadata_keyword_rules)
         if not isinstance(custom, list):
             raise ValueError("METADATA_KEYWORD_RULES must be a JSON array")
         for rule in custom:

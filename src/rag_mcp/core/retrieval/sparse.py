@@ -172,9 +172,9 @@ class BM25SparseRetriever:
     def _get_collection(self):
         if self._collection is not None:
             return self._collection
-        from ...config import CHROMA_PERSIST_DIR
+        from ...config import settings
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
         return db.get_collection(self.collection_name)
 
     def _get_generation(self) -> int:
@@ -207,11 +207,11 @@ def _read_collection_rows(collection: Any) -> list[_ChunkRow]:
     if count == 0:
         return []
 
-    from ...config import CHROMA_SCAN_PAGE_SIZE
+    from ...config import settings
 
     rows: list[_ChunkRow] = []
     offset = 0
-    page_size = CHROMA_SCAN_PAGE_SIZE
+    page_size = settings.chroma_scan_page_size
     while True:
         batch = collection.get(
             include=["documents", "metadatas"],

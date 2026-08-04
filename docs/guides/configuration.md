@@ -12,13 +12,68 @@ Environment variables from your shell override `.env` values, so you can also se
 METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 ```
 
-## Configuration flow
+## Resolution order
+
+Settings resolve through a precedence chain. Each layer overrides the one
+below it; the highest layer wins:
 
 ```
-.env  ──→  load_dotenv()  ──→  os.getenv()  ──→  config.py constants  ──→  all other modules
+subpackage model field defaults            (lowest — lives next to the code that owns the knob)
+  → config/defaults.yaml                    (shipped as package data, non-secret global defaults)
+    → environment variables / .env          (your shell and .env file)
+      → explicit instantiation args         (highest — passed when constructing Settings)
 ```
 
-`config.py` calls `load_dotenv()` at import time (`config.py:19`), then every constant is set via `os.getenv()`. Every other module (`ingestion.py`, `retrieval.py`, `server.py`, `reranker.py`, `metadata_extractor.py`, `codebase_map.py`, etc.) imports from `config.py` — they never call `os.getenv()` themselves.
+A typed Pydantic `Settings` object composes per-subpackage settings models
+(`core/chunking/settings.py`, `core/retrieval/settings.py`,
+`core/metadata/settings.py`) through multiple inheritance, so each knob's
+default sits beside the code that consumes it. `config/defaults.yaml` is read
+via `importlib.resources` and ships as package data. Higher layers never need
+to repeat a value the lower layers already provide.
+
+> **Never put secrets, API keys, or machine-specific absolute paths in
+> `config/defaults.yaml`.** It is committed to the repository. Secrets and
+> per-machine values belong in `.env` (see below).
+
+## Three-layer architecture (config / compose / DI)
+
+Since ADR-031 (Phase 2 of the refactor), configuration and wiring live in
+three layers, enforced mechanically by `import-linter`:
+
+1. **`config/` — typed resolver (pure data).** Parses, validates, and resolves
+   every setting into a single `Settings` object. It performs **zero object
+   construction** — no providers, no LlamaIndex globals. The resolver is the
+   single source of truth for *resolved values* (ADR-006, amended).
+2. **`compose.py` — composition root.** The **only** module that constructs
+   provider and pipeline objects (`build_embed_model`, `build_llm_model`,
+   `build_reranker`), resolves the lazy registries against `Settings`, and
+   wires LlamaIndex's global `Settings.embed_model` via `ensure_runtime_setup()`.
+   Provider construction happens here, not in `config`.
+3. **Dependency injection everywhere else.** Business modules
+   (`ingestion`, `retrieval`, `metadata`, `chunking`) receive their
+   dependencies as parameters. They never import concrete provider classes and
+   never reach into `config` for a constructed object.
+
+Read structured settings from the resolver:
+
+```python
+from rag_mcp.config import settings
+
+print(settings.top_k, settings.chunk_size, settings.rerank_enabled)
+```
+
+### Deprecated legacy constants (PEP 562 shim)
+
+The bare module-level constants the older code used (`TOP_K`, `CHUNK_SIZE`,
+`RERANK_ENABLED`, `EMBED_MODEL`, …) are **deprecated**. They still resolve via
+a PEP 562 module-level `__getattr__` shim that reads from the `Settings`
+singleton and emits a `DeprecationWarning` on each access, so external and
+experiment code keeps working during migration. The shim is **removed in
+v2.0.0**. New code must read from the structured `settings` object as shown
+above.
+
+See ADR-031 for the full design, including the `import-linter` contracts that
+keep the three layers honest.
 
 ## What `.env` actually does
 
@@ -28,22 +83,22 @@ METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 EMBED_MODEL=qwen3-embedding:0.6b OLLAMA_BASE_URL=http://localhost:11434 uv run rag-mcp
 ```
 
-Instead, `config.py:19` calls `load_dotenv()` which reads `.env` and puts those key-values into the process environment as if you'd exported them yourself. Then `os.getenv()` picks them up.
+Instead, the resolver calls `load_dotenv()` at import time, which reads `.env` and puts those key-values into the process environment as if you'd exported them yourself. The Pydantic `Settings` model then reads them through pydantic-settings.
 
-**That's it.** `.env` is not parsed by the application logic — it's loaded into the OS environment by `python-dotenv` before any `os.getenv()` call runs.
+**That's it.** `.env` is not parsed by the application logic — it's loaded into the OS environment by `python-dotenv` before the `Settings` model reads it.
 
 **Flow:**
 
-1. `config.py` imports → `load_dotenv()` reads `.env` → injects vars into `os.environ`
-2. `os.getenv("CHUNK_SIZE", "512")` checks `os.environ` → finds `"512"` from `.env` (or your shell) → returns it. If not found anywhere, returns the hardcoded `"512"`.
+1. `config` imports → `load_dotenv()` reads `.env` → injects vars into `os.environ`
+2. The Pydantic `Settings` model reads each field from `os.environ` (your shell or `.env`). If a var is absent, it falls back to `config/defaults.yaml`, then to the subpackage model's field default.
 
-**Why have both `.env` and hardcoded defaults in `config.py`?**
+**Why have both `.env` and shipped defaults?**
 
 - `.env` lets you customize without editing code
-- `config.py` defaults mean the app works out-of-the-box (except `EMBED_MODEL`)
+- Shipped defaults (`config/defaults.yaml` + subpackage model fields) mean the app works out-of-the-box (except `EMBED_MODEL`)
 - `.env.example` is a template showing what you _can_ set — you copy it to `.env` and tweak
 
-**You could delete `.env` entirely** and the server runs fine with all `config.py` defaults — you'd just need `EMBED_MODEL` set in your shell:
+**You could delete `.env` entirely** and the server runs fine with all shipped defaults — you'd just need `EMBED_MODEL` set in your shell:
 
 ```bash
 EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
@@ -51,7 +106,7 @@ EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
 
 ## All settings by category
 
-Each row below pairs an **env var** (what you set in `.env` or your shell) with its **config.py constant** (what modules import at runtime). The **Default** column is the hardcoded fallback in `config.py` used when the env var is absent. The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the `config.py` default is used.
+Each row below pairs an **env var** (what you set in `.env` or your shell) with its **settings field** (the structured `Settings` attribute you read in code). The **Default** column is the fallback used when the env var is absent (from `config/defaults.yaml` or the subpackage model). The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the default is used. The legacy bare-constant names (`TOP_K`, `CHUNK_SIZE`, …) are preserved as the deprecated PEP 562 shim described above.
 
 ### Provider selection
 
@@ -184,15 +239,17 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 | `MAGIKA_LABEL_TO_TREESITTER` | 23-entry dict                                  | Magika → tree-sitter language map                  |
 | `_QUERY_EMBED_CACHE_MAXSIZE` | `128`                                          | LRU cache for query embeddings (in `retrieval.py`) |
 
-## The two exceptions to "config.py only"
+## Call-time env reads
 
-1. **`LLAMANDEX_EXTRACTOR_MAX_CHUNKS`** — read at call-time via `os.getenv()` inside `metadata_extractor.py:544` (not imported from config). This is intentional so tests can override it with `monkeypatch.setenv` after module load.
+Most settings are resolved once into the `Settings` object at import time. One knob is deliberately read at call time instead:
 
-2. **`reranker.py` imports `dotenv` independently** — it calls `load_dotenv()` and reads `RERANK_MODEL` from env directly (gotcha #4 in AGENTS.md). This is to avoid a circular import with `config.py`. The `RERANK_MODEL` env var is not in `config.py`.
+- **`LLAMANDEX_EXTRACTOR_MAX_CHUNKS`** — read at call-time inside `metadata_extractor.py` rather than imported from `config`. This is intentional so tests can override it with `monkeypatch.setenv` after module load.
+
+> **Historical note.** Earlier revisions listed a second exception: `reranker.py` imported `dotenv` independently and read `RERANK_MODEL` directly to dodge a circular import with `config.py` (gotcha #4 in AGENTS.md). That exception is **gone** since ADR-031 — the reranker now receives its model ID via dependency injection from `compose.py`, and `RERANK_MODEL` is a structured settings field. There is no longer a `dotenv` import outside the resolver.
 
 ## Config-time validation
 
-`config.py` also performs validation at import time:
+The resolver performs validation at import time:
 
 - **`EMBED_MODEL`** missing → raises `ValueError` (only when `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`)
 - **`EMBED_PROVIDER`** invalid → warns + falls back to `local`
@@ -209,4 +266,9 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 
 ## Architecture note
 
-All configuration is centralised in `src/rag_mcp/config.py` — the single source of truth for `Settings.embed_model` and all constants. Never set `Settings.embed_model` directly in `ingestion.py`, `retrieval.py`, or `server.py`.
+Configuration is split across two modules since ADR-031 (Phase 2):
+
+- **`src/rag_mcp/config/`** — the typed resolver. Single source of truth for every *resolved settings value*. It parses and validates only; it builds no objects.
+- **`src/rag_mcp/compose.py`** — the composition root. The only place runtime objects (embedding model, LLM, reranker) are constructed and where LlamaIndex's global `Settings.embed_model` is wired via `ensure_runtime_setup()`.
+
+Never construct providers or set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, or `server.py` — those modules receive their dependencies as parameters. The `import-linter` contracts in `pyproject.toml` fail the build if a business module imports a concrete provider class. The legacy bare constants (`TOP_K`, `CHUNK_SIZE`, …) are a deprecated PEP 562 shim over the `Settings` singleton, removed in v2.0.0.

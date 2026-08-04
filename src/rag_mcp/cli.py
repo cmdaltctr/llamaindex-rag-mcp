@@ -43,7 +43,12 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from .config import SUPPORTED_EXTENSIONS, TOP_K
+from .config import SUPPORTED_EXTENSIONS, settings
+
+# Import the composition root early so the LlamaIndex global
+# ``Settings.embed_model`` is assigned before any ingest/search call
+# (previously done at import time in ``config.py``; see ADR-031).
+from . import compose  # noqa: F401
 
 _JSON_HELP = "Output results as JSON."
 
@@ -84,7 +89,7 @@ def _detect_gpu_acceleration() -> None:
     to determine whether the embedding model is running on Metal GPU or
     CPU-only.  Never raises — logs a warning on any failure.
     """
-    from .config import EMBED_MODEL_NAME
+    from .config import settings
 
     logger = logging.getLogger(__name__)
     try:
@@ -107,7 +112,7 @@ def _detect_gpu_acceleration() -> None:
         models = data.get("models", [])
         for model_info in models:
             name = model_info.get("name", "")
-            if EMBED_MODEL_NAME in name:
+            if settings.embed_model in name:
                 runner = model_info.get("details", {}).get(
                     "format", ""
                 ) or model_info.get("details", {}).get("runner", "")
@@ -129,7 +134,7 @@ def _detect_gpu_acceleration() -> None:
         logger.debug(
             "Could not determine Ollama runner — %s not found in "
             "running models",
-            EMBED_MODEL_NAME,
+            settings.embed_model,
         )
     except FileNotFoundError:
         logger.debug(
@@ -177,14 +182,14 @@ def _setup_logging() -> None:
     )
 
     # Log model configuration at INFO (task 1.3).
-    from .config import EMBED_BATCH_SIZE, EMBED_CONCURRENCY, EMBED_MODEL_NAME
+    from .config import settings
 
     logger = logging.getLogger(__name__)
     logger.info(
         "Embedding model: %s | batch_size: %d | concurrency: %d",
-        EMBED_MODEL_NAME,
-        EMBED_BATCH_SIZE,
-        EMBED_CONCURRENCY,
+        settings.embed_model,
+        settings.embed_batch_size,
+        settings.embed_concurrency,
     )
 
     # GPU detection at DEBUG level (task 1.2).
@@ -330,13 +335,7 @@ def _write_report(
         ingest_kwargs: The kwargs passed to ``ingest_path()``.
         input_path: The original input path argument.
     """
-    from .config import (
-        CHUNK_OVERLAP,
-        CHUNK_SIZE,
-        EMBED_BATCH_SIZE,
-        EMBED_CONCURRENCY,
-        EMBED_MODEL_NAME,
-    )
+    from .config import settings
 
     report_file = Path(report_path).expanduser().resolve()
 
@@ -354,11 +353,11 @@ def _write_report(
     timestamp = datetime.now(timezone.utc).isoformat()
 
     config_info = {
-        "model": EMBED_MODEL_NAME,
-        "batch_size": EMBED_BATCH_SIZE,
-        "concurrency": EMBED_CONCURRENCY,
-        "chunk_size": ingest_kwargs.get("chunk_size", CHUNK_SIZE),
-        "chunk_overlap": ingest_kwargs.get("chunk_overlap", CHUNK_OVERLAP),
+        "model": settings.embed_model,
+        "batch_size": settings.embed_batch_size,
+        "concurrency": settings.embed_concurrency,
+        "chunk_size": ingest_kwargs.get("chunk_size", settings.chunk_size),
+        "chunk_overlap": ingest_kwargs.get("chunk_overlap", settings.chunk_overlap),
     }
 
     summary = {
@@ -620,7 +619,7 @@ def ingest(
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Natural language search query."),
-    top_k: int = typer.Option(TOP_K, "--top-k", "-k", help="Max results to return."),
+    top_k: int = typer.Option(settings.top_k, "--top-k", "-k", help="Max results to return."),
     threshold: float = typer.Option(
         0.0, "--threshold", "-t", help="Minimum similarity score."
     ),
@@ -753,7 +752,7 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
     from llama_index.core import Document
     from llama_index.core.node_parser import SentenceSplitter
 
-    from .config import CHUNK_OVERLAP, CHUNK_SIZE
+    from .config import settings
 
     if file:
         file_path = Path(file).expanduser().resolve()
@@ -773,14 +772,14 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
 
         nodes = asyncio.run(
             read_and_chunk_file_async(
-                file_path, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+                file_path, chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
             )
         )
         return [n.get_content() for n in nodes]
 
     # Split inline text into chunks using the same splitter.
     splitter = SentenceSplitter(
-        chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+        chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
     )
     doc = Document(text=text)
     nodes = splitter.get_nodes_from_documents([doc])
@@ -824,13 +823,7 @@ def benchmark(
     from llama_index.core import Settings as LISettings
     from llama_index.core.node_parser import SentenceSplitter
 
-    from .config import (
-        CHUNK_OVERLAP,
-        CHUNK_SIZE,
-        EMBED_BATCH_SIZE,
-        EMBED_CONCURRENCY,
-        EMBED_MODEL_NAME,
-    )
+    from .config import settings
 
     if not text and not file:
         console.print(
@@ -852,7 +845,7 @@ def benchmark(
         raise typer.Exit(code=1)
 
     embed_model = LISettings.embed_model
-    model_name = EMBED_MODEL_NAME
+    model_name = settings.embed_model
 
     # Warm up: single embedding to ensure the model is loaded.
     console.print(
@@ -888,8 +881,8 @@ def benchmark(
     result = {
         "model": model_name,
         "chunks": total_chunks,
-        "batch_size": EMBED_BATCH_SIZE,
-        "concurrency": EMBED_CONCURRENCY,
+        "batch_size": settings.embed_batch_size,
+        "concurrency": settings.embed_concurrency,
         "iterations": iterations,
         "avg_time_sec": round(avg_time, 4),
         "chunks_per_sec": round(throughput, 2),
@@ -906,8 +899,8 @@ def benchmark(
 
     table.add_row("Model", model_name)
     table.add_row("Chunks", str(total_chunks))
-    table.add_row("Batch Size", str(EMBED_BATCH_SIZE))
-    table.add_row("Concurrency", str(EMBED_CONCURRENCY))
+    table.add_row("Batch Size", str(settings.embed_batch_size))
+    table.add_row("Concurrency", str(settings.embed_concurrency))
     table.add_row("Iterations", str(iterations))
     table.add_row("Avg Time (s)", f"{avg_time:.4f}")
     table.add_row("Chunks/sec", f"{throughput:.2f}")

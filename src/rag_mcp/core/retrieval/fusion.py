@@ -6,14 +6,16 @@ the original ``retrieval.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
-from ...config import HYBRID_RRF_K
+from ...config import settings
 
 
 def reciprocal_rank_fusion(
     rankings: list[list[str]],
-    k: int = HYBRID_RRF_K,
+    k: int | None = None,
 ) -> dict[str, float]:
     """Fuse ranked doc-id lists with Reciprocal Rank Fusion."""
+    if k is None:
+        k = settings.hybrid_rrf_k
     fused: dict[str, float] = {}
     for ranking in rankings:
         for rank, doc_id in enumerate(ranking, start=1):
@@ -24,9 +26,11 @@ def reciprocal_rank_fusion(
 def rrf_with_metadata(
     dense_ranked: list[dict],
     sparse_ranked: list[dict],
-    k: int = HYBRID_RRF_K,
+    k: int | None = None,
 ) -> list[dict]:
     """Return sorted fused result dicts with score and rank diagnostics."""
+    if k is None:
+        k = settings.hybrid_rrf_k
     dense_ids = [str(row["id"]) for row in dense_ranked]
     sparse_ids = [str(row["id"]) for row in sparse_ranked]
     scores = reciprocal_rank_fusion([dense_ids, sparse_ids], k=k)

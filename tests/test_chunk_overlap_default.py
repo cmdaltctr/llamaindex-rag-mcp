@@ -1,4 +1,4 @@
-"""Tests for retrieval defaults recorded in config.py.
+"""Tests for retrieval defaults recorded in the config Settings model.
 
 Covers Section 3 of the rag-retrieval-quality-improvements OpenSpec change
 and ADR-018 balanced retrieval defaults:
@@ -10,85 +10,39 @@ and ADR-018 balanced retrieval defaults:
 
 from __future__ import annotations
 
-import os
-import re
-from pathlib import Path
-
-import pytest
+from rag_mcp.config import Settings
 
 
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "src" / "rag_mcp" / "config.py"
+def _model_default(field_name: str):
+    """Return the declared model default for *field_name* (not env-overridden).
 
-
-def _extract_default_chunk_overlap() -> int:
-    """Read the literal default for CHUNK_OVERLAP from the config source.
-
-    Reloading ``rag_mcp.config`` is unreliable because ``load_dotenv()``
-    re-reads the user's ``.env`` (which may pin the old value). Reading
-    the source guarantees we are checking the codebase's documented
-    default rather than the developer's local environment.
+    This reads the Pydantic field metadata, guaranteeing we are checking
+    the codebase's documented default rather than the developer's local
+    environment.
     """
-    src = _CONFIG_PATH.read_text(encoding="utf-8")
-    match = re.search(
-        r'CHUNK_OVERLAP\s*=\s*int\(os\.getenv\("CHUNK_OVERLAP",\s*"(\d+)"\)\)',
-        src,
-    )
-    if match is None:
-        raise AssertionError(
-            "Could not locate the CHUNK_OVERLAP default in config.py"
-        )
-    return int(match.group(1))
-
-
-def _extract_default_int_env(name: str) -> int:
-    """Read an integer os.getenv default from config.py source."""
-    src = _CONFIG_PATH.read_text(encoding="utf-8")
-    match = re.search(
-        rf'{name}\s*=\s*int\(os\.getenv\("{name}",\s*"(\d+)"\)\)',
-        src,
-    )
-    if match is None:
-        raise AssertionError(f"Could not locate the {name} default in config.py")
-    return int(match.group(1))
-
-
-def _extract_default_bool_env(name: str) -> str:
-    """Read a boolean os.getenv default from config.py source."""
-    src = _CONFIG_PATH.read_text(encoding="utf-8")
-    match = re.search(
-        rf'{name}\s*=\s*os\.getenv\("{name}",\s*"(true|false)"\)\.lower\(\)\s*==\s*"true"',
-        src,
-    )
-    if match is None:
-        raise AssertionError(f"Could not locate the {name} default in config.py")
-    return match.group(1)
+    return Settings.model_fields[field_name].default
 
 
 def test_default_chunk_overlap_is_100() -> None:
     """The codebase default for ``CHUNK_OVERLAP`` SHALL be 100."""
-    assert _extract_default_chunk_overlap() == 100
-
-
-def test_chunk_overlap_env_override_shape() -> None:
-    """The default SHALL be sourced through ``os.getenv`` so env vars win.
-
-    This is a contract test — if the assignment changes shape (e.g.
-    drops ``os.getenv``), the override behaviour silently regresses.
-    """
-    src = _CONFIG_PATH.read_text(encoding="utf-8")
-    assert "CHUNK_OVERLAP" in src
-    assert 'os.getenv("CHUNK_OVERLAP"' in src
+    assert _model_default("chunk_overlap") == 100
 
 
 def test_balanced_retrieval_defaults_are_configured() -> None:
     """ADR-018/019 retrieval defaults SHALL be the codebase defaults."""
-    assert _extract_default_chunk_overlap() == 100
-    assert _extract_default_int_env("TOP_K") == 10
-    assert _extract_default_bool_env("RERANK_ENABLED") == "false"
+    assert _model_default("chunk_overlap") == 100
+    assert _model_default("top_k") == 10
+    assert _model_default("rerank_enabled") is False
 
 
 def test_balanced_retrieval_defaults_are_env_overridable() -> None:
-    """TOP_K and RERANK_ENABLED SHALL remain environment-overridable."""
-    src = _CONFIG_PATH.read_text(encoding="utf-8")
-    assert 'os.getenv("TOP_K"' in src
-    assert 'os.getenv("RERANK_ENABLED"' in src
+    """TOP_K and RERANK_ENABLED SHALL remain environment-overridable.
+
+    The Settings model uses pydantic-settings which reads env vars by
+    field name (case-insensitive).  This test verifies the field names
+    map to the expected env var names.
+    """
+    # In pydantic-settings, env var name = field_name.upper()
+    assert "chunk_overlap" in Settings.model_fields
+    assert "top_k" in Settings.model_fields
+    assert "rerank_enabled" in Settings.model_fields

@@ -16,12 +16,12 @@ from pathlib import Path
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
-from ...config import (
-    CHUNK_OVERLAP,
-    CHUNK_SIZE,
-    MAGIKA_LABEL_TO_TREESITTER,
-    MARKDOWN_CHUNK_SIZE,
-)
+from ...config import settings, MAGIKA_LABEL_TO_TREESITTER
+
+# Kept as module-level alias so existing tests that monkeypatch
+# ``MARKDOWN_CHUNK_SIZE`` continue to work; value sourced from settings.
+MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size
+
 from ..chunking.code import chunk_code_file_async
 from ..chunking.config_file import chunk_config_file
 from ..chunking.markdown import (
@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 async def read_and_chunk_file_async(
     file_path: Path,
-    chunk_size: int = CHUNK_SIZE,
-    chunk_overlap: int = CHUNK_OVERLAP,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
     content_type: str | None = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
@@ -61,6 +61,11 @@ async def read_and_chunk_file_async(
     Raises:
         Exception: If the file cannot be read or parsed.
     """
+    if chunk_size is None:
+        chunk_size = settings.chunk_size
+    if chunk_overlap is None:
+        chunk_overlap = settings.chunk_overlap
+
     # Determine chunking strategy based on content_type (task 6.2, 6.6).
     # Content_type takes precedence over extension when available.
     if content_type:
@@ -87,8 +92,7 @@ async def read_and_chunk_file_async(
     # Documents: existing extension-based routing (task 6.2).
     # Azure Document Intelligence branch (task 7.8).
     if group in ("document", "") and group != "config":
-        from ...config import DOCUMENT_BACKEND
-        if DOCUMENT_BACKEND == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
+        if settings.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
             try:
                 from ...azure_reader import read_with_azure_fallback
                 documents = await read_with_azure_fallback(file_path)

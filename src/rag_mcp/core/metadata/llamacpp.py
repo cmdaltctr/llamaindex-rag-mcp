@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import LLAMACPP_CHAT_MODEL, LLAMACPP_CHAT_URL
+from ...config import settings
 from ._common import logger
 from .ollama import (
     _build_ollama_prompt,
@@ -49,14 +49,14 @@ async def _extract_llamacpp_chat_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": LLAMACPP_CHAT_MODEL,
+        "model": settings.llamacpp_chat_model,
         "messages": [
             {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
             {"role": "user", "content": prompt},
         ],
         "stream": False,
     }
-    url = f"{LLAMACPP_CHAT_URL}/chat/completions"
+    url = f"{settings.llamacpp_chat_url}/chat/completions"
 
     max_attempts = _get_ollama_max_attempts()
     timeout_s = _get_ollama_timeout()

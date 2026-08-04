@@ -56,13 +56,13 @@ def _resolve_fetch_k(
     if fetch_k_override is not None:
         fetch_k = fetch_k_override
     elif rerank:
-        # Re-read env-derived values from config at call time so tests
-        # that monkeypatch ``rag_mcp.config.RERANK_*`` are honoured.
-        from ... import config as _config
+        # Read from the resolved settings singleton at call time so
+        # tests that patch ``settings.rerank_*`` are honoured.
+        from ...config import settings
 
         fetch_k = max(
-            _config.RERANK_MAX_FETCH,
-            top_k * _config.RERANK_FETCH_MULTIPLIER,
+            settings.rerank_max_fetch,
+            top_k * settings.rerank_fetch_multiplier,
         )
     else:
         fetch_k = top_k
@@ -211,8 +211,9 @@ def _resolve_rerank_policy(
         Tuple of ``(effective_rerank, reason)`` where ``effective_rerank``
         is the resolved boolean and ``reason`` is a diagnostic string.
     """
-    # Re-read config at call time so tests that monkeypatch are honoured.
-    from ... import config as _config
+    # Read from the resolved settings singleton at call time so tests
+    # that patch ``settings.rerank_*`` are honoured.
+    from ...config import settings
 
     # Explicit override: True forces reranking.
     if rerank is True:
@@ -224,18 +225,18 @@ def _resolve_rerank_policy(
 
     # Omitted/None: apply policy.
     # Step 1: Check global default.
-    if _config.RERANK_ENABLED:
+    if settings.rerank_enabled:
         return (True, "global default RERANK_ENABLED=true")
 
     # Step 2: Global is off. Check semantic policy.
-    if not _config.RERANK_ENABLED_FOR_SEMANTIC:
+    if not settings.rerank_enabled_for_semantic:
         return (False, "disabled by default (RERANK_ENABLED_FOR_SEMANTIC=false)")
 
     # Step 3: Semantic policy is enabled. Classify the query.
     if technical_fraction is None:
         technical_fraction = _classify_query_technical(query)
 
-    threshold = _config.HARD_TECHNICAL_THRESHOLD
+    threshold = settings.hard_technical_threshold
     if technical_fraction >= threshold:
         return (
             False,
