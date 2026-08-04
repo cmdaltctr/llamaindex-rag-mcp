@@ -50,7 +50,11 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("MARKDOWN_MIN_CHUNK_FRACTION", "markdown_min_chunk_fraction", 0.0),
     # Retrieval.
     ("TOP_K", "top_k", 10),
-    ("RERANK_ENABLED", "rerank_enabled", False),
+    # RERANK_ENABLED: the documents profile (default RAG_PROFILE) sets this
+    # to true, restoring ADR-018's balanced intent (M1 behaviour change,
+    # Phase 4). The field default is False (post-Experiment 10), but the
+    # profile source sits above field defaults in the precedence chain.
+    ("RERANK_ENABLED", "rerank_enabled", True),
     ("RERANK_ENABLED_FOR_SEMANTIC", "rerank_enabled_for_semantic", True),
     ("HARD_TECHNICAL_THRESHOLD", "hard_technical_threshold", 0.3),
     ("SIMILARITY_THRESHOLD", "similarity_threshold", 0.0),

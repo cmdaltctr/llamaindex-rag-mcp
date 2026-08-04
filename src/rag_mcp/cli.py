@@ -563,9 +563,17 @@ def ingest(
 
     from .core.ingestion._state import shutdown_requested as _shutdown_requested
     from .core.ingestion import ingest_path_async
+    from .core.profiles import ProfileResolver
+
+    # Phase 4: resolve the collection's profile for per-operation levers.
+    try:
+        effective = ProfileResolver().resolve(collection)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1)
 
     # Build kwargs for overrides
-    ingest_kwargs: dict = {"collection_name": collection}
+    ingest_kwargs: dict = {"collection_name": collection, "effective_settings": effective}
     if chunk_size is not None:
         ingest_kwargs["chunk_size"] = chunk_size
     if chunk_overlap is not None:
@@ -644,7 +652,15 @@ def search(
     ),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
+    from .core.profiles import ProfileResolver
     from .core.retrieval import search as do_search
+
+    # Phase 4: resolve the collection's profile for per-operation levers.
+    try:
+        effective = ProfileResolver().resolve(collection)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1)
 
     try:
         output_guard = (
@@ -661,6 +677,7 @@ def search(
                 rerank=rerank,
                 hybrid=hybrid,
                 collection_name=collection,
+                effective_settings=effective,
             )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
@@ -1221,6 +1238,101 @@ def delete(
         result = _delete_by_collection(coll_name, dry_run, yes, preview_delete, remove_collection)
 
     _print_delete_result(result, coll_name, json_output, dry_run)
+
+
+# ── Profile subcommand (Phase 4) ─────────────────────────────────────────
+
+
+@app.command(name="set-profile")
+def set_profile_cmd(
+    collection: str = typer.Option(
+        ...,
+        "--collection",
+        "-c",
+        help="Name of the ChromaDB collection.",
+    ),
+    profile: str = typer.Option(
+        ...,
+        "--profile",
+        "-p",
+        help="Target profile: 'documents' or 'codebase'.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip the confirmation prompt.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help=_JSON_HELP,
+    ),
+) -> None:
+    """Change the profile bound to a collection (non-destructive).
+
+    Profiles control retrieval behaviour: 'documents' (quality-first,
+    reranker on, dense-only) or 'codebase' (speed-first, reranker off,
+    hybrid).  The change is non-destructive — existing chunks are NOT
+    re-chunked or re-embedded.  Query-time levers apply immediately;
+    ingest-time levers apply to future ingests only.
+    """
+    if profile not in ("documents", "codebase"):
+        console.print(
+            f"[red]Error:[/red] Invalid profile {profile!r}. "
+            f"Available: documents, codebase."
+        )
+        raise typer.Exit(code=1)
+
+    from .core.profiles import apply_profile_change, generate_safety_contract
+
+    contract = generate_safety_contract(collection, profile)
+
+    if json_output:
+        if yes:
+            result = apply_profile_change(collection, profile)
+            typer.echo(json.dumps(result, indent=2))
+        else:
+            typer.echo(json.dumps(contract, indent=2))
+        return
+
+    # Print the safety contract.
+    console.print(
+        f"\n[bold]Profile change:[/bold] {collection} → {profile}"
+    )
+    console.print(
+        f"  Current chunks: [cyan]{contract['chunk_count']}[/cyan]"
+    )
+    if contract["old_profile"]:
+        console.print(
+            f"  Old profile: [yellow]{contract['old_profile']}[/yellow]"
+        )
+    else:
+        console.print("  Old profile: [dim](none — inherits server default)[/dim]")
+
+    console.print("\n[bold]Lever impacts:[/bold]")
+    for impact in contract["lever_impacts"]:
+        timing_colour = "green" if impact["timing"] == "query-time" else "yellow"
+        console.print(
+            f"  [{timing_colour}]{impact['timing']}[/{timing_colour}] "
+            f"{impact['lever']}: {impact['change']}"
+        )
+
+    console.print(
+        f"\n[dim]{contract['reingest_pointer']}[/dim]\n"
+    )
+
+    if not yes:
+        response = typer.confirm("Continue?", default=False)
+        if not response:
+            console.print("[yellow]Aborted.[/yellow]")
+            raise typer.Exit(code=1)
+
+    result = apply_profile_change(collection, profile)
+    console.print(
+        f"[green]✓[/green] Profile changed: {collection} → {profile} "
+        f"({result['chunk_count_unchanged']} chunks unchanged)"
+    )
 
 
 def run_cli() -> None:

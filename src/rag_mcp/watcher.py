@@ -299,10 +299,21 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
     def _dispatch_ingest(self, file_path: str, current_hash: str) -> None:
         """Run ingestion via asyncio.run from the watcher thread."""
         from .core.ingestion import ingest_path_async
+        from .core.profiles import ProfileResolver
+
+        # Phase 4: resolve the collection's profile for per-operation levers.
+        try:
+            effective = ProfileResolver().resolve(self._collection_name)
+        except ValueError:
+            effective = None
 
         try:
             result = asyncio.run(
-                ingest_path_async(file_path, collection_name=self._collection_name)
+                ingest_path_async(
+                    file_path,
+                    collection_name=self._collection_name,
+                    effective_settings=effective,
+                )
             )
 
             if result.get("status") == "error":

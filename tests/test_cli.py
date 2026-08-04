@@ -12,7 +12,7 @@ import signal
 import sys
 from io import StringIO
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -604,6 +604,7 @@ class TestSearchErrorHandling:
             rerank=False,
             collection_name="cli_coll",
             hybrid=False,
+            effective_settings=ANY,
         )
 
     def test_search_cli_defaults_follow_policy_resolver(self) -> None:
@@ -630,6 +631,7 @@ class TestSearchErrorHandling:
             rerank=None,
             collection_name="documents",
             hybrid=False,
+            effective_settings=ANY,
         )
 
     def test_search_cli_hybrid_flag_passes_true(self) -> None:

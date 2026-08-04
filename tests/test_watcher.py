@@ -10,7 +10,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import ANY, AsyncMock, MagicMock, patch, call
 
 import pytest
 
@@ -114,7 +114,7 @@ class TestOnCreatedIngestion:
         timer.fire()
 
         mock_ingest.assert_called_once_with(
-            "/tmp/test.pdf", collection_name="documents"
+            "/tmp/test.pdf", collection_name="documents", effective_settings=ANY
         )
 
     @patch("rag_mcp.watcher.threading.Timer", _FakeTimer)

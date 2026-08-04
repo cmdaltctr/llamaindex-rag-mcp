@@ -39,6 +39,8 @@ async def read_and_chunk_file_async(
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
     content_type: str | None = None,
+    fallback_strategy: str | None = None,
+    taxonomy_mode: str | None = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
@@ -48,12 +50,22 @@ async def read_and_chunk_file_async(
     use the existing ``SentenceSplitter`` / ``MarkdownNodeParser`` path.
     When ``content_type`` is None, falls back to extension-based routing.
 
+    The ``fallback_strategy`` parameter (Phase 4 profiles) applies only to
+    ambiguous file types — content-type dispatch always wins for known
+    types.  When the fallback is ``"code"`` and the file extension maps to
+    a tree-sitter language, the code strategy is used; otherwise the
+    document path applies.
+
     Args:
         file_path: Path to the document file.
         chunk_size: Maximum characters per chunk.
         chunk_overlap: Overlap between chunks.
         content_type: Magika content-type string (e.g., ``"code/python"``).
             When provided, takes precedence over file extension.
+        fallback_strategy: Profile-resolved strategy name for ambiguous
+            types (Phase 4).  ``"code"`` routes ambiguous files through
+            the code strategy; ``"markdown"`` (default) uses the document
+            path.
 
     Returns:
         List of LlamaIndex Node objects, each with metadata attached.
@@ -72,6 +84,17 @@ async def read_and_chunk_file_async(
         group, _, label = content_type.partition("/")
     else:
         group, label = "", ""
+
+    # Phase 4: when content_type is absent (ambiguous file) and the
+    # profile's fallback strategy is "code", attempt code chunking via
+    # extension mapping.  Content-type dispatch always wins for known types.
+    if not content_type and fallback_strategy == "code":
+        ext = file_path.suffix.lower().lstrip(".")
+        ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(ext)
+        if ts_lang:
+            return await chunk_code_file_async(
+                file_path, ts_lang, chunk_size, chunk_overlap, None,
+            )
 
     # Code files: use CodeSplitter with tree-sitter boundaries.
     if group == "code":
@@ -146,6 +169,14 @@ async def read_and_chunk_file_async(
             "No documents loaded from %s — skipping metadata extraction",
             file_path.name,
         )
+
+    # Phase 4: file_type taxonomy mode overrides the category with the
+    # Magika-detected file type label (e.g. "python", "yaml").  This is
+    # the codebase profile's taxonomy — files are classified by language
+    # rather than by semantic category.
+    if taxonomy_mode == "file_type" and content_type:
+        _label = content_type.partition("/")[2] or content_type
+        doc_metadata["category"] = _label
 
     # Markdown files use a heading-aware parser chained with the sentence
     # splitter so heading boundaries are preserved wherever the
