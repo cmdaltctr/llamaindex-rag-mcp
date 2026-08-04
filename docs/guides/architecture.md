@@ -129,7 +129,7 @@ The `get_codebase_map` MCP tool generates a compact, pre-computed map of a proje
 
 ### Data flow
 
-1. **Magika file-type detection** (`codebase_map.py`): Scans the project directory using the Magika CLI (with suffix-based fallback) to produce a file inventory with group/label classification.
+1. **Magika file-type detection** (`codebase_map.py`, via `integrations/magika.py`): Scans the project directory using the Magika CLI (with suffix-based fallback) to produce a file inventory with group/label classification.
 
 2. **Code graph** (`code_graph.py`): Extracts AST relationships (imports, classes, inheritance) via tree-sitter, builds a NetworkX DiGraph, and detects Louvain communities, hubs (high in-degree), and bridges (high betweenness).
 
@@ -139,7 +139,7 @@ The `get_codebase_map` MCP tool generates a compact, pre-computed map of a proje
 
 5. **Type-aware ingestion** (`ingestion.py`): Uses Magika content-type detection to dispatch chunking — `CodeSplitter` for code, whole-file for config, existing chain for documents. Binary files are skipped.
 
-6. **Azure Document Intelligence** (`azure_reader.py`, optional): When `DOCUMENT_BACKEND=azure`, PDF/DOCX files are parsed by Azure with structured table extraction and heading hierarchy. Falls back to local chain on any error.
+6. **Azure Document Intelligence** (`integrations/azure.py`, optional): When `DOCUMENT_BACKEND=azure`, PDF/DOCX files are parsed by Azure with structured table extraction and heading hierarchy. Falls back to local chain on any error.
 
 ### New modules
 
@@ -148,7 +148,7 @@ The `get_codebase_map` MCP tool generates a compact, pre-computed map of a proje
 | `codebase_map.py` | Magika detection, graph assembly, formatting, caching                   |
 | `code_graph.py`   | Tree-sitter AST extraction, code graph, communities, hubs               |
 | `doc_graph.py`    | Embedding similarity, metadata edges, document communities, cross-links |
-| `azure_reader.py` | Azure Document Intelligence reader with fallback                        |
+| `integrations/azure.py` | Azure Document Intelligence reader with fallback                        |
 
 ---
 

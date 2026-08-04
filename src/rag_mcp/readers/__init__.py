@@ -1,11 +1,21 @@
-"""Pluggable PDF reader factory and adapters.
+"""Deprecated shim — use ``rag_mcp.integrations.pdf`` instead.
 
-Public API: ``get_pdf_reader()`` returns a reader adapter based on
-``config.RESOLVED_PDF_READER``. See ADR-020 for the adoption rationale.
+This package re-exports the PDF reader factory from its new home under
+``integrations/pdf/``. It exists so existing ``from rag_mcp.readers
+import ...`` consumers keep working during the deprecation window
+(removal in v2.0.0).
 """
 
 from __future__ import annotations
 
-from .factory import get_pdf_reader
+import warnings
+
+warnings.warn(
+    "rag_mcp.readers is deprecated — import from rag_mcp.integrations.pdf instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+from ..integrations.pdf.factory import get_pdf_reader  # noqa: E402,F401
 
 __all__ = ["get_pdf_reader"]

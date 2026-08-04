@@ -17,12 +17,12 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from rag_mcp.cli import (
+from rag_mcp.transports.cli import (
     _sanitise_display_name,
     _print_ollama_error,
-    _make_plain_callback,
     app,
 )
+from rag_mcp.transports.cli.ingest import _make_plain_callback
 from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
 runner = CliRunner()
@@ -89,7 +89,7 @@ class TestPrintOllamaError:
 
     def test_console_output(self) -> None:
         """Console mode prints to Rich console with 'Ollama' in message."""
-        with patch("rag_mcp.cli.console.print") as mock_print:
+        with patch("rag_mcp.transports.cli.console.print") as mock_print:
             _print_ollama_error("Connection refused")
             mock_print.assert_called_once()
             call_arg = str(mock_print.call_args)
@@ -107,7 +107,7 @@ class TestPrintOllamaError:
 
     def test_includes_detail(self) -> None:
         """Detail string is included in the error message."""
-        with patch("rag_mcp.cli.console.print") as mock_print:
+        with patch("rag_mcp.transports.cli.console.print") as mock_print:
             _print_ollama_error("Connection refused")
             call_arg = str(mock_print.call_args)
             assert "Connection refused" in call_arg
@@ -119,7 +119,7 @@ class TestPrintOllamaError:
 class TestIngestCLI:
     """Tests for the ingest subcommand."""
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_single_txt_file(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -131,13 +131,13 @@ class TestIngestCLI:
         output = result.output or ""
         assert "Indexed" in output or "1 file(s)" in output or "✓" in output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_path_not_found(self, mock_signal: MagicMock) -> None:
         """Non-existent path exits 1 with an error message."""
         result = runner.invoke(app, ["ingest", "/nonexistent/path"])
         assert result.exit_code == 1
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_unsupported_extension(
         self, mock_signal: MagicMock, tmp_path: Path
     ) -> None:
@@ -147,7 +147,7 @@ class TestIngestCLI:
         result = runner.invoke(app, ["ingest", str(bad_file)])
         assert result.exit_code != 0
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_json_output(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -159,7 +159,7 @@ class TestIngestCLI:
         assert "files_indexed" in data
         assert "chunks_created" in data
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_json_output_on_error(self, mock_signal: MagicMock) -> None:
         """--json with non-existent path exits with error code."""
         result = runner.invoke(app, ["ingest", "/nonexistent", "--json"])
@@ -176,7 +176,7 @@ class TestIngestCLI:
         assert result.exit_code != 0
         assert "No such option" in result.output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_with_chunk_size(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -186,7 +186,7 @@ class TestIngestCLI:
         )
         assert result.exit_code == 0
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_with_chunk_overlap(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -196,7 +196,7 @@ class TestIngestCLI:
         )
         assert result.exit_code == 0
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_success_message(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -207,7 +207,7 @@ class TestIngestCLI:
         # Rich renders via console.print, check for key content
         assert "1 file(s)" in output or "Indexed" in output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_exit_code_success(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -215,7 +215,7 @@ class TestIngestCLI:
         result = runner.invoke(app, ["ingest", str(sample_txt)])
         assert result.exit_code == 0
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_exit_code_error(self, mock_signal: MagicMock) -> None:
         """Invalid path produces exit code 1."""
         result = runner.invoke(app, ["ingest", "/nonexistent"])
@@ -251,7 +251,7 @@ class TestSearchCLI:
         assert result.exit_code == 0
         assert result.output.strip() == "[]"
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_search_json_results(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -294,7 +294,7 @@ class TestSearchCLI:
         finally:
             CrossEncoderReranker._instance = None
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_search_rich_table_output(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -337,7 +337,7 @@ class TestListCLI:
         assert result.exit_code == 0
         assert result.output.strip() == "[]"
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_list_json_with_docs(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -352,7 +352,7 @@ class TestListCLI:
             assert "source" in doc
             assert "chunks" in doc
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_list_rich_table_output(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -363,7 +363,7 @@ class TestListCLI:
         assert "Source" in result.output
         assert "Chunks" in result.output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_list_shows_total(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -414,7 +414,7 @@ class TestProgressReporting:
                 "chunks_created": 3,
             }
 
-            from rag_mcp.cli import _run_ingest_with_rich_progress
+            from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
             _run_ingest_with_rich_progress("/fake", {})
 
@@ -424,7 +424,7 @@ class TestProgressReporting:
             assert "progress_callback" in call_kwargs.kwargs
             assert callable(call_kwargs.kwargs["progress_callback"])
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_json_suppresses_progress(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -443,7 +443,7 @@ class TestProgressReporting:
 class TestIngestErrorHandling:
     """Tests for error handling and interrupt paths in ingest."""
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
         with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
@@ -451,7 +451,7 @@ class TestIngestErrorHandling:
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_ollama(
         self, mock_signal: MagicMock
     ) -> None:
@@ -461,7 +461,7 @@ class TestIngestErrorHandling:
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_embed(
         self, mock_signal: MagicMock
     ) -> None:
@@ -471,7 +471,7 @@ class TestIngestErrorHandling:
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_other(
         self, mock_signal: MagicMock
     ) -> None:
@@ -481,7 +481,7 @@ class TestIngestErrorHandling:
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_message_plain(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -504,7 +504,7 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_message_json(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -528,7 +528,7 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_with_chunks(
         self, mock_signal: MagicMock, sample_txt: Path
     ) -> None:
@@ -549,7 +549,7 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error_json(
         self, mock_signal: MagicMock
     ) -> None:
@@ -692,9 +692,9 @@ class TestRunCli:
 
     def test_run_cli_delegates_to_app(self) -> None:
         """run_cli() delegates to the Typer app."""
-        from rag_mcp.cli import run_cli
+        from rag_mcp.transports.cli import run_cli
 
-        with patch("rag_mcp.cli.app") as mock_app:
+        with patch("rag_mcp.transports.cli.app") as mock_app:
             run_cli()
             mock_app.assert_called_once()
 
@@ -707,7 +707,7 @@ class TestRichProgressCallbackInternals:
 
     def test_rich_callback_read_phase(self) -> None:
         """Read phase creates and updates the read task."""
-        from rag_mcp.cli import _run_ingest_with_rich_progress
+        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
         captured_callbacks: list[tuple[str, int, int]] = []
 
@@ -731,7 +731,7 @@ class TestRichProgressCallbackInternals:
 
     def test_rich_callback_embed_start_phase(self) -> None:
         """embed_start phase completes read bar and creates embed bar."""
-        from rag_mcp.cli import _run_ingest_with_rich_progress
+        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -753,7 +753,7 @@ class TestRichProgressCallbackInternals:
         self,
     ) -> None:
         """embed_start forces read bar to 100% if not yet complete."""
-        from rag_mcp.cli import _run_ingest_with_rich_progress
+        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -773,7 +773,7 @@ class TestRichProgressCallbackInternals:
 
     def test_rich_callback_embed_phase_updates(self) -> None:
         """embed phase updates the embed task progress."""
-        from rag_mcp.cli import _run_ingest_with_rich_progress
+        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -795,8 +795,8 @@ class TestRichProgressCallbackInternals:
 class TestSigintHandler:
     """Directly test the _on_sigint handler registered during ingest."""
 
-    @patch("rag_mcp.cli.signal.signal")
-    @patch("rag_mcp.cli.console.print")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("rag_mcp.transports.cli.console.print")
     def test_first_sigint_sets_shutdown_flag(
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
@@ -842,8 +842,8 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-    @patch("rag_mcp.cli.signal.signal")
-    @patch("rag_mcp.cli.console.print")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("rag_mcp.transports.cli.console.print")
     def test_second_sigint_raises_keyboard_interrupt(
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
@@ -886,13 +886,13 @@ class TestSigintHandler:
 class TestConsoleIsTerminal:
     """Test the TTY path (console.is_terminal == True)."""
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_tty_path_uses_rich_progress(
         self, mock_signal: MagicMock
     ) -> None:
         """When console.is_terminal is True, Rich progress is used."""
         with (
-            patch("rag_mcp.cli.console") as mock_console,
+            patch("rag_mcp.transports.cli.ingest.console") as mock_console,
             patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
         ):
             mock_console.is_terminal = True
@@ -1095,7 +1095,7 @@ class TestReportGeneration:
 class TestIntegrationWithPdfs:
     """Integration tests using real PDF fixtures."""
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_5_pdfs_report_json(
         self, mock_signal: MagicMock, pdf_dir: Path, tmp_path: Path
     ) -> None:
@@ -1128,7 +1128,7 @@ class TestIntegrationWithPdfs:
         )
         assert report["summary"]["indexed"] == 5
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_5_pdfs_report_markdown(
         self, mock_signal: MagicMock, pdf_dir: Path, tmp_path: Path
     ) -> None:
@@ -1348,7 +1348,7 @@ class TestDeleteCLI:
         assert result.exit_code != 0
         assert "mutually exclusive" in result.output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_path_removes_chunks(
         self, mock_signal, sample_txt,
     ) -> None:
@@ -1364,7 +1364,7 @@ class TestDeleteCLI:
         assert result.exit_code == 0
         assert "Removed" in result.output or "chunk" in result.output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_path_json(
         self, mock_signal, sample_txt,
     ) -> None:
@@ -1381,7 +1381,7 @@ class TestDeleteCLI:
         docs = list_documents()
         assert docs == []  # chunks were removed
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_dry_run(
         self, mock_signal, sample_txt,
     ) -> None:
@@ -1393,7 +1393,7 @@ class TestDeleteCLI:
         assert result.exit_code == 0
         assert "Dry run" in result.output or "would_delete" in result.output
 
-    @patch("rag_mcp.cli.signal.signal")
+    @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_dry_run_json(
         self, mock_signal, sample_txt,
     ) -> None:
@@ -1547,7 +1547,7 @@ class TestWatchCLI:
 
     def test_watch_delegates_to_watcher(self) -> None:
         """watch command delegates to watcher.watch_directory and exits 0."""
-        with patch("rag_mcp.watcher.watch_directory") as mock_watch:
+        with patch("rag_mcp.daemon.watcher.watch_directory") as mock_watch:
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
         assert result.exit_code == 0
         mock_watch.assert_called_once()
@@ -1559,7 +1559,7 @@ class TestWatchCLI:
     def test_watch_system_exit_propagates(self) -> None:
         """SystemExit from watcher propagates as typer.Exit with matching code."""
         with patch(
-            "rag_mcp.watcher.watch_directory",
+            "rag_mcp.daemon.watcher.watch_directory",
             side_effect=SystemExit(1),
         ):
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])

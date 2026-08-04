@@ -24,7 +24,7 @@ class TestPyPDFium2Reader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from rag_mcp.readers.pypdfium_reader import PyPDFium2Reader
+        from rag_mcp.integrations.pdf.pypdfium import PyPDFium2Reader
 
         reader = PyPDFium2Reader()
         documents = reader.load_data(file=CORPUS_PDF)

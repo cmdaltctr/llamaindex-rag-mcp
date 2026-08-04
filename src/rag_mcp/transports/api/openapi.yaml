@@ -1,0 +1,563 @@
+openapi: 3.1.0
+info:
+  title: RAG MCP REST API
+  description: >
+    REST transport contract for the LlamaIndex RAG MCP server.
+
+    Maps HTTP endpoints to the same core operations that the MCP and CLI
+    transports call. This is a contract-first document — no runtime HTTP
+    code exists yet. The REST implementation is a separate follow-up
+    OpenSpec change.
+
+    ## Error Envelope
+
+    All error responses use the same shape as the MCP error dict:
+    ```json
+    {"status": "error", "message": "..."}
+    ```
+
+    ## Long-Running Operations
+
+    Ingestion and codebase-map generation are asynchronous (202 Accepted
+    with a job resource). Poll via `GET /v1/jobs/{jobId}`.
+  version: 1.0.0
+  license:
+    name: Apache-2.0
+
+servers:
+  - url: https://{host}/v1
+    variables:
+      host:
+        default: localhost:8000
+        description: API host (localhost for local-first deployment)
+
+security:
+  - bearerAuth: []
+
+
+paths:
+  # ── Ingest ───────────────────────────────────────────────────────────
+  /ingestions:
+    post:
+      operationId: ingestPath
+      summary: Index documents into the RAG store
+      description: >
+        Accepts a file path or directory path and indexes supported
+        document formats (PDF, DOCX, Markdown, code, etc.) into the
+        specified ChromaDB collection. This is a long-running operation —
+        returns 202 Accepted with a job resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '202':
+          description: Ingestion job accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Search ───────────────────────────────────────────────────────────
+  /collections/{collection}/search:
+    post:
+      operationId: searchCollection
+      summary: Semantic search over indexed documents
+      description: >
+        Returns the most relevant text chunks with source paths and
+        relevance scores. Optionally re-scores with a cross-encoder
+        reranker, fuses with sparse BM25 retrieval, or filters by metadata.
+      parameters:
+        - $ref: '#/components/parameters/CollectionName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+
+  # ── List documents ───────────────────────────────────────────────────
+  /collections/{collection}/documents:
+    get:
+      operationId: listDocuments
+      summary: List indexed documents in a collection
+      description: >
+        Returns all documents currently indexed in the specified
+        collection, with their source paths and chunk counts.
+      parameters:
+        - $ref: '#/components/parameters/CollectionName'
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      operationId: deleteDocuments
+      summary: Delete documents from a collection
+      description: >
+        Removes chunks by source file path, metadata filter, or drops
+        the entire collection. Use dry_run=true to preview without
+        modifying data.
+      parameters:
+        - $ref: '#/components/parameters/CollectionName'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRequest'
+      responses:
+        '200':
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── List collections ─────────────────────────────────────────────────
+  /collections:
+    get:
+      operationId: listCollections
+      summary: List all ChromaDB collections
+      description: Returns all collections with document and chunk counts.
+      responses:
+        '200':
+          description: Collection list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollectionInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+
+  # ── Codebase map ─────────────────────────────────────────────────────
+  /codebase-maps:
+    post:
+      operationId: generateCodebaseMap
+      summary: Generate a compact codebase map
+      description: >
+        Scans a project directory for file types, builds code and document
+        graphs, detects communities and hubs, and returns a formatted text
+        map. This is a long-running operation — returns 202 Accepted with
+        a job resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodebaseMapRequest'
+      responses:
+        '202':
+          description: Codebase map job accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Change collection profile ────────────────────────────────────────
+  /collections/{collection}/profile:
+    patch:
+      operationId: changeCollectionProfile
+      summary: Change the profile bound to a collection
+      description: >
+        Profiles control retrieval behaviour: 'documents' (quality-first,
+        reranker on, dense-only) or 'codebase' (speed-first, reranker off,
+        hybrid). The change is non-destructive — existing chunks are NOT
+        re-chunked or re-embedded.
+
+        A request without `confirm: true` returns a preview response with
+        impact details and `confirm_required: true`. A request with
+        `confirm: true` applies the change.
+      parameters:
+        - $ref: '#/components/parameters/CollectionName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileChangeRequest'
+      responses:
+        '200':
+          description: >
+            Preview response (when confirm=false) or applied change
+            confirmation (when confirm=true).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProfilePreview'
+                  - $ref: '#/components/schemas/ProfileChangeResult'
+        '400':
+          description: Invalid profile name or bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Job polling ──────────────────────────────────────────────────────
+  /jobs/{jobId}:
+    get:
+      operationId: getJobStatus
+      summary: Poll the status of an asynchronous job
+      description: >
+        Returns the current status of a long-running job (ingestion or
+        codebase-map generation). Terminal states: `completed`, `failed`.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Bearer token authentication (API key or JWT). The specific token
+        type is resolved when the REST transport is implemented.
+
+  parameters:
+    CollectionName:
+      name: collection
+      in: path
+      required: true
+      schema:
+        type: string
+        default: documents
+      description: ChromaDB collection name
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Error envelope (matches MCP error-dict shape) ──────────────────
+    Error:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        error_type:
+          type: string
+          enum: [validation, retrieval, internal]
+          description: Optional error category (used by search errors)
+
+    # ── Ingest ─────────────────────────────────────────────────────────
+    IngestRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: File or directory path to ingest
+        collection:
+          type: string
+          default: documents
+          description: Target ChromaDB collection
+
+    # ── Search ─────────────────────────────────────────────────────────
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Natural language search query
+        top_k:
+          type: integer
+          minimum: 1
+          description: Maximum results to return (default from profile/config)
+        similarity_threshold:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Minimum relevance score (default 0.0 — no filtering)
+        rerank:
+          type: boolean
+          nullable: true
+          description: >
+            Tri-state: true (force on), false (force off), null (policy default)
+        hybrid:
+          type: boolean
+          nullable: true
+          description: >
+            Fuse dense + sparse (BM25 + RRF). Null = profile default.
+        metadata_filter:
+          type: object
+          nullable: true
+          description: ChromaDB-compatible `where` clause for metadata filtering
+          additionalProperties: true
+
+    SearchResult:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+        source:
+          type: string
+        page_label:
+          type: string
+          nullable: true
+        text:
+          type: string
+        reranked:
+          type: boolean
+
+    # ── Document info ──────────────────────────────────────────────────
+    DocumentInfo:
+      type: object
+      properties:
+        source:
+          type: string
+        chunks:
+          type: integer
+
+    # ── Collection info ────────────────────────────────────────────────
+    CollectionInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        document_count:
+          type: integer
+        chunk_count:
+          type: integer
+
+    # ── Delete ─────────────────────────────────────────────────────────
+    DeleteRequest:
+      type: object
+      properties:
+        path:
+          type: string
+          nullable: true
+          description: Source file path to delete chunks for
+        metadata_filter:
+          type: object
+          nullable: true
+          description: ChromaDB `where` clause for metadata-based deletion
+          additionalProperties: true
+        dry_run:
+          type: boolean
+          default: false
+          description: Preview without modifying data
+
+    DeleteResult:
+      type: object
+      properties:
+        status:
+          type: string
+        mode:
+          type: string
+          enum: [path, metadata, collection]
+        collection:
+          type: string
+        chunks_removed:
+          type: integer
+        would_delete:
+          type: integer
+          description: Present only in dry-run mode
+
+    # ── Codebase map ───────────────────────────────────────────────────
+    CodebaseMapRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: Project directory path
+        refresh:
+          type: boolean
+          default: false
+          description: Force rebuild regardless of cache
+
+    # ── Profile change ─────────────────────────────────────────────────
+    ProfileChangeRequest:
+      type: object
+      required:
+        - profile
+      properties:
+        profile:
+          type: string
+          enum: [documents, codebase]
+          description: Target operational profile
+        confirm:
+          type: boolean
+          default: false
+          description: >
+            When false, returns a preview. When true, applies the change.
+
+    ProfilePreview:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [preview]
+        contract:
+          type: object
+          properties:
+            collection:
+              type: string
+            target_profile:
+              type: string
+            old_profile:
+              type: string
+              nullable: true
+            chunk_count:
+              type: integer
+            lever_impacts:
+              type: array
+              items:
+                type: object
+                properties:
+                  lever:
+                    type: string
+                  change:
+                    type: string
+                  timing:
+                    type: string
+                    enum: [query-time, ingest-time]
+            reingest_pointer:
+              type: string
+        confirm_required:
+          type: boolean
+          enum: [true]
+
+    ProfileChangeResult:
+      type: object
+      properties:
+        status:
+          type: string
+        collection:
+          type: string
+        profile:
+          type: string
+        chunk_count_unchanged:
+          type: integer
+
+    # ── Job resource (long-running operations) ─────────────────────────
+    Job:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+          description: Current job state
+        result:
+          type: object
+          nullable: true
+          description: Result payload (present when status is completed)
+        error:
+          type: string
+          nullable: true
+          description: Error message (present when status is failed)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

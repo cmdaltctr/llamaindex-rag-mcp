@@ -7,7 +7,7 @@ falls back gracefully.
 
 from __future__ import annotations
 
-from rag_mcp.readers.factory import get_pdf_reader
+from rag_mcp.integrations.pdf.factory import get_pdf_reader
 
 
 def test_factory_returns_pypdf_by_default(monkeypatch):
@@ -15,42 +15,42 @@ def test_factory_returns_pypdf_by_default(monkeypatch):
     from rag_mcp import config as _config
     monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "pypdf")
     # Also patch the factory's import target
-    import rag_mcp.readers.factory as factory_mod
+    import rag_mcp.integrations.pdf.factory as factory_mod
     monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
 
     reader = get_pdf_reader()
-    from rag_mcp.readers.pypdf_reader import PyPDFReader
+    from rag_mcp.integrations.pdf.pypdf import PyPDFReader
     assert isinstance(reader, PyPDFReader)
 
 
 def test_factory_returns_liteparse_when_configured(monkeypatch):
     """With RESOLVED_PDF_READER=liteparse, factory returns LiteParseReader."""
-    import rag_mcp.readers.factory as factory_mod
+    import rag_mcp.integrations.pdf.factory as factory_mod
     monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
     # Patch config BEFORE calling get_pdf_reader
     from rag_mcp import config as _config
     monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "liteparse")
 
     reader = get_pdf_reader()
-    from rag_mcp.readers.liteparse_reader import LiteParseReader
+    from rag_mcp.integrations.pdf.liteparse import LiteParseReader
     assert isinstance(reader, LiteParseReader)
 
 
 def test_factory_returns_pypdfium2_when_configured(monkeypatch):
     """With RESOLVED_PDF_READER=pypdfium2, factory returns PyPDFium2Reader."""
-    import rag_mcp.readers.factory as factory_mod
+    import rag_mcp.integrations.pdf.factory as factory_mod
     monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
     from rag_mcp import config as _config
     monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "pypdfium2")
 
     reader = get_pdf_reader()
-    from rag_mcp.readers.pypdfium_reader import PyPDFium2Reader
+    from rag_mcp.integrations.pdf.pypdfium import PyPDFium2Reader
     assert isinstance(reader, PyPDFium2Reader)
 
 
 def test_factory_raises_on_unknown_value(monkeypatch):
     """Unknown RESOLVED_PDF_READER raises ValueError."""
-    import rag_mcp.readers.factory as factory_mod
+    import rag_mcp.integrations.pdf.factory as factory_mod
     monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
     from rag_mcp import config as _config
     monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "fastparser")

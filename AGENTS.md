@@ -36,25 +36,25 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
-1. **`config.py` is the single source of truth** for `Settings.embed_model` and all constants. Never set it elsewhere.
-2. **No cross-imports** between `ingestion.py` and `retrieval.py` — they share only `config.py`.
-3. **`server.py` and `cli.py` are thin wrappers** — all logic lives in `ingestion.py`, `retrieval.py`, `reranker.py`, `metadata_extractor.py`, `codebase_map.py`, `code_graph.py`, `doc_graph.py`, `azure_reader.py`.
+1. **`config.py` is the single source of truth** for `Settings.embed_model` and all constants. Never set it elsewhere. `compose.py` is the composition root — the only place objects are constructed.
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only `config.py`. (The top-level `ingestion.py` and `retrieval.py` are deprecated shims.)
+3. **Transports are thin wrappers** — `transports/mcp.py` (MCP server), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `TOP_K=10`, `CHUNK_OVERLAP=100`. Read from `config.py`, never hardcode. **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
-6. **Codebase map modules share only `config.py`** — `codebase_map.py`, `code_graph.py`, `doc_graph.py` have no cross-imports with `ingestion.py` or `retrieval.py`.
-7. **Azure SDK import is lazy** (ADR-024) — `azure_reader.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
+6. **Codebase map modules share only `config.py`** — `codebase_map.py`, `code_graph.py`, `doc_graph.py` have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py`.
+7. **Azure SDK import is lazy** (ADR-024) — `integrations/azure.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
 
 ## Critical Gotchas (silent breakage if violated)
 
-1. **Never raise from MCP tool handlers.** Return `{"status": "error", "message": "..."}`.
+1. **Never raise from MCP tool handlers.** Return `{"status": "error", "message": "..."}`. Every handler in `transports/mcp.py` wraps its body in try/except — keep this uniform when adding new tools.
 2. **The reranker is a DI plain class with a process-wide model cache** (ADR-031, Phase 2). Tests MUST call `reset_model_cache()` in setup/teardown — it replaced the old `CrossEncoderReranker._instance = None` hook.
 3. **The ÷30 threshold scaling is empirically calibrated.** Don't change without re-running `experiments/1-reranker-threshold-calibration-2026-05-12/`.
 4. **The reranker no longer imports `dotenv` independently** — settings are injected via the composition root (Phase 2, ADR-031). The old circular-import workaround (gotcha #4 pre-Phase-2) is gone; don't reintroduce it.
-5. **CLI output goes to stderr.** stdout is the MCP protocol channel.
-6. **PDF reader is a factory** (ADR-020). Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
+5. **CLI output goes to stderr.** stdout is the MCP protocol channel. The `transports/cli/` package uses `Console(stderr=True)`.
+6. **PDF reader is a factory** (ADR-020, amended Phase 5). Located at `integrations/pdf/factory.py`. Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
 7. **MCP tool annotations are mandatory.** Use `ToolAnnotations` (`readOnlyHint`, `destructiveHint`) on every tool.
-8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (implemented in `ingestion.py`; no dedicated ADR — ADR-022 is "Code Graph via Tree-Sitter AST", not content-type dispatch).
+8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (implemented in `core/ingestion/chunker.py`; no dedicated ADR — ADR-022 is "Code Graph via Tree-Sitter AST", not content-type dispatch).
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
 

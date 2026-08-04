@@ -117,7 +117,7 @@ async def read_and_chunk_file_async(
     if group in ("document", "") and group != "config":
         if settings.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
             try:
-                from ...azure_reader import read_with_azure_fallback
+                from ...integrations.azure import read_with_azure_fallback
                 documents = await read_with_azure_fallback(file_path)
                 # Add content_type metadata to Azure documents.
                 if content_type:
@@ -143,7 +143,7 @@ async def read_and_chunk_file_async(
                 )
 
     def _read_sync() -> list:
-        from ...readers import get_pdf_reader
+        from ...integrations.pdf import get_pdf_reader
 
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],

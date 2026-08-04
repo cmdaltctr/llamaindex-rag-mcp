@@ -173,7 +173,7 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def mcp_server():
-    """Return the real FastMCP server instance from rag_mcp.server.
+    """Return the real FastMCP server instance from rag_mcp.transports.mcp.
 
     The ChromaDB and embedding patches are applied via autouse fixtures
     above, so the server uses in-memory ChromaDB and mock embeddings.
@@ -181,7 +181,7 @@ def mcp_server():
     Re-applies MockEmbedding after import because ``config.py``
     sets ``Settings.embed_model = OllamaEmbedding(...)`` at import time.
     """
-    from rag_mcp.server import mcp
+    from rag_mcp.transports.mcp import mcp
 
     # Importing server.py triggers config.py which sets
     # Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.

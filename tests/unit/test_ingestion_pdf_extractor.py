@@ -50,7 +50,7 @@ class TestIngestionLiteParsePath:
         # Ensure liteparse is the resolved reader
         from rag_mcp import config as _config
         monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "liteparse")
-        import rag_mcp.readers.factory as factory_mod
+        import rag_mcp.integrations.pdf.factory as factory_mod
         monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
 
         import asyncio

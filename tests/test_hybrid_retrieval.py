@@ -136,7 +136,7 @@ def test_search_signature_exposes_hybrid_opt_in() -> None:
 
 def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
     """The MCP tool must expose the same opt-in ``hybrid`` parameter."""
-    from rag_mcp.server import search_documents
+    from rag_mcp.transports.mcp import search_documents
 
     param = inspect.signature(search_documents).parameters.get("hybrid")
 
@@ -147,7 +147,7 @@ def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
 
 async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
     """MCP calls must forward ``hybrid`` unchanged to retrieval.search."""
-    import rag_mcp.server as server
+    import rag_mcp.transports.mcp as server
 
     mock_search = MagicMock(return_value=[])
     monkeypatch.setattr(server, "search", mock_search)

@@ -87,7 +87,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     mcp_server,
 ) -> None:
     """MCP search handler is async and returns the same list-of-dicts shape."""
-    import rag_mcp.server as server
+    import rag_mcp.transports.mcp as server
 
     expected = [{
         "score": 0.9,
@@ -99,7 +99,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
     assert inspect.iscoroutinefunction(server.search_documents)
 
-    with patch("rag_mcp.server.search", return_value=expected) as mock_search:
+    with patch("rag_mcp.transports.mcp.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -139,7 +139,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         "reranked": False,
     }]
 
-    with patch("rag_mcp.server.search", return_value=expected) as mock_search:
+    with patch("rag_mcp.transports.mcp.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -550,8 +550,8 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 
 def test_main_calls_mcp_run() -> None:
     """main() must configure logging and call mcp.run(transport='stdio')."""
-    with patch("rag_mcp.server.mcp.run") as mock_run:
-        from rag_mcp.server import main
+    with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+        from rag_mcp.transports.mcp import main
 
         main()
 
@@ -574,7 +574,7 @@ async def test_search_documents_metadata_filter_passed_through(
     }]
 
     with patch(
-        "rag_mcp.server.search", return_value=expected,
+        "rag_mcp.transports.mcp.search", return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
@@ -640,7 +640,7 @@ async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
     expected: list[dict] = []
 
     with patch(
-        "rag_mcp.server.search", return_value=expected,
+        "rag_mcp.transports.mcp.search", return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
@@ -663,7 +663,7 @@ async def test_search_documents_validation_error_envelope(
     def _raise_value_error(*args, **kwargs):
         raise ValueError("Invalid where clause: unsupported operator $bogus")
 
-    with patch("rag_mcp.server.search", side_effect=_raise_value_error):
+    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_value_error):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -689,7 +689,7 @@ async def test_search_documents_retrieval_error_envelope(
     # Forge an exception class whose ``__module__`` lives under chromadb,
     # without importing chromadb.errors directly (which moves between
     # versions).  This matches the production-side discriminator in
-    # rag_mcp.server.search_documents.
+    # rag_mcp.transports.mcp.search_documents.
     fake_chroma = type(
         "ChromaError",
         (RuntimeError,),
@@ -699,7 +699,7 @@ async def test_search_documents_retrieval_error_envelope(
     def _raise_chroma(*args, **kwargs):
         raise fake_chroma("collection 'x' is corrupt")
 
-    with patch("rag_mcp.server.search", side_effect=_raise_chroma):
+    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_chroma):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents", {"query": "anything"},
@@ -721,7 +721,7 @@ async def test_search_documents_internal_error_envelope(
     def _raise_unexpected(*args, **kwargs):
         raise KeyError("missing config key 'foo'")
 
-    with patch("rag_mcp.server.search", side_effect=_raise_unexpected):
+    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_unexpected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents", {"query": "anything"},
@@ -756,7 +756,7 @@ async def test_search_documents_success_has_no_status_key(
         },
     ]
 
-    with patch("rag_mcp.server.search", return_value=expected):
+    with patch("rag_mcp.transports.mcp.search", return_value=expected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents", {"query": "anything"},
