@@ -381,6 +381,7 @@ class TestNonDestructiveProfileChanges:
     def test_apply_profile_change_updates_metadata_only(self) -> None:
         """Applying a profile change updates only collection metadata."""
         store = _make_mock_store(chunk_counts={"coll": 42})
+        store.collection_exists.return_value = True
         result = apply_profile_change("coll", "codebase", store=store)
         assert result["status"] == "ok"
         assert result["profile"] == "codebase"
@@ -388,6 +389,13 @@ class TestNonDestructiveProfileChanges:
         store.update_collection_metadata.assert_called_once_with(
             "coll", {"profile": "codebase"}
         )
+
+    def test_apply_profile_change_rejects_nonexistent_collection(self) -> None:
+        """Applying a profile change to a nonexistent collection is rejected."""
+        store = _make_mock_store()
+        store.collection_exists.return_value = False
+        with pytest.raises(ValueError, match="does not exist"):
+            apply_profile_change("nonexistent", "codebase", store=store)
 
     def test_apply_profile_change_rejects_hybrid(self) -> None:
         """Applying 'hybrid' as a profile is rejected."""

@@ -63,8 +63,8 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store."""
     try:
         effective = _profile_resolver.resolve(collection)
-    except ValueError:
-        effective = None
+    except ValueError as exc:
+        return {"status": "error", "message": str(exc)}
     return await ingest_path_async(
         path, collection_name=collection, effective_settings=effective
     )
@@ -128,8 +128,12 @@ async def search_documents(
         # Phase 4: resolve the collection's profile for per-operation levers.
         try:
             effective = _profile_resolver.resolve(collection)
-        except ValueError:
-            effective = None
+        except ValueError as exc:
+            return [{
+                "status": "error",
+                "error_type": "validation",
+                "message": str(exc),
+            }]
 
         if top_k is None and effective is not None:
             top_k = effective.top_k
@@ -370,7 +374,10 @@ def change_collection_profile(
         }
 
     if not confirm:
-        contract = generate_safety_contract(collection, profile)
+        try:
+            contract = generate_safety_contract(collection, profile)
+        except Exception as exc:
+            return {"status": "error", "message": str(exc)}
         return {
             "status": "preview",
             "contract": contract,
@@ -379,7 +386,7 @@ def change_collection_profile(
 
     try:
         return apply_profile_change(collection, profile)
-    except ValueError as exc:
+    except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
 

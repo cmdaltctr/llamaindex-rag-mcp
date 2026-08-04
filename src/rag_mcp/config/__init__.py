@@ -124,6 +124,11 @@ def _load_profile_bundle(profile_name: str) -> dict[str, Any]:
             data = yaml.safe_load(fh)
     except (FileNotFoundError, ModuleNotFoundError):
         return {}
+    except yaml.YAMLError as exc:
+        logger.error(
+            "Profile bundle %r has invalid YAML: %s — ignoring", profile_name, exc
+        )
+        return {}
 
     if not isinstance(data, dict):
         return {}

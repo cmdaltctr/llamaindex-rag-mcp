@@ -205,6 +205,14 @@ def apply_profile_change(
             f"'codebase' are operational profiles."
         )
 
+    # Verify the collection exists before updating — do not silently create
+    # an empty collection from a typo'd name.
+    if not resolved_store.collection_exists(collection_name):
+        raise ValueError(
+            f"Collection {collection_name!r} does not exist. "
+            f"Create it first by ingesting documents into it."
+        )
+
     resolved_store.update_collection_metadata(
         collection_name, {"profile": new_profile}
     )

@@ -13,8 +13,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from typing import Any
-
 from ...config import settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore

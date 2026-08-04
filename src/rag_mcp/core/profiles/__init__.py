@@ -10,7 +10,7 @@ Public API:
     * :class:`EffectiveSettings` — the per-operation Tier 2 lever bundle.
     * :class:`ProfileResolver` — maps ``collection_name → EffectiveSettings``.
 
-See ``docs/adr/030-phase-4-refactor-profiles-dual-use-case.md`` for the
+See ``docs/adr/035-phase-4-refactor-profiles-dual-use-case.md`` for the
 full design rationale (two-tier resolution, non-destructive changes,
 transport-specific safety contract).
 """
