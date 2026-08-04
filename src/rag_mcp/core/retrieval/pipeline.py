@@ -13,6 +13,8 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from typing import Any
+
 from ...config import settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
@@ -158,12 +160,15 @@ def search(
     fetch_k: int | None = None,
     reranker: CrossEncoderReranker | None = None,
     store: VectorStore | None = None,
+    effective_settings: Any = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
     Args:
         query: Free-text search query.
-        top_k: Maximum number of chunks to return (default from env or 5).
+        top_k: Maximum number of chunks to return.  When ``None``, the
+            resolved default applies: the profile's ``top_k`` when
+            ``effective_settings`` is provided, else ``settings.top_k``.
         similarity_threshold: Minimum score to include a result
             (0.0 = no filtering, default from env).  When ``rerank``
             is True the threshold is scaled down by 30× because
@@ -173,12 +178,13 @@ def search(
             - ``True``: force reranking (explicit opt-in)
             - ``False``: force no reranking (explicit opt-out)
             - ``None``: apply policy resolver (default)
-            The policy resolver checks ``RERANK_ENABLED``, then
-            ``RERANK_ENABLED_FOR_SEMANTIC`` and ``HARD_TECHNICAL_THRESHOLD``
-            to decide whether to enable reranking based on query type.
+            When ``effective_settings`` is provided, the profile's
+            ``reranker_enabled`` takes precedence over the global default.
+            Explicit ``rerank`` flags always bypass both.
         hybrid: If True, fuse dense vector results with sparse BM25/native
             sparse rankings via Reciprocal Rank Fusion before reranking.
-            When ``None``, the resolved ``settings.hybrid_enabled`` applies.
+            When ``None``, the profile's ``hybrid_enabled`` applies if
+            ``effective_settings`` is provided, else ``settings.hybrid_enabled``.
         collection_name: Name of the collection to search
             (default ``"documents"`` for backward compatibility).
         metadata_filter: Optional store ``where`` clause to filter
@@ -206,6 +212,11 @@ def search(
             created.
         store: Optional injected :class:`VectorStore` (defaults to the
             process-wide store constructed by ``compose``).
+        effective_settings: Optional :class:`EffectiveSettings` resolved
+            by :class:`ProfileResolver` for this collection (Phase 4).
+            When provided, its Tier 2 levers (``top_k``, ``reranker_enabled``,
+            ``hybrid_enabled``) supply the defaults for omitted parameters,
+            taking precedence over the global ``settings`` singleton.
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
@@ -224,9 +235,21 @@ def search(
             store-side failures propagate as their original exception
             types so the MCP layer can classify them.
     """
+    # Phase 4: profile-resolved levers take precedence over global defaults.
+    profile_reranker = None
+    if effective_settings is not None:
+        if top_k is None:
+            top_k = effective_settings.top_k
+        if hybrid is None:
+            hybrid = effective_settings.hybrid_enabled
+        profile_reranker = effective_settings.reranker_enabled
+
     # Resolve effective rerank behaviour from policy.
     effective_rerank, rerank_reason = _resolve_rerank_policy(
-        rerank, query, technical_fraction=technical_fraction,
+        rerank,
+        query,
+        technical_fraction=technical_fraction,
+        profile_reranker_enabled=profile_reranker,
     )
 
     if top_k is None:

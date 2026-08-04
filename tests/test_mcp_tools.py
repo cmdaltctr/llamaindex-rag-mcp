@@ -24,7 +24,7 @@ from mcp.types import TextContent
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
 
-async def test_list_tools_discovers_all_six(mcp_server) -> None:
+async def test_list_tools_discovers_all_seven(mcp_server) -> None:
     """The server must expose all expected tools."""
     async with connected_client(mcp_server) as client:
         result = await client.list_tools()
@@ -36,6 +36,7 @@ async def test_list_tools_discovers_all_six(mcp_server) -> None:
             "list_collections",
             "delete_documents",
             "get_codebase_map",
+            "change_collection_profile",
         }
 
 
@@ -122,6 +123,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         collection_name="mcp_shape_coll",
         metadata_filter=None,
         reranker=ANY,
+        effective_settings=ANY,
     )
 
 
@@ -155,6 +157,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         collection_name="documents",
         metadata_filter=None,
         reranker=ANY,
+        effective_settings=ANY,
     )
 
 
