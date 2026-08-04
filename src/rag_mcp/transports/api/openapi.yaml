@@ -296,7 +296,6 @@ components:
       required: true
       schema:
         type: string
-        default: documents
       description: ChromaDB collection name
 
   responses:
@@ -370,18 +369,21 @@ components:
           maximum: 1.0
           description: Minimum relevance score (default 0.0 — no filtering)
         rerank:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
           description: >
             Tri-state: true (force on), false (force off), null (policy default)
         hybrid:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - "null"
           description: >
             Fuse dense + sparse (BM25 + RRF). Null = profile default.
         metadata_filter:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
           description: ChromaDB-compatible `where` clause for metadata filtering
           additionalProperties: true
 
@@ -394,8 +396,9 @@ components:
         source:
           type: string
         page_label:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         text:
           type: string
         reranked:
@@ -426,12 +429,14 @@ components:
       type: object
       properties:
         path:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
           description: Source file path to delete chunks for
         metadata_filter:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
           description: ChromaDB `where` clause for metadata-based deletion
           additionalProperties: true
         dry_run:
@@ -499,8 +504,9 @@ components:
             target_profile:
               type: string
             old_profile:
-              type: string
-              nullable: true
+              type:
+                - string
+                - "null"
             chunk_count:
               type: integer
             lever_impacts:
@@ -548,12 +554,14 @@ components:
           enum: [queued, running, completed, failed]
           description: Current job state
         result:
-          type: object
-          nullable: true
+          type:
+            - object
+            - "null"
           description: Result payload (present when status is completed)
         error:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
           description: Error message (present when status is failed)
         created_at:
           type: string

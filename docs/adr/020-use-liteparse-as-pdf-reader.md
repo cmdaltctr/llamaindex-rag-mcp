@@ -3,7 +3,7 @@
 **Date:** 2026-06-23
 **Status:** Accepted
 **Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
-**Amended:** 2026-08-04 — Phase 5 relocated the reader factory from `src/rag_mcp/readers/` to `src/rag_mcp/integrations/pdf/`. Factory dispatch behaviour and the `auto` fallback are unchanged. The old `readers/` path resolves via a deprecated re-export shim (removal in v2.0.0). See ADR-031 (Transport Separation).
+**Amended:** 2026-08-04 — Phase 5 relocated the reader factory from `src/rag_mcp/readers/` to `src/rag_mcp/integrations/pdf/`. Factory dispatch behaviour and the `auto` fallback are unchanged. The old `readers/` path resolves via a deprecated re-export shim (removal in v2.0.0). See ADR-036 (Transport Separation).
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context

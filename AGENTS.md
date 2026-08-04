@@ -132,11 +132,13 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 
 ## Coverage Thresholds
 
-| Tier          | Floor    | Modules                                                                        |
-| ------------- | -------- | ------------------------------------------------------------------------------ |
-| Core + MCP    | ≥95%     | `ingestion`, `retrieval`, `reranker`, `metadata_extractor`, `config`, `server` |
-| Orchestration | ≥85%     | `watcher`, `cli`                                                               |
-| **Overall**   | **≥90%** | all                                                                            |
+| Tier          | Floor    | Modules                                                                              |
+| ------------- | -------- | ------------------------------------------------------------------------------------ |
+| Core + MCP    | ≥95%     | `core/ingestion`, `core/retrieval`, `core/retrieval/reranker`, `core/metadata`, `config`, `transports/mcp` |
+| Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                   |
+| **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                  |
+
+> **Deprecated compat shims** (`server.py`, `cli.py`, `watcher.py`, `azure_reader.py`, `readers/`, `ingestion.py`, `retrieval.py`, `reranker.py`, `sparse_retriever.py`, `metadata_extractor.py`) are excluded from the coverage gate via `[tool.coverage.run] omit` in `pyproject.toml`. They are re-export pass-throughs with no test consumers, scheduled for removal in v2.0.0.
 
 ## Detailed Documentation
 

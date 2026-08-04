@@ -32,6 +32,47 @@ Early on, both the ingestion module and the retrieval module each set up the emb
 
 ---
 
+## Project layout (after the refactor)
+
+The five-phase refactor reorganised the codebase into a three-layer architecture: typed configuration (`config.py` + YAML), a composition root (`compose.py`), and dependency injection everywhere else. See [ADR-031](../adr/031-three-layer-config-compose-di.md) for the three-layer decision and [ADR-036](../adr/036-phase-5-refactor-transport-separation.md) for transport separation.
+
+```
+src/rag_mcp/
+├── config.py              Typed settings resolver (validates YAML + .env)
+├── compose.py             Composition root — the only place objects are built
+├── config/                Versioned declarative policy (no secrets)
+│   ├── defaults.yaml
+│   └── profiles/          documents.yaml · codebase.yaml · hybrid.yaml
+├── core/                  Shared business logic (transport-agnostic)
+│   ├── ingestion/         loader · chunker · writer · pipeline
+│   ├── chunking/          Strategy folder: code · markdown · sentence · config_file + registry
+│   ├── retrieval/         dense · sparse · fusion · reranker · policy · pipeline
+│   ├── metadata/          extractor · keyword · ollama · taxonomy + registry
+│   ├── vectordb/          VectorStore ABC (base.py) + ChromaDB impl (chroma.py)
+│   ├── profiles/          ProfileResolver — per-collection profile resolution
+│   └── providers/         embeddings/ · llm/ + registries (extracted from config.py)
+├── codebase_map.py        Codebase map assembly + caching (Use Case B)
+├── code_graph.py          Tree-sitter AST code graph
+├── doc_graph.py           Embedding-similarity document graph (Use Case A)
+├── integrations/          External-tool wrappers
+│   ├── pdf/               PDF reader factory + backends (pypdf · pypdfium · liteparse)
+│   ├── azure.py           Azure Document Intelligence (lazy SDK import — ADR-024)
+│   └── magika.py          Magika file-type detection
+├── daemon/                Long-running background processes
+│   └── watcher.py         File watcher (debouncing · hashing · ingestion trigger)
+├── transports/            Thin delivery layers (no business logic)
+│   ├── mcp.py             MCP server over stdio
+│   ├── cli/               CLI split by command group (ingest · search · list · watch · delete · benchmark · profile)
+│   └── api/               OpenAPI 3.1 contract only — no runtime HTTP code yet
+└── (deprecated shims)     server.py · cli.py · watcher.py · azure_reader.py · readers/
+                           ingestion.py · retrieval.py · reranker.py · sparse_retriever.py
+                           metadata_extractor.py — re-exports with DeprecationWarning, removal v2.0.0
+```
+
+**Key boundaries:** `core/` never imports from `transports/`. Transports validate input, delegate to `core/`, and format output. The composition root (`compose.py`) is the only place provider objects are constructed. Deprecated shims preserve old import paths during the v2.0.0 deprecation window.
+
+---
+
 ## The search pipeline
 
 ### Why qwen3-embedding:0.6b? ([ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md))

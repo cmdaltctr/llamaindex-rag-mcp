@@ -80,7 +80,7 @@ markers = [
 ]
 
 # ─── Import-linter contracts (Phase 2: config/compose/DI layering) ─────
-# Enforces the three-layer architecture from ADR-028:
+# Enforces the three-layer architecture from ADR-031:
 #   config.py (typed resolver) / compose.py (composition root) / DI elsewhere.
 # See openspec/changes/phase-2-refactor-config-core-split/design.md (D5).
 [tool.importlinter]
@@ -136,6 +136,22 @@ forbidden_modules = [
 
 [tool.coverage.run]
 source = ["rag_mcp"]
+# Deprecated compatibility shims carry no test consumers by design (each is
+# a <30-line re-export). Excluding them from the gate stops the overall
+# figure from being dragged down by 0%-coverage pass-through files and
+# keeps the documented ≥90% floor meaningful. Removal scheduled for v2.0.0.
+omit = [
+    "src/rag_mcp/server.py",
+    "src/rag_mcp/cli.py",
+    "src/rag_mcp/watcher.py",
+    "src/rag_mcp/azure_reader.py",
+    "src/rag_mcp/readers/*",
+    "src/rag_mcp/ingestion.py",
+    "src/rag_mcp/retrieval.py",
+    "src/rag_mcp/reranker.py",
+    "src/rag_mcp/sparse_retriever.py",
+    "src/rag_mcp/metadata_extractor.py",
+]
 
 [dependency-groups]
 dev = [

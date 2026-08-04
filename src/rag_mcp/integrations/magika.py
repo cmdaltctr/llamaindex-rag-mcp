@@ -1,12 +1,16 @@
 """Magika file-type detection — wraps the Magika CLI binary.
 
-Extracted from ``codebase_map.py`` in Phase 5. Provides:
+Extracted from ``codebase_map.py`` in Phase 5. Owns the detection data
+primitives (``FileEntry``, ``_EXCLUDED_DIRS``) so that ``codebase_map.py``
+imports them from here rather than the reverse. Provides:
+- ``FileEntry`` — dataclass for a single detected file
+- ``_EXCLUDED_DIRS`` — directory names skipped during scanning
 - ``_is_magika_available()`` — check if the Magika CLI is on $PATH
 - ``scan_with_magika(path)`` — scan a directory and return typed file entries
 
-The functions are re-imported by ``codebase_map.py`` so existing
-``rag_mcp.codebase_map._is_magika_available`` references (including test
-patches) keep resolving.
+``codebase_map.py`` re-exports ``_is_magika_available`` and ``scan_with_magika``
+as thin wrappers so existing ``rag_mcp.codebase_map.*`` references (including
+test patches) keep resolving.
 """
 
 from __future__ import annotations
@@ -15,11 +19,39 @@ import json
 import logging
 import shutil
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# ── Detection data primitives (owned here, re-exported by codebase_map) ──
+# Directories excluded from both Magika and suffix scanning.
+_EXCLUDED_DIRS: set[str] = {
+    ".git", "node_modules", "__pycache__", ".venv", ".pytest_cache",
+    "dist", "build", ".opencode",
+}
+
+
+@dataclass
+class FileEntry:
+    """A single file detected by Magika or suffix fallback.
+
+    Attributes:
+        path: Relative path from the project root.
+        group: Magika group (e.g., "code", "document", "config", "binary").
+        label: Magika label (e.g., "typescript", "markdown", "yaml").
+        is_text: Whether the file is text (vs binary).
+        suffix: File extension including the dot (e.g., ".py").
+    """
+
+    path: str
+    group: str
+    label: str
+    is_text: bool
+    suffix: str
 
 
 def _is_magika_available() -> bool:
@@ -43,14 +75,9 @@ def scan_with_magika(path: str) -> list:
         FileNotFoundError: If the Magika binary is not on $PATH.
         subprocess.CalledProcessError: If the Magika process fails.
     """
-    # Late binding: look up _is_magika_available, FileEntry, and
-    # _EXCLUDED_DIRS from codebase_map so test patches on that module
-    # propagate correctly.
-    from ..codebase_map import FileEntry, _EXCLUDED_DIRS
-
-    # Use the module-level _is_magika_available from integrations.magika
-    # by default, but allow codebase_map's re-imported reference to be
-    # patched by tests.
+    # FileEntry and _EXCLUDED_DIRS are module-level (defined above).
+    # _is_magika_available is read through codebase_map's re-export so
+    # test patches on rag_mcp.codebase_map._is_magika_available propagate.
     import rag_mcp.codebase_map as _cbm
 
     if not _cbm._is_magika_available():

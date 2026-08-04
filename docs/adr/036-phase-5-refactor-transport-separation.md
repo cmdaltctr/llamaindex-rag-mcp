@@ -117,5 +117,4 @@ All shims emit `DeprecationWarning`. Removal scheduled for v2.0.0.
 - OpenSpec change: `openspec/changes/phase-5-refactor-transports-reorganisation/`
 - ADR-020: LiteParse PDF Reader (amended for `integrations/pdf/` location)
 - ADR-024: Dual Deployment (lazy Azure SDK import preserved)
-- ADR-028: Three-Layer Architecture (Config, Core, DI)
-- ADR-031: Three-Layer Config/Compose/DI (Phase 2)
+- ADR-031: Three-Layer Architecture (Config, Core, DI; Phase 2)

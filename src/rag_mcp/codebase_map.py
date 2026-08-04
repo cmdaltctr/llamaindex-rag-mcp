@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import settings
+from .integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -85,30 +86,10 @@ _BINARY_SUFFIXES: set[str] = {
     ".pyc", ".pyo", ".class", ".jar",
 }
 
-# Directories excluded from both Magika and suffix scanning.
-_EXCLUDED_DIRS: set[str] = {
-    ".git", "node_modules", "__pycache__", ".venv", ".pytest_cache",
-    "dist", "build", ".opencode",
-}
-
-
-@dataclass
-class FileEntry:
-    """A single file detected by Magika or suffix fallback.
-
-    Attributes:
-        path: Relative path from the project root.
-        group: Magika group (e.g., "code", "document", "config", "binary").
-        label: Magika label (e.g., "typescript", "markdown", "yaml").
-        is_text: Whether the file is text (vs binary).
-        suffix: File extension including the dot (e.g., ".py").
-    """
-
-    path: str
-    group: str
-    label: str
-    is_text: bool
-    suffix: str
+# FileEntry and _EXCLUDED_DIRS are detection primitives owned by
+# integrations.magika (extracted in Phase 5). They are imported at the
+# top of this module and re-exported here so existing
+# ``from rag_mcp.codebase_map import FileEntry`` consumers keep working.
 
 
 @dataclass
