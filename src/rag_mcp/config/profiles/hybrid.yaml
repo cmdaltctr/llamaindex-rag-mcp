@@ -1,0 +1,16 @@
+# Profile: Hybrid Mode Selector (NOT an operational profile)
+#
+# When RAG_PROFILE=hybrid, the server allows per-collection profiles.
+# This bundle does NOT carry concrete retrieval settings (top_k, reranker,
+# hybrid flag) — it declares only a default_profile that untagged
+# collections resolve to.
+#
+# A collection tagged metadata={"profile": "hybrid"} is REJECTED because
+# hybrid is a mode selector, not an operational profile with retrieval
+# levers.  Tag collections with "documents" or "codebase" instead.
+#
+# NEVER put API keys, tokens, or secrets in this file.
+
+# The profile untagged collections resolve to under RAG_PROFILE=hybrid.
+# Valid values: "documents" or "codebase".
+default_profile: documents
