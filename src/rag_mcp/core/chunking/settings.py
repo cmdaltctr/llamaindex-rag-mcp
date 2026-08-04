@@ -58,3 +58,10 @@ class ChunkingSettings(BaseModel):
 
     # Embedding batch size (documents per API call).
     embed_batch_size: int = 100
+
+    # Fallback chunking strategy for ambiguous file types (Phase 4 profiles).
+    # Known file types always use content-type dispatch (code → CodeSplitter,
+    # config → whole-file, etc.).  This value is the strategy name used when
+    # Magika cannot classify the file confidently.  Documents profile uses
+    # "markdown"; codebase profile uses "code".
+    chunk_strategy_fallback: str = "markdown"
