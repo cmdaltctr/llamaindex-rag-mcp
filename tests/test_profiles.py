@@ -602,3 +602,174 @@ class TestCLIWatcherWiring:
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
         assert "ProfileResolver" in source
         assert "effective_settings" in source
+
+
+# ── Coverage: contract.py exception and edge paths ───────────────────
+
+
+class TestContractCoverage:
+    """Tests for uncovered exception and edge paths in contract.py."""
+
+    def test_safety_contract_when_count_raises(self) -> None:
+        """generate_safety_contract handles store.count() raising."""
+        store = MagicMock()
+        store.count.side_effect = RuntimeError("store down")
+        store.get_collection_metadata.return_value = None
+        store.list_collections.return_value = []
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        contract = generate_safety_contract(
+            "coll", "codebase", store=store, resolver=resolver
+        )
+        assert contract["chunk_count"] == 0
+
+    def test_safety_contract_when_metadata_raises(self) -> None:
+        """generate_safety_contract handles get_collection_metadata raising."""
+        store = MagicMock()
+        store.count.return_value = 10
+        store.get_collection_metadata.side_effect = RuntimeError("store down")
+        store.list_collections.return_value = []
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        contract = generate_safety_contract(
+            "coll", "codebase", store=store, resolver=resolver
+        )
+        assert contract["old_profile"] is None
+
+    def test_safety_contract_with_old_profile_load_failure(self) -> None:
+        """generate_safety_contract handles old profile load failure."""
+        store = MagicMock()
+        store.count.return_value = 5
+        store.get_collection_metadata.return_value = {"profile": "documents"}
+        store.list_collections.return_value = ["coll"]
+        store.collection_exists.return_value = True
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        # Force _load_effective to fail for the old profile.
+        with patch.object(
+            resolver, "_load_effective", side_effect=[RuntimeError("fail"), None]
+        ):
+            contract = generate_safety_contract(
+                "coll", "codebase", store=store, resolver=resolver
+            )
+        # old_effective is None, but contract still generates.
+        assert contract["old_profile"] == "documents"
+
+    def test_safety_contract_with_new_profile_load_failure(self) -> None:
+        """generate_safety_contract handles new profile load failure."""
+        store = MagicMock()
+        store.count.return_value = 5
+        store.get_collection_metadata.return_value = None
+        store.list_collections.return_value = []
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        with patch.object(
+            resolver, "_load_effective", side_effect=RuntimeError("fail")
+        ):
+            contract = generate_safety_contract(
+                "coll", "codebase", store=store, resolver=resolver
+            )
+        # new_effective is None → lever_impacts is empty.
+        assert contract["lever_impacts"] == []
+
+    def test_lever_impact_unchanged_value(self) -> None:
+        """_lever_impact marks unchanged values correctly."""
+        from rag_mcp.core.profiles.contract import _lever_impact
+
+        impact = _lever_impact("top_k", 10, 10, "query-time")
+        assert "unchanged" in impact["change"]
+
+    def test_apply_profile_change_count_failure(self) -> None:
+        """apply_profile_change handles count() raising after update."""
+        store = MagicMock()
+        store.collection_exists.return_value = True
+        store.count.side_effect = RuntimeError("store down")
+        result = apply_profile_change("coll", "codebase", store=store)
+        assert result["status"] == "ok"
+        assert result["chunk_count_unchanged"] == 0
+
+
+# ── Coverage: resolver.py edge paths ──────────────────────────────────
+
+
+class TestResolverCoverage:
+    """Tests for uncovered edge paths in resolver.py."""
+
+    def test_parse_profile_bool_with_native_bool(self) -> None:
+        """_parse_profile_bool returns native bools directly."""
+        from rag_mcp.core.profiles.resolver import _parse_profile_bool
+
+        assert _parse_profile_bool(True) is True
+        assert _parse_profile_bool(False) is False
+
+    def test_parse_profile_bool_with_non_str_non_bool(self) -> None:
+        """_parse_profile_bool coerces other types via bool()."""
+        from rag_mcp.core.profiles.resolver import _parse_profile_bool
+
+        assert _parse_profile_bool(1) is True
+        assert _parse_profile_bool(0) is False
+
+    def test_resolve_profile_name_method(self) -> None:
+        """resolve_profile_name returns the name without loading the bundle."""
+        store = _make_mock_store(
+            collection_meta={"docs": {"profile": "documents"}}
+        )
+        resolver = ProfileResolver(store=store, server_profile="codebase")
+        name = resolver.resolve_profile_name("docs")
+        assert name == "documents"
+
+    def test_resolve_profile_name_hybrid_fallback(self) -> None:
+        """resolve_profile_name resolves hybrid to default_profile."""
+        store = _make_mock_store(collection_meta={"coll": None})
+        resolver = ProfileResolver(store=store, server_profile="hybrid")
+        name = resolver.resolve_profile_name("coll")
+        assert name == "documents"
+
+    def test_read_collection_tag_handles_store_exception(self) -> None:
+        """_read_collection_tag returns None when store raises."""
+        store = MagicMock()
+        store.get_collection_metadata.side_effect = RuntimeError("down")
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        tag = resolver._read_collection_tag(store, "coll")
+        assert tag is None
+
+    def test_read_collection_tag_non_dict_metadata(self) -> None:
+        """_read_collection_tag returns None for non-dict metadata."""
+        store = MagicMock()
+        store.get_collection_metadata.return_value = "not a dict"
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        tag = resolver._read_collection_tag(store, "coll")
+        assert tag is None
+
+    def test_read_collection_tag_empty_string_tag(self) -> None:
+        """_read_collection_tag returns None for empty string tag."""
+        store = MagicMock()
+        store.get_collection_metadata.return_value = {"profile": ""}
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        tag = resolver._read_collection_tag(store, "coll")
+        assert tag is None
+
+    def test_load_effective_with_missing_bundle(self) -> None:
+        """_load_effective falls back to defaults when bundle is missing."""
+        store = _make_mock_store()
+        resolver = ProfileResolver(store=store, server_profile="documents")
+        with patch(
+            "rag_mcp.core.profiles.resolver._load_profile_bundle",
+            return_value={},
+        ):
+            effective = resolver._load_effective("documents")
+        assert effective.profile_name == "documents"
+        assert effective.top_k == 10  # field default
+
+    def test_resolve_hybrid_default_exception_fallback(self) -> None:
+        """_resolve_hybrid_default falls back to 'documents' on error."""
+        store = _make_mock_store()
+        resolver = ProfileResolver(store=store, server_profile="hybrid")
+        # Patch importlib.resources.files to raise inside _resolve_hybrid_default
+        with patch("importlib.resources.files", side_effect=FileNotFoundError("gone")):
+            result = resolver._resolve_hybrid_default()
+        assert result == "documents"
+
+    def test_get_server_profile_from_settings(self) -> None:
+        """_get_server_profile reads from settings when not injected."""
+        store = _make_mock_store(collection_meta={"coll": None})
+        # Don't pass server_profile — should read from settings.
+        resolver = ProfileResolver(store=store)
+        profile = resolver._get_server_profile()
+        assert profile in ("documents", "codebase", "hybrid")
