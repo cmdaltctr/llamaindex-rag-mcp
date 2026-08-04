@@ -24,7 +24,7 @@ Phase 4's ``ProfileResolver`` stores profile tags
 (``metadata={"profile": "codebase"}``) on collections and reads them
 back through this interface.
 
-See ``docs/adr/034-vector-store-abstraction-interface.md`` for the full
+See ``docs/adr/034-phase-3-refactor-vectordb-abstraction.md`` for the full
 design rationale and the rejected minimal-interface alternative.
 """
 

@@ -40,7 +40,7 @@ development of the LlamaIndex RAG MCP Server.
 | [031](./031-three-layer-config-compose-di.md)               | Three-Layer Architecture — Config, Compose, DI                             | 2026-08-04 | Accepted |
 | [032](./032-phase-1-refactor-modular-extraction.md) | Phase 1 Refactor — Modular Core Extraction | 2026-08-03 | Accepted |
 | [033](./033-phase-2-refactor-di-refinement.md) | Phase 2 Refactor — DI Refinement (Inject Constructed Objects, Resolve Settings at Call Time) | 2026-08-04 | Accepted |
-| [034](./034-vector-store-abstraction-interface.md) | Vector Store Abstraction Interface                                     | 2026-08-04 | Accepted |
+| [034](./034-phase-3-refactor-vectordb-abstraction.md) | Phase 3 Refactor — Vector Store Abstraction Interface                     | 2026-08-04 | Accepted |
 
 ## Convention
 

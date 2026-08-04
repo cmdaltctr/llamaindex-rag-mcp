@@ -12,7 +12,7 @@ The one principle that shapes every decision here: **everything runs on your mac
 
 Reading a PDF, a Word document, a PowerPoint, and a CSV file all require completely different parsing logic. LlamaIndex handles all of that out of the box. Rather than building our own document readers for seven file formats, we use LlamaIndex's `SimpleDirectoryReader` and focus on the parts that are specific to this project. The trade-off is a large dependency tree, but the alternative — writing our own parsers — would have taken weeks and been worse.
 
-### Why ChromaDB? ([ADR-003](../adr/003-use-chromadb-as-vector-store.md), [ADR-034](../adr/034-vector-store-abstraction-interface.md))
+### Why ChromaDB? ([ADR-003](../adr/003-use-chromadb-as-vector-store.md), [ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md))
 
 When you search for documents, the server compares your query against thousands of stored text chunks using vector similarity. Those vectors need to be stored somewhere. ChromaDB stores them in a folder on your disk — no server process, no configuration, no network. It just works. The main limitation is that it locks the vector dimension when you first create a collection, so switching embedding models requires deleting the store and re-indexing. That's a known trade-off, documented in the [Ingestion Guide](../guides/ingestion.md).
 

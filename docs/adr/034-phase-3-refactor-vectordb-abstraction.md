@@ -1,4 +1,4 @@
-# ADR-034: Vector Store Abstraction Interface
+# ADR-034: Phase 3 Refactor — Vector Store Abstraction Interface
 
 **Date:** 2026-08-04
 **Status:** Accepted
@@ -154,8 +154,8 @@ would implement `write_nodes` differently.
 
 ## References
 
-- Design doc: [`openspec/changes/phase-3-refactor-vectordb-abstraction/design.md`](../../openspec/changes/phase-3-refactor-vectordb-abstraction/design.md) (decisions D1–D4)
-- Proposal: [`openspec/changes/phase-3-refactor-vectordb-abstraction/proposal.md`](../../openspec/changes/phase-3-refactor-vectordb-abstraction/proposal.md)
+- Design doc: [`openspec/changes/archive/2026-08-04-phase-3-refactor-vectordb-abstraction/design.md`](../../openspec/changes/archive/2026-08-04-phase-3-refactor-vectordb-abstraction/design.md) (decisions D1–D4)
+- Proposal: [`openspec/changes/archive/2026-08-04-phase-3-refactor-vectordb-abstraction/proposal.md`](../../openspec/changes/archive/2026-08-04-phase-3-refactor-vectordb-abstraction/proposal.md)
 - Refactor proposal: [`docs/brainstorm/refactor-proposal/PROPOSAL.md`](../brainstorm/refactor-proposal/PROPOSAL.md) (§5.2 vectordb, §8)
 - [ADR-003](./003-use-chromadb-as-vector-store.md) — Use ChromaDB as Vector Store (unchanged: ChromaDB stays the default)
 - [ADR-031](./031-three-layer-config-compose-di.md) — Three-Layer Architecture (the composition root constructs the store)
