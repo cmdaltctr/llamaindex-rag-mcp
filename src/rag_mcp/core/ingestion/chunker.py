@@ -22,14 +22,7 @@ from ...config import settings, MAGIKA_LABEL_TO_TREESITTER
 # ``MARKDOWN_CHUNK_SIZE`` continue to work; value sourced from settings.
 MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size
 
-from ..chunking.code import chunk_code_file_async
-from ..chunking.config_file import chunk_config_file
-from ..chunking.markdown import (
-    apply_heading_prepend,
-    drop_small_markdown_chunks,
-    ensure_heading_metadata,
-)
-from ..chunking.sentence import _split_documents_sync
+from ..chunking.registry import get as _chunking_get
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +85,7 @@ async def read_and_chunk_file_async(
         ext = file_path.suffix.lower().lstrip(".")
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(ext)
         if ts_lang:
+            chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
                 file_path, ts_lang, chunk_size, chunk_overlap, None,
             )
@@ -100,6 +94,7 @@ async def read_and_chunk_file_async(
     if group == "code":
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(label)
         if ts_lang:
+            chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
                 file_path, ts_lang, chunk_size, chunk_overlap, content_type,
             )
@@ -108,6 +103,7 @@ async def read_and_chunk_file_async(
 
     # Config files: whole-file as single chunk.
     if group == "config":
+        chunk_config_file = _chunking_get("config")
         return chunk_config_file(
             file_path, content_type,
         )
@@ -191,6 +187,8 @@ async def read_and_chunk_file_async(
     # thread so the MCP event loop stays responsive while large documents
     # are split.  See ADR-015 / OpenSpec change
     # ``rag-reliability-correctness-fixes`` Decision 1.
+    from ..chunking.sentence import _split_documents_sync
+
     nodes = await asyncio.to_thread(
         _split_documents_sync,
         documents,
@@ -200,6 +198,12 @@ async def read_and_chunk_file_async(
     )
 
     if is_markdown:
+        from ..chunking.markdown import (
+            apply_heading_prepend,
+            drop_small_markdown_chunks,
+            ensure_heading_metadata,
+        )
+
         ensure_heading_metadata(nodes)
         apply_heading_prepend(nodes)
         nodes = drop_small_markdown_chunks(nodes, effective_chunk_size)

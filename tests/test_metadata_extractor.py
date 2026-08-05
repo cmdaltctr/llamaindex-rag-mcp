@@ -213,7 +213,7 @@ class TestLlamaindexStub:
             return {"category": "biology", "keywords": ["protein", "deep_learning"], "summary": "A biology paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -742,7 +742,7 @@ class TestLlamaindexExtraction:
             return {"category": "ai", "keywords": ["deep_learning", "neural"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -787,7 +787,7 @@ class TestLlamaindexExtraction:
             return _aggregate_llamaindex_metadata([mock_node])
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
@@ -871,7 +871,7 @@ class TestLlamaindexExtraction:
             return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -917,7 +917,7 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _failing_ollama,
         )
 
@@ -957,7 +957,7 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 

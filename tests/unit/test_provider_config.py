@@ -137,7 +137,7 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(monkeypatch: py
     monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "local")
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(_ext, "_extract_llamacpp_chat_async", mock_fn):
+    with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt")
         mock_fn.assert_called_once_with("text")
 
@@ -153,7 +153,7 @@ async def test_local_mode_dispatches_to_ollama_when_configured(monkeypatch: pyte
     monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "local")
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(_ext, "_extract_ollama_async", mock_fn):
+    with patch("rag_mcp.core.metadata.ollama._extract_ollama_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt")
         mock_fn.assert_called_once_with("text")
 
@@ -196,7 +196,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
             raise ImportError("not installed")
         return real_import(name, *args, **kwargs)
 
-    with patch.object(_ext, "_extract_llamacpp_chat_async", mock_fn), \
+    with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn), \
          patch("builtins.__import__", side_effect=_failing_import):
         await _lli._extract_llamaindex_async("text", "file.txt")
         mock_fn.assert_called_once_with("text")

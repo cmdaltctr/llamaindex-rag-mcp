@@ -16,15 +16,7 @@ from typing import Any
 from ...config import settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
-from .dense import _dense_query_rows, _result_source
-from .fusion import rrf_with_metadata
-from .policy import (
-    _classify_query_technical,
-    _effective_threshold,
-    _resolve_fetch_k,
-    _resolve_rerank_policy,
-)
-from .reranker import CrossEncoderReranker
+from .registry import get as _retrieval_get
 
 logger = logging.getLogger(__name__)
 _warned_collections: set[str] = set()
@@ -48,8 +40,9 @@ def _sparse_bm25_query(
     query: str,
     fetch_k: int,
 ) -> list[dict]:
-    from .sparse import BM25SparseRetriever
+    from .dense import _result_source
 
+    BM25SparseRetriever = _retrieval_get("bm25")
     rows = BM25SparseRetriever(collection_name, store=store).query(query, fetch_k)
     return [
         {
@@ -117,6 +110,7 @@ def _hybrid_query_rows(
     metadata_filter: dict | None = None,
 ) -> list[dict]:
     backend = _selected_sparse_backend()
+    _dense_query_rows = _retrieval_get("dense")
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
             _dense_query_rows, store, collection_name, query, fetch_k,
@@ -134,7 +128,7 @@ def _hybrid_query_rows(
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
-    return rrf_with_metadata(dense_rows, sparse_rows, k=settings.hybrid_rrf_k)[:fetch_k]
+    return _retrieval_get("fusion")(dense_rows, sparse_rows, k=settings.hybrid_rrf_k)[:fetch_k]
 
 
 def _strip_internal_result_fields(result: dict) -> dict:
@@ -156,7 +150,7 @@ def search(
     include_diagnostics: bool = False,
     technical_fraction: float | None = None,
     fetch_k: int | None = None,
-    reranker: CrossEncoderReranker | None = None,
+    reranker: Any = None,
     store: VectorStore | None = None,
     effective_settings: Any = None,
 ) -> list[dict]:
@@ -234,6 +228,12 @@ def search(
             types so the MCP layer can classify them.
     """
     # Phase 4: profile-resolved levers take precedence over global defaults.
+    from .policy import (
+        _effective_threshold,
+        _resolve_fetch_k,
+        _resolve_rerank_policy,
+    )
+
     profile_reranker = None
     if effective_settings is not None:
         if top_k is None:
@@ -272,6 +272,7 @@ def search(
         fetch_k_override=fetch_k,
     )
 
+    _dense_query_rows = _retrieval_get("dense")
     if hybrid:
         results = _hybrid_query_rows(
             resolved_store, collection_name, query, resolved_fetch_k,
@@ -286,7 +287,7 @@ def search(
     # Optional: re-score with cross-encoder reranker.
     if effective_rerank and results:
         if reranker is None:
-            reranker = CrossEncoderReranker()
+            reranker = _retrieval_get("reranker")()
         results = reranker.rerank(query, results, top_k=top_k)
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:

@@ -81,6 +81,26 @@ def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _clear_registry_caches() -> None:
+    """Clear all strategy registry caches before each test.
+
+    The chunking, metadata, retrieval, embeddings, and LLM registries
+    cache resolved strategy callables.  When a test patches a strategy
+    function at its source module, the cached reference would still point
+    at the original.  Clearing the caches ensures each test sees the
+    patched function (task 3.7/3.9).
+    """
+    from rag_mcp.core.chunking import registry as _chunking
+    from rag_mcp.core.metadata import registry as _metadata
+    from rag_mcp.core.retrieval import registry as _retrieval
+    from rag_mcp.core.providers.embeddings import registry as _embed
+    from rag_mcp.core.providers.llm import registry as _llm
+
+    for reg in (_chunking, _metadata, _retrieval, _embed, _llm):
+        reg._cache.clear()
+
+
+@pytest.fixture(autouse=True)
 def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace OllamaEmbedding with MockEmbedding globally.
 

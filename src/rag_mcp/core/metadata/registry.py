@@ -1,10 +1,11 @@
 """Lazy registry for metadata extraction strategies.
 
-Maps strategy names to ``"module:attr"`` import strings resolved on
-first ``get()``.  Importing this module does NOT import any strategy
-module (shared registry contract, PROPOSAL §4.4).
+Maps strategy names to ``"module:attr"`` import strings resolved on first
+``get()``.  Importing this module does NOT import any strategy module
+(shared registry contract, PROPOSAL §4.4).
 
-Adding a strategy = one new file + one line in ``REGISTRY``.
+Adding a strategy = one new file + one ``register()`` call at the bottom of
+this module (or at composition time).
 """
 
 from __future__ import annotations
@@ -12,14 +13,18 @@ from __future__ import annotations
 import importlib
 from typing import Any, Callable
 
-REGISTRY: dict[str, str] = {
-    "keyword": "rag_mcp.core.metadata.keyword:_extract_keyword_async",
-    "ollama": "rag_mcp.core.metadata.ollama:_extract_ollama_async",
-    "llamacpp": "rag_mcp.core.metadata.llamacpp:_extract_llamacpp_chat_async",
-    "llamaindex": "rag_mcp.core.metadata.llamaindex:_extract_llamaindex_async",
-}
-
+_registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
+
+
+def register(name: str, import_path: str) -> None:
+    """Register a metadata extraction strategy.
+
+    Args:
+        name: The strategy name (e.g. ``"keyword"``, ``"ollama"``).
+        import_path: A ``"module:attr"`` string pointing at the callable.
+    """
+    _registry[name] = import_path
 
 
 def get(name: str) -> Callable[..., Any]:
@@ -31,12 +36,12 @@ def get(name: str) -> Callable[..., Any]:
     """
     if name in _cache:
         return _cache[name]
-    if name not in REGISTRY:
+    if name not in _registry:
         raise KeyError(
             f"Unknown metadata strategy {name!r}. "
-            f"Available: {sorted(REGISTRY)}"
+            f"Available: {sorted(_registry)}"
         )
-    module_path, attr = REGISTRY[name].split(":")
+    module_path, attr = _registry[name].split(":")
     try:
         mod = importlib.import_module(module_path)
     except ImportError as exc:
@@ -51,4 +56,11 @@ def get(name: str) -> Callable[..., Any]:
 
 def available() -> list[str]:
     """Return the sorted list of registered strategy names."""
-    return sorted(REGISTRY)
+    return sorted(_registry)
+
+
+# ── Built-in strategy registrations ────────────────────────────────────
+register("keyword", "rag_mcp.core.metadata.keyword:_extract_keyword_async")
+register("ollama", "rag_mcp.core.metadata.ollama:_extract_ollama_async")
+register("llamacpp", "rag_mcp.core.metadata.llamacpp:_extract_llamacpp_chat_async")
+register("llamaindex", "rag_mcp.core.metadata.llamaindex:_extract_llamaindex_async")

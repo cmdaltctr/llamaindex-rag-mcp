@@ -1,10 +1,11 @@
 """Lazy registry for retrieval strategies.
 
-Maps strategy names to ``"module:attr"`` import strings resolved on
-first ``get()``.  Importing this module does NOT import any strategy
-module (shared registry contract, PROPOSAL §4.4).
+Maps strategy names to ``"module:attr"`` import strings resolved on first
+``get()``.  Importing this module does NOT import any strategy module
+(shared registry contract, PROPOSAL §4.4).
 
-Adding a strategy = one new file + one line in ``REGISTRY``.
+Adding a strategy = one new file + one ``register()`` call at the bottom of
+this module (or at composition time).
 """
 
 from __future__ import annotations
@@ -12,14 +13,18 @@ from __future__ import annotations
 import importlib
 from typing import Any, Callable
 
-REGISTRY: dict[str, str] = {
-    "dense": "rag_mcp.core.retrieval.dense:_dense_query_rows",
-    "bm25": "rag_mcp.core.retrieval.sparse:BM25SparseRetriever",
-    "fusion": "rag_mcp.core.retrieval.fusion:rrf_with_metadata",
-    "reranker": "rag_mcp.core.retrieval.reranker:CrossEncoderReranker",
-}
-
+_registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
+
+
+def register(name: str, import_path: str) -> None:
+    """Register a retrieval strategy.
+
+    Args:
+        name: The strategy name (e.g. ``"dense"``, ``"bm25"``).
+        import_path: A ``"module:attr"`` string pointing at the callable.
+    """
+    _registry[name] = import_path
 
 
 def get(name: str) -> Callable[..., Any]:
@@ -31,12 +36,12 @@ def get(name: str) -> Callable[..., Any]:
     """
     if name in _cache:
         return _cache[name]
-    if name not in REGISTRY:
+    if name not in _registry:
         raise KeyError(
             f"Unknown retrieval strategy {name!r}. "
-            f"Available: {sorted(REGISTRY)}"
+            f"Available: {sorted(_registry)}"
         )
-    module_path, attr = REGISTRY[name].split(":")
+    module_path, attr = _registry[name].split(":")
     try:
         mod = importlib.import_module(module_path)
     except ImportError as exc:
@@ -51,4 +56,11 @@ def get(name: str) -> Callable[..., Any]:
 
 def available() -> list[str]:
     """Return the sorted list of registered strategy names."""
-    return sorted(REGISTRY)
+    return sorted(_registry)
+
+
+# ── Built-in strategy registrations ────────────────────────────────────
+register("dense", "rag_mcp.core.retrieval.dense:_dense_query_rows")
+register("bm25", "rag_mcp.core.retrieval.sparse:BM25SparseRetriever")
+register("fusion", "rag_mcp.core.retrieval.fusion:rrf_with_metadata")
+register("reranker", "rag_mcp.core.retrieval.reranker:CrossEncoderReranker")

@@ -26,15 +26,15 @@
 
 ## 3. Make the strategy registries the real dispatch (F1, F9)
 
-- [ ] 3.1 Rewrite `core/chunking/registry.py` to the PROPOSAL §4.4 contract: private `_registry`/`_cache` dicts, public `register(name, import_path)`, `get(name)`, `available()`; registrations record `"module:attr"` strings only.
-- [ ] 3.2 Apply the same rewrite to `core/metadata/registry.py` and `core/retrieval/registry.py`; align `core/providers/embeddings/registry.py` and `core/providers/llm/registry.py` to the identical public API.
-- [ ] 3.3 Replace the eager strategy imports at `core/ingestion/chunker.py:25-32` with `chunking_registry.get(<strategy>)` resolution at dispatch time; keep content-type precedence (AGENTS.md gotcha #8) byte-for-byte.
-- [ ] 3.4 Replace the if/elif backend chain at `core/metadata/extractor.py:36-39` and `:187-193` with `metadata_registry.get(<mode>)`, preserving the `disabled` short-circuit without resolving a backend.
-- [ ] 3.5 Replace the eager dense/fusion/policy/reranker imports at `core/retrieval/pipeline.py:19-27` with `retrieval_registry.get(...)` resolution.
-- [ ] 3.6 Have `compose.py` resolve the *active* chunking, metadata, and retrieval strategies at startup so a bad `register()` import string fails fast rather than at first query.
-- [ ] 3.7 Extend `tests/test_registry_contract.py` to walk `available()` → `get()` for every registered name in all five registries, asserting no `ImportError`, and to assert importing a registry imports no strategy module (check `sys.modules`).
-- [ ] 3.8 Add tests asserting `core/ingestion/chunker.py`, `core/metadata/extractor.py`, and `core/retrieval/pipeline.py` contain no module-level import of a concrete strategy module.
-- [ ] 3.9 Run `uv run pytest -m "not slow"` and confirm identical chunking, extraction, and retrieval behaviour.
+- [x] 3.1 Rewrite `core/chunking/registry.py` to the PROPOSAL §4.4 contract: private `_registry`/`_cache` dicts, public `register(name, import_path)`, `get(name)`, `available()`; registrations record `"module:attr"` strings only.
+- [x] 3.2 Apply the same rewrite to `core/metadata/registry.py` and `core/retrieval/registry.py`; align `core/providers/embeddings/registry.py` and `core/providers/llm/registry.py` to the identical public API.
+- [x] 3.3 Replace the eager strategy imports at `core/ingestion/chunker.py:25-32` with `chunking_registry.get(<strategy>)` resolution at dispatch time; keep content-type precedence (AGENTS.md gotcha #8) byte-for-byte.
+- [x] 3.4 Replace the if/elif backend chain at `core/metadata/extractor.py:36-39` and `:187-193` with `metadata_registry.get(<mode>)`, preserving the `disabled` short-circuit without resolving a backend.
+- [x] 3.5 Replace the eager dense/fusion/policy/reranker imports at `core/retrieval/pipeline.py:19-27` with `retrieval_registry.get(...)` resolution.
+- [x] 3.6 Have `compose.py` resolve the *active* chunking, metadata, and retrieval strategies at startup so a bad `register()` import string fails fast rather than at first query.
+- [x] 3.7 Extend `tests/test_registry_contract.py` to walk `available()` → `get()` for every registered name in all five registries, asserting no `ImportError`, and to assert importing a registry imports no strategy module (check `sys.modules`).
+- [x] 3.8 Add tests asserting `core/ingestion/chunker.py`, `core/metadata/extractor.py`, and `core/retrieval/pipeline.py` contain no module-level import of a concrete strategy module.
+- [x] 3.9 Run `uv run pytest -m "not slow"` and confirm identical chunking, extraction, and retrieval behaviour.
 
 ## 4. Introduce the EffectiveSettings value object
 

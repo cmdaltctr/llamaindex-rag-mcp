@@ -380,9 +380,8 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
                 row["_reranked"] = True
             return results[:top_k]
 
-    monkeypatch.setattr(retrieval, "CrossEncoderReranker", CapturingReranker)
-
-    retrieval.search("ZXQ-77", top_k=1, rerank=True, hybrid=True)
+    # Inject the capturing reranker directly via the DI parameter.
+    retrieval.search("ZXQ-77", top_k=1, rerank=True, hybrid=True, reranker=CapturingReranker())
 
     assert "results" in captured
     assert any(row["source"] == "sparse.txt" for row in captured["results"])

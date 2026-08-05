@@ -33,17 +33,7 @@ import logging
 
 from ...config import settings
 from ._common import logger
-from .keyword import _extract_keyword_async
-from .llamacpp import _extract_llamacpp_chat_async
-from .llamaindex import _extract_llamaindex_async
-from .ollama import (
-    _build_ollama_prompt,
-    _extract_ollama_async,
-    _get_ollama_max_attempts,
-    _get_ollama_timeout,
-    _parse_ollama_json_response,
-    _retry_sleep,
-)
+from .registry import get as _metadata_get
 
 
 def _extract_disabled() -> dict:
@@ -73,9 +63,9 @@ async def _dispatch_local_extraction(text: str) -> dict:
         # Future cloud sub-providers would dispatch here.
         return await _extract_openrouter_chat_async(text)
     elif settings.local_backend == "llamacpp":
-        return await _extract_llamacpp_chat_async(text)
+        return await _metadata_get("llamacpp")(text)
     else:
-        return await _extract_ollama_async(text)
+        return await _metadata_get("ollama")(text)
 
 
 async def _extract_openrouter_chat_async(text: str) -> dict:
@@ -91,6 +81,14 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
         A dict with ``category``, ``keywords``, ``summary``.
     """
     import httpx
+
+    from .ollama import (
+        _build_ollama_prompt,
+        _get_ollama_max_attempts,
+        _get_ollama_timeout,
+        _parse_ollama_json_response,
+        _retry_sleep,
+    )
 
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
 
@@ -187,14 +185,14 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
     if mode == "disabled":
         return _extract_disabled()
     elif mode == "keyword":
-        return await _extract_keyword_async(file_text)
+        return await _metadata_get("keyword")(file_text)
     elif mode == "local":
         return await _dispatch_local_extraction(file_text)
     elif mode == "llamaindex":
-        return await _extract_llamaindex_async(file_text, file_name)
+        return await _metadata_get("llamaindex")(file_text, file_name)
     else:
         logger.warning(
             "Unknown METADATA_EXTRACTION_MODE '%s' — falling back to keyword",
             settings.metadata_extraction_mode,
         )
-        return await _extract_keyword_async(file_text)
+        return await _metadata_get("keyword")(file_text)

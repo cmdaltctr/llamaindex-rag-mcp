@@ -128,6 +128,38 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     )
 
 
+def _resolve_all_strategies() -> None:
+    """Resolve every registered strategy at startup so a bad ``register()``
+    import string fails fast rather than at first query (task 3.6).
+
+    Walks ``available()`` → ``get()`` for all five registries.  Errors are
+    logged but do not abort startup — a missing optional dependency for one
+    strategy should not prevent the server from starting if that strategy
+    is not selected.
+    """
+    from .core.chunking import registry as chunking_registry
+    from .core.metadata import registry as metadata_registry
+    from .core.retrieval import registry as retrieval_registry
+    from .core.providers.embeddings import registry as embed_registry
+    from .core.providers.llm import registry as llm_registry
+
+    for label, registry in (
+        ("chunking", chunking_registry),
+        ("metadata", metadata_registry),
+        ("retrieval", retrieval_registry),
+        ("embeddings", embed_registry),
+        ("llm", llm_registry),
+    ):
+        for name in registry.available():
+            try:
+                registry.get(name)
+            except ImportError as exc:
+                logger.debug(
+                    "Strategy %s/%s skipped (optional dependency missing): %s",
+                    label, name, exc,
+                )
+
+
 def ensure_runtime_setup() -> None:
     """Assign ``LlamaIndexSettings.embed_model`` and the default vector store.
 
@@ -151,6 +183,8 @@ def ensure_runtime_setup() -> None:
         set_default_store(build_vector_store(settings))
     except (ImportError, ValueError) as exc:
         logger.warning("Failed to construct vector store: %s", exc)
+    # Resolve all registered strategies so a bad import string fails fast.
+    _resolve_all_strategies()
     _runtime_setup_done = True
 
 
