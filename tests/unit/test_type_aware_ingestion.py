@@ -113,7 +113,7 @@ class TestBinarySkip:
         (tmp_path / "app.py").write_text("x = 1\n")
         (tmp_path / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n")
 
-        from rag_mcp.codebase_map import FileEntry, FileInventory
+        from rag_mcp.core.codebase.codebase_map import FileEntry, FileInventory
 
         mock_inventory = FileInventory(
             entries=[
@@ -124,8 +124,8 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False), \
-             patch("rag_mcp.codebase_map.detect_file_types", return_value=mock_inventory), \
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+             patch("rag_mcp.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory), \
              patch("rag_mcp.core.ingestion.pipeline.gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
              patch("rag_mcp.core.ingestion.pipeline.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \
              patch("rag_mcp.core.ingestion.pipeline.embed_and_write_async", new_callable=AsyncMock, return_value=1):

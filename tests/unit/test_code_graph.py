@@ -7,7 +7,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from rag_mcp.code_graph import (
+from rag_mcp.core.codebase.code_graph import (
     ASTResult,
     Bridge,
     Community,
@@ -18,7 +18,7 @@ from rag_mcp.code_graph import (
     detect_hubs,
     extract_ast_relationships,
 )
-from rag_mcp.codebase_map import FileEntry
+from rag_mcp.core.codebase.codebase_map import FileEntry
 
 
 # ── AST extraction tests ─────────────────────────────────────────────────

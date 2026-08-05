@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rag_mcp.codebase_map import (
+from rag_mcp.core.codebase.codebase_map import (
     CodebaseMap,
     FileEntry,
     FileInventory,
@@ -107,7 +107,7 @@ class TestDetectFileTypes:
         """When Magika is not installed, suffix detection is used."""
         (tmp_path / "app.py").write_text("print('hi')")
         (tmp_path / "README.md").write_text("# Test")
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert len(inventory.entries) == 2
         assert "code/python" in inventory.type_counts
@@ -117,7 +117,7 @@ class TestDetectFileTypes:
         """Binary files are collected in the binary_files list."""
         (tmp_path / "app.py").write_text("x = 1")
         (tmp_path / "photo.png").write_bytes(b"\x89PNG")
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert "photo.png" in inventory.binary_files
         assert "app.py" not in inventory.binary_files
@@ -127,7 +127,7 @@ class TestDetectFileTypes:
         (tmp_path / "a.py").write_text("x = 1")
         (tmp_path / "b.py").write_text("y = 2")
         (tmp_path / "c.ts").write_text("const z = 3;")
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert inventory.type_counts["code/python"] == 2
         assert inventory.type_counts["code/typescript"] == 1
@@ -256,10 +256,10 @@ class TestMagikaParsing:
             "output": {"group": "document", "label": "markdown", "is_text": True},
         }) + "\n"
 
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=True), \
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=True), \
              patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
-            from rag_mcp.codebase_map import scan_with_magika
+            from rag_mcp.core.codebase.codebase_map import scan_with_magika
             entries = scan_with_magika(str(tmp_path))
 
         assert len(entries) == 2
@@ -276,10 +276,10 @@ class TestMagikaParsing:
             "output": {"group": "executable", "label": "elf", "is_text": False},
         }) + "\n"
 
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=True), \
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=True), \
              patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
-            from rag_mcp.codebase_map import scan_with_magika
+            from rag_mcp.core.codebase.codebase_map import scan_with_magika
             entries = scan_with_magika(str(tmp_path))
 
         assert len(entries) == 1
@@ -304,9 +304,9 @@ class TestBuildCodebaseMap:
         mock_collection = MagicMock()
         mock_collection.count.return_value = 2
 
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
              patch("chromadb.PersistentClient") as mock_client, \
-             patch("rag_mcp.doc_graph.build_document_graph") as mock_build_doc:
+             patch("rag_mcp.core.documents.doc_graph.build_document_graph") as mock_build_doc:
             mock_client.return_value.get_collection.return_value = mock_collection
             mock_build_doc.return_value = MagicMock()
 
@@ -320,7 +320,7 @@ class TestBuildCodebaseMap:
         """When ChromaDB collection is unavailable, code graph still works."""
         (tmp_path / "app.py").write_text("x = 1\n")
 
-        with patch("rag_mcp.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
              patch("chromadb.PersistentClient") as mock_client:
             mock_client.return_value.get_collection.side_effect = Exception("no collection")
 

@@ -94,7 +94,7 @@ async def ingest_path_async(
 
     # Type-aware ingestion: detect file types via Magika (task 6.3).
     # Falls back to None (extension-based routing) when Magika unavailable.
-    from ...codebase_map import detect_file_types
+    from ..codebase.codebase_map import detect_file_types
 
     content_type_map: dict[str, str] = {}
     try:

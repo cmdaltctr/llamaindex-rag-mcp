@@ -339,7 +339,7 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """
     import json
 
-    from ..codebase_map import get_codebase_map_text
+    from .core.codebase.codebase_map import get_codebase_map_text
 
     try:
         return get_codebase_map_text(path=path, refresh=refresh)

@@ -16,8 +16,8 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import settings
-from .integrations.magika import FileEntry, _EXCLUDED_DIRS
+from ...config import settings
+from ...integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ def _is_magika_available() -> bool:
 
     Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
-    from .integrations.magika import _is_magika_available as _check
+    from ...integrations.magika import _is_magika_available as _check
     return _check()
 
 
@@ -124,7 +124,7 @@ def scan_with_magika(path: str) -> list[FileEntry]:
 
     Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
-    from .integrations.magika import scan_with_magika as _scan
+    from ...integrations.magika import scan_with_magika as _scan
     return _scan(path)
 
 
@@ -474,7 +474,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
     collection = None
     try:
         import chromadb
-        from .config import settings
+        from ...config import settings
         db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
         collection = db.get_collection("documents")
         if collection.count() == 0:
@@ -485,7 +485,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
 
     if doc_files:
         try:
-            from .doc_graph import build_document_graph, detect_document_communities
+            from ..documents.doc_graph import build_document_graph, detect_document_communities
 
             doc_graph = build_document_graph(collection)
             doc_comms = detect_document_communities(doc_graph)
@@ -504,7 +504,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
     # Cross-links (only if both code and doc communities exist)
     if code_communities and doc_communities:
         try:
-            from .doc_graph import compute_cross_links
+            from ..documents.doc_graph import compute_cross_links
 
             dg = build_document_graph(collection)
             links = compute_cross_links(code_graph, dg)

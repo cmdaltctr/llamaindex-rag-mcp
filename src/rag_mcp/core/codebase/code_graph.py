@@ -17,7 +17,7 @@ from pathlib import Path
 import networkx as nx
 
 from .codebase_map import FileEntry
-from .config import MAGIKA_LABEL_TO_TREESITTER
+from ...config import MAGIKA_LABEL_TO_TREESITTER
 
 logger = logging.getLogger(__name__)
 

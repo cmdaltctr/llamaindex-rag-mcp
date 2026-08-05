@@ -17,7 +17,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from .config import settings
+from ...config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -14,15 +14,15 @@
 
 ## 2. Relocate the unmigrated v1 subsystems (Category B)
 
-- [ ] 2.1 Create `src/rag_mcp/core/codebase/__init__.py` and `src/rag_mcp/core/documents/__init__.py` with module docstrings stating they are namespace groupings, not strategy folders (no registry).
-- [ ] 2.2 `git mv src/rag_mcp/codebase_map.py src/rag_mcp/core/codebase/codebase_map.py` and fix its relative imports.
-- [ ] 2.3 `git mv src/rag_mcp/code_graph.py src/rag_mcp/core/codebase/code_graph.py` and fix its relative imports.
-- [ ] 2.4 `git mv src/rag_mcp/doc_graph.py src/rag_mcp/core/documents/doc_graph.py` and fix its relative imports.
-- [ ] 2.5 Rewrite `core/ingestion/pipeline.py:97`'s `from ...codebase_map import detect_file_types` to import from `rag_mcp.core.codebase`, removing core's upward import into a top-level module.
-- [ ] 2.6 Update every remaining consumer of the three moved modules (`transports/mcp.py`, `transports/cli/*`, `daemon/watcher.py`, `compose.py`, `integrations/magika.py`) to the new paths.
-- [ ] 2.7 Update all test imports of `rag_mcp.codebase_map`, `rag_mcp.code_graph`, `rag_mcp.doc_graph` to the `core.codebase` / `core.documents` paths, including monkeypatch targets.
-- [ ] 2.8 Run `uv run pytest -m "not slow"` (no `--cov` — see the group 1 coverage-gate note) and confirm green with no assertion changes.
-- [ ] 2.9 Run `graphify update .` so the knowledge graph reflects the relocated `core/codebase/` and `core/documents/` packages before any later group consults it.
+- [x] 2.1 Create `src/rag_mcp/core/codebase/__init__.py` and `src/rag_mcp/core/documents/__init__.py` with module docstrings stating they are namespace groupings, not strategy folders (no registry).
+- [x] 2.2 `git mv src/rag_mcp/codebase_map.py src/rag_mcp/core/codebase/codebase_map.py` and fix its relative imports.
+- [x] 2.3 `git mv src/rag_mcp/code_graph.py src/rag_mcp/core/codebase/code_graph.py` and fix its relative imports.
+- [x] 2.4 `git mv src/rag_mcp/doc_graph.py src/rag_mcp/core/documents/doc_graph.py` and fix its relative imports.
+- [x] 2.5 Rewrite `core/ingestion/pipeline.py:97`'s `from ...codebase_map import detect_file_types` to import from `rag_mcp.core.codebase`, removing core's upward import into a top-level module.
+- [x] 2.6 Update every remaining consumer of the three moved modules (`transports/mcp.py`, `transports/cli/*`, `daemon/watcher.py`, `compose.py`, `integrations/magika.py`) to the new paths.
+- [x] 2.7 Update all test imports of `rag_mcp.codebase_map`, `rag_mcp.code_graph`, `rag_mcp.doc_graph` to the `core.codebase` / `core.documents` paths, including monkeypatch targets.
+- [x] 2.8 Run `uv run pytest -m "not slow"` (no `--cov` — see the group 1 coverage-gate note) and confirm green with no assertion changes.
+- [x] 2.9 Run `graphify update .` so the knowledge graph reflects the relocated `core/codebase/` and `core/documents/` packages before any later group consults it.
 
 ## 3. Make the strategy registries the real dispatch (F1, F9)
 

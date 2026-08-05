@@ -77,8 +77,9 @@ def scan_with_magika(path: str) -> list:
     """
     # FileEntry and _EXCLUDED_DIRS are module-level (defined above).
     # _is_magika_available is read through codebase_map's re-export so
-    # test patches on rag_mcp.codebase_map._is_magika_available propagate.
-    import rag_mcp.codebase_map as _cbm
+    # test patches on rag_mcp.core.codebase.codebase_map._is_magika_available propagate.
+    # TODO(group 6.4): this circular indirection is deleted in task 6.4/6.5.
+    import rag_mcp.core.codebase.codebase_map as _cbm
 
     if not _cbm._is_magika_available():
         raise FileNotFoundError(
