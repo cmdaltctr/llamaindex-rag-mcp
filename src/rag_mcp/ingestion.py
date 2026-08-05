@@ -44,7 +44,6 @@ from llama_index.core import Settings  # noqa: F401
 
 # ── Thread-safety primitives (old names with underscore prefix) ─────────
 from .core.ingestion._state import (  # noqa: F401
-    embed_semaphore as _embed_semaphore,
     shutdown_requested as _shutdown_requested,
     write_lock as _write_lock,
 )

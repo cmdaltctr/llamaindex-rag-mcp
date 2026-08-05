@@ -14,11 +14,32 @@ from __future__ import annotations
 
 import threading
 
-from ...config import settings
-
 # ── Thread-safety primitives ─────────────────────────────────────────────
 write_lock = threading.Lock()
-embed_semaphore = threading.BoundedSemaphore(value=settings.embed_concurrency)
+
+# The embed limiter is built on first use from the injected concurrency, not
+# snapshotted at import (ADR-033 Part 2).  It is cached per concurrency value
+# so every caller in a process shares one limiter — the property that made
+# the old module-level object correct — while a differently-configured value
+# still gets its own.
+_embed_semaphores: dict[int, threading.BoundedSemaphore] = {}
+_embed_semaphores_lock = threading.Lock()
+
+
+def get_embed_semaphore(concurrency: int) -> threading.BoundedSemaphore:
+    """Return the shared embed limiter for *concurrency*, building it once."""
+    with _embed_semaphores_lock:
+        sem = _embed_semaphores.get(concurrency)
+        if sem is None:
+            sem = threading.BoundedSemaphore(value=concurrency)
+            _embed_semaphores[concurrency] = sem
+        return sem
+
+
+def reset_embed_semaphores() -> None:
+    """Clear the cached limiters (used by tests)."""
+    with _embed_semaphores_lock:
+        _embed_semaphores.clear()
 
 # ── Shutdown flag for graceful SIGINT handling ───────────────────────────
 shutdown_requested = threading.Event()

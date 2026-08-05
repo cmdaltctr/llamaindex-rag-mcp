@@ -16,6 +16,7 @@ from types import SimpleNamespace
 import pytest
 
 from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE, MARKDOWN_CHUNK_SIZE
+from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings
 from rag_mcp.core.chunking.markdown import (
     apply_heading_prepend as _apply_heading_prepend,
     drop_small_markdown_chunks as _drop_small_markdown_chunks,
@@ -101,10 +102,13 @@ async def test_markdown_long_section_is_split(
     """
     long_md = fixtures_dir / "markdown_long_section.md"
     small_chunk_size = 64
-    import rag_mcp.core.ingestion.chunker as _chunker
-
-    monkeypatch.setattr(_chunker, "MARKDOWN_CHUNK_SIZE", small_chunk_size)
-    nodes = await read_and_chunk_file_async(long_md, chunk_overlap=10)
+    nodes = await read_and_chunk_file_async(
+        long_md,
+        chunk_overlap=10,
+        settings=EffectiveSettings(
+            chunking=ChunkingBlock(markdown_chunk_size=small_chunk_size)
+        ),
+    )
 
     assert len(nodes) > 1, (
         "A heading-bounded section longer than chunk_size must produce "
@@ -186,11 +190,12 @@ async def test_markdown_multi_chunk_nodes_keep_heading_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Every Markdown chunk emitted after second-stage splitting has headings."""
-    import rag_mcp.core.ingestion.chunker as _chunker
-
-    monkeypatch.setattr(_chunker, "MARKDOWN_CHUNK_SIZE", 64)
     long_md = fixtures_dir / "markdown_long_section.md"
-    nodes = await read_and_chunk_file_async(long_md, chunk_overlap=10)
+    nodes = await read_and_chunk_file_async(
+        long_md,
+        chunk_overlap=10,
+        settings=EffectiveSettings(chunking=ChunkingBlock(markdown_chunk_size=64)),
+    )
 
     assert len(nodes) >= 2, "Fixture must force multiple Markdown chunks"
     for node in nodes:
@@ -236,10 +241,12 @@ async def test_heading_prepend_enabled_adds_heading_prefix(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The experimental heading-prepend knob prefixes Markdown node text."""
-    import rag_mcp.core.chunking.markdown as _md
-
-    monkeypatch.setattr(_md.settings, "markdown_heading_prepend", True)
-    nodes = await read_and_chunk_file_async(sample_md)
+    nodes = await read_and_chunk_file_async(
+        sample_md,
+        settings=EffectiveSettings(
+            chunking=ChunkingBlock(markdown_heading_prepend=True)
+        ),
+    )
 
     assert nodes
     for node in nodes:
@@ -254,15 +261,14 @@ def test_heading_prepend_is_not_applied_twice(
     """The heading prepend helper guards against double-prefixing text."""
     import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_md.settings, "markdown_heading_prepend", True)
     node = SimpleNamespace(
         metadata={"header_path": "/Paper/Methods/"},
         text="Methods text",
     )
 
-    _apply_heading_prepend([node])
+    _apply_heading_prepend([node], heading_prepend=True)
     once = node.text
-    _apply_heading_prepend([node])
+    _apply_heading_prepend([node], heading_prepend=True)
 
     assert node.text == once == "[/Paper/Methods/] Methods text"
 
@@ -273,11 +279,10 @@ def test_min_size_floor_drops_tiny_markdown_chunks(
     """The experimental min-size floor drops tiny Markdown chunks."""
     import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_md.settings, "markdown_min_chunk_fraction", 0.5)
     small = SimpleNamespace(text="## Introduction\n\nWe study X.")
     large = SimpleNamespace(text="x" * 1200)
 
-    kept = _drop_small_markdown_chunks([small, large], chunk_size=512)
+    kept = _drop_small_markdown_chunks([small, large], chunk_size=512, min_chunk_fraction=0.5)
 
     assert kept == [large]
 
@@ -290,8 +295,6 @@ async def test_markdown_experimental_knobs_default_to_existing_chunks(
     """Unset 6c knobs preserve the 6b Markdown chunk text for a small fixture."""
     import rag_mcp.core.chunking.markdown as _md
 
-    monkeypatch.setattr(_md.settings, "markdown_heading_prepend", False)
-    monkeypatch.setattr(_md.settings, "markdown_min_chunk_fraction", 0.0)
 
     nodes = await read_and_chunk_file_async(sample_md)
     texts = [_node_text(node) for node in nodes]
