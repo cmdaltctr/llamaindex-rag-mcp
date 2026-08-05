@@ -158,6 +158,6 @@
 - [x] 14.4 Smoke-test both transports against a scratch collection: `uv run rag-mcp ingest ./docs`, `uv run rag-mcp search "<query>"`, `uv run rag-mcp list`, and an MCP `search_documents` / `get_codebase_map` call; confirm stdout stays clean for MCP (AGENTS.md gotcha #5).
 - [x] 14.5 Verify backward data compatibility: start against an existing `output/chroma_*` directory and confirm collections and their profile metadata tags resolve unchanged.
 - [x] 14.6 Verify the rollback path documented in `design.md`: check out the previous release tag, restore the pre-migration `.env`, and confirm the same ChromaDB data is readable.
-- [ ] 14.7 Mirror the task groups into `niftypm/llamaindex-rag-mcp.json` and sync per the `s-niftypm` pipeline.
-- [ ] 14.8 Open the PR with a `refactor!:` Conventional Commit title against `main`, confirming `python-semantic-release` will cut **v2.0.0**; never hand-edit `version` in `pyproject.toml`.
-- [ ] 14.9 After merge, archive the change with `openspec archive complete-architecture-v2-conformance` and sync `openspec/specs/`.
+- [~] 14.7 ~~Mirror the task groups into `niftypm/llamaindex-rag-mcp.json` and sync per the `s-niftypm` pipeline.~~ **SKIPPED** — explicitly deferred by the user during execution; the board was not updated for this change.
+- [x] 14.8 Open the PR with a `refactor!:` Conventional Commit title against `main`. **Done:** PR #19 squash-merged 2026-08-05; `python-semantic-release` cut **v2.0.0** automatically (previous release v1.9.0). CI green on ubuntu-latest and macos-latest plus SonarCloud before merge.
+- [x] 14.9 After merge, archive the change with `openspec archive complete-architecture-v2-conformance` and sync `openspec/specs/`.
