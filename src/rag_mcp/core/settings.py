@@ -19,6 +19,12 @@ from pydantic import BaseModel, ConfigDict
 class ChunkingBlock(BaseModel):
     """Chunking knobs carried in :attr:`EffectiveSettings.chunking`."""
 
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
+
     chunk_size: int = 512
     chunk_overlap: int = 100
     markdown_chunk_size: int = 1024
@@ -30,12 +36,24 @@ class ChunkingBlock(BaseModel):
 class IngestionBlock(BaseModel):
     """Ingestion knobs carried in :attr:`EffectiveSettings.ingestion` (D10)."""
 
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
+
     embed_concurrency: int = 2
     embed_batch_size: int = 100
 
 
 class RetrievalBlock(BaseModel):
     """Retrieval knobs carried in :attr:`EffectiveSettings.retrieval`."""
+
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
 
     top_k: int = 10
     similarity_threshold: float = 0.0
@@ -52,6 +70,12 @@ class RetrievalBlock(BaseModel):
 
 class MetadataBlock(BaseModel):
     """Metadata knobs carried in :attr:`EffectiveSettings.metadata`."""
+
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
 
     extraction_mode: str = "llamaindex"
     keyword_rules: str | None = None
