@@ -13,7 +13,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from .registry import get as _retrieval_get
@@ -28,10 +28,14 @@ def _resolve_store(store: VectorStore | None) -> VectorStore:
     return store if store is not None else get_default_store()
 
 
-def _selected_sparse_backend() -> str:
-    from ...config import resolve_sparse_backend, settings
+def _selected_sparse_backend(settings: Any) -> str:
+    """Return the sparse backend from the injected settings.
 
-    return resolve_sparse_backend(settings)
+    The ``auto`` capability probe runs once in the composition root, which
+    bakes the concrete backend into ``EffectiveSettings`` — so this is a
+    plain read, not a probe.
+    """
+    return settings.retrieval.hybrid_sparse_backend
 
 
 def _sparse_bm25_query(
@@ -107,9 +111,11 @@ def _hybrid_query_rows(
     collection_name: str,
     query: str,
     fetch_k: int,
+    rrf_k: int,
+    settings: Any,
     metadata_filter: dict | None = None,
 ) -> list[dict]:
-    backend = _selected_sparse_backend()
+    backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
@@ -128,7 +134,7 @@ def _hybrid_query_rows(
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
-    return _retrieval_get("fusion")(dense_rows, sparse_rows, k=settings.hybrid_rrf_k)[:fetch_k]
+    return _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)[:fetch_k]
 
 
 def _strip_internal_result_fields(result: dict) -> dict:
@@ -234,28 +240,31 @@ def search(
         _resolve_rerank_policy,
     )
 
-    profile_reranker = None
-    if effective_settings is not None:
-        if top_k is None:
-            top_k = effective_settings.top_k
-        if hybrid is None:
-            hybrid = effective_settings.hybrid_enabled
-        profile_reranker = effective_settings.reranker_enabled
+    # Resolve the settings ONCE at the entry-point boundary. An explicitly
+    # passed instance always wins; otherwise the composition root's default
+    # is used. Nothing below this line consults any other source.
+    resolved_settings = resolve_effective_settings(effective_settings)
+
+    # A profile-resolved instance carries the profile's reranker decision;
+    # the server default does not express a profile opinion.
+    profile_reranker = (
+        effective_settings.reranker_enabled if effective_settings is not None else None
+    )
+    if top_k is None:
+        top_k = resolved_settings.retrieval.top_k
+    if hybrid is None:
+        hybrid = resolved_settings.retrieval.hybrid_enabled
+    if similarity_threshold is None:
+        similarity_threshold = resolved_settings.retrieval.similarity_threshold
 
     # Resolve effective rerank behaviour from policy.
     effective_rerank, rerank_reason = _resolve_rerank_policy(
         rerank,
         query,
+        resolved_settings,
         technical_fraction=technical_fraction,
         profile_reranker_enabled=profile_reranker,
     )
-
-    if top_k is None:
-        top_k = settings.top_k
-    if similarity_threshold is None:
-        similarity_threshold = settings.similarity_threshold
-    if hybrid is None:
-        hybrid = settings.hybrid_enabled
 
     resolved_store = _resolve_store(store)
 
@@ -268,7 +277,7 @@ def search(
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
     resolved_fetch_k = _resolve_fetch_k(
-        top_k, effective_rerank, chunk_count,
+        top_k, effective_rerank, chunk_count, resolved_settings,
         fetch_k_override=fetch_k,
     )
 
@@ -276,6 +285,7 @@ def search(
     if hybrid:
         results = _hybrid_query_rows(
             resolved_store, collection_name, query, resolved_fetch_k,
+            resolved_settings.retrieval.hybrid_rrf_k, resolved_settings,
             metadata_filter,
         )
     else:

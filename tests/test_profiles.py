@@ -274,10 +274,11 @@ class TestTwoTierResolution:
     def test_profile_reranker_enabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker takes precedence over global default."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         # Global default is off, but profile says on.
         effective, reason = _resolve_rerank_policy(
-            None, "semantic query", profile_reranker_enabled=True
+            None, "semantic query", EffectiveSettings(), profile_reranker_enabled=True
         )
         assert effective is True
         assert "profile" in reason
@@ -285,9 +286,10 @@ class TestTwoTierResolution:
     def test_profile_reranker_disabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker disabled takes precedence."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
-            None, "semantic query", profile_reranker_enabled=False
+            None, "semantic query", EffectiveSettings(), profile_reranker_enabled=False
         )
         assert effective is False
         assert "profile" in reason
@@ -295,9 +297,10 @@ class TestTwoTierResolution:
     def test_explicit_rerank_bypasses_profile(self) -> None:
         """Explicit rerank=True bypasses profile-resolved enablement."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
-            True, "query", profile_reranker_enabled=False
+            True, "query", EffectiveSettings(), profile_reranker_enabled=False
         )
         assert effective is True
         assert "explicit" in reason

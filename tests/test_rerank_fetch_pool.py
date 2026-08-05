@@ -13,6 +13,16 @@ import pytest
 
 from rag_mcp import config as _config
 from rag_mcp.core.retrieval.policy import _resolve_fetch_k
+from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+
+
+def _settings(**retrieval_overrides) -> EffectiveSettings:
+    """Build EffectiveSettings for the fetch-pool formula.
+
+    Defaults mirror config.py (rerank_max_fetch=100, multiplier=3); tests that
+    exercise overrides pass their own values instead of patching a singleton.
+    """
+    return EffectiveSettings(retrieval=RetrievalBlock(**retrieval_overrides))
 
 
 # ── Defaults ────────────────────────────────────────────────────────────────
@@ -20,36 +30,39 @@ from rag_mcp.core.retrieval.policy import _resolve_fetch_k
 
 def test_default_pool_is_at_least_50_when_reranking() -> None:
     """With defaults (max=100, multiplier=3), top_k=5 → fetch_k=100."""
-    fetch_k = _resolve_fetch_k(top_k=5, rerank=True, collection_count=1000)
+    fetch_k = _resolve_fetch_k(top_k=5, rerank=True, collection_count=1000, settings=_settings())
     assert fetch_k == 100
 
 
 def test_default_pool_grows_with_top_k() -> None:
     """top_k=10 with multiplier=10 yields fetch_k=100, above the floor."""
-    fetch_k = _resolve_fetch_k(top_k=10, rerank=True, collection_count=1000)
+    fetch_k = _resolve_fetch_k(top_k=10, rerank=True, collection_count=1000, settings=_settings())
     assert fetch_k == 100
 
 
 def test_rerank_disabled_uses_top_k_directly() -> None:
     """Without reranking, fetch_k SHALL equal top_k (original behaviour)."""
-    fetch_k = _resolve_fetch_k(top_k=5, rerank=False, collection_count=1000)
+    fetch_k = _resolve_fetch_k(top_k=5, rerank=False, collection_count=1000, settings=_settings())
     assert fetch_k == 5
 
 
 # ── Env-var overrides ──────────────────────────────────────────────────────
 
 
-def test_env_overrides_pool_size(monkeypatch: pytest.MonkeyPatch) -> None:
-    """RERANK_FETCH_MULTIPLIER and RERANK_MAX_FETCH SHALL be respected."""
-    monkeypatch.setattr(_config.settings, "rerank_fetch_multiplier", 4)
-    monkeypatch.setattr(_config.settings, "rerank_max_fetch", 20)
+def test_injected_overrides_pool_size() -> None:
+    """rerank_fetch_multiplier and rerank_max_fetch SHALL be respected.
+
+    Injected via EffectiveSettings rather than patched onto a singleton, so
+    the two calls below genuinely carry their own configuration.
+    """
+    tuned = _settings(rerank_fetch_multiplier=4, rerank_max_fetch=20)
 
     # Spec scenario: top_k=3 → max(20, 3*4) = 20
-    fetch_k = _resolve_fetch_k(top_k=3, rerank=True, collection_count=1000)
+    fetch_k = _resolve_fetch_k(top_k=3, rerank=True, collection_count=1000, settings=tuned)
     assert fetch_k == 20
 
     # Multiplier wins when it exceeds the floor: top_k=10, mult=4 → 40
-    fetch_k = _resolve_fetch_k(top_k=10, rerank=True, collection_count=1000)
+    fetch_k = _resolve_fetch_k(top_k=10, rerank=True, collection_count=1000, settings=tuned)
     assert fetch_k == 40
 
 
@@ -58,7 +71,7 @@ def test_env_overrides_pool_size(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_small_collection_clamps_fetch_k() -> None:
     """If the collection has fewer chunks than the pool, clamp to the count."""
-    fetch_k = _resolve_fetch_k(top_k=5, rerank=True, collection_count=12)
+    fetch_k = _resolve_fetch_k(top_k=5, rerank=True, collection_count=12, settings=_settings())
     assert fetch_k == 12
 
 
@@ -67,7 +80,7 @@ def test_clamp_floors_at_one() -> None:
     # collection_count=0 represents "unknown / skip clamp" — falls back to
     # the computed pool. Empty collections short-circuit earlier in
     # ``search()`` before this helper is called.
-    fetch_k = _resolve_fetch_k(top_k=0, rerank=True, collection_count=10)
+    fetch_k = _resolve_fetch_k(top_k=0, rerank=True, collection_count=10, settings=_settings())
     assert fetch_k >= 1
 
 
@@ -86,6 +99,7 @@ def test_override_bypasses_formula() -> None:
     fetch_k = _resolve_fetch_k(
         top_k=50, rerank=True, collection_count=10000,
         fetch_k_override=50,
+        settings=_settings(),
     )
     assert fetch_k == 50
 
@@ -93,6 +107,7 @@ def test_override_bypasses_formula() -> None:
     fetch_k = _resolve_fetch_k(
         top_k=50, rerank=True, collection_count=10000,
         fetch_k_override=200,
+        settings=_settings(),
     )
     assert fetch_k == 200
 
@@ -107,6 +122,7 @@ def test_override_distinct_values_no_collapse() -> None:
         _resolve_fetch_k(
             top_k=50, rerank=True, collection_count=10000,
             fetch_k_override=v,
+        settings=_settings(),
         )
         for v in (50, 100, 200, 500)
     ]
@@ -119,6 +135,7 @@ def test_override_still_clamps_to_collection() -> None:
     fetch_k = _resolve_fetch_k(
         top_k=50, rerank=True, collection_count=30,
         fetch_k_override=500,
+        settings=_settings(),
     )
     assert fetch_k == 30
 
@@ -130,5 +147,6 @@ def test_override_none_preserves_formula() -> None:
     fetch_k = _resolve_fetch_k(
         top_k=5, rerank=True, collection_count=1000,
         fetch_k_override=None,
+        settings=_settings(),
     )
     assert fetch_k == 100

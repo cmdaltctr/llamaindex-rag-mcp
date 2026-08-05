@@ -24,7 +24,6 @@ warnings.warn(
 )
 
 from .core.retrieval.reranker import (  # noqa: F401
-    RERANK_MODEL,
     TOKENIZER_MAX_LENGTH,
     CrossEncoderReranker,
     _select_onnx_variant,

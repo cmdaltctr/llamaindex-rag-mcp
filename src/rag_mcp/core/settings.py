@@ -161,3 +161,56 @@ class EffectiveSettings(BaseModel):
     def metadata_taxonomy_mode(self) -> str:
         """Alias for ``metadata.taxonomy_mode`` (backward compat)."""
         return self.metadata.taxonomy_mode
+
+
+# ── Composition-root-provided default ───────────────────────────────────
+#
+# Entry points (``search``, ``ingest_path_async``) resolve their settings
+# ONCE at the boundary: an explicitly passed instance always wins, otherwise
+# the default the composition root installed at startup is used.  Everything
+# below the entry point receives the resolved instance as a required
+# parameter and performs no lookup of its own.
+#
+# This mirrors ``core.vectordb.get_default_store`` — the DI pattern already
+# established in this codebase — and satisfies the settings-dependency-
+# injection contract: no ``core/`` or ``integrations/`` module imports the
+# resolved ``Settings`` singleton, and two operations in one process each
+# honour the instance they were given.
+
+_default_effective: EffectiveSettings | None = None
+
+
+def set_default_effective_settings(settings: EffectiveSettings) -> None:
+    """Install the process-wide default (called only by the composition root)."""
+    global _default_effective
+    _default_effective = settings
+
+
+def reset_default_effective_settings() -> None:
+    """Clear the installed default (used by tests)."""
+    global _default_effective
+    _default_effective = None
+
+
+def get_default_effective_settings() -> EffectiveSettings:
+    """Return the composition-root default.
+
+    Raises:
+        RuntimeError: If the composition root has not installed one. Falling
+            back to class defaults here would silently discard the operator's
+            configuration — the H-7 failure mode — so this fails loudly.
+    """
+    if _default_effective is None:
+        raise RuntimeError(
+            "No default EffectiveSettings installed. The composition root "
+            "(rag_mcp.compose) installs one at startup; import it before "
+            "calling core operations, or pass effective_settings explicitly."
+        )
+    return _default_effective
+
+
+def resolve_effective_settings(
+    settings: EffectiveSettings | None,
+) -> EffectiveSettings:
+    """Return *settings* if given, else the composition-root default."""
+    return settings if settings is not None else get_default_effective_settings()

@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 _runtime_setup_done: bool = False
 
 
+def _resolve_sparse_backend_for(settings: Settings) -> str:
+    """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
+    from .config import resolve_sparse_backend
+
+    return resolve_sparse_backend(settings)
+
+
 def settings_to_effective(settings: Settings | None = None) -> Any:
     """Produce the server-default :class:`EffectiveSettings` from resolved ``Settings``.
 
@@ -77,7 +84,10 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
             rerank_model=settings.rerank_model,
             hybrid_enabled=settings.hybrid_enabled,
             hybrid_rrf_k=settings.hybrid_rrf_k,
-            hybrid_sparse_backend=settings.hybrid_sparse_backend,
+            # Bake the RESOLVED backend in: the `auto` capability probe runs
+            # once here in the composition root, so core/ performs a plain
+            # read instead of probing at query time (task 7.10).
+            hybrid_sparse_backend=_resolve_sparse_backend_for(settings),
         ),
         metadata=MetadataBlock(
             extraction_mode=settings.metadata_extraction_mode,
@@ -309,6 +319,11 @@ def ensure_runtime_setup() -> None:
         set_default_store(build_vector_store(settings))
     except (ImportError, ValueError) as exc:
         logger.warning("Failed to construct vector store: %s", exc)
+    # Install the process-wide default EffectiveSettings so core entry points
+    # have a composition-root-provided fallback when no instance is passed.
+    from .core.settings import set_default_effective_settings
+
+    set_default_effective_settings(settings_to_effective(settings))
     # Resolve the configured strategies so a bad import string fails fast.
     _resolve_active_strategies(settings)
     _runtime_setup_done = True

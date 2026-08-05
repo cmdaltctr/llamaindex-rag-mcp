@@ -180,6 +180,26 @@ def effective_settings():
 
 
 @pytest.fixture(autouse=True)
+def _install_default_effective_settings():
+    """Install a composition-root default EffectiveSettings for every test.
+
+    Production installs this in ``compose.ensure_runtime_setup()``. Tests that
+    call a core entry point without passing ``effective_settings`` need the
+    same default present, and each test gets a fresh instance so no state
+    leaks between them.
+    """
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        reset_default_effective_settings,
+        set_default_effective_settings,
+    )
+
+    set_default_effective_settings(EffectiveSettings())
+    yield
+    reset_default_effective_settings()
+
+
+@pytest.fixture(autouse=True)
 def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace OllamaEmbedding with MockEmbedding globally.
 

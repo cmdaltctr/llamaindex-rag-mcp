@@ -464,7 +464,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(config.settings, "hybrid_sparse_backend", "native")
-    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
+    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     if hasattr(retrieval, "_warned_collections"):
         retrieval._warned_collections.clear()
     if hasattr(retrieval, "_warned_native_fallback_collections"):
@@ -499,7 +499,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     monkeypatch.setattr(config.settings, "chroma_scan_page_size", 1)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
+    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_collections.clear()
     retrieval._warned_native_fallback_collections.clear()
 
@@ -528,7 +528,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     monkeypatch.setattr(config.settings, "rerank_fetch_multiplier", 2)
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"native_fallback": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "native")
+    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_native_fallback_collections.clear()
 
     with caplog.at_level(logging.WARNING):
@@ -560,7 +560,7 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     )
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"bm25_no_warn": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda: "bm25")
+    monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "bm25")
 
     with caplog.at_level(logging.WARNING):
         retrieval.search("rare", collection_name="bm25_no_warn", rerank=False, hybrid=True)
