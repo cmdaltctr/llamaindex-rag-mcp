@@ -7,6 +7,7 @@ sub-providers resolve to the correct LlamaIndex classes.
 
 from __future__ import annotations
 
+import importlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -37,7 +38,7 @@ def test_unknown_provider_falls_back_to_local(
 ) -> None:
     """Unknown EMBED_PROVIDER value should warn and fall back to local."""
     from rag_mcp import config
-    assert config.EMBED_PROVIDER in {"local", "cloud"}
+    assert config.get_settings().embed_provider in {"local", "cloud"}
 
 
 def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -179,9 +180,8 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
     from rag_mcp.core.metadata import llamaindex as _lli
     from rag_mcp.core.metadata import extractor as _ext
 
-    # Both modules read the resolved settings singleton, so a single set
-    # of patches drives the LLM-class selection in llamaindex.py and the
-    # fallback dispatch route in extractor.py.
+    # One injected EffectiveSettings drives both the LLM-class selection in
+    # llamaindex.py and the fallback dispatch route in extractor.py.
     _settings = EffectiveSettings(metadata_llm_provider="local", local_backend="llamacpp")
 
     mock_fn = AsyncMock(return_value={"category": "fallback", "keywords": [], "summary": ""})
@@ -196,7 +196,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
 
     with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn), \
          patch("builtins.__import__", side_effect=_failing_import):
-        await _lli._extract_llamaindex_async("text", "file.txt")
+        await _lli._extract_llamaindex_async("text", "file.txt", _settings)
         mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
 
@@ -244,48 +244,45 @@ def test_cloud_openrouter_missing_optional_deps_raises(monkeypatch: pytest.Monke
 
 def test_metadata_llm_provider_defaults_to_local(monkeypatch: pytest.MonkeyPatch) -> None:
     """METADATA_LLM_PROVIDER defaults to local when not explicitly set."""
-    import importlib
-
     monkeypatch.setenv("EMBED_PROVIDER", "local")
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
     monkeypatch.delenv("METADATA_LLM_PROVIDER", raising=False)
 
+    # Settings is resolved on demand now — build a fresh instance from the
+    # patched environment instead of reloading the module (the old pattern
+    # relied on a module-level singleton that no longer exists).
     import rag_mcp.config as config_mod
-    original_settings = config_mod.settings
-    importlib.reload(config_mod)
-    assert config_mod.METADATA_LLM_PROVIDER == "local"
+
+    config_mod._settings = None
+    assert config_mod.get_settings().metadata_llm_provider == "local"
 
     # Restore
     monkeypatch.setenv("METADATA_LLM_PROVIDER", "local")
-    importlib.reload(config_mod)
     # Reload re-created the settings singleton; restore the original so
     # modules that imported `settings` keep reading the same object.
-    config_mod.settings = original_settings
 
 
 def test_unknown_embed_provider_falls_back_to_local(monkeypatch: pytest.MonkeyPatch) -> None:
     """Unknown EMBED_PROVIDER value falls back to local."""
-    import importlib
-
     monkeypatch.setenv("EMBED_PROVIDER", "nonexistent")
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
 
+    # Settings is resolved on demand now — build a fresh instance from the
+    # patched environment instead of reloading the module (the old pattern
+    # relied on a module-level singleton that no longer exists).
     import rag_mcp.config as config_mod
-    original_settings = config_mod.settings
-    importlib.reload(config_mod)
-    assert config_mod.EMBED_PROVIDER == "local"
+
+    config_mod._settings = None
+    assert config_mod.get_settings().embed_provider == "local"
 
     # Restore
     monkeypatch.setenv("EMBED_PROVIDER", "local")
-    importlib.reload(config_mod)
-    config_mod.settings = original_settings
 
 
 def test_unknown_local_backend_falls_back_to_llamacpp(monkeypatch: pytest.MonkeyPatch) -> None:
     """Unknown LOCAL_BACKEND value falls back to llamacpp after config reload."""
-    import importlib
 
     monkeypatch.setenv("EMBED_PROVIDER", "local")
     monkeypatch.setenv("LOCAL_BACKEND", "nonexistent")
@@ -304,13 +301,9 @@ def test_unknown_local_backend_falls_back_to_llamacpp(monkeypatch: pytest.Monkey
     monkeypatch.setattr(importlib, "import_module", _mock_import)
 
     import rag_mcp.config as config_mod
-    original_settings = config_mod.settings
-    importlib.reload(config_mod)
-    assert config_mod.LOCAL_BACKEND == "llamacpp"
+    assert config_mod.get_settings().local_backend == "llamacpp"
 
     # Restore
     monkeypatch.setattr(importlib, "import_module", real_import_module)
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
-    importlib.reload(config_mod)
-    config_mod.settings = original_settings

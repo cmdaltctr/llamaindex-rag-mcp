@@ -17,6 +17,7 @@ def _set_mode(
     mode: str,
     keyword_rules: str | None = None,
     local_backend: str | None = None,
+    max_attempts: int | None = None,
 ):
     """Helper: install an EffectiveSettings carrying the mode under test.
 
@@ -35,6 +36,8 @@ def _set_mode(
     block_kwargs = {"extraction_mode": mode}
     if keyword_rules is not None:
         block_kwargs["keyword_rules"] = keyword_rules
+    if max_attempts is not None:
+        block_kwargs["ollama_classify_max_attempts"] = max_attempts
     root_kwargs = {}
     if local_backend is not None:
         root_kwargs["local_backend"] = local_backend
@@ -1125,7 +1128,7 @@ class TestCoverageGaps:
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
-        db = chromadb.PersistentClient(path=_config.CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_config.get_settings().chroma_persist_dir)
         collection = db.get_or_create_collection("paged_categories")
         collection.add(
             ids=["1", "2", "3"],
@@ -1313,7 +1316,9 @@ class TestOllamaRetry:
         self, monkeypatch,
     ) -> None:
         """First call fails, second succeeds → returns parsed metadata."""
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         good = json.dumps({
             "category": "ai",
@@ -1334,7 +1339,9 @@ class TestOllamaRetry:
 
     def test_retry_exhaustion_falls_back(self, monkeypatch, caplog) -> None:
         """All attempts fail → fallback dict + WARNING log."""
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         log = self._mock_async_client(
             monkeypatch,
@@ -1364,7 +1371,9 @@ class TestOllamaRetry:
 
     def test_backoff_grows_between_attempts(self, monkeypatch) -> None:
         """``_retry_sleep`` must be called with 1, 2, 4 ... seconds."""
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "4")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=4)
 
         sleeps: list[float] = []
 
@@ -1393,7 +1402,9 @@ class TestOllamaRetry:
 
     def test_no_sleep_when_max_attempts_is_one(self, monkeypatch) -> None:
         """A single-attempt configuration must not call _retry_sleep."""
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
 
         sleeps: list[float] = []
 
@@ -1416,7 +1427,9 @@ class TestOllamaRetry:
 
     def test_first_attempt_success_no_retry(self, monkeypatch) -> None:
         """A successful first attempt must not trigger a retry."""
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         log = self._mock_async_client(monkeypatch, [good])

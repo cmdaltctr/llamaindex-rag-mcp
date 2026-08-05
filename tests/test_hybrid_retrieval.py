@@ -162,9 +162,9 @@ def test_hybrid_config_defaults() -> None:
     """OpenSpec defaults are stable and safe for v1 rollout."""
     import rag_mcp.config as config
 
-    assert config.HYBRID_ENABLED is False
-    assert config.HYBRID_RRF_K == 60
-    assert config.HYBRID_SPARSE_BACKEND == "bm25"
+    assert config.get_settings().retrieval.hybrid_enabled is False
+    assert config.get_settings().retrieval.hybrid_rrf_k == 60
+    assert config.get_settings().retrieval.hybrid_sparse_backend == "bm25"
 
 
 def test_rrf_worked_example_from_spec() -> None:

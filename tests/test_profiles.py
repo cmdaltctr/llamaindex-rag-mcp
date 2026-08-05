@@ -66,8 +66,11 @@ def _make_mock_store(
 # Tier 2 lever env vars that override profile bundles. Tests that verify
 # profile-resolved values MUST clear these so the .env file doesn't leak.
 _TIER2_ENV_VARS = [
-    "TOP_K", "RERANK_ENABLED", "HYBRID_ENABLED",
-    "CHUNK_STRATEGY_FALLBACK", "METADATA_TAXONOMY_MODE",
+    "RETRIEVAL__TOP_K",
+    "RETRIEVAL__RERANK_ENABLED",
+    "RETRIEVAL__HYBRID_ENABLED",
+    "CHUNKING__STRATEGY_FALLBACK",
+    "METADATA__TAXONOMY_MODE",
 ]
 
 
@@ -87,28 +90,28 @@ class TestProfileBundles:
     def test_documents_profile_values(self) -> None:
         """Documents profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("documents")
-        assert bundle["TOP_K"] == 10
-        assert bundle["RERANK_ENABLED"] == "true"
-        assert bundle["HYBRID_ENABLED"] == "false"
-        assert bundle["CHUNK_STRATEGY_FALLBACK"] == "markdown"
-        assert bundle["METADATA_TAXONOMY_MODE"] == "category"
+        assert bundle["retrieval"]["top_k"] == 10
+        assert bundle["retrieval"]["rerank_enabled"] == True
+        assert bundle["retrieval"]["hybrid_enabled"] == False
+        assert bundle["chunking"]["strategy_fallback"] == "markdown"
+        assert bundle["metadata"]["taxonomy_mode"] == "category"
 
     def test_codebase_profile_values(self) -> None:
         """Codebase profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["TOP_K"] == 20
-        assert bundle["RERANK_ENABLED"] == "false"
-        assert bundle["HYBRID_ENABLED"] == "true"
-        assert bundle["CHUNK_STRATEGY_FALLBACK"] == "code"
-        assert bundle["METADATA_TAXONOMY_MODE"] == "file_type"
+        assert bundle["retrieval"]["top_k"] == 20
+        assert bundle["retrieval"]["rerank_enabled"] == False
+        assert bundle["retrieval"]["hybrid_enabled"] == True
+        assert bundle["chunking"]["strategy_fallback"] == "code"
+        assert bundle["metadata"]["taxonomy_mode"] == "file_type"
 
     def test_hybrid_resolves_to_default_profile(self) -> None:
         """Hybrid bundle resolves to default_profile's values, not its own keys."""
         bundle = _load_profile_bundle("hybrid")
         # Hybrid resolves to documents (the default_profile), so it carries
         # documents' Tier 2 levers, not a default_profile key.
-        assert bundle["TOP_K"] == 10
-        assert bundle["RERANK_ENABLED"] == "true"
+        assert bundle["retrieval"]["top_k"] == 10
+        assert bundle["retrieval"]["rerank_enabled"] == True
 
     def test_documents_profile_bundle_contains_no_credentials(self) -> None:
         """Profile bundles SHALL contain no credentials."""
@@ -127,7 +130,19 @@ class TestProfileBundles:
         with a wrong TYPE produces a validation error.
         """
         # Type mismatch on a known field raises during Pydantic validation.
-        with patch.dict("os.environ", {"TOP_K": "not_a_number"}):
+        # The env var uses the v2.0.0 nested delimiter.
+        with patch.dict("os.environ", {"RETRIEVAL__TOP_K": "not_a_number"}):
+            with pytest.raises(Exception):
+                Settings(_env_file=None)
+
+    def test_unknown_nested_key_is_rejected(self) -> None:
+        """extra="forbid" on the subpackage models catches typos (design D9).
+
+        This is the general-case guard: the legacy tripwire only enumerates
+        known pre-v2 names, so an unlisted or mistyped nested key would
+        otherwise be swallowed by the root model's extra="ignore".
+        """
+        with patch.dict("os.environ", {"RETRIEVAL__TOPK": "20"}):
             with pytest.raises(Exception):
                 Settings(_env_file=None)
 
@@ -489,12 +504,12 @@ class TestM1RerankerRevalidation:
         enables it; the codebase profile correctly disables it.
         """
         bundle = _load_profile_bundle("documents")
-        assert bundle["RERANK_ENABLED"] == "true"
+        assert bundle["retrieval"]["rerank_enabled"] == True
 
     def test_codebase_profile_sets_reranker_false(self) -> None:
         """The codebase profile disables the reranker (Experiment 10)."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["RERANK_ENABLED"] == "false"
+        assert bundle["retrieval"]["rerank_enabled"] == False
 
     def test_effective_settings_documents_reranker_on(self) -> None:
         """EffectiveSettings for documents has reranker_enabled=True."""
@@ -522,29 +537,55 @@ class TestBundleValidation:
     """Tests for operation-time bundle validation."""
 
     def test_invalid_top_k_raises_with_key_name(self) -> None:
-        """A non-integer TOP_K raises with the key name in the message."""
-        bundle = {"TOP_K": "not_a_number"}
-        with pytest.raises(ValueError, match="TOP_K"):
+        """A non-integer top_k raises with the key name in the message."""
+        bundle = {"retrieval": {"top_k": "not_a_number"}}
+        with pytest.raises(ValueError, match="top_k"):
             _bundle_to_effective("documents", bundle)
 
     def test_invalid_taxonomy_mode_raises_with_key_name(self) -> None:
-        """An invalid METADATA_TAXONOMY_MODE raises naming the key."""
-        bundle = {"METADATA_TAXONOMY_MODE": "invalid_mode"}
-        with pytest.raises(ValueError, match="METADATA_TAXONOMY_MODE"):
+        """An invalid metadata.taxonomy_mode raises naming the key."""
+        bundle = {"metadata": {"taxonomy_mode": "invalid_mode"}}
+        with pytest.raises(ValueError, match="taxonomy_mode"):
             _bundle_to_effective("codebase", bundle)
 
     def test_valid_bundle_does_not_raise(self) -> None:
-        """A valid bundle resolves without error."""
+        """A valid nested bundle resolves without error."""
         bundle = {
-            "TOP_K": 15,
-            "RERANK_ENABLED": "true",
-            "HYBRID_ENABLED": "false",
-            "CHUNK_STRATEGY_FALLBACK": "markdown",
-            "METADATA_TAXONOMY_MODE": "category",
+            "retrieval": {
+                "top_k": 15,
+                "rerank_enabled": True,
+                "hybrid_enabled": False,
+            },
+            "chunking": {"strategy_fallback": "markdown"},
+            "metadata": {"taxonomy_mode": "category"},
         }
         effective = _bundle_to_effective("documents", bundle)
-        assert effective.top_k == 15
-        assert effective.reranker_enabled is True
+        assert effective.retrieval.top_k == 15
+        assert effective.retrieval.rerank_enabled is True
+
+    def test_flat_schema_bundle_is_rejected(self, tmp_path, monkeypatch) -> None:
+        """A pre-v2.0.0 flat bundle fails loudly, naming the offending key.
+
+        Silently ignoring flat keys would reintroduce the exact failure mode
+        this change exists to remove: config that looks applied but is not.
+        """
+        import rag_mcp.config as _cfg
+
+        bundle_dir = tmp_path / "profiles"
+        bundle_dir.mkdir()
+        (bundle_dir / "documents.yaml").write_text(
+            'TOP_K: 10\nRERANK_ENABLED: "true"\n'
+        )
+
+        class _FakeTraversable:
+            def __truediv__(self, other):
+                return bundle_dir / str(other) if "profiles" not in str(other) else self
+
+        monkeypatch.setattr(
+            _cfg, "files", lambda _pkg: _FakeTraversable(), raising=False
+        )
+        with pytest.raises(ValueError, match="TOP_K"):
+            _cfg._load_profile_bundle("documents")
 
 
 # ── Taxonomy mode wiring (spec: file_type taxonomy) ──────────────────
@@ -564,12 +605,12 @@ class TestTaxonomyModeWiring:
     def test_category_taxonomy_is_default(self) -> None:
         """category mode is the default (documents profile)."""
         bundle = _load_profile_bundle("documents")
-        assert bundle["METADATA_TAXONOMY_MODE"] == "category"
+        assert bundle["metadata"]["taxonomy_mode"] == "category"
 
     def test_file_type_taxonomy_in_codebase(self) -> None:
         """file_type mode is set in the codebase profile."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["METADATA_TAXONOMY_MODE"] == "file_type"
+        assert bundle["metadata"]["taxonomy_mode"] == "file_type"
 
 
 # ── CLI/watcher profile wiring ───────────────────────────────────────

@@ -28,9 +28,28 @@ from rag_mcp.compose import (
 from rag_mcp.core.providers.common import get_embed_endpoint
 
 
+# Subpackage field -> the nested block that owns it (v2.0.0 schema).
+_BLOCK_OF = {
+    "embed_batch_size": "ingestion",
+    "embed_concurrency": "ingestion",
+    "rerank_model": "retrieval",
+    "top_k": "retrieval",
+    "ollama_classify_model": "metadata",
+    "ollama_classify_timeout": "metadata",
+}
+
+
 def _settings(**overrides) -> Settings:
-    """Build a fresh Settings with sensible defaults and no .env."""
-    base = {
+    """Build a fresh Settings with sensible defaults and no .env.
+
+    Accepts flat keyword names for readability and routes each into its
+    nested block, so callers need not restate the schema at every site.
+    """
+    from rag_mcp.core.ingestion.settings import IngestionSettings
+    from rag_mcp.core.metadata.settings import MetadataSettings
+    from rag_mcp.core.retrieval.settings import RetrievalSettings
+
+    flat = {
         "embed_provider": "local",
         "local_backend": "ollama",
         "embed_model": "nomic-embed-text",
@@ -41,8 +60,24 @@ def _settings(**overrides) -> Settings:
         "ollama_classify_timeout": 30.0,
         "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
     }
-    base.update(overrides)
-    return Settings(_env_file=None, **base)
+    flat.update(overrides)
+
+    blocks: dict[str, dict] = {}
+    root: dict = {}
+    for key, value in flat.items():
+        block = _BLOCK_OF.get(key)
+        if block:
+            blocks.setdefault(block, {})[key] = value
+        else:
+            root[key] = value
+
+    cls = {
+        "ingestion": IngestionSettings,
+        "retrieval": RetrievalSettings,
+        "metadata": MetadataSettings,
+    }
+    nested = {name: cls[name](**fields) for name, fields in blocks.items()}
+    return Settings(_env_file=None, **root, **nested)
 
 
 # ── build_embed_model ───────────────────────────────────────────────────────

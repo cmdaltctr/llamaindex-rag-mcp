@@ -20,7 +20,14 @@ def _model_default(field_name: str):
     the codebase's documented default rather than the developer's local
     environment.
     """
-    return Settings.model_fields[field_name].default
+    # v2.0.0: subpackage defaults live on the nested block models.
+    if field_name in Settings.model_fields:
+        return Settings.model_fields[field_name].default
+    for block in ("chunking", "ingestion", "retrieval", "metadata"):
+        block_cls = Settings.model_fields[block].annotation
+        if field_name in block_cls.model_fields:
+            return block_cls.model_fields[field_name].default
+    raise KeyError(field_name)
 
 
 def test_default_chunk_overlap_is_100() -> None:
@@ -43,6 +50,6 @@ def test_balanced_retrieval_defaults_are_env_overridable() -> None:
     map to the expected env var names.
     """
     # In pydantic-settings, env var name = field_name.upper()
-    assert "chunk_overlap" in Settings.model_fields
-    assert "top_k" in Settings.model_fields
-    assert "rerank_enabled" in Settings.model_fields
+    assert "chunk_overlap" in Settings.model_fields["chunking"].annotation.model_fields
+    assert "top_k" in Settings.model_fields["retrieval"].annotation.model_fields
+    assert "rerank_enabled" in Settings.model_fields["retrieval"].annotation.model_fields

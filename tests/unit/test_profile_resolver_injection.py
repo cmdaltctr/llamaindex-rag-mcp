@@ -30,7 +30,7 @@ def test_bundle_overlay_inherits_non_lever_fields(
     """Profile levers overlay onto the base; everything else is inherited."""
     # Tier 2 env vars legitimately win over the bundle; clear them so this
     # test exercises the bundle→base overlay rather than env precedence.
-    for var in ("TOP_K", "RERANK_ENABLED", "HYBRID_ENABLED"):
+    for var in ("RETRIEVAL__TOP_K", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__HYBRID_ENABLED"):
         monkeypatch.delenv(var, raising=False)
     base = EffectiveSettings(
         chroma_persist_dir="/operator/path",
@@ -41,7 +41,7 @@ def test_bundle_overlay_inherits_non_lever_fields(
 
     effective = _bundle_to_effective(
         "codebase",
-        {"TOP_K": 20, "RERANK_ENABLED": "false", "HYBRID_ENABLED": "true"},
+        {"retrieval": {"top_k": 20, "rerank_enabled": False, "hybrid_enabled": True}},
         base,
     )
 
@@ -65,7 +65,7 @@ def test_bundle_overlay_does_not_mutate_base(
     """Resolving a profile must leave the shared base instance untouched."""
     monkeypatch.delenv("RETRIEVAL__TOP_K", raising=False)
     base = EffectiveSettings(retrieval=RetrievalBlock(top_k=10))
-    _bundle_to_effective("codebase", {"TOP_K": 20}, base)
+    _bundle_to_effective("codebase", {"retrieval": {"top_k": 20}}, base)
     assert base.retrieval.top_k == 10
 
 
@@ -73,15 +73,15 @@ def test_two_profiles_from_one_base_are_independent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Two collections on different profiles must not observe each other."""
-    for var in ("TOP_K", "RERANK_ENABLED", "HYBRID_ENABLED"):
+    for var in ("RETRIEVAL__TOP_K", "RETRIEVAL__RERANK_ENABLED", "RETRIEVAL__HYBRID_ENABLED"):
         monkeypatch.delenv(var, raising=False)
     base = EffectiveSettings(chroma_persist_dir="/shared")
 
     docs = _bundle_to_effective(
-        "documents", {"TOP_K": 10, "RERANK_ENABLED": "true"}, base
+        "documents", {"retrieval": {"top_k": 10, "rerank_enabled": True}}, base
     )
     code = _bundle_to_effective(
-        "codebase", {"TOP_K": 20, "RERANK_ENABLED": "false"}, base
+        "codebase", {"retrieval": {"top_k": 20, "rerank_enabled": False}}, base
     )
 
     assert docs.retrieval.top_k == 10

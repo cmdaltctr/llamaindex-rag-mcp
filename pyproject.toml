@@ -177,9 +177,7 @@ ignore_imports = [
     "rag_mcp.config -> rag_mcp.core.chunking.settings",
     "rag_mcp.config -> rag_mcp.core.retrieval.settings",
     "rag_mcp.config -> rag_mcp.core.metadata.settings",
-    # TEMPORARY: resolve_sparse_backend imports core.retrieval.sparse.
-    # Removed at task 7.10 when the probe moves to compose.py.
-    "rag_mcp.config -> rag_mcp.core.retrieval.sparse",
+    "rag_mcp.config -> rag_mcp.core.ingestion.settings",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -202,6 +200,7 @@ ignore_imports = [
     "rag_mcp.integrations.magika -> rag_mcp.core.settings",
     "rag_mcp.integrations.azure -> rag_mcp.core.settings",
     "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
+    "rag_mcp.integrations.pdf.factory -> rag_mcp.core.settings",
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings
@@ -214,7 +213,6 @@ ignore_imports = [
     # undetected today. Do not add modules here to silence a new violation;
     # the four below are a time-boxed migration artefact removed at 5.6, and
     # task 10.3a fails the build if any outlives its fix.
-    "rag_mcp.integrations.pdf.factory -> rag_mcp.config",
 ]
 unmatched_ignore_imports_alerting = "error"
 
