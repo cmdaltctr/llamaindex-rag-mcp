@@ -32,16 +32,6 @@ def _line_count(path: Path) -> int:
         return sum(1 for _ in fh)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Architecture-v2 conformance: five files exceed the 500-line ceiling "
-        "(core/codebase/code_graph.py 690, core/codebase/codebase_map.py 663, "
-        "config/__init__.py 576, core/documents/doc_graph.py 562, "
-        "daemon/watcher.py 550). Split in group 8 (tasks 8.4-8.6); "
-        "config/__init__.py drops below the ceiling via groups 5/7/9 (task 8.7)."
-    ),
-)
 def test_no_file_exceeds_500_lines() -> None:
     """No file under ``src/rag_mcp/`` may exceed 500 lines."""
     offenders: list[tuple[Path, int]] = []

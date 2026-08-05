@@ -78,10 +78,10 @@
 - [x] 7.5 Rewrite `src/rag_mcp/config/profiles/documents.yaml` to `retrieval:` (`top_k: 10`, `rerank_enabled: true`, `hybrid_enabled: false`), `chunking:` (`strategy_fallback: markdown`), `metadata:` (`taxonomy_mode: category`), preserving the existing header comments including the ADR-018/ADR-030 reranker rationale.
 - [x] 7.6 Rewrite `src/rag_mcp/config/profiles/codebase.yaml` to `retrieval:` (`top_k: 20`, `rerank_enabled: false`, `hybrid_enabled: true`), `chunking:` (`strategy_fallback: code`), `metadata:` (`taxonomy_mode: file_type`), preserving the Experiment 10 rationale comments.
 - [x] 7.7 Keep `src/rag_mcp/config/profiles/hybrid.yaml` as a selector (`default_profile: documents` only) and add a validator rejecting `retrieval:`/`chunking:`/`ingestion:`/`metadata:` blocks in it. The validator MUST run at `ProfileResolver` construction (equivalently, at settings resolution) — **not** lazily at first collection lookup — so a malformed selector fails at startup rather than at first query. Add a test asserting the failure surfaces during construction with no search performed.
-- [ ] 7.8 Search the repository for any other profile YAML (outside `.venv/`) and migrate it to the nested schema in this change; record the inventory in `notes/profile-yaml-inventory.md`.
+- [x] 7.8 Search the repository for any other profile YAML (outside `.venv/`) and migrate it to the nested schema in this change; record the inventory in `notes/profile-yaml-inventory.md`.
 - [x] 7.9 Add validation that a bundle using flat SCREAMING_SNAKE keys is rejected with an error naming the offending key, and a test for it.
 - [x] 7.10 Move `resolve_sparse_backend()` (`config/__init__.py:385`) and `resolve_pdf_reader()` (`:412`) plus their `_resolve_*` wrappers into `compose.py`, deleting `from ..core.retrieval.sparse import _detect_native_sparse_capability` at `:395`.
-- [ ] 7.11 Move `MAGIKA_LABEL_TO_TREESITTER` (`config/__init__.py:478`) to `core/codebase/code_graph.py` and `SUPPORTED_EXTENSIONS` (`:488`) to `core/ingestion/loader.py`, updating consumers.
+- [x] 7.11 Move `MAGIKA_LABEL_TO_TREESITTER` (`config/__init__.py:478`) to `core/codebase/code_graph.py` and `SUPPORTED_EXTENSIONS` (`:488`) to `core/ingestion/loader.py`, updating consumers.
 - [x] 7.12 Add the legacy-flat-env-var tripwire (design.md D9 layer 2): a startup validator scanning the process environment for the pre-v2 flat subpackage names and raising a `ValueError` naming the `CHUNKING__*`/`INGESTION__*`/`RETRIEVAL__*`/`METADATA__*` replacement. This covers the case `extra="forbid"` structurally cannot see — a bare `TOP_K` never reaches a subpackage model. Document its lifetime in the module docstring: permanent through v2.x, **removed in v3.0.0** (not v2.1.0 — see D9). Add tests for hit and no-hit paths.
 - [x] 7.13 Confirm `config-is-leaf` (task 1.3) now passes.
 
@@ -89,22 +89,22 @@
 
 - [x] 8.1 Delete `MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size` at `core/ingestion/chunker.py:23`; read the value from the injected settings at the two live consumption points (`:127`, `:188`).
 - [x] 8.2 Delete the import-time `BoundedSemaphore(value=settings.embed_concurrency)` at `core/ingestion/_state.py:22`; construct the limiter at operation start (or in `compose.py`) from the injected concurrency value.
-- [ ] 8.3 Add a docstring note on `core/retrieval/reranker.py:43`'s `RERANK_MODEL` recording it as a deliberate compat export per ADR-033:65, consumed by nothing on the live path; add a test asserting no production module reads it.
-- [ ] 8.4 Split `core/codebase/code_graph.py` (690) into `code_graph.py` (graph assembly), `ast_extract.py` (tree-sitter extraction), and `communities.py` (deterministic community detection), preserving AGENTS.md invariant #8 (no LLM involvement).
-- [ ] 8.5 Split `core/codebase/codebase_map.py` (663) into `codebase_map.py` (assembly), `cache.py` (git-commit-hash-keyed cache, AGENTS.md gotcha #9), and `format.py` (rendering).
-- [ ] 8.6 Split `core/documents/doc_graph.py` (562) into `doc_graph.py` and `similarity.py`; split `daemon/watcher.py` (550) into `watcher.py` and `debounce.py`.
-- [ ] 8.7 Verify `src/rag_mcp/config/__init__.py` is at or below ~150 lines after groups 5, 7 and 9; split only if it is not.
-- [ ] 8.8 Un-`xfail` `tests/test_file_size_ceiling.py` (task 1.5) and confirm zero offenders.
+- [x] 8.3 Add a docstring note on `core/retrieval/reranker.py:43`'s `RERANK_MODEL` recording it as a deliberate compat export per ADR-033:65, consumed by nothing on the live path; add a test asserting no production module reads it.
+- [x] 8.4 Split `core/codebase/code_graph.py` (690) into `code_graph.py` (graph assembly), `ast_extract.py` (tree-sitter extraction), and `communities.py` (deterministic community detection), preserving AGENTS.md invariant #8 (no LLM involvement).
+- [x] 8.5 Split `core/codebase/codebase_map.py` (663) into `codebase_map.py` (assembly), `cache.py` (git-commit-hash-keyed cache, AGENTS.md gotcha #9), and `format.py` (rendering).
+- [x] 8.6 Split `core/documents/doc_graph.py` (562) into `doc_graph.py` and `similarity.py`; split `daemon/watcher.py` (550) into `watcher.py` and `debounce.py`.
+- [x] 8.7 Verify `src/rag_mcp/config/__init__.py` is at or below ~150 lines after groups 5, 7 and 9; split only if it is not.
+- [x] 8.8 Un-`xfail` `tests/test_file_size_ceiling.py` (task 1.5) and confirm zero offenders.
 
 ## 9. Delete the v1 compatibility surface (Category A)
 
 - [x] 9.1 Delete the PEP 562 alias table and `__getattr__` at `config/__init__.py:497-576` (the ~55 legacy constant aliases).
-- [ ] 9.2 Delete the nine top-level shim modules: `server.py`, `cli.py`, `watcher.py`, `azure_reader.py`, `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, `reranker.py`, `sparse_retriever.py`.
-- [ ] 9.3 Delete the `src/rag_mcp/readers/` package (`__init__.py`, `base.py`, `factory.py`, `pypdf_reader.py`, `pypdfium_reader.py`, `liteparse_reader.py`).
-- [ ] 9.4 Update `tests/conftest.py:161`'s `sys.modules.get()` lookup to the `rag_mcp.core.*` path and remove any other test reference to the deleted modules.
-- [ ] 9.5 Remove the deprecated-shim entries from `[tool.coverage.run] omit` in `pyproject.toml`, leaving only exclusions that are still justified.
-- [ ] 9.6 Verify the packaging surface: `uv run rag-mcp` starts the MCP server and every CLI subcommand runs, with no import of a deleted module.
-- [ ] 9.7 Add a one-line note to each archived `experiments/*/run_eval.py` header (or the experiment's `README`) recording that it targets the pre-v2.0.0 import surface and is intentionally not repaired.
+- [x] 9.2 Delete the nine top-level shim modules: `server.py`, `cli.py`, `watcher.py`, `azure_reader.py`, `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, `reranker.py`, `sparse_retriever.py`.
+- [x] 9.3 Delete the `src/rag_mcp/readers/` package (`__init__.py`, `base.py`, `factory.py`, `pypdf_reader.py`, `pypdfium_reader.py`, `liteparse_reader.py`).
+- [x] 9.4 Update `tests/conftest.py:161`'s `sys.modules.get()` lookup to the `rag_mcp.core.*` path and remove any other test reference to the deleted modules.
+- [x] 9.5 Remove the deprecated-shim entries from `[tool.coverage.run] omit` in `pyproject.toml`, leaving only exclusions that are still justified.
+- [x] 9.6 Verify the packaging surface: `uv run rag-mcp` starts the MCP server and every CLI subcommand runs, with no import of a deleted module.
+- [x] 9.7 Add a one-line note to each archived `experiments/*/run_eval.py` header (or the experiment's `README`) recording that it targets the pre-v2.0.0 import surface and is intentionally not repaired.
 - [ ] 9.8 Run `graphify update .` so the knowledge graph reflects the 15 deleted modules before groups 10–13 consult it.
 
 ## 10. Complete the enforcement contracts
@@ -120,8 +120,8 @@
 ## 11. Test suite migration
 
 - [ ] 11.1 Migrate every test that patches `rag_mcp.config.settings` attributes to construct an `EffectiveSettings` via the task 4.1 fixture and pass it into the operation.
-- [ ] 11.2 Migrate every test that sets a flat subpackage env var (`TOP_K`, `CHUNK_SIZE`, `RERANK_ENABLED`, `METADATA_EXTRACTION_MODE`, `EMBED_CONCURRENCY`, …) to the `RETRIEVAL__*` / `CHUNKING__*` / `INGESTION__*` / `METADATA__*` names. Compare the count migrated against the group 1.1 baseline and record any discrepancy.
-- [ ] 11.3 Keep `PDF_READER=pypdf` determinism in the PDF tests (AGENTS.md gotcha #6) and `reset_model_cache()` setup/teardown in the reranker tests (gotcha #2) intact through the migration.
+- [x] 11.2 Migrate every test that sets a flat subpackage env var (`TOP_K`, `CHUNK_SIZE`, `RERANK_ENABLED`, `METADATA_EXTRACTION_MODE`, `EMBED_CONCURRENCY`, …) to the `RETRIEVAL__*` / `CHUNKING__*` / `INGESTION__*` / `METADATA__*` names. Compare the count migrated against the group 1.1 baseline and record any discrepancy.
+- [x] 11.3 Keep `PDF_READER=pypdf` determinism in the PDF tests (AGENTS.md gotcha #6) and `reset_model_cache()` setup/teardown in the reranker tests (gotcha #2) intact through the migration.
 - [ ] 11.4 Add tests for the nested profile bundles: each of `documents` and `codebase` resolves to its documented lever set; a flat-key bundle is rejected; `hybrid.yaml` with a lever block is rejected.
 - [ ] 11.5 Add a test that two `search()` calls in one process with different `EffectiveSettings` each honour their own instance (per-collection hybrid mode).
 - [ ] 11.6 Add a test that the `documents`/`codebase` profile difference is observable end-to-end through `ProfileResolver` without any global mutation.

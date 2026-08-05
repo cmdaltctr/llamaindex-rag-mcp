@@ -569,7 +569,7 @@ class TestBundleValidation:
         Silently ignoring flat keys would reintroduce the exact failure mode
         this change exists to remove: config that looks applied but is not.
         """
-        import rag_mcp.config as _cfg
+        import rag_mcp.config.sources as _sources
 
         bundle_dir = tmp_path / "profiles"
         bundle_dir.mkdir()
@@ -577,15 +577,15 @@ class TestBundleValidation:
             'TOP_K: 10\nRERANK_ENABLED: "true"\n'
         )
 
-        class _FakeTraversable:
-            def __truediv__(self, other):
-                return bundle_dir / str(other) if "profiles" not in str(other) else self
+        class _FakeAnchor:
+            def __truediv__(self, part):
+                # Mimics importlib.resources traversal:
+                # files(pkg) / "profiles" / "<name>.yaml"
+                return self if part == "profiles" else bundle_dir / str(part)
 
-        monkeypatch.setattr(
-            _cfg, "files", lambda _pkg: _FakeTraversable(), raising=False
-        )
+        monkeypatch.setattr(_sources, "files", lambda _pkg: _FakeAnchor())
         with pytest.raises(ValueError, match="TOP_K"):
-            _cfg._load_profile_bundle("documents")
+            _sources._load_profile_bundle("documents")
 
 
 # ── Taxonomy mode wiring (spec: file_type taxonomy) ──────────────────

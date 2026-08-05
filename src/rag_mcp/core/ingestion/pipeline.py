@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from ...config import SUPPORTED_EXTENSIONS
+from .loader import SUPPORTED_EXTENSIONS
 from ..settings import resolve_effective_settings
 from ._state import shutdown_requested
 from .chunker import read_and_chunk_file_async

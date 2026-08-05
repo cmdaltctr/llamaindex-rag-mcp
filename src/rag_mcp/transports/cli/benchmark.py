@@ -14,7 +14,8 @@ import typer
 from rich.table import Table
 
 from . import app, console, _print_ollama_error
-from ...config import SUPPORTED_EXTENSIONS, get_settings
+from ...config import get_settings
+from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
 
 
 def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:

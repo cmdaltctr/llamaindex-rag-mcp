@@ -17,7 +17,7 @@ from typing import Any
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
-from ...config import MAGIKA_LABEL_TO_TREESITTER
+from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..chunking.registry import get as _chunking_get
 from ..settings import resolve_effective_settings
 

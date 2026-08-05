@@ -316,116 +316,6 @@ class CodebaseMap:
     commit_hash: str | None = None
 
 
-def _get_git_commit_hash(path: str) -> str | None:
-    """Get the current git commit hash for a project path.
-
-    Args:
-        path: Project directory path.
-
-    Returns:
-        The commit hash string, or None if not a git repository.
-    """
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            cwd=path,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except OSError:
-        pass
-    return None
-
-
-def _load_cache(path: str) -> CodebaseMap | None:
-    """Load a cached codebase map from disk.
-
-    Cache files are stored at ``<project>/.opencode/codebase-graph.json``.
-    The cache is keyed by git commit hash.
-
-    Args:
-        path: Project directory path.
-
-    Returns:
-        A ``CodebaseMap`` if the cache exists and the commit hash matches,
-        otherwise None.
-    """
-    cache_dir = Path(path) / get_default_effective_settings().codebase_map_cache_dir
-    cache_file = cache_dir / "codebase-graph.json"
-
-    if not cache_file.exists():
-        return None
-
-    commit_hash = _get_git_commit_hash(path)
-    if commit_hash is None:
-        logger.info("Caching disabled — not a git repository")
-        return None
-
-    try:
-        data = json.loads(cache_file.read_text())
-        if data.get("commit_hash") == commit_hash:
-            logger.debug("Codebase map cache hit (commit %s)", commit_hash[:8])
-            return _codebase_map_from_dict(data)
-    except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Cache file corrupt, rebuilding: %s", exc)
-
-    return None
-
-
-def _save_cache(path: str, codebase_map: CodebaseMap) -> None:
-    """Save a codebase map to disk cache.
-
-    Args:
-        path: Project directory path.
-        codebase_map: The codebase map to cache.
-    """
-    if codebase_map.commit_hash is None:
-        return
-
-    cache_dir = Path(path) / get_default_effective_settings().codebase_map_cache_dir
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / "codebase-graph.json"
-
-    data = _codebase_map_to_dict(codebase_map)
-    cache_file.write_text(json.dumps(data, indent=2))
-    logger.debug("Codebase map cached (commit %s)", codebase_map.commit_hash[:8])
-
-
-def _codebase_map_to_dict(m: CodebaseMap) -> dict:
-    """Serialise a CodebaseMap to a JSON-compatible dict."""
-    return {
-        "commit_hash": m.commit_hash,
-        "inventory": {
-            "type_counts": m.inventory.type_counts,
-            "binary_files": m.inventory.binary_files,
-            "mismatches": m.inventory.mismatches,
-        },
-        "code_communities": m.code_communities,
-        "doc_communities": m.doc_communities,
-        "cross_links": m.cross_links,
-        "hubs": m.hubs,
-    }
-
-
-def _codebase_map_from_dict(data: dict) -> CodebaseMap:
-    """Deserialise a CodebaseMap from a dict."""
-    inv_data = data.get("inventory", {})
-    return CodebaseMap(
-        inventory=FileInventory(
-            type_counts=inv_data.get("type_counts", {}),
-            binary_files=inv_data.get("binary_files", []),
-            mismatches=[tuple(m) for m in inv_data.get("mismatches", [])],
-        ),
-        code_communities=data.get("code_communities", []),
-        doc_communities=data.get("doc_communities", []),
-        cross_links=data.get("cross_links", []),
-        hubs=data.get("hubs", []),
-        commit_hash=data.get("commit_hash"),
-    )
-
-
 def build_codebase_map(path: str) -> CodebaseMap:
     """Build a complete codebase map for a project directory.
 
@@ -538,82 +428,6 @@ def build_codebase_map(path: str) -> CodebaseMap:
     )
 
 
-def format_codebase_map(codebase_map: CodebaseMap) -> str:
-    """Format a complete codebase map as compact text (≤800 tokens).
-
-    Produces sections for File Types, Code Communities, Document Communities,
-    Cross-links, and Architectural Hubs. Communities with more than 4 files
-    are truncated to show the top 4 plus "... and N more".
-
-    Args:
-        codebase_map: The codebase map to format.
-
-    Returns:
-        Compact text representation targeting 500–800 tokens.
-    """
-    sections: list[str] = []
-
-    # File Types section
-    sections.append(format_inventory(codebase_map.inventory))
-
-    # Code Communities section
-    if codebase_map.code_communities:
-        lines = ["", "## Code Communities"]
-        for i, comm in enumerate(codebase_map.code_communities):
-            files = comm.get("files", [])
-            file_count = comm.get("file_count", len(files))
-            edge_count = comm.get("edge_count", 0)
-            label = comm.get("label", f"Community {i + 1}")
-
-            if len(files) > 4:
-                shown = ", ".join(files[:4])
-                lines.append(
-                    f"- {label} ({file_count} files, {edge_count} edges): "
-                    f"{shown}, ... and {len(files) - 4} more"
-                )
-            else:
-                shown = ", ".join(files) if files else ""
-                lines.append(
-                    f"- {label} ({file_count} files, {edge_count} edges): {shown}"
-                )
-        sections.append("\n".join(lines))
-
-    # Document Communities section
-    if codebase_map.doc_communities:
-        lines = ["", "## Document Communities"]
-        for i, comm in enumerate(codebase_map.doc_communities):
-            chunks = comm.get("chunks", [])
-            chunk_count = comm.get("chunk_count", len(chunks))
-            label = comm.get("label", f"Topic {i + 1}")
-            category = comm.get("category", "")
-            cat_str = f" [{category}]" if category else ""
-            lines.append(f"- {label}{cat_str} ({chunk_count} chunks)")
-        sections.append("\n".join(lines))
-
-    # Cross-links section
-    if codebase_map.cross_links:
-        lines = ["", "## Cross-links"]
-        for link in codebase_map.cross_links[:15]:
-            lines.append(
-                f"- {link.get('code', '?')} ↔ {link.get('doc', '?')} "
-                f"({link.get('relation', '?')})"
-            )
-        if len(codebase_map.cross_links) > 15:
-            lines.append(f"- ... and {len(codebase_map.cross_links) - 15} more")
-        sections.append("\n".join(lines))
-
-    # Hubs section
-    if codebase_map.hubs:
-        lines = ["", "## Architectural Hubs"]
-        for hub in codebase_map.hubs[:10]:
-            lines.append(
-                f"- {hub.get('file', '?')} (imported by {hub.get('in_degree', 0)})"
-            )
-        sections.append("\n".join(lines))
-
-    return "\n".join(sections)
-
-
 def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
     """Get a formatted codebase map for a project, with caching.
 
@@ -670,3 +484,17 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
             "status": "error",
             "message": f"{type(exc).__name__}: {exc}",
         })
+
+
+# ── Re-exports ───────────────────────────────────────────────────────────
+# Caching and rendering live in sibling modules after the task 8.5 split.
+# Re-exported so existing imports and test monkeypatch targets keep working.
+
+from .cache import (  # noqa: E402
+    _codebase_map_from_dict,
+    _codebase_map_to_dict,
+    _get_git_commit_hash,
+    _load_cache,
+    _save_cache,
+)
+from .format import format_codebase_map  # noqa: E402

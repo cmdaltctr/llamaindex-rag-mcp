@@ -39,163 +39,9 @@ from ..core.retrieval.settings import RetrievalSettings
 
 load_dotenv()
 
+from .sources import LegacyBool  # noqa: E402
+
 logger = logging.getLogger(__name__)
-
-
-# ── Legacy bool parser ──────────────────────────────────────────────
-# Pre-refactor code used ``.lower() == "true"`` for boolean env vars.
-# Pydantic's native bool parser accepts "1"/"yes"/"on" as True, which
-# would be a silent semantic change.  This validator constrains parsing
-# to the legacy contract.
-
-
-def _parse_legacy_bool(value: object) -> object:
-    """Parse booleans with legacy ``.lower() == "true"`` semantics."""
-    if isinstance(value, str):
-        return value.lower() == "true"
-    return value
-
-
-LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
-
-
-# ── YAML defaults source ────────────────────────────────────────────
-
-
-class _YamlDefaultsSource(PydanticBaseSettingsSource):
-    """Settings source reading ``config/defaults.yaml`` via importlib.resources.
-
-    YAML uses the nested schema (PROPOSAL §4.3/§6.2): ``chunking:``,
-    ``ingestion:``, ``retrieval:`` and ``metadata:`` blocks with lowercase
-    leaf keys, plus flat cross-cutting keys at the top level. Values from
-    this source sit between field defaults (lower) and env/.env (higher).
-    """
-
-    def __init__(self, settings_cls: type[BaseSettings]) -> None:
-        super().__init__(settings_cls)
-        self._data: dict[str, Any] = self._load_yaml()
-
-    def _load_yaml(self) -> dict[str, Any]:
-        """Load defaults.yaml from the package, tolerating missing file."""
-        try:
-            yaml_path = files("rag_mcp.config") / "defaults.yaml"
-            with yaml_path.open("r") as fh:
-                data = yaml.safe_load(fh)
-            return data if isinstance(data, dict) else {}
-        except (FileNotFoundError, ModuleNotFoundError):
-            return {}
-
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
-        return self._data.get(field_name), field_name, False
-
-    def __call__(self) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for field_name in self.settings_cls.model_fields:
-            if field_name in self._data:
-                result[field_name] = self._data[field_name]
-        return result
-
-
-# ── Profile YAML source (Phase 4) ───────────────────────────────────
-
-
-def _load_profile_bundle(profile_name: str) -> dict[str, Any]:
-    """Load a profile bundle from ``config/profiles/<name>.yaml``.
-
-    Operational profiles (``documents``, ``codebase``) return their Tier 2
-    lever overrides as a flat dict keyed by SCREAMING_SNAKE_CASE env names.
-
-    The ``hybrid`` profile is a mode selector: it declares only a
-    ``default_profile`` key.  This function resolves hybrid to the named
-    default profile's bundle so the startup Settings carries concrete
-    retrieval levers.
-
-    Args:
-        profile_name: One of ``documents``, ``codebase``, ``hybrid``.
-
-    Returns:
-        Flat dict of profile overrides, or an empty dict if the bundle
-        cannot be loaded (graceful degradation).
-    """
-    try:
-        yaml_path = files("rag_mcp.config") / "profiles" / f"{profile_name}.yaml"
-        with yaml_path.open("r") as fh:
-            data = yaml.safe_load(fh)
-    except (FileNotFoundError, ModuleNotFoundError):
-        return {}
-    except yaml.YAMLError as exc:
-        logger.error(
-            "Profile bundle %r has invalid YAML: %s — ignoring", profile_name, exc
-        )
-        return {}
-
-    if not isinstance(data, dict):
-        return {}
-
-    _LEVER_BLOCKS = ("retrieval", "chunking", "ingestion", "metadata")
-
-    # Reject the pre-v2 flat schema loudly rather than silently ignoring it.
-    flat_keys = [k for k in data if k.isupper()]
-    if flat_keys:
-        raise ValueError(
-            f"Profile bundle {profile_name!r} uses the pre-v2.0.0 flat schema. "
-            f"Offending key(s): {', '.join(sorted(flat_keys))}. Nest them under "
-            f"a {', '.join(_LEVER_BLOCKS)} block — e.g. 'TOP_K: 10' becomes "
-            f"'retrieval:\n  top_k: 10'."
-        )
-
-    # Hybrid is a mode selector — it must carry no operational levers.
-    if profile_name == "hybrid":
-        lever_blocks = [b for b in _LEVER_BLOCKS if b in data]
-        if lever_blocks:
-            raise ValueError(
-                f"hybrid.yaml declares lever block(s) {', '.join(lever_blocks)}, "
-                f"but hybrid is a mode selector, not an operational profile. "
-                f"Move those levers into documents.yaml or codebase.yaml."
-            )
-        default_profile = data.get("default_profile", "documents")
-        if default_profile not in ("documents", "codebase"):
-            default_profile = "documents"
-        return _load_profile_bundle(default_profile)
-
-    return data
-
-
-class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
-    """Settings source reading the selected profile bundle.
-
-    Sits between ``_YamlDefaultsSource`` (defaults.yaml, lower) and the
-    environment sources (higher) in the precedence chain.  The profile
-    bundle supplies Tier 2 lever overrides for the server-wide default
-    profile selected by ``RAG_PROFILE``.
-
-    Per-collection profile resolution at operation time is handled by
-    :class:`rag_mcp.core.profiles.resolver.ProfileResolver`, not by this
-    source.  This source only affects the startup ``Settings`` singleton.
-    """
-
-    def __init__(self, settings_cls: type[BaseSettings]) -> None:
-        super().__init__(settings_cls)
-        self._data: dict[str, Any] = self._load_profile()
-
-    def _load_profile(self) -> dict[str, Any]:
-        """Load the profile bundle selected by ``RAG_PROFILE``."""
-        profile = os.environ.get("RAG_PROFILE", "documents")
-        return _load_profile_bundle(profile)
-
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
-        return self._data.get(field_name), field_name, False
-
-    def __call__(self) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for field_name in self.settings_cls.model_fields:
-            if field_name in self._data:
-                result[field_name] = self._data[field_name]
-        return result
 
 
 # ── Root Settings model ─────────────────────────────────────────────
@@ -448,88 +294,23 @@ _settings: Settings | None = None
 # layering (finding F3).
 
 
-# ── Static constants (not env-configurable) ─────────────────────────
-
-MAGIKA_LABEL_TO_TREESITTER: dict[str, str] = {
-    "python": "python", "javascript": "javascript", "typescript": "typescript",
-    "tsx": "tsx", "jsx": "jsx", "java": "java", "c": "c", "cpp": "cpp",
-    "csharp": "c_sharp", "go": "go", "rust": "rust", "ruby": "ruby",
-    "php": "php", "swift": "swift", "kotlin": "kotlin", "scala": "scala",
-    "html": "html", "css": "css", "sql": "sql", "bash": "bash",
-    "shell": "bash", "yaml": "yaml", "toml": "toml", "json": "json",
-}
-
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
-
-
 # ── PEP 562 legacy constant shim ────────────────────────────────────
 # Maps each frozen legacy constant name to its Settings field path.
 # When code does ``from rag_mcp.config import TOP_K``, Python calls
 # ``__getattr__("TOP_K")``, which resolves the value from the Settings
 
-# ── Legacy flat env-var tripwire (design.md D9, layer 2) ─────────────
 
-# Pre-v2.0.0 flat names for settings that now live in a nested block.
-# `extra="forbid"` on the subpackage models catches a mistyped *nested* key,
-# but a bare `TOP_K` never reaches a subpackage model at all — with
-# env_nested_delimiter it is simply an unrecognised root-level key that
-# `extra="ignore"` would swallow in silence. That silent behaviour change on
-# upgrade is exactly what this whole change exists to eliminate, so it is
-# caught here instead.
-#
-# LIFETIME: permanent through the v2.x line, removed in v3.0.0. This is a
-# decided removal trigger, not a deferral to an unplanned minor.
-_LEGACY_FLAT_ENV_VARS: dict[str, str] = {
-    "CHUNK_SIZE": "CHUNKING__CHUNK_SIZE",
-    "CHUNK_OVERLAP": "CHUNKING__CHUNK_OVERLAP",
-    "MARKDOWN_CHUNK_SIZE": "CHUNKING__MARKDOWN_CHUNK_SIZE",
-    "MARKDOWN_HEADING_PREPEND": "CHUNKING__MARKDOWN_HEADING_PREPEND",
-    "MARKDOWN_MIN_CHUNK_FRACTION": "CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION",
-    "CHUNK_STRATEGY_FALLBACK": "CHUNKING__STRATEGY_FALLBACK",
-    "EMBED_CONCURRENCY": "INGESTION__EMBED_CONCURRENCY",
-    "EMBED_BATCH_SIZE": "INGESTION__EMBED_BATCH_SIZE",
-    "TOP_K": "RETRIEVAL__TOP_K",
-    "SIMILARITY_THRESHOLD": "RETRIEVAL__SIMILARITY_THRESHOLD",
-    "RERANK_ENABLED": "RETRIEVAL__RERANK_ENABLED",
-    "RERANK_ENABLED_FOR_SEMANTIC": "RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC",
-    "HARD_TECHNICAL_THRESHOLD": "RETRIEVAL__HARD_TECHNICAL_THRESHOLD",
-    "RERANK_FETCH_MULTIPLIER": "RETRIEVAL__RERANK_FETCH_MULTIPLIER",
-    "RERANK_MAX_FETCH": "RETRIEVAL__RERANK_MAX_FETCH",
-    "RERANK_MODEL": "RETRIEVAL__RERANK_MODEL",
-    "HYBRID_ENABLED": "RETRIEVAL__HYBRID_ENABLED",
-    "HYBRID_RRF_K": "RETRIEVAL__HYBRID_RRF_K",
-    "HYBRID_SPARSE_BACKEND": "RETRIEVAL__HYBRID_SPARSE_BACKEND",
-    "METADATA_EXTRACTION_MODE": "METADATA__EXTRACTION_MODE",
-    "METADATA_KEYWORD_RULES": "METADATA__KEYWORD_RULES",
-    "METADATA_TAXONOMY_MODE": "METADATA__TAXONOMY_MODE",
-    "OLLAMA_CLASSIFY_MODEL": "METADATA__OLLAMA_CLASSIFY_MODEL",
-    "OLLAMA_CLASSIFY_MAX_ATTEMPTS": "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
-    "OLLAMA_CLASSIFY_TIMEOUT": "METADATA__OLLAMA_CLASSIFY_TIMEOUT",
-}
+# ── Re-exports ───────────────────────────────────────────────────────────
+# Settings sources and the legacy-name tripwire live in sibling modules
+# after the task 8.7 split.
 
-
-def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
-    """Raise if the environment carries pre-v2.0.0 flat subpackage names.
-
-    Args:
-        env: Environment mapping to scan (defaults to ``os.environ``).
-
-    Raises:
-        ValueError: Naming every offending variable and its nested
-            replacement, so the fix is mechanical.
-    """
-    import os
-
-    source = os.environ if env is None else env
-    found = [(old, new) for old, new in _LEGACY_FLAT_ENV_VARS.items() if old in source]
-    if not found:
-        return
-    lines = "\n".join(f"  {old}  ->  {new}" for old, new in sorted(found))
-    raise ValueError(
-        "Pre-v2.0.0 flat configuration variable(s) found in the environment. "
-        "v2.0.0 moved subpackage settings into nested blocks; these names are "
-        "no longer read and would have been silently ignored. Rename them:\n"
-        f"{lines}\n"
-        "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "
-        "credentials) are unchanged. See docs/adr/037 for the full table."
-    )
+from .legacy import (  # noqa: E402
+    _LEGACY_FLAT_ENV_VARS,
+    check_legacy_env_vars,
+)
+from .sources import (  # noqa: E402
+    _load_profile_bundle,
+    _parse_legacy_bool,
+    _ProfileYamlSettingsSource,
+    _YamlDefaultsSource,
+)

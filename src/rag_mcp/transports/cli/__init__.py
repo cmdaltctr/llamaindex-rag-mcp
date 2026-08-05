@@ -23,7 +23,8 @@ import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-from ...config import SUPPORTED_EXTENSIONS, get_settings
+from ...config import get_settings
+from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
 
 # Import the composition root early so the LlamaIndex global
 # ``Settings.embed_model`` is assigned before any ingest/search call
