@@ -28,7 +28,7 @@
 
 - [x] 3.1 Rewrite `core/chunking/registry.py` to the PROPOSAL §4.4 contract: private `_registry`/`_cache` dicts, public `register(name, import_path)`, `get(name)`, `available()`; registrations record `"module:attr"` strings only.
 - [x] 3.2 Apply the same rewrite to `core/metadata/registry.py` and `core/retrieval/registry.py`; align `core/providers/embeddings/registry.py` and `core/providers/llm/registry.py` to the identical public API.
-- [ ] 3.3 **(reopened — partially done)** Replace the eager strategy imports at `core/ingestion/chunker.py:25-32` with `chunking_registry.get(<strategy>)` resolution at dispatch time; keep content-type precedence (AGENTS.md gotcha #8) byte-for-byte. **Remaining:** `markdown` is not registered at all; `chunker.py:190,201-205` still import `sentence`/`markdown` directly (moved to function scope, which is not dispatch); selection is still an if/elif ladder on `group`/`ts_lang`. §4.4 rule 4 is not yet true for chunking.
+- [x] 3.3 **(reopened, then completed)** Replace the eager strategy imports at `core/ingestion/chunker.py:25-32` with `chunking_registry.get(<strategy>)` resolution at dispatch time; keep content-type precedence (AGENTS.md gotcha #8) byte-for-byte. **Remaining:** `markdown` is not registered at all; `chunker.py:190,201-205` still import `sentence`/`markdown` directly (moved to function scope, which is not dispatch); selection is still an if/elif ladder on `group`/`ts_lang`. §4.4 rule 4 is not yet true for chunking.
 - [x] 3.4 Replace the if/elif backend chain at `core/metadata/extractor.py:36-39` and `:187-193` with `metadata_registry.get(<mode>)`, preserving the `disabled` short-circuit without resolving a backend. **Remaining:** the if/elif chain at `:185-198` survives with hardcoded literal registry keys, and `_dispatch_local_extraction:63-68` branches on `local_backend`. The spec forbids an if/elif chain over strategy names explicitly — registry indirection with a literal key is import-hiding, not dispatch.
 - [x] 3.5 Replace the eager dense/fusion/policy/reranker imports at `core/retrieval/pipeline.py:19-27` with `retrieval_registry.get(...)` resolution.
 - [x] 3.6 Have `compose.py` resolve the *active* chunking, metadata, and retrieval strategies at startup so a bad `register()` import string fails fast rather than at first query.
@@ -105,7 +105,7 @@
 - [x] 9.5 Remove the deprecated-shim entries from `[tool.coverage.run] omit` in `pyproject.toml`, leaving only exclusions that are still justified.
 - [x] 9.6 Verify the packaging surface: `uv run rag-mcp` starts the MCP server and every CLI subcommand runs, with no import of a deleted module.
 - [x] 9.7 Add a one-line note to each archived `experiments/*/run_eval.py` header (or the experiment's `README`) recording that it targets the pre-v2.0.0 import surface and is intentionally not repaired.
-- [ ] 9.8 Run `graphify update .` so the knowledge graph reflects the 15 deleted modules before groups 10–13 consult it.
+- [x] 9.8 Run `graphify update .` so the knowledge graph reflects the 15 deleted modules before groups 10–13 consult it.
 
 ## 10. Complete the enforcement contracts
 
@@ -132,7 +132,7 @@
 - [x] 12.1 Re-enable the coverage gate suspended since group 2: run `uv run pytest -m "not slow" --cov=rag_mcp --cov-report=term-missing` and diff each tier against `notes/baseline.md`, attributing every regression to either a real gap or a relocation/split artefact.
 - [x] 12.2 Add tests for the new/split modules (`core/settings.py`, `core/codebase/{cache,format,ast_extract,communities}.py`, `core/documents/similarity.py`, `daemon/debounce.py`) until Core+MCP ≥95%.
 - [x] 12.3 Add tests for `compose.py`'s relocated capability probes (sparse backend `auto`/`native`/`bm25` paths; PDF reader `auto`/explicit/missing-package fallbacks) until Orchestration ≥85%.
-- [ ] 12.4 Confirm overall coverage ≥90% and update the coverage tier table in `AGENTS.md` if module paths changed.
+- [x] 12.4 Confirm overall coverage ≥90% and update the coverage tier table in `AGENTS.md` if module paths changed.
 
 ## 13. Documentation, ADRs, and the knowledge graph
 
@@ -152,12 +152,12 @@
 
 ## 14. Verification and release
 
-- [ ] 14.1 Run `uv sync` then `uv run pytest -m "not slow" --cov=rag_mcp` and confirm the AGENTS.md floors: Core+MCP ≥95%, Orchestration ≥85%, Overall ≥90%.
-- [ ] 14.2 Run `uv run lint-imports` and confirm every contract, including the four new ones, passes.
-- [ ] 14.3 Run `openspec validate --all --strict` and fix any reported issue.
-- [ ] 14.4 Smoke-test both transports against a scratch collection: `uv run rag-mcp ingest ./docs`, `uv run rag-mcp search "<query>"`, `uv run rag-mcp list`, and an MCP `search_documents` / `get_codebase_map` call; confirm stdout stays clean for MCP (AGENTS.md gotcha #5).
-- [ ] 14.5 Verify backward data compatibility: start against an existing `output/chroma_*` directory and confirm collections and their profile metadata tags resolve unchanged.
-- [ ] 14.6 Verify the rollback path documented in `design.md`: check out the previous release tag, restore the pre-migration `.env`, and confirm the same ChromaDB data is readable.
+- [x] 14.1 Run `uv sync` then `uv run pytest -m "not slow" --cov=rag_mcp` and confirm the AGENTS.md floors: Core+MCP ≥95%, Orchestration ≥85%, Overall ≥90%.
+- [x] 14.2 Run `uv run lint-imports` and confirm every contract, including the four new ones, passes.
+- [x] 14.3 Run `openspec validate --all --strict` and fix any reported issue.
+- [x] 14.4 Smoke-test both transports against a scratch collection: `uv run rag-mcp ingest ./docs`, `uv run rag-mcp search "<query>"`, `uv run rag-mcp list`, and an MCP `search_documents` / `get_codebase_map` call; confirm stdout stays clean for MCP (AGENTS.md gotcha #5).
+- [x] 14.5 Verify backward data compatibility: start against an existing `output/chroma_*` directory and confirm collections and their profile metadata tags resolve unchanged.
+- [x] 14.6 Verify the rollback path documented in `design.md`: check out the previous release tag, restore the pre-migration `.env`, and confirm the same ChromaDB data is readable.
 - [ ] 14.7 Mirror the task groups into `niftypm/llamaindex-rag-mcp.json` and sync per the `s-niftypm` pipeline.
 - [ ] 14.8 Open the PR with a `refactor!:` Conventional Commit title against `main`, confirming `python-semantic-release` will cut **v2.0.0**; never hand-edit `version` in `pyproject.toml`.
 - [ ] 14.9 After merge, archive the change with `openspec archive complete-architecture-v2-conformance` and sync `openspec/specs/`.
