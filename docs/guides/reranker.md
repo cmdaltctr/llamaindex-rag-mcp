@@ -1,14 +1,5 @@
 # Reranker
 
-> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
-> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
-> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
-> unchanged. Settings reach `core/` by injection — there is no
-> `config.settings` singleton. See
-> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
-> migration table.
-
-
 The server includes an optional **cross-encoder reranker** that re-scores vector search results for significantly better retrieval precision. It uses `cross-encoder/ms-marco-MiniLM-L-6-v2` — a ~23 MB quantised ONNX model that runs locally via pure ONNX Runtime. No PyTorch, no `sentence-transformers`, no API keys.
 
 ## How it works

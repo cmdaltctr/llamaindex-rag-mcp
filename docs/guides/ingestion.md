@@ -1,14 +1,5 @@
 # Ingestion Guide
 
-> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
-> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
-> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
-> unchanged. Settings reach `core/` by injection — there is no
-> `config.settings` singleton. See
-> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
-> migration table.
-
-
 ## How ingestion works
 
 Each file passes through a four-stage pipeline:
@@ -103,7 +94,7 @@ For comparison, the larger `qwen3-embedding:8b` model (4,096-dim vectors) takes 
 
 File reading is sequential. Tune throughput with `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` rather than file-reader worker settings.
 
-Raw benchmark data: [`experiments/embedding-performance.md`](../../experiments/embedding-performance.md).
+Run `uv run rag-mcp benchmark` to measure throughput on your own hardware.
 
 ### Switching models
 

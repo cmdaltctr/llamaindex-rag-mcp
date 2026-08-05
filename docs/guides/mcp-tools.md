@@ -1,15 +1,6 @@
 # MCP Tools Reference
 
-> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
-> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
-> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
-> unchanged. Settings reach `core/` by injection — there is no
-> `config.settings` singleton. See
-> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
-> migration table.
-
-
-Six tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+Seven tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
 ## `search_documents`
 
@@ -71,6 +62,36 @@ Generate a compact codebase map showing file types, code communities, document c
 Results are cached per-project keyed by git commit hash in `.opencode/codebase-graph.json`. Use `refresh=true` to force a rebuild after code changes.
 
 **Read-only:** This tool does not modify any files or databases.
+
+---
+
+## `change_collection_profile`
+
+Switch a collection between the `documents` and `codebase` profiles. This
+changes retrieval behaviour only — no chunks are re-chunked or re-embedded.
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `collection` | string | _(required)_ | Collection to change |
+| `profile` | string | _(required)_ | `documents` or `codebase` |
+| `confirm` | bool | `false` | Apply the change. When `false`, returns a preview instead |
+
+Called without `confirm`, it returns a preview describing what would change:
+which levers move, whether each applies immediately or only to future ingests,
+and the current chunk count. Nothing is modified.
+
+```json
+{ "collection": "my_code", "profile": "codebase" }
+```
+
+Call again with `"confirm": true` to apply it.
+
+Two-step by design: some levers (top_k, reranker) take effect on the next
+query, while others (chunking strategy) only affect documents ingested from
+then on. The preview makes that distinction visible before you commit to it.
+
+A collection cannot be set to `hybrid` — that is a server mode, not a
+collection profile. See [Configuration](configuration.md#profiles).
 
 ---
 

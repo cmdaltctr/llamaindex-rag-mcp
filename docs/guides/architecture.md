@@ -1,205 +1,316 @@
-# Architecture Decisions
+# How this project is put together
 
-> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
-> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
-> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
-> unchanged. Settings reach `core/` by injection — there is no
-> `config.settings` singleton. See
-> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
-> migration table.
+This is the map. If you are trying to work out where something lives, or why a
+change you made had no effect, start here.
 
+For *why* a particular technology was chosen, see [Technology choices](#technology-choices)
+at the end. For the full reasoning behind any of it, see [`docs/adr/`](../adr/).
 
-This is a living document. It explains the "why" behind how this project is built — in plain English, for anyone who wants to understand the thinking, not just the code. Each section links to the full ADR for the details.
-
-The one principle that shapes every decision here: **everything runs on your machine**. No cloud, no API keys, no recurring costs. Every technology choice either supports that or gets rejected.
+The principle that shapes everything: **it runs on your machine**. Cloud
+providers are opt-in, never required, and everything degrades back to local if
+they are missing.
 
 ---
 
-## The technology stack
+## The one-paragraph version
 
-### Why LlamaIndex? ([ADR-002](../adr/002-adopt-llamaindex-for-rag-pipeline.md))
+There is a **core** that does the actual work — reading files, chunking,
+embedding, searching. There are **transports** that expose that work to the
+outside world: an MCP server and a CLI. There is a **composition root** that
+builds all the objects and hands them to the core. And there is **config**,
+which works out what the settings are.
 
-Reading a PDF, a Word document, a PowerPoint, and a CSV file all require completely different parsing logic. LlamaIndex handles all of that out of the box. Rather than building our own document readers for seven file formats, we use LlamaIndex's `SimpleDirectoryReader` and focus on the parts that are specific to this project. The trade-off is a large dependency tree, but the alternative — writing our own parsers — would have taken weeks and been worse.
-
-### Why ChromaDB? ([ADR-003](../adr/003-use-chromadb-as-vector-store.md), [ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md))
-
-When you search for documents, the server compares your query against thousands of stored text chunks using vector similarity. Those vectors need to be stored somewhere. ChromaDB stores them in a folder on your disk — no server process, no configuration, no network. It just works. The main limitation is that it locks the vector dimension when you first create a collection, so switching embedding models requires deleting the store and re-indexing. That's a known trade-off, documented in the [Ingestion Guide](../guides/ingestion.md).
-
-Since Phase 3, every ChromaDB call goes through a `VectorStore` abstract interface (`core/vectordb/base.py`). The ABC encodes the three ChromaDB behaviours the pipeline depends on — dimension locking, metadata filter syntax, and generation bumping for BM25 cache invalidation — as documented contract behaviour rather than hidden implementation detail. ChromaDB is the first and currently only implementation; the ABC exists so future stores (LanceDB, Qdrant, pgvector) can be added behind the same interface without touching pipeline code. Store selection is via the `VECTOR_STORE` env var (default `chroma`), constructed in the composition root.
-
-### Why MCP? ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md))
-
-The Model Context Protocol is the standard way AI assistants call external tools. By implementing MCP, this server works with Claude, GPT, Cursor, Windsurf, and any other MCP-compatible client without any custom integration code. The server runs as a subprocess and communicates over stdin/stdout — no open ports, no firewall rules, no web server to manage.
-
-### Why uv? ([ADR-001](../adr/001-use-uv-as-package-manager.md))
-
-uv is a Python package manager written in Rust. It's dramatically faster than pip or poetry, produces a lockfile for reproducible installs, and handles virtual environments automatically. `uv sync` installs everything; `uv run rag-mcp` runs the server. One tool, no ceremony.
-
-### Why config.py? ([ADR-006](../adr/006-config-as-single-source-of-truth.md))
-
-Early on, both the ingestion module and the retrieval module each set up the embedding model independently. When one was updated and the other wasn't, they'd silently use different settings. `config.py` was created as the single place where all configuration lives. Every other module imports from it. Nothing sets `Settings.embed_model` except `config.py`. This sounds obvious in hindsight, but it took a real bug to make it a rule.
+The rule that makes it hold together: **core never reaches out**. It does not
+read global settings, does not build its own database connection, does not know
+a CLI exists. Everything it needs arrives as a function argument.
 
 ---
 
-## Project layout (after the refactor)
-
-The five-phase refactor reorganised the codebase into a three-layer architecture: typed configuration (`config.py` + YAML), a composition root (`compose.py`), and dependency injection everywhere else. See [ADR-031](../adr/031-three-layer-config-compose-di.md) for the three-layer decision and [ADR-036](../adr/036-phase-5-refactor-transport-separation.md) for transport separation.
+## The four layers
 
 ```
-src/rag_mcp/
-├── config.py              Typed settings resolver (validates YAML + .env)
-├── compose.py             Composition root — the only place objects are built
-├── config/                Versioned declarative policy (no secrets)
-│   ├── defaults.yaml
-│   └── profiles/          documents.yaml · codebase.yaml · hybrid.yaml
-├── core/                  Shared business logic (transport-agnostic)
-│   ├── ingestion/         loader · chunker · writer · pipeline
-│   ├── chunking/          Strategy folder: code · markdown · sentence · config_file + registry
-│   ├── retrieval/         dense · sparse · fusion · reranker · policy · pipeline
-│   ├── metadata/          extractor · keyword · ollama · taxonomy + registry
-│   ├── vectordb/          VectorStore ABC (base.py) + ChromaDB impl (chroma.py)
-│   ├── profiles/          ProfileResolver — per-collection profile resolution
-│   └── providers/         embeddings/ · llm/ + registries (extracted from config.py)
-├── codebase_map.py        Codebase map assembly + caching (Use Case B)
-├── code_graph.py          Tree-sitter AST code graph
-├── doc_graph.py           Embedding-similarity document graph (Use Case A)
-├── integrations/          External-tool wrappers
-│   ├── pdf/               PDF reader factory + backends (pypdf · pypdfium · liteparse)
-│   ├── azure.py           Azure Document Intelligence (lazy SDK import — ADR-024)
-│   └── magika.py          Magika file-type detection
-├── daemon/                Long-running background processes
-│   └── watcher.py         File watcher (debouncing · hashing · ingestion trigger)
-├── transports/            Thin delivery layers (no business logic)
-│   ├── mcp.py             MCP server over stdio
-│   ├── cli/               CLI split by command group (ingest · search · list · watch · delete · benchmark · profile)
-│   └── api/               OpenAPI 3.1 contract only — no runtime HTTP code yet
-└── (deprecated shims)     server.py · cli.py · watcher.py · azure_reader.py · readers/
-                           ingestion.py · retrieval.py · reranker.py · sparse_retriever.py
-                           metadata_extractor.py — re-exports with DeprecationWarning, removal v2.0.0
+transports/          MCP server, CLI. Thin. No business logic.
+    │                Calls into core, formats the answer.
+    ▼
+compose.py           Builds everything: embedder, vector store, reranker,
+    │                profile resolver. The ONLY place objects are constructed.
+    ▼
+core/                The actual work. Receives what it needs as arguments.
+    │                Never imports transports. Never reads a global.
+    ▼
+config/              Works out what the settings are. Reads nothing else.
+                     Builds nothing.
 ```
 
-**Key boundaries:** `core/` never imports from `transports/`. Transports validate input, delegate to `core/`, and format output. The composition root (`compose.py`) is the only place provider objects are constructed. Deprecated shims preserve old import paths during the v2.0.0 deprecation window.
+Two supporting folders sit off to the side:
+
+- `integrations/` — wrappers around outside tools: Azure Document
+  Intelligence, Magika, the PDF readers. Leaf modules.
+- `daemon/` — the file watcher, a long-running process rather than a
+  request/response transport.
+
+These boundaries are not a convention you have to remember. `uv run lint-imports`
+checks them, and the build fails if you cross one.
 
 ---
 
-## The search pipeline
+## Settings: the part that confuses everyone
 
-### Why qwen3-embedding:0.6b? ([ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md))
+Settings can come from five places. Each beats the one above it:
 
-We ran experiments comparing three embedding models. The results were clear:
+```
+1. Model defaults          in the code, last resort
+2. defaults.yaml           project-wide, committed, shared by everyone
+3. profile YAML            per collection (documents / codebase)
+4. .env                    your machine, your secrets
+5. environment variables   highest priority, wins over everything
+```
 
-- `qwen3-embedding:8b` — perfect retrieval quality, but ingesting a 57-PDF Zotero library takes 3 hours. Unusable.
-- `nomic-embed-text` — fastest (15 chunks/sec), but missed 1 in 17 test queries (94.1% accuracy).
-- `qwen3-embedding:0.6b` — perfect retrieval quality (100% accuracy), ingests the same library in 13 minutes.
+### Which one should you use?
 
-The 0.6b model is 13× faster than the 8b model with identical retrieval quality. It's also better than nomic on accuracy. The choice was straightforward. The benchmark data is in [`experiments/embedding-performance.md`](../../experiments/embedding-performance.md).
+| You want to change | Put it in |
+|---|---|
+| A sensible default for everyone | `defaults.yaml` |
+| A token, a URL, a path on your machine | `.env` |
+| How *one collection* behaves | its profile YAML |
+| Something for a single command | an environment variable |
 
-### Why a cross-encoder reranker? ([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md))
+**The trap.** `.env` beats profiles. Put `RETRIEVAL__TOP_K=5` in `.env` and
+every profile returns 5 results regardless of what its YAML says. Profiles stop
+working and nothing warns you. Keep tuning out of `.env`.
 
-Vector similarity search is fast but imprecise. It finds chunks that are _similar_ to your query, but "similar" in vector space doesn't always mean "relevant" in human terms. A cross-encoder reranker reads each (query, chunk) pair together and scores them more accurately — the same way a human would judge relevance.
+### The five levers profiles own
 
-The challenge: most reranker implementations require PyTorch, a ~2 GB dependency. We use a pre-exported ONNX model (~23 MB) that runs via ONNX Runtime instead. No PyTorch, no GPU required. The reranker is optional and off by default — it adds ~90ms per query but improves accuracy from 87.5% to 100% in our experiments.
+Profiles do not set everything. They set five things and inherit the rest:
 
----
+- `retrieval.top_k`
+- `retrieval.rerank_enabled`
+- `retrieval.hybrid_enabled`
+- `chunking.strategy_fallback`
+- `metadata.taxonomy_mode`
 
-## Features added over time
+Anything else — chunk size, storage path, which embedding model — is shared
+across all profiles.
 
-### CLI and ingestion controls ([ADR-007](../adr/007-cli-and-parallel-ingestion.md))
+### Variable names
 
-The original server only worked through an MCP client. To test it, you needed the MCP Inspector. To ingest documents, you needed an AI assistant. That was inconvenient, so we added a CLI: `rag-mcp ingest`, `rag-mcp search`, `rag-mcp list`. The same binary, no arguments = MCP server; with subcommands = CLI tool.
+Settings that belong to one area are nested. The environment variable uses a
+double underscore:
 
-Directory ingestion currently reads files sequentially and keeps ChromaDB writes serial behind a lock. Throughput tuning is focused on embedding work: `INGESTION__EMBED_BATCH_SIZE` controls Ollama batch size and `INGESTION__EMBED_CONCURRENCY` controls concurrent embedding API calls.
+```
+retrieval.top_k             →  RETRIEVAL__TOP_K
+chunking.chunk_size         →  CHUNKING__CHUNK_SIZE
+ingestion.embed_batch_size  →  INGESTION__EMBED_BATCH_SIZE
+metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
+```
 
-### Ingestion reports ([ADR-008](../adr/008-cli-folder-embed-progress.md))
+Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
+`RAG_PROFILE`, `PDF_READER`, and all credentials.
 
-When you ingest a large directory, you want to know what happened: which files succeeded, which failed, how many chunks were created. The `--report` flag writes a structured summary to a file. Use `.json` for machine-readable output (useful in CI), or any other extension for a Markdown table. The format is inferred from the file extension — no extra flags needed.
-
-### File watcher ([ADR-010](../adr/010-file-watcher-auto-ingestion.md))
-
-`rag-mcp watch <dir>` monitors a directory and automatically ingests new or changed files as they appear. This is particularly useful for Zotero users — new papers are indexed as soon as Zotero downloads them, with no manual step.
-
-The watcher uses SHA-256 content hashing to skip files that haven't actually changed (even if their modification timestamp has). It debounces rapid writes (e.g. a file being downloaded in chunks) and limits concurrent ingestions to avoid overwhelming Ollama. If Ollama becomes unreachable, it logs a warning after 5 consecutive failures rather than silently failing.
-
-One important constraint: don't run `rag-mcp watch` and `rag-mcp ingest` simultaneously on the same ChromaDB. Two processes don't share the write lock.
-
-### Multi-collection support and metadata extraction ([ADR-011](../adr/011-multi-collection-and-metadata-extraction.md))
-
-Originally, everything went into one collection called `documents`. Research papers, work notes, and code documentation all mixed together. Multi-collection support lets you route content into named silos — `research`, `work`, `python` — and search each one independently.
-
-Metadata extraction was added at the same time. During ingestion, each document is automatically categorised (AI, Biology, Philosophy, etc.) and that category is stored alongside the vectors. You can then filter searches by category: `metadata_filter={"category": "AI"}` returns only AI-related chunks. The default mode uses regex pattern matching — instant, zero dependencies. An Ollama-powered mode is available for richer classification.
-
-### Document deletion ([ADR-012](../adr/012-document-deletion.md))
-
-The server was originally append-only. Re-ingesting a file created duplicate chunks. There was no way to remove stale documents. ADR-012 added deletion and changed re-ingestion to upsert semantics: when you ingest a file that's already indexed, the old chunks are removed first. The file watcher also cleans up vectors when a watched file is deleted from disk.
-
-Deletion works three ways: by file path, by metadata filter, or by dropping an entire collection. Collection drops require confirmation (or `--yes` to skip it).
-
-### Hybrid category taxonomy ([ADR-013](../adr/013-hybrid-category-taxonomy-for-ollama-metadata.md))
-
-The Ollama metadata extraction mode originally used a fixed list of five categories. Documents outside those categories were permanently labelled "uncategorised". The opposite extreme — letting the LLM invent any label — caused fragmentation: the same domain would get labelled "Machine Learning", "ML", "machine_learning", and "Deep Learning" across different documents. ChromaDB uses exact string matching, so `metadata_filter={"category": "ai"}` would miss all of those.
-
-The solution: before classifying each document, query ChromaDB for all categories already in use, merge them with the five seed categories, and tell the LLM to prefer existing labels. New categories are allowed but only when nothing existing fits. All labels are normalised to lowercase with underscores. The taxonomy grows organically and stays consistent. This pattern is inspired by Microsoft's TnT-LLM paper (KDD 2024).
-
-### Async ingestion path ([ADR-014](../adr/014-async-ingestion-path.md))
-
-The MCP server runs an async event loop. When ingestion was synchronous, a long ingest (a large PDF, or Ollama-based metadata extraction) would block the entire server — search queries would queue up and wait. Making the ingest path async means the server stays responsive to search, list, and delete calls while ingestion runs in the background. ChromaDB's sync API is wrapped in `asyncio.to_thread()` to yield the loop during database writes.
-
-### Pluggable inference backend ([ADR-025](../adr/025-pluggable-inference-backend.md), [ADR-026](../adr/026-provider-registry-and-openrouter.md))
-
-Ollama is a convenience wrapper over llama.cpp. It's easy to use (`ollama pull`), but adds ~20-27% overhead and serialises concurrent requests. For researchers who want raw performance, the server supports switching to llama.cpp's `llama-server` directly. For cloud users, OpenRouter provides OpenAI-compatible endpoints without running any local servers. Both `llamacpp` and `openrouter` use the same LlamaIndex classes (`OpenAIEmbedding`, `OpenAILike`) because both implement the OpenAI-compatible API — the pattern supports any endpoint that does (vLLM, TGI, LocalAI, Azure OpenAI).
-
-ADR-025 introduced a single `INFERENCE_BACKEND` env var. ADR-026 split this into two independent env vars — `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER` — so users can mix and match (e.g., cloud embeddings with a free local LLM). A config-based provider registry replaced the if/elif chains, making it trivial to add new providers. The registry uses a two-tier system: category (`local`|`cloud`) + sub-provider (`LOCAL_BACKEND`|`CLOUD_BACKEND`).
-
-> **Note:** This registry covers embeddings and metadata LLM only. Document parsing (`DOCUMENT_BACKEND=azure`, Azure Document Intelligence) is a separate orthogonal axis — see [ADR-024](../adr/024-dual-deployment-modes.md).
-
-| Category | Sub-provider         | Embeddings        | Metadata LLM           |
-| -------- | -------------------- | ----------------- | ---------------------- |
-| `local`  | `llamacpp` (default) | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
-| `local`  | `ollama`             | `OllamaEmbedding` | `Ollama` / `httpx`     |
-| `cloud`  | `openrouter`         | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
-
-The `METADATA__EXTRACTION_MODE=ollama` was renamed to `local` since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
+Use a pre-v2 name like `TOP_K` and the app refuses to start, telling you the
+replacement. It does not quietly ignore you. Full table in
+[ADR-037](../adr/037-architecture-v2-conformance.md).
 
 ---
 
-## What we deliberately didn't do
+## What each piece actually does
 
-A few constraints that shaped the design:
+### `config/` — works out the settings
 
-- **No PyTorch at runtime.** The reranker uses ONNX Runtime instead. PyTorch is ~2 GB; the ONNX model is ~23 MB.
-- **No cloud services or API keys (by default).** Every component — embeddings, classification, reranking, storage — runs locally via Ollama or llama.cpp and ChromaDB. Cloud providers (OpenRouter, Azure Document Intelligence) are opt-in and require explicit configuration. See [ADR-024](../adr/024-dual-deployment-modes.md) and [ADR-026](../adr/026-provider-registry-and-openrouter.md).
-- **No breaking changes.** Every new feature (collections, metadata, deletion, the watcher) was added with backward-compatible defaults. `rag-mcp ingest ./docs` still works exactly as it did on day one.
-- **No new Python dependencies in default mode.** The keyword metadata extraction mode uses only Python's standard library (`re`, `json`). The Ollama mode uses `urllib` (also stdlib). New dependencies are only added when there's no reasonable alternative.
+Reads the five sources above and produces one `Settings` object holding the
+final answers.
+
+That is all it does. It builds no objects, opens no connections, calls no
+models. It is a leaf: it must not import business logic from `core/`.
+
+This matters more than it sounds. "Is LiteParse installed?" is not a setting —
+it is a question about the world. Those checks live in `compose.py`. Keeping
+them in config is what made config depend on retrieval, which inverted the
+whole dependency direction.
+
+- `config/__init__.py` — the `Settings` model and the resolver
+- `config/sources.py` — reads `defaults.yaml` and the profile bundles
+- `config/legacy.py` — catches pre-v2 names and explains the rename
+
+### `compose.py` — builds the objects
+
+Takes the settings and constructs the real things: the embedding model, the
+vector store, the reranker, the profile resolver.
+
+It is the only place allowed to do this, and the only place that calls
+`get_settings()`. Everything else is handed what it needs.
+
+Why one place: before the v2 work, objects were built in a dozen scattered
+spots, all reading one shared global. That is how you end up unable to run two
+configurations at once.
+
+### `core/` — does the work
+
+| Folder | Job |
+|---|---|
+| `core/ingestion/` | Read files, chunk them, write to the store |
+| `core/retrieval/` | Search, rerank, fuse results |
+| `core/chunking/` | The chunking strategies: code, markdown, sentence, config |
+| `core/metadata/` | Work out a category and keywords for a document |
+| `core/vectordb/` | The database interface, and the ChromaDB implementation |
+| `core/profiles/` | Resolve which profile a collection uses |
+| `core/providers/` | Build embedding and LLM clients |
+| `core/codebase/` | Codebase map and code graph |
+| `core/documents/` | Document similarity graph |
+| `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around |
+
+`core/ingestion/` and `core/retrieval/` do not import each other. They share
+only settings.
+
+### `transports/` — exposes it
+
+- `transports/mcp.py` — the MCP server, seven tools, over stdio
+- `transports/cli/` — the `rag-mcp` command, one file per command group
+- `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
+  deliberately: the contract is published before anything implements it.
+
+Transports hold no business logic. They resolve a profile, call core, format
+the answer.
 
 ---
 
-## Codebase map (ADR-022, ADR-023, ADR-024)
+## How a search actually flows
 
-The `get_codebase_map` MCP tool generates a compact, pre-computed map of a project's file types, code communities, document communities, cross-links, and architectural hubs. It is designed for agents starting a session on an unfamiliar codebase.
+```
+MCP client asks for a search
+      │
+      ▼
+transports/mcp.py        works out which profile this collection uses
+      │                  → EffectiveSettings (frozen)
+      ▼
+core/retrieval/pipeline  resolves settings ONCE here, at the boundary.
+      │                  Everything below gets them as an argument.
+      ├─→ dense.py       embedding search
+      ├─→ sparse.py      BM25 keyword search (if hybrid is on)
+      ├─→ fusion.py      merge the two rankings
+      ├─→ policy.py      decide whether to rerank
+      └─→ reranker.py    re-score with the cross-encoder
+      │
+      ▼
+results back to the client
+```
 
-### Data flow
-
-1. **Magika file-type detection** (`codebase_map.py`, via `integrations/magika.py`): Scans the project directory using the Magika CLI (with suffix-based fallback) to produce a file inventory with group/label classification.
-
-2. **Code graph** (`code_graph.py`): Extracts AST relationships (imports, classes, inheritance) via tree-sitter, builds a NetworkX DiGraph, and detects Louvain communities, hubs (high in-degree), and bridges (high betweenness).
-
-3. **Document graph** (`doc_graph.py`): Builds an undirected graph from ChromaDB embeddings (cosine similarity edges), metadata (category/keyword edges), and heading hierarchy. Detects document communities and cross-links to code communities.
-
-4. **Graph assembly** (`codebase_map.py`): Orchestrates all components, formats the result as compact text (≤800 tokens), and caches per-project keyed by git commit hash.
-
-5. **Type-aware ingestion** (`ingestion.py`): Uses Magika content-type detection to dispatch chunking — `CodeSplitter` for code, whole-file for config, existing chain for documents. Binary files are skipped.
-
-6. **Azure Document Intelligence** (`integrations/azure.py`, optional): When `DOCUMENT_BACKEND=azure`, PDF/DOCX files are parsed by Azure with structured table extraction and heading hierarchy. Falls back to local chain on any error.
-
-### New modules
-
-| Module            | Responsibility                                                          |
-| ----------------- | ----------------------------------------------------------------------- |
-| `codebase_map.py` | Magika detection, graph assembly, formatting, caching                   |
-| `code_graph.py`   | Tree-sitter AST extraction, code graph, communities, hubs               |
-| `doc_graph.py`    | Embedding similarity, metadata edges, document communities, cross-links |
-| `integrations/azure.py` | Azure Document Intelligence reader with fallback                        |
+The settings object is frozen. Two searches running at once each hold their own
+copy; neither can affect the other. That is the whole point of passing it as an
+argument instead of reading a global.
 
 ---
 
-_Each section above links to the full ADR for the complete context, alternatives considered, and consequences. The ADRs are the authoritative record; this document is the readable summary._
+## Adding things
+
+### A new chunking strategy
+
+1. Write `core/chunking/mystrategy.py`
+2. Add one line to `core/chunking/registry.py`:
+
+```python
+register("mystrategy", "rag_mcp.core.chunking.mystrategy:chunk_my_file_async")
+```
+
+That is the whole job. No other file changes. Same pattern for metadata
+backends and retrieval stages.
+
+This is enforced, not just encouraged. One test fails if a dispatch module
+imports a strategy directly; another fails if it branches on strategy names.
+
+### A new vector database
+
+Implement `VectorStore` from `core/vectordb/base.py`, register it in
+`compose.py`. ChromaDB is confined to `core/vectordb/chroma.py` — a contract
+fails the build if `chromadb` is imported anywhere else.
+
+### A new setting
+
+- Belongs to one area? Add it to that area's `settings.py`
+  (`core/retrieval/settings.py`, and so on), then to `defaults.yaml` under the
+  matching block.
+- Cross-cutting? Add it to `Settings` in `config/__init__.py` and to
+  `defaults.yaml` at the top level.
+
+A test checks the two agree, so they cannot drift apart.
+
+---
+
+## The rules that are actually enforced
+
+These are not documentation. They fail the build.
+
+| Rule | Enforced by |
+|---|---|
+| ChromaDB only in `core/vectordb/chroma.py` | `chromadb-confined-to-vectordb` |
+| `config/` never imports business logic | `config-is-leaf` |
+| `integrations/` never imports core or transports | `integrations-are-leaves` |
+| `core/` never imports transports or providers | `core-business-avoids-providers-transports` |
+| Settings models stay pure data | `settings-models-are-pure-data` |
+| Every package covered by some contract | `tests/test_contract_coverage.py` |
+| No global settings reads in core | `tests/test_no_global_settings_reads.py` |
+| No file over 500 lines | `tests/test_file_size_ceiling.py` |
+| Dispatch goes through registries | `tests/test_no_module_level_strategy_imports.py` |
+
+Run them with `uv run lint-imports` and `uv run pytest -m "not slow"`.
+
+One detail worth knowing: the contracts fail when a *suppression* becomes
+unnecessary. Fix a violation, forget to delete its exception, and the build
+tells you. That is deliberate — see [ADR-037](../adr/037-architecture-v2-conformance.md).
+
+---
+
+## Technology choices
+
+Short version. Each links to the full reasoning.
+
+**LlamaIndex** ([ADR-002](../adr/002-adopt-llamaindex-for-rag-pipeline.md)) —
+document loaders, chunkers and vector store adapters already exist, so we write
+pipeline logic instead of plumbing.
+
+**ChromaDB** ([ADR-003](../adr/003-use-chromadb-as-vector-store.md),
+[ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)) — embedded, no
+server to run, persists to a folder. Behind an interface since ADR-034, so it
+can be swapped.
+
+**MCP** ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md)) —
+one server works with any MCP client, rather than a bespoke integration each
+time.
+
+**uv** ([ADR-001](../adr/001-use-uv-as-package-manager.md)) — fast, one
+lockfile, no virtualenv juggling.
+
+**ONNX Runtime, never PyTorch**
+([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md)) — PyTorch
+is a multi-gigabyte dependency for something that only needs inference.
+
+**qwen3-embedding:0.6b**
+([ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md)) — better retrieval
+quality than nomic-embed-text, at a size that still runs locally.
+
+**Cross-encoder reranker, off by default**
+([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md),
+[ADR-019](../adr/019-reranker-disabled-for-technical-workloads.md)) —
+Experiment 10 found it *hurt* results on code-heavy content by 19–27%. The
+`documents` profile turns it back on, because it does help on prose.
+
+**Deterministic graphs, no LLM**
+([ADR-022](../adr/022-code-graph-via-tree-sitter-ast.md),
+[ADR-023](../adr/023-document-graph-via-embedding-similarity.md)) — the code
+graph comes from tree-sitter parsing, the document graph from embedding
+similarity. Same input, same output, every time.
+
+---
+
+## Where to go next
+
+| You want to | Read |
+|---|---|
+| Get it running | [Getting started](getting-started.md) |
+| Change a setting | [Configuration](configuration.md) |
+| Use the CLI | [CLI reference](cli-reference.md) |
+| Connect an MCP client | [MCP client setup](mcp-client-setup.md) |
+| Understand ingestion | [Ingestion](ingestion.md) |
+| Understand reranking | [Reranker](reranker.md) |
+| Write tests | [Testing](testing.md) |
+| Know why a decision was made | [`docs/adr/`](../adr/) |

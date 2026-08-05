@@ -1,14 +1,5 @@
 # Metadata Extraction
 
-> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
-> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
-> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
-> unchanged. Settings reach `core/` by injection — there is no
-> `config.settings` singleton. See
-> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
-> migration table.
-
-
 During ingestion, the server can automatically extract metadata from documents and attach it to every chunk as ChromaDB metadata. This metadata can then be used to **filter search results** — for example, searching only chunks categorised as `"AI"` or `"Biology"`.
 
 Extraction runs **once per file** (not per chunk), so overhead is O(files), not O(chunks).
