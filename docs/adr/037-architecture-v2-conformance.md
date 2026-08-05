@@ -164,7 +164,35 @@ added during this change was removed that way rather than by remembering to.
 `tests/test_contract_coverage.py` asserts every package is covered by some
 contract, so a new package forces a conscious boundary decision.
 
-### 5. The v1 surface is deleted — **BREAKING**
+### 5. A stale suppression fails the build
+
+All contracts set `unmatched_ignore_imports_alerting = "error"`.
+Import-linter's default is `"none"`: an `ignore_imports` entry that no
+longer matches any real import is silently accepted. That default is what
+makes "temporary suppression" a fiction — nothing ever forces the entry out
+once its fix lands, and the contract goes on passing while the exception
+remains.
+
+With `"error"`, removing a violation makes its ignore stale, and a stale
+ignore **fails the run**. The failure is the notification.
+
+This is not theoretical. During this change it fired **six times**: on the
+ChromaDB leak, the Magika cycle, the four `integrations → config` edges, and
+the `config → core.retrieval.sparse` probe. Each time, the build refused to
+pass until the now-pointless suppression was deleted. Under the default
+setting all six would have survived as permanent exceptions wearing the word
+TEMPORARY, and the audit that produced this ADR had already found exactly
+that pattern — a documented target with a live legacy path that nothing
+forced anyone off.
+
+The general principle: **a deprecation needs a mechanism, not a comment.**
+A `# TEMPORARY` note records an intention; a failing build enforces one.
+Where the two disagree, only the second one survives contact with a busy
+week. `tests/test_contract_coverage.py` applies the same reasoning to
+packages — a new package fails the suite until someone decides which
+boundary governs it.
+
+### 6. The v1 surface is deleted — **BREAKING**
 
 The 15 re-export modules and the PEP 562 alias table are gone.
 `src/rag_mcp/` now contains only `__init__.py` and `compose.py` at the top
@@ -202,6 +230,59 @@ enforces it.
   This is a global, though a frozen one that `core/` only reads at an entry
   point — weaker than pure parameter-passing from `main()`, and the same
   trade-off `get_default_store` already made.
+
+## Alternatives Considered
+
+| Option | Rejected because |
+|---|---|
+| Amend the proposal to match the code, rather than the code to match the proposal | Four of the seven findings were defects, not documentation drift: dead dispatch machinery, a leaked abstraction, an inverted dependency, and a cycle. Rewriting the target to describe them would have made the documents accurate and the architecture wrong. |
+| Keep the 15 shims until a natural v2.0.0 (PROPOSAL §11 Decision 2's grace period) | Carrying both architectures on `main` costs more than one clean break. Nothing in `src/` or `tests/` imported them; the only consumers were archived experiment scripts that are not run in CI. |
+| Provide flat→nested env var aliases via `AliasChoices` | Reproduces the state this ADR exists to correct: a documented target plus a live legacy path with no forcing function. Since the shim deletion already made this a major release, the schema break costs one migration note. |
+| Enumerated legacy-name tripwire alone, without `extra="forbid"` | An enumeration only catches what it enumerates. A typo or an unlisted key would still be swallowed silently — the precise failure mode being eliminated. |
+| `extra="forbid"` alone, without the tripwire | Cannot see flat legacy names: with `env_nested_delimiter`, a bare `TOP_K` never reaches a subpackage model. That is the population every existing `.env` is full of. |
+| One broad import-linter `layers` contract instead of four targeted ones | Fails today for reasons unrelated to this change, producing noise rather than signal. Deferred, not dismissed. |
+| Leave the graph modules top-level, as §12 accepted | See "Correcting the record" below — the stated rationale was factually wrong. |
+
+## Correcting the record: PROPOSAL §12 was wrong, not merely stale
+
+§12 recorded the three unmigrated graph modules as an accepted deviation,
+reasoning that they "already satisfy the invariant of sharing only
+`config.py` (AGENTS.md invariant #6)" and that "the grouping was aesthetic
+(making the use-case boundary visible in the tree), not structural", so
+moving them "would add import churn for no behavioural benefit."
+
+Every clause of that is false, and the distinction matters more than the
+correction:
+
+* **They did not satisfy invariant #6.** `core/ingestion/pipeline.py`
+  imported `detect_file_types` from the top-level `codebase_map`, so `core/`
+  was reaching upward out of its own package — the specific coupling the
+  invariant exists to prevent.
+* **The grouping was structural.** Those three files hosted the ChromaDB
+  abstraction leak, the `integrations.magika` circular import, and three of
+  the five 500-line ceiling breaches. They were where the architecture was
+  leaking, not where it was untidy.
+* **"No behavioural benefit" was unfalsifiable as written.** No one had
+  looked. The relocation surfaced two defects immediately.
+
+This is recorded as a decision because the *failure mode* is reusable. §12
+was written in good faith and reads as diligent: it names the deviation,
+cites the invariant, and gives a rationale. But the invariant was asserted
+rather than checked, and once written down the assertion became the thing
+future readers would trust. A deviation recorded with a wrong rationale is
+worse than one recorded with none, because it forecloses the question.
+
+The lesson applied elsewhere in this change: every claim the audit tested
+was either verified against the code or corrected. Where ADR-033 disclosed
+its weakened DI contract honestly, that disclosure held up and is credited
+in the amendment. Where ADR-034 asserted "never through ChromaDB APIs
+directly" without a contract to enforce it, the assertion had already
+drifted from the code by the time anyone read it.
+
+**Corollary, now enforced:** an architectural invariant that no test or
+contract checks is a comment. Invariant #6 is now covered by
+`core-business-avoids-providers-transports` and
+`tests/test_contract_coverage.py`.
 
 ## Deviations from the proposal, recorded
 
