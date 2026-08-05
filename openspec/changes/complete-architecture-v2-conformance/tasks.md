@@ -109,13 +109,13 @@
 
 ## 10. Complete the enforcement contracts
 
-- [ ] 10.1 Extend the `core-business-avoids-providers-transports` contract's `source_modules` with `rag_mcp.core.vectordb`, `rag_mcp.core.profiles`, `rag_mcp.core.codebase`, `rag_mcp.core.documents`, and `rag_mcp.daemon`; resolve any violation it surfaces.
-- [ ] 10.2 Extend `settings-models-are-pure-data` to cover `rag_mcp.core.settings` (the `EffectiveSettings` module).
-- [ ] 10.3 Review the `providers-constructed-only-in-compose` contract's `ignore_imports` against the now-lazy registry resolution and tighten or document each exception.
+- [x] 10.1 Extend the `core-business-avoids-providers-transports` contract's `source_modules` with `rag_mcp.core.vectordb`, `rag_mcp.core.profiles`, `rag_mcp.core.codebase`, `rag_mcp.core.documents`, and `rag_mcp.daemon`; resolve any violation it surfaces.
+- [x] 10.2 Extend `settings-models-are-pure-data` to cover `rag_mcp.core.settings` (the `EffectiveSettings` module).
+- [x] 10.3 Review the `providers-constructed-only-in-compose` contract's `ignore_imports` against the now-lazy registry resolution and tighten or document each exception.
 - [x] 10.3a Remove every `TEMPORARY` `ignore_imports` entry from `chromadb-confined-to-vectordb`, `config-is-leaf` and `integrations-are-leaves` now that groups 5-7 have removed the underlying violations, and confirm the run is clean. All three contracts set `unmatched_ignore_imports_alerting = "error"`, so a stale ignore fails the run — that failure IS the signal that a suppression has outlived its fix. Do not silence it by re-adding the ignore.
-- [ ] 10.3b Narrow or document the `integrations.* -> rag_mcp.config` ignores: suppressing that root edge hides **every** chain through `config`, not only the enumerated ones. Record the coverage loss in ADR-037 if it cannot be narrowed.
-- [ ] 10.4 Add a test asserting every package under `src/rag_mcp/` appears as a source module in at least one import-linter contract.
-- [ ] 10.5 Run `uv run lint-imports` and confirm all contracts pass; record the output in `notes/lint-imports-after.md`.
+- [x] 10.3b Narrow or document the `integrations.* -> rag_mcp.config` ignores: suppressing that root edge hides **every** chain through `config`, not only the enumerated ones. Record the coverage loss in ADR-037 if it cannot be narrowed.
+- [x] 10.4 Add a test asserting every package under `src/rag_mcp/` appears as a source module in at least one import-linter contract.
+- [x] 10.5 Run `uv run lint-imports` and confirm all contracts pass; record the output in `notes/lint-imports-after.md`.
 
 ## 11. Test suite migration
 

@@ -92,8 +92,12 @@ name = "settings-models-are-pure-data"
 type = "forbidden"
 source_modules = [
     "rag_mcp.core.chunking.settings",
+    "rag_mcp.core.ingestion.settings",
     "rag_mcp.core.retrieval.settings",
     "rag_mcp.core.metadata.settings",
+    # Task 10.2: the EffectiveSettings value object every core/ and
+    # integrations/ module now receives must stay pure data too.
+    "rag_mcp.core.settings",
 ]
 forbidden_modules = [
     "rag_mcp.config",
@@ -129,11 +133,26 @@ source_modules = [
     "rag_mcp.core.retrieval",
     "rag_mcp.core.metadata",
     "rag_mcp.core.chunking",
+    # Extended at task 10.1: these were uncovered, so the boundary they
+    # depend on was unenforced even though no violation existed.
+    "rag_mcp.core.vectordb",
+    "rag_mcp.core.profiles",
+    "rag_mcp.core.codebase",
+    "rag_mcp.core.documents",
+    "rag_mcp.daemon",
 ]
 forbidden_modules = [
     "rag_mcp.core.providers",
     "rag_mcp.transports",
 ]
+ignore_imports = [
+    # PERMANENT: daemon is an orchestration layer, like transports — it is a
+    # legitimate CONSUMER of the composition root. What this contract forbids
+    # is core BUSINESS logic reaching for providers directly; calling
+    # compose.build_profile_resolver() is the sanctioned direction.
+    "rag_mcp.daemon.watcher -> rag_mcp.compose",
+]
+unmatched_ignore_imports_alerting = "error"
 
 # ─── Architecture-v2 conformance contracts ────────────────────────────
 # Added by the complete-architecture-v2-conformance change. Each is added
