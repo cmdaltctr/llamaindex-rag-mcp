@@ -11,6 +11,11 @@ build/
 
 # Environment variables
 .env
+# Any .env variant: backups, per-environment files, migration snapshots.
+# A v2.0.0 migration backup (.env.pre-v2.bak) was very nearly committed;
+# `.env` alone did not match it.
+.env.*
+!.env.example
 
 # ChromaDB persistence
 chroma_db/
