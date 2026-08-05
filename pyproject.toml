@@ -148,6 +148,9 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.chroma -> chromadb",
+    # TEMPORARY: codebase_map bypasses the VectorStore abstraction.
+    # Removed at task 6.1/6.3 when it uses the injected store.
+    "rag_mcp.core.codebase.codebase_map -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "none"
 
@@ -170,6 +173,18 @@ forbidden_modules = [
     "rag_mcp.integrations",
     "rag_mcp.daemon",
 ]
+ignore_imports = [
+    # PERMANENT: sanctioned pure-data settings model imports. Config
+    # composes the subpackage settings models by inheritance (pre-group-7)
+    # or nesting (post-group-7). These are the only upward refs allowed.
+    "rag_mcp.config -> rag_mcp.core.chunking.settings",
+    "rag_mcp.config -> rag_mcp.core.retrieval.settings",
+    "rag_mcp.config -> rag_mcp.core.metadata.settings",
+    # TEMPORARY: resolve_sparse_backend imports core.retrieval.sparse.
+    # Removed at task 7.10 when the probe moves to compose.py.
+    "rag_mcp.config -> rag_mcp.core.retrieval.sparse",
+]
+unmatched_ignore_imports_alerting = "none"
 
 # F5: integrations are acyclic leaves — no imports from core, transports,
 # daemon, or the top-level graph modules (which relocate in group 2).
@@ -185,6 +200,22 @@ forbidden_modules = [
     "rag_mcp.code_graph",
     "rag_mcp.doc_graph",
 ]
+ignore_imports = [
+    # TEMPORARY: integrations import config, which transitively reaches
+    # core through the sanctioned settings models. These import edges
+    # are removed at task 5.6 when integrations receive EffectiveSettings
+    # by injection and stop importing config. Each edge suppressed here
+    # is the root of a transitive chain; removing it from the graph breaks
+    # the chain for this contract.
+    "rag_mcp.integrations.azure -> rag_mcp.config",
+    "rag_mcp.integrations.magika -> rag_mcp.config",
+    "rag_mcp.integrations.pdf.factory -> rag_mcp.config",
+    "rag_mcp.integrations.pdf.liteparse -> rag_mcp.config",
+    # TEMPORARY: magika's circular import to codebase_map for the
+    # _is_magika_available monkeypatch target. Removed at task 6.4/6.5.
+    "rag_mcp.integrations.magika -> rag_mcp.core.codebase.codebase_map",
+]
+unmatched_ignore_imports_alerting = "none"
 
 [tool.coverage.run]
 source = ["rag_mcp"]
