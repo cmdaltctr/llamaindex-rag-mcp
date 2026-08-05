@@ -44,7 +44,7 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     # Chunking.
     ("CHUNKING__CHUNK_SIZE", "chunking.chunk_size", 512),
     ("CHUNKING__CHUNK_OVERLAP", "chunking.chunk_overlap", 100),
-    ("INGESTION__EMBED_CONCURRENCY", "ingestion.embed_concurrency", 2),
+    ("INGESTION__EMBED_CONCURRENCY", "ingestion.embed_concurrency", 4),
     ("CHUNKING__MARKDOWN_CHUNK_SIZE", "chunking.markdown_chunk_size", 1024),
     ("CHUNKING__MARKDOWN_HEADING_PREPEND", "chunking.markdown_heading_prepend", False),
     ("CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION", "chunking.markdown_min_chunk_fraction", 0.0),

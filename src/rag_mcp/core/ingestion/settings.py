@@ -21,7 +21,9 @@ class IngestionSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # Number of parallel embedding requests in flight.
-    embed_concurrency: int = 2
+    # Raised 2 -> 4 (2026-08-05) when promoted out of .env. Machine-specific:
+    # lower it if the embedding backend starts throttling.
+    embed_concurrency: int = 4
 
     # Documents per embedding API call.
     embed_batch_size: int = 100

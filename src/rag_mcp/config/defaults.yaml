@@ -28,7 +28,9 @@ chunking:
 # Moved out of `chunking` in v2.0.0: these are ingestion concerns and only
 # lived under chunking because the flat schema had nowhere better.
 ingestion:
-  embed_concurrency: 2
+  # 4 (was 2): promoted from .env, 2026-08-05. This is machine-
+  # specific — raise on a bigger box, lower if the embedder throttles.
+  embed_concurrency: 4
   embed_batch_size: 100
 
 # ── Retrieval ─────────────────────────────────────────────────────────
