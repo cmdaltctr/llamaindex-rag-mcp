@@ -9,12 +9,15 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from .codebase_map import CodebaseMap, format_inventory
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .codebase_map import CodebaseMap
 
 logger = logging.getLogger(__name__)
 
 
-def format_codebase_map(codebase_map: CodebaseMap) -> str:
+def format_codebase_map(codebase_map: "CodebaseMap") -> str:
     """Format a complete codebase map as compact text (≤800 tokens).
 
     Produces sections for File Types, Code Communities, Document Communities,
@@ -27,6 +30,8 @@ def format_codebase_map(codebase_map: CodebaseMap) -> str:
     Returns:
         Compact text representation targeting 500–800 tokens.
     """
+    from .codebase_map import format_inventory
+
     sections: list[str] = []
 
     # File Types section

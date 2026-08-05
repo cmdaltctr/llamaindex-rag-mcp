@@ -119,19 +119,19 @@
 
 ## 11. Test suite migration
 
-- [ ] 11.1 Migrate every test that patches `rag_mcp.config.settings` attributes to construct an `EffectiveSettings` via the task 4.1 fixture and pass it into the operation.
+- [x] 11.1 Migrate every test that patches `rag_mcp.config.settings` attributes to construct an `EffectiveSettings` via the task 4.1 fixture and pass it into the operation.
 - [x] 11.2 Migrate every test that sets a flat subpackage env var (`TOP_K`, `CHUNK_SIZE`, `RERANK_ENABLED`, `METADATA_EXTRACTION_MODE`, `EMBED_CONCURRENCY`, …) to the `RETRIEVAL__*` / `CHUNKING__*` / `INGESTION__*` / `METADATA__*` names. Compare the count migrated against the group 1.1 baseline and record any discrepancy.
 - [x] 11.3 Keep `PDF_READER=pypdf` determinism in the PDF tests (AGENTS.md gotcha #6) and `reset_model_cache()` setup/teardown in the reranker tests (gotcha #2) intact through the migration.
-- [ ] 11.4 Add tests for the nested profile bundles: each of `documents` and `codebase` resolves to its documented lever set; a flat-key bundle is rejected; `hybrid.yaml` with a lever block is rejected.
-- [ ] 11.5 Add a test that two `search()` calls in one process with different `EffectiveSettings` each honour their own instance (per-collection hybrid mode).
-- [ ] 11.6 Add a test that the `documents`/`codebase` profile difference is observable end-to-end through `ProfileResolver` without any global mutation.
-- [ ] 11.7 Run the full fast suite and fix any remaining failures.
+- [x] 11.4 Add tests for the nested profile bundles: each of `documents` and `codebase` resolves to its documented lever set; a flat-key bundle is rejected; `hybrid.yaml` with a lever block is rejected.
+- [x] 11.5 Add a test that two `search()` calls in one process with different `EffectiveSettings` each honour their own instance (per-collection hybrid mode).
+- [x] 11.6 Add a test that the `documents`/`codebase` profile difference is observable end-to-end through `ProfileResolver` without any global mutation.
+- [x] 11.7 Run the full fast suite and fix any remaining failures.
 
 ## 12. Coverage repair
 
-- [ ] 12.1 Re-enable the coverage gate suspended since group 2: run `uv run pytest -m "not slow" --cov=rag_mcp --cov-report=term-missing` and diff each tier against `notes/baseline.md`, attributing every regression to either a real gap or a relocation/split artefact.
-- [ ] 12.2 Add tests for the new/split modules (`core/settings.py`, `core/codebase/{cache,format,ast_extract,communities}.py`, `core/documents/similarity.py`, `daemon/debounce.py`) until Core+MCP ≥95%.
-- [ ] 12.3 Add tests for `compose.py`'s relocated capability probes (sparse backend `auto`/`native`/`bm25` paths; PDF reader `auto`/explicit/missing-package fallbacks) until Orchestration ≥85%.
+- [x] 12.1 Re-enable the coverage gate suspended since group 2: run `uv run pytest -m "not slow" --cov=rag_mcp --cov-report=term-missing` and diff each tier against `notes/baseline.md`, attributing every regression to either a real gap or a relocation/split artefact.
+- [x] 12.2 Add tests for the new/split modules (`core/settings.py`, `core/codebase/{cache,format,ast_extract,communities}.py`, `core/documents/similarity.py`, `daemon/debounce.py`) until Core+MCP ≥95%.
+- [x] 12.3 Add tests for `compose.py`'s relocated capability probes (sparse backend `auto`/`native`/`bm25` paths; PDF reader `auto`/explicit/missing-package fallbacks) until Orchestration ≥85%.
 - [ ] 12.4 Confirm overall coverage ≥90% and update the coverage tier table in `AGENTS.md` if module paths changed.
 
 ## 13. Documentation, ADRs, and the knowledge graph
