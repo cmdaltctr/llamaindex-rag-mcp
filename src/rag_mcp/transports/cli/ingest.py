@@ -221,10 +221,10 @@ def ingest(
     EMBED_BATCH_SIZE and EMBED_CONCURRENCY environment variables.
     """
     from ...core.ingestion._state import shutdown_requested as _shutdown_requested
-    from ...core.profiles import ProfileResolver
+    from ... import compose
 
     try:
-        effective = ProfileResolver().resolve(collection)
+        effective = compose.build_profile_resolver().resolve(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1)

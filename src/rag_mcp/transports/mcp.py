@@ -52,7 +52,7 @@ _reranker = compose.build_reranker()
 
 # Phase 4: profile resolver for per-collection profile resolution.
 # Reads collection metadata tags through the vector store interface.
-_profile_resolver = ProfileResolver()
+_profile_resolver = compose.build_profile_resolver()
 
 
 # ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
@@ -339,9 +339,9 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """
     import json
 
-    from .core.codebase.codebase_map import get_codebase_map_text
-
     try:
+        from ..core.codebase.codebase_map import get_codebase_map_text
+
         return get_codebase_map_text(path=path, refresh=refresh)
     except Exception as exc:
         logger.warning("get_codebase_map error: %s: %s", type(exc).__name__, exc)
@@ -387,7 +387,9 @@ def change_collection_profile(
 
     if not confirm:
         try:
-            contract = generate_safety_contract(collection, profile)
+            contract = generate_safety_contract(
+                collection, profile, resolver=_profile_resolver
+            )
         except Exception as exc:
             return {"status": "error", "message": str(exc)}
         return {

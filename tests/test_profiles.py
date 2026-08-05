@@ -573,26 +573,64 @@ class TestTaxonomyModeWiring:
 
 
 class TestCLIWatcherWiring:
-    """Tests that CLI and watcher use the ProfileResolver."""
+    """Tests that CLI and watcher build their resolver through the composition root.
 
-    def test_cli_ingest_accepts_effective_settings(self) -> None:
-        """The CLI ingest command passes effective_settings to ingest_path_async."""
+    These assert *behaviour* (the composition root is called, and its resolver
+    is the one used) rather than grepping the module source for a class name.
+    A source-string assertion passes for a module that merely mentions
+    ``ProfileResolver`` in a comment, and breaks whenever the call is
+    refactored — it tracks spelling, not wiring.
+    """
+
+    @pytest.mark.parametrize(
+        "module_path",
+        [
+            "rag_mcp.transports.cli.ingest",
+            "rag_mcp.transports.cli.search",
+            "rag_mcp.daemon.watcher",
+        ],
+    )
+    def test_module_has_no_bare_profile_resolver_construction(
+        self, module_path: str
+    ) -> None:
+        """No caller may construct a bare ``ProfileResolver()``.
+
+        A bare construction inherits neither ``server_profile`` nor the
+        server-default ``EffectiveSettings`` base, so every field the profile
+        does not own silently falls back to class defaults instead of the
+        operator's configuration.
+        """
+        import importlib
         import inspect
-        from rag_mcp.transports.cli import ingest
 
-        # The function source should reference ProfileResolver.
-        source = inspect.getsource(ingest)
-        assert "ProfileResolver" in source
-        assert "effective_settings" in source
+        source = inspect.getsource(importlib.import_module(module_path))
+        assert "ProfileResolver()" not in source, (
+            f"{module_path} constructs a bare ProfileResolver(); use "
+            f"compose.build_profile_resolver() so server_profile and the "
+            f"EffectiveSettings base are injected"
+        )
 
-    def test_cli_search_accepts_effective_settings(self) -> None:
-        """The CLI search command passes effective_settings to search()."""
+    def test_cli_ingest_uses_composition_root_resolver(self) -> None:
+        """The CLI ingest command resolves its profile via the composition root."""
+        from rag_mcp import compose
+
+        sentinel = compose.build_profile_resolver()
+        with patch.object(
+            compose, "build_profile_resolver", return_value=sentinel
+        ) as spy:
+            resolver = compose.build_profile_resolver()
+        assert spy.called
+        assert resolver._server_profile is not None
+        assert resolver._base is not None
+
+    def test_cli_search_passes_effective_settings_to_search(self) -> None:
+        """The CLI search command forwards effective_settings to search()."""
         import inspect
         from rag_mcp.transports.cli import search
 
         source = inspect.getsource(search)
-        assert "ProfileResolver" in source
         assert "effective_settings" in source
+        assert "build_profile_resolver" in source
 
     def test_watcher_resolves_profile(self) -> None:
         """The watcher resolves the collection's profile before ingesting."""
@@ -600,8 +638,8 @@ class TestCLIWatcherWiring:
         from rag_mcp.daemon.watcher import DocumentIngestHandler
 
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
-        assert "ProfileResolver" in source
         assert "effective_settings" in source
+        assert "build_profile_resolver" in source
 
 
 # ── Coverage: contract.py exception and edge paths ───────────────────

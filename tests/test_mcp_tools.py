@@ -766,3 +766,27 @@ async def test_search_documents_success_has_no_status_key(
     assert data == expected
     for entry in data:
         assert "status" not in entry
+
+
+# ── get_codebase_map ───────────────────────────────────────────────────────
+
+
+async def test_get_codebase_map_handler_is_callable(mcp_server, tmp_path) -> None:
+    """The handler must actually run — not just appear in the tool list.
+
+    Regression test for a broken relative import (``.core`` instead of
+    ``..core``) that made this tool raise ``ModuleNotFoundError`` out of the
+    handler, violating AGENTS.md gotcha #1. The pre-existing tool-list test
+    only asserted the *name* was registered, so it never caught this.
+    """
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "get_codebase_map", {"path": str(tmp_path), "refresh": False}
+        )
+        # Must return content rather than raising out of the handler.
+        assert result.content
+        text = result.content[0].text
+        assert isinstance(text, str) and text
+        # If it failed, it must be the structured error contract (gotcha #1),
+        # never an unhandled ModuleNotFoundError.
+        assert "ModuleNotFoundError" not in text

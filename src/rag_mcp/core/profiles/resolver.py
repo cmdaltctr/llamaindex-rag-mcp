@@ -56,9 +56,11 @@ def _parse_profile_bool(value: Any) -> bool:
 
 
 def _bundle_to_effective(
-    profile_name: str, bundle: dict[str, Any]
+    profile_name: str,
+    bundle: dict[str, Any],
+    base: EffectiveSettings | None = None,
 ) -> EffectiveSettings:
-    """Convert a raw profile bundle dict to an :class:`EffectiveSettings`.
+    """Overlay a raw profile bundle's Tier 2 levers onto *base*.
 
     Environment variables override the profile bundle values for Tier 2
     levers, preserving the "env still wins" precedence established by
@@ -71,17 +73,15 @@ def _bundle_to_effective(
         profile_name: The operational profile name (``documents`` or
             ``codebase``).
         bundle: Raw key-value dict from the YAML bundle.
+        base: Server-default :class:`EffectiveSettings` to overlay onto,
+            supplied by ``compose.py``.  Only the profile-owned levers are
+            replaced; every other field is inherited.  When ``None``, class
+            defaults are used — correct only for tests that assert on
+            levers alone.
 
     Returns:
         Frozen :class:`EffectiveSettings` instance.
     """
-    from ..settings import (
-        ChunkingBlock,
-        IngestionBlock,
-        MetadataBlock,
-        RetrievalBlock,
-    )
-
     # Tier 2 lever env-var overrides (env wins over profile bundle).
     raw_top_k = os.environ.get("TOP_K", bundle.get("TOP_K", 10))
     try:
@@ -122,16 +122,32 @@ def _bundle_to_effective(
             f"{metadata_taxonomy_mode!r}: must be 'category' or 'file_type'"
         )
 
-    return EffectiveSettings(
-        profile_name=profile_name,
-        chunking=ChunkingBlock(strategy_fallback=chunk_strategy_fallback),
-        ingestion=IngestionBlock(),
-        retrieval=RetrievalBlock(
-            top_k=top_k,
-            rerank_enabled=reranker_enabled,
-            hybrid_enabled=hybrid_enabled,
-        ),
-        metadata=MetadataBlock(taxonomy_mode=metadata_taxonomy_mode),
+    # Overlay ONLY the profile-owned levers onto the server-default base
+    # (task 4.4).  Every field the profile does not own — chroma_persist_dir,
+    # embed_model, chunk sizes, concurrency, backends — MUST be inherited
+    # from *base*, not reset to class defaults.  Constructing a fresh
+    # EffectiveSettings here would silently discard the operator's .env.
+    if base is None:
+        base = EffectiveSettings()
+
+    return base.model_copy(
+        update={
+            "profile_name": profile_name,
+            "chunking": base.chunking.model_copy(
+                update={"strategy_fallback": chunk_strategy_fallback}
+            ),
+            "ingestion": base.ingestion,
+            "retrieval": base.retrieval.model_copy(
+                update={
+                    "top_k": top_k,
+                    "rerank_enabled": reranker_enabled,
+                    "hybrid_enabled": hybrid_enabled,
+                }
+            ),
+            "metadata": base.metadata.model_copy(
+                update={"taxonomy_mode": metadata_taxonomy_mode}
+            ),
+        }
     )
 
 
@@ -152,6 +168,7 @@ class ProfileResolver:
         self,
         store: VectorStore | None = None,
         server_profile: str | None = None,
+        base: EffectiveSettings | None = None,
     ) -> None:
         """Initialise the resolver.
 
@@ -163,9 +180,16 @@ class ProfileResolver:
                 injection (task 4.5); when ``None``, falls back to the
                 resolved settings singleton for backward compatibility
                 during the group 4→5 transition.
+            base: Server-default :class:`EffectiveSettings` that resolved
+                profiles overlay their Tier 2 levers onto (task 4.4).
+                Supplied by ``compose.build_profile_resolver()``.  When
+                ``None``, class defaults are used — every non-lever field
+                would then ignore the operator's configuration, so
+                production callers MUST supply it.
         """
         self._store = store
         self._server_profile = server_profile
+        self._base = base
         self._cache: dict[str, EffectiveSettings] = {}
 
     # ── Public API ──────────────────────────────────────────────────
@@ -348,6 +372,6 @@ class ProfileResolver:
             )
             bundle = {}
 
-        effective = _bundle_to_effective(profile_name, bundle)
+        effective = _bundle_to_effective(profile_name, bundle, self._base)
         self._cache[profile_name] = effective
         return effective

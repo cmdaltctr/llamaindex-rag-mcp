@@ -36,8 +36,10 @@ def _line_count(path: Path) -> int:
     strict=True,
     reason=(
         "Architecture-v2 conformance: five files exceed the 500-line ceiling "
-        "(code_graph.py 690, codebase_map.py 663, config/__init__.py 576, "
-        "doc_graph.py 562, daemon/watcher.py 550). Split in group 8 (task 8.6)."
+        "(core/codebase/code_graph.py 690, core/codebase/codebase_map.py 663, "
+        "config/__init__.py 576, core/documents/doc_graph.py 562, "
+        "daemon/watcher.py 550). Split in group 8 (tasks 8.4-8.6); "
+        "config/__init__.py drops below the ceiling via groups 5/7/9 (task 8.7)."
     ),
 )
 def test_no_file_exceeds_500_lines() -> None:

@@ -152,7 +152,7 @@ ignore_imports = [
     # Removed at task 6.1/6.3 when it uses the injected store.
     "rag_mcp.core.codebase.codebase_map -> chromadb",
 ]
-unmatched_ignore_imports_alerting = "none"
+unmatched_ignore_imports_alerting = "error"
 
 # F3: config is a leaf — it must not import core business logic, compose,
 # transports, integrations, or daemon. Only the pure-data subpackage
@@ -184,7 +184,7 @@ ignore_imports = [
     # Removed at task 7.10 when the probe moves to compose.py.
     "rag_mcp.config -> rag_mcp.core.retrieval.sparse",
 ]
-unmatched_ignore_imports_alerting = "none"
+unmatched_ignore_imports_alerting = "error"
 
 # F5: integrations are acyclic leaves — no imports from core, transports,
 # daemon, or the top-level graph modules (which relocate in group 2).
@@ -196,17 +196,20 @@ forbidden_modules = [
     "rag_mcp.core",
     "rag_mcp.transports",
     "rag_mcp.daemon",
-    "rag_mcp.codebase_map",
-    "rag_mcp.code_graph",
-    "rag_mcp.doc_graph",
 ]
 ignore_imports = [
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings
-    # by injection and stop importing config. Each edge suppressed here
-    # is the root of a transitive chain; removing it from the graph breaks
-    # the chain for this contract.
+    # by injection and stop importing config.
+    #
+    # COVERAGE LOSS — read before adding to this list. Each entry suppresses
+    # the *root* edge of a transitive chain, so this contract goes blind to
+    # EVERY chain through config from that module, not just the known one.
+    # A new `integrations.magika -> config -> core.retrieval.dense` would go
+    # undetected today. Do not add modules here to silence a new violation;
+    # the four below are a time-boxed migration artefact removed at 5.6, and
+    # task 10.3a fails the build if any outlives its fix.
     "rag_mcp.integrations.azure -> rag_mcp.config",
     "rag_mcp.integrations.magika -> rag_mcp.config",
     "rag_mcp.integrations.pdf.factory -> rag_mcp.config",
@@ -215,7 +218,7 @@ ignore_imports = [
     # _is_magika_available monkeypatch target. Removed at task 6.4/6.5.
     "rag_mcp.integrations.magika -> rag_mcp.core.codebase.codebase_map",
 ]
-unmatched_ignore_imports_alerting = "none"
+unmatched_ignore_imports_alerting = "error"
 
 [tool.coverage.run]
 source = ["rag_mcp"]

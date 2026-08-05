@@ -17,24 +17,62 @@ import pytest
 _SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
 
 
+def _absolute_module_name(module_path: Path) -> str:
+    """Return the dotted module name for a file under ``src/``.
+
+    ``src/rag_mcp/core/ingestion/chunker.py`` → ``rag_mcp.core.ingestion.chunker``
+    """
+    rel = module_path.resolve().relative_to(_SRC_ROOT.parent)
+    return ".".join(rel.with_suffix("").parts)
+
+
+def _resolve_relative(importer: str, level: int, module: str | None) -> str:
+    """Resolve a relative ``ImportFrom`` to its absolute dotted name.
+
+    ``level`` is the number of leading dots.  Level 1 means "the importer's
+    own package", level 2 means "one package above", and so on — the same
+    semantics Python itself uses.
+
+    Without this resolution a relative import such as
+    ``from ..chunking.code import chunk_code_file_async`` inside
+    ``rag_mcp.core.ingestion.chunker`` yields the bare string
+    ``"chunking.code"``, which can never match an absolute forbidden name —
+    silently rendering this whole test decorative.
+    """
+    package_parts = importer.split(".")[:-1]  # drop the module itself
+    if level > 1:
+        package_parts = package_parts[: -(level - 1)] or []
+    base = ".".join(package_parts)
+    if not module:
+        return base
+    return f"{base}.{module}" if base else module
+
+
 def _module_top_level_imports(module_path: Path) -> set[str]:
     """Return the set of module names imported at the top level of *module_path*.
 
     Only top-level (module body) ``Import`` and ``ImportFrom`` nodes are
-    collected — imports inside function/class bodies are excluded.
+    collected — imports inside function/class bodies are excluded.  Relative
+    imports are resolved to their absolute dotted names so they can be
+    matched against the forbidden set.
     """
     source = module_path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(module_path))
+    importer = _absolute_module_name(module_path)
     names: set[str] = set()
     for node in tree.body:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 names.add(alias.name.split(".")[0])
+                names.add(alias.name)
         elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                names.add(node.module.split(".")[0])
-                # Also record the full dotted path for precise matching.
-                names.add(node.module)
+            if node.level:
+                resolved = _resolve_relative(importer, node.level, node.module)
+            else:
+                resolved = node.module or ""
+            if resolved:
+                names.add(resolved.split(".")[0])
+                names.add(resolved)
     return names
 
 

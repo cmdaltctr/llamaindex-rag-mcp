@@ -647,3 +647,53 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
 
     assert all(row["source"] != "sample.md" for row in dense_only)
     assert any(row["source"] == "sample.md" for row in hybrid)
+
+
+def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
+    """When no reranker is injected, search() resolves one from the registry.
+
+    Covers ``core/retrieval/pipeline.py``'s ``reranker = _retrieval_get("reranker")()``
+    default-construction branch. The sibling injection test above passes its own
+    instance, so it never exercises that line — leaving the registry-backed
+    default path (introduced by this change) untested.
+    """
+    import chromadb
+    import rag_mcp.config as config
+    import rag_mcp.core.retrieval.pipeline as retrieval
+    import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.registry as retrieval_registry
+
+    collection = FakeCollection(
+        "documents",
+        [
+            {"id": "1", "text": "ZXQ-77 appears here", "metadata": {"file_path": "a.txt"}, "distance": 0.1},
+            {"id": "2", "text": "unrelated text", "metadata": {"file_path": "b.txt"}, "distance": 0.9},
+        ],
+    )
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
+    )
+    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+
+    constructed: list[str] = []
+
+    class RecordingReranker:
+        def __init__(self) -> None:
+            constructed.append("built")
+
+        def rerank(self, query: str, results: list[dict], top_k: int) -> list[dict]:
+            for row in results:
+                row["_reranked"] = True
+            return results[:top_k]
+
+    # Replace the registry's resolved entry, not the module attribute, so the
+    # assertion fails if dispatch stops going through the registry.
+    monkeypatch.setitem(retrieval_registry._cache, "reranker", RecordingReranker)
+
+    results = retrieval.search("ZXQ-77", top_k=1, rerank=True, reranker=None)
+
+    assert constructed == ["built"], (
+        "search() did not construct the default reranker through "
+        "retrieval_registry.get('reranker')"
+    )
+    assert results and results[0]["reranked"] is True

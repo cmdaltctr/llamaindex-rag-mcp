@@ -26,6 +26,15 @@ def register(name: str, import_path: str) -> None:
     _registry[name] = import_path
 
 
+# Provider name → the pyproject.toml optional-dependency extra that supplies
+# it.  Providers absent from this map ship in the base install; a missing
+# import for one of those is a genuine environment fault, not a missing extra.
+_PROVIDER_EXTRAS: dict[str, str] = {
+    "llamacpp": "llamacpp",
+    "openrouter": "openrouter",
+}
+
+
 def get(name: str) -> Callable[..., Any]:
     """Resolve and cache the ``build(settings)`` callable for *name*.
 
@@ -44,9 +53,17 @@ def get(name: str) -> Callable[..., Any]:
     try:
         mod = importlib.import_module(module_path)
     except ImportError as exc:
+        # Only suggest `--extra <x>` when that extra actually exists in
+        # pyproject.toml.  Not every provider name is an extra name — e.g.
+        # `ollama` ships in the base install — and pointing an operator at a
+        # non-existent extra turns a clear error into a wild goose chase.
+        hint = (
+            f"  Install it with:  uv sync --extra {_PROVIDER_EXTRAS[name]}"
+            if name in _PROVIDER_EXTRAS
+            else f"  Missing import: {exc}"
+        )
         raise ImportError(
-            f"Provider {name!r} requires an optional dependency. "
-            f"Install it with:  uv sync --extra {name}"
+            f"Provider {name!r} requires an optional dependency.\n{hint}"
         ) from exc
     fn = getattr(mod, attr)
     _cache[name] = fn

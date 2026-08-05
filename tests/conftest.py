@@ -118,10 +118,29 @@ def effective_settings():
     """
     from rag_mcp.core.settings import EffectiveSettings
 
+    from rag_mcp.core.settings import (
+        ChunkingBlock,
+        IngestionBlock,
+        MetadataBlock,
+        RetrievalBlock,
+    )
+
+    blocks = {
+        "chunking": ChunkingBlock,
+        "ingestion": IngestionBlock,
+        "retrieval": RetrievalBlock,
+        "metadata": MetadataBlock,
+    }
+    # Reverse index: leaf field name → owning block, so flat overrides like
+    # ``top_k=20`` route to ``retrieval.top_k`` instead of being silently
+    # swallowed by EffectiveSettings (which has no extra="forbid" and whose
+    # ``top_k`` is a read-only property, not a field).
+    field_owner: dict[str, str] = {}
+    for block_name, block_cls in blocks.items():
+        for field in block_cls.model_fields:
+            field_owner.setdefault(field, block_name)
+
     def _factory(**overrides) -> EffectiveSettings:
-        # Build the base instance with defaults, then apply overrides.
-        # Pydantic frozen models support construction with nested overrides
-        # via model_construct or by passing nested model instances.
         kwargs: dict = {}
         nested: dict[str, dict] = {}
 
@@ -129,24 +148,28 @@ def effective_settings():
             if "." in key:
                 # Dotted notation: "retrieval.top_k" → nested override.
                 block, field = key.split(".", 1)
+                if block not in blocks:
+                    raise TypeError(
+                        f"effective_settings: unknown block {block!r} in "
+                        f"{key!r}. Valid blocks: {sorted(blocks)}"
+                    )
                 nested.setdefault(block, {})[field] = value
-            else:
+            elif key in EffectiveSettings.model_fields:
                 kwargs[key] = value
+            elif key in field_owner:
+                # Flat leaf name → route into its owning block.
+                nested.setdefault(field_owner[key], {})[key] = value
+            else:
+                # Never silently discard an override — that is the exact
+                # failure mode this change exists to eliminate (design D9).
+                raise TypeError(
+                    f"effective_settings: unknown override {key!r}. It is "
+                    f"neither an EffectiveSettings field nor a field of any "
+                    f"block ({', '.join(sorted(blocks))}). Note that "
+                    f"convenience properties such as 'top_k' on the root "
+                    f"model are read-only — use the block field instead."
+                )
 
-        # Build with nested overrides.
-        from rag_mcp.core.settings import (
-            ChunkingBlock,
-            IngestionBlock,
-            MetadataBlock,
-            RetrievalBlock,
-        )
-
-        blocks = {
-            "chunking": ChunkingBlock,
-            "ingestion": IngestionBlock,
-            "retrieval": RetrievalBlock,
-            "metadata": MetadataBlock,
-        }
         for block_name, block_cls in blocks.items():
             if block_name in nested:
                 kwargs[block_name] = block_cls(**nested[block_name])

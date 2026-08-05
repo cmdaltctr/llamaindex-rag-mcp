@@ -11,7 +11,9 @@ Covers the config-composition-root spec scenarios:
 
 from __future__ import annotations
 
+import subprocess
 import sys
+import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -39,21 +41,38 @@ ALL_REGISTRIES = [
 def test_registry_is_lazy(registry) -> None:
     """Importing a registry must not import any strategy module.
 
-    Snapshots ``sys.modules`` before importing the registry module and
-    asserts no registered strategy module appears as a *new* entry.
+    Runs in a **subprocess** with a clean interpreter.  Snapshotting
+    ``sys.modules`` in-process cannot work: this test module imports every
+    registry at module scope, so by the time the test body runs the registry
+    is already in ``sys.modules`` and ``importlib.import_module`` returns the
+    cached object without executing it — making the assertion unfalsifiable.
     """
-    before = set(sys.modules)
-    import importlib
+    strategy_modules = sorted(
+        path.split(":")[0] for path in registry._registry.values()
+    )
+    program = textwrap.dedent(
+        f"""
+        import sys
+        import importlib
 
-    importlib.import_module(registry.__name__)
-    after = set(sys.modules)
-    new_modules = after - before
+        importlib.import_module({registry.__name__!r})
 
-    for import_path in registry._registry.values():
-        module_path = import_path.split(":")[0]
-        assert module_path not in new_modules, (
-            f"{module_path} was imported eagerly by {registry.__name__}"
-        )
+        eager = [m for m in {strategy_modules!r} if m in sys.modules]
+        if eager:
+            print(",".join(eager))
+            sys.exit(1)
+        sys.exit(0)
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, (
+        f"{registry.__name__} eagerly imported strategy modules on import: "
+        f"{proc.stdout.strip()}\n{proc.stderr.strip()}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -121,28 +140,42 @@ def test_registry_all_names_resolve(registry) -> None:
     ALL_REGISTRIES,
     ids=lambda r: r.__name__,
 )
-def test_registry_imports_no_strategy_module(registry) -> None:
-    """Importing a registry module must not import any strategy module.
+def test_registry_package_import_is_lazy(registry) -> None:
+    """Importing the registry's *package* must not import strategy modules.
 
-    Checks ``sys.modules`` after import — no registered strategy module
-    may be present (task 3.7).
+    Complements :func:`test_registry_is_lazy`: that test imports the registry
+    submodule directly, this one imports the package (e.g. ``rag_mcp.core.chunking``)
+    the way production code does, catching an eager re-export added to
+    ``__init__.py``.  Also runs in a subprocess — see that test's docstring
+    for why an in-process ``sys.modules`` check is unfalsifiable here.
     """
-    for import_path in registry._registry.values():
-        module_path = import_path.split(":")[0]
-        # The strategy module may have been imported by a *previous* test
-        # via get(); we only assert the registry import itself did not
-        # add it. Re-import the registry and check it does not pull in
-        # strategies as a side effect.
+    package = registry.__name__.rsplit(".", 1)[0]
+    strategy_modules = sorted(
+        path.split(":")[0] for path in registry._registry.values()
+    )
+    program = textwrap.dedent(
+        f"""
+        import sys
         import importlib
 
-        # Clear and re-import to get a clean check.
-        was_present = module_path in sys.modules
-        importlib.reload(registry)
-        if not was_present:
-            assert module_path not in sys.modules, (
-                f"{module_path} was imported as a side effect of "
-                f"importing {registry.__name__}"
-            )
+        importlib.import_module({package!r})
+
+        eager = [m for m in {strategy_modules!r} if m in sys.modules]
+        if eager:
+            print(",".join(eager))
+            sys.exit(1)
+        sys.exit(0)
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, (
+        f"importing package {package} eagerly imported strategy modules: "
+        f"{proc.stdout.strip()}\n{proc.stderr.strip()}"
+    )
 
 
 def test_registry_missing_dependency_raises_import_error() -> None:

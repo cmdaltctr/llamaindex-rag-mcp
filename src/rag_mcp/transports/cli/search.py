@@ -39,11 +39,11 @@ def search(
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
-    from ...core.profiles import ProfileResolver
+    from ... import compose
     from ...core.retrieval import search as do_search
 
     try:
-        effective = ProfileResolver().resolve(collection)
+        effective = compose.build_profile_resolver().resolve(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1)
