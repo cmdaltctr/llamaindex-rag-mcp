@@ -15,12 +15,12 @@ import json
 import logging
 import re
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ._common import _normalise_category, _truncate_keywords, _truncate_summary, logger
 from .taxonomy import _gather_existing_categories, _get_seed_categories
 
 
-def _build_ollama_prompt(text: str) -> str:
+def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
     """Build the Ollama classification prompt with hybrid category taxonomy.
 
     Merges existing ChromaDB categories with seed categories from keyword
@@ -36,7 +36,7 @@ def _build_ollama_prompt(text: str) -> str:
     """
     # Gather categories: ChromaDB existing + seed from keyword rules.
     existing = _gather_existing_categories()
-    seed = _get_seed_categories()
+    seed = _get_seed_categories(settings)
     merged = set(existing) | set(seed)
     merged.discard("uncategorised")  # added explicitly below
 
@@ -177,7 +177,7 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     }
 
 
-def _get_ollama_max_attempts() -> int:
+def _get_ollama_max_attempts(resolved) -> int:
     """Return the bounded retry budget for Ollama metadata classification.
 
     Reads ``OLLAMA_CLASSIFY_MAX_ATTEMPTS`` at call time so tests can
@@ -189,15 +189,15 @@ def _get_ollama_max_attempts() -> int:
     import os
     raw = os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS")
     if raw is None:
-        return settings.ollama_classify_max_attempts
+        return resolved.metadata.ollama_classify_max_attempts
     try:
         value = int(raw)
     except (TypeError, ValueError):
-        return settings.ollama_classify_max_attempts
+        return resolved.metadata.ollama_classify_max_attempts
     return max(1, value)
 
 
-def _get_ollama_timeout() -> float:
+def _get_ollama_timeout(resolved) -> float:
     """Return the per-attempt HTTP timeout (seconds) for Ollama classification.
 
     Reads ``OLLAMA_CLASSIFY_TIMEOUT`` at call time so tests can override
@@ -209,11 +209,11 @@ def _get_ollama_timeout() -> float:
     import os
     raw = os.getenv("OLLAMA_CLASSIFY_TIMEOUT")
     if raw is None:
-        return settings.ollama_classify_timeout
+        return resolved.metadata.ollama_classify_timeout
     try:
         return float(raw)
     except (TypeError, ValueError):
-        return settings.ollama_classify_timeout
+        return resolved.metadata.ollama_classify_timeout
 
 
 # Sleep hook used between Ollama retry attempts.  Module-level so tests
@@ -221,7 +221,9 @@ def _get_ollama_timeout() -> float:
 _retry_sleep = asyncio.sleep
 
 
-async def _extract_ollama_async(text: str) -> dict:
+async def _extract_ollama_async(
+    text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Classify text using Ollama via async HTTP (httpx).
 
     Uses ``httpx.AsyncClient`` for non-blocking HTTP to Ollama's
@@ -240,12 +242,13 @@ async def _extract_ollama_async(text: str) -> dict:
     Returns:
         A dict with ``category``, ``keywords``, ``summary``.
     """
+    resolved = resolve_effective_settings(settings)
     import httpx
 
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
 
     try:
-        prompt = _build_ollama_prompt(text)
+        prompt = _build_ollama_prompt(text, resolved)
     except Exception as exc:
         logger.warning(
             "Ollama classification failed — could not build prompt: %s",
@@ -254,14 +257,14 @@ async def _extract_ollama_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": settings.ollama_classify_model,
+        "model": resolved.metadata.ollama_classify_model,
         "prompt": prompt,
         "stream": False,
     }
-    url = f"{settings.ollama_base_url}/api/generate"
+    url = f"{resolved.ollama_base_url}/api/generate"
 
-    max_attempts = _get_ollama_max_attempts()
-    timeout_s = _get_ollama_timeout()
+    max_attempts = _get_ollama_max_attempts(resolved)
+    timeout_s = _get_ollama_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):

@@ -31,9 +31,9 @@ from __future__ import annotations
 
 import logging
 
-from ...config import settings
 from ._common import logger
-from .registry import get as _metadata_get
+from .registry import available as _metadata_available, get as _metadata_get
+from ..settings import resolve_effective_settings
 
 
 def _extract_disabled() -> dict:
@@ -45,30 +45,42 @@ def _extract_disabled() -> dict:
     return {}
 
 
-async def _dispatch_local_extraction(text: str) -> dict:
-    """Dispatch to the appropriate extraction function based on provider config.
+def _local_strategy_name(settings) -> str:
+    """Map provider configuration to the registered strategy name.
 
-    Routes based on ``METADATA_LLM_PROVIDER`` (local|cloud) and the
-    corresponding ``LOCAL_BACKEND`` or ``CLOUD_BACKEND`` sub-provider.
-
-    Args:
-        text: The full document text.
-
-    Returns:
-        A dict with ``category``, ``keywords``, ``summary``.
+    This is provider *selection* (which backend this deployment is
+    configured for), not strategy dispatch: it yields a name that the
+    registry then resolves. Adding a backend means registering it and
+    naming it here — no import and no branch over strategy behaviour.
     """
     if settings.metadata_llm_provider == "cloud":
-        if settings.cloud_backend == "openrouter":
-            return await _extract_openrouter_chat_async(text)
-        # Future cloud sub-providers would dispatch here.
-        return await _extract_openrouter_chat_async(text)
-    elif settings.local_backend == "llamacpp":
-        return await _metadata_get("llamacpp")(text)
-    else:
-        return await _metadata_get("ollama")(text)
+        return _CLOUD_BACKENDS.get(settings.cloud_backend, "openrouter")
+    return _LOCAL_BACKENDS.get(settings.local_backend, "ollama")
 
 
-async def _extract_openrouter_chat_async(text: str) -> dict:
+async def _dispatch_local_extraction(
+    text: str, settings: object | None = None, file_name: str = ""
+) -> dict:
+    """Resolve the configured local/cloud backend and run it.
+
+    Kept as a named entry point because ``llamaindex.py`` degrades to it when
+    the LlamaIndex extractor is unavailable. Dispatch itself goes through the
+    registry — this only maps provider configuration to a strategy name.
+    """
+    resolved = resolve_effective_settings(settings)
+    return await _metadata_get(_local_strategy_name(resolved))(
+        text, file_name, resolved
+    )
+
+
+# Provider config value → registered strategy name.
+_LOCAL_BACKENDS = {"llamacpp": "llamacpp", "ollama": "ollama"}
+_CLOUD_BACKENDS = {"openrouter": "openrouter"}
+
+
+async def _extract_openrouter_chat_async(
+    text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Classify text using OpenRouter's OpenAI-compatible /v1/chat/completions.
 
     Mirrors ``_extract_llamacpp_chat_async`` but targets OpenRouter's API
@@ -92,8 +104,9 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
 
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
 
+    resolved = resolve_effective_settings(settings)
     try:
-        prompt = _build_ollama_prompt(text)
+        prompt = _build_ollama_prompt(text, resolved)
     except Exception as exc:
         logger.warning(
             "OpenRouter classification failed — could not build prompt: %s",
@@ -102,7 +115,7 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": settings.openrouter_llm_model,
+        "model": resolved.openrouter_llm_model,
         "messages": [
             {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
             {"role": "user", "content": prompt},
@@ -111,8 +124,8 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
     }
     url = "https://openrouter.ai/api/v1/chat/completions"
 
-    max_attempts = _get_ollama_max_attempts()
-    timeout_s = _get_ollama_timeout()
+    max_attempts = _get_ollama_max_attempts(resolved)
+    timeout_s = _get_ollama_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
@@ -123,7 +136,7 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
                     json=data,
                     headers={
                         "Content-Type": "application/json",
-                        "Authorization": f"Bearer {settings.openrouter_api_key}",
+                        "Authorization": f"Bearer {resolved.openrouter_api_key}",
                     },
                 )
                 resp.raise_for_status()
@@ -167,7 +180,9 @@ async def _extract_openrouter_chat_async(text: str) -> dict:
     return fallback
 
 
-async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
+async def extract_metadata_async(
+    file_text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Async counterpart of ``extract_metadata()``.
 
     Dispatches to the appropriate async extraction function based on
@@ -180,19 +195,22 @@ async def extract_metadata_async(file_text: str, file_name: str = "") -> dict:
     Returns:
         A dict of metadata key-value pairs (same shape as sync version).
     """
-    mode = settings.metadata_extraction_mode.lower()
+    resolved = resolve_effective_settings(settings)
+    mode = resolved.metadata.extraction_mode.lower()
 
     if mode == "disabled":
         return _extract_disabled()
-    elif mode == "keyword":
-        return await _metadata_get("keyword")(file_text)
-    elif mode == "local":
-        return await _dispatch_local_extraction(file_text)
-    elif mode == "llamaindex":
-        return await _metadata_get("llamaindex")(file_text, file_name)
-    else:
+
+    # ``local`` is a provider-selection alias, not a strategy name.
+    name = _local_strategy_name(resolved) if mode == "local" else mode
+
+    if name not in _metadata_available():
         logger.warning(
-            "Unknown METADATA_EXTRACTION_MODE '%s' — falling back to keyword",
-            settings.metadata_extraction_mode,
+            "Unknown metadata extraction mode %r — falling back to keyword. "
+            "Registered strategies: %s",
+            resolved.metadata.extraction_mode,
+            ", ".join(_metadata_available()),
         )
-        return await _metadata_get("keyword")(file_text)
+        name = "keyword"
+
+    return await _metadata_get(name)(file_text, file_name, resolved)

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ._common import (
     _normalise_category,
     _strip_llm_prefix,
@@ -140,7 +140,9 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
     return result
 
 
-async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
+async def _extract_llamaindex_async(
+    text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Extract metadata using LlamaIndex's ``IngestionPipeline.arun()``.
 
     Calls ``pipeline.arun()`` directly — no ThreadPoolExecutor workaround
@@ -154,43 +156,44 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         A dict with ``category``, ``keywords``, ``summary``, and
         optionally ``document_title``.  Falls back to keyword mode on failure.
     """
+    resolved = resolve_effective_settings(settings)
     try:
-        if settings.metadata_llm_provider == "local":
-            if settings.local_backend == "llamacpp":
+        if resolved.metadata_llm_provider == "local":
+            if resolved.local_backend == "llamacpp":
                 from llama_index.llms.openai_like import OpenAILike
                 llm = OpenAILike(
-                    model=settings.llamacpp_chat_model,
-                    api_base=settings.llamacpp_chat_url,
+                    model=resolved.llamacpp_chat_model,
+                    api_base=resolved.llamacpp_chat_url,
                     api_key="no-key",
                     request_timeout=180.0,
                 )
             else:
                 from llama_index.llms.ollama import Ollama
                 llm = Ollama(
-                    model=settings.ollama_classify_model,
-                    base_url=settings.ollama_base_url,
+                    model=resolved.metadata.ollama_classify_model,
+                    base_url=resolved.ollama_base_url,
                     request_timeout=180.0,
                 )
         else:
             from llama_index.llms.openai_like import OpenAILike
             llm = OpenAILike(
-                model=settings.openrouter_llm_model,
+                model=resolved.openrouter_llm_model,
                 api_base="https://openrouter.ai/api/v1",
-                api_key=settings.openrouter_api_key,
+                api_key=resolved.openrouter_api_key,
                 request_timeout=180.0,
             )
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
             "(backend=%s) — falling back to local mode",
-            settings.metadata_llm_provider,
-            settings.local_backend if settings.metadata_llm_provider == "local" else settings.cloud_backend,
+            resolved.metadata_llm_provider,
+            resolved.local_backend if resolved.metadata_llm_provider == "local" else resolved.cloud_backend,
         )
         # Lazy import to avoid a circular dependency: extractor.py imports
         # this module at load time, but the fallback dispatch lives in
         # extractor.py.  The import only runs at call time.
         from .extractor import _dispatch_local_extraction
-        return await _dispatch_local_extraction(text)
+        return await _dispatch_local_extraction(text, resolved, file_name)
 
     try:
         from llama_index.core import Document
@@ -203,15 +206,15 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
         )
 
         max_chunks = _get_max_chunks()
-        capped_text = text[:max_chunks * settings.chunk_size]
+        capped_text = text[:max_chunks * resolved.chunk_size]
 
         doc = Document(text=capped_text, metadata={"file_name": file_name})
 
         pipeline = IngestionPipeline(
             transformations=[
                 SentenceSplitter(
-                    chunk_size=settings.chunk_size,
-                    chunk_overlap=settings.chunk_overlap,
+                    chunk_size=resolved.chunk_size,
+                    chunk_overlap=resolved.chunk_overlap,
                 ),
                 TitleExtractor(nodes=5, llm=llm),
                 KeywordExtractor(keywords=10, llm=llm),
@@ -230,9 +233,9 @@ async def _extract_llamaindex_async(text: str, file_name: str) -> dict:
             "falling back to %s mode",
             type(exc).__name__,
             exc,
-            settings.metadata_llm_provider,
+            resolved.metadata_llm_provider,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
         # Lazy import — see note above.
         from .extractor import _dispatch_local_extraction
-        return await _dispatch_local_extraction(text)
+        return await _dispatch_local_extraction(text, resolved, file_name)

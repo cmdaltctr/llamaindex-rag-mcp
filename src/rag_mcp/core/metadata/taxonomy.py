@@ -16,9 +16,10 @@ from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ._common import _normalise_category, logger
 from .keyword import _load_keyword_rules
+from ..settings import resolve_effective_settings
 
 
-def _get_seed_categories() -> frozenset[str]:
+def _get_seed_categories(settings: object | None = None) -> frozenset[str]:
     """Extract unique category names from the current keyword rules.
 
     These serve as the initial taxonomy when the store is empty (first run).
@@ -27,7 +28,7 @@ def _get_seed_categories() -> frozenset[str]:
     Returns:
         Frozen set of normalised seed category names.
     """
-    rules = _load_keyword_rules()
+    rules = _load_keyword_rules(resolve_effective_settings(settings))
     seen: set[str] = set()
     for rule in rules:
         cat = rule.get("category", "").lower()

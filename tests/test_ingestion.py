@@ -154,10 +154,16 @@ class TestMetadataAttachment:
         self, tmp_path, monkeypatch,
     ):
         """Metadata must be attached to chunks when METADATA_EXTRACTION_MODE=keyword."""
-        # Enable keyword extraction for this test
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        # Enable keyword extraction for this test via injected settings.
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         # Create a test file with AI-related content
         test_file = tmp_path / "ai_paper.txt"
@@ -193,8 +199,15 @@ class TestMetadataAttachment:
     ):
         """When METADATA_EXTRACTION_MODE=disabled, no category metadata."""
         # Disable keyword extraction
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "disabled")
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+        )
 
         test_file = tmp_path / "whatever.txt"
         test_file.write_text("Some random content about biology and proteins.")

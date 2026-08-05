@@ -12,6 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+
 
 # ── Config: provider selection ───────────────────────────────────────────
 
@@ -132,14 +134,12 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(monkeypatch: py
     import rag_mcp.config as _config
     from rag_mcp.core.metadata import extractor as _ext
 
-    monkeypatch.setattr(_config.settings, "metadata_llm_provider", "local")
-    monkeypatch.setattr(_config.settings, "local_backend", "llamacpp")
-    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "local")
+    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="local", local_backend="llamacpp")
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
-        await _ext.extract_metadata_async("text", "file.txt")
-        mock_fn.assert_called_once_with("text")
+        await _ext.extract_metadata_async("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
 
 @pytest.mark.asyncio
@@ -148,14 +148,12 @@ async def test_local_mode_dispatches_to_ollama_when_configured(monkeypatch: pyte
     import rag_mcp.config as _config
     from rag_mcp.core.metadata import extractor as _ext
 
-    monkeypatch.setattr(_config.settings, "metadata_llm_provider", "local")
-    monkeypatch.setattr(_config.settings, "local_backend", "ollama")
-    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "local")
+    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="local", local_backend="ollama")
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("rag_mcp.core.metadata.ollama._extract_ollama_async", mock_fn):
-        await _ext.extract_metadata_async("text", "file.txt")
-        mock_fn.assert_called_once_with("text")
+        await _ext.extract_metadata_async("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
 
 @pytest.mark.asyncio
@@ -164,13 +162,12 @@ async def test_cloud_mode_dispatches_to_openrouter(monkeypatch: pytest.MonkeyPat
     import rag_mcp.config as _config
     from rag_mcp.core.metadata import extractor as _ext
 
-    monkeypatch.setattr(_config.settings, "metadata_llm_provider", "cloud")
-    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "local")
+    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="cloud")
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch.object(_ext, "_extract_openrouter_chat_async", mock_fn):
-        await _ext.extract_metadata_async("text", "file.txt")
-        mock_fn.assert_called_once_with("text")
+        await _ext.extract_metadata_async("text", "file.txt", _settings)
+        mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
 
 @pytest.mark.asyncio
@@ -183,8 +180,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
     # Both modules read the resolved settings singleton, so a single set
     # of patches drives the LLM-class selection in llamaindex.py and the
     # fallback dispatch route in extractor.py.
-    monkeypatch.setattr(_config.settings, "metadata_llm_provider", "local")
-    monkeypatch.setattr(_config.settings, "local_backend", "llamacpp")
+    _settings = EffectiveSettings(metadata_llm_provider="local", local_backend="llamacpp")
 
     mock_fn = AsyncMock(return_value={"category": "fallback", "keywords": [], "summary": ""})
 
@@ -199,7 +195,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
     with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn), \
          patch("builtins.__import__", side_effect=_failing_import):
         await _lli._extract_llamaindex_async("text", "file.txt")
-        mock_fn.assert_called_once_with("text")
+        mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
 
 # ── Provider registry tests ──────────────────────────────────────────────
