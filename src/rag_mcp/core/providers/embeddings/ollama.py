@@ -29,5 +29,5 @@ def build(settings: Settings) -> Any:
     return OllamaEmbedding(
         model_name=settings.embed_model,
         base_url=settings.ollama_base_url,
-        embed_batch_size=settings.embed_batch_size,
+        embed_batch_size=settings.ingestion.embed_batch_size,
     )

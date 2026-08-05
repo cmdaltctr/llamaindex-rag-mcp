@@ -64,11 +64,13 @@ class TestListDocuments:
         """Document chunk counts must include metadata beyond one scan page."""
         import chromadb
         import rag_mcp.config as _config
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
+        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
+
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_or_create_collection("paged_docs")
         collection.add(
             ids=["1", "2", "3", "4", "5"],
@@ -154,10 +156,16 @@ class TestMetadataAttachment:
         self, tmp_path, monkeypatch,
     ):
         """Metadata must be attached to chunks when METADATA_EXTRACTION_MODE=keyword."""
-        # Enable keyword extraction for this test
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        # Enable keyword extraction for this test via injected settings.
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         # Create a test file with AI-related content
         test_file = tmp_path / "ai_paper.txt"
@@ -172,9 +180,9 @@ class TestMetadataAttachment:
 
         # Verify metadata in ChromaDB
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_collection("test_metadata")
         data = collection.get(include=["metadatas"])
 
@@ -193,8 +201,15 @@ class TestMetadataAttachment:
     ):
         """When METADATA_EXTRACTION_MODE=disabled, no category metadata."""
         # Disable keyword extraction
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "disabled")
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+        )
 
         test_file = tmp_path / "whatever.txt"
         test_file.write_text("Some random content about biology and proteins.")
@@ -203,9 +218,9 @@ class TestMetadataAttachment:
         assert result["status"] == "ok"
 
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_collection("test_disabled_meta")
         data = collection.get(include=["metadatas"])
 

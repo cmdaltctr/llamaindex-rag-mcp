@@ -9,6 +9,11 @@ original ``retrieval.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..settings import EffectiveSettings
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,6 +23,7 @@ def _resolve_fetch_k(
     top_k: int,
     rerank: bool,
     collection_count: int,
+    settings: EffectiveSettings,
     fetch_k_override: int | None = None,
 ) -> int:
     """Compute the candidate pool size, applying the reranker fetch rules.
@@ -56,13 +62,9 @@ def _resolve_fetch_k(
     if fetch_k_override is not None:
         fetch_k = fetch_k_override
     elif rerank:
-        # Read from the resolved settings singleton at call time so
-        # tests that patch ``settings.rerank_*`` are honoured.
-        from ...config import settings
-
         fetch_k = max(
-            settings.rerank_max_fetch,
-            top_k * settings.rerank_fetch_multiplier,
+            settings.retrieval.rerank_max_fetch,
+            top_k * settings.retrieval.rerank_fetch_multiplier,
         )
     else:
         fetch_k = top_k
@@ -183,6 +185,7 @@ def _classify_query_technical(query: str) -> float:
 def _resolve_rerank_policy(
     rerank: bool | None,
     query: str,
+    settings: EffectiveSettings,
     technical_fraction: float | None = None,
     profile_reranker_enabled: bool | None = None,
 ) -> tuple[bool, str]:
@@ -220,10 +223,6 @@ def _resolve_rerank_policy(
         Tuple of ``(effective_rerank, reason)`` where ``effective_rerank``
         is the resolved boolean and ``reason`` is a diagnostic string.
     """
-    # Read from the resolved settings singleton at call time so tests
-    # that patch ``settings.rerank_*`` are honoured.
-    from ...config import settings
-
     # Explicit override: True forces reranking.
     if rerank is True:
         return (True, "explicit rerank=True override")
@@ -243,18 +242,18 @@ def _resolve_rerank_policy(
         return (False, "profile-resolved reranker disabled")
 
     # Step 1: Check global default.
-    if settings.rerank_enabled:
+    if settings.retrieval.rerank_enabled:
         return (True, "global default RERANK_ENABLED=true")
 
     # Step 2: Global is off. Check semantic policy.
-    if not settings.rerank_enabled_for_semantic:
+    if not settings.retrieval.rerank_enabled_for_semantic:
         return (False, "disabled by default (RERANK_ENABLED_FOR_SEMANTIC=false)")
 
     # Step 3: Semantic policy is enabled. Classify the query.
     if technical_fraction is None:
         technical_fraction = _classify_query_technical(query)
 
-    threshold = settings.hard_technical_threshold
+    threshold = settings.retrieval.hard_technical_threshold
     if technical_fraction >= threshold:
         return (
             False,

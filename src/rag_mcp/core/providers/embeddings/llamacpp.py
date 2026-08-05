@@ -31,5 +31,5 @@ def build(settings: Settings) -> Any:
         model=settings.llamacpp_embed_model,
         api_base=settings.llamacpp_embed_url,
         api_key="no-key",
-        embed_batch_size=settings.embed_batch_size,
+        embed_batch_size=settings.ingestion.embed_batch_size,
     )

@@ -16,8 +16,8 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import settings
-from .integrations.magika import FileEntry, _EXCLUDED_DIRS
+from ..settings import get_default_effective_settings
+from ...integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +113,15 @@ class FileInventory:
 def _is_magika_available() -> bool:
     """Check if the Magika CLI binary is on $PATH.
 
-    Delegates to ``integrations.magika`` (extracted in Phase 5).
+    Thin delegation to ``integrations.magika``, which owns the check. Resolve
+    the attribute on the module rather than binding it at import so patches
+    applied to the owning module take effect here — the previous arrangement
+    inverted this and required ``integrations.magika`` to import *back* into
+    this module, creating the cycle removed in task 6.4.
     """
-    from .integrations.magika import _is_magika_available as _check
-    return _check()
+    from ...integrations import magika as _magika
+
+    return _magika._is_magika_available()
 
 
 def scan_with_magika(path: str) -> list[FileEntry]:
@@ -124,7 +129,7 @@ def scan_with_magika(path: str) -> list[FileEntry]:
 
     Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
-    from .integrations.magika import scan_with_magika as _scan
+    from ...integrations.magika import scan_with_magika as _scan
     return _scan(path)
 
 
@@ -145,7 +150,7 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
-        if current_depth > settings.codebase_map_max_depth:
+        if current_depth > get_default_effective_settings().codebase_map_max_depth:
             return
         try:
             children = sorted(directory.iterdir())
@@ -230,12 +235,12 @@ def detect_file_types(path: str) -> FileInventory:
                 )
 
     # Enforce file count limit.
-    if len(entries) > settings.codebase_map_max_files:
+    if len(entries) > get_default_effective_settings().codebase_map_max_files:
         logger.warning(
             "File count %d exceeds CODEBASE_MAP_MAX_FILES=%d, truncating",
-            len(entries), settings.codebase_map_max_files,
+            len(entries), get_default_effective_settings().codebase_map_max_files,
         )
-        entries = entries[:settings.codebase_map_max_files]
+        entries = entries[:get_default_effective_settings().codebase_map_max_files]
 
     inventory.entries = entries
     return inventory
@@ -311,116 +316,6 @@ class CodebaseMap:
     commit_hash: str | None = None
 
 
-def _get_git_commit_hash(path: str) -> str | None:
-    """Get the current git commit hash for a project path.
-
-    Args:
-        path: Project directory path.
-
-    Returns:
-        The commit hash string, or None if not a git repository.
-    """
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            cwd=path,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except OSError:
-        pass
-    return None
-
-
-def _load_cache(path: str) -> CodebaseMap | None:
-    """Load a cached codebase map from disk.
-
-    Cache files are stored at ``<project>/.opencode/codebase-graph.json``.
-    The cache is keyed by git commit hash.
-
-    Args:
-        path: Project directory path.
-
-    Returns:
-        A ``CodebaseMap`` if the cache exists and the commit hash matches,
-        otherwise None.
-    """
-    cache_dir = Path(path) / settings.codebase_map_cache_dir
-    cache_file = cache_dir / "codebase-graph.json"
-
-    if not cache_file.exists():
-        return None
-
-    commit_hash = _get_git_commit_hash(path)
-    if commit_hash is None:
-        logger.info("Caching disabled — not a git repository")
-        return None
-
-    try:
-        data = json.loads(cache_file.read_text())
-        if data.get("commit_hash") == commit_hash:
-            logger.debug("Codebase map cache hit (commit %s)", commit_hash[:8])
-            return _codebase_map_from_dict(data)
-    except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Cache file corrupt, rebuilding: %s", exc)
-
-    return None
-
-
-def _save_cache(path: str, codebase_map: CodebaseMap) -> None:
-    """Save a codebase map to disk cache.
-
-    Args:
-        path: Project directory path.
-        codebase_map: The codebase map to cache.
-    """
-    if codebase_map.commit_hash is None:
-        return
-
-    cache_dir = Path(path) / settings.codebase_map_cache_dir
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / "codebase-graph.json"
-
-    data = _codebase_map_to_dict(codebase_map)
-    cache_file.write_text(json.dumps(data, indent=2))
-    logger.debug("Codebase map cached (commit %s)", codebase_map.commit_hash[:8])
-
-
-def _codebase_map_to_dict(m: CodebaseMap) -> dict:
-    """Serialise a CodebaseMap to a JSON-compatible dict."""
-    return {
-        "commit_hash": m.commit_hash,
-        "inventory": {
-            "type_counts": m.inventory.type_counts,
-            "binary_files": m.inventory.binary_files,
-            "mismatches": m.inventory.mismatches,
-        },
-        "code_communities": m.code_communities,
-        "doc_communities": m.doc_communities,
-        "cross_links": m.cross_links,
-        "hubs": m.hubs,
-    }
-
-
-def _codebase_map_from_dict(data: dict) -> CodebaseMap:
-    """Deserialise a CodebaseMap from a dict."""
-    inv_data = data.get("inventory", {})
-    return CodebaseMap(
-        inventory=FileInventory(
-            type_counts=inv_data.get("type_counts", {}),
-            binary_files=inv_data.get("binary_files", []),
-            mismatches=[tuple(m) for m in inv_data.get("mismatches", [])],
-        ),
-        code_communities=data.get("code_communities", []),
-        doc_communities=data.get("doc_communities", []),
-        cross_links=data.get("cross_links", []),
-        hubs=data.get("hubs", []),
-        commit_hash=data.get("commit_hash"),
-    )
-
-
 def build_codebase_map(path: str) -> CodebaseMap:
     """Build a complete codebase map for a project directory.
 
@@ -470,22 +365,26 @@ def build_codebase_map(path: str) -> CodebaseMap:
     doc_communities: list[dict] = []
     cross_links: list[dict] = []
 
-    # Fetch ChromaDB collection for document graph.
+    # Open the document collection through the VectorStore abstraction.
+    # This used to construct a chromadb.PersistentClient directly — the only
+    # place in the codebase that bypassed the ABC, contradicting ADR-034 and
+    # silently breaking under any non-Chroma store.
     collection = None
     try:
-        import chromadb
-        from .config import settings
-        db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-        collection = db.get_collection("documents")
-        if collection.count() == 0:
-            logger.debug("ChromaDB 'documents' collection is empty")
-            collection = None
+        from ..documents.doc_graph import CollectionView
+        from ..vectordb import get_default_store
+
+        view = CollectionView(get_default_store(), "documents")
+        if view.count() == 0:
+            logger.debug("Document collection is empty")
+        else:
+            collection = view
     except Exception as exc:
-        logger.warning("Could not access ChromaDB collection for document graph: %s", exc)
+        logger.warning("Could not access the document collection for the graph: %s", exc)
 
     if doc_files:
         try:
-            from .doc_graph import build_document_graph, detect_document_communities
+            from ..documents.doc_graph import build_document_graph, detect_document_communities
 
             doc_graph = build_document_graph(collection)
             doc_comms = detect_document_communities(doc_graph)
@@ -504,7 +403,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
     # Cross-links (only if both code and doc communities exist)
     if code_communities and doc_communities:
         try:
-            from .doc_graph import compute_cross_links
+            from ..documents.doc_graph import compute_cross_links
 
             dg = build_document_graph(collection)
             links = compute_cross_links(code_graph, dg)
@@ -527,82 +426,6 @@ def build_codebase_map(path: str) -> CodebaseMap:
         hubs=hubs,
         commit_hash=commit_hash,
     )
-
-
-def format_codebase_map(codebase_map: CodebaseMap) -> str:
-    """Format a complete codebase map as compact text (≤800 tokens).
-
-    Produces sections for File Types, Code Communities, Document Communities,
-    Cross-links, and Architectural Hubs. Communities with more than 4 files
-    are truncated to show the top 4 plus "... and N more".
-
-    Args:
-        codebase_map: The codebase map to format.
-
-    Returns:
-        Compact text representation targeting 500–800 tokens.
-    """
-    sections: list[str] = []
-
-    # File Types section
-    sections.append(format_inventory(codebase_map.inventory))
-
-    # Code Communities section
-    if codebase_map.code_communities:
-        lines = ["", "## Code Communities"]
-        for i, comm in enumerate(codebase_map.code_communities):
-            files = comm.get("files", [])
-            file_count = comm.get("file_count", len(files))
-            edge_count = comm.get("edge_count", 0)
-            label = comm.get("label", f"Community {i + 1}")
-
-            if len(files) > 4:
-                shown = ", ".join(files[:4])
-                lines.append(
-                    f"- {label} ({file_count} files, {edge_count} edges): "
-                    f"{shown}, ... and {len(files) - 4} more"
-                )
-            else:
-                shown = ", ".join(files) if files else ""
-                lines.append(
-                    f"- {label} ({file_count} files, {edge_count} edges): {shown}"
-                )
-        sections.append("\n".join(lines))
-
-    # Document Communities section
-    if codebase_map.doc_communities:
-        lines = ["", "## Document Communities"]
-        for i, comm in enumerate(codebase_map.doc_communities):
-            chunks = comm.get("chunks", [])
-            chunk_count = comm.get("chunk_count", len(chunks))
-            label = comm.get("label", f"Topic {i + 1}")
-            category = comm.get("category", "")
-            cat_str = f" [{category}]" if category else ""
-            lines.append(f"- {label}{cat_str} ({chunk_count} chunks)")
-        sections.append("\n".join(lines))
-
-    # Cross-links section
-    if codebase_map.cross_links:
-        lines = ["", "## Cross-links"]
-        for link in codebase_map.cross_links[:15]:
-            lines.append(
-                f"- {link.get('code', '?')} ↔ {link.get('doc', '?')} "
-                f"({link.get('relation', '?')})"
-            )
-        if len(codebase_map.cross_links) > 15:
-            lines.append(f"- ... and {len(codebase_map.cross_links) - 15} more")
-        sections.append("\n".join(lines))
-
-    # Hubs section
-    if codebase_map.hubs:
-        lines = ["", "## Architectural Hubs"]
-        for hub in codebase_map.hubs[:10]:
-            lines.append(
-                f"- {hub.get('file', '?')} (imported by {hub.get('in_degree', 0)})"
-            )
-        sections.append("\n".join(lines))
-
-    return "\n".join(sections)
 
 
 def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
@@ -661,3 +484,17 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
             "status": "error",
             "message": f"{type(exc).__name__}: {exc}",
         })
+
+
+# ── Re-exports ───────────────────────────────────────────────────────────
+# Caching and rendering live in sibling modules after the task 8.5 split.
+# Re-exported so existing imports and test monkeypatch targets keep working.
+
+from .cache import (  # noqa: E402
+    _codebase_map_from_dict,
+    _codebase_map_to_dict,
+    _get_git_commit_hash,
+    _load_cache,
+    _save_cache,
+)
+from .format import format_codebase_map  # noqa: E402

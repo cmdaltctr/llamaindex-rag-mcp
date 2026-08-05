@@ -9,20 +9,41 @@ from typing import Any
 
 import pytest
 
+from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
-def _set_mode(monkeypatch, mode: str, keyword_rules: str | None = None):
-    """Helper: monkeypatch the settings singleton that metadata reads.
 
-    After the config-core split, ``metadata_extraction_mode`` and
-    ``metadata_keyword_rules`` live on the resolved ``settings``
-    singleton, so tests patch ``config.settings`` attributes rather
-    than module globals.
+def _set_mode(
+    monkeypatch,
+    mode: str,
+    keyword_rules: str | None = None,
+    local_backend: str | None = None,
+    max_attempts: int | None = None,
+):
+    """Helper: install an EffectiveSettings carrying the mode under test.
+
+    Metadata extraction now receives its settings by injection rather than
+    reading a module-level singleton, so this installs the composition-root
+    default the extractor falls back to. Each test gets its own instance —
+    the conftest autouse fixture resets it afterwards — so configuration can
+    no longer leak between tests the way singleton patching allowed.
     """
-    import rag_mcp.config as _config
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        MetadataBlock,
+        set_default_effective_settings,
+    )
 
-    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", mode)
+    block_kwargs = {"extraction_mode": mode}
     if keyword_rules is not None:
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", keyword_rules)
+        block_kwargs["keyword_rules"] = keyword_rules
+    if max_attempts is not None:
+        block_kwargs["ollama_classify_max_attempts"] = max_attempts
+    root_kwargs = {}
+    if local_backend is not None:
+        root_kwargs["local_backend"] = local_backend
+    set_default_effective_settings(
+        EffectiveSettings(metadata=MetadataBlock(**block_kwargs), **root_kwargs)
+    )
 
 
 # ── 9.1 Keyword mode tests ──────────────────────────────────────────────────
@@ -194,7 +215,7 @@ class TestLlamaindexStub:
         self, monkeypatch, caplog,
     ) -> None:
         """Llamaindex mode must fall back to ollama mode when LLM package missing."""
-        _set_mode(monkeypatch, "llamaindex")
+        _set_mode(monkeypatch, "llamaindex", local_backend="ollama")
 
         # Force the import to fail (the package is installed in the dev venv,
         # but this test verifies the fallback path for users who don't have it).
@@ -209,11 +230,11 @@ class TestLlamaindexStub:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str) -> dict:
+        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
             return {"category": "biology", "keywords": ["protein", "deep_learning"], "summary": "A biology paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -275,8 +296,13 @@ class TestOllamaExtraction:
 
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch) -> None:
-        """Set mode to local for all tests in this class."""
-        _set_mode(monkeypatch, "local")
+        """Select the Ollama backend explicitly for this class.
+
+        Previously this relied on ``local`` resolving to Ollama through the
+        settings singleton's ambient ``LOCAL_BACKEND``. The class tests the
+        Ollama response format, so it now names the backend it needs.
+        """
+        _set_mode(monkeypatch, "local", local_backend="ollama")
 
     # ── Helpers ─────────────────────────────────────────────────────────
 
@@ -471,8 +497,13 @@ class TestHybridCategoryTaxonomy:
 
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch) -> None:
-        """Set mode to local for all tests in this class."""
-        _set_mode(monkeypatch, "local")
+        """Select the Ollama backend explicitly for this class.
+
+        Previously this relied on ``local`` resolving to Ollama through the
+        settings singleton's ambient ``LOCAL_BACKEND``. The class tests the
+        Ollama response format, so it now names the backend it needs.
+        """
+        _set_mode(monkeypatch, "local", local_backend="ollama")
 
     def _mock_ollama(self, monkeypatch, response_text: str) -> None:
         """Mock Ollama to return controlled response via httpx."""
@@ -709,7 +740,7 @@ class TestLlamaindexExtraction:
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch) -> None:
         """Set mode to llamaindex and IS_TESTING for MockLLM."""
-        _set_mode(monkeypatch, "llamaindex")
+        _set_mode(monkeypatch, "llamaindex", local_backend="ollama")
         # Enable LlamaIndex's IS_TESTING mode so Settings.llm uses MockLLM
         # instead of attempting OpenAI API key validation.
         monkeypatch.setenv("IS_TESTING", "1")
@@ -738,11 +769,11 @@ class TestLlamaindexExtraction:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str) -> dict:
+        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
             return {"category": "ai", "keywords": ["deep_learning", "neural"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -783,11 +814,11 @@ class TestLlamaindexExtraction:
 
         from rag_mcp.core.metadata.llamaindex import _aggregate_llamaindex_metadata
 
-        async def fake_extract_llamaindex_async(text: str, file_name: str) -> dict:
+        async def fake_extract_llamaindex_async(text: str, file_name: str = '', settings=None) -> dict:
             return _aggregate_llamaindex_metadata([mock_node])
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
@@ -867,11 +898,11 @@ class TestLlamaindexExtraction:
         monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
 
         # Mock _extract_ollama_async so we don't need a live Ollama instance.
-        async def _fake_ollama(text: str) -> dict:
+        async def _fake_ollama(text: str, file_name: str = "", settings=None) -> dict:
             return {"category": "ai", "keywords": ["transformer"], "summary": "An AI paper."}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _fake_ollama,
         )
 
@@ -912,16 +943,16 @@ class TestLlamaindexExtraction:
         monkeypatch.setattr("builtins.__import__", _fake_import)
 
         # Make _extract_ollama_async also fail — simulates Ollama unreachable.
-        async def _failing_ollama(text: str) -> dict:
+        async def _failing_ollama(text: str, file_name: str = "", settings=None) -> dict:
             # _extract_ollama_async catches its own exceptions and returns this.
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_ollama_async",
+            "rag_mcp.core.metadata.ollama._extract_ollama_async",
             _failing_ollama,
         )
 
-        _set_mode(monkeypatch, "llamaindex")
+        _set_mode(monkeypatch, "llamaindex", local_backend="ollama")
         from rag_mcp.core.metadata import extract_metadata_async
 
         result = asyncio.run(extract_metadata_async(
@@ -949,7 +980,7 @@ class TestLlamaindexExtraction:
         # Track what text length is passed to the extraction function
         captured_text_len = []
 
-        async def fake_extract_llamaindex_async(text: str, file_name: str) -> dict:
+        async def fake_extract_llamaindex_async(text: str, file_name: str = '', settings=None) -> dict:
             captured_text_len.append(len(text))
             # The function internally caps text at max_chunks * CHUNK_SIZE
             # before passing to the pipeline. We verify by checking that
@@ -957,7 +988,7 @@ class TestLlamaindexExtraction:
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._extract_llamaindex_async",
+            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
             fake_extract_llamaindex_async,
         )
 
@@ -1023,39 +1054,38 @@ class TestCoverageGaps:
 
     def test_load_keyword_rules_empty_list(self, monkeypatch) -> None:
         """An empty JSON array must be accepted and returned as-is."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
         from rag_mcp.core.metadata.keyword import _load_keyword_rules
-        result = _load_keyword_rules()
+        result = _load_keyword_rules(
+            EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
+        )
         assert result == []
 
     def test_load_keyword_rules_missing_keys(self, monkeypatch) -> None:
         """Rules missing 'pattern' or 'category' keys must fall back to defaults."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", '[{"pattern": "foo"}]')
+        _rules_settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules='[{"pattern": "foo"}]'))
         from rag_mcp.core.metadata.keyword import _load_keyword_rules, _DEFAULT_KEYWORD_RULES
-        result = _load_keyword_rules()
+        result = _load_keyword_rules(EffectiveSettings())
         assert result == _DEFAULT_KEYWORD_RULES
 
     # ── _extract_keyword: empty rules guard (line 453) ────────────────────
 
     def test_extract_keyword_empty_rules(self, monkeypatch) -> None:
         """Empty rules list must return uncategorised immediately."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
+        _rules_settings = EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]"))
         from rag_mcp.core.metadata.keyword import _extract_keyword
-        result = _extract_keyword("transformer attention neural network")
+        result = _extract_keyword("transformer attention neural network", _rules_settings)
         assert result == {"category": "uncategorised"}
 
     # ── _extract_keyword: invalid regex pattern (lines 463-469) ──────────
 
     def test_extract_keyword_invalid_regex_skipped(self, monkeypatch, caplog) -> None:
         """A rule with an invalid regex pattern must be skipped with a WARNING."""
-        import rag_mcp.config as _config
         bad_rules = '[{"pattern": "[invalid(", "category": "broken"}, {"pattern": "neural", "category": "AI"}]'
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", bad_rules)
+        _rules_settings = EffectiveSettings(
+            metadata=MetadataBlock(keyword_rules=bad_rules)
+        )
         from rag_mcp.core.metadata.keyword import _extract_keyword
-        result = _extract_keyword("neural network transformer")
+        result = _extract_keyword("neural network transformer", _rules_settings)
         # The valid rule still fires
         assert result["category"] == "AI"
         assert any("invalid regex" in r.message.lower() for r in caplog.records)
@@ -1094,9 +1124,11 @@ class TestCoverageGaps:
         from rag_mcp.core.vectordb import set_default_store
         from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 
-        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
+        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-        db = chromadb.PersistentClient(path=_config.CHROMA_PERSIST_DIR)
+        set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
+
+        db = chromadb.PersistentClient(path=_config.get_settings().chroma_persist_dir)
         collection = db.get_or_create_collection("paged_categories")
         collection.add(
             ids=["1", "2", "3"],
@@ -1125,7 +1157,9 @@ class TestCoverageGaps:
 
         import rag_mcp.config as _config
         # Empty custom rules → no seed categories
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
+        from rag_mcp.core.settings import EffectiveSettings, MetadataBlock, set_default_effective_settings
+
+        set_default_effective_settings(EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]")))
         # Empty store → no existing categories
         mock_store = MagicMock()
         mock_store.list_collections.return_value = []
@@ -1233,7 +1267,9 @@ class TestOllamaRetry:
 
     @pytest.fixture(autouse=True)
     def _ollama_mode(self, monkeypatch) -> None:
-        _set_mode(monkeypatch, "local")
+        # Name the backend: this class tests Ollama's retry loop, so it must
+        # not depend on whatever LOCAL_BACKEND happens to resolve to.
+        _set_mode(monkeypatch, "local", local_backend="ollama")
         # Avoid real time.sleep / asyncio.sleep delays in tests.
         async def _noop_sleep(_seconds):
             return None
@@ -1280,7 +1316,9 @@ class TestOllamaRetry:
         self, monkeypatch,
     ) -> None:
         """First call fails, second succeeds → returns parsed metadata."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         good = json.dumps({
             "category": "ai",
@@ -1301,7 +1339,9 @@ class TestOllamaRetry:
 
     def test_retry_exhaustion_falls_back(self, monkeypatch, caplog) -> None:
         """All attempts fail → fallback dict + WARNING log."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         log = self._mock_async_client(
             monkeypatch,
@@ -1331,7 +1371,9 @@ class TestOllamaRetry:
 
     def test_backoff_grows_between_attempts(self, monkeypatch) -> None:
         """``_retry_sleep`` must be called with 1, 2, 4 ... seconds."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "4")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=4)
 
         sleeps: list[float] = []
 
@@ -1360,7 +1402,9 @@ class TestOllamaRetry:
 
     def test_no_sleep_when_max_attempts_is_one(self, monkeypatch) -> None:
         """A single-attempt configuration must not call _retry_sleep."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
 
         sleeps: list[float] = []
 
@@ -1383,7 +1427,9 @@ class TestOllamaRetry:
 
     def test_first_attempt_success_no_retry(self, monkeypatch) -> None:
         """A successful first attempt must not trigger a retry."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        # Attempts come from the injected settings now, not the environment:
+        # the extractor reads EffectiveSettings, so setenv would be ignored.
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=3)
 
         good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         log = self._mock_async_client(monkeypatch, [good])

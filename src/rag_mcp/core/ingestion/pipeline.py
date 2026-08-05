@@ -13,7 +13,8 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from ...config import settings, SUPPORTED_EXTENSIONS
+from .loader import SUPPORTED_EXTENSIONS
+from ..settings import resolve_effective_settings
 from ._state import shutdown_requested
 from .chunker import read_and_chunk_file_async
 from .loader import gather_supported_files, make_file_detail
@@ -76,9 +77,16 @@ async def ingest_path_async(
             "chunks_removed": 0,
         }
 
-    _chunk_size = chunk_size if chunk_size is not None else settings.chunk_size
+    # Resolve settings ONCE at the entry-point boundary; everything below
+    # receives the resolved instance.
+    resolved_settings = resolve_effective_settings(effective_settings)
+    _chunk_size = (
+        chunk_size if chunk_size is not None else resolved_settings.chunking.chunk_size
+    )
     _chunk_overlap = (
-        chunk_overlap if chunk_overlap is not None else settings.chunk_overlap
+        chunk_overlap
+        if chunk_overlap is not None
+        else resolved_settings.chunking.chunk_overlap
     )
 
     files_to_index, skipped_details = gather_supported_files(path_obj)
@@ -94,7 +102,7 @@ async def ingest_path_async(
 
     # Type-aware ingestion: detect file types via Magika (task 6.3).
     # Falls back to None (extension-based routing) when Magika unavailable.
-    from ...codebase_map import detect_file_types
+    from ..codebase.codebase_map import detect_file_types
 
     content_type_map: dict[str, str] = {}
     try:
@@ -149,23 +157,14 @@ async def ingest_path_async(
             # Phase 4: pass the profile's chunking fallback for ambiguous
             # types and the taxonomy mode for metadata classification.
             # Content-type dispatch still wins for known types.
-            fallback_strategy = (
-                effective_settings.chunk_strategy_fallback
-                if effective_settings is not None
-                else None
-            )
-            taxonomy_mode = (
-                effective_settings.metadata_taxonomy_mode
-                if effective_settings is not None
-                else None
-            )
             nodes = await read_and_chunk_file_async(
                 file_path,
                 chunk_size=_chunk_size,
                 chunk_overlap=_chunk_overlap,
                 content_type=content_type,
-                fallback_strategy=fallback_strategy,
-                taxonomy_mode=taxonomy_mode,
+                fallback_strategy=resolved_settings.chunking.strategy_fallback,
+                taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
+                settings=resolved_settings,
             )
             all_nodes.extend(nodes)
             files_indexed += 1
@@ -191,7 +190,8 @@ async def ingest_path_async(
     # Embed and write to ChromaDB (async, yields the loop).
     try:
         chunks_created = await embed_and_write_async(
-            all_nodes, progress_callback, collection_name=collection_name
+            all_nodes, progress_callback, collection_name=collection_name,
+            embed_concurrency=resolved_settings.ingestion.embed_concurrency,
         )
     except ConnectionError as exc:
         return {

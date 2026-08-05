@@ -26,7 +26,7 @@ __all__ = [
 
 # Legacy name -> owning submodule (imported on demand).
 _NAMES: dict[str, str] = {
-    "embed_semaphore": "._state",
+    "get_embed_semaphore": "._state",
     "shutdown_requested": "._state",
     "write_lock": "._state",
     "read_and_chunk_file_async": ".chunker",

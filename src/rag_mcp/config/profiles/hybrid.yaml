@@ -9,6 +9,10 @@
 # hybrid is a mode selector, not an operational profile with retrieval
 # levers.  Tag collections with "documents" or "codebase" instead.
 #
+# Adding a retrieval:/chunking:/ingestion:/metadata: block here is rejected
+# at ProfileResolver construction — a malformed selector fails at startup,
+# not at the first collection lookup.
+#
 # NEVER put API keys, tokens, or secrets in this file.
 
 # The profile untagged collections resolve to under RAG_PROFILE=hybrid.

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, ConfigDict, BeforeValidator
 
 
 def _parse_legacy_bool(value: object) -> object:
@@ -24,6 +24,8 @@ LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
 
 
 class RetrievalSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     """Configuration knobs for the retrieval pipeline.
 
     Defaults mirror the pre-refactor ``config.py`` values exactly.

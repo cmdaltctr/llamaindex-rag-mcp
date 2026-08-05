@@ -42,5 +42,5 @@ def build(settings: Settings) -> Any:
         model=settings.openrouter_embed_model,
         api_key=settings.openrouter_api_key,
         api_base="https://openrouter.ai/api/v1",
-        embed_batch_size=settings.embed_batch_size,
+        embed_batch_size=settings.ingestion.embed_batch_size,
     )

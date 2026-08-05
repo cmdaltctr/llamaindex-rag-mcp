@@ -11,11 +11,17 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from ...config import SUPPORTED_EXTENSIONS
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 
 logger = logging.getLogger(__name__)
+
+
+# File extensions the ingestion pipeline accepts.
+# Relocated from config.py (task 7.11): static data, not a setting.
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
+
+
 
 
 def make_file_detail(

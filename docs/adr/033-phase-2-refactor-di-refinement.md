@@ -128,3 +128,26 @@ objects injected, settings read from the singleton at call time.
 - `src/rag_mcp/core/retrieval/reranker.py` — `settings.rerank_model` read at construction time
 - `src/rag_mcp/ingestion.py` — legacy `Settings` (LlamaIndex global) re-export
 - `openspec/changes/phase-2-refactor-config-core-split/specs/config-composition-root/spec.md` — amended "Components receive dependencies" scenario
+
+---
+
+## Amendment (2026-08-05, ADR-037)
+
+**Two corrections.**
+
+1. **Part 2 stated that settings are "never snapshotted at import or
+   definition time".** Two snapshots survived:
+   `core/ingestion/chunker.py`'s `MARKDOWN_CHUNK_SIZE` (consumed as the live
+   value) and `_state.py`'s module-level `BoundedSemaphore`. Both are removed
+   in ADR-037. The `RERANK_MODEL` alias, kept here deliberately as a compat
+   export, is also gone — its only consumer was the `rag_mcp.reranker` shim,
+   deleted in the same change.
+
+2. **The References section cited `src/rag_mcp/server.py`** as the file
+   wiring `compose.build_reranker()` into `search_documents()`. Phase 5 moved
+   that to `transports/mcp.py`; `server.py` no longer exists.
+
+The Consequences section's disclosure — that settings were still read from a
+mutable process-wide singleton rather than passed in — was accurate and
+honest. ADR-037 closes it: all 25 reads are gone from `core/` and
+`integrations/`.

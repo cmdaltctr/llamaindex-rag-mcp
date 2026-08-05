@@ -13,7 +13,7 @@ import json
 import logging
 import re
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ._common import logger
 
 # ── Default keyword rules ──────────────────────────────────────────────
@@ -50,7 +50,7 @@ _DEFAULT_KEYWORD_RULES: list[dict[str, str]] = [
 # ── Keyword rule loading ────────────────────────────────────────────────
 
 
-def _load_keyword_rules() -> list[dict[str, str]]:
+def _load_keyword_rules(resolved) -> list[dict[str, str]]:
     """Load keyword->category rules, preferring env var over defaults.
 
     Returns:
@@ -58,11 +58,11 @@ def _load_keyword_rules() -> list[dict[str, str]]:
         Falls back to ``_DEFAULT_KEYWORD_RULES`` if
         ``METADATA_KEYWORD_RULES`` is not set or contains invalid JSON.
     """
-    if not settings.metadata_keyword_rules:
+    if not resolved.metadata.keyword_rules:
         return _DEFAULT_KEYWORD_RULES
 
     try:
-        custom = json.loads(settings.metadata_keyword_rules)
+        custom = json.loads(resolved.metadata.keyword_rules)
         if not isinstance(custom, list):
             raise ValueError("METADATA_KEYWORD_RULES must be a JSON array")
         for rule in custom:
@@ -83,7 +83,7 @@ def _load_keyword_rules() -> list[dict[str, str]]:
         return _DEFAULT_KEYWORD_RULES
 
 
-def _extract_keyword(text: str) -> dict:
+def _extract_keyword(text: str, settings: object | None = None) -> dict:
     """Classify text using regex keyword matching with scoring.
 
     Each rule is tested against *text* (case-insensitive).  The category
@@ -92,12 +92,14 @@ def _extract_keyword(text: str) -> dict:
 
     Args:
         text: The full document text to classify.
+        settings: Optional injected settings; falls back to the
+            composition-root default when omitted.
 
     Returns:
         A dict with key ``"category"``, e.g. ``{"category": "AI"}`` or
         ``{"category": "uncategorised"}``.
     """
-    rules = _load_keyword_rules()
+    rules = _load_keyword_rules(resolve_effective_settings(settings))
     if not rules:
         return {"category": "uncategorised"}
 
@@ -127,7 +129,9 @@ def _extract_keyword(text: str) -> dict:
     return {"category": best_category}
 
 
-async def _extract_keyword_async(text: str) -> dict:
+async def _extract_keyword_async(
+    text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Async wrapper around keyword extraction.
 
     Offloads to a worker thread because regex matching against large
@@ -140,4 +144,5 @@ async def _extract_keyword_async(text: str) -> dict:
     Returns:
         Same dict as ``_extract_keyword()``.
     """
-    return await asyncio.to_thread(_extract_keyword, text)
+    resolved = resolve_effective_settings(settings)
+    return await asyncio.to_thread(_extract_keyword, text, resolved)

@@ -42,9 +42,12 @@ def set_profile_cmd(
         )
         raise typer.Exit(code=1)
 
+    from ... import compose
     from ...core.profiles import apply_profile_change, generate_safety_contract
 
-    contract = generate_safety_contract(collection, profile)
+    contract = generate_safety_contract(
+        collection, profile, resolver=compose.build_profile_resolver()
+    )
 
     if json_output:
         if yes:

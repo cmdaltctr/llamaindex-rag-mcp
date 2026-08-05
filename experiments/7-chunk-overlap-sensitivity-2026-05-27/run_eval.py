@@ -18,6 +18,14 @@ Pass criterion: overlap=100 Hit@1 / MRR ≥ overlap=64 Hit@1 / MRR; chunk-count
 delta vs overlap=64 ≤ 15 %.
 """
 
+# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
+# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# removed by the architecture-v2 conformance change. It is an archived
+# historical artefact, is not run in CI, and is intentionally NOT repaired:
+# its results are already recorded in results.md, and rewriting it would
+# change the code that produced them. See docs/adr/037.
+
+
 from __future__ import annotations
 
 import argparse

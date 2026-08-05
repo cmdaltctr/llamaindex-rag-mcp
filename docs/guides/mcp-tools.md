@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Six tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+Seven tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
 ## `search_documents`
 
@@ -11,8 +11,8 @@ Semantic similarity search over indexed documents.
 | `query`                | string | _(required)_  | Natural language search query                                                                                                                                                                 |
 | `top_k`                | int    | `10`          | Maximum number of chunks to return                                                                                                                                                            |
 | `similarity_threshold` | float  | `0.0`         | Minimum relevance score (0.0 = no filtering). When `rerank=True`, automatically scaled down 30× because cross-encoder scores occupy a lower range.                                            |
-| `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RERANK_ENABLED` config                                                |
-| `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
+| `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RETRIEVAL__RERANK_ENABLED` config                                                |
+| `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
 | `collection`           | string | `"documents"` | ChromaDB collection to search                                                                                                                                                                 |
 | `metadata_filter`      | dict   | `null`        | ChromaDB `where` clause to filter by metadata fields, e.g. `{"category": "AI"}`. Applied server-side — only matching chunks are fetched.                                                      |
 
@@ -62,6 +62,36 @@ Generate a compact codebase map showing file types, code communities, document c
 Results are cached per-project keyed by git commit hash in `.opencode/codebase-graph.json`. Use `refresh=true` to force a rebuild after code changes.
 
 **Read-only:** This tool does not modify any files or databases.
+
+---
+
+## `change_collection_profile`
+
+Switch a collection between the `documents` and `codebase` profiles. This
+changes retrieval behaviour only — no chunks are re-chunked or re-embedded.
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `collection` | string | _(required)_ | Collection to change |
+| `profile` | string | _(required)_ | `documents` or `codebase` |
+| `confirm` | bool | `false` | Apply the change. When `false`, returns a preview instead |
+
+Called without `confirm`, it returns a preview describing what would change:
+which levers move, whether each applies immediately or only to future ingests,
+and the current chunk count. Nothing is modified.
+
+```json
+{ "collection": "my_code", "profile": "codebase" }
+```
+
+Call again with `"confirm": true` to apply it.
+
+Two-step by design: some levers (top_k, reranker) take effect on the next
+query, while others (chunking strategy) only affect documents ingested from
+then on. The preview makes that distinction visible before you commit to it.
+
+A collection cannot be set to `hybrid` — that is a server mode, not a
+collection profile. See [Configuration](configuration.md#profiles).
 
 ---
 

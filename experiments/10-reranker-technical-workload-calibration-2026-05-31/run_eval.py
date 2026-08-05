@@ -7,6 +7,14 @@ corpus (reused from Experiment 9a).
 Cell matrix: 2 modes × 4 rerank policies = 8 cells.
 """
 
+# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
+# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# removed by the architecture-v2 conformance change. It is an archived
+# historical artefact, is not run in CI, and is intentionally NOT repaired:
+# its results are already recorded in results.md, and rewriting it would
+# change the code that produced them. See docs/adr/037.
+
+
 from __future__ import annotations
 
 import argparse

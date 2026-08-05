@@ -333,7 +333,7 @@ replacement, covering the one case `extra="forbid"` structurally cannot see
 (a bare `TOP_K` never reaches a subpackage model); (c) `.env.example` rewritten;
 (d) a full migration table in ADR-037.
 
-**[DI threading blast radius]** → 21 call sites plus every intermediate function
+**[DI threading blast radius]** → 25 call sites (21 enumerated at proposal time, plus four that group 2's relocation moved into `core/` — see tasks 5.6a) plus every intermediate function
 between the two entry points and the leaves. Signature churn risks a partially
 threaded state where some modules read the (now deleted) global and fail at
 import. Mitigation: sequence the work leaf-first — thread the parameter into

@@ -153,3 +153,16 @@ a guideline.
 - [ADR-031](./031-three-layer-config-compose-di.md) — Phase 2 Three-Layer Architecture (builds on this layout; removes the reranker singleton)
 - `src/rag_mcp/core/metadata/`, `src/rag_mcp/core/ingestion/`, `src/rag_mcp/core/chunking/`, `src/rag_mcp/core/retrieval/` — the extracted subpackages
 - PR #12 — `refactor: modular extraction — Phase 1 subpackage restructure`
+
+---
+
+## Amendment (2026-08-05, ADR-037)
+
+**Correction.** This ADR presented the `registry.py` modules as "the
+consistent dispatch mechanism". They were not: at the time this was written
+only the two *provider* registries had production consumers. Chunking,
+metadata and retrieval kept eager imports and `if/elif` chains, so the §4.4
+"one file plus one `register()` line" promise was not yet true.
+
+Registry dispatch became real in ADR-037. The structures described here were
+correct; the claim that they were load-bearing was premature.

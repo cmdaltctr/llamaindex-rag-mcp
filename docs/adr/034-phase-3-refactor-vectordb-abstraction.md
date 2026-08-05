@@ -163,3 +163,17 @@ would implement `write_nodes` differently.
 - `src/rag_mcp/core/vectordb/chroma.py` — ChromaDB implementation
 - `src/rag_mcp/compose.py` — `build_vector_store` factory
 - `tests/test_vectordb_contract.py` — contract integration test
+
+---
+
+## Amendment (2026-08-05, ADR-037)
+
+**Correction.** The Decision states that "all pipeline code accesses the
+store through the interface — never through ChromaDB APIs directly". One
+module did not: the codebase map constructed a `chromadb.PersistentClient`
+directly to read the document collection, which would have broken silently
+under any second store implementation.
+
+ADR-037 routes that read through a new `VectorStore.fetch_all` and adds the
+`chromadb-confined-to-vectordb` import-linter contract, so the claim is now
+enforced rather than asserted.

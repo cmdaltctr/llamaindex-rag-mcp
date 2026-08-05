@@ -5,13 +5,15 @@ Covers the config-composition-root spec scenarios:
 - Unknown strategy: ``get()`` raises a helpful ``KeyError`` listing names.
 - Missing optional dependency: ``get()`` raises an ``ImportError`` naming
   the strategy, without breaking other strategies.
-- Adding a strategy touches one file: registration is a single line in
-  ``REGISTRY``.
+- Adding a strategy touches one file: registration via ``register()``.
+- Every registered name resolves without ``ImportError``.
 """
 
 from __future__ import annotations
 
+import subprocess
 import sys
+import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -39,23 +41,38 @@ ALL_REGISTRIES = [
 def test_registry_is_lazy(registry) -> None:
     """Importing a registry must not import any strategy module.
 
-    Order-independent: snapshots ``sys.modules`` before importing the
-    registry module and asserts no registered strategy module appears
-    as a *new* entry (strategies already imported by earlier tests are
-    ignored).
+    Runs in a **subprocess** with a clean interpreter.  Snapshotting
+    ``sys.modules`` in-process cannot work: this test module imports every
+    registry at module scope, so by the time the test body runs the registry
+    is already in ``sys.modules`` and ``importlib.import_module`` returns the
+    cached object without executing it — making the assertion unfalsifiable.
     """
-    before = set(sys.modules)
-    import importlib
+    strategy_modules = sorted(
+        path.split(":")[0] for path in registry._registry.values()
+    )
+    program = textwrap.dedent(
+        f"""
+        import sys
+        import importlib
 
-    importlib.import_module(registry.__name__)
-    after = set(sys.modules)
-    new_modules = after - before
+        importlib.import_module({registry.__name__!r})
 
-    for name in registry.REGISTRY.values():
-        module_path = name.split(":")[0]
-        assert module_path not in new_modules, (
-            f"{module_path} was imported eagerly by {registry.__name__}"
-        )
+        eager = [m for m in {strategy_modules!r} if m in sys.modules]
+        if eager:
+            print(",".join(eager))
+            sys.exit(1)
+        sys.exit(0)
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, (
+        f"{registry.__name__} eagerly imported strategy modules on import: "
+        f"{proc.stdout.strip()}\n{proc.stderr.strip()}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -66,7 +83,7 @@ def test_registry_is_lazy(registry) -> None:
 def test_registry_available_lists_sorted_names(registry) -> None:
     """``available()`` must return the sorted registered names."""
     names = registry.available()
-    assert names == sorted(registry.REGISTRY.keys())
+    assert names == sorted(registry._registry.keys())
     assert names, "registry must register at least one strategy"
 
 
@@ -81,7 +98,7 @@ def test_registry_unknown_name_raises_helpful_keyerror(registry) -> None:
         registry.get("no-such-strategy")
     message = str(excinfo.value)
     assert "Available" in message
-    for name in registry.REGISTRY:
+    for name in registry.available():
         assert name in message
 
 
@@ -92,25 +109,83 @@ def test_registry_unknown_name_raises_helpful_keyerror(registry) -> None:
 )
 def test_registry_get_resolves_and_caches(registry) -> None:
     """``get()`` resolves the ``"module:attr"`` string and caches it."""
-    first_name = next(iter(registry.REGISTRY))
+    first_name = registry.available()[0]
     resolved = registry.get(first_name)
     assert callable(resolved) or isinstance(resolved, type)
     # Second call must come from the cache (same object).
     assert registry.get(first_name) is resolved
 
 
+@pytest.mark.parametrize(
+    "registry",
+    ALL_REGISTRIES,
+    ids=lambda r: r.__name__,
+)
+def test_registry_all_names_resolve(registry) -> None:
+    """Every registered name must resolve via ``get()`` without ImportError.
+
+    Walks ``available()`` → ``get()`` for every entry, asserting no
+    ``ImportError`` surfaces (task 3.7).
+    """
+    registry._cache.clear()
+    for name in registry.available():
+        resolved = registry.get(name)
+        assert callable(resolved) or isinstance(resolved, type), (
+            f"{registry.__name__}.get({name!r}) did not return a callable/type"
+        )
+
+
+@pytest.mark.parametrize(
+    "registry",
+    ALL_REGISTRIES,
+    ids=lambda r: r.__name__,
+)
+def test_registry_package_import_is_lazy(registry) -> None:
+    """Importing the registry's *package* must not import strategy modules.
+
+    Complements :func:`test_registry_is_lazy`: that test imports the registry
+    submodule directly, this one imports the package (e.g. ``rag_mcp.core.chunking``)
+    the way production code does, catching an eager re-export added to
+    ``__init__.py``.  Also runs in a subprocess — see that test's docstring
+    for why an in-process ``sys.modules`` check is unfalsifiable here.
+    """
+    package = registry.__name__.rsplit(".", 1)[0]
+    strategy_modules = sorted(
+        path.split(":")[0] for path in registry._registry.values()
+    )
+    program = textwrap.dedent(
+        f"""
+        import sys
+        import importlib
+
+        importlib.import_module({package!r})
+
+        eager = [m for m in {strategy_modules!r} if m in sys.modules]
+        if eager:
+            print(",".join(eager))
+            sys.exit(1)
+        sys.exit(0)
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, (
+        f"importing package {package} eagerly imported strategy modules: "
+        f"{proc.stdout.strip()}\n{proc.stderr.strip()}"
+    )
+
+
 def test_registry_missing_dependency_raises_import_error() -> None:
     """A strategy whose module import fails raises a naming ImportError.
 
     Simulates a missing optional dependency by poisoning ``sys.modules``
-    with ``None`` for the target module (Python raises ImportError on
-    import of a module whose ``sys.modules`` entry is ``None``).
+    with ``None`` for the target module.
     """
-    # Choose the llamacpp embedding provider — it guards an optional
-    # dependency (llama-index-embeddings-openai).
     target = "rag_mcp.core.providers.embeddings.llamacpp"
     with patch.dict(sys.modules, {target: None}):
-        # Force a cache miss by using a fresh registry module.
         import importlib
 
         fresh = importlib.import_module(
@@ -138,9 +213,22 @@ def test_registry_missing_module_raises_import_error() -> None:
 
 
 def test_all_registries_follow_dict_of_import_strings() -> None:
-    """Every REGISTRY must map names to ``"module:attr"`` strings."""
+    """Every ``_registry`` must map names to ``"module:attr"`` strings."""
     for registry in ALL_REGISTRIES:
-        for name, value in registry.REGISTRY.items():
+        for name, value in registry._registry.items():
             assert ":" in value, f"{registry.__name__}[{name}] not 'module:attr'"
             module_path, attr = value.split(":", 1)
             assert module_path and attr
+
+
+def test_register_adds_new_strategy() -> None:
+    """``register()`` adds a new entry to the registry."""
+    chunking_registry._cache.pop("__test__", None)
+    chunking_registry._registry.pop("__test__", None)
+    chunking_registry.register("__test__", "rag_mcp.core.chunking.code:chunk_code_file_async")
+    assert "__test__" in chunking_registry.available()
+    resolved = chunking_registry.get("__test__")
+    assert callable(resolved)
+    # Clean up.
+    chunking_registry._registry.pop("__test__", None)
+    chunking_registry._cache.pop("__test__", None)

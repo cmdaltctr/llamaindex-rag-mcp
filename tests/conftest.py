@@ -42,6 +42,16 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 # ── Session-scoped patches ─────────────────────────────────────────────────
 
 
+# Shared by `_isolate_env` (which exports them as env vars) and
+# `_install_default_effective_settings` (which puts them in the injected
+# settings). Defined once so the two fixtures cannot drift apart.
+_TEST_PERSIST_DIR = os.path.join(
+    tempfile.gettempdir(),
+    f"test_chroma_rag_mcp_{os.getpid()}",
+)
+_TEST_COLLECTION = "test_documents"
+
+
 @pytest.fixture(autouse=True)
 def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace PersistentClient with a singleton EphemeralClient globally.
@@ -81,6 +91,140 @@ def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _clear_registry_caches() -> None:
+    """Clear all strategy registry caches before each test.
+
+    The chunking, metadata, retrieval, embeddings, and LLM registries
+    cache resolved strategy callables.  When a test patches a strategy
+    function at its source module, the cached reference would still point
+    at the original.  Clearing the caches ensures each test sees the
+    patched function (task 3.7/3.9).
+    """
+    from rag_mcp.core.chunking import registry as _chunking
+    from rag_mcp.core.metadata import registry as _metadata
+    from rag_mcp.core.retrieval import registry as _retrieval
+    from rag_mcp.core.providers.embeddings import registry as _embed
+    from rag_mcp.core.providers.llm import registry as _llm
+
+    for reg in (_chunking, _metadata, _retrieval, _embed, _llm):
+        reg._cache.clear()
+
+
+# ── EffectiveSettings factory fixture (task 4.1) ─────────────────────
+
+
+@pytest.fixture
+def effective_settings():
+    """Return a factory that builds a valid ``EffectiveSettings`` with overrides.
+
+    Usage::
+
+        def test_something(effective_settings):
+            settings = effective_settings(top_k=20)
+            assert settings.retrieval.top_k == 20
+
+    Builds a frozen :class:`EffectiveSettings` with sensible defaults so
+    later test migrations are one-line changes (task 4.1).
+    """
+    from rag_mcp.core.settings import EffectiveSettings
+
+    from rag_mcp.core.settings import (
+        ChunkingBlock,
+        IngestionBlock,
+        MetadataBlock,
+        RetrievalBlock,
+    )
+
+    blocks = {
+        "chunking": ChunkingBlock,
+        "ingestion": IngestionBlock,
+        "retrieval": RetrievalBlock,
+        "metadata": MetadataBlock,
+    }
+    # Reverse index: leaf field name → owning block, so flat overrides like
+    # ``top_k=20`` route to ``retrieval.top_k`` instead of being silently
+    # swallowed by EffectiveSettings (which has no extra="forbid" and whose
+    # ``top_k`` is a read-only property, not a field).
+    field_owner: dict[str, str] = {}
+    for block_name, block_cls in blocks.items():
+        for field in block_cls.model_fields:
+            field_owner.setdefault(field, block_name)
+
+    def _factory(**overrides) -> EffectiveSettings:
+        kwargs: dict = {}
+        nested: dict[str, dict] = {}
+
+        for key, value in overrides.items():
+            if "." in key:
+                # Dotted notation: "retrieval.top_k" → nested override.
+                block, field = key.split(".", 1)
+                if block not in blocks:
+                    raise TypeError(
+                        f"effective_settings: unknown block {block!r} in "
+                        f"{key!r}. Valid blocks: {sorted(blocks)}"
+                    )
+                nested.setdefault(block, {})[field] = value
+            elif key in EffectiveSettings.model_fields:
+                kwargs[key] = value
+            elif key in field_owner:
+                # Flat leaf name → route into its owning block.
+                nested.setdefault(field_owner[key], {})[key] = value
+            else:
+                # Never silently discard an override — that is the exact
+                # failure mode this change exists to eliminate (design D9).
+                raise TypeError(
+                    f"effective_settings: unknown override {key!r}. It is "
+                    f"neither an EffectiveSettings field nor a field of any "
+                    f"block ({', '.join(sorted(blocks))}). Note that "
+                    f"convenience properties such as 'top_k' on the root "
+                    f"model are read-only — use the block field instead."
+                )
+
+        for block_name, block_cls in blocks.items():
+            if block_name in nested:
+                kwargs[block_name] = block_cls(**nested[block_name])
+
+        return EffectiveSettings(**kwargs)
+
+    return _factory
+
+
+@pytest.fixture(autouse=True)
+def _install_default_effective_settings():
+    """Install a composition-root default EffectiveSettings for every test.
+
+    Production installs this in ``compose.ensure_runtime_setup()``. Tests that
+    call a core entry point without passing ``effective_settings`` need the
+    same default present, and each test gets a fresh instance so no state
+    leaks between them.
+    """
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        MetadataBlock,
+        reset_default_effective_settings,
+        set_default_effective_settings,
+    )
+
+    # This must mirror the deterministic environment `_isolate_env` sets, not
+    # the class defaults. In particular metadata extraction MUST be disabled:
+    # the class default is "llamaindex", which would make every ingestion test
+    # perform real LLM calls and hang on network timeouts.
+    #   - extraction_mode="disabled" -> no auto-categorisation (was patched
+    #     onto the settings singleton before v2.0.0)
+    #   - pdf_reader="pypdf"         -> deterministic PDF path (gotcha #6)
+    set_default_effective_settings(
+        EffectiveSettings(
+            metadata=MetadataBlock(extraction_mode="disabled"),
+            pdf_reader="pypdf",
+            collection_name=_TEST_COLLECTION,
+            chroma_persist_dir=_TEST_PERSIST_DIR,
+        )
+    )
+    yield
+    reset_default_effective_settings()
+
+
+@pytest.fixture(autouse=True)
 def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace OllamaEmbedding with MockEmbedding globally.
 
@@ -113,12 +257,6 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     import sys
 
-    _TEST_PERSIST_DIR = os.path.join(
-        tempfile.gettempdir(),
-        f"test_chroma_rag_mcp_{os.getpid()}",
-    )
-    _TEST_COLLECTION = "test_documents"
-
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
     monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
     monkeypatch.setenv("EMBED_PROVIDER", "local")
@@ -126,46 +264,27 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
     monkeypatch.setenv("METADATA_LLM_PROVIDER", "local")
-    monkeypatch.setenv("METADATA_EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
-    monkeypatch.setenv("METADATA_KEYWORD_RULES", "")
-    monkeypatch.setenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
+    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
+    monkeypatch.setenv("METADATA__KEYWORD_RULES", "")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
     # Keep retry behaviour out of the default test path so existing
     # tests don't pay 1+2+...=O(2^n) seconds of backoff.  Retry-specific
     # tests opt back in by setting this to 2+.
-    monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
-    monkeypatch.setenv("OLLAMA_CLASSIFY_TIMEOUT", "5.0")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "5.0")
 
-    # Patch the shared config module if already loaded — this covers
-    # both ingestion and retrieval since they import from config.
+    # NOTE: this fixture used to also monkeypatch legacy module constants
+    # (config.CHROMA_PERSIST_DIR …) and then the resolved Settings singleton,
+    # because consumers read one or the other depending on how far migration
+    # had got. Both are gone in v2.0.0: the constants with the PEP 562 shim
+    # (task 9.1) and the singleton with task 5.7. Setting the environment is
+    # now sufficient — get_settings() resolves from it, and compose derives
+    # the EffectiveSettings every layer receives.
+    #
+    # Clear any cached Settings so the env above is picked up per test.
     config_mod = sys.modules.get("rag_mcp.config")
     if config_mod is not None:
-        monkeypatch.setattr(config_mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
-        monkeypatch.setattr(config_mod, "COLLECTION_NAME", _TEST_COLLECTION)
-        monkeypatch.setattr(config_mod, "METADATA_EXTRACTION_MODE", "disabled")
-        monkeypatch.setattr(config_mod, "METADATA_KEYWORD_RULES", None)
-        monkeypatch.setattr(config_mod, "OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
-
-        # Migrated consumers read the resolved settings singleton rather
-        # than the legacy module constants, so the module-attr patches
-        # above would be no-ops for them.  Patch the singleton attributes
-        # directly — Settings is a mutable BaseSettings (not frozen), so
-        # instance assignment works and monkeypatch restores on teardown.
-        monkeypatch.setattr(config_mod.settings, "chroma_persist_dir", _TEST_PERSIST_DIR)
-        monkeypatch.setattr(config_mod.settings, "collection_name", _TEST_COLLECTION)
-        monkeypatch.setattr(config_mod.settings, "metadata_extraction_mode", "disabled")
-        monkeypatch.setattr(config_mod.settings, "metadata_keyword_rules", None)
-        monkeypatch.setattr(config_mod.settings, "ollama_classify_model", "qwen3:0.6b")
-
-    # Also patch the leaf modules for backward compatibility in case
-    # any test imports them before config is loaded.
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):
-        mod = sys.modules.get(mod_name)
-        if mod is not None:
-            monkeypatch.setattr(mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
-            # COLLECTION_NAME may not be imported by all modules
-            # (e.g. retrieval.py uses a parameter default instead).
-            if hasattr(mod, "COLLECTION_NAME"):
-                monkeypatch.setattr(mod, "COLLECTION_NAME", _TEST_COLLECTION)
+        monkeypatch.setattr(config_mod, "_settings", None, raising=False)
 
 
 # ── FastMCP server fixture ─────────────────────────────────────────────────

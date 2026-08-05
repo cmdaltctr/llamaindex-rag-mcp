@@ -1,345 +1,319 @@
 # Configuration
 
-All configuration lives in a `.env` file at the project root. Copy the example to get started:
+Where settings live, which one wins, and what every setting does.
+
+---
+
+## The short version
+
+Settings come from five places. Each beats the one above it:
+
+| # | Source | What belongs here |
+|---|---|---|
+| 1 | Model defaults, in the code | Last resort. You never edit these directly. |
+| 2 | `src/rag_mcp/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
+| 3 | Profile YAML (`config/profiles/*.yaml`) | Per-collection behaviour |
+| 4 | `.env` | Your machine: tokens, URLs, paths |
+| 5 | Environment variables | Highest. Wins over everything. |
+
+**Rule of thumb:**
+
+- Sensible default for everyone → `defaults.yaml`
+- Secret, or specific to your machine → `.env`
+- Different for one collection → its profile
+- Just for this one command → an environment variable
+
+### The trap worth knowing
+
+`.env` sits **above** profiles. Put a tuning value there and it overrides every
+profile silently.
+
+Real example: `RETRIEVAL__TOP_K=5` in `.env` meant the `documents` profile
+(top_k 10) and the `codebase` profile (top_k 20) both returned 5 results.
+Profiles looked broken. Nothing warned about it.
+
+**Keep `.env` for connection details and secrets only.**
+
+---
+
+## Variable naming
+
+Settings that belong to one area are nested. The environment variable joins the
+block and the field with a double underscore:
+
+```
+retrieval.top_k             →  RETRIEVAL__TOP_K
+chunking.chunk_size         →  CHUNKING__CHUNK_SIZE
+ingestion.embed_batch_size  →  INGESTION__EMBED_BATCH_SIZE
+metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
+```
+
+Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
+`RAG_PROFILE`, `PDF_READER`, and every credential.
+
+In YAML the same thing looks like this:
+
+```yaml
+retrieval:
+  top_k: 10
+  rerank_enabled: false
+
+chunking:
+  chunk_size: 512
+
+# cross-cutting settings stay at the top level
+EMBED_MODEL: qwen3-embedding:0.6b
+```
+
+### Upgrading from v1
+
+Pre-v2 flat names (`TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE`, …) are no
+longer read. The app **refuses to start** and names the replacement, rather
+than silently falling back to a default.
+
+Two guards catch mistakes:
+
+- A wrong nested key (`RETRIEVAL__TOPK`) fails immediately, listing the valid
+  fields.
+- An old flat name (`TOP_K`) fails with the new name.
+
+Full rename table: [ADR-037](../adr/037-architecture-v2-conformance.md).
+
+---
+
+## Profiles
+
+A profile is a named bundle of retrieval behaviour, bound to a collection.
+
+| Profile | For | top_k | Reranker | Hybrid search |
+|---|---|---|---|---|
+| `documents` | Papers, reports, prose | 10 | on | off |
+| `codebase` | Source code | 20 | off | on |
+| `hybrid` | Not a profile — a mode selector | — | — | — |
+
+**Profiles only control five things:**
+
+- `retrieval.top_k`
+- `retrieval.rerank_enabled`
+- `retrieval.hybrid_enabled`
+- `chunking.strategy_fallback`
+- `metadata.taxonomy_mode`
+
+Everything else — chunk size, storage path, embedding model — is shared.
+
+### Choosing a profile
+
+Server-wide default:
 
 ```bash
-cp .env.example .env
+RAG_PROFILE=documents
 ```
 
-Environment variables from your shell override `.env` values, so you can also set them inline for a single run:
+Per collection, which is the point of the feature:
 
 ```bash
-METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+rag-mcp set-profile -c my_code -p codebase
 ```
 
-## Resolution order
+Set `RAG_PROFILE=hybrid` to let each collection pick its own; untagged
+collections fall back to `default_profile` in `hybrid.yaml`.
 
-Settings resolve through a precedence chain. Each layer overrides the one
-below it; the highest layer wins:
+A collection cannot be tagged `hybrid` — it selects a mode, it is not one.
 
-```
-subpackage model field defaults            (lowest — lives next to the code that owns the knob)
-  → config/defaults.yaml                    (shipped as package data, non-secret global defaults)
-    → config/profiles/<RAG_PROFILE>.yaml    (Phase 4 profile bundle — Tier 2 lever overrides)
-      → environment variables / .env        (your shell and .env file)
-        → explicit instantiation args       (highest — passed when constructing Settings)
-```
+### Why the reranker differs
 
-A typed Pydantic `Settings` object composes per-subpackage settings models
-(`core/chunking/settings.py`, `core/retrieval/settings.py`,
-`core/metadata/settings.py`) through multiple inheritance, so each knob's
-default sits beside the code that consumes it. `config/defaults.yaml` is read
-via `importlib.resources` and ships as package data. Higher layers never need
-to repeat a value the lower layers already provide.
+The `documents` profile turns the reranker on; `codebase` leaves it off. That
+is not an oversight. Experiment 10 measured the reranker making code retrieval
+**19–27% worse** and adding ~14s per query. On prose it helps. See
+[ADR-019](../adr/019-reranker-disabled-for-technical-workloads.md) and
+[ADR-030](../adr/030-prefer-int8-onnx-variant-for-modernbert-rerankers.md).
 
-> **Never put secrets, API keys, or machine-specific absolute paths in
-> `config/defaults.yaml`.** It is committed to the repository. Secrets and
-> per-machine values belong in `.env` (see below).
+---
 
-## Three-layer architecture (config / compose / DI)
+## What goes in `.env`
 
-Since ADR-031 (Phase 2 of the refactor), configuration and wiring live in
-three layers, enforced mechanically by `import-linter`:
-
-1. **`config/` — typed resolver (pure data).** Parses, validates, and resolves
-   every setting into a single `Settings` object. It performs **zero object
-   construction** — no providers, no LlamaIndex globals. The resolver is the
-   single source of truth for *resolved values* (ADR-006, amended).
-2. **`compose.py` — composition root.** The **only** module that constructs
-   provider and pipeline objects (`build_embed_model`, `build_llm_model`,
-   `build_reranker`), resolves the lazy registries against `Settings`, and
-   wires LlamaIndex's global `Settings.embed_model` via `ensure_runtime_setup()`.
-   Provider construction happens here, not in `config`.
-3. **Dependency injection everywhere else.** Business modules
-   (`ingestion`, `retrieval`, `metadata`, `chunking`) receive their
-   dependencies as parameters. They never import concrete provider classes and
-   never reach into `config` for a constructed object.
-
-Read structured settings from the resolver:
-
-```python
-from rag_mcp.config import settings
-
-print(settings.top_k, settings.chunk_size, settings.rerank_enabled)
-```
-
-### Deprecated legacy constants (PEP 562 shim)
-
-The bare module-level constants the older code used (`TOP_K`, `CHUNK_SIZE`,
-`RERANK_ENABLED`, `EMBED_MODEL`, …) are **deprecated**. They still resolve via
-a PEP 562 module-level `__getattr__` shim that reads from the `Settings`
-singleton and emits a `DeprecationWarning` on each access, so external and
-experiment code keeps working during migration. The shim is **removed in
-v2.0.0**. New code must read from the structured `settings` object as shown
-above.
-
-See ADR-031 for the full design, including the `import-linter` contracts that
-keep the three layers honest.
-
-## What `.env` actually does
-
-`.env` is just a convenience file. Without it, you'd have to export env vars in your shell every time:
+Only these:
 
 ```bash
-EMBED_MODEL=qwen3-embedding:0.6b OLLAMA_BASE_URL=http://localhost:11434 uv run rag-mcp
+# Where the vector database lives
+CHROMA_PERSIST_DIR=./chroma_db
+COLLECTION_NAME=documents
+
+# Which embedding model, and where to reach it
+EMBED_MODEL=qwen3-embedding:0.6b
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Secrets
+HF_TOKEN=...
+OPENROUTER_API_KEY=...
+AZURE_DOC_INTELLIGENCE_KEY=...
 ```
 
-Instead, the resolver calls `load_dotenv()` at import time, which reads `.env` and puts those key-values into the process environment as if you'd exported them yourself. The Pydantic `Settings` model then reads them through pydantic-settings.
+If you find yourself putting `RETRIEVAL__*` or `CHUNKING__*` in here, it
+probably belongs in `defaults.yaml` or a profile instead.
 
-**That's it.** `.env` is not parsed by the application logic — it's loaded into the OS environment by `python-dotenv` before the `Settings` model reads it.
+---
 
-**Flow:**
+## All settings
 
-1. `config` imports → `load_dotenv()` reads `.env` → injects vars into `os.environ`
-2. The Pydantic `Settings` model reads each field from `os.environ` (your shell or `.env`). If a var is absent, it falls back to `config/defaults.yaml`, then to the subpackage model's field default.
+Defaults below are what ships in `defaults.yaml`.
 
-**Why have both `.env` and shipped defaults?**
+### Storage
 
-- `.env` lets you customize without editing code
-- Shipped defaults (`config/defaults.yaml` + subpackage model fields) mean the app works out-of-the-box (except `EMBED_MODEL`)
-- `.env.example` is a template showing what you _can_ set — you copy it to `.env` and tweak
+| Variable | Default | What it does |
+|---|---|---|
+| `CHROMA_PERSIST_DIR` | `./chroma_db` | Where the database is written |
+| `COLLECTION_NAME` | `documents` | Default collection |
+| `CHROMA_SCAN_PAGE_SIZE` | `10000` | Rows per page when scanning metadata |
+| `VECTOR_STORE` | `chroma` | Which store implementation |
 
-**You could delete `.env` entirely** and the server runs fine with all shipped defaults — you'd just need `EMBED_MODEL` set in your shell:
+### Providers
+
+| Variable | Default | What it does |
+|---|---|---|
+| `EMBED_PROVIDER` | `local` | `local` or `cloud` |
+| `METADATA_LLM_PROVIDER` | `local` | `local` or `cloud`, independent of the above |
+| `LOCAL_BACKEND` | `llamacpp` | `llamacpp` or `ollama` |
+| `CLOUD_BACKEND` | `openrouter` | `openrouter` |
+| `EMBED_MODEL` | — | Model name for embeddings |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+
+Optional dependencies:
 
 ```bash
-EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
+uv sync --extra llamacpp     # llama.cpp backend
+uv sync --extra openrouter   # OpenRouter backend
 ```
 
-## All settings by category
+Connection details for each: [Providers](providers.md).
 
-Each row below pairs an **env var** (what you set in `.env` or your shell) with its **settings field** (the structured `Settings` attribute you read in code). The **Default** column is the fallback used when the env var is absent (from `config/defaults.yaml` or the subpackage model). The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the default is used. The legacy bare-constant names (`TOP_K`, `CHUNK_SIZE`, …) are preserved as the deprecated PEP 562 shim described above.
+### Chunking — `CHUNKING__*`
 
-### Provider selection
+| Field | Default | What it does |
+|---|---|---|
+| `chunk_size` | `512` | Target chunk size for most files |
+| `chunk_overlap` | `100` | Overlap between chunks. Calibrated ([ADR-018](../adr/018-balanced-retrieval-defaults.md)) — do not change casually |
+| `markdown_chunk_size` | `1024` | Larger, because Markdown splits on headings |
+| `markdown_heading_prepend` | `false` | Prepend the heading path to each chunk |
+| `markdown_min_chunk_fraction` | `0.0` | Drop chunks below this fraction of the target |
+| `strategy_fallback` | `markdown` | Strategy for file types we cannot identify. **Profile-owned** |
 
-| Env var                 | Default      | `.env.example` | Config constant         | Purpose                                                           |
-| ----------------------- | ------------ | -------------- | ----------------------- | ----------------------------------------------------------------- |
-| `EMBED_PROVIDER`        | `local`      | `local`        | `EMBED_PROVIDER`        | `local` / `cloud` category (ADR-026)                              |
-| `METADATA_LLM_PROVIDER` | `local`      | `local`        | `METADATA_LLM_PROVIDER` | Metadata LLM category — independent of `EMBED_PROVIDER` (ADR-026) |
-| `LOCAL_BACKEND`         | `llamacpp`   | `llamacpp`     | `LOCAL_BACKEND`         | Local sub-provider: `llamacpp` / `ollama`                         |
-| `CLOUD_BACKEND`         | `openrouter` | _(commented)_  | `CLOUD_BACKEND`         | Cloud sub-provider: `openrouter`                                  |
+Known file types always use content-type dispatch — a `.py` file gets the code
+splitter regardless of the fallback.
 
-When `LOCAL_BACKEND=llamacpp` or `CLOUD_BACKEND=openrouter`, install optional deps first:
+### Ingestion — `INGESTION__*`
 
-```bash
-uv sync --extra llamacpp     # for llama.cpp
-uv sync --extra openrouter   # for OpenRouter
-```
+| Field | Default | What it does |
+|---|---|---|
+| `embed_concurrency` | `4` | Parallel embedding requests. Machine-specific — lower it if the backend throttles |
+| `embed_batch_size` | `100` | Documents per embedding call |
 
-See [Providers](providers.md) for full setup instructions for each provider.
+### Retrieval — `RETRIEVAL__*`
 
-### llama.cpp (local sub-provider)
+| Field | Default | What it does |
+|---|---|---|
+| `top_k` | `10` | Results returned. **Profile-owned** |
+| `similarity_threshold` | `0.0` | Minimum score to keep a result |
+| `rerank_enabled` | `false` | Cross-encoder reranking. **Profile-owned** |
+| `rerank_enabled_for_semantic` | `true` | Allow reranking on prose-like queries |
+| `hard_technical_threshold` | `0.3` | Above this "technical" score, skip reranking |
+| `rerank_fetch_multiplier` | `3` | Fetch `top_k × 3` candidates before reranking |
+| `rerank_max_fetch` | `100` | Cap on that candidate pool |
+| `rerank_model` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
+| `hybrid_enabled` | `false` | Combine keyword and embedding search. **Profile-owned** |
+| `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
+| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto` |
 
-| Env var                | Default                          | `.env.example` | Config constant        | Purpose                                              |
-| ---------------------- | -------------------------------- | -------------- | ---------------------- | ---------------------------------------------------- |
-| `LLAMACPP_EMBED_URL`   | `http://localhost:8080/v1`       | _(not set)_    | `LLAMACPP_EMBED_URL`   | llama-server embedding endpoint (llamacpp only)      |
-| `LLAMACPP_EMBED_MODEL` | _(none — required for llamacpp)_ | _(not set)_    | `LLAMACPP_EMBED_MODEL` | GGUF filename for embeddings (llamacpp only)         |
-| `LLAMACPP_CHAT_URL`    | `http://localhost:8081/v1`       | _(not set)_    | `LLAMACPP_CHAT_URL`    | llama-server chat endpoint (llamacpp only)           |
-| `LLAMACPP_CHAT_MODEL`  | _(none — required for llamacpp)_ | _(not set)_    | `LLAMACPP_CHAT_MODEL`  | GGUF filename for metadata extraction LLM (llamacpp) |
+### Metadata — `METADATA__*`
 
-### OpenRouter (cloud sub-provider)
+| Field | Default | What it does |
+|---|---|---|
+| `extraction_mode` | `llamaindex` | `disabled`, `keyword`, `local`, or `llamaindex` |
+| `keyword_rules` | — | JSON array of custom `{pattern, category}` rules |
+| `taxonomy_mode` | `category` | `category` or `file_type`. **Profile-owned** |
+| `ollama_classify_model` | `qwen3:0.6b` | Model used for classification |
+| `ollama_classify_max_attempts` | `3` | Retries on failure |
+| `ollama_classify_timeout` | `30.0` | Seconds per attempt |
 
-| Env var                  | Default                                       | `.env.example` | Config constant          | Purpose                                                          |
-| ------------------------ | --------------------------------------------- | -------------- | ------------------------ | ---------------------------------------------------------------- |
-| `OPENROUTER_API_KEY`     | _(none — required for openrouter)_            | _(not set)_    | `OPENROUTER_API_KEY`     | OpenRouter API key                                               |
-| `OPENROUTER_EMBED_MODEL` | _(none — required for openrouter embeddings)_ | _(not set)_    | `OPENROUTER_EMBED_MODEL` | OpenRouter embedding model (e.g., `text-embedding-3-small`)      |
-| `OPENROUTER_LLM_MODEL`   | _(none — required for openrouter LLM)_        | _(not set)_    | `OPENROUTER_LLM_MODEL`   | OpenRouter chat model (e.g., `meta-llama/llama-3.1-8b-instruct`) |
+Set `extraction_mode=disabled` to skip classification entirely — much faster
+ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md).
 
-When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODEL` (below). When `LOCAL_BACKEND=llamacpp`, it uses `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`. When `CLOUD_BACKEND=openrouter`, it uses `OPENROUTER_EMBED_MODEL` and `OPENROUTER_API_KEY`.
+### PDF reading
 
-### Embedding (required for ollama sub-provider)
+| Variable | Default | What it does |
+|---|---|---|
+| `PDF_READER` | `auto` | `auto`, `pypdf`, `pypdfium2`, or `liteparse` |
+| `LITEPARSE_OCR_ENABLED` | `false` | OCR for scanned PDFs |
+| `LITEPARSE_NUM_WORKERS` | — | Parallel workers |
 
-| Env var             | Default                        | `.env.example`           | Config constant     | Purpose                            |
-| ------------------- | ------------------------------ | ------------------------ | ------------------- | ---------------------------------- |
-| `EMBED_MODEL`       | _(none — required for ollama)_ | `qwen3-embedding:0.6b`   | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
-| `OLLAMA_BASE_URL`   | `http://localhost:11434`       | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
-| `EMBED_BATCH_SIZE`  | `100`                          | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
-| `EMBED_CONCURRENCY` | `2`                            | `4`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
+`auto` uses LiteParse if installed, otherwise pypdf. Tests pin `pypdf` for
+determinism.
 
-### ChromaDB storage
+### Document backend
 
-| Env var                 | Default       | `.env.example` | Config constant         | Purpose                        |
-| ----------------------- | ------------- | -------------- | ----------------------- | ------------------------------ |
-| `CHROMA_PERSIST_DIR`    | `./chroma_db` | `./chroma_db`  | `CHROMA_PERSIST_DIR`    | Vector DB disk path            |
-| `COLLECTION_NAME`       | `documents`   | `documents`    | `COLLECTION_NAME`       | Default collection name        |
-| `CHROMA_SCAN_PAGE_SIZE` | `10000`       | _(not set)_    | `CHROMA_SCAN_PAGE_SIZE` | Page size for collection scans |
+| Variable | Default | What it does |
+|---|---|---|
+| `DOCUMENT_BACKEND` | `local` | `local` or `azure` |
+| `AZURE_DOC_INTELLIGENCE_ENDPOINT` | — | Azure endpoint URL |
+| `AZURE_DOC_INTELLIGENCE_KEY` | — | Azure key |
+| `AZURE_DOC_INTELLIGENCE_MODEL` | `prebuilt-layout` | Azure model |
 
-### Chunking
-
-| Env var                       | Default | `.env.example` | Config constant               | Purpose                                  |
-| ----------------------------- | ------- | -------------- | ----------------------------- | ---------------------------------------- |
-| `CHUNK_SIZE`                  | `512`   | `512`          | `CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
-| `CHUNK_OVERLAP`               | `100`   | `100`          | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
-| `MARKDOWN_CHUNK_SIZE`         | `1024`  | `1024`         | `MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
-| `MARKDOWN_HEADING_PREPEND`    | `false` | _(not set)_    | `MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
-| `MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | _(not set)_    | `MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNK_SIZE |
-
-### Retrieval
-
-| Env var                 | Default | `.env.example` | Config constant         | Purpose                         |
-| ----------------------- | ------- | -------------- | ----------------------- | ------------------------------- |
-| `TOP_K`                 | `10`    | `10`           | `TOP_K`                 | Default results count (ADR-018) |
-| `SIMILARITY_THRESHOLD`  | `0.0`   | `0.0`          | `SIMILARITY_THRESHOLD`  | Min relevance score             |
-| `HYBRID_ENABLED`        | `false` | `false`        | `HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
-| `HYBRID_RRF_K`          | `60`    | `60`           | `HYBRID_RRF_K`          | RRF constant                    |
-| `HYBRID_SPARSE_BACKEND` | `bm25`  | `bm25`         | `HYBRID_SPARSE_BACKEND` | `bm25` / `native` / `auto`      |
-
-### Reranker policy
-
-| Env var                       | Default                                  | `.env.example`                            | Config constant               | Purpose                              |
-| ----------------------------- | ---------------------------------------- | ----------------------------------------- | ----------------------------- | ------------------------------------ |
-| `RERANK_MODEL`                | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `RERANK_MODEL` (in reranker.py) | HuggingFace model ID              |
-| `RERANK_ENABLED`              | `false`                                  | `false`                                   | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
-| `RERANK_ENABLED_FOR_SEMANTIC` | `true`                                   | `true`                                    | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
-| `HARD_TECHNICAL_THRESHOLD`    | `0.3`                                    | `0.3`                                     | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
-| `RERANK_FETCH_MULTIPLIER`     | `3`                                      | `3`                                       | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
-| `RERANK_MAX_FETCH`            | `100`                                    | `100`                                     | `RERANK_MAX_FETCH`            | Max candidate pool size              |
-
-### PDF reader
-
-| Env var                 | Default  | `.env.example` | Config constant                      | Purpose                                                |
-| ----------------------- | -------- | -------------- | ------------------------------------ | ------------------------------------------------------ |
-| `PDF_READER`            | `auto`   | `auto`         | `PDF_READER` / `RESOLVED_PDF_READER` | `auto` / `liteparse` / `pypdfium2` / `pypdf` (ADR-020) |
-| `LITEPARSE_OCR_ENABLED` | `false`  | `false`        | `LITEPARSE_OCR_ENABLED`              | OCR in LiteParse                                       |
-| `LITEPARSE_NUM_WORKERS` | _(none)_ | _(not set)_    | `LITEPARSE_NUM_WORKERS`              | LiteParse worker threads                               |
-
-### Metadata extraction
-
-| Env var                          | Default      | `.env.example` | Config constant                                  | Purpose                                          |
-| -------------------------------- | ------------ | -------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `METADATA_EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `local` / `llamaindex`  |
-| `METADATA_KEYWORD_RULES`         | _(none)_     | _(not set)_    | `METADATA_KEYWORD_RULES`                         | JSON override for keyword rules                  |
-| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification (ollama backend) |
-| `OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | _(not set)_    | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
-| `OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | _(not set)_    | `OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
-| `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` | `10`         | _(not set)_    | _(read at call-time in `metadata_extractor.py`)_ | Max chunks for LlamaIndex extractor              |
+Azure is opt-in and degrades to local parsing if unreachable
+([ADR-024](../adr/024-dual-deployment-modes.md)).
 
 ### Codebase map
 
-| Env var                    | Default     | `.env.example` | Config constant            | Purpose                       |
-| -------------------------- | ----------- | -------------- | -------------------------- | ----------------------------- |
-| `MAGIKA_BINARY`            | `magika`    | _(not set)_    | `MAGIKA_BINARY`            | Path to Magika CLI            |
-| `DOC_SIMILARITY_THRESHOLD` | `0.85`      | _(not set)_    | `DOC_SIMILARITY_THRESHOLD` | Document graph edge threshold |
-| `CODEBASE_MAP_CACHE_DIR`   | `.opencode` | _(not set)_    | `CODEBASE_MAP_CACHE_DIR`   | Cache directory               |
-| `CODEBASE_MAP_MAX_FILES`   | `5000`      | _(not set)_    | `CODEBASE_MAP_MAX_FILES`   | Max files to scan             |
-| `CODEBASE_MAP_MAX_DEPTH`   | `10`        | _(not set)_    | `CODEBASE_MAP_MAX_DEPTH`   | Max directory depth           |
+| Variable | Default | What it does |
+|---|---|---|
+| `MAGIKA_BINARY` | `magika` | File-type detection binary |
+| `CODEBASE_MAP_CACHE_DIR` | `.opencode` | Cache location |
+| `CODEBASE_MAP_MAX_FILES` | `5000` | File limit |
+| `CODEBASE_MAP_MAX_DEPTH` | `10` | Directory depth limit |
+| `DOC_SIMILARITY_THRESHOLD` | `0.85` | Similarity edge cutoff. Not yet calibrated |
 
-### Document backend (Azure)
+The cache key is the git commit hash. Not a git repository means no caching —
+the map rebuilds every call.
 
-| Env var                           | Default           | `.env.example` | Config constant                   | Purpose                     |
-| --------------------------------- | ----------------- | -------------- | --------------------------------- | --------------------------- |
-| `DOCUMENT_BACKEND`                | `local`           | `local`        | `DOCUMENT_BACKEND`                | `local` / `azure` (ADR-024) |
-| `AZURE_DOC_INTELLIGENCE_ENDPOINT` | _(empty)_         | _(not set)_    | `AZURE_DOC_INTELLIGENCE_ENDPOINT` | Azure endpoint URL          |
-| `AZURE_DOC_INTELLIGENCE_KEY`      | _(empty)_         | _(redacted)_   | `AZURE_DOC_INTELLIGENCE_KEY`      | Azure API key               |
-| `AZURE_DOC_INTELLIGENCE_MODEL`    | `prebuilt-layout` | _(not set)_    | `AZURE_DOC_INTELLIGENCE_MODEL`    | Azure model                 |
+---
 
-### Hardcoded (not env-configurable)
+## How settings reach the code
 
-| Constant                     | Value                                          | Purpose                                            |
-| ---------------------------- | ---------------------------------------------- | -------------------------------------------------- |
-| `SUPPORTED_EXTENSIONS`       | `{.pdf, .docx, .pptx, .txt, .md, .html, .csv}` | Allowed file types                                 |
-| `MAGIKA_LABEL_TO_TREESITTER` | 23-entry dict                                  | Magika → tree-sitter language map                  |
-| `_QUERY_EMBED_CACHE_MAXSIZE` | `128`                                          | LRU cache for query embeddings (in `retrieval.py`) |
+Worth understanding if you are changing anything.
 
-## Call-time env reads
+`config/` works out the values and produces a `Settings` object. It builds
+nothing else.
 
-Most settings are resolved once into the `Settings` object at import time. One knob is deliberately read at call time instead:
+`compose.py` takes those settings and constructs the real objects — embedder,
+vector store, reranker. It is the only place that calls `get_settings()`.
 
-- **`LLAMANDEX_EXTRACTOR_MAX_CHUNKS`** — read at call-time inside `metadata_extractor.py` rather than imported from `config`. This is intentional so tests can override it with `monkeypatch.setenv` after module load.
+Core operations receive a frozen `EffectiveSettings` as an argument. There is
+no global to read and nothing to patch. Two searches running at once each hold
+their own settings.
 
-> **Historical note.** Earlier revisions listed a second exception: `reranker.py` imported `dotenv` independently and read `RERANK_MODEL` directly to dodge a circular import with `config.py` (gotcha #4 in AGENTS.md). That exception is **gone** since ADR-031 — the reranker now receives its model ID via dependency injection from `compose.py`, and `RERANK_MODEL` is a structured settings field. There is no longer a `dotenv` import outside the resolver.
+For tests, this means injecting rather than patching:
 
-## Profiles (Phase 4, ADR-035)
-
-Profiles make the project's dual use cases first-class: **document grounding**
-(research papers, reports) and **codebase context** (source code for coding
-agents). Each profile is a version-controlled YAML bundle of Tier 2 retrieval
-levers. Profiles bind to ChromaDB collections via metadata tags, so one server
-process can serve both use cases simultaneously.
-
-### The three profiles
-
-| Profile | Use case | Reranker | Hybrid | Top_k | Chunking fallback | Taxonomy |
-|---------|----------|----------|--------|-------|-------------------|----------|
-| `documents` | Document grounding (papers, reports) | ON | OFF | 10 | markdown | category |
-| `codebase` | Codebase context (coding agents) | OFF | ON | 20 | code | file_type |
-| `hybrid` | Mode selector (NOT operational) | — | — | — | — | — |
-
-The `documents` profile restores ADR-018's balanced intent (reranker-on for
-semantic workloads). The `codebase` profile formalises Experiment 10's finding
-(reranker-off for technical workloads). See ADR-035 for the full rationale.
-
-### Selecting a profile
-
-Set `RAG_PROFILE` to choose the server-wide default:
-
-```bash
-# .env
-RAG_PROFILE=documents  # or codebase, or hybrid
+```python
+def test_something(effective_settings):
+    settings = effective_settings(top_k=20)
+    results = search("query", effective_settings=settings)
 ```
 
-When `RAG_PROFILE=hybrid`, untagged collections resolve to `hybrid.yaml`'s
-`default_profile` (default: `documents`). Individual collections override the
-server default via metadata tags.
+More in [Architecture](architecture.md) and
+[ADR-031](../adr/031-three-layer-config-compose-di.md).
 
-### Binding a profile to a collection
+---
 
-```bash
-# CLI (interactive prompt)
-rag-mcp set-profile --collection my-papers --profile documents
+## Adding a setting
 
-# MCP (preview then confirm)
-change_collection_profile(collection="my-code", profile="codebase", confirm=False)
-# → {"status": "preview", "contract": ..., "confirm_required": true}
-change_collection_profile(collection="my-code", profile="codebase", confirm=True)
-# → {"status": "ok", "profile": "codebase", ...}
-```
+**Belongs to one area** (chunking, ingestion, retrieval, metadata):
 
-Profile changes are **non-destructive**: existing chunks are NOT re-chunked or
-re-embedded. Query-time levers (reranker, top_k, hybrid) apply immediately;
-ingest-time levers (taxonomy, chunking fallback) apply to future ingests only.
+1. Add the field to that area's `settings.py`
+2. Add it to `defaults.yaml` under the matching block
 
-### Two-tier resolution
+**Cross-cutting:**
 
-* **Tier 1** (constructed once at startup): embedder, registries, vector store
-  handle, reranker model. Shared across all collections.
-* **Tier 2** (resolved per operation by `ProfileResolver`): reranker toggle,
-  top_k, hybrid/RRF, chunking fallback, taxonomy mode. Passed as parameters to
-  `search()` and `ingest_path_async()`.
+1. Add the field to `Settings` in `config/__init__.py`
+2. Add it to `defaults.yaml` at the top level
 
-### Precedence
-
-Environment variables always override profile bundles. The profile source sits
-between `defaults.yaml` and environment sources in the resolution chain:
-
-```
-field defaults < defaults.yaml < profile bundle < .env / env vars < explicit args
-```
-
-This means `.env` can override any profile value for deployment-specific tweaks
-without editing the YAML bundles.
-
-## Config-time validation
-
-The resolver performs validation at import time:
-
-- **`EMBED_MODEL`** missing → raises `ValueError` (only when `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`)
-- **`EMBED_PROVIDER`** invalid → warns + falls back to `local`
-- **`LOCAL_BACKEND`** invalid → warns + falls back to `llamacpp`
-- **`LOCAL_BACKEND=llamacpp`** without `llama-index-embeddings-openai` → raises `ImportError` with install hint
-- **`LOCAL_BACKEND=llamacpp`** without `LLAMACPP_EMBED_MODEL` → raises `ValueError`
-- **`CLOUD_BACKEND=openrouter`** without `OPENROUTER_API_KEY` → raises `ValueError`
-- **`CLOUD_BACKEND=openrouter`** without optional deps → raises `ImportError` with install hint
-- **`HYBRID_SPARSE_BACKEND`** invalid → warns + falls back to `bm25`
-- **`PDF_READER`** invalid → warns + falls back to `auto`
-- **`DOCUMENT_BACKEND`** invalid → warns + falls back to `local`
-- **`DOCUMENT_BACKEND=azure`** without credentials → warns + falls back to `local`
-- **`RESOLVED_PDF_READER`** and **`RESOLVED_HYBRID_SPARSE_BACKEND`** — resolved at import time by probing installed packages
-
-## Architecture note
-
-Configuration is split across two modules since ADR-031 (Phase 2):
-
-- **`src/rag_mcp/config/`** — the typed resolver. Single source of truth for every *resolved settings value*. It parses and validates only; it builds no objects.
-- **`src/rag_mcp/compose.py`** — the composition root. The only place runtime objects (embedding model, LLM, reranker) are constructed and where LlamaIndex's global `Settings.embed_model` is wired via `ensure_runtime_setup()`.
-
-Never construct providers or set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, or `server.py` — those modules receive their dependencies as parameters. The `import-linter` contracts in `pyproject.toml` fail the build if a business module imports a concrete provider class. The legacy bare constants (`TOP_K`, `CHUNK_SIZE`, …) are a deprecated PEP 562 shim over the `Settings` singleton, removed in v2.0.0.
+A test checks `defaults.yaml` agrees with the model defaults, so the two cannot
+drift apart. If they disagree, that test tells you.

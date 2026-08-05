@@ -94,26 +94,26 @@ class TestSelectOnnxVariant:
             "onnx/model.onnx",
         ]
 
-    def test_default_model_is_modernbert(self) -> None:
-        """Default (no arg) selects ModernBERT variants.
+    def test_variant_selection_requires_an_explicit_model_id(self) -> None:
+        """Omitting model_id is a programming error, not a silent settings read."""
+        import pytest as _pytest
 
-        The default model ID is read from ``settings.rerank_model`` at call
-        time (Phase 2, ADR-031), so the singleton is patched here rather
-        than the module-level ``RERANK_MODEL`` alias.
+        with _pytest.raises(ValueError, match="model_id is required"):
+            _select_onnx_variant(None)
+
+    def test_modernbert_model_id_selects_modernbert_variants(self) -> None:
+        """A ModernBERT model ID selects the ModernBERT variant chain.
+
+        Previously this patched ``config.settings.retrieval.rerank_model`` and called
+        ``_select_onnx_variant()`` with no argument. The model ID is now an
+        explicit parameter, so the test states it directly — which is also
+        what it was actually testing all along.
         """
-        from rag_mcp.config import settings
-
-        original = settings.rerank_model
-        try:
-            settings.rerank_model = "Alibaba-NLP/gte-reranker-modernbert-base"
-            result = _select_onnx_variant()
-        finally:
-            settings.rerank_model = original
+        result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
         assert result[0] == "onnx/model_quantized.onnx"
+        assert "onnx/model.onnx" in result
 
-    # ── Legacy MiniLM model ──────────────────────────────────────────
-
-    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="arm64")
+    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="aarch64")
     def test_minilm_arm64_selects_quantised(self, mock_machine: MagicMock) -> None:
         """MiniLM on ARM64 selects the ARM-tuned quantised variant."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -178,28 +178,35 @@ class TestCrossEncoderRerankerSingleton:
         reranker = CrossEncoderReranker()
         assert reranker._loaded is False
 
-    def test_default_model_id_from_settings(self) -> None:
-        """Unspecified model_id defaults to the resolved settings value."""
-        reranker = CrossEncoderReranker()
-        from rag_mcp.config import settings
+    def test_default_model_id_matches_settings_default(self) -> None:
+        """An unspecified model_id falls back to the documented default.
 
-        assert reranker._model_id == settings.rerank_model
-
-    def test_default_model_id_read_at_call_time(self) -> None:
-        """A settings patch after import SHALL be honoured by the default.
-
-        The default must resolve ``settings.rerank_model`` at construction
-        time rather than from an import-time snapshot of the module alias.
+        Production never takes this path — ``compose.build_reranker()`` always
+        injects the model ID. The fallback exists for direct construction and
+        MUST stay in step with ``RetrievalSettings.rerank_model``.
         """
-        from rag_mcp.config import settings
+        from rag_mcp.core.retrieval.reranker import DEFAULT_RERANK_MODEL
+        from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-        original = settings.rerank_model
-        try:
-            settings.rerank_model = "patched/model"
-            reranker = CrossEncoderReranker()
-            assert reranker._model_id == "patched/model"
-        finally:
-            settings.rerank_model = original
+        reranker = CrossEncoderReranker()
+        assert reranker._model_id == DEFAULT_RERANK_MODEL
+        assert DEFAULT_RERANK_MODEL == RetrievalSettings().rerank_model
+
+    def test_model_id_comes_from_the_composition_root(self) -> None:
+        """The model ID is injected, not read from a process-wide singleton.
+
+        Replaces the old test that patched ``config.settings.retrieval.rerank_model``
+        and expected the reranker to observe it. That coupling is exactly what
+        the DI refactor removed: the reranker no longer imports config at all.
+        """
+        import rag_mcp.core.retrieval.reranker as reranker_mod
+        from rag_mcp import compose
+
+        assert not hasattr(reranker_mod, "settings"), (
+            "reranker must not hold a module-level settings object"
+        )
+        built = compose.build_reranker()
+        assert built._model_id == compose.get_settings().retrieval.rerank_model
 
     def test_injected_model_id_is_honoured(self) -> None:
         """A caller-provided model_id must override the settings default."""

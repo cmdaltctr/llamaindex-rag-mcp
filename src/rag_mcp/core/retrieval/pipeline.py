@@ -13,18 +13,10 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
-from .dense import _dense_query_rows, _result_source
-from .fusion import rrf_with_metadata
-from .policy import (
-    _classify_query_technical,
-    _effective_threshold,
-    _resolve_fetch_k,
-    _resolve_rerank_policy,
-)
-from .reranker import CrossEncoderReranker
+from .registry import get as _retrieval_get
 
 logger = logging.getLogger(__name__)
 _warned_collections: set[str] = set()
@@ -36,10 +28,14 @@ def _resolve_store(store: VectorStore | None) -> VectorStore:
     return store if store is not None else get_default_store()
 
 
-def _selected_sparse_backend() -> str:
-    from ...config import resolve_sparse_backend, settings
+def _selected_sparse_backend(settings: Any) -> str:
+    """Return the sparse backend from the injected settings.
 
-    return resolve_sparse_backend(settings)
+    The ``auto`` capability probe runs once in the composition root, which
+    bakes the concrete backend into ``EffectiveSettings`` — so this is a
+    plain read, not a probe.
+    """
+    return settings.retrieval.hybrid_sparse_backend
 
 
 def _sparse_bm25_query(
@@ -48,8 +44,9 @@ def _sparse_bm25_query(
     query: str,
     fetch_k: int,
 ) -> list[dict]:
-    from .sparse import BM25SparseRetriever
+    from .dense import _result_source
 
+    BM25SparseRetriever = _retrieval_get("bm25")
     rows = BM25SparseRetriever(collection_name, store=store).query(query, fetch_k)
     return [
         {
@@ -114,9 +111,12 @@ def _hybrid_query_rows(
     collection_name: str,
     query: str,
     fetch_k: int,
+    rrf_k: int,
+    settings: Any,
     metadata_filter: dict | None = None,
 ) -> list[dict]:
-    backend = _selected_sparse_backend()
+    backend = _selected_sparse_backend(settings)
+    _dense_query_rows = _retrieval_get("dense")
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
             _dense_query_rows, store, collection_name, query, fetch_k,
@@ -134,7 +134,7 @@ def _hybrid_query_rows(
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
-    return rrf_with_metadata(dense_rows, sparse_rows, k=settings.hybrid_rrf_k)[:fetch_k]
+    return _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)[:fetch_k]
 
 
 def _strip_internal_result_fields(result: dict) -> dict:
@@ -156,7 +156,7 @@ def search(
     include_diagnostics: bool = False,
     technical_fraction: float | None = None,
     fetch_k: int | None = None,
-    reranker: CrossEncoderReranker | None = None,
+    reranker: Any = None,
     store: VectorStore | None = None,
     effective_settings: Any = None,
 ) -> list[dict]:
@@ -234,28 +234,37 @@ def search(
             types so the MCP layer can classify them.
     """
     # Phase 4: profile-resolved levers take precedence over global defaults.
-    profile_reranker = None
-    if effective_settings is not None:
-        if top_k is None:
-            top_k = effective_settings.top_k
-        if hybrid is None:
-            hybrid = effective_settings.hybrid_enabled
-        profile_reranker = effective_settings.reranker_enabled
+    from .policy import (
+        _effective_threshold,
+        _resolve_fetch_k,
+        _resolve_rerank_policy,
+    )
+
+    # Resolve the settings ONCE at the entry-point boundary. An explicitly
+    # passed instance always wins; otherwise the composition root's default
+    # is used. Nothing below this line consults any other source.
+    resolved_settings = resolve_effective_settings(effective_settings)
+
+    # A profile-resolved instance carries the profile's reranker decision;
+    # the server default does not express a profile opinion.
+    profile_reranker = (
+        effective_settings.reranker_enabled if effective_settings is not None else None
+    )
+    if top_k is None:
+        top_k = resolved_settings.retrieval.top_k
+    if hybrid is None:
+        hybrid = resolved_settings.retrieval.hybrid_enabled
+    if similarity_threshold is None:
+        similarity_threshold = resolved_settings.retrieval.similarity_threshold
 
     # Resolve effective rerank behaviour from policy.
     effective_rerank, rerank_reason = _resolve_rerank_policy(
         rerank,
         query,
+        resolved_settings,
         technical_fraction=technical_fraction,
         profile_reranker_enabled=profile_reranker,
     )
-
-    if top_k is None:
-        top_k = settings.top_k
-    if similarity_threshold is None:
-        similarity_threshold = settings.similarity_threshold
-    if hybrid is None:
-        hybrid = settings.hybrid_enabled
 
     resolved_store = _resolve_store(store)
 
@@ -268,13 +277,15 @@ def search(
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
     resolved_fetch_k = _resolve_fetch_k(
-        top_k, effective_rerank, chunk_count,
+        top_k, effective_rerank, chunk_count, resolved_settings,
         fetch_k_override=fetch_k,
     )
 
+    _dense_query_rows = _retrieval_get("dense")
     if hybrid:
         results = _hybrid_query_rows(
             resolved_store, collection_name, query, resolved_fetch_k,
+            resolved_settings.retrieval.hybrid_rrf_k, resolved_settings,
             metadata_filter,
         )
     else:
@@ -286,7 +297,7 @@ def search(
     # Optional: re-score with cross-encoder reranker.
     if effective_rerank and results:
         if reranker is None:
-            reranker = CrossEncoderReranker()
+            reranker = _retrieval_get("reranker")()
         results = reranker.rerank(query, results, top_k=top_k)
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:

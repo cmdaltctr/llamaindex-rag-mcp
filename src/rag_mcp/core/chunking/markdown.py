@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 
-from ...config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def ensure_heading_metadata(nodes: list) -> None:
             node.metadata.setdefault("header_path", header_path)
 
 
-def apply_heading_prepend(nodes: list) -> None:
+def apply_heading_prepend(nodes: list, heading_prepend: bool = False) -> None:
     """Optionally prepend heading path to Markdown chunk text.
 
     Experiment 6c recovery knob controlled by ``MARKDOWN_HEADING_PREPEND``.
@@ -42,8 +41,10 @@ def apply_heading_prepend(nodes: list) -> None:
 
     Args:
         nodes: Markdown nodes after heading metadata propagation.
+        heading_prepend: Whether prepending is enabled, from the injected
+            settings (``chunking.markdown_heading_prepend``).
     """
-    if not settings.markdown_heading_prepend:
+    if not heading_prepend:
         return
     for node in nodes:
         header_path = node.metadata.get("header_path") or node.metadata.get("heading_path")
@@ -56,7 +57,9 @@ def apply_heading_prepend(nodes: list) -> None:
         node.text = prefix + text
 
 
-def drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
+def drop_small_markdown_chunks(
+    nodes: list, chunk_size: int, min_chunk_fraction: float = 0.0
+) -> list:
     """Optionally drop tiny Markdown chunks before embedding.
 
     Experiment 6c recovery knob controlled by
@@ -66,14 +69,16 @@ def drop_small_markdown_chunks(nodes: list, chunk_size: int) -> list:
     Args:
         nodes: Markdown nodes to filter.
         chunk_size: Effective Markdown chunk size for this ingestion run.
+        min_chunk_fraction: Minimum-size floor as a fraction of chunk_size,
+            from the injected settings. ``<= 0`` disables the filter.
 
     Returns:
         The original node list when disabled, otherwise only nodes meeting
         the configured minimum estimated size.
     """
-    if settings.markdown_min_chunk_fraction <= 0:
+    if min_chunk_fraction <= 0:
         return nodes
-    min_chars = int(chunk_size * 4 * settings.markdown_min_chunk_fraction)
+    min_chars = int(chunk_size * 4 * min_chunk_fraction)
     kept = [node for node in nodes if len(getattr(node, "text", "")) >= min_chars]
     dropped = len(nodes) - len(kept)
     if dropped:

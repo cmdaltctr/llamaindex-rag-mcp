@@ -1,10 +1,11 @@
-"""Code graph construction via tree-sitter AST extraction.
+"""Tree-sitter AST parsing and relationship extraction.
 
-Parses code files using tree-sitter to extract structural relationships
-(imports, exports, class inheritance), builds a NetworkX directed graph,
-and detects communities, hubs, and bridges.
+Split out of ``code_graph.py`` (task 8.4), which exceeded the 500-line
+ceiling. This module owns everything that touches tree-sitter: the language
+mapping, parser construction, import/class/function extraction, and import
+path resolution. ``code_graph.py`` keeps graph assembly.
 
-All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
+Extraction is deterministic — no LLM is involved (AGENTS.md invariant #8).
 """
 
 from __future__ import annotations
@@ -14,10 +15,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import networkx as nx
-
 from .codebase_map import FileEntry
-from .config import MAGIKA_LABEL_TO_TREESITTER
 
 logger = logging.getLogger(__name__)
 
@@ -41,47 +39,15 @@ class ASTResult:
     inheritance: list[tuple[str, str]] = field(default_factory=list)
 
 
-@dataclass
-class Community:
-    """A community of related files detected by Louvain.
-
-    Attributes:
-        label: Human-readable label (top filenames + shared keywords).
-        files: List of file paths in the community.
-        edge_count: Number of internal edges.
-    """
-
-    label: str
-    files: list[str]
-    edge_count: int = 0
-
-
-@dataclass
-class Hub:
-    """A hub file with high in-degree.
-
-    Attributes:
-        file: File path.
-        in_degree: Number of incoming edges (imported by N files).
-    """
-
-    file: str
-    in_degree: int
-
-
-@dataclass
-class Bridge:
-    """A bridge node connecting separate communities.
-
-    Attributes:
-        file: File path.
-        betweenness: Betweenness centrality score.
-        communities: List of community indices this node bridges.
-    """
-
-    file: str
-    betweenness: float
-    communities: list[int]
+# Magika language label -> tree-sitter grammar name.
+# Relocated from config.py (task 7.11): this is a static lookup table, not an
+# env-configurable setting, and it belongs with the AST extraction that reads it.
+MAGIKA_LABEL_TO_TREESITTER: dict[str, str] = {
+    "python": "python", "javascript": "javascript", "typescript": "typescript",
+    "tsx": "tsx", "jsx": "jsx", "java": "java", "c": "c", "cpp": "cpp",
+    "csharp": "c_sharp", "go": "go", "rust": "rust", "ruby": "ruby",
+    "php": "php", "swift": "swift", "kotlin": "kotlin", "scala": "scala",
+}
 
 
 # ── Language mapping ─────────────────────────────────────────────────────
@@ -446,245 +412,3 @@ def extract_ast_relationships(
     return result
 
 
-def build_code_graph(
-    files: list[FileEntry],
-    project_root: str,
-) -> nx.DiGraph:
-    """Build a NetworkX directed graph from code files.
-
-    Each node represents a file with metadata (type, content_type, functions,
-    imports). Each edge represents a structural relationship (import,
-    inheritance) with metadata (relation, confidence).
-
-    Args:
-        files: List of ``FileEntry`` objects for code files.
-        project_root: Project root directory path.
-
-    Returns:
-        A ``networkx.DiGraph`` with file nodes and relationship edges.
-    """
-    graph = nx.DiGraph()
-
-    # Add nodes.
-    for entry in files:
-        file_path = Path(project_root) / entry.path
-        content = ""
-        try:
-            content = file_path.read_text(encoding="utf-8", errors="replace")
-        except (OSError, IOError) as exc:
-            logger.warning("Could not read %s: %s", entry.path, exc)
-            continue
-
-        ast = extract_ast_relationships(entry.path, content, entry.label)
-
-        graph.add_node(
-            entry.path,
-            type="file",
-            content_type=f"{entry.group}/{entry.label}",
-            functions=ast.functions,
-            imports=ast.imports,
-            classes=ast.classes,
-            exports=ast.exports,
-            inheritance=ast.inheritance,
-        )
-
-        # Add import edges.
-        for imp in ast.imports:
-            resolved = _resolve_import_path(imp, entry.path, project_root)
-            if resolved is not None and resolved != entry.path:
-                if resolved in {e.path for e in files}:
-                    graph.add_edge(
-                        entry.path,
-                        resolved,
-                        relation="import",
-                        confidence="exact",
-                    )
-
-    # Add inheritance edges (class-to-class, within same file or cross-file).
-    # These are stored as file-level edges with relation="inheritance".
-    for node in graph.nodes():
-        node_data = graph.nodes[node]
-        for child, parent in _get_inheritance(node_data):
-            # Find which file contains the parent class.
-            for other_node in graph.nodes():
-                if other_node == node:
-                    continue
-                other_data = graph.nodes[other_node]
-                if parent in other_data.get("classes", []):
-                    if not graph.has_edge(node, other_node):
-                        graph.add_edge(
-                            node,
-                            other_node,
-                            relation="inheritance",
-                            confidence="exact",
-                        )
-
-    return graph
-
-
-def _get_inheritance(node_data: dict) -> list[tuple[str, str]]:
-    """Extract inheritance pairs from node data.
-
-    The ``inheritance`` list is stored on the node during ``build_code_graph``
-    from the AST extraction result.
-    """
-    return node_data.get("inheritance", [])
-
-
-def detect_communities(graph: nx.DiGraph) -> list[Community]:
-    """Detect communities in the code graph using Louvain.
-
-    Uses ``networkx.algorithms.community.louvain_communities()`` to partition
-    the graph into clusters of related files. Each community is labelled with
-    representative file names.
-
-    Args:
-        graph: The code graph as a ``networkx.DiGraph``.
-
-    Returns:
-        List of ``Community`` objects with labels, files, and edge counts.
-    """
-    if graph.number_of_nodes() < 5:
-        # Small graph: single community.
-        files = list(graph.nodes())
-        return [Community(
-            label=", ".join(Path(f).name for f in files[:3]),
-            files=files,
-            edge_count=graph.number_of_edges(),
-        )]
-
-    # Convert to undirected for Louvain.
-    undirected = graph.to_undirected()
-
-    try:
-        communities_sets = nx.algorithms.community.louvain_communities(undirected)
-    except Exception as exc:
-        logger.warning("Louvain community detection failed: %s", exc)
-        return [Community(
-            label="all",
-            files=list(graph.nodes()),
-            edge_count=graph.number_of_edges(),
-        )]
-
-    communities: list[Community] = []
-    for comm_set in communities_sets:
-        files = sorted(comm_set)
-        # Label by top filenames.
-        filenames = [Path(f).stem for f in files[:3]]
-        label = "/".join(filenames) if filenames else "unnamed"
-
-        # Count internal edges.
-        internal_edges = sum(
-            1 for u, v in graph.edges()
-            if u in comm_set and v in comm_set
-        )
-
-        communities.append(Community(
-            label=label,
-            files=files,
-            edge_count=internal_edges,
-        ))
-
-    # Sort by size (largest first).
-    communities.sort(key=lambda c: len(c.files), reverse=True)
-    return communities
-
-
-def detect_hubs(graph: nx.DiGraph) -> list[Hub]:
-    """Identify hub nodes — files with high in-degree.
-
-    A hub is any node in the top 10% of in-degree, or any node with
-    in-degree ≥ 5, whichever is more inclusive.
-
-    Args:
-        graph: The code graph as a ``networkx.DiGraph``.
-
-    Returns:
-        List of ``Hub`` objects sorted by in-degree (descending).
-    """
-    if graph.number_of_nodes() == 0:
-        return []
-
-    in_degrees = dict(graph.in_degree())
-    if not in_degrees:
-        return []
-
-    max_degree = max(in_degrees.values())
-    if max_degree == 0:
-        return []
-
-    # Top 10% threshold.
-    sorted_degrees = sorted(in_degrees.values(), reverse=True)
-    top_10_percent_idx = max(1, len(sorted_degrees) // 10)
-    top_10_threshold = sorted_degrees[top_10_percent_idx - 1]
-
-    # More inclusive of the two criteria.
-    threshold = min(top_10_threshold, 5)
-
-    hubs = [
-        Hub(file=node, in_degree=degree)
-        for node, degree in in_degrees.items()
-        if degree >= threshold
-    ]
-    hubs.sort(key=lambda h: h.in_degree, reverse=True)
-    return hubs
-
-
-def detect_bridges(
-    graph: nx.DiGraph,
-    communities: list[Community],
-) -> list[Bridge]:
-    """Identify bridge nodes connecting separate communities.
-
-    Bridge nodes are detected by high betweenness centrality — they lie
-    on shortest paths between different communities.
-
-    Args:
-        graph: The code graph as a ``networkx.DiGraph``.
-        communities: List of detected communities.
-
-    Returns:
-        List of ``Bridge`` objects with betweenness scores and community indices.
-    """
-    if graph.number_of_nodes() < 5 or len(communities) < 2:
-        return []
-
-    # Compute betweenness centrality.
-    try:
-        betweenness = nx.betweenness_centrality(graph.to_undirected())
-    except Exception as exc:
-        logger.warning("Betweenness centrality computation failed: %s", exc)
-        return []
-
-    # Map nodes to community indices.
-    node_to_comm: dict[str, int] = {}
-    for i, comm in enumerate(communities):
-        for node in comm.files:
-            node_to_comm[node] = i
-
-    # Find nodes that connect different communities.
-    bridges: list[Bridge] = []
-    for node, score in betweenness.items():
-        if score <= 0:
-            continue
-        # Check if this node has edges to multiple communities.
-        neighbor_comms: set[int] = set()
-        for neighbor in graph.neighbors(node):
-            comm_idx = node_to_comm.get(neighbor)
-            if comm_idx is not None:
-                neighbor_comms.add(comm_idx)
-        # Also check incoming edges.
-        for predecessor in graph.predecessors(node):
-            comm_idx = node_to_comm.get(predecessor)
-            if comm_idx is not None:
-                neighbor_comms.add(comm_idx)
-
-        if len(neighbor_comms) >= 2:
-            bridges.append(Bridge(
-                file=node,
-                betweenness=score,
-                communities=sorted(neighbor_comms),
-            ))
-
-    bridges.sort(key=lambda b: b.betweenness, reverse=True)
-    return bridges

@@ -15,7 +15,7 @@ import logging
 
 from llama_index.core.node_parser import MarkdownNodeParser, SentenceSplitter
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from .markdown import (
     apply_heading_prepend,
     drop_small_markdown_chunks,
@@ -59,6 +59,7 @@ async def chunk_sentence_file_async(
     is_markdown: bool,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
+    settings: object | None = None,
 ) -> list:
     """Chunk documents using SentenceSplitter (and MarkdownNodeParser for .md).
 
@@ -75,10 +76,15 @@ async def chunk_sentence_file_async(
     Returns:
         List of LlamaIndex Node objects.
     """
+    resolved = resolve_effective_settings(settings)
     effective_chunk_size = chunk_size if chunk_size is not None else (
-        settings.markdown_chunk_size if is_markdown else settings.chunk_size
+        resolved.chunking.markdown_chunk_size
+        if is_markdown
+        else resolved.chunking.chunk_size
     )
-    effective_overlap = chunk_overlap if chunk_overlap is not None else settings.chunk_overlap
+    effective_overlap = (
+        chunk_overlap if chunk_overlap is not None else resolved.chunking.chunk_overlap
+    )
 
     nodes = await asyncio.to_thread(
         _split_documents_sync,

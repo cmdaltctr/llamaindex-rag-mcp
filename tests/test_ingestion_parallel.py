@@ -19,7 +19,7 @@ import pytest
 
 from rag_mcp.core.ingestion import ingest_path_async, list_documents
 from rag_mcp.core.ingestion._state import (
-    embed_semaphore as _embed_semaphore,
+    get_embed_semaphore as _get_embed_semaphore,
     shutdown_requested as _shutdown_requested,
     write_lock as _write_lock,
 )
@@ -187,8 +187,14 @@ class TestConcurrencyPrimitives:
         assert max_concurrent == 1
 
     def test_embed_semaphore_limits_concurrency(self) -> None:
-        """BoundedSemaphore(2) limits to at most 2 concurrent holders."""
-        from rag_mcp.config import EMBED_CONCURRENCY
+        """The limiter caps concurrent holders at the injected value.
+
+        The limiter is now built from the injected concurrency at call time
+        rather than snapshotted at import, so the test states the value it
+        depends on instead of reading a module constant.
+        """
+        concurrency = 2
+        semaphore = _get_embed_semaphore(concurrency)
 
         max_concurrent = 0
         current = 0
@@ -196,7 +202,7 @@ class TestConcurrencyPrimitives:
 
         def worker() -> None:
             nonlocal max_concurrent, current
-            with _embed_semaphore:
+            with semaphore:
                 with counter_lock:
                     current += 1
                     max_concurrent = max(max_concurrent, current)
@@ -210,7 +216,7 @@ class TestConcurrencyPrimitives:
         for t in threads:
             t.join()
 
-        assert max_concurrent <= EMBED_CONCURRENCY
+        assert max_concurrent <= concurrency
 
     async def test_parallel_shutdown_early_exit(self, tmp_path: Path) -> None:
         """Shutdown flag set mid-parallel causes early exit with fewer files."""

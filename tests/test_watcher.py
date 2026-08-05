@@ -363,7 +363,7 @@ class TestDebounceValidation:
             watch_directory("/tmp", debounce=0.3)
         assert exc_info.value.code == 1
 
-    @patch("rag_mcp.daemon.watcher.Observer")
+    @patch("rag_mcp.daemon.runner.Observer")
     def test_accepts_valid_debounce(self, MockObserver):
         """--debounce 5.0 is accepted and observer is scheduled."""
         mock_observer = MagicMock()
@@ -551,7 +551,7 @@ class TestGenericException:
 class TestEmptyDirectory:
     """Watcher on empty directory: blocks, no errors, no ingestion calls."""
 
-    @patch("rag_mcp.daemon.watcher.Observer")
+    @patch("rag_mcp.daemon.runner.Observer")
     def test_empty_dir_no_ingestion(self, MockObserver):
         """Observer starts on empty dir with no ingestion calls."""
         mock_observer = MagicMock()
@@ -667,7 +667,7 @@ class TestPathValidation:
             watch_directory(str(file_path))
         assert exc_info.value.code == 1
 
-    @patch("rag_mcp.daemon.watcher.Observer")
+    @patch("rag_mcp.daemon.runner.Observer")
     def test_accepts_valid_directory(self, MockObserver, tmp_path):
         """Valid directory → observer starts."""
         mock_observer = MagicMock()
@@ -743,7 +743,7 @@ class TestSHA256OSError:
 class TestVerboseFlag:
     """--verbose flag sets the watcher logger to DEBUG level."""
 
-    @patch("rag_mcp.daemon.watcher.Observer")
+    @patch("rag_mcp.daemon.runner.Observer")
     def test_verbose_sets_debug_level(self, MockObserver, tmp_path):
         """verbose=True sets rag_mcp.daemon.watcher logger to DEBUG."""
         watcher_logger = logging.getLogger("rag_mcp.daemon.watcher")
@@ -759,7 +759,7 @@ class TestVerboseFlag:
 
         assert watcher_logger.level == logging.DEBUG
 
-    @patch("rag_mcp.daemon.watcher.Observer")
+    @patch("rag_mcp.daemon.runner.Observer")
     def test_non_verbose_keeps_level(self, MockObserver, tmp_path):
         """verbose=False does not change the logger level."""
         watcher_logger = logging.getLogger("rag_mcp.daemon.watcher")

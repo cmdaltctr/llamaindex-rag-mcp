@@ -330,9 +330,15 @@ class TestMetadataFiltering:
 
     async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -360,9 +366,15 @@ class TestMetadataFiltering:
 
     async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -417,12 +429,14 @@ class TestListCollections:
         """Collection document counts must include all metadata pages."""
         import chromadb
         import rag_mcp.config as _config
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
         from rag_mcp.core.retrieval import list_collections
 
-        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
+        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
+
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_or_create_collection("paged_collection_stats")
         collection.add(
             ids=["1", "2", "3", "4", "5"],
@@ -461,9 +475,15 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search
@@ -510,9 +530,15 @@ class TestScoreConsistency:
         self, tmp_path, monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
-        import rag_mcp.config as _config
-        monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+
+        set_default_effective_settings(
+            EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+        )
 
         from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import search

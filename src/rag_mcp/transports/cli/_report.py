@@ -27,7 +27,7 @@ def write_report(
         ingest_kwargs: The kwargs passed to ingestion (for config echo).
         input_path: The original input path (for the report header).
     """
-    from ...config import settings
+    from ...config import get_settings
 
     report_file = Path(report_path).expanduser().resolve()
 
@@ -43,11 +43,11 @@ def write_report(
     timestamp = datetime.now(timezone.utc).isoformat()
 
     config_info = {
-        "model": settings.embed_model,
-        "batch_size": settings.embed_batch_size,
-        "concurrency": settings.embed_concurrency,
-        "chunk_size": ingest_kwargs.get("chunk_size", settings.chunk_size),
-        "chunk_overlap": ingest_kwargs.get("chunk_overlap", settings.chunk_overlap),
+        "model": get_settings().embed_model,
+        "batch_size": get_settings().ingestion.embed_batch_size,
+        "concurrency": get_settings().ingestion.embed_concurrency,
+        "chunk_size": ingest_kwargs.get("chunk_size", get_settings().chunking.chunk_size),
+        "chunk_overlap": ingest_kwargs.get("chunk_overlap", get_settings().chunking.chunk_overlap),
     }
 
     summary = {

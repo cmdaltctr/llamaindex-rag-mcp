@@ -59,7 +59,7 @@ rag-mcp ingest /path/to/docs/ --json
 
 Collections are created automatically on first ingest — nothing to set up.
 
-File reading is sequential. For ingestion throughput, tune `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` in your environment.
+File reading is sequential. For ingestion throughput, tune `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` in your environment.
 
 ### search
 

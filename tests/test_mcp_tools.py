@@ -129,7 +129,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
 async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
     """MCP omitted rerank should pass None so retrieval resolves policy."""
-    from rag_mcp.config import HYBRID_ENABLED, SIMILARITY_THRESHOLD, TOP_K
+    from rag_mcp.config import get_settings as _gs
 
     expected = [{
         "score": 0.9,
@@ -150,10 +150,10 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
     assert data == expected
     mock_search.assert_called_once_with(
         "fixture",
-        top_k=TOP_K,
-        similarity_threshold=SIMILARITY_THRESHOLD,
+        top_k=_gs().retrieval.top_k,
+        similarity_threshold=_gs().retrieval.similarity_threshold,
         rerank=None,
-        hybrid=HYBRID_ENABLED,
+        hybrid=_gs().retrieval.hybrid_enabled,
         collection_name="documents",
         metadata_filter=None,
         reranker=ANY,
@@ -598,8 +598,9 @@ async def test_search_documents_returns_filter_matches(
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
     import rag_mcp.config as _config
-    monkeypatch.setattr(_config.settings, "metadata_extraction_mode", "keyword")
-    monkeypatch.setattr(_config.settings, "metadata_keyword_rules", None)
+    from rag_mcp.core.settings import EffectiveSettings, MetadataBlock, set_default_effective_settings
+
+    set_default_effective_settings(EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword", keyword_rules=None)))
 
     ai_doc = tmp_path / "ai.txt"
     ai_doc.write_text(
@@ -766,3 +767,27 @@ async def test_search_documents_success_has_no_status_key(
     assert data == expected
     for entry in data:
         assert "status" not in entry
+
+
+# ── get_codebase_map ───────────────────────────────────────────────────────
+
+
+async def test_get_codebase_map_handler_is_callable(mcp_server, tmp_path) -> None:
+    """The handler must actually run — not just appear in the tool list.
+
+    Regression test for a broken relative import (``.core`` instead of
+    ``..core``) that made this tool raise ``ModuleNotFoundError`` out of the
+    handler, violating AGENTS.md gotcha #1. The pre-existing tool-list test
+    only asserted the *name* was registered, so it never caught this.
+    """
+    async with connected_client(mcp_server) as client:
+        result = await client.call_tool(
+            "get_codebase_map", {"path": str(tmp_path), "refresh": False}
+        )
+        # Must return content rather than raising out of the handler.
+        assert result.content
+        text = result.content[0].text
+        assert isinstance(text, str) and text
+        # If it failed, it must be the structured error contract (gotcha #1),
+        # never an unhandled ModuleNotFoundError.
+        assert "ModuleNotFoundError" not in text

@@ -18,7 +18,7 @@ from llama_index.core import Settings as LlamaIndexSettings
 
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
-from ._state import embed_semaphore, shutdown_requested, write_lock
+from ._state import get_embed_semaphore, shutdown_requested, write_lock
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ async def embed_and_write_async(
     progress_callback: Callable | None = None,
     collection_name: str = "documents",
     store: VectorStore | None = None,
+    embed_concurrency: int = 2,
 ) -> int:
     """Async version of embed and write to the vector store.
 
@@ -43,6 +44,8 @@ async def embed_and_write_async(
         nodes: List of LlamaIndex Node objects.
         progress_callback: Optional callable for progress updates.
         collection_name: Vector store collection to write to.
+        embed_concurrency: Max concurrent embed calls, from the injected
+            settings. The limiter is shared per value across the process.
         store: Optional injected :class:`VectorStore` (defaults to the
             process-wide store constructed by ``compose``).
 
@@ -65,7 +68,7 @@ async def embed_and_write_async(
             if shutdown_requested.is_set():
                 return 0
 
-            with embed_semaphore:
+            with get_embed_semaphore(embed_concurrency):
                 logger.info(
                     "Embedding %d chunks via %s...",
                     len(nodes),

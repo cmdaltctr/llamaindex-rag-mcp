@@ -41,8 +41,8 @@ Calibrated from experiment data in `experiments/reranker-threshold-calibration-2
 **Always on** (via `.env`):
 
 ```bash
-RERANK_ENABLED=true
-SIMILARITY_THRESHOLD=0.3   # optional default threshold
+RETRIEVAL__RERANK_ENABLED=true
+RETRIEVAL__SIMILARITY_THRESHOLD=0.3   # optional default threshold
 ```
 
 **CLI**:

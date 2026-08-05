@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from ...config import settings
+from ..settings import resolve_effective_settings
 from ._common import logger
 from .ollama import (
     _build_ollama_prompt,
@@ -22,7 +22,9 @@ from .ollama import (
 )
 
 
-async def _extract_llamacpp_chat_async(text: str) -> dict:
+async def _extract_llamacpp_chat_async(
+    text: str, file_name: str = "", settings: object | None = None
+) -> dict:
     """Classify text using llama.cpp's OpenAI-compatible /v1/chat/completions.
 
     Mirrors ``_extract_ollama_async`` but uses the OpenAI chat format instead
@@ -35,12 +37,13 @@ async def _extract_llamacpp_chat_async(text: str) -> dict:
     Returns:
         A dict with ``category``, ``keywords``, ``summary``.
     """
+    resolved = resolve_effective_settings(settings)
     import httpx
 
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
 
     try:
-        prompt = _build_ollama_prompt(text)
+        prompt = _build_ollama_prompt(text, resolved)
     except Exception as exc:
         logger.warning(
             "llama.cpp classification failed — could not build prompt: %s",
@@ -49,17 +52,17 @@ async def _extract_llamacpp_chat_async(text: str) -> dict:
         return fallback
 
     data = {
-        "model": settings.llamacpp_chat_model,
+        "model": resolved.llamacpp_chat_model,
         "messages": [
             {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
             {"role": "user", "content": prompt},
         ],
         "stream": False,
     }
-    url = f"{settings.llamacpp_chat_url}/chat/completions"
+    url = f"{resolved.llamacpp_chat_url}/chat/completions"
 
-    max_attempts = _get_ollama_max_attempts()
-    timeout_s = _get_ollama_timeout()
+    max_attempts = _get_ollama_max_attempts(resolved)
+    timeout_s = _get_ollama_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):

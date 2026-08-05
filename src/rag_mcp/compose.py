@@ -27,6 +27,154 @@ logger = logging.getLogger(__name__)
 _runtime_setup_done: bool = False
 
 
+# ── Runtime capability probes (moved from config.py, task 7.10) ──────
+# These ask the runtime a question ("is native sparse available?", "is
+# LiteParse installed?"), which is construction work, not settings data.
+# Keeping them in config.py forced it to import core.retrieval.sparse,
+# inverting the layering the config-is-leaf contract now forbids.
+
+def resolve_sparse_backend(settings: Settings) -> str:
+    """Resolve the configured sparse backend to ``bm25`` or ``native``.
+
+    Probes ChromaDB's native sparse capability when ``auto`` or
+    ``native`` is selected.
+    """
+    backend = settings.retrieval.hybrid_sparse_backend
+    if backend == "bm25":
+        return "bm25"
+
+    from .core.retrieval.sparse import _detect_native_sparse_capability
+
+    native_available = _detect_native_sparse_capability()
+    if backend == "auto":
+        return "native" if native_available else "bm25"
+
+    if native_available:
+        return "native"
+
+    logger.warning(
+        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
+        "ChromaDB runtime does not expose native sparse retrieval for this "
+        "project configuration. Falling back to bm25."
+    )
+    return "bm25"
+
+
+def resolve_pdf_reader(settings: Settings) -> str:
+    """Resolve the configured PDF reader to a concrete backend name.
+
+    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
+    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
+    """
+    reader = settings.pdf_reader
+    if reader == "pypdf":
+        return "pypdf"
+
+    if reader in ("liteparse", "pypdfium2"):
+        try:
+            __import__(reader)
+            return reader
+        except ImportError:
+            logger.error(
+                "PDF_READER=%s was requested but the package is not "
+                "installed. Falling back to pypdf.", reader,
+            )
+            return "pypdf"
+
+    # auto resolution: probe in preference order.
+    for backend in ("liteparse", "pypdfium2"):
+        try:
+            __import__(backend)
+            logger.info("PDF_READER=auto resolved to %s", backend)
+            return backend
+        except ImportError:
+            continue
+
+    return "pypdf"
+
+def _resolve_sparse_backend_for(settings: Settings) -> str:
+    """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
+    return resolve_sparse_backend(settings)
+
+
+def settings_to_effective(settings: Settings | None = None) -> Any:
+    """Produce the server-default :class:`EffectiveSettings` from resolved ``Settings``.
+
+    This is the adapter that bridges the config layer (flat ``Settings``)
+    and the core layer (frozen ``EffectiveSettings``).  The
+    :class:`ProfileResolver` overlays only the profile-owned levers onto
+    the instance this function produces (task 4.4).
+
+    Args:
+        settings: Resolved settings (defaults to the singleton).
+
+    Returns:
+        A frozen :class:`EffectiveSettings` with all cross-cutting fields
+        populated from *settings*.
+    """
+    from .core.settings import (
+        ChunkingBlock,
+        EffectiveSettings,
+        IngestionBlock,
+        MetadataBlock,
+        RetrievalBlock,
+    )
+
+    if settings is None:
+        settings = get_settings()
+
+    # The nested Settings blocks map 1:1 onto the EffectiveSettings blocks,
+    # so this is a straight copy plus the cross-cutting fields. Before the
+    # nested schema this function had to restate ~30 flat field names.
+    return EffectiveSettings(
+        chunking=ChunkingBlock(**settings.chunking.model_dump()),
+        ingestion=IngestionBlock(**settings.ingestion.model_dump()),
+        retrieval=RetrievalBlock(
+            **{
+                **settings.retrieval.model_dump(),
+                # Bake the RESOLVED backend in: the `auto` capability probe
+                # runs once here, so core/ performs a plain read instead of
+                # probing at query time (task 7.10).
+                "hybrid_sparse_backend": _resolve_sparse_backend_for(settings),
+            }
+        ),
+        metadata=MetadataBlock(**settings.metadata.model_dump()),
+        profile_name=settings.rag_profile,
+        chroma_persist_dir=settings.chroma_persist_dir,
+        collection_name=settings.collection_name,
+        chroma_scan_page_size=settings.chroma_scan_page_size,
+        vector_store=settings.vector_store,
+        embed_provider=settings.embed_provider,
+        metadata_llm_provider=settings.metadata_llm_provider,
+        local_backend=settings.local_backend,
+        cloud_backend=settings.cloud_backend,
+        llamacpp_embed_url=settings.llamacpp_embed_url,
+        llamacpp_embed_model=settings.llamacpp_embed_model,
+        llamacpp_chat_url=settings.llamacpp_chat_url,
+        llamacpp_chat_model=settings.llamacpp_chat_model,
+        openrouter_api_key=settings.openrouter_api_key,
+        openrouter_embed_model=settings.openrouter_embed_model,
+        openrouter_llm_model=settings.openrouter_llm_model,
+        ollama_base_url=settings.ollama_base_url,
+        embed_model=settings.embed_model,
+        # Bake the RESOLVED reader in: the `auto` probe (is LiteParse
+        # installed?) runs once here, not on every PDF read.
+        pdf_reader=resolve_pdf_reader(settings),
+        liteparse_num_workers=settings.liteparse_num_workers,
+        liteparse_ocr_enabled=settings.liteparse_ocr_enabled,
+        magika_binary=settings.magika_binary,
+        doc_similarity_threshold=settings.doc_similarity_threshold,
+        codebase_map_cache_dir=settings.codebase_map_cache_dir,
+        codebase_map_max_files=settings.codebase_map_max_files,
+        codebase_map_max_depth=settings.codebase_map_max_depth,
+        document_backend=settings.document_backend,
+        azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
+        azure_doc_intelligence_key=settings.azure_doc_intelligence_key,
+        azure_doc_intelligence_model=settings.azure_doc_intelligence_model,
+        rag_profile=settings.rag_profile,
+    )
+
+
 def build_embed_model(settings: Settings | None = None) -> Any:
     """Construct the embedding model from resolved settings.
 
@@ -84,14 +232,14 @@ def build_reranker(settings: Settings | None = None) -> Any:
 
     Returns:
         A ``CrossEncoderReranker`` instance wired to
-        ``settings.rerank_model``.
+        ``settings.retrieval.rerank_model``.
     """
     if settings is None:
         settings = get_settings()
 
     from .core.retrieval.reranker import CrossEncoderReranker
 
-    return CrossEncoderReranker(model_id=settings.rerank_model)
+    return CrossEncoderReranker(model_id=settings.retrieval.rerank_model)
 
 
 def build_vector_store(settings: Settings | None = None) -> Any:
@@ -128,6 +276,70 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     )
 
 
+def build_profile_resolver(settings: Settings | None = None) -> Any:
+    """Construct the :class:`ProfileResolver` with its dependencies injected.
+
+    This is the only sanctioned way to build a resolver in production.
+    A bare ``ProfileResolver()`` inherits neither the server profile nor the
+    server-default :class:`EffectiveSettings`, so every field the profile
+    does not own would silently fall back to class defaults instead of the
+    operator's configuration (task 4.4/4.5).
+
+    Args:
+        settings: Resolved settings (defaults to the singleton).
+
+    Returns:
+        A :class:`ProfileResolver` with ``server_profile`` and ``base``
+        injected.
+    """
+    from .core.profiles import ProfileResolver
+
+    if settings is None:
+        settings = get_settings()
+
+    return ProfileResolver(
+        server_profile=settings.rag_profile,
+        base=settings_to_effective(settings),
+    )
+
+
+def _resolve_active_strategies(settings: Settings) -> None:
+    """Resolve the *configured* strategies at startup so a bad ``register()``
+    import string fails fast rather than at first query (task 3.6).
+
+    Only the strategies this deployment actually selects are resolved, and
+    their errors propagate.  Resolving *every* registered name would defeat
+    §4.4 rule 2's lazy-import benefit — it would eagerly import the ONNX
+    reranker and every optional provider on each boot — and swallowing the
+    errors would make this function a no-op rather than the documented
+    fail-fast gate.
+
+    Exhaustive resolution of all registered names is a test-suite concern
+    and lives in ``tests/test_registry_contract.py::test_registry_all_names_resolve``.
+    """
+    from .core.chunking import registry as chunking_registry
+    from .core.metadata import registry as metadata_registry
+    from .core.providers.embeddings import registry as embed_registry
+    from .core.providers.llm import registry as llm_registry
+
+    active: list[tuple[str, Any, str]] = [
+        ("chunking", chunking_registry, settings.chunking.strategy_fallback),
+        ("metadata", metadata_registry, settings.metadata.extraction_mode),
+        ("embeddings", embed_registry, _resolve_effective_embed_provider(settings)),
+        ("llm", llm_registry, settings.metadata_llm_provider),
+    ]
+
+    for label, registry, name in active:
+        if not name or name in ("disabled", "none"):
+            continue
+        if name not in registry.available():
+            # Not a registry-backed selection (e.g. a mode handled inline);
+            # leave validation to the consuming dispatcher.
+            continue
+        registry.get(name)
+        logger.debug("Resolved active %s strategy %r at startup", label, name)
+
+
 def ensure_runtime_setup() -> None:
     """Assign ``LlamaIndexSettings.embed_model`` and the default vector store.
 
@@ -140,6 +352,11 @@ def ensure_runtime_setup() -> None:
     global _runtime_setup_done
     if _runtime_setup_done:
         return
+    # Fail fast on pre-v2.0.0 flat env vars before resolving anything, so an
+    # unmigrated .env produces a naming error rather than silent defaults.
+    from .config import check_legacy_env_vars
+
+    check_legacy_env_vars()
     settings = get_settings()
     try:
         LlamaIndexSettings.embed_model = build_embed_model(settings)
@@ -151,6 +368,13 @@ def ensure_runtime_setup() -> None:
         set_default_store(build_vector_store(settings))
     except (ImportError, ValueError) as exc:
         logger.warning("Failed to construct vector store: %s", exc)
+    # Install the process-wide default EffectiveSettings so core entry points
+    # have a composition-root-provided fallback when no instance is passed.
+    from .core.settings import set_default_effective_settings
+
+    set_default_effective_settings(settings_to_effective(settings))
+    # Resolve the configured strategies so a bad import string fails fast.
+    _resolve_active_strategies(settings)
     _runtime_setup_done = True
 
 

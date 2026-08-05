@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from rag_mcp.doc_graph import (
+from rag_mcp.core.documents.doc_graph import (
     CrossLink,
     DocCommunity,
     Edge,

@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from ..config import settings
+from ..config import get_settings
 from ..core.ingestion import ingest_path_async, list_documents as _list_documents
 from ..core.profiles import ProfileResolver
 from ..core.retrieval import search
@@ -52,7 +52,7 @@ _reranker = compose.build_reranker()
 
 # Phase 4: profile resolver for per-collection profile resolution.
 # Reads collection metadata tags through the vector store interface.
-_profile_resolver = ProfileResolver()
+_profile_resolver = compose.build_profile_resolver()
 
 
 # ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
@@ -164,11 +164,11 @@ async def search_documents(
         if top_k is None and effective is not None:
             top_k = effective.top_k
         if similarity_threshold is None:
-            similarity_threshold = settings.similarity_threshold
+            similarity_threshold = get_settings().retrieval.similarity_threshold
         if hybrid is None and effective is not None:
             hybrid = effective.hybrid_enabled
         elif hybrid is None:
-            hybrid = settings.hybrid_enabled
+            hybrid = get_settings().retrieval.hybrid_enabled
         return await asyncio.to_thread(
             search,
             query,
@@ -339,9 +339,9 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """
     import json
 
-    from ..codebase_map import get_codebase_map_text
-
     try:
+        from ..core.codebase.codebase_map import get_codebase_map_text
+
         return get_codebase_map_text(path=path, refresh=refresh)
     except Exception as exc:
         logger.warning("get_codebase_map error: %s: %s", type(exc).__name__, exc)
@@ -387,7 +387,9 @@ def change_collection_profile(
 
     if not confirm:
         try:
-            contract = generate_safety_contract(collection, profile)
+            contract = generate_safety_contract(
+                collection, profile, resolver=_profile_resolver
+            )
         except Exception as exc:
             return {"status": "error", "message": str(exc)}
         return {

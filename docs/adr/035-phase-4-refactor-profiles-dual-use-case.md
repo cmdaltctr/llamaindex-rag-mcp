@@ -154,3 +154,28 @@ the profile-level restoration.
 * ADR-034 (VectorStore ABC — collection metadata read through this interface)
 * Experiment 10 (`experiments/10-reranker-technical-workload-calibration-2026-05-31/`)
   — M1 revalidation source data
+
+---
+
+## Amendment (2026-08-05, ADR-037)
+
+**Schema change.** Profile bundles described here use flat
+SCREAMING_SNAKE keys (`TOP_K: 10`). ADR-037 moves them to nested blocks:
+
+```yaml
+retrieval:
+  top_k: 10
+  rerank_enabled: true
+chunking:
+  strategy_fallback: markdown
+metadata:
+  taxonomy_mode: category
+```
+
+A bundle using the flat schema is now rejected with the offending key named.
+The three shipped bundles were converted as part of that change; custom
+bundles must be converted by hand.
+
+The Tier 1 / Tier 2 split and the safety contract are unchanged. Tier 2
+levers are now delivered as a frozen `EffectiveSettings` parameter overlaid
+onto the server default, rather than resolved against a global.

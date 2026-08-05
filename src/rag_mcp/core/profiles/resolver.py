@@ -36,6 +36,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from ...config import _load_profile_bundle
+from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 
@@ -43,35 +44,6 @@ logger = logging.getLogger(__name__)
 
 # Operational profiles that carry concrete retrieval settings.
 OPERATIONAL_PROFILES: frozenset[str] = frozenset({"documents", "codebase"})
-
-
-class EffectiveSettings(BaseModel):
-    """Tier 2 levers resolved per-operation from a collection's profile.
-
-    These are the knobs that differ between document grounding and
-    codebase context.  Tier 1 components (embedder, store handle, reranker
-    model) are constructed once in ``compose.py`` and shared across all
-    collections regardless of profile.
-
-    Attributes:
-        profile_name: The operational profile that produced these levers
-            (``documents`` or ``codebase``).
-        top_k: Default number of chunks to return from search.
-        reranker_enabled: Whether the reranker applies for omitted rerank
-            requests against this collection.
-        hybrid_enabled: Whether to fuse dense + sparse retrieval.
-        chunk_strategy_fallback: Strategy name for ambiguous file types.
-        metadata_taxonomy_mode: ``category`` or ``file_type``.
-    """
-
-    profile_name: str
-    top_k: int
-    reranker_enabled: bool
-    hybrid_enabled: bool
-    chunk_strategy_fallback: str
-    metadata_taxonomy_mode: str
-
-    model_config = {"frozen": True}
 
 
 def _parse_profile_bool(value: Any) -> bool:
@@ -84,77 +56,102 @@ def _parse_profile_bool(value: Any) -> bool:
 
 
 def _bundle_to_effective(
-    profile_name: str, bundle: dict[str, Any]
+    profile_name: str,
+    bundle: dict[str, Any],
+    base: EffectiveSettings | None = None,
 ) -> EffectiveSettings:
-    """Convert a raw profile bundle dict to an :class:`EffectiveSettings`.
+    """Overlay a raw profile bundle's Tier 2 levers onto *base*.
 
     Environment variables override the profile bundle values for Tier 2
     levers, preserving the "env still wins" precedence established by
-    the startup Settings resolver (spec task 4.1: "applies env overrides").
+    the startup Settings resolver.
 
     Validates each lever value and raises a clear error naming the
-    offending key if validation fails (spec: "fail at resolution time
-    with a clear validation error naming the offending key").
+    offending key if validation fails.
 
     Args:
         profile_name: The operational profile name (``documents`` or
             ``codebase``).
         bundle: Raw key-value dict from the YAML bundle.
+        base: Server-default :class:`EffectiveSettings` to overlay onto,
+            supplied by ``compose.py``.  Only the profile-owned levers are
+            replaced; every other field is inherited.  When ``None``, class
+            defaults are used — correct only for tests that assert on
+            levers alone.
 
     Returns:
         Frozen :class:`EffectiveSettings` instance.
-
-    Raises:
-        ValueError: If any lever value fails type validation, with a
-            message naming the offending key.
     """
-    # Tier 2 lever env-var overrides (env wins over profile bundle).
-    raw_top_k = os.environ.get("TOP_K", bundle.get("TOP_K", 10))
+    # Tier 2 lever env overrides (env still wins over the profile bundle).
+    # The bundle is nested (v2.0.0), and env vars use the nested delimiter.
+    retrieval = bundle.get("retrieval", {}) or {}
+    chunking = bundle.get("chunking", {}) or {}
+    metadata = bundle.get("metadata", {}) or {}
+
+    raw_top_k = os.environ.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
     try:
         top_k = int(raw_top_k)
     except (ValueError, TypeError) as exc:
         raise ValueError(
-            f"Profile {profile_name!r} has invalid TOP_K={raw_top_k!r}: "
+            f"Profile {profile_name!r} has invalid retrieval.top_k={raw_top_k!r}: "
             f"must be an integer ({exc})"
         ) from exc
 
-    raw_reranker = os.environ.get(
-        "RERANK_ENABLED", bundle.get("RERANK_ENABLED", "false")
+    reranker_enabled = _parse_profile_bool(
+        os.environ.get(
+            "RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False)
+        )
     )
-    reranker_enabled = _parse_profile_bool(raw_reranker)
-
-    raw_hybrid = os.environ.get(
-        "HYBRID_ENABLED", bundle.get("HYBRID_ENABLED", "false")
+    hybrid_enabled = _parse_profile_bool(
+        os.environ.get(
+            "RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False)
+        )
     )
-    hybrid_enabled = _parse_profile_bool(raw_hybrid)
-
     chunk_strategy_fallback = str(
         os.environ.get(
-            "CHUNK_STRATEGY_FALLBACK",
-            bundle.get("CHUNK_STRATEGY_FALLBACK", "markdown"),
+            "CHUNKING__STRATEGY_FALLBACK",
+            chunking.get("strategy_fallback", "markdown"),
         )
     )
     metadata_taxonomy_mode = str(
         os.environ.get(
-            "METADATA_TAXONOMY_MODE",
-            bundle.get("METADATA_TAXONOMY_MODE", "category"),
+            "METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category")
         )
     )
 
     # Validate taxonomy mode against known values.
     if metadata_taxonomy_mode not in ("category", "file_type"):
         raise ValueError(
-            f"Profile {profile_name!r} has invalid METADATA_TAXONOMY_MODE="
+            f"Profile {profile_name!r} has invalid metadata.taxonomy_mode="
             f"{metadata_taxonomy_mode!r}: must be 'category' or 'file_type'"
         )
 
-    return EffectiveSettings(
-        profile_name=profile_name,
-        top_k=top_k,
-        reranker_enabled=reranker_enabled,
-        hybrid_enabled=hybrid_enabled,
-        chunk_strategy_fallback=chunk_strategy_fallback,
-        metadata_taxonomy_mode=metadata_taxonomy_mode,
+    # Overlay ONLY the profile-owned levers onto the server-default base
+    # (task 4.4).  Every field the profile does not own — chroma_persist_dir,
+    # embed_model, chunk sizes, concurrency, backends — MUST be inherited
+    # from *base*, not reset to class defaults.  Constructing a fresh
+    # EffectiveSettings here would silently discard the operator's .env.
+    if base is None:
+        base = EffectiveSettings()
+
+    return base.model_copy(
+        update={
+            "profile_name": profile_name,
+            "chunking": base.chunking.model_copy(
+                update={"strategy_fallback": chunk_strategy_fallback}
+            ),
+            "ingestion": base.ingestion,
+            "retrieval": base.retrieval.model_copy(
+                update={
+                    "top_k": top_k,
+                    "rerank_enabled": reranker_enabled,
+                    "hybrid_enabled": hybrid_enabled,
+                }
+            ),
+            "metadata": base.metadata.model_copy(
+                update={"taxonomy_mode": metadata_taxonomy_mode}
+            ),
+        }
     )
 
 
@@ -175,6 +172,7 @@ class ProfileResolver:
         self,
         store: VectorStore | None = None,
         server_profile: str | None = None,
+        base: EffectiveSettings | None = None,
     ) -> None:
         """Initialise the resolver.
 
@@ -182,11 +180,19 @@ class ProfileResolver:
             store: Optional :class:`VectorStore` for reading collection
                 metadata.  Defaults to the process-wide store.
             server_profile: The server-wide default profile name
-                (``RAG_PROFILE``).  When ``None``, reads from the resolved
-                :class:`Settings` singleton at resolution time.
+                (``RAG_PROFILE``).  Supplied by ``compose.py`` via
+                injection (task 4.5); when ``None``, falls back to the
+                composition root's default ``EffectiveSettings``.
+            base: Server-default :class:`EffectiveSettings` that resolved
+                profiles overlay their Tier 2 levers onto (task 4.4).
+                Supplied by ``compose.build_profile_resolver()``.  When
+                ``None``, class defaults are used — every non-lever field
+                would then ignore the operator's configuration, so
+                production callers MUST supply it.
         """
         self._store = store
         self._server_profile = server_profile
+        self._base = base
         self._cache: dict[str, EffectiveSettings] = {}
 
     # ── Public API ──────────────────────────────────────────────────
@@ -257,12 +263,21 @@ class ProfileResolver:
         return self._store if self._store is not None else get_default_store()
 
     def _get_server_profile(self) -> str:
-        """Return the server-wide default profile name."""
+        """Return the server-wide default profile name.
+
+        Uses the injected ``server_profile`` constructor argument (task 4.5).
+        Falls back to the resolved settings singleton only when no profile
+        was injected — this fallback is removed in group 5 when the global
+        is deleted.
+        """
         if self._server_profile is not None:
             return self._server_profile
-        from ...config import settings
+        # No injected profile: fall back to the composition root's default
+        # EffectiveSettings rather than the config singleton (task 5.7).
+        # Production always injects — see compose.build_profile_resolver().
+        from ..settings import get_default_effective_settings
 
-        return settings.rag_profile
+        return get_default_effective_settings().rag_profile
 
     def _read_collection_tag(
         self, store: VectorStore, collection_name: str
@@ -362,6 +377,6 @@ class ProfileResolver:
             )
             bundle = {}
 
-        effective = _bundle_to_effective(profile_name, bundle)
+        effective = _bundle_to_effective(profile_name, bundle, self._base)
         self._cache[profile_name] = effective
         return effective

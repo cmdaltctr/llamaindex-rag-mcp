@@ -33,14 +33,20 @@ import platform
 import threading
 from typing import Any
 
-from ...config import settings
-
 logger = logging.getLogger(__name__)
 
-# Model ID resolved from the structured settings (injected).  Kept as a
-# module-level alias so legacy imports (and the ``rag_mcp.reranker``
-# compat shim) keep working during migration.
-RERANK_MODEL = settings.rerank_model
+# NOTE: the ``RERANK_MODEL`` module-level alias was removed in the
+# architecture-v2 conformance change.  It was an import-time snapshot of
+# ``settings.rerank_model`` (ADR-033 Part 2 forbids these), and its only
+# consumer was the ``rag_mcp.reranker`` v1 shim, itself deleted in the same
+# change.  The model ID is now injected: ``compose.build_reranker()`` passes
+# ``model_id`` explicitly.
+
+# Fallback model ID, used only when a caller constructs the reranker directly
+# without one; production always goes through ``compose.build_reranker()``.
+# MUST match ``RetrievalSettings.rerank_model`` in core/retrieval/settings.py,
+# which is the single source of truth for the default.
+DEFAULT_RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # Tokenizer max sequence length.  ModernBERT supports 8,192 tokens but
 # processing full-length pairs increases latency.  2,048 balances context
@@ -92,8 +98,8 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
 
     Args:
         model_id: HuggingFace model ID to select a variant for.
-            If ``None``, defaults to the resolved ``settings.rerank_model``
-            (read at call time so patches to the singleton are honoured).
+            Required — the composition root resolves it from the injected
+            settings.  Passing ``None`` is a programming error.
 
     Returns:
         List of Hub-relative paths (e.g. ``"onnx/model_quantized.onnx"``)
@@ -101,7 +107,10 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
         downloads successfully.
     """
     if model_id is None:
-        model_id = settings.rerank_model
+        raise ValueError(
+            "model_id is required; compose.build_reranker() resolves it from "
+            "the injected settings"
+        )
     model_lower = model_id.lower()
 
     # ModernBERT models ship eight pre-exported ONNX variants.  Prefer the
@@ -145,15 +154,15 @@ class CrossEncoderReranker:
         """Initialise the reranker with injected settings.
 
         Args:
-            model_id: HuggingFace model ID to use.  When ``None``,
-                defaults to the resolved ``settings.rerank_model``
-                (read at call time, so tests patching the singleton
-                after import are honoured).
+            model_id: HuggingFace model ID to use.  Supplied by
+                ``compose.build_reranker()`` from the injected settings.
+                Falls back to the ADR-028 default only for direct
+                construction in tests.
             tokenizer_max_length: Tokenizer sequence-length cap.  When
                 ``None``, defaults to the module-level
                 ``TOKENIZER_MAX_LENGTH``.
         """
-        self._model_id: str = model_id or settings.rerank_model
+        self._model_id: str = model_id or DEFAULT_RERANK_MODEL
         self._session: Any = None
         self._tokenizer: Any = None
         self._loaded: bool = False

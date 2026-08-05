@@ -11,6 +11,7 @@ interleave a search with an in-progress ingest.
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
 
 import pytest
@@ -28,17 +29,19 @@ def pause_event() -> asyncio.Event:
     return asyncio.Event()
 
 
-async def _patched_read_and_chunk(file_path, *, chunk_size=None, chunk_overlap=None):
-    """Patched version that pauses until *pause_event* is set.
+async def _patched_read_and_chunk(file_path, **kwargs):
+    """Pause until ``_pause`` is set, then delegate to the real chunker.
 
-    Grabs the global ``_pause`` event set by the test fixture.
+    Takes ``**kwargs`` deliberately. The previous version pinned the exact
+    signature (``chunk_size``/``chunk_overlap`` only); when the real function
+    gained parameters, every call raised TypeError, the ingest failed
+    instantly, and the "responsive during ingest" tests passed against an
+    ingest that was never actually in flight.
     """
-    import rag_mcp.core.ingestion.pipeline as _ing
+    from rag_mcp.core.ingestion import chunker as _chunker
 
     await _pause.wait()
-    return await _ing.read_and_chunk_file_async(
-        file_path, chunk_size=chunk_size, chunk_overlap=chunk_overlap
-    )
+    return await _chunker.read_and_chunk_file_async(file_path, **kwargs)
 
 
 class TestIngestResponsiveness:
@@ -72,15 +75,23 @@ class TestIngestResponsiveness:
         # Give the task a moment to enter the patched function.
         await asyncio.sleep(0.1)
 
-        # Search must complete quickly even though ingest is still running.
-        start = time.monotonic()
-        results = await search_documents("test", top_k=5, collection=coll)
-        elapsed = time.monotonic() - start
-
-        assert elapsed < 0.5, (
-            f"Search took {elapsed:.3f}s (> 0.5s) — "
-            "loop may be blocked by ingest"
+        # Search must complete WHILE the ingest is still parked on the event.
+        #
+        # This asserts the property directly instead of timing it. If the
+        # ingest were blocking the loop, this await could not proceed at all
+        # until `_pause` is set, so `wait_for` would time out. The 10s budget
+        # is a hang-guard, not a performance bar — a wall-clock upper bound
+        # like `elapsed < 0.5` measured how busy the machine was, not whether
+        # the loop was blocked, and flaked under parallel load.
+        results = await asyncio.wait_for(
+            search_documents("test", top_k=5, collection=coll), timeout=10
         )
+
+        assert not ingest_task.done(), (
+            "ingest finished before the search — the test no longer proves "
+            "the loop stayed responsive DURING ingest"
+        )
+        assert not _pause.is_set(), "ingest was unblocked too early"
         assert isinstance(results, list)
 
         # Unblock and await ingest completion.
@@ -109,13 +120,14 @@ class TestIngestResponsiveness:
         )
         await asyncio.sleep(0.1)
 
-        start = time.monotonic()
+        # Same property, same reasoning as the search test above.
         result = list_collections()
-        elapsed = time.monotonic() - start
 
-        assert elapsed < 0.5, (
-            f"list_collections took {elapsed:.3f}s (> 0.5s)"
+        assert not ingest_task.done(), (
+            "ingest finished before list_collections — no longer proves "
+            "responsiveness during ingest"
         )
+        assert not _pause.is_set(), "ingest was unblocked too early"
         assert isinstance(result, list)
 
         _pause.set()
@@ -142,12 +154,13 @@ class TestIngestResponsiveness:
         search_task = asyncio.create_task(search_documents("slow"))
         await asyncio.sleep(0.05)
 
-        start = time.monotonic()
+        # The loop must still be schedulable while the blocking search runs
+        # in a worker thread. Asserted as "this coroutine got to run before
+        # the search finished" rather than as a stopwatch reading.
         await asyncio.sleep(0.01)
-        elapsed = time.monotonic() - start
-
-        assert elapsed < 0.1, (
-            f"event loop sleep took {elapsed:.3f}s while search was in flight"
+        assert not search_task.done(), (
+            "the blocking search completed before the loop yielded — it is "
+            "not running in a worker thread, or the sleep was too long"
         )
         assert await search_task == [{
             "score": 1.0,
@@ -245,9 +258,17 @@ class TestSplitterOffload:
 
         original_get_nodes = SentenceSplitter.get_nodes_from_documents
 
+        # Gate the splitter on an Event rather than a fixed sleep. With
+        # `time.sleep(0.6)` the ingest could finish before the search under
+        # CPU load, and the test then asserted nothing. The Event holds the
+        # splitter open until the search has demonstrably completed.
+        release = threading.Event()
+        entered = threading.Event()
+
         def _slow_get_nodes(self, documents, *args, **kwargs):
             # Synchronous block — only safe if offloaded to a worker thread.
-            time.sleep(0.6)
+            entered.set()
+            release.wait(timeout=30)
             return original_get_nodes(self, documents, *args, **kwargs)
 
         monkeypatch.setattr(
@@ -260,17 +281,22 @@ class TestSplitterOffload:
             ingest_path_async(dir_with_docs, collection_name=coll)
         )
 
-        # Let the ingest reach the splitter.
-        await asyncio.sleep(0.1)
+        # Wait until the splitter is genuinely blocking, rather than
+        # guessing with a sleep.
+        await asyncio.to_thread(entered.wait, 10)
 
-        start = time.monotonic()
-        results = await search_documents("test", top_k=5, collection=coll)
-        elapsed = time.monotonic() - start
+        # Deterministic form, matching the other responsiveness tests: the
+        # search must complete while the blocking splitter is still running,
+        # not merely "within 0.5s" — which measured machine load.
+        results = await asyncio.wait_for(
+            search_documents("test", top_k=5, collection=coll), timeout=10
+        )
 
-        assert elapsed < 0.5, (
-            f"Search took {elapsed:.3f}s while splitter was blocking — "
-            "splitter offload may have regressed"
+        assert not ingest_task.done(), (
+            "the ingest finished before the search — the blocking splitter "
+            "was not actually in flight, so this proves nothing"
         )
         assert isinstance(results, list)
 
+        release.set()
         await ingest_task

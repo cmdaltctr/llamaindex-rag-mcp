@@ -85,14 +85,19 @@ markers = [
 # See openspec/changes/phase-2-refactor-config-core-split/design.md (D5).
 [tool.importlinter]
 root_package = "rag_mcp"
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "settings-models-are-pure-data"
 type = "forbidden"
 source_modules = [
     "rag_mcp.core.chunking.settings",
+    "rag_mcp.core.ingestion.settings",
     "rag_mcp.core.retrieval.settings",
     "rag_mcp.core.metadata.settings",
+    # Task 10.2: the EffectiveSettings value object every core/ and
+    # integrations/ module now receives must stay pure data too.
+    "rag_mcp.core.settings",
 ]
 forbidden_modules = [
     "rag_mcp.config",
@@ -128,30 +133,113 @@ source_modules = [
     "rag_mcp.core.retrieval",
     "rag_mcp.core.metadata",
     "rag_mcp.core.chunking",
+    # Extended at task 10.1: these were uncovered, so the boundary they
+    # depend on was unenforced even though no violation existed.
+    "rag_mcp.core.vectordb",
+    "rag_mcp.core.profiles",
+    "rag_mcp.core.codebase",
+    "rag_mcp.core.documents",
+    "rag_mcp.daemon",
 ]
 forbidden_modules = [
     "rag_mcp.core.providers",
     "rag_mcp.transports",
 ]
+ignore_imports = [
+    # PERMANENT: daemon is an orchestration layer, like transports — it is a
+    # legitimate CONSUMER of the composition root. What this contract forbids
+    # is core BUSINESS logic reaching for providers directly; calling
+    # compose.build_profile_resolver() is the sanctioned direction.
+    "rag_mcp.daemon.watcher -> rag_mcp.compose",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# ─── Architecture-v2 conformance contracts ────────────────────────────
+# Added by the complete-architecture-v2-conformance change. Each is added
+# before its fix so the failing state is observed first (design.md D7).
+# See openspec/changes/complete-architecture-v2-conformance/.
+
+# F2: chromadb is confined to the vector store implementation.
+[[tool.importlinter.contracts]]
+name = "chromadb-confined-to-vectordb"
+type = "forbidden"
+source_modules = ["rag_mcp"]
+forbidden_modules = ["chromadb"]
+ignore_imports = [
+    "rag_mcp.core.vectordb.chroma -> chromadb",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# F3: config is a leaf — it must not import core business logic, compose,
+# transports, integrations, or daemon. Only the pure-data subpackage
+# settings models (rag_mcp.core.*.settings) are sanctioned upward refs.
+[[tool.importlinter.contracts]]
+name = "config-is-leaf"
+type = "forbidden"
+source_modules = ["rag_mcp.config"]
+forbidden_modules = [
+    "rag_mcp.core.ingestion",
+    "rag_mcp.core.retrieval",
+    "rag_mcp.core.metadata",
+    "rag_mcp.core.vectordb",
+    "rag_mcp.core.profiles",
+    "rag_mcp.core.providers",
+    "rag_mcp.compose",
+    "rag_mcp.transports",
+    "rag_mcp.integrations",
+    "rag_mcp.daemon",
+]
+ignore_imports = [
+    # PERMANENT: sanctioned pure-data settings model imports. Config
+    # composes the subpackage settings models by inheritance (pre-group-7)
+    # or nesting (post-group-7). These are the only upward refs allowed.
+    "rag_mcp.config -> rag_mcp.core.chunking.settings",
+    "rag_mcp.config -> rag_mcp.core.retrieval.settings",
+    "rag_mcp.config -> rag_mcp.core.metadata.settings",
+    "rag_mcp.config -> rag_mcp.core.ingestion.settings",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# F5: integrations are acyclic leaves — no imports from core, transports,
+# daemon, or the top-level graph modules (which relocate in group 2).
+[[tool.importlinter.contracts]]
+name = "integrations-are-leaves"
+type = "forbidden"
+source_modules = ["rag_mcp.integrations"]
+forbidden_modules = [
+    "rag_mcp.core",
+    "rag_mcp.transports",
+    "rag_mcp.daemon",
+]
+ignore_imports = [
+    # PERMANENT: integrations read the frozen EffectiveSettings value object.
+    # This is the same sanctioned category as config -> core.*.settings: a
+    # pure-data model with no business logic and no imports of its own. It is
+    # NOT a dependency on core business logic, which stays forbidden.
+    "rag_mcp.integrations.magika -> rag_mcp.core.settings",
+    "rag_mcp.integrations.azure -> rag_mcp.core.settings",
+    "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
+    "rag_mcp.integrations.pdf.factory -> rag_mcp.core.settings",
+    # TEMPORARY: integrations import config, which transitively reaches
+    # core through the sanctioned settings models. These import edges
+    # are removed at task 5.6 when integrations receive EffectiveSettings
+    # by injection and stop importing config.
+    #
+    # COVERAGE LOSS — read before adding to this list. Each entry suppresses
+    # the *root* edge of a transitive chain, so this contract goes blind to
+    # EVERY chain through config from that module, not just the known one.
+    # A new `integrations.magika -> config -> core.retrieval.dense` would go
+    # undetected today. Do not add modules here to silence a new violation;
+    # the four below are a time-boxed migration artefact removed at 5.6, and
+    # task 10.3a fails the build if any outlives its fix.
+]
+unmatched_ignore_imports_alerting = "error"
 
 [tool.coverage.run]
 source = ["rag_mcp"]
-# Deprecated compatibility shims carry no test consumers by design (each is
-# a <30-line re-export). Excluding them from the gate stops the overall
-# figure from being dragged down by 0%-coverage pass-through files and
-# keeps the documented ≥90% floor meaningful. Removal scheduled for v2.0.0.
-omit = [
-    "src/rag_mcp/server.py",
-    "src/rag_mcp/cli.py",
-    "src/rag_mcp/watcher.py",
-    "src/rag_mcp/azure_reader.py",
-    "src/rag_mcp/readers/*",
-    "src/rag_mcp/ingestion.py",
-    "src/rag_mcp/retrieval.py",
-    "src/rag_mcp/reranker.py",
-    "src/rag_mcp/sparse_retriever.py",
-    "src/rag_mcp/metadata_extractor.py",
-]
+# The deprecated-shim omit list was removed in v2.0.0 together with the
+# shims themselves (task 9.5). Every module under src/rag_mcp is now real
+# code with real consumers, so nothing is excluded from the gate.
 
 [dependency-groups]
 dev = [

@@ -22,7 +22,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..config import settings
+from ..core.settings import get_default_effective_settings
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +54,14 @@ class FileEntry:
     suffix: str
 
 
+def _magika_binary() -> str:
+    """Return the configured Magika binary name."""
+    return get_default_effective_settings().magika_binary
+
+
 def _is_magika_available() -> bool:
     """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(settings.magika_binary) is not None
+    return shutil.which(_magika_binary()) is not None
 
 
 def scan_with_magika(path: str) -> list:
@@ -75,19 +80,14 @@ def scan_with_magika(path: str) -> list:
         FileNotFoundError: If the Magika binary is not on $PATH.
         subprocess.CalledProcessError: If the Magika process fails.
     """
-    # FileEntry and _EXCLUDED_DIRS are module-level (defined above).
-    # _is_magika_available is read through codebase_map's re-export so
-    # test patches on rag_mcp.codebase_map._is_magika_available propagate.
-    import rag_mcp.codebase_map as _cbm
-
-    if not _cbm._is_magika_available():
+    if not _is_magika_available():
         raise FileNotFoundError(
-            f"Magika CLI binary not found: {settings.magika_binary}"
+            f"Magika CLI binary not found: {_magika_binary()}"
         )
 
     try:
         result = subprocess.run(
-            [settings.magika_binary, "-r", path, "--jsonl"],
+            [_magika_binary(), "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
             check=True,

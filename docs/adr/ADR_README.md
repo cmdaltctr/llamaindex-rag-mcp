@@ -42,6 +42,8 @@ development of the LlamaIndex RAG MCP Server.
 | [033](./033-phase-2-refactor-di-refinement.md) | Phase 2 Refactor — DI Refinement (Inject Constructed Objects, Resolve Settings at Call Time) | 2026-08-04 | Accepted |
 | [034](./034-phase-3-refactor-vectordb-abstraction.md) | Phase 3 Refactor — Vector Store Abstraction Interface                     | 2026-08-04 | Accepted |
 | [035](./035-phase-4-refactor-profiles-dual-use-case.md) | Phase 4 Refactor — Profiles: Dual Use Cases (Documents + Codebase) | 2026-08-04 | Accepted |
+| [036](./036-phase-5-refactor-transport-separation.md) | Phase 5 Refactor — Transport Separation (MCP / CLI / API) | 2026-08-04 | Accepted |
+| [037](./037-architecture-v2-conformance.md) | Architecture v2 Conformance | 2026-08-05 | Accepted |
 
 ## Convention
 

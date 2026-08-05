@@ -6,7 +6,7 @@ Extraction runs **once per file** (not per chunk), so overhead is O(files), not 
 
 ## Modes
 
-Set `METADATA_EXTRACTION_MODE` in `.env`:
+Set `METADATA__EXTRACTION_MODE` in `.env`:
 
 | Mode                | What it does                                                                                                                                                                                   | Speed       | Status |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------ |
@@ -17,19 +17,19 @@ Set `METADATA_EXTRACTION_MODE` in `.env`:
 
 ```bash
 # In .env
-METADATA_EXTRACTION_MODE=keyword   # default
-METADATA_EXTRACTION_MODE=local
-METADATA_EXTRACTION_MODE=disabled
+METADATA__EXTRACTION_MODE=keyword   # default
+METADATA__EXTRACTION_MODE=local
+METADATA__EXTRACTION_MODE=disabled
 
 # Or inline for a single run
-METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+METADATA__EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 ```
 
 ## Local mode
 
 Uses a **separate chat model** (not the embedding model) set via `METADATA_LLM_PROVIDER` (default `local`). The sub-provider is selected by `LOCAL_BACKEND` (default `llamacpp`) or `CLOUD_BACKEND` (default `openrouter`).
 
-When `METADATA_LLM_PROVIDER=local` and `LOCAL_BACKEND=ollama`, the model is configured via `OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). Pull it first:
+When `METADATA_LLM_PROVIDER=local` and `LOCAL_BACKEND=ollama`, the model is configured via `METADATA__OLLAMA_CLASSIFY_MODEL` (default `qwen3:0.6b`). Pull it first:
 
 ```bash
 ollama pull qwen3:0.6b
@@ -59,10 +59,10 @@ If no keywords match, the category is `"uncategorised"`.
 
 ## Custom keyword rules
 
-Override the built-in rules entirely by setting `METADATA_KEYWORD_RULES` in `.env` to a JSON string:
+Override the built-in rules entirely by setting `METADATA__KEYWORD_RULES` in `.env` to a JSON string:
 
 ```bash
-METADATA_KEYWORD_RULES='[{"pattern": "f1|grand.?prix|motorsport", "category": "Motorsport"}, {"pattern": "football|goal|stadium", "category": "Sport"}]'
+METADATA__KEYWORD_RULES='[{"pattern": "f1|grand.?prix|motorsport", "category": "Motorsport"}, {"pattern": "football|goal|stadium", "category": "Sport"}]'
 ```
 
 ## Filtering search results

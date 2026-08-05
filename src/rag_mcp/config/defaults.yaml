@@ -2,39 +2,60 @@
 #
 # This file is loaded by the Settings resolver at a LOWER priority than
 # environment variables and .env.  Override any value by setting the
-# matching environment variable (key names are identical).
+# matching environment variable.
+#
+# SCHEMA (v2.0.0): subpackage settings are NESTED under their block; only
+# cross-cutting settings stay flat at the top level.  Environment variables
+# for nested keys use the "__" delimiter, e.g.
+#     retrieval.top_k       -> RETRIEVAL__TOP_K
+#     chunking.chunk_size   -> CHUNKING__CHUNK_SIZE
+#     ingestion.embed_batch_size -> INGESTION__EMBED_BATCH_SIZE
+#     metadata.extraction_mode   -> METADATA__EXTRACTION_MODE
 #
 # NEVER put API keys, tokens, passwords, or machine-specific absolute
 # paths in this file — those belong in .env (gitignored).
 
 # ── Chunking ──────────────────────────────────────────────────────────
-CHUNK_SIZE: 512
-CHUNK_OVERLAP: 100
-MARKDOWN_CHUNK_SIZE: 1024
-MARKDOWN_HEADING_PREPEND: "false"
-MARKDOWN_MIN_CHUNK_FRACTION: 0.0
-EMBED_CONCURRENCY: 2
-EMBED_BATCH_SIZE: 100
+chunking:
+  chunk_size: 512
+  chunk_overlap: 100
+  markdown_chunk_size: 1024
+  markdown_heading_prepend: false
+  markdown_min_chunk_fraction: 0.0
+  strategy_fallback: markdown
+
+# ── Ingestion ─────────────────────────────────────────────────────────
+# Moved out of `chunking` in v2.0.0: these are ingestion concerns and only
+# lived under chunking because the flat schema had nowhere better.
+ingestion:
+  # 4 (was 2): promoted from .env, 2026-08-05. This is machine-
+  # specific — raise on a bigger box, lower if the embedder throttles.
+  embed_concurrency: 4
+  embed_batch_size: 100
 
 # ── Retrieval ─────────────────────────────────────────────────────────
-TOP_K: 10
-SIMILARITY_THRESHOLD: 0.0
-RERANK_ENABLED: "false"
-RERANK_ENABLED_FOR_SEMANTIC: "true"
-HARD_TECHNICAL_THRESHOLD: 0.3
-RERANK_FETCH_MULTIPLIER: 3
-RERANK_MAX_FETCH: 100
-HYBRID_ENABLED: "false"
-HYBRID_RRF_K: 60
-HYBRID_SPARSE_BACKEND: bm25
+retrieval:
+  top_k: 10
+  similarity_threshold: 0.0
+  rerank_enabled: false
+  rerank_enabled_for_semantic: true
+  hard_technical_threshold: 0.3
+  rerank_fetch_multiplier: 3
+  rerank_max_fetch: 100
+  rerank_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  hybrid_enabled: false
+  hybrid_rrf_k: 60
+  hybrid_sparse_backend: bm25
 
 # ── Metadata extraction ──────────────────────────────────────────────
-METADATA_EXTRACTION_MODE: llamaindex
-OLLAMA_CLASSIFY_MODEL: "qwen3:0.6b"
-OLLAMA_CLASSIFY_MAX_ATTEMPTS: 3
-OLLAMA_CLASSIFY_TIMEOUT: 30.0
+metadata:
+  extraction_mode: llamaindex
+  taxonomy_mode: category
+  ollama_classify_model: "qwen3:0.6b"
+  ollama_classify_max_attempts: 3
+  ollama_classify_timeout: 30.0
 
-# ── Storage ───────────────────────────────────────────────────────────
+# ── Storage (cross-cutting, flat) ─────────────────────────────────────
 CHROMA_PERSIST_DIR: ./chroma_db
 COLLECTION_NAME: documents
 CHROMA_SCAN_PAGE_SIZE: 10000
@@ -47,7 +68,7 @@ CLOUD_BACKEND: openrouter
 
 # ── PDF reader ────────────────────────────────────────────────────────
 PDF_READER: auto
-LITEPARSE_OCR_ENABLED: "false"
+LITEPARSE_OCR_ENABLED: false
 
 # ── Codebase map ──────────────────────────────────────────────────────
 MAGIKA_BINARY: magika
@@ -64,5 +85,3 @@ AZURE_DOC_INTELLIGENCE_MODEL: prebuilt-layout
 # Server-wide default profile.  Individual collections override via
 # metadata tags.  See config/profiles/ for the bundle YAMLs.
 RAG_PROFILE: documents
-CHUNK_STRATEGY_FALLBACK: markdown
-METADATA_TAXONOMY_MODE: category

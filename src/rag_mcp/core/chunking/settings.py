@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, ConfigDict, BeforeValidator
 
 
 def _parse_legacy_bool(value: object) -> object:
@@ -30,6 +30,8 @@ LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
 
 
 class ChunkingSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     """Configuration knobs for the document chunking pipeline.
 
     Defaults mirror the pre-refactor ``config.py`` values exactly.
@@ -53,15 +55,9 @@ class ChunkingSettings(BaseModel):
     # Chunks below this fraction are merged with neighbours.
     markdown_min_chunk_fraction: float = 0.0
 
-    # Embedding pipeline concurrency (number of parallel embedding requests).
-    embed_concurrency: int = 2
-
-    # Embedding batch size (documents per API call).
-    embed_batch_size: int = 100
-
     # Fallback chunking strategy for ambiguous file types (Phase 4 profiles).
     # Known file types always use content-type dispatch (code → CodeSplitter,
     # config → whole-file, etc.).  This value is the strategy name used when
     # Magika cannot classify the file confidently.  Documents profile uses
     # "markdown"; codebase profile uses "code".
-    chunk_strategy_fallback: str = "markdown"
+    strategy_fallback: str = "markdown"

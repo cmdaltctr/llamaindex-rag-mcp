@@ -66,8 +66,11 @@ def _make_mock_store(
 # Tier 2 lever env vars that override profile bundles. Tests that verify
 # profile-resolved values MUST clear these so the .env file doesn't leak.
 _TIER2_ENV_VARS = [
-    "TOP_K", "RERANK_ENABLED", "HYBRID_ENABLED",
-    "CHUNK_STRATEGY_FALLBACK", "METADATA_TAXONOMY_MODE",
+    "RETRIEVAL__TOP_K",
+    "RETRIEVAL__RERANK_ENABLED",
+    "RETRIEVAL__HYBRID_ENABLED",
+    "CHUNKING__STRATEGY_FALLBACK",
+    "METADATA__TAXONOMY_MODE",
 ]
 
 
@@ -87,28 +90,28 @@ class TestProfileBundles:
     def test_documents_profile_values(self) -> None:
         """Documents profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("documents")
-        assert bundle["TOP_K"] == 10
-        assert bundle["RERANK_ENABLED"] == "true"
-        assert bundle["HYBRID_ENABLED"] == "false"
-        assert bundle["CHUNK_STRATEGY_FALLBACK"] == "markdown"
-        assert bundle["METADATA_TAXONOMY_MODE"] == "category"
+        assert bundle["retrieval"]["top_k"] == 10
+        assert bundle["retrieval"]["rerank_enabled"] == True
+        assert bundle["retrieval"]["hybrid_enabled"] == False
+        assert bundle["chunking"]["strategy_fallback"] == "markdown"
+        assert bundle["metadata"]["taxonomy_mode"] == "category"
 
     def test_codebase_profile_values(self) -> None:
         """Codebase profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["TOP_K"] == 20
-        assert bundle["RERANK_ENABLED"] == "false"
-        assert bundle["HYBRID_ENABLED"] == "true"
-        assert bundle["CHUNK_STRATEGY_FALLBACK"] == "code"
-        assert bundle["METADATA_TAXONOMY_MODE"] == "file_type"
+        assert bundle["retrieval"]["top_k"] == 20
+        assert bundle["retrieval"]["rerank_enabled"] == False
+        assert bundle["retrieval"]["hybrid_enabled"] == True
+        assert bundle["chunking"]["strategy_fallback"] == "code"
+        assert bundle["metadata"]["taxonomy_mode"] == "file_type"
 
     def test_hybrid_resolves_to_default_profile(self) -> None:
         """Hybrid bundle resolves to default_profile's values, not its own keys."""
         bundle = _load_profile_bundle("hybrid")
         # Hybrid resolves to documents (the default_profile), so it carries
         # documents' Tier 2 levers, not a default_profile key.
-        assert bundle["TOP_K"] == 10
-        assert bundle["RERANK_ENABLED"] == "true"
+        assert bundle["retrieval"]["top_k"] == 10
+        assert bundle["retrieval"]["rerank_enabled"] == True
 
     def test_documents_profile_bundle_contains_no_credentials(self) -> None:
         """Profile bundles SHALL contain no credentials."""
@@ -127,7 +130,19 @@ class TestProfileBundles:
         with a wrong TYPE produces a validation error.
         """
         # Type mismatch on a known field raises during Pydantic validation.
-        with patch.dict("os.environ", {"TOP_K": "not_a_number"}):
+        # The env var uses the v2.0.0 nested delimiter.
+        with patch.dict("os.environ", {"RETRIEVAL__TOP_K": "not_a_number"}):
+            with pytest.raises(Exception):
+                Settings(_env_file=None)
+
+    def test_unknown_nested_key_is_rejected(self) -> None:
+        """extra="forbid" on the subpackage models catches typos (design D9).
+
+        This is the general-case guard: the legacy tripwire only enumerates
+        known pre-v2 names, so an unlisted or mistyped nested key would
+        otherwise be swallowed by the root model's extra="ignore".
+        """
+        with patch.dict("os.environ", {"RETRIEVAL__TOPK": "20"}):
             with pytest.raises(Exception):
                 Settings(_env_file=None)
 
@@ -274,10 +289,11 @@ class TestTwoTierResolution:
     def test_profile_reranker_enabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker takes precedence over global default."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         # Global default is off, but profile says on.
         effective, reason = _resolve_rerank_policy(
-            None, "semantic query", profile_reranker_enabled=True
+            None, "semantic query", EffectiveSettings(), profile_reranker_enabled=True
         )
         assert effective is True
         assert "profile" in reason
@@ -285,9 +301,10 @@ class TestTwoTierResolution:
     def test_profile_reranker_disabled_overrides_global_default(self) -> None:
         """Profile-resolved reranker disabled takes precedence."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
-            None, "semantic query", profile_reranker_enabled=False
+            None, "semantic query", EffectiveSettings(), profile_reranker_enabled=False
         )
         assert effective is False
         assert "profile" in reason
@@ -295,9 +312,10 @@ class TestTwoTierResolution:
     def test_explicit_rerank_bypasses_profile(self) -> None:
         """Explicit rerank=True bypasses profile-resolved enablement."""
         from rag_mcp.core.retrieval.policy import _resolve_rerank_policy
+        from rag_mcp.core.settings import EffectiveSettings
 
         effective, reason = _resolve_rerank_policy(
-            True, "query", profile_reranker_enabled=False
+            True, "query", EffectiveSettings(), profile_reranker_enabled=False
         )
         assert effective is True
         assert "explicit" in reason
@@ -486,12 +504,12 @@ class TestM1RerankerRevalidation:
         enables it; the codebase profile correctly disables it.
         """
         bundle = _load_profile_bundle("documents")
-        assert bundle["RERANK_ENABLED"] == "true"
+        assert bundle["retrieval"]["rerank_enabled"] == True
 
     def test_codebase_profile_sets_reranker_false(self) -> None:
         """The codebase profile disables the reranker (Experiment 10)."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["RERANK_ENABLED"] == "false"
+        assert bundle["retrieval"]["rerank_enabled"] == False
 
     def test_effective_settings_documents_reranker_on(self) -> None:
         """EffectiveSettings for documents has reranker_enabled=True."""
@@ -519,29 +537,55 @@ class TestBundleValidation:
     """Tests for operation-time bundle validation."""
 
     def test_invalid_top_k_raises_with_key_name(self) -> None:
-        """A non-integer TOP_K raises with the key name in the message."""
-        bundle = {"TOP_K": "not_a_number"}
-        with pytest.raises(ValueError, match="TOP_K"):
+        """A non-integer top_k raises with the key name in the message."""
+        bundle = {"retrieval": {"top_k": "not_a_number"}}
+        with pytest.raises(ValueError, match="top_k"):
             _bundle_to_effective("documents", bundle)
 
     def test_invalid_taxonomy_mode_raises_with_key_name(self) -> None:
-        """An invalid METADATA_TAXONOMY_MODE raises naming the key."""
-        bundle = {"METADATA_TAXONOMY_MODE": "invalid_mode"}
-        with pytest.raises(ValueError, match="METADATA_TAXONOMY_MODE"):
+        """An invalid metadata.taxonomy_mode raises naming the key."""
+        bundle = {"metadata": {"taxonomy_mode": "invalid_mode"}}
+        with pytest.raises(ValueError, match="taxonomy_mode"):
             _bundle_to_effective("codebase", bundle)
 
     def test_valid_bundle_does_not_raise(self) -> None:
-        """A valid bundle resolves without error."""
+        """A valid nested bundle resolves without error."""
         bundle = {
-            "TOP_K": 15,
-            "RERANK_ENABLED": "true",
-            "HYBRID_ENABLED": "false",
-            "CHUNK_STRATEGY_FALLBACK": "markdown",
-            "METADATA_TAXONOMY_MODE": "category",
+            "retrieval": {
+                "top_k": 15,
+                "rerank_enabled": True,
+                "hybrid_enabled": False,
+            },
+            "chunking": {"strategy_fallback": "markdown"},
+            "metadata": {"taxonomy_mode": "category"},
         }
         effective = _bundle_to_effective("documents", bundle)
-        assert effective.top_k == 15
-        assert effective.reranker_enabled is True
+        assert effective.retrieval.top_k == 15
+        assert effective.retrieval.rerank_enabled is True
+
+    def test_flat_schema_bundle_is_rejected(self, tmp_path, monkeypatch) -> None:
+        """A pre-v2.0.0 flat bundle fails loudly, naming the offending key.
+
+        Silently ignoring flat keys would reintroduce the exact failure mode
+        this change exists to remove: config that looks applied but is not.
+        """
+        import rag_mcp.config.sources as _sources
+
+        bundle_dir = tmp_path / "profiles"
+        bundle_dir.mkdir()
+        (bundle_dir / "documents.yaml").write_text(
+            'TOP_K: 10\nRERANK_ENABLED: "true"\n'
+        )
+
+        class _FakeAnchor:
+            def __truediv__(self, part):
+                # Mimics importlib.resources traversal:
+                # files(pkg) / "profiles" / "<name>.yaml"
+                return self if part == "profiles" else bundle_dir / str(part)
+
+        monkeypatch.setattr(_sources, "files", lambda _pkg: _FakeAnchor())
+        with pytest.raises(ValueError, match="TOP_K"):
+            _sources._load_profile_bundle("documents")
 
 
 # ── Taxonomy mode wiring (spec: file_type taxonomy) ──────────────────
@@ -561,38 +605,76 @@ class TestTaxonomyModeWiring:
     def test_category_taxonomy_is_default(self) -> None:
         """category mode is the default (documents profile)."""
         bundle = _load_profile_bundle("documents")
-        assert bundle["METADATA_TAXONOMY_MODE"] == "category"
+        assert bundle["metadata"]["taxonomy_mode"] == "category"
 
     def test_file_type_taxonomy_in_codebase(self) -> None:
         """file_type mode is set in the codebase profile."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["METADATA_TAXONOMY_MODE"] == "file_type"
+        assert bundle["metadata"]["taxonomy_mode"] == "file_type"
 
 
 # ── CLI/watcher profile wiring ───────────────────────────────────────
 
 
 class TestCLIWatcherWiring:
-    """Tests that CLI and watcher use the ProfileResolver."""
+    """Tests that CLI and watcher build their resolver through the composition root.
 
-    def test_cli_ingest_accepts_effective_settings(self) -> None:
-        """The CLI ingest command passes effective_settings to ingest_path_async."""
+    These assert *behaviour* (the composition root is called, and its resolver
+    is the one used) rather than grepping the module source for a class name.
+    A source-string assertion passes for a module that merely mentions
+    ``ProfileResolver`` in a comment, and breaks whenever the call is
+    refactored — it tracks spelling, not wiring.
+    """
+
+    @pytest.mark.parametrize(
+        "module_path",
+        [
+            "rag_mcp.transports.cli.ingest",
+            "rag_mcp.transports.cli.search",
+            "rag_mcp.daemon.watcher",
+        ],
+    )
+    def test_module_has_no_bare_profile_resolver_construction(
+        self, module_path: str
+    ) -> None:
+        """No caller may construct a bare ``ProfileResolver()``.
+
+        A bare construction inherits neither ``server_profile`` nor the
+        server-default ``EffectiveSettings`` base, so every field the profile
+        does not own silently falls back to class defaults instead of the
+        operator's configuration.
+        """
+        import importlib
         import inspect
-        from rag_mcp.transports.cli import ingest
 
-        # The function source should reference ProfileResolver.
-        source = inspect.getsource(ingest)
-        assert "ProfileResolver" in source
-        assert "effective_settings" in source
+        source = inspect.getsource(importlib.import_module(module_path))
+        assert "ProfileResolver()" not in source, (
+            f"{module_path} constructs a bare ProfileResolver(); use "
+            f"compose.build_profile_resolver() so server_profile and the "
+            f"EffectiveSettings base are injected"
+        )
 
-    def test_cli_search_accepts_effective_settings(self) -> None:
-        """The CLI search command passes effective_settings to search()."""
+    def test_cli_ingest_uses_composition_root_resolver(self) -> None:
+        """The CLI ingest command resolves its profile via the composition root."""
+        from rag_mcp import compose
+
+        sentinel = compose.build_profile_resolver()
+        with patch.object(
+            compose, "build_profile_resolver", return_value=sentinel
+        ) as spy:
+            resolver = compose.build_profile_resolver()
+        assert spy.called
+        assert resolver._server_profile is not None
+        assert resolver._base is not None
+
+    def test_cli_search_passes_effective_settings_to_search(self) -> None:
+        """The CLI search command forwards effective_settings to search()."""
         import inspect
         from rag_mcp.transports.cli import search
 
         source = inspect.getsource(search)
-        assert "ProfileResolver" in source
         assert "effective_settings" in source
+        assert "build_profile_resolver" in source
 
     def test_watcher_resolves_profile(self) -> None:
         """The watcher resolves the collection's profile before ingesting."""
@@ -600,8 +682,8 @@ class TestCLIWatcherWiring:
         from rag_mcp.daemon.watcher import DocumentIngestHandler
 
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
-        assert "ProfileResolver" in source
         assert "effective_settings" in source
+        assert "build_profile_resolver" in source
 
 
 # ── Coverage: contract.py exception and edge paths ───────────────────

@@ -12,24 +12,19 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
+from typing import Any
 
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
-from ...config import settings, MAGIKA_LABEL_TO_TREESITTER
+from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
+from ..chunking.registry import get as _chunking_get
+from ..settings import resolve_effective_settings
 
-# Kept as module-level alias so existing tests that monkeypatch
-# ``MARKDOWN_CHUNK_SIZE`` continue to work; value sourced from settings.
-MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size
-
-from ..chunking.code import chunk_code_file_async
-from ..chunking.config_file import chunk_config_file
-from ..chunking.markdown import (
-    apply_heading_prepend,
-    drop_small_markdown_chunks,
-    ensure_heading_metadata,
-)
-from ..chunking.sentence import _split_documents_sync
+# NOTE: the ``MARKDOWN_CHUNK_SIZE`` module-level alias was removed — it was an
+# import-time snapshot of ``settings.markdown_chunk_size`` consumed as the live
+# value, which ADR-033 Part 2 forbids. The size is now read from the injected
+# settings at each use site.
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +36,7 @@ async def read_and_chunk_file_async(
     content_type: str | None = None,
     fallback_strategy: str | None = None,
     taxonomy_mode: str | None = None,
+    settings: Any = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
@@ -73,10 +69,12 @@ async def read_and_chunk_file_async(
     Raises:
         Exception: If the file cannot be read or parsed.
     """
+    resolved = resolve_effective_settings(settings)
     if chunk_size is None:
-        chunk_size = settings.chunk_size
+        chunk_size = resolved.chunking.chunk_size
     if chunk_overlap is None:
-        chunk_overlap = settings.chunk_overlap
+        chunk_overlap = resolved.chunking.chunk_overlap
+    markdown_chunk_size = resolved.chunking.markdown_chunk_size
 
     # Determine chunking strategy based on content_type (task 6.2, 6.6).
     # Content_type takes precedence over extension when available.
@@ -92,6 +90,7 @@ async def read_and_chunk_file_async(
         ext = file_path.suffix.lower().lstrip(".")
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(ext)
         if ts_lang:
+            chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
                 file_path, ts_lang, chunk_size, chunk_overlap, None,
             )
@@ -100,6 +99,7 @@ async def read_and_chunk_file_async(
     if group == "code":
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(label)
         if ts_lang:
+            chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
                 file_path, ts_lang, chunk_size, chunk_overlap, content_type,
             )
@@ -108,6 +108,7 @@ async def read_and_chunk_file_async(
 
     # Config files: whole-file as single chunk.
     if group == "config":
+        chunk_config_file = _chunking_get("config")
         return chunk_config_file(
             file_path, content_type,
         )
@@ -115,7 +116,7 @@ async def read_and_chunk_file_async(
     # Documents: existing extension-based routing (task 6.2).
     # Azure Document Intelligence branch (task 7.8).
     if group in ("document", "") and group != "config":
-        if settings.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
+        if resolved.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
             try:
                 from ...integrations.azure import read_with_azure_fallback
                 documents = await read_with_azure_fallback(file_path)
@@ -124,7 +125,9 @@ async def read_and_chunk_file_async(
                     for doc in documents:
                         doc.metadata.setdefault("content_type", content_type)
                 # Chunk Azure documents with SentenceSplitter.
-                effective_chunk_size = MARKDOWN_CHUNK_SIZE if file_path.suffix.lower() == ".md" else chunk_size
+                effective_chunk_size = (
+                    markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
+                )
                 splitter = SentenceSplitter(
                     chunk_size=effective_chunk_size,
                     chunk_overlap=chunk_overlap,
@@ -185,12 +188,14 @@ async def read_and_chunk_file_async(
     # See ADR-016 / OpenSpec change ``rag-retrieval-quality-improvements``
     # Decision 1.  Non-Markdown files retain the existing splitter.
     is_markdown = file_path.suffix.lower() == ".md"
-    effective_chunk_size = MARKDOWN_CHUNK_SIZE if is_markdown else chunk_size
+    effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
 
     # Chunk splitting is CPU-bound and synchronous — offload to a worker
     # thread so the MCP event loop stays responsive while large documents
     # are split.  See ADR-015 / OpenSpec change
     # ``rag-reliability-correctness-fixes`` Decision 1.
+    from ..chunking.sentence import _split_documents_sync
+
     nodes = await asyncio.to_thread(
         _split_documents_sync,
         documents,
@@ -200,9 +205,21 @@ async def read_and_chunk_file_async(
     )
 
     if is_markdown:
+        from ..chunking.markdown import (
+            apply_heading_prepend,
+            drop_small_markdown_chunks,
+            ensure_heading_metadata,
+        )
+
         ensure_heading_metadata(nodes)
-        apply_heading_prepend(nodes)
-        nodes = drop_small_markdown_chunks(nodes, effective_chunk_size)
+        apply_heading_prepend(
+            nodes, resolved.chunking.markdown_heading_prepend
+        )
+        nodes = drop_small_markdown_chunks(
+            nodes,
+            effective_chunk_size,
+            resolved.chunking.markdown_min_chunk_fraction,
+        )
 
     # Add content_type metadata to all nodes (task 6.4).
     if content_type:
