@@ -36,6 +36,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from ...config import _load_profile_bundle
+from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 
@@ -43,35 +44,6 @@ logger = logging.getLogger(__name__)
 
 # Operational profiles that carry concrete retrieval settings.
 OPERATIONAL_PROFILES: frozenset[str] = frozenset({"documents", "codebase"})
-
-
-class EffectiveSettings(BaseModel):
-    """Tier 2 levers resolved per-operation from a collection's profile.
-
-    These are the knobs that differ between document grounding and
-    codebase context.  Tier 1 components (embedder, store handle, reranker
-    model) are constructed once in ``compose.py`` and shared across all
-    collections regardless of profile.
-
-    Attributes:
-        profile_name: The operational profile that produced these levers
-            (``documents`` or ``codebase``).
-        top_k: Default number of chunks to return from search.
-        reranker_enabled: Whether the reranker applies for omitted rerank
-            requests against this collection.
-        hybrid_enabled: Whether to fuse dense + sparse retrieval.
-        chunk_strategy_fallback: Strategy name for ambiguous file types.
-        metadata_taxonomy_mode: ``category`` or ``file_type``.
-    """
-
-    profile_name: str
-    top_k: int
-    reranker_enabled: bool
-    hybrid_enabled: bool
-    chunk_strategy_fallback: str
-    metadata_taxonomy_mode: str
-
-    model_config = {"frozen": True}
 
 
 def _parse_profile_bool(value: Any) -> bool:
@@ -90,11 +62,10 @@ def _bundle_to_effective(
 
     Environment variables override the profile bundle values for Tier 2
     levers, preserving the "env still wins" precedence established by
-    the startup Settings resolver (spec task 4.1: "applies env overrides").
+    the startup Settings resolver.
 
     Validates each lever value and raises a clear error naming the
-    offending key if validation fails (spec: "fail at resolution time
-    with a clear validation error naming the offending key").
+    offending key if validation fails.
 
     Args:
         profile_name: The operational profile name (``documents`` or
@@ -103,11 +74,14 @@ def _bundle_to_effective(
 
     Returns:
         Frozen :class:`EffectiveSettings` instance.
-
-    Raises:
-        ValueError: If any lever value fails type validation, with a
-            message naming the offending key.
     """
+    from ..settings import (
+        ChunkingBlock,
+        IngestionBlock,
+        MetadataBlock,
+        RetrievalBlock,
+    )
+
     # Tier 2 lever env-var overrides (env wins over profile bundle).
     raw_top_k = os.environ.get("TOP_K", bundle.get("TOP_K", 10))
     try:
@@ -150,11 +124,14 @@ def _bundle_to_effective(
 
     return EffectiveSettings(
         profile_name=profile_name,
-        top_k=top_k,
-        reranker_enabled=reranker_enabled,
-        hybrid_enabled=hybrid_enabled,
-        chunk_strategy_fallback=chunk_strategy_fallback,
-        metadata_taxonomy_mode=metadata_taxonomy_mode,
+        chunking=ChunkingBlock(strategy_fallback=chunk_strategy_fallback),
+        ingestion=IngestionBlock(),
+        retrieval=RetrievalBlock(
+            top_k=top_k,
+            rerank_enabled=reranker_enabled,
+            hybrid_enabled=hybrid_enabled,
+        ),
+        metadata=MetadataBlock(taxonomy_mode=metadata_taxonomy_mode),
     )
 
 
@@ -182,8 +159,10 @@ class ProfileResolver:
             store: Optional :class:`VectorStore` for reading collection
                 metadata.  Defaults to the process-wide store.
             server_profile: The server-wide default profile name
-                (``RAG_PROFILE``).  When ``None``, reads from the resolved
-                :class:`Settings` singleton at resolution time.
+                (``RAG_PROFILE``).  Supplied by ``compose.py`` via
+                injection (task 4.5); when ``None``, falls back to the
+                resolved settings singleton for backward compatibility
+                during the group 4→5 transition.
         """
         self._store = store
         self._server_profile = server_profile
@@ -257,9 +236,16 @@ class ProfileResolver:
         return self._store if self._store is not None else get_default_store()
 
     def _get_server_profile(self) -> str:
-        """Return the server-wide default profile name."""
+        """Return the server-wide default profile name.
+
+        Uses the injected ``server_profile`` constructor argument (task 4.5).
+        Falls back to the resolved settings singleton only when no profile
+        was injected — this fallback is removed in group 5 when the global
+        is deleted.
+        """
         if self._server_profile is not None:
             return self._server_profile
+        # Transition fallback: will be removed in group 5.7.
         from ...config import settings
 
         return settings.rag_profile

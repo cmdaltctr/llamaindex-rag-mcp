@@ -100,6 +100,62 @@ def _clear_registry_caches() -> None:
         reg._cache.clear()
 
 
+# ── EffectiveSettings factory fixture (task 4.1) ─────────────────────
+
+
+@pytest.fixture
+def effective_settings():
+    """Return a factory that builds a valid ``EffectiveSettings`` with overrides.
+
+    Usage::
+
+        def test_something(effective_settings):
+            settings = effective_settings(top_k=20)
+            assert settings.retrieval.top_k == 20
+
+    Builds a frozen :class:`EffectiveSettings` with sensible defaults so
+    later test migrations are one-line changes (task 4.1).
+    """
+    from rag_mcp.core.settings import EffectiveSettings
+
+    def _factory(**overrides) -> EffectiveSettings:
+        # Build the base instance with defaults, then apply overrides.
+        # Pydantic frozen models support construction with nested overrides
+        # via model_construct or by passing nested model instances.
+        kwargs: dict = {}
+        nested: dict[str, dict] = {}
+
+        for key, value in overrides.items():
+            if "." in key:
+                # Dotted notation: "retrieval.top_k" → nested override.
+                block, field = key.split(".", 1)
+                nested.setdefault(block, {})[field] = value
+            else:
+                kwargs[key] = value
+
+        # Build with nested overrides.
+        from rag_mcp.core.settings import (
+            ChunkingBlock,
+            IngestionBlock,
+            MetadataBlock,
+            RetrievalBlock,
+        )
+
+        blocks = {
+            "chunking": ChunkingBlock,
+            "ingestion": IngestionBlock,
+            "retrieval": RetrievalBlock,
+            "metadata": MetadataBlock,
+        }
+        for block_name, block_cls in blocks.items():
+            if block_name in nested:
+                kwargs[block_name] = block_cls(**nested[block_name])
+
+        return EffectiveSettings(**kwargs)
+
+    return _factory
+
+
 @pytest.fixture(autouse=True)
 def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace OllamaEmbedding with MockEmbedding globally.

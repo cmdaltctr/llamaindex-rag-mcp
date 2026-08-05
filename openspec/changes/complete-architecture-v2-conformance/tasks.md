@@ -38,12 +38,12 @@
 
 ## 4. Introduce the EffectiveSettings value object
 
-- [ ] 4.1 Add an `effective_settings(**overrides)` factory fixture to `tests/conftest.py` that builds a valid `EffectiveSettings` with sensible defaults, so later test migrations are one-line changes.
-- [ ] 4.2 Create `src/rag_mcp/core/settings.py` holding the frozen `EffectiveSettings` model: nested `chunking`/`ingestion`/`retrieval`/`metadata` blocks (the `ingestion` block per D10) plus the cross-cutting fields `core/` needs (`embed_model`, `chroma_persist_dir`, `collection_name`, `chroma_scan_page_size`, `pdf_reader`, `document_backend`, Azure fields, `magika_binary`, `doc_similarity_threshold`, codebase-map limits, `rag_profile`). No imports from `config`, `compose`, or sibling `core/` modules.
-- [ ] 4.3 Move `EffectiveSettings` out of `core/profiles/resolver.py:48` to the new module, re-exporting from `core.profiles` for the resolver's callers; keep `_bundle_to_effective` behaviour identical.
-- [ ] 4.4 Add a `Settings.to_effective()` (or equivalent adapter in `compose.py`) producing the server-default `EffectiveSettings`, and make `ProfileResolver` overlay only the profile-owned levers onto it.
-- [ ] 4.5 Replace `ProfileResolver`'s `from ...config import settings` at `core/profiles/resolver.py:263` with a `server_default_profile: str` constructor argument supplied by `compose.py`.
-- [ ] 4.6 Add unit tests: `EffectiveSettings` is frozen (mutation raises); two instances with different `rerank_enabled` are independent; `core/settings.py` has no upward imports.
+- [x] 4.1 Add an `effective_settings(**overrides)` factory fixture to `tests/conftest.py` that builds a valid `EffectiveSettings` with sensible defaults, so later test migrations are one-line changes.
+- [x] 4.2 Create `src/rag_mcp/core/settings.py` holding the frozen `EffectiveSettings` model: nested `chunking`/`ingestion`/`retrieval`/`metadata` blocks (the `ingestion` block per D10) plus the cross-cutting fields `core/` needs (`embed_model`, `chroma_persist_dir`, `collection_name`, `chroma_scan_page_size`, `pdf_reader`, `document_backend`, Azure fields, `magika_binary`, `doc_similarity_threshold`, codebase-map limits, `rag_profile`). No imports from `config`, `compose`, or sibling `core/` modules.
+- [x] 4.3 Move `EffectiveSettings` out of `core/profiles/resolver.py:48` to the new module, re-exporting from `core.profiles` for the resolver's callers; keep `_bundle_to_effective` behaviour identical.
+- [x] 4.4 Add a `Settings.to_effective()` (or equivalent adapter in `compose.py`) producing the server-default `EffectiveSettings`, and make `ProfileResolver` overlay only the profile-owned levers onto it.
+- [x] 4.5 Replace `ProfileResolver`'s `from ...config import settings` at `core/profiles/resolver.py:263` with a `server_default_profile: str` constructor argument supplied by `compose.py`.
+- [x] 4.6 Add unit tests: `EffectiveSettings` is frozen (mutation raises); two instances with different `rerank_enabled` are independent; `core/settings.py` has no upward imports.
 
 ## 5. Thread settings through core and delete the global
 

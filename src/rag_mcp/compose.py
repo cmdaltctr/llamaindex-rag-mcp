@@ -27,6 +27,100 @@ logger = logging.getLogger(__name__)
 _runtime_setup_done: bool = False
 
 
+def settings_to_effective(settings: Settings | None = None) -> Any:
+    """Produce the server-default :class:`EffectiveSettings` from resolved ``Settings``.
+
+    This is the adapter that bridges the config layer (flat ``Settings``)
+    and the core layer (frozen ``EffectiveSettings``).  The
+    :class:`ProfileResolver` overlays only the profile-owned levers onto
+    the instance this function produces (task 4.4).
+
+    Args:
+        settings: Resolved settings (defaults to the singleton).
+
+    Returns:
+        A frozen :class:`EffectiveSettings` with all cross-cutting fields
+        populated from *settings*.
+    """
+    from .core.settings import (
+        ChunkingBlock,
+        EffectiveSettings,
+        IngestionBlock,
+        MetadataBlock,
+        RetrievalBlock,
+    )
+
+    if settings is None:
+        settings = get_settings()
+
+    return EffectiveSettings(
+        chunking=ChunkingBlock(
+            chunk_size=settings.chunk_size,
+            chunk_overlap=settings.chunk_overlap,
+            markdown_chunk_size=settings.markdown_chunk_size,
+            markdown_heading_prepend=settings.markdown_heading_prepend,
+            markdown_min_chunk_fraction=settings.markdown_min_chunk_fraction,
+            strategy_fallback=settings.chunk_strategy_fallback,
+        ),
+        ingestion=IngestionBlock(
+            embed_concurrency=settings.embed_concurrency,
+            embed_batch_size=settings.embed_batch_size,
+        ),
+        retrieval=RetrievalBlock(
+            top_k=settings.top_k,
+            similarity_threshold=settings.similarity_threshold,
+            rerank_enabled=settings.rerank_enabled,
+            rerank_enabled_for_semantic=settings.rerank_enabled_for_semantic,
+            hard_technical_threshold=settings.hard_technical_threshold,
+            rerank_fetch_multiplier=settings.rerank_fetch_multiplier,
+            rerank_max_fetch=settings.rerank_max_fetch,
+            rerank_model=settings.rerank_model,
+            hybrid_enabled=settings.hybrid_enabled,
+            hybrid_rrf_k=settings.hybrid_rrf_k,
+            hybrid_sparse_backend=settings.hybrid_sparse_backend,
+        ),
+        metadata=MetadataBlock(
+            extraction_mode=settings.metadata_extraction_mode,
+            keyword_rules=settings.metadata_keyword_rules,
+            ollama_classify_model=settings.ollama_classify_model,
+            ollama_classify_max_attempts=settings.ollama_classify_max_attempts,
+            ollama_classify_timeout=settings.ollama_classify_timeout,
+            taxonomy_mode=settings.metadata_taxonomy_mode,
+        ),
+        profile_name=settings.rag_profile,
+        chroma_persist_dir=settings.chroma_persist_dir,
+        collection_name=settings.collection_name,
+        chroma_scan_page_size=settings.chroma_scan_page_size,
+        vector_store=settings.vector_store,
+        embed_provider=settings.embed_provider,
+        metadata_llm_provider=settings.metadata_llm_provider,
+        local_backend=settings.local_backend,
+        cloud_backend=settings.cloud_backend,
+        llamacpp_embed_url=settings.llamacpp_embed_url,
+        llamacpp_embed_model=settings.llamacpp_embed_model,
+        llamacpp_chat_url=settings.llamacpp_chat_url,
+        llamacpp_chat_model=settings.llamacpp_chat_model,
+        openrouter_api_key=settings.openrouter_api_key,
+        openrouter_embed_model=settings.openrouter_embed_model,
+        openrouter_llm_model=settings.openrouter_llm_model,
+        ollama_base_url=settings.ollama_base_url,
+        embed_model=settings.embed_model,
+        pdf_reader=settings.pdf_reader,
+        liteparse_num_workers=settings.liteparse_num_workers,
+        liteparse_ocr_enabled=settings.liteparse_ocr_enabled,
+        magika_binary=settings.magika_binary,
+        doc_similarity_threshold=settings.doc_similarity_threshold,
+        codebase_map_cache_dir=settings.codebase_map_cache_dir,
+        codebase_map_max_files=settings.codebase_map_max_files,
+        codebase_map_max_depth=settings.codebase_map_max_depth,
+        document_backend=settings.document_backend,
+        azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
+        azure_doc_intelligence_key=settings.azure_doc_intelligence_key,
+        azure_doc_intelligence_model=settings.azure_doc_intelligence_model,
+        rag_profile=settings.rag_profile,
+    )
+
+
 def build_embed_model(settings: Settings | None = None) -> Any:
     """Construct the embedding model from resolved settings.
 
