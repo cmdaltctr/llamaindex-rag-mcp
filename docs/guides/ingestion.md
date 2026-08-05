@@ -1,5 +1,14 @@
 # Ingestion Guide
 
+> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
+> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
+> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
+> unchanged. Settings reach `core/` by injection — there is no
+> `config.settings` singleton. See
+> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
+> migration table.
+
+
 ## How ingestion works
 
 Each file passes through a four-stage pipeline:
@@ -79,7 +88,7 @@ See [ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md) for the full evidenc
 
 ### How long will ingestion take?
 
-Practical timings on Apple Silicon (M-series) with `qwen3-embedding:0.6b`, default settings (`EMBED_CONCURRENCY=2`, `EMBED_BATCH_SIZE=100`, `CHUNK_SIZE=512`):
+Practical timings on Apple Silicon (M-series) with `qwen3-embedding:0.6b`, default settings (`INGESTION__EMBED_CONCURRENCY=2`, `INGESTION__EMBED_BATCH_SIZE=100`, `CHUNKING__CHUNK_SIZE=512`):
 
 | Scenario                                     | Time        |
 | -------------------------------------------- | ----------- |
@@ -90,9 +99,9 @@ Practical timings on Apple Silicon (M-series) with `qwen3-embedding:0.6b`, defau
 
 For comparison, the larger `qwen3-embedding:8b` model (4,096-dim vectors) takes ~3 hours for the same Zotero library — the 0.6b model is **13× faster** with identical retrieval quality in our tests.
 
-> **Apple Silicon note:** Ollama serialises `/api/embed` requests internally on Apple Silicon, so `EMBED_CONCURRENCY > 2` yields diminishing returns. Setting it to 2 overlaps network round-trips with embedding computation; beyond that, requests queue up in Ollama's internal pipeline.
+> **Apple Silicon note:** Ollama serialises `/api/embed` requests internally on Apple Silicon, so `INGESTION__EMBED_CONCURRENCY > 2` yields diminishing returns. Setting it to 2 overlaps network round-trips with embedding computation; beyond that, requests queue up in Ollama's internal pipeline.
 
-File reading is sequential. Tune throughput with `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` rather than file-reader worker settings.
+File reading is sequential. Tune throughput with `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` rather than file-reader worker settings.
 
 Raw benchmark data: [`experiments/embedding-performance.md`](../../experiments/embedding-performance.md).
 

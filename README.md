@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-> **⚠️ Under heavy refactoring (v2.0.0).** The codebase has been restructured into a modular RAG framework across five phases — all complete: subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)), VectorStore abstraction ([#14](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)), profiles for dual use cases ([#16](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/16)), and transport reorganisation ([#18](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/18)). Everything stays backward-compatible via deprecation shims until v2.0.0. See [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md) for details.
+> **⚠️ v2.0.0 — breaking changes.** The five-phase refactor is complete, and a conformance pass ([ADR-037](docs/adr/037-architecture-v2-conformance.md)) has closed the gap between the shipped tree and [the refactor proposal](docs/brainstorm/refactor-proposal/PROPOSAL.md). The v1 compatibility shims are **removed**, and subpackage environment variables are **renamed** to a nested schema (`TOP_K` → `RETRIEVAL__TOP_K`, …). Startup fails with the replacement named if it finds an old one. ChromaDB collections, CLI commands and MCP tool signatures are unchanged. See ADR-037 for the migration table.
 
 A local document search server for AI assistants. Point it at your files — PDFs, Word docs, notes, research papers — and your AI can search them by meaning, not just keywords. Everything runs on your machine by default — no cloud, no API keys, no recurring costs. Cloud providers (OpenRouter) are available as an opt-in alternative.
 
@@ -16,7 +16,7 @@ A local document search server for AI assistants. Point it at your files — PDF
 
 ## Active Refactoring (v2.0.0)
 
-**Progress:** All five phases complete: Phase 1 subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), Phase 2 config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)), Phase 3 VectorStore abstraction ([#14](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)), Phase 4 profiles for dual use cases ([#16](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/16)), Phase 5 transport reorganisation ([#18](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/18)).
+**Progress:** All five phases complete — Phase 1 subpackage extraction ([#12](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/12)), Phase 2 config/compose split ([#13](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/13)), Phase 3 VectorStore abstraction ([#14](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/14)), Phase 4 profiles ([#16](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/16)), Phase 5 transports ([#18](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/18)) — plus the **v2 conformance pass** ([#19](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/19)), which made the registries load-bearing, threaded settings by injection, confined ChromaDB to its abstraction, nested the config schema, and deleted the v1 surface ([ADR-037](docs/adr/037-architecture-v2-conformance.md)).
 
 The codebase is now a **modular, swappable RAG framework** that serves two distinct use cases through one shared core: **document grounding** (facts from papers, reports, financial statements) and **codebase context** (code understanding for AI agents).
 
@@ -28,7 +28,7 @@ The codebase is now a **modular, swappable RAG framework** that serves two disti
 - **Profiles system** — named presets (`documents`, `codebase`, `hybrid`) bound per-collection via `RAG_PROFILE` or ChromaDB collection metadata, making the dual use cases first-class instead of implicit env-var combinations. See [Configuration](docs/guides/configuration.md) and [ADR-035](docs/adr/035-phase-4-refactor-profiles-dual-use-case.md).
 - **Thin transports** — MCP (`transports/mcp.py`), CLI (`transports/cli/`), and a versioned OpenAPI 3.1 contract for a future REST API (`transports/api/`), all calling the same `core/`. None contains business logic ([ADR-036](docs/adr/036-phase-5-refactor-transport-separation.md)).
 
-> **⚠️ Timeline:** The refactor targets **v2.0.0**. All five phases are merged to main; the modular structure is live behind backward-compatible deprecation shims. No breaking changes until the deprecation window opens. Existing ChromaDB collections, CLI commands, and MCP tool signatures remain stable.
+> **⚠️ Upgrading to v2.0.0.** Rename subpackage variables in your `.env` per the [ADR-037 table](docs/adr/037-architecture-v2-conformance.md) — the app refuses to start on an old name rather than silently ignoring it. Replace any `from rag_mcp.{server,cli,ingestion,retrieval,reranker,readers} import …` with the `rag_mcp.{core,transports,integrations}.*` equivalent. Custom profile YAML must be converted to nested blocks. Existing ChromaDB collections, CLI commands and MCP tool signatures are unchanged, and rollback is code-only.
 
 ---
 

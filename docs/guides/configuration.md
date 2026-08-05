@@ -1,5 +1,14 @@
 # Configuration
 
+> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
+> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
+> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
+> unchanged. Settings reach `core/` by injection — there is no
+> `config.settings` singleton. See
+> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
+> migration table.
+
+
 All configuration lives in a `.env` file at the project root. Copy the example to get started:
 
 ```bash
@@ -9,7 +18,7 @@ cp .env.example .env
 Environment variables from your shell override `.env` values, so you can also set them inline for a single run:
 
 ```bash
-METADATA_EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+METADATA__EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 ```
 
 ## Resolution order
@@ -65,8 +74,8 @@ print(settings.top_k, settings.chunk_size, settings.rerank_enabled)
 
 ### Deprecated legacy constants (PEP 562 shim)
 
-The bare module-level constants the older code used (`TOP_K`, `CHUNK_SIZE`,
-`RERANK_ENABLED`, `EMBED_MODEL`, …) are **deprecated**. They still resolve via
+The bare module-level constants the older code used (`RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_SIZE`,
+`RETRIEVAL__RERANK_ENABLED`, `EMBED_MODEL`, …) are **deprecated**. They still resolve via
 a PEP 562 module-level `__getattr__` shim that reads from the `Settings`
 singleton and emits a `DeprecationWarning` on each access, so external and
 experiment code keeps working during migration. The shim is **removed in
@@ -107,7 +116,7 @@ EMBED_MODEL=qwen3-embedding:0.6b uv run rag-mcp
 
 ## All settings by category
 
-Each row below pairs an **env var** (what you set in `.env` or your shell) with its **settings field** (the structured `Settings` attribute you read in code). The **Default** column is the fallback used when the env var is absent (from `config/defaults.yaml` or the subpackage model). The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the default is used. The legacy bare-constant names (`TOP_K`, `CHUNK_SIZE`, …) are preserved as the deprecated PEP 562 shim described above.
+Each row below pairs an **env var** (what you set in `.env` or your shell) with its **settings field** (the structured `Settings` attribute you read in code). The **Default** column is the fallback used when the env var is absent (from `config/defaults.yaml` or the subpackage model). The **`.env.example`** column shows the current value in the checked-in template — _(not set)_ means the line is commented out, so the default is used. The legacy bare-constant names (`RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_SIZE`, …) are preserved as the deprecated PEP 562 shim described above.
 
 ### Provider selection
 
@@ -152,8 +161,8 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 | ------------------- | ------------------------------ | ------------------------ | ------------------- | ---------------------------------- |
 | `EMBED_MODEL`       | _(none — required for ollama)_ | `qwen3-embedding:0.6b`   | `EMBED_MODEL_NAME`  | Ollama embedding model name        |
 | `OLLAMA_BASE_URL`   | `http://localhost:11434`       | `http://localhost:11434` | `OLLAMA_BASE_URL`   | Ollama server URL                  |
-| `EMBED_BATCH_SIZE`  | `100`                          | `100`                    | `EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
-| `EMBED_CONCURRENCY` | `2`                            | `4`                      | `EMBED_CONCURRENCY` | Max concurrent embedding API calls |
+| `INGESTION__EMBED_BATCH_SIZE`  | `100`                          | `100`                    | `INGESTION__EMBED_BATCH_SIZE`  | Ollama `/api/embed` batch size     |
+| `INGESTION__EMBED_CONCURRENCY` | `2`                            | `4`                      | `INGESTION__EMBED_CONCURRENCY` | Max concurrent embedding API calls |
 
 ### ChromaDB storage
 
@@ -167,32 +176,32 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 
 | Env var                       | Default | `.env.example` | Config constant               | Purpose                                  |
 | ----------------------------- | ------- | -------------- | ----------------------------- | ---------------------------------------- |
-| `CHUNK_SIZE`                  | `512`   | `512`          | `CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
-| `CHUNK_OVERLAP`               | `100`   | `100`          | `CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
-| `MARKDOWN_CHUNK_SIZE`         | `1024`  | `1024`         | `MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
-| `MARKDOWN_HEADING_PREPEND`    | `false` | _(not set)_    | `MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
-| `MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | _(not set)_    | `MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNK_SIZE |
+| `CHUNKING__CHUNK_SIZE`                  | `512`   | `512`          | `CHUNKING__CHUNK_SIZE`                  | Token chunk size for non-Markdown        |
+| `CHUNKING__CHUNK_OVERLAP`               | `100`   | `100`          | `CHUNKING__CHUNK_OVERLAP`               | Overlap between chunks (ADR-018)         |
+| `CHUNKING__MARKDOWN_CHUNK_SIZE`         | `1024`  | `1024`         | `CHUNKING__MARKDOWN_CHUNK_SIZE`         | Markdown-only chunk size (Experiment 6c) |
+| `CHUNKING__MARKDOWN_HEADING_PREPEND`    | `false` | _(not set)_    | `CHUNKING__MARKDOWN_HEADING_PREPEND`    | Prepend headings to chunks               |
+| `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`   | _(not set)_    | `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` | Min chunk size as fraction of CHUNKING__CHUNK_SIZE |
 
 ### Retrieval
 
 | Env var                 | Default | `.env.example` | Config constant         | Purpose                         |
 | ----------------------- | ------- | -------------- | ----------------------- | ------------------------------- |
-| `TOP_K`                 | `10`    | `10`           | `TOP_K`                 | Default results count (ADR-018) |
-| `SIMILARITY_THRESHOLD`  | `0.0`   | `0.0`          | `SIMILARITY_THRESHOLD`  | Min relevance score             |
-| `HYBRID_ENABLED`        | `false` | `false`        | `HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
-| `HYBRID_RRF_K`          | `60`    | `60`           | `HYBRID_RRF_K`          | RRF constant                    |
-| `HYBRID_SPARSE_BACKEND` | `bm25`  | `bm25`         | `HYBRID_SPARSE_BACKEND` | `bm25` / `native` / `auto`      |
+| `RETRIEVAL__TOP_K`                 | `10`    | `10`           | `RETRIEVAL__TOP_K`                 | Default results count (ADR-018) |
+| `RETRIEVAL__SIMILARITY_THRESHOLD`  | `0.0`   | `0.0`          | `RETRIEVAL__SIMILARITY_THRESHOLD`  | Min relevance score             |
+| `RETRIEVAL__HYBRID_ENABLED`        | `false` | `false`        | `RETRIEVAL__HYBRID_ENABLED`        | Dense + sparse BM25 fusion      |
+| `RETRIEVAL__HYBRID_RRF_K`          | `60`    | `60`           | `RETRIEVAL__HYBRID_RRF_K`          | RRF constant                    |
+| `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `bm25`  | `bm25`         | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `bm25` / `native` / `auto`      |
 
 ### Reranker policy
 
 | Env var                       | Default                                  | `.env.example`                            | Config constant               | Purpose                              |
 | ----------------------------- | ---------------------------------------- | ----------------------------------------- | ----------------------------- | ------------------------------------ |
-| `RERANK_MODEL`                | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `RERANK_MODEL` (in reranker.py) | HuggingFace model ID              |
-| `RERANK_ENABLED`              | `false`                                  | `false`                                   | `RERANK_ENABLED`              | Global rerank default (ADR-019)      |
-| `RERANK_ENABLED_FOR_SEMANTIC` | `true`                                   | `true`                                    | `RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
-| `HARD_TECHNICAL_THRESHOLD`    | `0.3`                                    | `0.3`                                     | `HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
-| `RERANK_FETCH_MULTIPLIER`     | `3`                                      | `3`                                       | `RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
-| `RERANK_MAX_FETCH`            | `100`                                    | `100`                                     | `RERANK_MAX_FETCH`            | Max candidate pool size              |
+| `RETRIEVAL__RERANK_MODEL`                | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `cross-encoder/ms-marco-MiniLM-L-6-v2`   | `RETRIEVAL__RERANK_MODEL` (in reranker.py) | HuggingFace model ID              |
+| `RETRIEVAL__RERANK_ENABLED`              | `false`                                  | `false`                                   | `RETRIEVAL__RERANK_ENABLED`              | Global rerank default (ADR-019)      |
+| `RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC` | `true`                                   | `true`                                    | `RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC` | Policy override for semantic queries |
+| `RETRIEVAL__HARD_TECHNICAL_THRESHOLD`    | `0.3`                                    | `0.3`                                     | `RETRIEVAL__HARD_TECHNICAL_THRESHOLD`    | Identifier-heavy fraction cutoff     |
+| `RETRIEVAL__RERANK_FETCH_MULTIPLIER`     | `3`                                      | `3`                                       | `RETRIEVAL__RERANK_FETCH_MULTIPLIER`     | Candidate pool multiplier            |
+| `RETRIEVAL__RERANK_MAX_FETCH`            | `100`                                    | `100`                                     | `RETRIEVAL__RERANK_MAX_FETCH`            | Max candidate pool size              |
 
 ### PDF reader
 
@@ -206,11 +215,11 @@ When `LOCAL_BACKEND=ollama`, the provider uses `OLLAMA_BASE_URL` and `EMBED_MODE
 
 | Env var                          | Default      | `.env.example` | Config constant                                  | Purpose                                          |
 | -------------------------------- | ------------ | -------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `METADATA_EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA_EXTRACTION_MODE`                       | `disabled` / `keyword` / `local` / `llamaindex`  |
-| `METADATA_KEYWORD_RULES`         | _(none)_     | _(not set)_    | `METADATA_KEYWORD_RULES`                         | JSON override for keyword rules                  |
-| `OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification (ollama backend) |
-| `OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | _(not set)_    | `OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
-| `OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | _(not set)_    | `OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
+| `METADATA__EXTRACTION_MODE`       | `keyword`    | `llamaindex`   | `METADATA__EXTRACTION_MODE`                       | `disabled` / `keyword` / `local` / `llamaindex`  |
+| `METADATA__KEYWORD_RULES`         | _(none)_     | _(not set)_    | `METADATA__KEYWORD_RULES`                         | JSON override for keyword rules                  |
+| `METADATA__OLLAMA_CLASSIFY_MODEL`          | `qwen3:0.6b` | `qwen3:0.6b`   | `METADATA__OLLAMA_CLASSIFY_MODEL`                          | Ollama model for classification (ollama backend) |
+| `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS`   | `3`          | _(not set)_    | `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS`                   | Retry budget                                     |
+| `METADATA__OLLAMA_CLASSIFY_TIMEOUT`        | `30.0`       | _(not set)_    | `METADATA__OLLAMA_CLASSIFY_TIMEOUT`                        | Per-attempt timeout (seconds)                    |
 | `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` | `10`         | _(not set)_    | _(read at call-time in `metadata_extractor.py`)_ | Max chunks for LlamaIndex extractor              |
 
 ### Codebase map
@@ -246,7 +255,7 @@ Most settings are resolved once into the `Settings` object at import time. One k
 
 - **`LLAMANDEX_EXTRACTOR_MAX_CHUNKS`** — read at call-time inside `metadata_extractor.py` rather than imported from `config`. This is intentional so tests can override it with `monkeypatch.setenv` after module load.
 
-> **Historical note.** Earlier revisions listed a second exception: `reranker.py` imported `dotenv` independently and read `RERANK_MODEL` directly to dodge a circular import with `config.py` (gotcha #4 in AGENTS.md). That exception is **gone** since ADR-031 — the reranker now receives its model ID via dependency injection from `compose.py`, and `RERANK_MODEL` is a structured settings field. There is no longer a `dotenv` import outside the resolver.
+> **Historical note.** Earlier revisions listed a second exception: `reranker.py` imported `dotenv` independently and read `RETRIEVAL__RERANK_MODEL` directly to dodge a circular import with `config.py` (gotcha #4 in AGENTS.md). That exception is **gone** since ADR-031 — the reranker now receives its model ID via dependency injection from `compose.py`, and `RETRIEVAL__RERANK_MODEL` is a structured settings field. There is no longer a `dotenv` import outside the resolver.
 
 ## Profiles (Phase 4, ADR-035)
 
@@ -329,7 +338,7 @@ The resolver performs validation at import time:
 - **`LOCAL_BACKEND=llamacpp`** without `LLAMACPP_EMBED_MODEL` → raises `ValueError`
 - **`CLOUD_BACKEND=openrouter`** without `OPENROUTER_API_KEY` → raises `ValueError`
 - **`CLOUD_BACKEND=openrouter`** without optional deps → raises `ImportError` with install hint
-- **`HYBRID_SPARSE_BACKEND`** invalid → warns + falls back to `bm25`
+- **`RETRIEVAL__HYBRID_SPARSE_BACKEND`** invalid → warns + falls back to `bm25`
 - **`PDF_READER`** invalid → warns + falls back to `auto`
 - **`DOCUMENT_BACKEND`** invalid → warns + falls back to `local`
 - **`DOCUMENT_BACKEND=azure`** without credentials → warns + falls back to `local`
@@ -342,4 +351,4 @@ Configuration is split across two modules since ADR-031 (Phase 2):
 - **`src/rag_mcp/config/`** — the typed resolver. Single source of truth for every *resolved settings value*. It parses and validates only; it builds no objects.
 - **`src/rag_mcp/compose.py`** — the composition root. The only place runtime objects (embedding model, LLM, reranker) are constructed and where LlamaIndex's global `Settings.embed_model` is wired via `ensure_runtime_setup()`.
 
-Never construct providers or set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, or `server.py` — those modules receive their dependencies as parameters. The `import-linter` contracts in `pyproject.toml` fail the build if a business module imports a concrete provider class. The legacy bare constants (`TOP_K`, `CHUNK_SIZE`, …) are a deprecated PEP 562 shim over the `Settings` singleton, removed in v2.0.0.
+Never construct providers or set `Settings.embed_model` in `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, or `server.py` — those modules receive their dependencies as parameters. The `import-linter` contracts in `pyproject.toml` fail the build if a business module imports a concrete provider class. The legacy bare constants (`RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_SIZE`, …) are a deprecated PEP 562 shim over the `Settings` singleton, removed in v2.0.0.

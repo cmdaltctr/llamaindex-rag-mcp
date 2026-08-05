@@ -1,5 +1,14 @@
 # MCP Tools Reference
 
+> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
+> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
+> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
+> unchanged. Settings reach `core/` by injection — there is no
+> `config.settings` singleton. See
+> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
+> migration table.
+
+
 Six tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
 ## `search_documents`
@@ -11,8 +20,8 @@ Semantic similarity search over indexed documents.
 | `query`                | string | _(required)_  | Natural language search query                                                                                                                                                                 |
 | `top_k`                | int    | `10`          | Maximum number of chunks to return                                                                                                                                                            |
 | `similarity_threshold` | float  | `0.0`         | Minimum relevance score (0.0 = no filtering). When `rerank=True`, automatically scaled down 30× because cross-encoder scores occupy a lower range.                                            |
-| `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RERANK_ENABLED` config                                                |
-| `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
+| `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RETRIEVAL__RERANK_ENABLED` config                                                |
+| `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
 | `collection`           | string | `"documents"` | ChromaDB collection to search                                                                                                                                                                 |
 | `metadata_filter`      | dict   | `null`        | ChromaDB `where` clause to filter by metadata fields, e.g. `{"category": "AI"}`. Applied server-side — only matching chunks are fetched.                                                      |
 

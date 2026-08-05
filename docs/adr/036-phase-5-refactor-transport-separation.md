@@ -118,3 +118,25 @@ All shims emit `DeprecationWarning`. Removal scheduled for v2.0.0.
 - ADR-020: LiteParse PDF Reader (amended for `integrations/pdf/` location)
 - ADR-024: Dual Deployment (lazy Azure SDK import preserved)
 - ADR-031: Three-Layer Architecture (Config, Core, DI; Phase 2)
+
+---
+
+## Amendment (2026-08-05, ADR-037)
+
+**Two corrections.**
+
+1. **§1 stated that "import-linter contracts (Phase 2) already cover this".**
+   They covered four packages. `core.vectordb`, `core.profiles`,
+   `core.providers`, `daemon` and `integrations` were uncovered — no
+   violation existed, but nothing would have caught one. ADR-037 extends the
+   contracts and adds `tests/test_contract_coverage.py`, which fails when a
+   package is added without a governing contract.
+
+2. **§3 described Magika as "extracted from `codebase_map.py`".** The
+   extraction left a back-import: `integrations/magika.py` imported
+   `codebase_map` to keep a test monkeypatch target working, forming a cycle
+   and making `integrations/` depend on use-case logic. ADR-037 deletes the
+   back-import and inverts the delegation.
+
+The 15 deprecated shims this ADR scheduled for removal at v2.0.0 are removed
+in ADR-037, along with `readers/`.

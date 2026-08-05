@@ -1,5 +1,14 @@
 # CLI Reference
 
+> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
+> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
+> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
+> unchanged. Settings reach `core/` by injection — there is no
+> `config.settings` singleton. See
+> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
+> migration table.
+
+
 The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments it starts the MCP stdio server. With subcommands it operates directly from the terminal.
 
 ## Subcommands
@@ -59,7 +68,7 @@ rag-mcp ingest /path/to/docs/ --json
 
 Collections are created automatically on first ingest — nothing to set up.
 
-File reading is sequential. For ingestion throughput, tune `EMBED_BATCH_SIZE` and `EMBED_CONCURRENCY` in your environment.
+File reading is sequential. For ingestion throughput, tune `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` in your environment.
 
 ### search
 

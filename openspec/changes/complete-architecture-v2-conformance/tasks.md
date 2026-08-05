@@ -136,19 +136,19 @@
 
 ## 13. Documentation, ADRs, and the knowledge graph
 
-- [ ] 13.1 Write `docs/adr/037-architecture-v2-conformance.md`: the audit findings closed, the nested configuration schema and its deviation from PROPOSAL §6.2 leaf names, the complete flat → nested environment variable migration table (including `INGESTION__*`), the deletion of the v1 surface, the deliberately broken archived experiments, the v2.0.0 release implication, and the deferred single `layers` import-linter contract.
-- [ ] 13.1a Record the two proposal-review resolutions in ADR-037's Decision and Consequences: (a) **D9** — the two-layer config guard, with `extra="forbid"` on the subpackage models as the permanent general-case defence and the enumerated legacy tripwire as a bounded second line whose removal trigger is **v3.0.0**, explicitly not a hypothetical v2.1.0; (b) **D10** — `IngestionSettings` created now rather than deferred, because the breaking rename cost is already paid and deferral would buy a second break. State both as decisions, not open questions.
-- [ ] 13.2 Amend ADR-032 to correct its claim that dispatch runs through the strategy registries (true only as of this change) and reference ADR-037.
-- [ ] 13.3 Amend ADR-033: correct the Part 2 "no import-time snapshots" claim, note the `RERANK_MODEL` exception at `core/retrieval/reranker.py:43` as deliberate, and repoint the References entry from `src/rag_mcp/server.py` to `transports/mcp.py`.
-- [ ] 13.4 Amend ADR-034 to correct "never through ChromaDB APIs directly" (the codebase map bypassed it until this change) and record the new enforcing contract.
-- [ ] 13.5 Amend ADR-036: correct §1's "import-linter contracts already cover this" and §3's Magika extraction claim.
-- [ ] 13.6 Amend ADR-035 where it describes flat-key profile bundles, pointing at the nested schema.
-- [ ] 13.7 Update `docs/brainstorm/refactor-proposal/PROPOSAL.md`: §8 Phase 2's "572 → ~150 lines" to the achieved figure, and §12 to record that the graph-module relocation is complete.
-- [ ] 13.8 Rewrite the affected `AGENTS.md` sections: architecture invariants #1–#8 (new `core/codebase/`, `core/documents/` paths; registries as dispatch; settings injected not global), the gotchas list, the module table, and the coverage tier table.
-- [ ] 13.9 Update `docs/guides/architecture.md`, `docs/guides/configuration.md` (nested schema, new env var names), `docs/guides/ingestion.md`, `docs/guides/reranker.md`, `docs/guides/cli-reference.md`, and `docs/guides/testing.md` for the injected-settings test pattern.
-- [ ] 13.10 Regenerate `.env.example` with the nested variable names and a migration comment block at the top.
-- [ ] 13.11 Update `README.md`'s refactor-progress section to state that the v2 conformance work is complete.
-- [ ] 13.12 Run `graphify update .` so the knowledge graph reflects the new tree.
+- [x] 13.1 Write `docs/adr/037-architecture-v2-conformance.md`: the audit findings closed, the nested configuration schema and its deviation from PROPOSAL §6.2 leaf names, the complete flat → nested environment variable migration table (including `INGESTION__*`), the deletion of the v1 surface, the deliberately broken archived experiments, the v2.0.0 release implication, and the deferred single `layers` import-linter contract.
+- [x] 13.1a Record the two proposal-review resolutions in ADR-037's Decision and Consequences: (a) **D9** — the two-layer config guard, with `extra="forbid"` on the subpackage models as the permanent general-case defence and the enumerated legacy tripwire as a bounded second line whose removal trigger is **v3.0.0**, explicitly not a hypothetical v2.1.0; (b) **D10** — `IngestionSettings` created now rather than deferred, because the breaking rename cost is already paid and deferral would buy a second break. State both as decisions, not open questions.
+- [x] 13.2 Amend ADR-032 to correct its claim that dispatch runs through the strategy registries (true only as of this change) and reference ADR-037.
+- [x] 13.3 Amend ADR-033: correct the Part 2 "no import-time snapshots" claim, note the `RERANK_MODEL` exception at `core/retrieval/reranker.py:43` as deliberate, and repoint the References entry from `src/rag_mcp/server.py` to `transports/mcp.py`.
+- [x] 13.4 Amend ADR-034 to correct "never through ChromaDB APIs directly" (the codebase map bypassed it until this change) and record the new enforcing contract.
+- [x] 13.5 Amend ADR-036: correct §1's "import-linter contracts already cover this" and §3's Magika extraction claim.
+- [x] 13.6 Amend ADR-035 where it describes flat-key profile bundles, pointing at the nested schema.
+- [x] 13.7 Update `docs/brainstorm/refactor-proposal/PROPOSAL.md`: §8 Phase 2's "572 → ~150 lines" to the achieved figure, and §12 to record that the graph-module relocation is complete.
+- [x] 13.8 Rewrite the affected `AGENTS.md` sections: architecture invariants #1–#8 (new `core/codebase/`, `core/documents/` paths; registries as dispatch; settings injected not global), the gotchas list, the module table, and the coverage tier table.
+- [x] 13.9 Update `docs/guides/architecture.md`, `docs/guides/configuration.md` (nested schema, new env var names), `docs/guides/ingestion.md`, `docs/guides/reranker.md`, `docs/guides/cli-reference.md`, and `docs/guides/testing.md` for the injected-settings test pattern.
+- [x] 13.10 Regenerate `.env.example` with the nested variable names and a migration comment block at the top.
+- [x] 13.11 Update `README.md`'s refactor-progress section to state that the v2 conformance work is complete.
+- [x] 13.12 Run `graphify update .` so the knowledge graph reflects the new tree.
 
 ## 14. Verification and release
 

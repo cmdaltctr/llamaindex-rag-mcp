@@ -1,5 +1,14 @@
 # Architecture Decisions
 
+> **v2.0.0 (ADR-037).** Subpackage environment variables are nested:
+> `RETRIEVAL__*`, `CHUNKING__*`, `INGESTION__*`, `METADATA__*`. Cross-cutting
+> names (`EMBED_MODEL`, `RAG_PROFILE`, `PDF_READER`, credentials) are
+> unchanged. Settings reach `core/` by injection — there is no
+> `config.settings` singleton. See
+> [ADR-037](../adr/037-architecture-v2-conformance.md) for the full
+> migration table.
+
+
 This is a living document. It explains the "why" behind how this project is built — in plain English, for anyone who wants to understand the thinking, not just the code. Each section links to the full ADR for the details.
 
 The one principle that shapes every decision here: **everything runs on your machine**. No cloud, no API keys, no recurring costs. Every technology choice either supports that or gets rejected.
@@ -99,7 +108,7 @@ The challenge: most reranker implementations require PyTorch, a ~2 GB dependency
 
 The original server only worked through an MCP client. To test it, you needed the MCP Inspector. To ingest documents, you needed an AI assistant. That was inconvenient, so we added a CLI: `rag-mcp ingest`, `rag-mcp search`, `rag-mcp list`. The same binary, no arguments = MCP server; with subcommands = CLI tool.
 
-Directory ingestion currently reads files sequentially and keeps ChromaDB writes serial behind a lock. Throughput tuning is focused on embedding work: `EMBED_BATCH_SIZE` controls Ollama batch size and `EMBED_CONCURRENCY` controls concurrent embedding API calls.
+Directory ingestion currently reads files sequentially and keeps ChromaDB writes serial behind a lock. Throughput tuning is focused on embedding work: `INGESTION__EMBED_BATCH_SIZE` controls Ollama batch size and `INGESTION__EMBED_CONCURRENCY` controls concurrent embedding API calls.
 
 ### Ingestion reports ([ADR-008](../adr/008-cli-folder-embed-progress.md))
 
@@ -149,7 +158,7 @@ ADR-025 introduced a single `INFERENCE_BACKEND` env var. ADR-026 split this into
 | `local`  | `ollama`             | `OllamaEmbedding` | `Ollama` / `httpx`     |
 | `cloud`  | `openrouter`         | `OpenAIEmbedding` | `OpenAILike` / `httpx` |
 
-The `METADATA_EXTRACTION_MODE=ollama` was renamed to `local` since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
+The `METADATA__EXTRACTION_MODE=ollama` was renamed to `local` since it's a strategy, not a provider. See [Providers](providers.md) for setup instructions.
 
 ---
 

@@ -36,14 +36,17 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
-1. **`config.py` is the single source of truth** for `Settings.embed_model` and all constants. Never set it elsewhere. `compose.py` is the composition root — the only place objects are constructed.
-2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only `config.py`. (The top-level `ingestion.py` and `retrieval.py` are deprecated shims.)
+1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader).
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/rag_mcp/` holds only `__init__.py` and `compose.py` at the top level.
 3. **Transports are thin wrappers** — `transports/mcp.py` (MCP server), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
-5. **Balanced retrieval defaults are intentional** (ADR-018): `TOP_K=10`, `CHUNK_OVERLAP=100`. Read from `config.py`, never hardcode. **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
-6. **Codebase map modules share only `config.py`** — `codebase_map.py`, `code_graph.py`, `doc_graph.py` have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py`.
+5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
+6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
 7. **Azure SDK import is lazy** (ADR-024) — `integrations/azure.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
+9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen.
+10. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
+11. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
 
 ## Critical Gotchas (silent breakage if violated)
 
@@ -55,8 +58,12 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 6. **PDF reader is a factory** (ADR-020, amended Phase 5). Located at `integrations/pdf/factory.py`. Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
 7. **MCP tool annotations are mandatory.** Use `ToolAnnotations` (`readOnlyHint`, `destructiveHint`) on every tool.
 8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (implemented in `core/ingestion/chunker.py`; no dedicated ADR — ADR-022 is "Code Graph via Tree-Sitter AST", not content-type dispatch).
+8a. **Tests inject settings; they do not patch a singleton.** There is nothing to patch. Use the `effective_settings(**overrides)` conftest factory, or `set_default_effective_settings(...)` for code that reads the composition-root default. The conftest default deliberately sets `extraction_mode="disabled"` and `pdf_reader="pypdf"` — the class defaults would make ingestion tests perform real LLM calls and hang on network timeouts.
+8b. **Patch targets follow the function, not the re-export.** After the ADR-037 splits, `_get_git_commit_hash`/`_load_cache`/`_save_cache` live in `core/codebase/cache.py`, `format_codebase_map` in `core/codebase/format.py`, `Observer` in `daemon/runner.py`, and `_is_magika_available` in `integrations/magika.py`. Patching the re-exporting module is a no-op.
+8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
+11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Removal trigger: v3.0.0 (ADR-037).
 
 ## Hard Boundaries
 
@@ -134,11 +141,12 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 
 | Tier          | Floor    | Modules                                                                              |
 | ------------- | -------- | ------------------------------------------------------------------------------------ |
-| Core + MCP    | ≥95%     | `core/ingestion`, `core/retrieval`, `core/retrieval/reranker`, `core/metadata`, `config`, `transports/mcp` |
+| Core + MCP    | ≥95%     | `core/ingestion`, `core/retrieval`, `core/metadata`, `core/chunking`, `core/vectordb`, `core/profiles`, `core/settings.py`, `config/`, `transports/mcp` |
 | Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                   |
 | **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                  |
 
-> **Deprecated compat shims** (`server.py`, `cli.py`, `watcher.py`, `azure_reader.py`, `readers/`, `ingestion.py`, `retrieval.py`, `reranker.py`, `sparse_retriever.py`, `metadata_extractor.py`) are excluded from the coverage gate via `[tool.coverage.run] omit` in `pyproject.toml`. They are re-export pass-throughs with no test consumers, scheduled for removal in v2.0.0.
+> All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
+> `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
 
 ## Detailed Documentation
 
