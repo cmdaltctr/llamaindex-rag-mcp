@@ -1,16 +1,25 @@
 ## Purpose
 
 Define named profile bundles that bind retrieval, reranker, chunking, and taxonomy settings to collections, enabling a single server to serve distinct use cases (document grounding vs codebase context) without reconfiguration or data migration.
-
 ## Requirements
-
 ### Requirement: Named profile bundles
 
 The system SHALL provide three version-controlled YAML profile bundles under
 `config/profiles/`: `documents.yaml` (document grounding), `codebase.yaml`
-(codebase context), and `hybrid.yaml` (per-collection policy). Bundles SHALL
-be validated against the same Pydantic settings models as global
-configuration and SHALL contain no credentials.
+(codebase context), and `hybrid.yaml` (per-collection policy). Operational
+bundles SHALL express their overrides as **nested blocks** keyed by subpackage
+(`retrieval:`, `chunking:`, `metadata:`) using the same field names as the
+subpackage Pydantic models, and SHALL be validated against those models.
+Flat, environment-variable-style keys SHALL NOT be accepted. Bundles SHALL
+contain no credentials.
+
+#### Scenario: Bundles use the nested schema
+
+- **WHEN** any file under `config/profiles/` is loaded
+- **THEN** its retrieval, chunking, and metadata overrides MUST appear as
+  nested mappings under `retrieval:`, `chunking:`, and `metadata:`
+- **AND** a bundle using flat SCREAMING_SNAKE keys MUST be rejected with a
+  validation error naming the offending key
 
 #### Scenario: Documents profile values
 
@@ -23,6 +32,21 @@ configuration and SHALL contain no credentials.
 - **WHEN** the `codebase` profile is loaded
 - **THEN** it MUST resolve to: code chunking fallback, reranker disabled,
   `top_k=20`, hybrid retrieval (dense + BM25 + RRF), file_type taxonomy
+
+#### Scenario: Hybrid selector carries no levers
+
+- **WHEN** `hybrid.yaml` is loaded
+- **THEN** it MUST declare only `default_profile`
+- **AND** it MUST NOT declare `retrieval:`, `chunking:`, `ingestion:`, or
+  `metadata:` blocks
+
+#### Scenario: Malformed hybrid selector fails at construction, not first use
+
+- **WHEN** `hybrid.yaml` declares a lever block
+- **THEN** the failure MUST surface when the profile resolver is constructed
+  (equivalently, at settings resolution)
+- **AND** it MUST NOT be deferred to the first collection lookup or the first
+  query, so a misconfigured deployment cannot start and appear healthy
 
 #### Scenario: Invalid bundle rejected
 
@@ -92,9 +116,12 @@ chunking and reader registries, vector store handle, reranker model) SHALL
 be constructed once at startup in `compose.py` and shared across
 collections. Tier 2 levers (reranker on/off, `top_k`, hybrid/RRF, chunking
 fallback for ambiguous types, metadata taxonomy mode) SHALL be resolved per
-operation by a `ProfileResolver` and passed as parameters to `search()` and
-`ingest_path_async()`. Core operations SHALL NOT read global state for
-Tier 2 levers.
+operation by a `ProfileResolver` that returns a frozen `EffectiveSettings`,
+which SHALL be passed as a parameter to `search()` and `ingest_path_async()`
+and propagated to every module they call. Core operations SHALL NOT read
+global state for any lever, Tier 1 or Tier 2. The `ProfileResolver` SHALL
+receive the server-wide default profile name by injection and SHALL NOT read
+it from a settings singleton.
 
 #### Scenario: Per-query reranker decision
 
@@ -111,7 +138,20 @@ Tier 2 levers.
 - **THEN** it MUST return the server-wide default profile's effective
   settings
 
----
+#### Scenario: Resolver takes its default by injection
+
+- **WHEN** `ProfileResolver` is constructed
+- **THEN** the server-wide default profile name MUST be supplied by the caller
+- **AND** `core/profiles/resolver.py` MUST NOT import a settings singleton
+
+#### Scenario: Resolved settings reach the leaves
+
+- **WHEN** an operation runs with an `EffectiveSettings` produced by the
+  resolver
+- **THEN** every module in the call chain — chunker, dense retriever, fusion,
+  policy, reranker, metadata extractor, vector store — MUST read its knobs from
+  that instance
+- **AND** none MUST consult a process-wide settings object
 
 ### Requirement: Content-type dispatch precedence over profiles
 
@@ -192,3 +232,4 @@ and the profile-level restoration.
 - **WHEN** the phase is accepted
 - **THEN** AGENTS.md invariant #5 MUST no longer claim `RERANK_ENABLED=true`
   is the code default
+

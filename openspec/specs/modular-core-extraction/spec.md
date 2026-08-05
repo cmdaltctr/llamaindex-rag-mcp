@@ -1,9 +1,7 @@
 ## Purpose
 
 Define the modular subpackage structure for the core RAG pipeline: metadata extraction, ingestion, chunking, and retrieval. Phase 1 of the five-phase modular refactor — mechanical extraction with backward-compatible shims, no behaviour change.
-
 ## Requirements
-
 ### Requirement: Metadata subpackage extraction
 
 The system SHALL provide all metadata-extraction behaviour formerly in
@@ -11,7 +9,9 @@ The system SHALL provide all metadata-extraction behaviour formerly in
 module per extraction backend (`keyword.py`, `ollama.py`, `llamaindex.py`,
 `llamacpp.py`), an orchestrator module (`extractor.py`) that dispatches to the
 configured backend, and a `taxonomy.py` module holding the hybrid category
-logic (ADR-013).
+logic (ADR-013). `extractor.py` SHALL select a backend by resolving it through
+`core/metadata/registry.py` and SHALL NOT dispatch by an if/elif chain over
+backend names, nor import concrete backend modules at the top level.
 
 #### Scenario: Backend split is faithful
 
@@ -28,6 +28,23 @@ logic (ADR-013).
 - **THEN** the extracted metadata output MUST be identical to the pre-refactor
   output for the same input and configuration
 
+#### Scenario: Backend resolved through the registry
+
+- **WHEN** the extractor dispatches to a backend
+- **THEN** it MUST call `registry.get(<backend name>)`
+- **AND** `core/metadata/extractor.py` MUST contain no if/elif chain over
+  backend names and no module-level import of a concrete backend module
+
+#### Scenario: Disabled sentinel honoured
+
+- **WHEN** metadata extraction is configured as disabled
+- **THEN** the extractor MUST short-circuit without resolving a backend
+
+#### Scenario: Extraction results unchanged
+
+- **WHEN** each backend runs against the same input as before the change
+- **THEN** the extracted metadata MUST be identical
+
 ---
 
 ### Requirement: Ingestion and chunking subpackage extraction
@@ -36,7 +53,9 @@ The system SHALL provide ingestion orchestration from a `core/ingestion/`
 subpackage (`loader.py`, `chunker.py`, `writer.py`) exposing
 `ingest_path_async()` as its public entry point, and SHALL provide the four
 existing chunking strategies from a `core/chunking/` strategy folder
-(`code.py`, `markdown.py`, `sentence.py`, `config_file.py`).
+(`code.py`, `markdown.py`, `sentence.py`, `config_file.py`). The chunker
+SHALL select a strategy by resolving it through `core/chunking/registry.py`,
+and SHALL NOT import concrete strategy modules at the top level.
 
 #### Scenario: Content-type dispatch preserved
 
@@ -45,9 +64,17 @@ existing chunking strategies from a `core/chunking/` strategy folder
 - **THEN** the chunker MUST route it to the same strategy as before the
   refactor (content-type precedence is unchanged)
 
+#### Scenario: Strategy resolved through the registry
+
+- **WHEN** the chunker resolves the strategy for a file
+- **THEN** it MUST call `registry.get(<strategy name>)`
+- **AND** `core/ingestion/chunker.py` MUST have no module-level import of
+  `core.chunking.code`, `core.chunking.markdown`, `core.chunking.sentence`, or
+  `core.chunking.config_file`
+
 #### Scenario: Only existing strategies extracted
 
-- **WHEN** the `core/chunking/` folder is inspected after Phase 1
+- **WHEN** the `core/chunking/` folder is inspected
 - **THEN** it MUST contain exactly the four pre-existing strategies
 - **AND** MUST NOT contain `structural.py` or `evidence_md.py` (net-new
   strategies deferred to a later change)
@@ -56,7 +83,7 @@ existing chunking strategies from a `core/chunking/` strategy folder
 
 - **WHEN** a caller invokes ingestion
 - **THEN** `ingest_path_async` MUST remain the sole ingestion entry point
-  with an unchanged signature (AGENTS.md invariant #4)
+  (AGENTS.md invariant #4), accepting an `EffectiveSettings` parameter
 
 ---
 
@@ -66,13 +93,21 @@ The system SHALL group dense retrieval, sparse retrieval, fusion, reranking,
 the `search()` orchestrator, and the rerank threshold policy under a
 `core/retrieval/` subpackage, including a `pipeline.py` module owning the
 end-to-end `search()` orchestration and a `policy.py` module owning the
-`HARD_TECHNICAL_THRESHOLD` ÷30 rerank threshold policy.
+`HARD_TECHNICAL_THRESHOLD` ÷30 rerank threshold policy. `pipeline.py` SHALL
+resolve retrieval stages through `core/retrieval/registry.py` and SHALL NOT
+import concrete stage modules at the top level.
 
 #### Scenario: End-to-end search dispatch
 
 - **WHEN** `search()` is called through the new subpackage
 - **THEN** `pipeline.py` MUST orchestrate dense + sparse + RRF + rerank policy
   exactly as the pre-refactor `retrieval.py` did
+
+#### Scenario: Stages resolved through the registry
+
+- **WHEN** `pipeline.py` needs the dense, fusion, policy, or reranker stage
+- **THEN** it MUST resolve it through `registry.get(...)`
+- **AND** `pipeline.py` MUST have no module-level import of those stage modules
 
 #### Scenario: Threshold policy relocated intact
 
@@ -81,61 +116,41 @@ end-to-end `search()` orchestration and a `policy.py` module owning the
   numerically identical to the pre-refactor implementation (AGENTS.md gotcha
   #3 — recalibration requires re-running experiment 1)
 
-#### Scenario: Reranker singleton preserved
+#### Scenario: Reranker model cache reset preserved
 
-- **WHEN** tests reset `CrossEncoderReranker._instance = None`
-- **THEN** the reset MUST affect the same class object used by the pipeline
-  (the class moves unchanged; DI conversion is out of scope for Phase 1)
-
----
-
-### Requirement: Backward-compatible import shims
-
-The system SHALL keep every pre-refactor public import path resolving via a
-compat shim that re-exports from the new location and emits a
-`DeprecationWarning` naming the new import path. Shims are scheduled for
-removal in v2.0.0.
-
-#### Scenario: Old import paths resolve
-
-- **WHEN** code executes `from rag_mcp.metadata_extractor import ...`,
-  `from rag_mcp.ingestion import ...`, `from rag_mcp.retrieval import ...`,
-  `from rag_mcp.sparse_retriever import ...`, or `from rag_mcp.reranker import ...`
-- **THEN** the import MUST succeed and resolve to the same objects as the new
-  `rag_mcp.core.*` paths
-- **AND** a `DeprecationWarning` MUST be emitted naming the new import path
-
-#### Scenario: No constant/config surface changes
-
-- **WHEN** any module reads configuration
-- **THEN** it MUST read it from `rag_mcp.config` exactly as before (the
-  config surface is unchanged in Phase 1; the PEP 562 shim is Phase 2 scope)
+- **WHEN** tests need a clean reranker state
+- **THEN** `reset_model_cache()` MUST clear the process-wide model cache
+  (AGENTS.md gotcha #2)
 
 ---
 
 ### Requirement: Behaviour preservation and test continuity
 
-The refactor SHALL NOT change any observable behaviour: public function
-signatures, CLI commands, MCP tool signatures, return shapes, and error
-contracts are identical before and after the extraction.
+The refactor SHALL NOT change any observable runtime behaviour of retrieval,
+ingestion, or metadata extraction: public operation semantics, CLI commands,
+MCP tool signatures, return shapes, and error contracts are identical before
+and after. Changes to Python import paths, the configuration surface, and
+removed compatibility modules are governed by the breaking-change
+requirements of this change and are excluded from this preservation
+guarantee.
 
 #### Scenario: Full test suite passes
 
-- **WHEN** `uv run pytest -m "not slow" --cov=rag_mcp` is run at the phase
+- **WHEN** `uv run pytest -m "not slow" --cov=rag_mcp` is run at the change
   boundary
-- **THEN** all tests MUST pass with no assertion modifications (only test
-  import paths may change)
-- **AND** overall coverage MUST NOT regress below the recorded baseline of
-  88% (`notes/baseline.md`), excluding deprecated compat shim files which
-  carry no test consumers by design
+- **THEN** all tests MUST pass
+- **AND** coverage MUST meet the recorded floors: Core + MCP ≥95%,
+  Orchestration ≥85%, Overall ≥90%
 
-#### Scenario: File size ceiling
+#### Scenario: File size ceiling across the package
 
-- **WHEN** the new `core/` tree is inspected
-- **THEN** no file MUST exceed 500 lines
+- **WHEN** `src/rag_mcp/` is inspected
+- **THEN** no Python file MUST exceed 500 lines, including modules outside
+  `core/`
 
 #### Scenario: MCP and CLI surfaces unchanged
 
-- **WHEN** the MCP server and CLI are exercised after the extraction
+- **WHEN** the MCP server and CLI are exercised after the change
 - **THEN** every tool signature and subcommand MUST behave identically to the
-  pre-refactor versions
+  pre-change versions
+

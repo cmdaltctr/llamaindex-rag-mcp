@@ -176,6 +176,8 @@ so importing a registry does not eagerly import strategy modules.
 
 ---
 
+## ADDED Requirements
+
 ### Requirement: Structured environment variable interface
 
 Environment variables for subpackage settings SHALL be addressed through the
