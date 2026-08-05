@@ -26,28 +26,28 @@ class TestBuildCodebaseMap:
         """Building a map with code files produces code communities."""
         (tmp_path / "app.py").write_text("from utils import helper\n")
         (tmp_path / "utils.py").write_text("def helper():\n    pass\n")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path))
         assert len(m.inventory.entries) >= 2
         assert "code/python" in m.inventory.type_counts
 
     def test_build_empty_directory(self, tmp_path: Path) -> None:
         """Empty directory produces empty map."""
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path))
         assert len(m.inventory.entries) == 0
 
     def test_build_with_documents(self, tmp_path: Path) -> None:
         """Building with markdown files detects document types."""
         (tmp_path / "README.md").write_text("# Project\n\nHello world")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             m = build_codebase_map(str(tmp_path))
         assert "document/markdown" in m.inventory.type_counts
 
     def test_build_no_git(self, tmp_path: Path) -> None:
         """Building outside a git repo sets commit_hash to None."""
         (tmp_path / "app.py").write_text("x = 1\n")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
              patch("rag_mcp.core.codebase.codebase_map._get_git_commit_hash", return_value=None):
             m = build_codebase_map(str(tmp_path))
         assert m.commit_hash is None
@@ -129,7 +129,7 @@ class TestGetCodebaseMapText:
         """Valid directory returns formatted map text."""
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
              patch("rag_mcp.core.codebase.codebase_map._get_git_commit_hash", return_value=None):
             result = get_codebase_map_text(path=".")
         assert "## File Types" in result
@@ -139,7 +139,7 @@ class TestGetCodebaseMapText:
         """Refresh=True bypasses cache."""
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
              patch("rag_mcp.core.codebase.codebase_map._get_git_commit_hash", return_value=None), \
              patch("rag_mcp.core.codebase.codebase_map._load_cache") as mock_load:
             result = get_codebase_map_text(path=".", refresh=True)

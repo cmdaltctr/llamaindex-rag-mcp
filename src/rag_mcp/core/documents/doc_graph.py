@@ -17,9 +17,33 @@ from pathlib import Path
 
 import networkx as nx
 
-from ...config import settings
+from ..settings import get_default_effective_settings
 
 logger = logging.getLogger(__name__)
+
+
+class CollectionView:
+    """Read-only view over one collection, backed by the VectorStore ABC.
+
+    The document graph needs embeddings and metadata for every chunk. It used
+    to receive a raw ChromaDB collection, which meant the codebase map had to
+    construct a ``chromadb.PersistentClient`` directly — the one place in the
+    codebase that bypassed the vector-store abstraction (ADR-034). This view
+    keeps the graph code's ``.get(include=[...])`` shape while routing the
+    read through ``VectorStore.fetch_all``, so ChromaDB stays confined to
+    ``core/vectordb/chroma.py``.
+    """
+
+    def __init__(self, store, collection_name: str = "documents") -> None:
+        self._store = store
+        self._collection_name = collection_name
+
+    def get(self, include: list[str]) -> dict[str, list]:
+        payload = self._store.fetch_all(self._collection_name, include)
+        return payload if payload is not None else {}
+
+    def count(self) -> int:
+        return self._store.count(self._collection_name)
 
 
 @dataclass
@@ -95,7 +119,7 @@ def compute_similarity_edges(
         return []
 
     if threshold is None:
-        threshold = settings.doc_similarity_threshold
+        threshold = get_default_effective_settings().doc_similarity_threshold
 
     # Fetch all embeddings and metadata from ChromaDB.
     try:
@@ -349,7 +373,7 @@ def build_document_graph(
         return graph
 
     if threshold is None:
-        threshold = settings.doc_similarity_threshold
+        threshold = get_default_effective_settings().doc_similarity_threshold
 
     _add_doc_nodes(graph, collection)
     if graph.number_of_nodes() == 0:

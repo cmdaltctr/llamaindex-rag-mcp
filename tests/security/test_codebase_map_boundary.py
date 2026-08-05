@@ -66,7 +66,7 @@ class TestPathBoundaryValidation:
         (tmp_path / "app.py").write_text("x = 1\n")
 
         with patch(
-            "rag_mcp.core.codebase.codebase_map._is_magika_available",
+            "rag_mcp.integrations.magika._is_magika_available",
             return_value=False,
         ):
             result = get_codebase_map_text(path=".")

@@ -124,7 +124,7 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
              patch("rag_mcp.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory), \
              patch("rag_mcp.core.ingestion.pipeline.gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
              patch("rag_mcp.core.ingestion.pipeline.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \

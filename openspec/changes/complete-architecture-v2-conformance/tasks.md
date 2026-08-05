@@ -47,25 +47,25 @@
 
 ## 5. Thread settings through core and delete the global
 
-- [ ] 5.1 Type `ingest_path_async`'s `effective_settings` parameter (`core/ingestion/pipeline.py:31`) as `EffectiveSettings` and add the same parameter to `search()` (`core/retrieval/pipeline.py:148`); both required on the internal call path, resolved by the caller.
-- [ ] 5.2 Thread the parameter through the ingestion chain and remove the global reads at `core/ingestion/_state.py:17`, `core/ingestion/chunker.py:19`, `core/ingestion/pipeline.py:16`, `core/chunking/markdown.py:12`, `core/chunking/sentence.py:18`.
-- [ ] 5.3 Thread it through the retrieval chain and remove the global reads at `core/retrieval/pipeline.py:16,40`, `core/retrieval/policy.py:61,225`, `core/retrieval/reranker.py:36`, `core/retrieval/fusion.py:9`. Do not alter the ÷30 threshold arithmetic (AGENTS.md gotcha #3).
-- [ ] 5.4 Thread it through metadata extraction and remove the global reads at `core/metadata/extractor.py:34`, `keyword.py:16`, `ollama.py:18`, `llamaindex.py:14`, `llamacpp.py:14`.
-- [ ] 5.5 Thread it into `core/vectordb/chroma.py`, removing the global reads at `:74` and `:197` in favour of constructor-injected values from `compose.py`.
-- [ ] 5.6 Thread it into `integrations/magika.py:25`, `integrations/azure.py:18`, and `integrations/pdf/liteparse.py:45` as call parameters, keeping the ADR-024 lazy Azure import intact.
-- [ ] 5.6a Thread it into the four sites group 2's relocation brought into scope, which the original 21-site enumeration predates: `core/codebase/codebase_map.py:19` and `:477`, `core/documents/doc_graph.py:20`, and `core/retrieval/pipeline.py:32` (`from ...config import resolve_sparse_backend, settings` — the `resolve_sparse_backend` half is removed by 7.10). **Ordering:** `codebase_map.py:477` sits in the same block as the ChromaDB leak that task 6.1 rewrites — do 6.1 first, or do both in one edit, so the block is not rewritten twice.
+- [x] 5.1 Type `ingest_path_async`'s `effective_settings` parameter (`core/ingestion/pipeline.py:31`) as `EffectiveSettings` and add the same parameter to `search()` (`core/retrieval/pipeline.py:148`); both required on the internal call path, resolved by the caller.
+- [x] 5.2 Thread the parameter through the ingestion chain and remove the global reads at `core/ingestion/_state.py:17`, `core/ingestion/chunker.py:19`, `core/ingestion/pipeline.py:16`, `core/chunking/markdown.py:12`, `core/chunking/sentence.py:18`.
+- [x] 5.3 Thread it through the retrieval chain and remove the global reads at `core/retrieval/pipeline.py:16,40`, `core/retrieval/policy.py:61,225`, `core/retrieval/reranker.py:36`, `core/retrieval/fusion.py:9`. Do not alter the ÷30 threshold arithmetic (AGENTS.md gotcha #3).
+- [x] 5.4 Thread it through metadata extraction and remove the global reads at `core/metadata/extractor.py:34`, `keyword.py:16`, `ollama.py:18`, `llamaindex.py:14`, `llamacpp.py:14`.
+- [x] 5.5 Thread it into `core/vectordb/chroma.py`, removing the global reads at `:74` and `:197` in favour of constructor-injected values from `compose.py`.
+- [x] 5.6 Thread it into `integrations/magika.py:25`, `integrations/azure.py:18`, and `integrations/pdf/liteparse.py:45` as call parameters, keeping the ADR-024 lazy Azure import intact.
+- [x] 5.6a Thread it into the four sites group 2's relocation brought into scope, which the original 21-site enumeration predates: `core/codebase/codebase_map.py:19` and `:477`, `core/documents/doc_graph.py:20`, and `core/retrieval/pipeline.py:32` (`from ...config import resolve_sparse_backend, settings` — the `resolve_sparse_backend` half is removed by 7.10). **Ordering:** `codebase_map.py:477` sits in the same block as the ChromaDB leak that task 6.1 rewrites — do 6.1 first, or do both in one edit, so the block is not rewritten twice.
 - [ ] 5.7 Delete the module-level `settings = get_settings()` at `config/__init__.py:460` and the `RESOLVED_*` constants; make `compose.py` the only production caller of `get_settings()`.
-- [ ] 5.8 Un-`xfail` `tests/test_no_global_settings_reads.py` (task 1.6) and confirm it passes with zero hits.
+- [x] 5.8 Un-`xfail` `tests/test_no_global_settings_reads.py` (task 1.6) and confirm it passes with zero hits.
 - [ ] 5.9 Add a test asserting importing `rag_mcp.config` constructs no `Settings` instance (no environment or YAML resolution as an import side effect).
 
 ## 6. Restore the ChromaDB and integrations boundaries (F2, F5)
 
-- [ ] 6.1 Replace the direct `import chromadb` / `chromadb.PersistentClient(...)` at `core/codebase/codebase_map.py:476-478` with calls on an injected `VectorStore`; add the needed read method to `core/vectordb/base.py` and implement it in `core/vectordb/chroma.py` if the contract does not already cover it.
-- [ ] 6.2 Update `compose.py` and the codebase-map callers in `transports/mcp.py` and `transports/cli/` to pass the constructed store into the codebase map.
-- [ ] 6.3 Un-`xfail`/confirm `chromadb-confined-to-vectordb` (task 1.2) now passes; add a test asserting `core/vectordb/chroma.py` is the only `import chromadb` site.
-- [ ] 6.4 Delete `import rag_mcp.codebase_map as _cbm` at `integrations/magika.py:81` and the indirection it supports.
-- [ ] 6.5 Move the `_is_magika_available` monkeypatch target to `integrations/magika.py` and update every test that patches it on the codebase-map module.
-- [ ] 6.6 Confirm `integrations-are-leaves` (task 1.4) now passes.
+- [x] 6.1 Replace the direct `import chromadb` / `chromadb.PersistentClient(...)` at `core/codebase/codebase_map.py:476-478` with calls on an injected `VectorStore`; add the needed read method to `core/vectordb/base.py` and implement it in `core/vectordb/chroma.py` if the contract does not already cover it.
+- [x] 6.2 Update `compose.py` and the codebase-map callers in `transports/mcp.py` and `transports/cli/` to pass the constructed store into the codebase map.
+- [x] 6.3 Un-`xfail`/confirm `chromadb-confined-to-vectordb` (task 1.2) now passes; add a test asserting `core/vectordb/chroma.py` is the only `import chromadb` site.
+- [x] 6.4 Delete `import rag_mcp.codebase_map as _cbm` at `integrations/magika.py:81` and the indirection it supports.
+- [x] 6.5 Move the `_is_magika_available` monkeypatch target to `integrations/magika.py` and update every test that patches it on the codebase-map module.
+- [x] 6.6 Confirm `integrations-are-leaves` (task 1.4) now passes.
 
 ## 7. Nested configuration schema and YAML migration (F3, F7, F8, F10)
 
@@ -87,8 +87,8 @@
 
 ## 8. Remove import-time snapshots and split oversized files (F6, F11)
 
-- [ ] 8.1 Delete `MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size` at `core/ingestion/chunker.py:23`; read the value from the injected settings at the two live consumption points (`:127`, `:188`).
-- [ ] 8.2 Delete the import-time `BoundedSemaphore(value=settings.embed_concurrency)` at `core/ingestion/_state.py:22`; construct the limiter at operation start (or in `compose.py`) from the injected concurrency value.
+- [x] 8.1 Delete `MARKDOWN_CHUNK_SIZE = settings.markdown_chunk_size` at `core/ingestion/chunker.py:23`; read the value from the injected settings at the two live consumption points (`:127`, `:188`).
+- [x] 8.2 Delete the import-time `BoundedSemaphore(value=settings.embed_concurrency)` at `core/ingestion/_state.py:22`; construct the limiter at operation start (or in `compose.py`) from the injected concurrency value.
 - [ ] 8.3 Add a docstring note on `core/retrieval/reranker.py:43`'s `RERANK_MODEL` recording it as a deliberate compat export per ADR-033:65, consumed by nothing on the live path; add a test asserting no production module reads it.
 - [ ] 8.4 Split `core/codebase/code_graph.py` (690) into `code_graph.py` (graph assembly), `ast_extract.py` (tree-sitter extraction), and `communities.py` (deterministic community detection), preserving AGENTS.md invariant #8 (no LLM involvement).
 - [ ] 8.5 Split `core/codebase/codebase_map.py` (663) into `codebase_map.py` (assembly), `cache.py` (git-commit-hash-keyed cache, AGENTS.md gotcha #9), and `format.py` (rendering).

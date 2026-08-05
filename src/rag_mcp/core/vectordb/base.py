@@ -165,6 +165,30 @@ class VectorStore(ABC):
         """
 
     @abstractmethod
+    def fetch_all(
+        self,
+        collection_name: str,
+        include: list[str],
+    ) -> dict[str, list] | None:
+        """Return every chunk's requested fields in one store-neutral payload.
+
+        Exists for the document-similarity graph, which needs embeddings
+        alongside metadata — a combination no paged iterator exposes. It is
+        deliberately the only bulk read on this interface: callers that can
+        stream should use ``iter_metadatas`` / ``iter_documents`` instead.
+
+        Args:
+            collection_name: Collection to read.
+            include: Field names to return. Supported values are
+                ``"embeddings"``, ``"metadatas"`` and ``"documents"``.
+
+        Returns:
+            A mapping with an ``"ids"`` key plus one key per requested field,
+            each a list aligned by index. ``None`` when the collection does
+            not exist or is empty, so callers can degrade gracefully.
+        """
+
+    @abstractmethod
     def iter_documents(
         self,
         collection_name: str,

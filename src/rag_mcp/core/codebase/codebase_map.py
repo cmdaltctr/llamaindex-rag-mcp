@@ -16,7 +16,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ...config import settings
+from ..settings import get_default_effective_settings
 from ...integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
@@ -113,10 +113,15 @@ class FileInventory:
 def _is_magika_available() -> bool:
     """Check if the Magika CLI binary is on $PATH.
 
-    Delegates to ``integrations.magika`` (extracted in Phase 5).
+    Thin delegation to ``integrations.magika``, which owns the check. Resolve
+    the attribute on the module rather than binding it at import so patches
+    applied to the owning module take effect here — the previous arrangement
+    inverted this and required ``integrations.magika`` to import *back* into
+    this module, creating the cycle removed in task 6.4.
     """
-    from ...integrations.magika import _is_magika_available as _check
-    return _check()
+    from ...integrations import magika as _magika
+
+    return _magika._is_magika_available()
 
 
 def scan_with_magika(path: str) -> list[FileEntry]:
@@ -145,7 +150,7 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
-        if current_depth > settings.codebase_map_max_depth:
+        if current_depth > get_default_effective_settings().codebase_map_max_depth:
             return
         try:
             children = sorted(directory.iterdir())
@@ -230,12 +235,12 @@ def detect_file_types(path: str) -> FileInventory:
                 )
 
     # Enforce file count limit.
-    if len(entries) > settings.codebase_map_max_files:
+    if len(entries) > get_default_effective_settings().codebase_map_max_files:
         logger.warning(
             "File count %d exceeds CODEBASE_MAP_MAX_FILES=%d, truncating",
-            len(entries), settings.codebase_map_max_files,
+            len(entries), get_default_effective_settings().codebase_map_max_files,
         )
-        entries = entries[:settings.codebase_map_max_files]
+        entries = entries[:get_default_effective_settings().codebase_map_max_files]
 
     inventory.entries = entries
     return inventory
@@ -347,7 +352,7 @@ def _load_cache(path: str) -> CodebaseMap | None:
         A ``CodebaseMap`` if the cache exists and the commit hash matches,
         otherwise None.
     """
-    cache_dir = Path(path) / settings.codebase_map_cache_dir
+    cache_dir = Path(path) / get_default_effective_settings().codebase_map_cache_dir
     cache_file = cache_dir / "codebase-graph.json"
 
     if not cache_file.exists():
@@ -379,7 +384,7 @@ def _save_cache(path: str, codebase_map: CodebaseMap) -> None:
     if codebase_map.commit_hash is None:
         return
 
-    cache_dir = Path(path) / settings.codebase_map_cache_dir
+    cache_dir = Path(path) / get_default_effective_settings().codebase_map_cache_dir
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cache_dir / "codebase-graph.json"
 
@@ -470,18 +475,22 @@ def build_codebase_map(path: str) -> CodebaseMap:
     doc_communities: list[dict] = []
     cross_links: list[dict] = []
 
-    # Fetch ChromaDB collection for document graph.
+    # Open the document collection through the VectorStore abstraction.
+    # This used to construct a chromadb.PersistentClient directly — the only
+    # place in the codebase that bypassed the ABC, contradicting ADR-034 and
+    # silently breaking under any non-Chroma store.
     collection = None
     try:
-        import chromadb
-        from ...config import settings
-        db = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-        collection = db.get_collection("documents")
-        if collection.count() == 0:
-            logger.debug("ChromaDB 'documents' collection is empty")
-            collection = None
+        from ..documents.doc_graph import CollectionView
+        from ..vectordb import get_default_store
+
+        view = CollectionView(get_default_store(), "documents")
+        if view.count() == 0:
+            logger.debug("Document collection is empty")
+        else:
+            collection = view
     except Exception as exc:
-        logger.warning("Could not access ChromaDB collection for document graph: %s", exc)
+        logger.warning("Could not access the document collection for the graph: %s", exc)
 
     if doc_files:
         try:

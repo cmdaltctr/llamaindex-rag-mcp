@@ -50,7 +50,7 @@ class ChromaVectorStore(VectorStore):
 
         Args:
             persist_dir: Override for the ChromaDB persist directory.
-                When omitted, reads ``settings.chroma_persist_dir`` at
+                When omitted, reads the composition root's default at
                 call time so tests and env-driven config can override.
         """
         self._persist_dir = persist_dir
@@ -71,9 +71,9 @@ class ChromaVectorStore(VectorStore):
         """
         if self._client is None:
             if self._persist_dir is None:
-                from ...config import settings
+                from ..settings import get_default_effective_settings
 
-                persist_dir = settings.chroma_persist_dir
+                persist_dir = get_default_effective_settings().chroma_persist_dir
             else:
                 persist_dir = self._persist_dir
             self._client = chromadb.PersistentClient(path=persist_dir)
@@ -194,9 +194,9 @@ class ChromaVectorStore(VectorStore):
     def _resolve_page_size(self, page_size: int | None) -> int:
         """Resolve the effective page size, validating it is positive."""
         if page_size is None:
-            from ...config import settings
+            from ..settings import get_default_effective_settings
 
-            page_size = settings.chroma_scan_page_size
+            page_size = get_default_effective_settings().chroma_scan_page_size
         if page_size <= 0:
             raise ValueError("CHROMA_SCAN_PAGE_SIZE must be a positive integer")
         return page_size
@@ -231,6 +231,34 @@ class ChromaVectorStore(VectorStore):
             if len(metadatas) < effective_page_size:
                 break
             offset += len(metadatas)
+
+    def fetch_all(
+        self,
+        collection_name: str,
+        include: list[str],
+    ) -> dict[str, list] | None:
+        """Return every chunk's requested fields (see :meth:`VectorStore.fetch_all`)."""
+        try:
+            collection = self._get_collection(collection_name)
+        except Exception as exc:
+            logger.warning(
+                "Could not open collection %r for bulk read: %s",
+                collection_name,
+                exc,
+            )
+            return None
+        if collection is None:
+            return None
+        try:
+            if collection.count() == 0:
+                logger.debug("Collection %r is empty", collection_name)
+                return None
+            return collection.get(include=include)
+        except Exception as exc:
+            logger.warning(
+                "Bulk read of collection %r failed: %s", collection_name, exc
+            )
+            return None
 
     def iter_documents(
         self,
@@ -349,7 +377,7 @@ def build_chroma_vector_store(persist_dir: str | None = None) -> ChromaVectorSto
 
     Args:
         persist_dir: Optional override for the ChromaDB persist dir.
-            When omitted, the store reads ``settings.chroma_persist_dir``
+            When omitted, the store reads the composition root's default
             lazily on first client access.
 
     Returns:

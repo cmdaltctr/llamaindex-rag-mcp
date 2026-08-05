@@ -107,7 +107,7 @@ class TestDetectFileTypes:
         """When Magika is not installed, suffix detection is used."""
         (tmp_path / "app.py").write_text("print('hi')")
         (tmp_path / "README.md").write_text("# Test")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert len(inventory.entries) == 2
         assert "code/python" in inventory.type_counts
@@ -117,7 +117,7 @@ class TestDetectFileTypes:
         """Binary files are collected in the binary_files list."""
         (tmp_path / "app.py").write_text("x = 1")
         (tmp_path / "photo.png").write_bytes(b"\x89PNG")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert "photo.png" in inventory.binary_files
         assert "app.py" not in inventory.binary_files
@@ -127,7 +127,7 @@ class TestDetectFileTypes:
         (tmp_path / "a.py").write_text("x = 1")
         (tmp_path / "b.py").write_text("y = 2")
         (tmp_path / "c.ts").write_text("const z = 3;")
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False):
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False):
             inventory = detect_file_types(str(tmp_path))
         assert inventory.type_counts["code/python"] == 2
         assert inventory.type_counts["code/typescript"] == 1
@@ -256,7 +256,7 @@ class TestMagikaParsing:
             "output": {"group": "document", "label": "markdown", "is_text": True},
         }) + "\n"
 
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=True), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=True), \
              patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
             from rag_mcp.core.codebase.codebase_map import scan_with_magika
@@ -276,7 +276,7 @@ class TestMagikaParsing:
             "output": {"group": "executable", "label": "elf", "is_text": False},
         }) + "\n"
 
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=True), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=True), \
              patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
             from rag_mcp.core.codebase.codebase_map import scan_with_magika
@@ -293,34 +293,41 @@ class TestBuildCodebaseMap:
     """Tests for the full build_codebase_map orchestrator."""
 
     def test_document_graph_receives_collection(self, tmp_path: Path) -> None:
-        """build_codebase_map passes a real ChromaDB collection to build_document_graph.
+        """build_codebase_map passes a store-backed view to build_document_graph.
 
-        Regression: previously ``build_document_graph(None)`` was hardcoded,
-        so document communities were always empty.
+        Regression 1: ``build_document_graph(None)`` was once hardcoded, so
+        document communities were always empty.
+        Regression 2 (ADR-034): the collection used to be opened by
+        constructing ``chromadb.PersistentClient`` directly. It now goes
+        through the VectorStore ABC, so this asserts on the store — patching
+        ``chromadb.PersistentClient`` here would no longer prove anything.
         """
         (tmp_path / "app.py").write_text("x = 1\n")
         (tmp_path / "README.md").write_text("# Test\n")
 
-        mock_collection = MagicMock()
-        mock_collection.count.return_value = 2
+        mock_store = MagicMock()
+        mock_store.count.return_value = 2
+        mock_store.fetch_all.return_value = {"ids": [], "embeddings": [], "metadatas": []}
 
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
-             patch("chromadb.PersistentClient") as mock_client, \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
+             patch("rag_mcp.core.vectordb.get_default_store", return_value=mock_store), \
              patch("rag_mcp.core.documents.doc_graph.build_document_graph") as mock_build_doc:
-            mock_client.return_value.get_collection.return_value = mock_collection
             mock_build_doc.return_value = MagicMock()
 
             build_codebase_map(str(tmp_path))
 
             mock_build_doc.assert_called()
-            call_args = mock_build_doc.call_args
-            assert call_args[0][0] is mock_collection or call_args[1].get("collection") is mock_collection
+            view = mock_build_doc.call_args.args[0]
+            assert view is not None, "document graph must receive a collection view"
+            # The view must read through the store, not a ChromaDB client.
+            view.get(include=["metadatas"])
+            mock_store.fetch_all.assert_called_with("documents", ["metadatas"])
 
     def test_no_collection_graceful_degradation(self, tmp_path: Path) -> None:
         """When ChromaDB collection is unavailable, code graph still works."""
         (tmp_path / "app.py").write_text("x = 1\n")
 
-        with patch("rag_mcp.core.codebase.codebase_map._is_magika_available", return_value=False), \
+        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
              patch("chromadb.PersistentClient") as mock_client:
             mock_client.return_value.get_collection.side_effect = Exception("no collection")
 

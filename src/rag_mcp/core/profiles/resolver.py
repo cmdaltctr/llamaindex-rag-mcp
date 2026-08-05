@@ -178,8 +178,7 @@ class ProfileResolver:
             server_profile: The server-wide default profile name
                 (``RAG_PROFILE``).  Supplied by ``compose.py`` via
                 injection (task 4.5); when ``None``, falls back to the
-                resolved settings singleton for backward compatibility
-                during the group 4→5 transition.
+                composition root's default ``EffectiveSettings``.
             base: Server-default :class:`EffectiveSettings` that resolved
                 profiles overlay their Tier 2 levers onto (task 4.4).
                 Supplied by ``compose.build_profile_resolver()``.  When
@@ -269,10 +268,12 @@ class ProfileResolver:
         """
         if self._server_profile is not None:
             return self._server_profile
-        # Transition fallback: will be removed in group 5.7.
-        from ...config import settings
+        # No injected profile: fall back to the composition root's default
+        # EffectiveSettings rather than the config singleton (task 5.7).
+        # Production always injects — see compose.build_profile_resolver().
+        from ..settings import get_default_effective_settings
 
-        return settings.rag_profile
+        return get_default_effective_settings().rag_profile
 
     def _read_collection_tag(
         self, store: VectorStore, collection_name: str

@@ -40,14 +40,6 @@ def _python_files() -> list[Path]:
     return sorted(files)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Architecture-v2 conformance: 21 sites in core/ and integrations/ "
-        "still import the resolved settings singleton. Threaded to DI in "
-        "group 5 (task 5.7); un-xfailed at task 5.8."
-    ),
-)
 def test_no_global_settings_reads_in_core_or_integrations() -> None:
     """No module under ``core/`` or ``integrations/`` may import the settings singleton."""
     hits: list[tuple[Path, int, str]] = []

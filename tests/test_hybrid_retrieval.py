@@ -496,7 +496,14 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
         {"id": "without_sparse_2", "text": "missing sparse again", "metadata": {"file_path": "c.txt"}},
     ]
     collection = FakeCollection("paged_native", rows)
-    monkeypatch.setattr(config.settings, "chroma_scan_page_size", 1)
+    # Page size is read from the composition-root default, not the config
+    # singleton, now that core no longer imports config.
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        set_default_effective_settings,
+    )
+
+    set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=1))
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection}))
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")

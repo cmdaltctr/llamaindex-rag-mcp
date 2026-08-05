@@ -15,7 +15,7 @@ import logging
 import time
 from pathlib import Path
 
-from ..config import settings
+from ..core.settings import get_default_effective_settings
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +49,14 @@ class AzureDocReader:
             key: Azure Document Intelligence API key.
             model: Azure model ID (default: "prebuilt-layout").
         """
-        if endpoint is None:
-            endpoint = settings.azure_doc_intelligence_endpoint
-        if key is None:
-            key = settings.azure_doc_intelligence_key
-        if model is None:
-            model = settings.azure_doc_intelligence_model
+        if endpoint is None or key is None or model is None:
+            defaults = get_default_effective_settings()
+            if endpoint is None:
+                endpoint = defaults.azure_doc_intelligence_endpoint
+            if key is None:
+                key = defaults.azure_doc_intelligence_key
+            if model is None:
+                model = defaults.azure_doc_intelligence_model
         self.endpoint = endpoint
         self.key = key
         self.model = model

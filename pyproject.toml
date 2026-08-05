@@ -148,9 +148,6 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.chroma -> chromadb",
-    # TEMPORARY: codebase_map bypasses the VectorStore abstraction.
-    # Removed at task 6.1/6.3 when it uses the injected store.
-    "rag_mcp.core.codebase.codebase_map -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -198,6 +195,13 @@ forbidden_modules = [
     "rag_mcp.daemon",
 ]
 ignore_imports = [
+    # PERMANENT: integrations read the frozen EffectiveSettings value object.
+    # This is the same sanctioned category as config -> core.*.settings: a
+    # pure-data model with no business logic and no imports of its own. It is
+    # NOT a dependency on core business logic, which stays forbidden.
+    "rag_mcp.integrations.magika -> rag_mcp.core.settings",
+    "rag_mcp.integrations.azure -> rag_mcp.core.settings",
+    "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings
@@ -210,13 +214,7 @@ ignore_imports = [
     # undetected today. Do not add modules here to silence a new violation;
     # the four below are a time-boxed migration artefact removed at 5.6, and
     # task 10.3a fails the build if any outlives its fix.
-    "rag_mcp.integrations.azure -> rag_mcp.config",
-    "rag_mcp.integrations.magika -> rag_mcp.config",
     "rag_mcp.integrations.pdf.factory -> rag_mcp.config",
-    "rag_mcp.integrations.pdf.liteparse -> rag_mcp.config",
-    # TEMPORARY: magika's circular import to codebase_map for the
-    # _is_magika_available monkeypatch target. Removed at task 6.4/6.5.
-    "rag_mcp.integrations.magika -> rag_mcp.core.codebase.codebase_map",
 ]
 unmatched_ignore_imports_alerting = "error"
 
