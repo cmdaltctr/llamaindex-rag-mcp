@@ -609,7 +609,7 @@ class TestSearchErrorHandling:
 
     def test_search_cli_defaults_follow_policy_resolver(self) -> None:
         """CLI omitted rerank should pass None so retrieval resolves policy."""
-        from rag_mcp.config import TOP_K
+        from rag_mcp.config import get_settings as _gs
 
         result_payload = [{
             "score": 0.8,
@@ -626,7 +626,7 @@ class TestSearchErrorHandling:
         assert json.loads(result.output) == result_payload
         mock_search.assert_called_once_with(
             "cli query",
-            top_k=TOP_K,
+            top_k=_gs().retrieval.top_k,
             similarity_threshold=0.0,
             rerank=None,
             collection_name="documents",

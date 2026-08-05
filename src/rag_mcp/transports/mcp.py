@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from ..config import settings
+from ..config import get_settings
 from ..core.ingestion import ingest_path_async, list_documents as _list_documents
 from ..core.profiles import ProfileResolver
 from ..core.retrieval import search
@@ -164,11 +164,11 @@ async def search_documents(
         if top_k is None and effective is not None:
             top_k = effective.top_k
         if similarity_threshold is None:
-            similarity_threshold = settings.similarity_threshold
+            similarity_threshold = get_settings().retrieval.similarity_threshold
         if hybrid is None and effective is not None:
             hybrid = effective.hybrid_enabled
         elif hybrid is None:
-            hybrid = settings.hybrid_enabled
+            hybrid = get_settings().retrieval.hybrid_enabled
         return await asyncio.to_thread(
             search,
             query,

@@ -16,7 +16,7 @@ def build(settings: Settings) -> Any:
     from llama_index.llms.ollama import Ollama
 
     return Ollama(
-        model=settings.ollama_classify_model,
+        model=settings.metadata.ollama_classify_model,
         base_url=settings.ollama_base_url,
-        request_timeout=settings.ollama_classify_timeout,
+        request_timeout=settings.metadata.ollama_classify_timeout,
     )

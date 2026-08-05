@@ -70,8 +70,9 @@ async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPa
     from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     import rag_mcp.config as _config
-    monkeypatch.setattr(_config.settings, "llamacpp_chat_url", "http://localhost:8081/v1")
-    monkeypatch.setattr(_config.settings, "llamacpp_chat_model", "test.gguf")
+    from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+
+    set_default_effective_settings(EffectiveSettings(llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"))
 
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -111,8 +112,9 @@ async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch)
     from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
     import rag_mcp.config as _config
-    monkeypatch.setattr(_config.settings, "llamacpp_chat_url", "http://localhost:8081/v1")
-    monkeypatch.setattr(_config.settings, "llamacpp_chat_model", "test.gguf")
+    from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+
+    set_default_effective_settings(EffectiveSettings(llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"))
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()

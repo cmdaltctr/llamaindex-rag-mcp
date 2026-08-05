@@ -15,13 +15,13 @@ import typer
 from rich.table import Table
 
 from . import app, console, _sanitise_display_name, _print_ollama_error
-from ...config import settings
+from ...config import get_settings
 
 
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Natural language search query."),
-    top_k: int = typer.Option(settings.top_k, "--top-k", "-k", help="Max results to return."),
+    top_k: int = typer.Option(get_settings().retrieval.top_k, "--top-k", "-k", help="Max results to return."),
     threshold: float = typer.Option(
         0.0, "--threshold", "-t", help="Minimum similarity score."
     ),

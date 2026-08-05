@@ -27,10 +27,73 @@ logger = logging.getLogger(__name__)
 _runtime_setup_done: bool = False
 
 
+# ── Runtime capability probes (moved from config.py, task 7.10) ──────
+# These ask the runtime a question ("is native sparse available?", "is
+# LiteParse installed?"), which is construction work, not settings data.
+# Keeping them in config.py forced it to import core.retrieval.sparse,
+# inverting the layering the config-is-leaf contract now forbids.
+
+def resolve_sparse_backend(settings: Settings) -> str:
+    """Resolve the configured sparse backend to ``bm25`` or ``native``.
+
+    Probes ChromaDB's native sparse capability when ``auto`` or
+    ``native`` is selected.
+    """
+    backend = settings.retrieval.hybrid_sparse_backend
+    if backend == "bm25":
+        return "bm25"
+
+    from .core.retrieval.sparse import _detect_native_sparse_capability
+
+    native_available = _detect_native_sparse_capability()
+    if backend == "auto":
+        return "native" if native_available else "bm25"
+
+    if native_available:
+        return "native"
+
+    logger.warning(
+        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
+        "ChromaDB runtime does not expose native sparse retrieval for this "
+        "project configuration. Falling back to bm25."
+    )
+    return "bm25"
+
+
+def resolve_pdf_reader(settings: Settings) -> str:
+    """Resolve the configured PDF reader to a concrete backend name.
+
+    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
+    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
+    """
+    reader = settings.pdf_reader
+    if reader == "pypdf":
+        return "pypdf"
+
+    if reader in ("liteparse", "pypdfium2"):
+        try:
+            __import__(reader)
+            return reader
+        except ImportError:
+            logger.error(
+                "PDF_READER=%s was requested but the package is not "
+                "installed. Falling back to pypdf.", reader,
+            )
+            return "pypdf"
+
+    # auto resolution: probe in preference order.
+    for backend in ("liteparse", "pypdfium2"):
+        try:
+            __import__(backend)
+            logger.info("PDF_READER=auto resolved to %s", backend)
+            return backend
+        except ImportError:
+            continue
+
+    return "pypdf"
+
 def _resolve_sparse_backend_for(settings: Settings) -> str:
     """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
-    from .config import resolve_sparse_backend
-
     return resolve_sparse_backend(settings)
 
 
@@ -60,43 +123,22 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     if settings is None:
         settings = get_settings()
 
+    # The nested Settings blocks map 1:1 onto the EffectiveSettings blocks,
+    # so this is a straight copy plus the cross-cutting fields. Before the
+    # nested schema this function had to restate ~30 flat field names.
     return EffectiveSettings(
-        chunking=ChunkingBlock(
-            chunk_size=settings.chunk_size,
-            chunk_overlap=settings.chunk_overlap,
-            markdown_chunk_size=settings.markdown_chunk_size,
-            markdown_heading_prepend=settings.markdown_heading_prepend,
-            markdown_min_chunk_fraction=settings.markdown_min_chunk_fraction,
-            strategy_fallback=settings.chunk_strategy_fallback,
-        ),
-        ingestion=IngestionBlock(
-            embed_concurrency=settings.embed_concurrency,
-            embed_batch_size=settings.embed_batch_size,
-        ),
+        chunking=ChunkingBlock(**settings.chunking.model_dump()),
+        ingestion=IngestionBlock(**settings.ingestion.model_dump()),
         retrieval=RetrievalBlock(
-            top_k=settings.top_k,
-            similarity_threshold=settings.similarity_threshold,
-            rerank_enabled=settings.rerank_enabled,
-            rerank_enabled_for_semantic=settings.rerank_enabled_for_semantic,
-            hard_technical_threshold=settings.hard_technical_threshold,
-            rerank_fetch_multiplier=settings.rerank_fetch_multiplier,
-            rerank_max_fetch=settings.rerank_max_fetch,
-            rerank_model=settings.rerank_model,
-            hybrid_enabled=settings.hybrid_enabled,
-            hybrid_rrf_k=settings.hybrid_rrf_k,
-            # Bake the RESOLVED backend in: the `auto` capability probe runs
-            # once here in the composition root, so core/ performs a plain
-            # read instead of probing at query time (task 7.10).
-            hybrid_sparse_backend=_resolve_sparse_backend_for(settings),
+            **{
+                **settings.retrieval.model_dump(),
+                # Bake the RESOLVED backend in: the `auto` capability probe
+                # runs once here, so core/ performs a plain read instead of
+                # probing at query time (task 7.10).
+                "hybrid_sparse_backend": _resolve_sparse_backend_for(settings),
+            }
         ),
-        metadata=MetadataBlock(
-            extraction_mode=settings.metadata_extraction_mode,
-            keyword_rules=settings.metadata_keyword_rules,
-            ollama_classify_model=settings.ollama_classify_model,
-            ollama_classify_max_attempts=settings.ollama_classify_max_attempts,
-            ollama_classify_timeout=settings.ollama_classify_timeout,
-            taxonomy_mode=settings.metadata_taxonomy_mode,
-        ),
+        metadata=MetadataBlock(**settings.metadata.model_dump()),
         profile_name=settings.rag_profile,
         chroma_persist_dir=settings.chroma_persist_dir,
         collection_name=settings.collection_name,
@@ -115,7 +157,9 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         openrouter_llm_model=settings.openrouter_llm_model,
         ollama_base_url=settings.ollama_base_url,
         embed_model=settings.embed_model,
-        pdf_reader=settings.pdf_reader,
+        # Bake the RESOLVED reader in: the `auto` probe (is LiteParse
+        # installed?) runs once here, not on every PDF read.
+        pdf_reader=resolve_pdf_reader(settings),
         liteparse_num_workers=settings.liteparse_num_workers,
         liteparse_ocr_enabled=settings.liteparse_ocr_enabled,
         magika_binary=settings.magika_binary,
@@ -188,14 +232,14 @@ def build_reranker(settings: Settings | None = None) -> Any:
 
     Returns:
         A ``CrossEncoderReranker`` instance wired to
-        ``settings.rerank_model``.
+        ``settings.retrieval.rerank_model``.
     """
     if settings is None:
         settings = get_settings()
 
     from .core.retrieval.reranker import CrossEncoderReranker
 
-    return CrossEncoderReranker(model_id=settings.rerank_model)
+    return CrossEncoderReranker(model_id=settings.retrieval.rerank_model)
 
 
 def build_vector_store(settings: Settings | None = None) -> Any:
@@ -279,8 +323,8 @@ def _resolve_active_strategies(settings: Settings) -> None:
     from .core.providers.llm import registry as llm_registry
 
     active: list[tuple[str, Any, str]] = [
-        ("chunking", chunking_registry, settings.chunk_strategy_fallback),
-        ("metadata", metadata_registry, settings.metadata_extraction_mode),
+        ("chunking", chunking_registry, settings.chunking.strategy_fallback),
+        ("metadata", metadata_registry, settings.metadata.extraction_mode),
         ("embeddings", embed_registry, _resolve_effective_embed_provider(settings)),
         ("llm", llm_registry, settings.metadata_llm_provider),
     ]
@@ -308,6 +352,11 @@ def ensure_runtime_setup() -> None:
     global _runtime_setup_done
     if _runtime_setup_done:
         return
+    # Fail fast on pre-v2.0.0 flat env vars before resolving anything, so an
+    # unmigrated .env produces a naming error rather than silent defaults.
+    from .config import check_legacy_env_vars
+
+    check_legacy_env_vars()
     settings = get_settings()
     try:
         LlamaIndexSettings.embed_model = build_embed_model(settings)

@@ -6,7 +6,7 @@
 # (no BM25 fusion needed for prose documents), and the category taxonomy
 # from ADR-013 classifies content.
 #
-# This profile deliberately sets RERANK_ENABLED=true, differing from the
+# This profile deliberately sets retrieval.rerank_enabled=true, differing from the
 # global code default of false (flipped post-Experiment 10).  Experiment 10
 # evaluated the reranker on a TECHNICAL/codebase workload (FreshStack
 # LangChain docs) where it was harmful.  Document grounding is a semantic
@@ -19,13 +19,16 @@
 # NEVER put API keys, tokens, or secrets in this file.
 
 # Retrieval: quality-first for document grounding.
-TOP_K: 10
-RERANK_ENABLED: "true"
-HYBRID_ENABLED: "false"
+retrieval:
+  top_k: 10
+  rerank_enabled: true
+  hybrid_enabled: false
 
 # Chunking fallback for ambiguous file types (content-type dispatch still
 # wins for known types like .py, .md, .yaml).
-CHUNK_STRATEGY_FALLBACK: markdown
+chunking:
+  strategy_fallback: markdown
 
 # Metadata taxonomy: ADR-013 hybrid category taxonomy.
-METADATA_TAXONOMY_MODE: category
+metadata:
+  taxonomy_mode: category

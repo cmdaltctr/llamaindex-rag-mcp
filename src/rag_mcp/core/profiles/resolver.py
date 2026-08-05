@@ -82,43 +82,47 @@ def _bundle_to_effective(
     Returns:
         Frozen :class:`EffectiveSettings` instance.
     """
-    # Tier 2 lever env-var overrides (env wins over profile bundle).
-    raw_top_k = os.environ.get("TOP_K", bundle.get("TOP_K", 10))
+    # Tier 2 lever env overrides (env still wins over the profile bundle).
+    # The bundle is nested (v2.0.0), and env vars use the nested delimiter.
+    retrieval = bundle.get("retrieval", {}) or {}
+    chunking = bundle.get("chunking", {}) or {}
+    metadata = bundle.get("metadata", {}) or {}
+
+    raw_top_k = os.environ.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
     try:
         top_k = int(raw_top_k)
     except (ValueError, TypeError) as exc:
         raise ValueError(
-            f"Profile {profile_name!r} has invalid TOP_K={raw_top_k!r}: "
+            f"Profile {profile_name!r} has invalid retrieval.top_k={raw_top_k!r}: "
             f"must be an integer ({exc})"
         ) from exc
 
-    raw_reranker = os.environ.get(
-        "RERANK_ENABLED", bundle.get("RERANK_ENABLED", "false")
+    reranker_enabled = _parse_profile_bool(
+        os.environ.get(
+            "RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False)
+        )
     )
-    reranker_enabled = _parse_profile_bool(raw_reranker)
-
-    raw_hybrid = os.environ.get(
-        "HYBRID_ENABLED", bundle.get("HYBRID_ENABLED", "false")
+    hybrid_enabled = _parse_profile_bool(
+        os.environ.get(
+            "RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False)
+        )
     )
-    hybrid_enabled = _parse_profile_bool(raw_hybrid)
-
     chunk_strategy_fallback = str(
         os.environ.get(
-            "CHUNK_STRATEGY_FALLBACK",
-            bundle.get("CHUNK_STRATEGY_FALLBACK", "markdown"),
+            "CHUNKING__STRATEGY_FALLBACK",
+            chunking.get("strategy_fallback", "markdown"),
         )
     )
     metadata_taxonomy_mode = str(
         os.environ.get(
-            "METADATA_TAXONOMY_MODE",
-            bundle.get("METADATA_TAXONOMY_MODE", "category"),
+            "METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category")
         )
     )
 
     # Validate taxonomy mode against known values.
     if metadata_taxonomy_mode not in ("category", "file_type"):
         raise ValueError(
-            f"Profile {profile_name!r} has invalid METADATA_TAXONOMY_MODE="
+            f"Profile {profile_name!r} has invalid metadata.taxonomy_mode="
             f"{metadata_taxonomy_mode!r}: must be 'category' or 'file_type'"
         )
 

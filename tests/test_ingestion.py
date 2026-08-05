@@ -64,11 +64,13 @@ class TestListDocuments:
         """Document chunk counts must include metadata beyond one scan page."""
         import chromadb
         import rag_mcp.config as _config
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
+        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
+
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_or_create_collection("paged_docs")
         collection.add(
             ids=["1", "2", "3", "4", "5"],
@@ -178,9 +180,9 @@ class TestMetadataAttachment:
 
         # Verify metadata in ChromaDB
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_collection("test_metadata")
         data = collection.get(include=["metadatas"])
 
@@ -216,9 +218,9 @@ class TestMetadataAttachment:
         assert result["status"] == "ok"
 
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
+        from rag_mcp.config import get_settings as _gs
 
-        db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
         collection = db.get_collection("test_disabled_meta")
         data = collection.get(include=["metadatas"])
 

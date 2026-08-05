@@ -104,7 +104,7 @@ class TestSelectOnnxVariant:
     def test_modernbert_model_id_selects_modernbert_variants(self) -> None:
         """A ModernBERT model ID selects the ModernBERT variant chain.
 
-        Previously this patched ``config.settings.rerank_model`` and called
+        Previously this patched ``config.settings.retrieval.rerank_model`` and called
         ``_select_onnx_variant()`` with no argument. The model ID is now an
         explicit parameter, so the test states it directly — which is also
         what it was actually testing all along.
@@ -195,7 +195,7 @@ class TestCrossEncoderRerankerSingleton:
     def test_model_id_comes_from_the_composition_root(self) -> None:
         """The model ID is injected, not read from a process-wide singleton.
 
-        Replaces the old test that patched ``config.settings.rerank_model``
+        Replaces the old test that patched ``config.settings.retrieval.rerank_model``
         and expected the reranker to observe it. That coupling is exactly what
         the DI refactor removed: the reranker no longer imports config at all.
         """
@@ -206,7 +206,7 @@ class TestCrossEncoderRerankerSingleton:
             "reranker must not hold a module-level settings object"
         )
         built = compose.build_reranker()
-        assert built._model_id == compose.get_settings().rerank_model
+        assert built._model_id == compose.get_settings().retrieval.rerank_model
 
     def test_injected_model_id_is_honoured(self) -> None:
         """A caller-provided model_id must override the settings default."""

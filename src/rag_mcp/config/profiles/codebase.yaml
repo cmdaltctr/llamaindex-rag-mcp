@@ -14,12 +14,15 @@
 # NEVER put API keys, tokens, or secrets in this file.
 
 # Retrieval: speed-first for coding agents in the loop.
-TOP_K: 20
-RERANK_ENABLED: "false"
-HYBRID_ENABLED: "true"
+retrieval:
+  top_k: 20
+  rerank_enabled: false
+  hybrid_enabled: true
 
 # Chunking fallback for ambiguous file types.
-CHUNK_STRATEGY_FALLBACK: code
+chunking:
+  strategy_fallback: code
 
 # Metadata taxonomy: file-type classification via Magika.
-METADATA_TAXONOMY_MODE: file_type
+metadata:
+  taxonomy_mode: file_type

@@ -85,9 +85,9 @@ def test_backward_compat_properties() -> None:
     settings = EffectiveSettings(
         retrieval=RetrievalBlock(top_k=42, rerank_enabled=True, hybrid_enabled=True),
     )
-    assert settings.top_k == 42
+    assert settings.retrieval.top_k == 42
     assert settings.reranker_enabled is True
-    assert settings.hybrid_enabled is True
+    assert settings.retrieval.hybrid_enabled is True
 
 
 def test_core_settings_has_no_upward_imports() -> None:

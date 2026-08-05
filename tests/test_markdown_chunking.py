@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE, MARKDOWN_CHUNK_SIZE
+from rag_mcp.config import get_settings as _gs
 from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings
 from rag_mcp.core.chunking.markdown import (
     apply_heading_prepend as _apply_heading_prepend,
@@ -39,8 +39,8 @@ def _node_text(node) -> str:
 
 def test_markdown_chunk_size_default_is_1024() -> None:
     """Markdown files use the promoted Experiment 6c chunk-size default."""
-    assert CHUNK_SIZE == 512
-    assert MARKDOWN_CHUNK_SIZE == 1024
+    assert _gs().chunking.chunk_size == 512
+    assert _gs().chunking.markdown_chunk_size == 1024
 
 
 # ── 1.4: heading boundaries preserved when sections fit ───────────────────
@@ -147,8 +147,8 @@ async def test_non_markdown_uses_default_splitter(sample_txt: Path) -> None:
     )
     documents = reader.load_data()
     baseline = SentenceSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
+        chunk_size=_gs().chunking.chunk_size,
+        chunk_overlap=_gs().chunking.chunk_overlap,
     ).get_nodes_from_documents(documents)
 
     # Production path — should match exactly for non-Markdown files

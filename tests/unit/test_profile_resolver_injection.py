@@ -63,7 +63,7 @@ def test_bundle_overlay_does_not_mutate_base(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Resolving a profile must leave the shared base instance untouched."""
-    monkeypatch.delenv("TOP_K", raising=False)
+    monkeypatch.delenv("RETRIEVAL__TOP_K", raising=False)
     base = EffectiveSettings(retrieval=RetrievalBlock(top_k=10))
     _bundle_to_effective("codebase", {"TOP_K": 20}, base)
     assert base.retrieval.top_k == 10

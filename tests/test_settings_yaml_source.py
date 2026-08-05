@@ -21,6 +21,26 @@ import yaml
 from rag_mcp.config import Settings
 
 
+def _yaml_lookup(data: dict, dotted: str, env_name: str) -> object:
+    """Read a value from defaults.yaml by its schema location.
+
+    Nested subpackage keys live under their block with lowercase leaves
+    (``retrieval: {top_k: 10}``); cross-cutting keys stay flat and
+    SCREAMING_SNAKE at the top level.
+    """
+    if "." in dotted:
+        block, leaf = dotted.split(".", 1)
+        return data[block][leaf]
+    return data[env_name]
+
+
+def _get_nested(obj: object, dotted: str) -> object:
+    """Resolve a dotted field path (``retrieval.top_k``) on nested Settings."""
+    for part in dotted.split("."):
+        obj = getattr(obj, part)
+    return obj
+
+
 def _fresh_settings() -> Settings:
     """Build a fresh ``Settings`` with the ``.env`` source disabled."""
     return Settings(_env_file=None)
@@ -60,13 +80,13 @@ def test_defaults_yaml_is_valid_mapping() -> None:
 @pytest.mark.parametrize(
     "env_name, field_name",
     [
-        ("CHUNK_SIZE", "chunk_size"),
-        ("CHUNK_OVERLAP", "chunk_overlap"),
-        ("TOP_K", "top_k"),
+        ("CHUNKING__CHUNK_SIZE", "chunking.chunk_size"),
+        ("CHUNKING__CHUNK_OVERLAP", "chunking.chunk_overlap"),
+        ("RETRIEVAL__TOP_K", "retrieval.top_k"),
         ("CHROMA_PERSIST_DIR", "chroma_persist_dir"),
         ("COLLECTION_NAME", "collection_name"),
         ("EMBED_PROVIDER", "embed_provider"),
-        ("HYBRID_SPARSE_BACKEND", "hybrid_sparse_backend"),
+        ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend"),
         ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold"),
     ],
     ids=lambda v: v,
@@ -80,7 +100,7 @@ def test_resolved_value_matches_defaults_yaml(
     monkeypatch.delenv(env_name, raising=False)
     data = _load_packaged_yaml()
     settings = _fresh_settings()
-    assert getattr(settings, field_name) == data[env_name]
+    assert _get_nested(settings, field_name) == _yaml_lookup(data, field_name, env_name)
 
 
 # ── Precedence: env overrides YAML ──────────────────────────────────────
@@ -90,18 +110,18 @@ def test_env_overrides_yaml_for_chunk_size(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An environment variable SHALL win over defaults.yaml."""
-    monkeypatch.setenv("CHUNK_SIZE", "999")
+    monkeypatch.setenv("CHUNKING__CHUNK_SIZE", "999")
     settings = _fresh_settings()
-    assert settings.chunk_size == 999
+    assert settings.chunking.chunk_size == 999
 
 
 def test_env_overrides_yaml_for_top_k(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """TOP_K env var SHALL take precedence over the YAML default."""
-    monkeypatch.setenv("TOP_K", "42")
+    monkeypatch.setenv("RETRIEVAL__TOP_K", "42")
     settings = _fresh_settings()
-    assert settings.top_k == 42
+    assert settings.retrieval.top_k == 42
 
 
 # ── YAML-backed vs field-default-only ───────────────────────────────────
@@ -111,11 +131,11 @@ def test_yaml_backed_field_resolves_from_yaml(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A field present in defaults.yaml SHALL resolve to its YAML value."""
-    monkeypatch.delenv("CHUNK_SIZE", raising=False)
+    monkeypatch.delenv("CHUNKING__CHUNK_SIZE", raising=False)
     data = _load_packaged_yaml()
-    assert "CHUNK_SIZE" in data
+    assert "chunking" in data and "chunk_size" in data["chunking"]
     settings = _fresh_settings()
-    assert settings.chunk_size == data["CHUNK_SIZE"]
+    assert settings.chunking.chunk_size == data["chunking"]["chunk_size"]
 
 
 def test_non_yaml_field_resolves_from_field_default(
@@ -147,8 +167,8 @@ def test_yaml_resolves_from_temporary_working_directory(
     no ``pyproject.toml`` and no ``config/`` folder, the packaged YAML is
     still found and applied.
     """
-    monkeypatch.delenv("CHUNK_SIZE", raising=False)
-    monkeypatch.delenv("TOP_K", raising=False)
+    monkeypatch.delenv("CHUNKING__CHUNK_SIZE", raising=False)
+    monkeypatch.delenv("RETRIEVAL__TOP_K", raising=False)
     monkeypatch.delenv("CHROMA_PERSIST_DIR", raising=False)
 
     original_cwd = os.getcwd()
@@ -157,8 +177,8 @@ def test_yaml_resolves_from_temporary_working_directory(
         assert not (tmp_path / "pyproject.toml").exists()
         assert not (tmp_path / "config").exists()
         settings = _fresh_settings()
-        assert settings.chunk_size == 512
-        assert settings.top_k == 10
+        assert settings.chunking.chunk_size == 512
+        assert settings.retrieval.top_k == 10
         assert settings.chroma_persist_dir == "./chroma_db"
     finally:
         os.chdir(original_cwd)
@@ -167,15 +187,14 @@ def test_yaml_resolves_from_temporary_working_directory(
 # ── Drift guard: defaults.yaml vs model field defaults ───────────────────
 
 
-def _normalise_yaml_value(field_name: str, yaml_value: object) -> object:
-    """Normalise a raw YAML value for comparison with the model field default.
+def _normalise_yaml_value(expected: object, yaml_value: object) -> object:
+    """Normalise a raw YAML value for comparison with a model field default.
 
-    Boolean knobs are stored as the strings ``"true"``/``"false"`` in
-    defaults.yaml (matching the legacy env-parsing contract); the model
-    declares real booleans.  Everything else compares as-is.
+    v2.0.0 writes native YAML booleans, but a quoted ``"true"``/``"false"``
+    is still accepted by the LegacyBool validators, so normalise both to a
+    real bool when the expected default is boolean.
     """
-    default = Settings.model_fields[field_name].default
-    if isinstance(default, bool):
+    if isinstance(expected, bool):
         if isinstance(yaml_value, str):
             return yaml_value.lower() == "true"
         return bool(yaml_value)
@@ -185,21 +204,50 @@ def _normalise_yaml_value(field_name: str, yaml_value: object) -> object:
 def test_yaml_defaults_match_model_field_defaults() -> None:
     """Every key in defaults.yaml SHALL agree with its model field default.
 
-    Guard against drift between the two default locations: the subpackage
+    Guards against drift between the two default locations: the subpackage
     settings models declare the authoritative default, and defaults.yaml
-    ships a copy as a resolution layer.  If they diverge, this fails.
+    ships a copy as a resolution layer. If they diverge, this fails.
+
+    v2.0.0: subpackage keys are nested under their block with lowercase
+    leaves; cross-cutting keys remain flat and SCREAMING_SNAKE.
     """
     data = _load_packaged_yaml()
     assert data, "defaults.yaml must not be empty"
-    for env_name, yaml_value in data.items():
-        field_name = env_name.lower()
-        assert field_name in Settings.model_fields, (
-            f"defaults.yaml key {env_name} has no Settings field {field_name!r}"
-        )
-        assert (
-            _normalise_yaml_value(field_name, yaml_value)
-            == Settings.model_fields[field_name].default
-        ), (
-            f"defaults.yaml {env_name}={yaml_value!r} disagrees with the "
-            f"model default {Settings.model_fields[field_name].default!r}"
-        )
+
+    for key, value in data.items():
+        if isinstance(value, dict):
+            # Nested block: compare each leaf against the block model's default.
+            assert key in Settings.model_fields, (
+                f"defaults.yaml block {key!r} has no matching Settings field"
+            )
+            block_cls = Settings.model_fields[key].annotation
+            for leaf, leaf_value in value.items():
+                assert leaf in block_cls.model_fields, (
+                    f"defaults.yaml {key}.{leaf} has no field on "
+                    f"{block_cls.__name__}"
+                )
+                expected = block_cls.model_fields[leaf].default
+                assert _normalise_yaml_value(expected, leaf_value) == expected, (
+                    f"defaults.yaml {key}.{leaf}={leaf_value!r} disagrees "
+                    f"with the model default {expected!r}"
+                )
+        else:
+            # Flat cross-cutting key.
+            field_name = key.lower()
+            assert field_name in Settings.model_fields, (
+                f"defaults.yaml key {key} has no Settings field {field_name!r}"
+            )
+            expected = Settings.model_fields[field_name].default
+            assert _normalise_yaml_value(expected, value) == expected, (
+                f"defaults.yaml {key}={value!r} disagrees with the model "
+                f"default {expected!r}"
+            )
+
+
+def test_every_subpackage_block_is_present_in_yaml() -> None:
+    """All four nested blocks must ship defaults, so none silently drifts."""
+    data = _load_packaged_yaml()
+    for block in ("chunking", "ingestion", "retrieval", "metadata"):
+        assert block in data, f"defaults.yaml is missing the {block!r} block"
+
+

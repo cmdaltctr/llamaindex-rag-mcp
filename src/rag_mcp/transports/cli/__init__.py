@@ -23,7 +23,7 @@ import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-from ...config import SUPPORTED_EXTENSIONS, settings
+from ...config import SUPPORTED_EXTENSIONS, get_settings
 
 # Import the composition root early so the LlamaIndex global
 # ``Settings.embed_model`` is assigned before any ingest/search call
@@ -88,7 +88,7 @@ def _detect_gpu_acceleration() -> None:
         models = data.get("models", [])
         for model_info in models:
             name = model_info.get("name", "")
-            if settings.embed_model in name:
+            if get_settings().embed_model in name:
                 runner = model_info.get("details", {}).get(
                     "format", ""
                 ) or model_info.get("details", {}).get("runner", "")
@@ -109,7 +109,7 @@ def _detect_gpu_acceleration() -> None:
         logger.debug(
             "Could not determine Ollama runner — %s not found in "
             "running models",
-            settings.embed_model,
+            get_settings().embed_model,
         )
     except FileNotFoundError:
         logger.debug("Could not determine Ollama runner — ollama CLI not found")
@@ -146,9 +146,9 @@ def _setup_logging() -> None:
     logger = logging.getLogger(__name__)
     logger.info(
         "Embedding model: %s | batch_size: %d | concurrency: %d",
-        settings.embed_model,
-        settings.embed_batch_size,
-        settings.embed_concurrency,
+        get_settings().embed_model,
+        get_settings().ingestion.embed_batch_size,
+        get_settings().ingestion.embed_concurrency,
     )
 
     if log_level <= logging.DEBUG:

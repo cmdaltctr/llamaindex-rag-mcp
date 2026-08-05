@@ -4,7 +4,7 @@ Covers the config-composition-root spec scenarios:
 - ``compose.build_embed_model`` / ``build_llm_model`` construct providers
   by resolving lazy registries against the resolved ``Settings``.
 - ``compose.build_reranker`` constructs the DI reranker wired to
-  ``settings.rerank_model``.
+  ``settings.retrieval.rerank_model``.
 - ``compose.ensure_runtime_setup`` assigns the LlamaIndex global
   ``Settings.embed_model`` exactly once per process.
 - ``core.providers.common.get_embed_endpoint`` returns the correct
@@ -120,7 +120,7 @@ def test_build_llm_model_cloud_openrouter_not_registered() -> None:
 
 
 def test_build_reranker_wires_model_id() -> None:
-    """The DI reranker must be constructed with settings.rerank_model."""
+    """The DI reranker must be constructed with settings.retrieval.rerank_model."""
     settings = _settings(rerank_model="custom/rerank-model")
     reranker = build_reranker(settings)
     assert reranker._model_id == "custom/rerank-model"

@@ -33,6 +33,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 from dotenv import load_dotenv
 
 from ..core.chunking.settings import ChunkingSettings
+from ..core.ingestion.settings import IngestionSettings
 from ..core.metadata.settings import MetadataSettings
 from ..core.retrieval.settings import RetrievalSettings
 
@@ -64,7 +65,9 @@ LegacyBool = Annotated[bool, BeforeValidator(_parse_legacy_bool)]
 class _YamlDefaultsSource(PydanticBaseSettingsSource):
     """Settings source reading ``config/defaults.yaml`` via importlib.resources.
 
-    YAML keys use the same SCREAMING_SNAKE_CASE as env vars.  Values from
+    YAML uses the nested schema (PROPOSAL §4.3/§6.2): ``chunking:``,
+    ``ingestion:``, ``retrieval:`` and ``metadata:`` blocks with lowercase
+    leaf keys, plus flat cross-cutting keys at the top level. Values from
     this source sit between field defaults (lower) and env/.env (higher).
     """
 
@@ -85,15 +88,13 @@ class _YamlDefaultsSource(PydanticBaseSettingsSource):
     def get_field_value(
         self, field: Any, field_name: str
     ) -> tuple[Any, str, bool]:
-        value = self._data.get(field_name.upper())
-        return value, field_name.upper(), False
+        return self._data.get(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for field_name in self.settings_cls.model_fields:
-            env_key = field_name.upper()
-            if env_key in self._data:
-                result[field_name] = self._data[env_key]
+            if field_name in self._data:
+                result[field_name] = self._data[field_name]
         return result
 
 
@@ -133,8 +134,27 @@ def _load_profile_bundle(profile_name: str) -> dict[str, Any]:
     if not isinstance(data, dict):
         return {}
 
-    # Hybrid is a mode selector — resolve to its default_profile's bundle.
+    _LEVER_BLOCKS = ("retrieval", "chunking", "ingestion", "metadata")
+
+    # Reject the pre-v2 flat schema loudly rather than silently ignoring it.
+    flat_keys = [k for k in data if k.isupper()]
+    if flat_keys:
+        raise ValueError(
+            f"Profile bundle {profile_name!r} uses the pre-v2.0.0 flat schema. "
+            f"Offending key(s): {', '.join(sorted(flat_keys))}. Nest them under "
+            f"a {', '.join(_LEVER_BLOCKS)} block — e.g. 'TOP_K: 10' becomes "
+            f"'retrieval:\n  top_k: 10'."
+        )
+
+    # Hybrid is a mode selector — it must carry no operational levers.
     if profile_name == "hybrid":
+        lever_blocks = [b for b in _LEVER_BLOCKS if b in data]
+        if lever_blocks:
+            raise ValueError(
+                f"hybrid.yaml declares lever block(s) {', '.join(lever_blocks)}, "
+                f"but hybrid is a mode selector, not an operational profile. "
+                f"Move those levers into documents.yaml or codebase.yaml."
+            )
         default_profile = data.get("default_profile", "documents")
         if default_profile not in ("documents", "codebase"):
             default_profile = "documents"
@@ -168,32 +188,39 @@ class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
     def get_field_value(
         self, field: Any, field_name: str
     ) -> tuple[Any, str, bool]:
-        value = self._data.get(field_name.upper())
-        return value, field_name.upper(), False
+        return self._data.get(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for field_name in self.settings_cls.model_fields:
-            env_key = field_name.upper()
-            if env_key in self._data:
-                result[field_name] = self._data[env_key]
+            if field_name in self._data:
+                result[field_name] = self._data[field_name]
         return result
 
 
 # ── Root Settings model ─────────────────────────────────────────────
 
 
-class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettings):
+class Settings(BaseSettings):
     """Resolved configuration for the RAG MCP server.
 
-    Composes the per-subpackage settings models (chunking, retrieval,
-    metadata) so defaults live near their code (spec: config-composition
-    root).  Fields defined here are the cross-cutting knobs that do not
-    belong to a single subpackage: storage, provider selection/connection,
-    PDF reader, codebase map, and document backend.
+    Composes the per-subpackage settings models by **nesting** (PROPOSAL
+    §4.3), so defaults live near their code and each block owns its own
+    namespace. Fields defined here are the cross-cutting knobs that belong
+    to no single subpackage: storage, provider selection/connection, PDF
+    reader, codebase map, and document backend.
 
-    All fields map 1:1 to environment variables (case-insensitive).
-    Defaults match the pre-refactor ``config.py`` exactly.
+    Environment variables:
+
+    * Subpackage fields use the nested delimiter — ``RETRIEVAL__TOP_K``,
+      ``CHUNKING__CHUNK_SIZE``, ``INGESTION__EMBED_CONCURRENCY``,
+      ``METADATA__EXTRACTION_MODE``.
+    * Cross-cutting fields keep their flat names — ``EMBED_MODEL``,
+      ``RAG_PROFILE``, ``PDF_READER``, credentials, and so on.
+
+    This is a **breaking change** from the pre-v2.0.0 flat interface. The
+    pre-v2 flat subpackage names are not accepted as aliases; a startup
+    validator raises with the nested replacement if it finds one.
     """
 
     model_config = SettingsConfigDict(
@@ -201,8 +228,19 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        env_nested_delimiter="__",
+        # The ROOT model stays permissive: it coexists with unrelated
+        # process environment entries (PATH, HOME, CI vars). The four
+        # subpackage models set extra="forbid", so a mistyped nested key
+        # still fails loudly — see design.md D9.
         extra="ignore",
     )
+
+    # ── Nested subpackage blocks ───────────────────────────────────
+    chunking: ChunkingSettings = ChunkingSettings()
+    ingestion: IngestionSettings = IngestionSettings()
+    retrieval: RetrievalSettings = RetrievalSettings()
+    metadata: MetadataSettings = MetadataSettings()
 
     # ── Storage ────────────────────────────────────────────────────
     chroma_persist_dir: str = "./chroma_db"
@@ -288,8 +326,8 @@ class Settings(ChunkingSettings, RetrievalSettings, MetadataSettings, BaseSettin
             logger.warning("Unknown CLOUD_BACKEND=%r; falling back to openrouter", self.cloud_backend)
             object.__setattr__(self, "cloud_backend", "openrouter")
 
-        if self.hybrid_sparse_backend not in ("auto", "native", "bm25"):
-            logger.warning("Unknown HYBRID_SPARSE_BACKEND=%r; falling back to bm25", self.hybrid_sparse_backend)
+        if self.retrieval.hybrid_sparse_backend not in ("auto", "native", "bm25"):
+            logger.warning("Unknown HYBRID_SPARSE_BACKEND=%r; falling back to bm25", self.retrieval.hybrid_sparse_backend)
             object.__setattr__(self, "hybrid_sparse_backend", "bm25")
 
         if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
@@ -382,66 +420,6 @@ def _resolve_effective_embed_provider(settings: Settings) -> str:
 # ── Runtime resolution (capability probing) ─────────────────────────
 
 
-def resolve_sparse_backend(settings: Settings) -> str:
-    """Resolve the configured sparse backend to ``bm25`` or ``native``.
-
-    Probes ChromaDB's native sparse capability when ``auto`` or
-    ``native`` is selected.
-    """
-    backend = settings.hybrid_sparse_backend
-    if backend == "bm25":
-        return "bm25"
-
-    from ..core.retrieval.sparse import _detect_native_sparse_capability
-
-    native_available = _detect_native_sparse_capability()
-    if backend == "auto":
-        return "native" if native_available else "bm25"
-
-    if native_available:
-        return "native"
-
-    logger.warning(
-        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
-        "ChromaDB runtime does not expose native sparse retrieval for this "
-        "project configuration. Falling back to bm25."
-    )
-    return "bm25"
-
-
-def resolve_pdf_reader(settings: Settings) -> str:
-    """Resolve the configured PDF reader to a concrete backend name.
-
-    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
-    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
-    """
-    reader = settings.pdf_reader
-    if reader == "pypdf":
-        return "pypdf"
-
-    if reader in ("liteparse", "pypdfium2"):
-        try:
-            __import__(reader)
-            return reader
-        except ImportError:
-            logger.error(
-                "PDF_READER=%s was requested but the package is not "
-                "installed. Falling back to pypdf.", reader,
-            )
-            return "pypdf"
-
-    # auto resolution: probe in preference order.
-    for backend in ("liteparse", "pypdfium2"):
-        try:
-            __import__(backend)
-            logger.info("PDF_READER=auto resolved to %s", backend)
-            return backend
-        except ImportError:
-            continue
-
-    return "pypdf"
-
-
 # ── Resolved singleton ──────────────────────────────────────────────
 
 def get_settings() -> Settings:
@@ -457,21 +435,17 @@ def get_settings() -> Settings:
 
 
 _settings: Settings | None = None
-settings = get_settings()
 
-# Resolved runtime values (computed once from the singleton).
-RESOLVED_HYBRID_SPARSE_BACKEND = resolve_sparse_backend(settings)
-RESOLVED_PDF_READER = resolve_pdf_reader(settings)
-
-
-def _resolve_sparse_backend() -> str:
-    """Backward-compatible no-arg wrapper for ``resolve_sparse_backend``."""
-    return resolve_sparse_backend(get_settings())
-
-
-def _resolve_pdf_reader() -> str:
-    """Backward-compatible no-arg wrapper for ``resolve_pdf_reader``."""
-    return resolve_pdf_reader(get_settings())
+# NOTE (task 5.7): the module-level ``settings = get_settings()`` singleton
+# and the RESOLVED_* constants derived from it were deleted in v2.0.0.
+# Importing this module now performs no environment or YAML resolution.
+# ``compose.py`` is the only production caller of ``get_settings()``; every
+# other layer receives a frozen ``EffectiveSettings`` by injection.
+#
+# The runtime capability probes (sparse backend, PDF reader) moved to
+# ``compose.py`` — they are construction concerns, and keeping them here
+# forced ``config`` to import ``core.retrieval.sparse``, inverting the
+# layering (finding F3).
 
 
 # ── Static constants (not env-configurable) ─────────────────────────
@@ -492,85 +466,70 @@ SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"
 # Maps each frozen legacy constant name to its Settings field path.
 # When code does ``from rag_mcp.config import TOP_K``, Python calls
 # ``__getattr__("TOP_K")``, which resolves the value from the Settings
-# singleton and emits a DeprecationWarning.
 
-_LEGACY_ALIASES: dict[str, str] = {
-    # Direct 1:1 mappings (constant name → settings field name).
-    "CHUNK_SIZE": "chunk_size",
-    "CHUNK_OVERLAP": "chunk_overlap",
-    "MARKDOWN_CHUNK_SIZE": "markdown_chunk_size",
-    "MARKDOWN_HEADING_PREPEND": "markdown_heading_prepend",
-    "MARKDOWN_MIN_CHUNK_FRACTION": "markdown_min_chunk_fraction",
-    "EMBED_CONCURRENCY": "embed_concurrency",
-    "EMBED_BATCH_SIZE": "embed_batch_size",
-    "TOP_K": "top_k",
-    "SIMILARITY_THRESHOLD": "similarity_threshold",
-    "RERANK_ENABLED": "rerank_enabled",
-    "RERANK_ENABLED_FOR_SEMANTIC": "rerank_enabled_for_semantic",
-    "HARD_TECHNICAL_THRESHOLD": "hard_technical_threshold",
-    "RERANK_FETCH_MULTIPLIER": "rerank_fetch_multiplier",
-    "RERANK_MAX_FETCH": "rerank_max_fetch",
-    "RERANK_MODEL": "rerank_model",
-    "HYBRID_ENABLED": "hybrid_enabled",
-    "HYBRID_RRF_K": "hybrid_rrf_k",
-    "HYBRID_SPARSE_BACKEND": "hybrid_sparse_backend",
-    "METADATA_EXTRACTION_MODE": "metadata_extraction_mode",
-    "METADATA_KEYWORD_RULES": "metadata_keyword_rules",
-    "OLLAMA_CLASSIFY_MODEL": "ollama_classify_model",
-    "OLLAMA_CLASSIFY_MAX_ATTEMPTS": "ollama_classify_max_attempts",
-    "OLLAMA_CLASSIFY_TIMEOUT": "ollama_classify_timeout",
-    "CHROMA_PERSIST_DIR": "chroma_persist_dir",
-    "COLLECTION_NAME": "collection_name",
-    "CHROMA_SCAN_PAGE_SIZE": "chroma_scan_page_size",
-    "VECTOR_STORE": "vector_store",
-    "EMBED_PROVIDER": "embed_provider",
-    "METADATA_LLM_PROVIDER": "metadata_llm_provider",
-    "LOCAL_BACKEND": "local_backend",
-    "CLOUD_BACKEND": "cloud_backend",
-    "LLAMACPP_EMBED_URL": "llamacpp_embed_url",
-    "LLAMACPP_EMBED_MODEL": "llamacpp_embed_model",
-    "LLAMACPP_CHAT_URL": "llamacpp_chat_url",
-    "LLAMACPP_CHAT_MODEL": "llamacpp_chat_model",
-    "OPENROUTER_API_KEY": "openrouter_api_key",
-    "OPENROUTER_EMBED_MODEL": "openrouter_embed_model",
-    "OPENROUTER_LLM_MODEL": "openrouter_llm_model",
-    "OLLAMA_BASE_URL": "ollama_base_url",
-    "PDF_READER": "pdf_reader",
-    "LITEPARSE_OCR_ENABLED": "liteparse_ocr_enabled",
-    "MAGIKA_BINARY": "magika_binary",
-    "DOC_SIMILARITY_THRESHOLD": "doc_similarity_threshold",
-    "CODEBASE_MAP_CACHE_DIR": "codebase_map_cache_dir",
-    "CODEBASE_MAP_MAX_FILES": "codebase_map_max_files",
-    "CODEBASE_MAP_MAX_DEPTH": "codebase_map_max_depth",
-    "DOCUMENT_BACKEND": "document_backend",
-    "AZURE_DOC_INTELLIGENCE_ENDPOINT": "azure_doc_intelligence_endpoint",
-    "AZURE_DOC_INTELLIGENCE_KEY": "azure_doc_intelligence_key",
-    "AZURE_DOC_INTELLIGENCE_MODEL": "azure_doc_intelligence_model",
-    "RAG_PROFILE": "rag_profile",
-    "CHUNK_STRATEGY_FALLBACK": "chunk_strategy_fallback",
-    "METADATA_TAXONOMY_MODE": "metadata_taxonomy_mode",
-    # Special alias: EMBED_MODEL_NAME was the old constant for the EMBED_MODEL env var.
-    "EMBED_MODEL_NAME": "embed_model",
-    # LITEPARSE_NUM_WORKERS needs int parsing.
-    "LITEPARSE_NUM_WORKERS": "liteparse_num_workers",
+# ── Legacy flat env-var tripwire (design.md D9, layer 2) ─────────────
+
+# Pre-v2.0.0 flat names for settings that now live in a nested block.
+# `extra="forbid"` on the subpackage models catches a mistyped *nested* key,
+# but a bare `TOP_K` never reaches a subpackage model at all — with
+# env_nested_delimiter it is simply an unrecognised root-level key that
+# `extra="ignore"` would swallow in silence. That silent behaviour change on
+# upgrade is exactly what this whole change exists to eliminate, so it is
+# caught here instead.
+#
+# LIFETIME: permanent through the v2.x line, removed in v3.0.0. This is a
+# decided removal trigger, not a deferral to an unplanned minor.
+_LEGACY_FLAT_ENV_VARS: dict[str, str] = {
+    "CHUNK_SIZE": "CHUNKING__CHUNK_SIZE",
+    "CHUNK_OVERLAP": "CHUNKING__CHUNK_OVERLAP",
+    "MARKDOWN_CHUNK_SIZE": "CHUNKING__MARKDOWN_CHUNK_SIZE",
+    "MARKDOWN_HEADING_PREPEND": "CHUNKING__MARKDOWN_HEADING_PREPEND",
+    "MARKDOWN_MIN_CHUNK_FRACTION": "CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION",
+    "CHUNK_STRATEGY_FALLBACK": "CHUNKING__STRATEGY_FALLBACK",
+    "EMBED_CONCURRENCY": "INGESTION__EMBED_CONCURRENCY",
+    "EMBED_BATCH_SIZE": "INGESTION__EMBED_BATCH_SIZE",
+    "TOP_K": "RETRIEVAL__TOP_K",
+    "SIMILARITY_THRESHOLD": "RETRIEVAL__SIMILARITY_THRESHOLD",
+    "RERANK_ENABLED": "RETRIEVAL__RERANK_ENABLED",
+    "RERANK_ENABLED_FOR_SEMANTIC": "RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC",
+    "HARD_TECHNICAL_THRESHOLD": "RETRIEVAL__HARD_TECHNICAL_THRESHOLD",
+    "RERANK_FETCH_MULTIPLIER": "RETRIEVAL__RERANK_FETCH_MULTIPLIER",
+    "RERANK_MAX_FETCH": "RETRIEVAL__RERANK_MAX_FETCH",
+    "RERANK_MODEL": "RETRIEVAL__RERANK_MODEL",
+    "HYBRID_ENABLED": "RETRIEVAL__HYBRID_ENABLED",
+    "HYBRID_RRF_K": "RETRIEVAL__HYBRID_RRF_K",
+    "HYBRID_SPARSE_BACKEND": "RETRIEVAL__HYBRID_SPARSE_BACKEND",
+    "METADATA_EXTRACTION_MODE": "METADATA__EXTRACTION_MODE",
+    "METADATA_KEYWORD_RULES": "METADATA__KEYWORD_RULES",
+    "METADATA_TAXONOMY_MODE": "METADATA__TAXONOMY_MODE",
+    "OLLAMA_CLASSIFY_MODEL": "METADATA__OLLAMA_CLASSIFY_MODEL",
+    "OLLAMA_CLASSIFY_MAX_ATTEMPTS": "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
+    "OLLAMA_CLASSIFY_TIMEOUT": "METADATA__OLLAMA_CLASSIFY_TIMEOUT",
 }
 
 
-def __getattr__(name: str) -> Any:
-    """PEP 562: resolve legacy module-level constants from Settings.
+def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
+    """Raise if the environment carries pre-v2.0.0 flat subpackage names.
 
-    Emits a ``DeprecationWarning`` directing consumers to the structured
-    ``settings`` object.
+    Args:
+        env: Environment mapping to scan (defaults to ``os.environ``).
+
+    Raises:
+        ValueError: Naming every offending variable and its nested
+            replacement, so the fix is mechanical.
     """
-    if name in _LEGACY_ALIASES:
-        field = _LEGACY_ALIASES[name]
-        warnings.warn(
-            f"`from rag_mcp.config import {name}` is deprecated; "
-            f"use `from rag_mcp.config import settings; settings.{field}` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        s = get_settings()
-        return getattr(s, field)
+    import os
 
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    source = os.environ if env is None else env
+    found = [(old, new) for old, new in _LEGACY_FLAT_ENV_VARS.items() if old in source]
+    if not found:
+        return
+    lines = "\n".join(f"  {old}  ->  {new}" for old, new in sorted(found))
+    raise ValueError(
+        "Pre-v2.0.0 flat configuration variable(s) found in the environment. "
+        "v2.0.0 moved subpackage settings into nested blocks; these names are "
+        "no longer read and would have been silently ignored. Rename them:\n"
+        f"{lines}\n"
+        "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "
+        "credentials) are unchanged. See docs/adr/037 for the full table."
+    )

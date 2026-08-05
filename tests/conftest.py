@@ -42,6 +42,16 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 # ── Session-scoped patches ─────────────────────────────────────────────────
 
 
+# Shared by `_isolate_env` (which exports them as env vars) and
+# `_install_default_effective_settings` (which puts them in the injected
+# settings). Defined once so the two fixtures cannot drift apart.
+_TEST_PERSIST_DIR = os.path.join(
+    tempfile.gettempdir(),
+    f"test_chroma_rag_mcp_{os.getpid()}",
+)
+_TEST_COLLECTION = "test_documents"
+
+
 @pytest.fixture(autouse=True)
 def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace PersistentClient with a singleton EphemeralClient globally.
@@ -190,11 +200,26 @@ def _install_default_effective_settings():
     """
     from rag_mcp.core.settings import (
         EffectiveSettings,
+        MetadataBlock,
         reset_default_effective_settings,
         set_default_effective_settings,
     )
 
-    set_default_effective_settings(EffectiveSettings())
+    # This must mirror the deterministic environment `_isolate_env` sets, not
+    # the class defaults. In particular metadata extraction MUST be disabled:
+    # the class default is "llamaindex", which would make every ingestion test
+    # perform real LLM calls and hang on network timeouts.
+    #   - extraction_mode="disabled" -> no auto-categorisation (was patched
+    #     onto the settings singleton before v2.0.0)
+    #   - pdf_reader="pypdf"         -> deterministic PDF path (gotcha #6)
+    set_default_effective_settings(
+        EffectiveSettings(
+            metadata=MetadataBlock(extraction_mode="disabled"),
+            pdf_reader="pypdf",
+            collection_name=_TEST_COLLECTION,
+            chroma_persist_dir=_TEST_PERSIST_DIR,
+        )
+    )
     yield
     reset_default_effective_settings()
 
@@ -232,12 +257,6 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     import sys
 
-    _TEST_PERSIST_DIR = os.path.join(
-        tempfile.gettempdir(),
-        f"test_chroma_rag_mcp_{os.getpid()}",
-    )
-    _TEST_COLLECTION = "test_documents"
-
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
     monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
     monkeypatch.setenv("EMBED_PROVIDER", "local")
@@ -245,46 +264,27 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
     monkeypatch.setenv("METADATA_LLM_PROVIDER", "local")
-    monkeypatch.setenv("METADATA_EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
-    monkeypatch.setenv("METADATA_KEYWORD_RULES", "")
-    monkeypatch.setenv("OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
+    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "disabled")  # no auto-categorisation in tests
+    monkeypatch.setenv("METADATA__KEYWORD_RULES", "")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
     # Keep retry behaviour out of the default test path so existing
     # tests don't pay 1+2+...=O(2^n) seconds of backoff.  Retry-specific
     # tests opt back in by setting this to 2+.
-    monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
-    monkeypatch.setenv("OLLAMA_CLASSIFY_TIMEOUT", "5.0")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "5.0")
 
-    # Patch the shared config module if already loaded — this covers
-    # both ingestion and retrieval since they import from config.
+    # NOTE: this fixture used to also monkeypatch legacy module constants
+    # (config.CHROMA_PERSIST_DIR …) and then the resolved Settings singleton,
+    # because consumers read one or the other depending on how far migration
+    # had got. Both are gone in v2.0.0: the constants with the PEP 562 shim
+    # (task 9.1) and the singleton with task 5.7. Setting the environment is
+    # now sufficient — get_settings() resolves from it, and compose derives
+    # the EffectiveSettings every layer receives.
+    #
+    # Clear any cached Settings so the env above is picked up per test.
     config_mod = sys.modules.get("rag_mcp.config")
     if config_mod is not None:
-        monkeypatch.setattr(config_mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
-        monkeypatch.setattr(config_mod, "COLLECTION_NAME", _TEST_COLLECTION)
-        monkeypatch.setattr(config_mod, "METADATA_EXTRACTION_MODE", "disabled")
-        monkeypatch.setattr(config_mod, "METADATA_KEYWORD_RULES", None)
-        monkeypatch.setattr(config_mod, "OLLAMA_CLASSIFY_MODEL", "qwen3:0.6b")
-
-        # Migrated consumers read the resolved settings singleton rather
-        # than the legacy module constants, so the module-attr patches
-        # above would be no-ops for them.  Patch the singleton attributes
-        # directly — Settings is a mutable BaseSettings (not frozen), so
-        # instance assignment works and monkeypatch restores on teardown.
-        monkeypatch.setattr(config_mod.settings, "chroma_persist_dir", _TEST_PERSIST_DIR)
-        monkeypatch.setattr(config_mod.settings, "collection_name", _TEST_COLLECTION)
-        monkeypatch.setattr(config_mod.settings, "metadata_extraction_mode", "disabled")
-        monkeypatch.setattr(config_mod.settings, "metadata_keyword_rules", None)
-        monkeypatch.setattr(config_mod.settings, "ollama_classify_model", "qwen3:0.6b")
-
-    # Also patch the leaf modules for backward compatibility in case
-    # any test imports them before config is loaded.
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):
-        mod = sys.modules.get(mod_name)
-        if mod is not None:
-            monkeypatch.setattr(mod, "CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
-            # COLLECTION_NAME may not be imported by all modules
-            # (e.g. retrieval.py uses a parameter default instead).
-            if hasattr(mod, "COLLECTION_NAME"):
-                monkeypatch.setattr(mod, "COLLECTION_NAME", _TEST_COLLECTION)
+        monkeypatch.setattr(config_mod, "_settings", None, raising=False)
 
 
 # ── FastMCP server fixture ─────────────────────────────────────────────────

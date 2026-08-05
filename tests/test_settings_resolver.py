@@ -36,43 +36,43 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("OPENROUTER_EMBED_MODEL", "openrouter_embed_model", ""),
     ("OPENROUTER_LLM_MODEL", "openrouter_llm_model", ""),
     ("OLLAMA_BASE_URL", "ollama_base_url", "http://localhost:11434"),
-    ("EMBED_BATCH_SIZE", "embed_batch_size", 100),
+    ("INGESTION__EMBED_BATCH_SIZE", "ingestion.embed_batch_size", 100),
     # Storage.
     ("CHROMA_PERSIST_DIR", "chroma_persist_dir", "./chroma_db"),
     ("COLLECTION_NAME", "collection_name", "documents"),
     ("CHROMA_SCAN_PAGE_SIZE", "chroma_scan_page_size", 10000),
     # Chunking.
-    ("CHUNK_SIZE", "chunk_size", 512),
-    ("CHUNK_OVERLAP", "chunk_overlap", 100),
-    ("EMBED_CONCURRENCY", "embed_concurrency", 2),
-    ("MARKDOWN_CHUNK_SIZE", "markdown_chunk_size", 1024),
-    ("MARKDOWN_HEADING_PREPEND", "markdown_heading_prepend", False),
-    ("MARKDOWN_MIN_CHUNK_FRACTION", "markdown_min_chunk_fraction", 0.0),
+    ("CHUNKING__CHUNK_SIZE", "chunking.chunk_size", 512),
+    ("CHUNKING__CHUNK_OVERLAP", "chunking.chunk_overlap", 100),
+    ("INGESTION__EMBED_CONCURRENCY", "ingestion.embed_concurrency", 2),
+    ("CHUNKING__MARKDOWN_CHUNK_SIZE", "chunking.markdown_chunk_size", 1024),
+    ("CHUNKING__MARKDOWN_HEADING_PREPEND", "chunking.markdown_heading_prepend", False),
+    ("CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION", "chunking.markdown_min_chunk_fraction", 0.0),
     # Retrieval.
-    ("TOP_K", "top_k", 10),
+    ("RETRIEVAL__TOP_K", "retrieval.top_k", 10),
     # RERANK_ENABLED: the documents profile (default RAG_PROFILE) sets this
     # to true, restoring ADR-018's balanced intent (M1 behaviour change,
     # Phase 4). The field default is False (post-Experiment 10), but the
     # profile source sits above field defaults in the precedence chain.
-    ("RERANK_ENABLED", "rerank_enabled", True),
-    ("RERANK_ENABLED_FOR_SEMANTIC", "rerank_enabled_for_semantic", True),
-    ("HARD_TECHNICAL_THRESHOLD", "hard_technical_threshold", 0.3),
-    ("SIMILARITY_THRESHOLD", "similarity_threshold", 0.0),
-    ("RERANK_FETCH_MULTIPLIER", "rerank_fetch_multiplier", 3),
-    ("RERANK_MAX_FETCH", "rerank_max_fetch", 100),
-    ("HYBRID_ENABLED", "hybrid_enabled", False),
-    ("HYBRID_RRF_K", "hybrid_rrf_k", 60),
-    ("HYBRID_SPARSE_BACKEND", "hybrid_sparse_backend", "bm25"),
+    ("RETRIEVAL__RERANK_ENABLED", "retrieval.rerank_enabled", True),
+    ("RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC", "retrieval.rerank_enabled_for_semantic", True),
+    ("RETRIEVAL__HARD_TECHNICAL_THRESHOLD", "retrieval.hard_technical_threshold", 0.3),
+    ("RETRIEVAL__SIMILARITY_THRESHOLD", "retrieval.similarity_threshold", 0.0),
+    ("RETRIEVAL__RERANK_FETCH_MULTIPLIER", "retrieval.rerank_fetch_multiplier", 3),
+    ("RETRIEVAL__RERANK_MAX_FETCH", "retrieval.rerank_max_fetch", 100),
+    ("RETRIEVAL__HYBRID_ENABLED", "retrieval.hybrid_enabled", False),
+    ("RETRIEVAL__HYBRID_RRF_K", "retrieval.hybrid_rrf_k", 60),
+    ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25"),
     # PDF reader.
     ("PDF_READER", "pdf_reader", "auto"),
     ("LITEPARSE_NUM_WORKERS", "liteparse_num_workers", None),
     ("LITEPARSE_OCR_ENABLED", "liteparse_ocr_enabled", False),
     # Metadata.
-    ("METADATA_EXTRACTION_MODE", "metadata_extraction_mode", "llamaindex"),
-    ("METADATA_KEYWORD_RULES", "metadata_keyword_rules", None),
-    ("OLLAMA_CLASSIFY_MODEL", "ollama_classify_model", "qwen3:0.6b"),
-    ("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "ollama_classify_max_attempts", 3),
-    ("OLLAMA_CLASSIFY_TIMEOUT", "ollama_classify_timeout", 30.0),
+    ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "llamaindex"),
+    ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", None),
+    ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "qwen3:0.6b"),
+    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", 3),
+    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", 30.0),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", 0.85),
@@ -106,39 +106,39 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("OPENROUTER_EMBED_MODEL", "openrouter_embed_model", "or-emb", "or-emb"),
     ("OPENROUTER_LLM_MODEL", "openrouter_llm_model", "or-llm", "or-llm"),
     ("OLLAMA_BASE_URL", "ollama_base_url", "http://ollama:11434", "http://ollama:11434"),
-    ("EMBED_BATCH_SIZE", "embed_batch_size", "250", 250),
+    ("INGESTION__EMBED_BATCH_SIZE", "ingestion.embed_batch_size", "250", 250),
     # Storage.
     ("CHROMA_PERSIST_DIR", "chroma_persist_dir", "/tmp/custom_chroma", "/tmp/custom_chroma"),
     ("COLLECTION_NAME", "collection_name", "my_collection", "my_collection"),
     ("CHROMA_SCAN_PAGE_SIZE", "chroma_scan_page_size", "5000", 5000),
     # Chunking.
-    ("CHUNK_SIZE", "chunk_size", "999", 999),
-    ("CHUNK_OVERLAP", "chunk_overlap", "50", 50),
-    ("EMBED_CONCURRENCY", "embed_concurrency", "8", 8),
-    ("MARKDOWN_CHUNK_SIZE", "markdown_chunk_size", "2048", 2048),
-    ("MARKDOWN_HEADING_PREPEND", "markdown_heading_prepend", "true", True),
-    ("MARKDOWN_MIN_CHUNK_FRACTION", "markdown_min_chunk_fraction", "0.5", 0.5),
+    ("CHUNKING__CHUNK_SIZE", "chunking.chunk_size", "999", 999),
+    ("CHUNKING__CHUNK_OVERLAP", "chunking.chunk_overlap", "50", 50),
+    ("INGESTION__EMBED_CONCURRENCY", "ingestion.embed_concurrency", "8", 8),
+    ("CHUNKING__MARKDOWN_CHUNK_SIZE", "chunking.markdown_chunk_size", "2048", 2048),
+    ("CHUNKING__MARKDOWN_HEADING_PREPEND", "chunking.markdown_heading_prepend", "true", True),
+    ("CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION", "chunking.markdown_min_chunk_fraction", "0.5", 0.5),
     # Retrieval.
-    ("TOP_K", "top_k", "25", 25),
-    ("RERANK_ENABLED", "rerank_enabled", "true", True),
-    ("RERANK_ENABLED_FOR_SEMANTIC", "rerank_enabled_for_semantic", "false", False),
-    ("HARD_TECHNICAL_THRESHOLD", "hard_technical_threshold", "0.7", 0.7),
-    ("SIMILARITY_THRESHOLD", "similarity_threshold", "0.5", 0.5),
-    ("RERANK_FETCH_MULTIPLIER", "rerank_fetch_multiplier", "5", 5),
-    ("RERANK_MAX_FETCH", "rerank_max_fetch", "200", 200),
-    ("HYBRID_ENABLED", "hybrid_enabled", "true", True),
-    ("HYBRID_RRF_K", "hybrid_rrf_k", "30", 30),
-    ("HYBRID_SPARSE_BACKEND", "hybrid_sparse_backend", "native", "native"),
+    ("RETRIEVAL__TOP_K", "retrieval.top_k", "25", 25),
+    ("RETRIEVAL__RERANK_ENABLED", "retrieval.rerank_enabled", "true", True),
+    ("RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC", "retrieval.rerank_enabled_for_semantic", "false", False),
+    ("RETRIEVAL__HARD_TECHNICAL_THRESHOLD", "retrieval.hard_technical_threshold", "0.7", 0.7),
+    ("RETRIEVAL__SIMILARITY_THRESHOLD", "retrieval.similarity_threshold", "0.5", 0.5),
+    ("RETRIEVAL__RERANK_FETCH_MULTIPLIER", "retrieval.rerank_fetch_multiplier", "5", 5),
+    ("RETRIEVAL__RERANK_MAX_FETCH", "retrieval.rerank_max_fetch", "200", 200),
+    ("RETRIEVAL__HYBRID_ENABLED", "retrieval.hybrid_enabled", "true", True),
+    ("RETRIEVAL__HYBRID_RRF_K", "retrieval.hybrid_rrf_k", "30", 30),
+    ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "native", "native"),
     # PDF reader.
     ("PDF_READER", "pdf_reader", "pypdf", "pypdf"),
     ("LITEPARSE_NUM_WORKERS", "liteparse_num_workers", "4", 4),
     ("LITEPARSE_OCR_ENABLED", "liteparse_ocr_enabled", "true", True),
     # Metadata.
-    ("METADATA_EXTRACTION_MODE", "metadata_extraction_mode", "disabled", "disabled"),
-    ("METADATA_KEYWORD_RULES", "metadata_keyword_rules", "rules.json", "rules.json"),
-    ("OLLAMA_CLASSIFY_MODEL", "ollama_classify_model", "llama3:8b", "llama3:8b"),
-    ("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "ollama_classify_max_attempts", "5", 5),
-    ("OLLAMA_CLASSIFY_TIMEOUT", "ollama_classify_timeout", "60.5", 60.5),
+    ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "disabled", "disabled"),
+    ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", "rules.json", "rules.json"),
+    ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "llama3:8b", "llama3:8b"),
+    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", "5", 5),
+    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", "60.5", 60.5),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "/usr/bin/magika", "/usr/bin/magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", "0.9", 0.9),
@@ -150,6 +150,13 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("AZURE_DOC_INTELLIGENCE_KEY", "azure_doc_intelligence_key", "key-123", "key-123"),
     ("AZURE_DOC_INTELLIGENCE_MODEL", "azure_doc_intelligence_model", "prebuilt-read", "prebuilt-read"),
 ]
+
+
+def _get_nested(obj: object, dotted: str) -> object:
+    """Resolve a dotted field path (``retrieval.top_k``) on nested Settings."""
+    for part in dotted.split("."):
+        obj = getattr(obj, part)
+    return obj
 
 
 def _fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
@@ -179,7 +186,7 @@ def test_env_var_resolves_to_documented_default(
     """With the env var unset, the resolver SHALL yield the documented default."""
     monkeypatch.delenv(env_name, raising=False)
     settings = _fresh_settings(monkeypatch)
-    assert getattr(settings, field_name) == expected
+    assert _get_nested(settings, field_name) == expected
 
 
 # ── Env-var override and parsing ────────────────────────────────────────
@@ -200,7 +207,7 @@ def test_env_var_override_parses_correctly(
     """An env-var override SHALL parse to the expected typed value."""
     monkeypatch.setenv(env_name, override_env)
     settings = _fresh_settings(monkeypatch)
-    assert getattr(settings, field_name) == expected
+    assert _get_nested(settings, field_name) == expected
 
 
 # ── EMBED_MODEL (validator-gated) ───────────────────────────────────────
@@ -299,6 +306,6 @@ def test_legacy_bool_semantics_for_rerank_enabled(
     parser (which accepts ``1``/``yes``/``on``) would be a silent semantic
     change.  This guards the legacy contract.
     """
-    monkeypatch.setenv("RERANK_ENABLED", env_value)
+    monkeypatch.setenv("RETRIEVAL__RERANK_ENABLED", env_value)
     settings = _fresh_settings(monkeypatch)
-    assert settings.rerank_enabled is expected
+    assert settings.retrieval.rerank_enabled is expected

@@ -1121,7 +1121,9 @@ class TestCoverageGaps:
         from rag_mcp.core.vectordb import set_default_store
         from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 
-        monkeypatch.setattr(_config.settings, "chroma_scan_page_size", 2)
+        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+
+        set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
         db = chromadb.PersistentClient(path=_config.CHROMA_PERSIST_DIR)
         collection = db.get_or_create_collection("paged_categories")
@@ -1152,7 +1154,9 @@ class TestCoverageGaps:
 
         import rag_mcp.config as _config
         # Empty custom rules → no seed categories
-        monkeypatch.setattr(_config.settings, "metadata_keyword_rules", "[]")
+        from rag_mcp.core.settings import EffectiveSettings, MetadataBlock, set_default_effective_settings
+
+        set_default_effective_settings(EffectiveSettings(metadata=MetadataBlock(keyword_rules="[]")))
         # Empty store → no existing categories
         mock_store = MagicMock()
         mock_store.list_collections.return_value = []
@@ -1309,7 +1313,7 @@ class TestOllamaRetry:
         self, monkeypatch,
     ) -> None:
         """First call fails, second succeeds → returns parsed metadata."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
 
         good = json.dumps({
             "category": "ai",
@@ -1330,7 +1334,7 @@ class TestOllamaRetry:
 
     def test_retry_exhaustion_falls_back(self, monkeypatch, caplog) -> None:
         """All attempts fail → fallback dict + WARNING log."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
 
         log = self._mock_async_client(
             monkeypatch,
@@ -1360,7 +1364,7 @@ class TestOllamaRetry:
 
     def test_backoff_grows_between_attempts(self, monkeypatch) -> None:
         """``_retry_sleep`` must be called with 1, 2, 4 ... seconds."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "4")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "4")
 
         sleeps: list[float] = []
 
@@ -1389,7 +1393,7 @@ class TestOllamaRetry:
 
     def test_no_sleep_when_max_attempts_is_one(self, monkeypatch) -> None:
         """A single-attempt configuration must not call _retry_sleep."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
 
         sleeps: list[float] = []
 
@@ -1412,7 +1416,7 @@ class TestOllamaRetry:
 
     def test_first_attempt_success_no_retry(self, monkeypatch) -> None:
         """A successful first attempt must not trigger a retry."""
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
 
         good = json.dumps({"category": "ai", "keywords": [], "summary": ""})
         log = self._mock_async_client(monkeypatch, [good])
