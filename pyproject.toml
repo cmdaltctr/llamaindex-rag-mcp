@@ -85,6 +85,7 @@ markers = [
 # See openspec/changes/phase-2-refactor-config-core-split/design.md (D5).
 [tool.importlinter]
 root_package = "rag_mcp"
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "settings-models-are-pure-data"
@@ -132,6 +133,57 @@ source_modules = [
 forbidden_modules = [
     "rag_mcp.core.providers",
     "rag_mcp.transports",
+]
+
+# ─── Architecture-v2 conformance contracts ────────────────────────────
+# Added by the complete-architecture-v2-conformance change. Each is added
+# before its fix so the failing state is observed first (design.md D7).
+# See openspec/changes/complete-architecture-v2-conformance/.
+
+# F2: chromadb is confined to the vector store implementation.
+[[tool.importlinter.contracts]]
+name = "chromadb-confined-to-vectordb"
+type = "forbidden"
+source_modules = ["rag_mcp"]
+forbidden_modules = ["chromadb"]
+ignore_imports = [
+    "rag_mcp.core.vectordb.chroma -> chromadb",
+]
+unmatched_ignore_imports_alerting = "none"
+
+# F3: config is a leaf — it must not import core business logic, compose,
+# transports, integrations, or daemon. Only the pure-data subpackage
+# settings models (rag_mcp.core.*.settings) are sanctioned upward refs.
+[[tool.importlinter.contracts]]
+name = "config-is-leaf"
+type = "forbidden"
+source_modules = ["rag_mcp.config"]
+forbidden_modules = [
+    "rag_mcp.core.ingestion",
+    "rag_mcp.core.retrieval",
+    "rag_mcp.core.metadata",
+    "rag_mcp.core.vectordb",
+    "rag_mcp.core.profiles",
+    "rag_mcp.core.providers",
+    "rag_mcp.compose",
+    "rag_mcp.transports",
+    "rag_mcp.integrations",
+    "rag_mcp.daemon",
+]
+
+# F5: integrations are acyclic leaves — no imports from core, transports,
+# daemon, or the top-level graph modules (which relocate in group 2).
+[[tool.importlinter.contracts]]
+name = "integrations-are-leaves"
+type = "forbidden"
+source_modules = ["rag_mcp.integrations"]
+forbidden_modules = [
+    "rag_mcp.core",
+    "rag_mcp.transports",
+    "rag_mcp.daemon",
+    "rag_mcp.codebase_map",
+    "rag_mcp.code_graph",
+    "rag_mcp.doc_graph",
 ]
 
 [tool.coverage.run]
