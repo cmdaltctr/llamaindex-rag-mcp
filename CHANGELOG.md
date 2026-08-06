@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.1.0 (2026-08-06)
+
+### Features
+
+- Add settings for graphify hooks and enhance AGENTS.md with graph usage guidelines
+  ([`dbd6fde`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/dbd6fde96feebb33d6f252b4ffcc04a7352f77b2))
+
+
 ## v2.0.0 (2026-08-05)
 
 ### Bug Fixes
