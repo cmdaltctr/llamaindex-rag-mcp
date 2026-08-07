@@ -230,6 +230,6 @@ and the profile-level restoration.
 #### Scenario: AGENTS.md corrected
 
 - **WHEN** the phase is accepted
-- **THEN** AGENTS.md invariant #5 MUST no longer claim `RERANK_ENABLED=true`
+- **THEN** AGENTS.md invariant #5 MUST no longer claim `RETRIEVAL__RERANK_ENABLED=true`
   is the code default
 

@@ -62,7 +62,7 @@ The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_
 
 ### Requirement: llamacpp embedding configuration
 
-When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (default `http://localhost:8080/v1`), `LLAMACPP_EMBED_MODEL` (the GGUF filename), and reuse `EMBED_BATCH_SIZE` for batch size. The `OpenAIEmbedding` instance SHALL be configured with `api_key="no-key"` since `llama-server` does not require authentication.
+When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (default `http://localhost:8080/v1`), `LLAMACPP_EMBED_MODEL` (the GGUF filename), and reuse `INGESTION__EMBED_BATCH_SIZE` for batch size. The `OpenAIEmbedding` instance SHALL be configured with `api_key="no-key"` since `llama-server` does not require authentication.
 
 #### Scenario: Embedding server reachable
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
@@ -77,25 +77,25 @@ When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (d
 
 ### Requirement: llamacpp chat configuration for metadata extraction
 
-When `INFERENCE_BACKEND=llamacpp` and `METADATA_EXTRACTION_MODE` is `ollama` or `llamaindex`, the system SHALL use `LLAMACPP_CHAT_URL` (default `http://localhost:8081/v1`) and `LLAMACPP_CHAT_MODEL` for LLM calls. The `ollama` metadata mode SHALL use `httpx` to call `/v1/chat/completions` with the OpenAI chat format. The `llamaindex` metadata mode SHALL use `OpenAILike` LLM from `llama-index-llms-openai-like`.
+When `INFERENCE_BACKEND=llamacpp` and `METADATA__EXTRACTION_MODE` is `ollama` or `llamaindex`, the system SHALL use `LLAMACPP_CHAT_URL` (default `http://localhost:8081/v1`) and `LLAMACPP_CHAT_MODEL` for LLM calls. The `ollama` metadata mode SHALL use `httpx` to call `/v1/chat/completions` with the OpenAI chat format. The `llamaindex` metadata mode SHALL use `OpenAILike` LLM from `llama-index-llms-openai-like`.
 
 #### Scenario: ollama metadata mode with llamacpp backend
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
-- **AND** `METADATA_EXTRACTION_MODE=ollama`
+- **AND** `METADATA__EXTRACTION_MODE=ollama`
 - **THEN** the system SHALL POST to `{LLAMACPP_CHAT_URL}/chat/completions`
 - **THEN** the request body SHALL follow OpenAI chat format with `model`, `messages`, and `stream: false`
 - **THEN** the response SHALL be parsed from `choices[0].message.content`
 
 #### Scenario: llamaindex metadata mode with llamacpp backend
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
-- **AND** `METADATA_EXTRACTION_MODE=llamaindex`
+- **AND** `METADATA__EXTRACTION_MODE=llamaindex`
 - **AND** `llama-index-llms-openai-like` is installed
 - **THEN** the LLM SHALL be `OpenAILike` with `api_base=LLAMACPP_CHAT_URL` and `model=LLAMACPP_CHAT_MODEL`
 - **THEN** the extraction pipeline SHALL use this LLM for `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`
 
 #### Scenario: llamaindex mode with llamacpp but openai-like not installed
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
-- **AND** `METADATA_EXTRACTION_MODE=llamaindex`
+- **AND** `METADATA__EXTRACTION_MODE=llamaindex`
 - **AND** `llama-index-llms-openai-like` is not installed
 - **THEN** the system SHALL log a WARNING
 - **THEN** the system SHALL fall back to the `ollama` metadata mode (which uses raw `httpx`)

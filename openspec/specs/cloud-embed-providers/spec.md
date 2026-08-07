@@ -54,11 +54,11 @@ The system SHALL support `EMBED_PROVIDER=openrouter` for cloud embeddings via Op
 
 ### Requirement: OpenRouter LLM provider for metadata extraction
 
-The system SHALL support `METADATA_LLM_PROVIDER=openrouter` for metadata extraction LLM calls. When `METADATA_LLM_PROVIDER=openrouter` and `METADATA_EXTRACTION_MODE` is `local` or `llamaindex`, the system SHALL use `OpenAILike` from `llama-index-llms-openai-like` with `api_base` set to `https://openrouter.ai/api/v1`, `api_key` set from `OPENROUTER_API_KEY`, and `model` set from `OPENROUTER_LLM_MODEL`.
+The system SHALL support `METADATA_LLM_PROVIDER=openrouter` for metadata extraction LLM calls. When `METADATA_LLM_PROVIDER=openrouter` and `METADATA__EXTRACTION_MODE` is `local` or `llamaindex`, the system SHALL use `OpenAILike` from `llama-index-llms-openai-like` with `api_base` set to `https://openrouter.ai/api/v1`, `api_key` set from `OPENROUTER_API_KEY`, and `model` set from `OPENROUTER_LLM_MODEL`.
 
 #### Scenario: local metadata mode with OpenRouter LLM
 
-- **WHEN** `METADATA_EXTRACTION_MODE=local`
+- **WHEN** `METADATA__EXTRACTION_MODE=local`
 - **AND** `METADATA_LLM_PROVIDER=openrouter`
 - **AND** `OPENROUTER_API_KEY` and `OPENROUTER_LLM_MODEL` are set
 - **THEN** the system SHALL POST to `https://openrouter.ai/api/v1/chat/completions`
@@ -66,7 +66,7 @@ The system SHALL support `METADATA_LLM_PROVIDER=openrouter` for metadata extract
 
 #### Scenario: llamaindex metadata mode with OpenRouter LLM
 
-- **WHEN** `METADATA_EXTRACTION_MODE=llamaindex`
+- **WHEN** `METADATA__EXTRACTION_MODE=llamaindex`
 - **AND** `METADATA_LLM_PROVIDER=openrouter`
 - **AND** `llama-index-llms-openai-like` is installed
 - **THEN** the LLM SHALL be `OpenAILike` with `api_base=https://openrouter.ai/api/v1` and `model=OPENROUTER_LLM_MODEL`
