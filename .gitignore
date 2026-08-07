@@ -59,6 +59,9 @@ coverage.xml
 # IDE
 .idea/
 .vscode/
+# VS Code comment tracking files (e.g. .README.md.comments.json)
+.comments.json
+*.comments.json
 *.swp
 *.swo
 *~
