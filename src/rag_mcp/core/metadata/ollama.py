@@ -192,8 +192,9 @@ async def _extract_ollama_async(
     Uses ``httpx.AsyncClient`` for non-blocking HTTP to Ollama's
     ``/api/generate`` endpoint with a bounded retry loop.  On transient
     failures (timeouts, connection errors, network errors) the call is
-    retried up to ``METADATA__CLASSIFY_MAX_ATTEMPTS`` times with
-    exponential backoff (``2 ** attempt`` seconds between attempts).
+    retried within a total budget of ``METADATA__CLASSIFY_MAX_ATTEMPTS``
+    attempts — the initial request included — with exponential backoff
+    (``2 ** attempt`` seconds between attempts).
     Per-attempt HTTP timeout is ``METADATA__CLASSIFY_TIMEOUT`` seconds.
     On retry exhaustion the function returns the ``uncategorised``
     fallback dict and logs a single WARNING summarising the failure

@@ -23,19 +23,28 @@ tracked there as 7.1, 7.2, and 7.3.
   locations. The nested env var becomes `METADATA__CLASSIFY_TIMEOUT`.
 - Add the old v2 nested names (`METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS`,
   `METADATA__OLLAMA_CLASSIFY_TIMEOUT`) to the legacy tripwire
-  (`_LEGACY_FLAT_ENV_VARS`) so an operator who upgrades and still has the old
-  name set gets a clear migration message instead of a silent ignore. The pre-v2
+  (`_RETIRED_ENV_VARS`) so an operator who upgrades and still has the old
+  name set gets a clear, named migration message. The pre-v2
   flat names (`OLLAMA_CLASSIFY_MAX_ATTEMPTS`, `OLLAMA_CLASSIFY_TIMEOUT`) are
   already on the tripwire; their target updates to the new nested name.
+  (`MetadataSettings` is `extra="forbid"`, so the old nested names already
+  raised a pydantic error; the tripwire's value is message quality and that it
+  fires before `get_settings()`, not that it prevents a silent ignore.)
 - Drop the `os.getenv` lookups from `_get_ollama_max_attempts` and
   `_get_ollama_timeout`. The settings are already injected via
   `resolved.metadata.*`; the nested env override is read by pydantic-settings
   natively at resolution time. The call-time re-read was a pre-v2 pattern that
   ADR-037 retired.
-- Move the `max(1, value)` floor for `classify_max_attempts` from the call-time
-  helper to a `field_validator` on `MetadataSettings` and `MetadataBlock`, so the
-  guarantee holds regardless of how the value enters the system (env, YAML,
-  programmatic).
+- **BREAKING** Replace the call-time `max(1, value)` clamp on
+  `classify_max_attempts` with `Field(gt=0)` on both `MetadataSettings` and
+  `MetadataBlock`, and add the same bound to `classify_timeout` (previously
+  unguarded, so a negative value reached `httpx.AsyncClient(timeout=...)`).
+  A configuration that previously ran with `METADATA__CLASSIFY_MAX_ATTEMPTS=0`
+  was silently rewritten to `1`; it now fails at settings resolution with a
+  named `ValidationError`. This is deliberate — silently rewriting an operator's
+  value hides the error, which is the behaviour the tripwire exists to reject.
+  The guarantee now holds regardless of how the value enters the system (env,
+  YAML, programmatic).
 - Add `METADATA__CLASSIFY_MAX_ATTEMPTS` and `METADATA__CLASSIFY_TIMEOUT` to
   `.env.example` with inline comments.
 - Move `_get_classify_max_attempts`, `_get_classify_timeout`, and `_retry_sleep`

@@ -20,8 +20,9 @@ re-read from the environment below the boundary.
 - Make the setting names honest about their scope (all backends, not Ollama only).
 - Remove dead code that creates a false impression of a working override path.
 - Make the settings discoverable to operators (`.env.example`).
-- Preserve the `max(1, ...)` floor on the retry budget so a misconfigured zero or
-  negative value cannot skip the classification call entirely.
+- Guarantee a usable retry budget and timeout at the point of entry, so a
+  misconfigured zero or negative value cannot skip the classification call or
+  reach the HTTP client.
 
 **Non-Goals:**
 - Splitting the timeout per backend (e.g. a separate cloud timeout). The 30 s
@@ -66,9 +67,17 @@ threaded through every call, so the override is now done at the boundary
 call-time re-read is dead code.
 
 The `max(1, value)` floor protected against a zero or negative budget that would
-skip the classification call. Moving it to a `field_validator` on both
-`MetadataSettings` and `MetadataBlock` preserves the guarantee at the point of
-entry — env, YAML, or programmatic — instead of at a single call site.
+skip the classification call. It is replaced by `Field(gt=0)` on both
+`MetadataSettings` and `MetadataBlock`, which moves the guarantee to the point of
+entry — env, YAML, or programmatic — instead of a single call site, and extends
+it to `classify_timeout`, which had no guard at all.
+
+Rejecting rather than clamping is the deliberate part. A clamp silently rewrites
+`0` to `1`, so an operator who misconfigures the budget never learns of it; the
+same reasoning that puts retired names on a startup tripwire rather than ignoring
+them applies here. `Field(gt=0)` fails at resolution and names the field. This is
+a behaviour change for any deployment that was relying on the clamp, and is
+recorded as BREAKING in `proposal.md`.
 
 ### 4. Rename the helper functions and move them to `_common.py`
 
@@ -112,11 +121,11 @@ target and keeps the retry-loop code symmetric across the three backends.
   mechanical find-and-replace plus rewriting `TestOllamaKnobResolution` to test
   the settings-injection path.
 - **Validator on two models** → `MetadataSettings` (config layer) and
-  `MetadataBlock` (runtime layer) both need the validator. This is the existing
+  `MetadataBlock` (runtime layer) both need the bound. This is the existing
   pattern: both models already declare the same fields with the same defaults.
-  Both blocks are frozen (`model_config = ConfigDict(frozen=True)`); a
-  `field_validator` runs at construction, before frozen assignment applies, so
-  the clamp is compatible with the frozen block.
+  Both blocks are frozen (`model_config = ConfigDict(frozen=True)`); `Field`
+  constraints are validated at construction, before frozen assignment applies,
+  so the bound is compatible with the frozen block.
 - **Tripwire / conftest coupling** → adding the old v2 nested names to the
   tripwire (task 6.2) and renaming them in `conftest.py` (task 9.1) must land in
   the **same commit**. `conftest.py` sets `METADATA__OLLAMA_CLASSIFY_*`; the

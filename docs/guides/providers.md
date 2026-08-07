@@ -57,12 +57,12 @@ See [ADR-025](../adr/025-pluggable-inference-backend.md) for the full rationale.
 
 ### Ollama (alternative local backend)
 
-| Env var                 | Default                  | Purpose                                  |
-| ----------------------- | ------------------------ | ---------------------------------------- |
-| `EMBED_MODEL`           | _(required)_             | Ollama embedding model name              |
-| `OLLAMA_BASE_URL`       | `http://localhost:11434` | Ollama server URL                        |
-| `OLLAMA_CLASSIFY_MODEL` | `qwen3:0.6b`             | Ollama model for metadata classification |
-| `EMBED_BATCH_SIZE`      | `100`                    | Ollama `/api/embed` batch size           |
+| Env var                           | Default                  | Purpose                                  |
+| --------------------------------- | ------------------------ | ---------------------------------------- |
+| `EMBED_MODEL`                     | _(required)_             | Ollama embedding model name              |
+| `OLLAMA_BASE_URL`                 | `http://localhost:11434` | Ollama server URL                        |
+| `METADATA__OLLAMA_CLASSIFY_MODEL` | `qwen3:0.6b`             | Ollama model for metadata classification |
+| `INGESTION__EMBED_BATCH_SIZE`     | `100`                    | Ollama `/api/embed` batch size           |
 
 ### OpenRouter (cloud backend)
 
@@ -103,7 +103,7 @@ See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full ratio
 > **Shared classification knobs:** `METADATA__CLASSIFY_MAX_ATTEMPTS` and
 > `METADATA__CLASSIFY_TIMEOUT` govern the retry budget and per-attempt
 > timeout for **all three** metadata LLM backends (Ollama, llama.cpp,
-> OpenRouter). The model field is per-provider (`OLLAMA_CLASSIFY_MODEL`,
+> OpenRouter). The model field is per-provider (`METADATA__OLLAMA_CLASSIFY_MODEL`,
 > `LLAMACPP_CHAT_MODEL`, `OPENROUTER_LLM_MODEL`); the retry budget and
 > timeout are not.
 

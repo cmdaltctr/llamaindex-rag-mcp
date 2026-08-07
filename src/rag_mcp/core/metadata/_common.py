@@ -133,8 +133,8 @@ def _get_classify_max_attempts(resolved) -> int:
     """Return the bounded retry budget for metadata classification.
 
     The value is injected via ``resolved.metadata.classify_max_attempts``
-    and clamped to at least 1 by the ``field_validator`` on the settings
-    model, so no floor is needed here.
+    and constrained to ``> 0`` by ``Field(gt=0)`` on the settings model,
+    which rejects rather than clamps, so no floor is needed here.
 
     Args:
         resolved: An :class:`EffectiveSettings` (or compatible) object.

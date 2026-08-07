@@ -49,15 +49,87 @@ class TestImportHasNoSideEffects:
 
 
 class TestLegacyEnvTripwire:
-    """Pre-v2 flat env vars fail loudly rather than being ignored."""
+    """Retired env vars fail loudly rather than being ignored."""
 
-    def test_legacy_name_raises_naming_replacement(self) -> None:
-        """The error names both the offending var and its nested replacement."""
+    @pytest.mark.parametrize(
+        ("old", "new"),
+        sorted(config._RETIRED_ENV_VARS.items()),
+    )
+    def test_retired_name_raises_naming_replacement(self, old: str, new: str) -> None:
+        """The error names both the offending var and its replacement.
+
+        Parametrised over the whole mapping so a newly retired name is
+        covered the moment it is added, rather than whenever someone
+        remembers to write a case for it.
+
+        Asserts on the rendered ``old  ->  new`` line rather than bare
+        membership of each name: for 19 of the pairs ``old`` is a substring
+        of ``new`` (``TOP_K`` in ``RETRIEVAL__TOP_K``), so two separate
+        ``in`` checks would pass even if the message dropped the offending
+        name entirely — which is half the point of the message.
+        """
         with pytest.raises(ValueError) as exc:
-            config.check_legacy_env_vars({"TOP_K": "20"})
-        message = str(exc.value)
-        assert "TOP_K" in message
-        assert "RETRIEVAL__TOP_K" in message
+            config.check_legacy_env_vars({old: "x"})
+        assert f"{old}  ->  {new}" in str(exc.value)
+
+    def test_retired_mapping_is_pinned(self) -> None:
+        """Deleting a mapping entry must fail, not silently shrink the sweep.
+
+        ``test_retired_name_raises_naming_replacement`` draws its cases from
+        the mapping itself, so a removed entry takes its own test case with
+        it and the suite stays green. Pinning the key set makes a deletion —
+        the regression that actually matters — fail loudly.
+        """
+        assert set(config._RETIRED_ENV_VARS) == {
+            "CHUNK_SIZE",
+            "CHUNK_OVERLAP",
+            "MARKDOWN_CHUNK_SIZE",
+            "MARKDOWN_HEADING_PREPEND",
+            "MARKDOWN_MIN_CHUNK_FRACTION",
+            "CHUNK_STRATEGY_FALLBACK",
+            "EMBED_CONCURRENCY",
+            "EMBED_BATCH_SIZE",
+            "TOP_K",
+            "SIMILARITY_THRESHOLD",
+            "RERANK_ENABLED",
+            "RERANK_ENABLED_FOR_SEMANTIC",
+            "HARD_TECHNICAL_THRESHOLD",
+            "RERANK_FETCH_MULTIPLIER",
+            "RERANK_MAX_FETCH",
+            "RERANK_MODEL",
+            "HYBRID_ENABLED",
+            "HYBRID_RRF_K",
+            "HYBRID_SPARSE_BACKEND",
+            "METADATA_EXTRACTION_MODE",
+            "METADATA_KEYWORD_RULES",
+            "METADATA_TAXONOMY_MODE",
+            "OLLAMA_CLASSIFY_MODEL",
+            "OLLAMA_CLASSIFY_MAX_ATTEMPTS",
+            "OLLAMA_CLASSIFY_TIMEOUT",
+            "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
+            "METADATA__OLLAMA_CLASSIFY_TIMEOUT",
+        }
+
+    @pytest.mark.parametrize(
+        ("old", "new"),
+        [
+            (
+                "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
+                "METADATA__CLASSIFY_MAX_ATTEMPTS",
+            ),
+            ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "METADATA__CLASSIFY_TIMEOUT"),
+        ],
+    )
+    def test_renamed_nested_names_are_tripwired(self, old: str, new: str) -> None:
+        """The v2 nested classify names retired by the rename must trip.
+
+        Pinned explicitly rather than left to the parametrised sweep above:
+        these are nested keys a block model would swallow via its own
+        schema, so losing them from the mapping would be silent.
+        """
+        assert config._RETIRED_ENV_VARS[old] == new
+        with pytest.raises(ValueError, match=new):
+            config.check_legacy_env_vars({old: "x"})
 
     def test_clean_environment_passes(self) -> None:
         """A migrated environment raises nothing."""

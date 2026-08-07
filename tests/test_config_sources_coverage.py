@@ -8,7 +8,9 @@ rather than abort startup.
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
+from rag_mcp.core.metadata.settings import MetadataSettings
 from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
 
@@ -120,11 +122,35 @@ class TestClassifyKnobResolution:
 
         assert _get_classify_timeout(self._settings()) == 42.0
 
-    def test_validator_clamps_zero_attempts(self) -> None:
-        """A zero budget is clamped to 1 so the call is never skipped."""
-        block = MetadataBlock(classify_max_attempts=0)
-        assert block.classify_max_attempts == 1
 
-    def test_validator_clamps_negative_attempts(self) -> None:
-        block = MetadataBlock(classify_max_attempts=-5)
-        assert block.classify_max_attempts == 1
+class TestClassifyKnobBounds:
+    """Non-positive retry/timeout knobs are rejected, never clamped.
+
+    Both the config-layer model (``MetadataSettings``) and the effective
+    block (``MetadataBlock``) declare these knobs, so both are exercised:
+    a bound added to one and forgotten on the other leaves a live hole.
+    Rejecting rather than clamping is deliberate — silently rewriting an
+    operator's ``0`` to ``1`` hides their mistake, which is the same
+    silent-config failure the legacy-name tripwire exists to prevent.
+    """
+
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    @pytest.mark.parametrize("value", [0, -5])
+    def test_non_positive_attempts_rejected(self, model, value: int) -> None:
+        """A zero or negative attempt budget fails resolution loudly."""
+        with pytest.raises(ValidationError, match="classify_max_attempts"):
+            model(classify_max_attempts=value)
+
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    @pytest.mark.parametrize("value", [0.0, -1.0])
+    def test_non_positive_timeout_rejected(self, model, value: float) -> None:
+        """A zero or negative timeout fails rather than reaching httpx."""
+        with pytest.raises(ValidationError, match="classify_timeout"):
+            model(classify_timeout=value)
+
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    def test_positive_values_accepted(self, model) -> None:
+        """The bound rejects only non-positive values."""
+        instance = model(classify_max_attempts=1, classify_timeout=0.5)
+        assert instance.classify_max_attempts == 1
+        assert instance.classify_timeout == 0.5

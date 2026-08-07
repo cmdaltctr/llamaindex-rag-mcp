@@ -4,9 +4,10 @@
       `ollama_classify_max_attempts` → `classify_max_attempts` and
       `ollama_classify_timeout` → `classify_timeout`. Update the inline comments
       to drop "Ollama" (these govern all three backends).
-- [x] 1.2 Add a `field_validator` on `classify_max_attempts` that clamps the
-      value to `max(1, value)` so a zero or negative budget cannot skip the
-      classification call. Import `field_validator` from `pydantic`.
+- [x] 1.2 Add `Field(gt=0)` to `classify_max_attempts` and `classify_timeout` so
+      a zero or negative budget cannot skip the classification call and a
+      non-positive timeout cannot reach the HTTP client. Rejects rather than
+      clamps, so the misconfiguration surfaces. Import `Field` from `pydantic`.
 - [x] 1.3 In `src/rag_mcp/core/settings.py` (`MetadataBlock`), rename the same
       two fields and add the same `field_validator` (the runtime block mirrors
       the config-layer model).
@@ -123,8 +124,9 @@
       `_settings()` factory already passes `classify_max_attempts=7,
       classify_timeout=42.0` via `MetadataBlock`. Drop the `os.getenv` tests
       (env override, malformed fallback, floor) — those tested dead code. Keep
-      one test asserting the settings value flows through the helper. Add a test
-      for the validator: `MetadataBlock(classify_max_attempts=0)` clamps to 1.
+      one test asserting the settings value flows through the helper. Add bounds
+      tests parametrised over both `MetadataSettings` and `MetadataBlock` × both
+      fields, asserting `ValidationError` on zero and negative values.
       Update import paths from `ollama` to `_common`.
 - [x] 9.3 In `tests/test_metadata_extractor.py`:
       - Line 41: rename `ollama_classify_max_attempts` → `classify_max_attempts`

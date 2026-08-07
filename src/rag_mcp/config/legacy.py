@@ -1,4 +1,4 @@
-"""Detection of pre-v2.0.0 flat configuration names.
+"""Detection of retired configuration variable names.
 
 Split out of ``config/__init__.py`` (task 8.7).
 
@@ -14,19 +14,23 @@ from __future__ import annotations
 import os
 
 
-# ── Legacy flat env-var tripwire (design.md D9, layer 2) ─────────────
+# ── Retired env-var tripwire (design.md D9, layer 2) ─────────────────
 
-# Pre-v2.0.0 flat names for settings that now live in a nested block.
+# Retired variable names mapped to their current replacement. Two kinds
+# live here: pre-v2.0.0 flat names for settings that now live in a nested
+# block, and nested names retired by a later rename.
+#
 # `extra="forbid"` on the subpackage models catches a mistyped *nested* key,
 # but a bare `TOP_K` never reaches a subpackage model at all — with
 # env_nested_delimiter it is simply an unrecognised root-level key that
-# `extra="ignore"` would swallow in silence. That silent behaviour change on
-# upgrade is exactly what this whole change exists to eliminate, so it is
-# caught here instead.
+# `extra="ignore"` would swallow in silence. A retired *nested* name is
+# swallowed the same way, by the block model that no longer declares it.
+# That silent behaviour change on upgrade is exactly what this guard exists
+# to eliminate, so it is caught here instead.
 #
 # LIFETIME: permanent through the v2.x line, removed in v3.0.0. This is a
 # decided removal trigger, not a deferral to an unplanned minor.
-_LEGACY_FLAT_ENV_VARS: dict[str, str] = {
+_RETIRED_ENV_VARS: dict[str, str] = {
     "CHUNK_SIZE": "CHUNKING__CHUNK_SIZE",
     "CHUNK_OVERLAP": "CHUNKING__CHUNK_OVERLAP",
     "MARKDOWN_CHUNK_SIZE": "CHUNKING__MARKDOWN_CHUNK_SIZE",
@@ -53,31 +57,36 @@ _LEGACY_FLAT_ENV_VARS: dict[str, str] = {
     "OLLAMA_CLASSIFY_MAX_ATTEMPTS": "METADATA__CLASSIFY_MAX_ATTEMPTS",
     "OLLAMA_CLASSIFY_TIMEOUT": "METADATA__CLASSIFY_TIMEOUT",
     # Old v2 nested names (pre-rename) — same tripwire treatment so an
-    # operator upgrading from v2.0–v2.2 gets a clear rename message.
+    # operator upgrading from v2.0 to v2.2 gets a clear rename message.
     "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS": "METADATA__CLASSIFY_MAX_ATTEMPTS",
     "METADATA__OLLAMA_CLASSIFY_TIMEOUT": "METADATA__CLASSIFY_TIMEOUT",
 }
 
 
 def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
-    """Raise if the environment carries pre-v2.0.0 flat subpackage names.
+    """Raise if the environment carries retired configuration names.
+
+    Covers both pre-v2.0.0 flat subpackage names and nested names retired
+    by a later rename.
 
     Args:
         env: Environment mapping to scan (defaults to ``os.environ``).
 
     Raises:
-        ValueError: Naming every offending variable and its nested
+        ValueError: Naming every offending variable and its current
             replacement, so the fix is mechanical.
     """
     source = os.environ if env is None else env
-    found = [(old, new) for old, new in _LEGACY_FLAT_ENV_VARS.items() if old in source]
+    found = [(old, new) for old, new in _RETIRED_ENV_VARS.items() if old in source]
     if not found:
         return
     lines = "\n".join(f"  {old}  ->  {new}" for old, new in sorted(found))
     raise ValueError(
-        "Pre-v2.0.0 flat configuration variable(s) found in the environment. "
-        "v2.0.0 moved subpackage settings into nested blocks; these names are "
-        "no longer read and would have been silently ignored. Rename them:\n"
+        "Retired configuration variable(s) found in the environment. These "
+        "names are no longer read and would have been silently ignored — "
+        "either they are pre-v2.0.0 flat names (v2.0.0 moved subpackage "
+        "settings into nested blocks), or nested names retired by a later "
+        "rename. Rename them:\n"
         f"{lines}\n"
         "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "
         "credentials) are unchanged. See docs/adr/037 for the full table."

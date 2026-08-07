@@ -232,7 +232,7 @@ splitter regardless of the fallback.
 | `keyword_rules` | — | JSON array of custom `{pattern, category}` rules |
 | `taxonomy_mode` | `category` | `category` or `file_type`. **Profile-owned** |
 | `ollama_classify_model` | `qwen3:0.6b` | Ollama model used for classification |
-| `classify_max_attempts` | `3` | Retries on failure (all metadata LLM backends) |
+| `classify_max_attempts` | `3` | Maximum attempts **including** the initial request (all metadata LLM backends) |
 | `classify_timeout` | `30.0` | Seconds per attempt (all metadata LLM backends) |
 
 Set `extraction_mode=disabled` to skip classification entirely — much faster
