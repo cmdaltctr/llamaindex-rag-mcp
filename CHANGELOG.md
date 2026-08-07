@@ -2,6 +2,21 @@
 
 <!-- version list -->
 
+## v2.2.0 (2026-08-07)
+
+### Bug Fixes
+
+- **spec**: Make the downgrade budget interaction explicit
+  ([#20](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/20),
+  [`ae2cbf3`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/ae2cbf34f0c6c8b4bc29bdd43f51cdb07134d8c3))
+
+### Features
+
+- **metadata**: Enforce structured JSON output in LLM classification
+  ([#20](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/20),
+  [`ae2cbf3`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/ae2cbf34f0c6c8b4bc29bdd43f51cdb07134d8c3))
+
+
 ## v2.1.0 (2026-08-06)
 
 ### Features
