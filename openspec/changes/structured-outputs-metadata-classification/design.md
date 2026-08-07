@@ -77,10 +77,15 @@ The downgrade mutates `data` in place and `continue`s, reusing the loop already 
 wrapping the call in a second try/except. It deliberately skips the backoff sleep: a rejected payload is
 not a transient fault, so waiting achieves nothing.
 
-*Trade-off:* the downgrade consumes one attempt from the budget. With the default of 3 there is room.
-At `OLLAMA_CLASSIFY_MAX_ATTEMPTS=1` the downgrade is computed but the loop exits before retrying, so a
-schema-incapable model degrades to `uncategorised` — same as if we had not implemented the downgrade.
-Accepted rather than restructuring the loop into a `while` with a separate budget; recorded under Risks.
+*Budget interaction:* the downgrade consumes one attempt from the retry budget rather than exceeding it.
+With the default of 3 there is room. At a budget of 1 no downgraded request is sent, so a schema-incapable
+model degrades to `uncategorised` — same as if the downgrade did not exist.
+
+This is specified behaviour, not a deviation. A budget of 1 is an operator instruction to issue exactly
+one request per classification; spending a second to satisfy the downgrade would override that
+instruction to honour a different one. The alternative — exempting the downgrade from the budget via a
+`while` loop with a separate counter — is therefore rejected on correctness, not merely on cost. The spec
+states the interaction explicitly and a test pins it.
 
 ### 4. No configuration surface
 
@@ -103,8 +108,8 @@ resulting log line misleading about the real cause.
 - **`require_parameters` narrows routing, which can raise latency or cost** by excluding cheaper
   endpoints → affects the OpenRouter path only, which is already the opt-in cloud path; the downgrade
   bounds the worst case.
-- **The downgrade never fires at `max_attempts=1`** (Decision 3) → equivalent to pre-change behaviour,
-  not worse; documented, and the default is 3.
+- **The downgrade does not fire at a retry budget of 1** (Decision 3) → specified, not a deviation:
+  equivalent to pre-change behaviour, the default budget is 3, and a test pins it.
 - **Older Ollama or llama.cpp builds may not know the field** → both ignore unknown request fields, and
   the fence-stripping path is retained precisely for this.
 - **The downgrade branch is the only new logic and is the easiest thing to regress silently** → it is

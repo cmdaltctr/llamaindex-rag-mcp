@@ -1695,6 +1695,29 @@ class TestOpenRouterStructuredOutputDowngrade:
         assert sleeps == [1]
         assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
 
+    def test_no_downgrade_when_budget_is_a_single_attempt(
+        self, monkeypatch
+    ) -> None:
+        """A single-attempt budget is an instruction, not an obstacle.
+
+        Setting the budget to 1 asks for exactly one request per
+        classification. Spending a second on the downgrade would override that
+        to honour a different rule, so the downgrade is computed and then not
+        sent. Behaviour matches the pre-enforcement code exactly.
+        """
+        _set_openrouter_mode(monkeypatch, max_attempts=1)
+        sleeps = _no_sleep(monkeypatch)
+        payloads = _capturing_async_client(monkeypatch, [400])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("text"))
+
+        assert len(payloads) == 1
+        assert "response_format" in payloads[0]
+        assert sleeps == []
+        assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
+
     def test_downgrade_happens_at_most_once(self, monkeypatch, caplog) -> None:
         """A second rejection after downgrading falls through to the fallback."""
         _set_openrouter_mode(monkeypatch, max_attempts=3)

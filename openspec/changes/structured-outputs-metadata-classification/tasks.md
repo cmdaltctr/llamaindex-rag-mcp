@@ -2,7 +2,9 @@
 > recorded here as completed for traceability, not because they were planned first. Group 4 closed the
 > gap that made this worth proposing at all: the pre-existing tests mock at the response level and
 > assert nothing about the request payload, so groups 1–3 were invisible to CI until group 4 landed.
-> Remaining: 5.6 (PR + merge) and 5.7 (archive, which must wait until after merge).
+> Group 6 records the response to CodeRabbit's review on PR #20; group 7 lists findings raised during
+> that review that are real but out of scope here. Remaining: merge, then 5.7 (archive, which must wait
+> until after merge).
 
 ## 1. Ollama backend enforcement
 
@@ -70,7 +72,38 @@
       not a decision.
 - [x] 5.5 Conventional Commits on branch `feat/structured-outputs-metadata-classification`
       → `e25338a` feat(metadata) (impl + tests + this change), `29ee8b0` docs (TDR-006)
-- [ ] 5.6 Open the PR against `main` and merge when green
+- [x] 5.6 Open the PR against `main` — [#20](https://github.com/cmdaltctr/llamaindex-rag-mcp/pull/20),
+      all 5 checks green (ubuntu, macOS, both SonarCloud gates, CodeRabbit)
 - [ ] 5.7 **After merge**, archive the change (`openspec archive`) so the spec deltas fold into
       `openspec/specs/metadata-extraction/spec.md`. Deliberately not done before merge: archiving
       rewrites the permanent spec, which must not claim behaviour that is not yet on `main`.
+
+## 6. Review response (CodeRabbit, PR #20)
+
+- [x] 6.1 **Spec/implementation contract conflict.** The downgrade requirement said the system `SHALL`
+      retry unconditionally, but at a retry budget of 1 the loop exits first — so the code violated its
+      own spec, and `design.md` "accepted" that deviation instead of resolving it. Fixed the **spec**,
+      not the code: a budget of 1 is an operator instruction to issue exactly one request per
+      classification, and the downgrade must not override it. Spec now states the budget interaction
+      explicitly; `design.md` reframes it as specified behaviour rejected on correctness rather than cost.
+- [x] 6.2 Add the `max_attempts=1` test pinning that no downgraded request is sent
+      (spec: *Downgrade cannot exceed a single-attempt retry budget*)
+- [x] 6.3 Restore the log excerpt deleted from TDR-006 §How to Recognise, tagged ` ```text ` (MD040).
+      CodeRabbit's committable suggestion had an empty replacement body, so applying it removed the
+      fenced block and its contents rather than adding the language identifier.
+- [x] 6.4 Correct the retry-budget setting name in TDR-006: `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS`,
+      not the pre-v2 flat `OLLAMA_CLASSIFY_MAX_ATTEMPTS`, and note that despite the `OLLAMA_` prefix it
+      governs all three backends
+
+## 7. Deferred — raised during review, out of scope here
+
+- [ ] 7.1 `_get_ollama_max_attempts` / `_get_ollama_timeout` read the pre-v2 flat env names
+      (`ollama.py:190`, `ollama.py:203`), but those exact names are on the startup tripwire list
+      (`config/legacy.py:53-54`) and raise via `compose.py:359`. Setting them prevents boot, so the
+      branch is unreachable outside tests. Either drop the `os.getenv` lookups or move the test hook
+      to the nested name.
+- [ ] 7.2 The retry budget and timeout are named `ollama_classify_*` but govern llama.cpp and
+      OpenRouter too. Undiscoverable for two of three backends, and a 30 s timeout tuned for a local
+      model is applied unchanged to a cloud API. Rename needs settings + `defaults.yaml` + the legacy
+      alias table, so it is its own change.
+- [ ] 7.3 Neither setting appears in `.env.example`.

@@ -59,6 +59,12 @@ than a transient fault: it SHALL remove the response-format and provider-routing
 request, SHALL log at INFO that structured outputs were rejected, and SHALL retry immediately without
 backoff on the prompt-only path. The downgrade SHALL be attempted at most once per classification call.
 
+The downgraded retry SHALL consume one attempt from the configured retry budget rather than exceeding it.
+Where that budget leaves no attempt remaining — notably when it is configured to a single attempt — no
+downgraded request SHALL be sent. A single-attempt budget is an explicit instruction to issue one request
+per classification, and the downgrade SHALL NOT override it; the system SHALL fall back to
+`uncategorised` exactly as it would for any other exhausted budget.
+
 Statuses that indicate a transient or unrelated fault SHALL NOT trigger a downgrade. In particular, HTTP
 429 SHALL follow the existing retry-with-backoff path, and HTTP 401 or 403 SHALL NOT be downgraded because
 dropping structured outputs cannot resolve an authentication failure.
@@ -96,6 +102,14 @@ The overall retry budget SHALL be unchanged; when it is exhausted the system SHA
 - **WHEN** a downgraded request is itself rejected with HTTP 400
 - **THEN** the system SHALL NOT attempt a further downgrade
 - **THEN** it SHALL follow the existing retry-and-fallback path
+
+#### Scenario: Downgrade cannot exceed a single-attempt retry budget
+
+- **WHEN** the retry budget is configured to a single attempt
+- **AND** the OpenRouter request is rejected with HTTP 400
+- **THEN** no downgraded request SHALL be sent
+- **THEN** exactly one request SHALL have been issued for that classification
+- **THEN** the system SHALL return `{"category": "uncategorised", "keywords": [], "summary": ""}`
 
 #### Scenario: Downgrade path exhausts the retry budget
 
