@@ -194,20 +194,20 @@ def test_build_llm_model_local_ollama() -> None:
         assert kwargs["base_url"] == "http://localhost:11434"
 
 
-def test_build_llm_model_cloud_openrouter_not_registered() -> None:
-    """Cloud openrouter LLM is served by the extractor's HTTP path.
+def test_build_llm_model_cloud_openrouter_requires_extra() -> None:
+    """Cloud openrouter LLM is registered but requires an optional dependency.
 
-    The LLM provider registry deliberately registers only ``ollama`` and
-    ``llamacpp`` (design: ``core/providers/llm/``).  OpenRouter chat
-    extraction lives in ``core.metadata.openrouter`` as a raw HTTP call
-    (``_extract_openrouter_chat_async``), so ``build_llm_model`` with
-    ``CLOUD_BACKEND=openrouter`` must raise a helpful ``KeyError``.
+    The LLM provider registry registers ``ollama``, ``llamacpp``, and
+    ``openrouter``.  OpenRouter's ``build`` function constructs an
+    ``OpenAILike`` from ``llama-index-llms-openai-like``
+    (``uv sync --extra openrouter``); when that package is absent the
+    call raises ``ImportError``.
     """
     settings = _settings(
         metadata_llm_provider="cloud",
         cloud_backend="openrouter",
     )
-    with pytest.raises(KeyError, match="openrouter"):
+    with pytest.raises(ImportError, match="openai_like"):
         build_llm_model(settings)
 
 

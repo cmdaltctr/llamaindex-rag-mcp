@@ -51,7 +51,7 @@ def _local_strategy_name(settings) -> str:
     naming it here — no import and no branch over strategy behaviour.
     """
     if settings.metadata_llm_provider == "cloud":
-        return _CLOUD_BACKENDS.get(settings.cloud_backend, "openrouter")
+        return settings.cloud_backend
     return _LOCAL_BACKENDS.get(settings.local_backend, "ollama")
 
 
@@ -72,7 +72,6 @@ async def _dispatch_local_extraction(
 
 # Provider config value → registered strategy name.
 _LOCAL_BACKENDS = {"llamacpp": "llamacpp", "ollama": "ollama"}
-_CLOUD_BACKENDS = {"openrouter": "openrouter"}
 
 
 async def extract_metadata_async(

@@ -175,13 +175,8 @@ async def _extract_llamaindex_async(
                     request_timeout=180.0,
                 )
         else:
-            from llama_index.llms.openai_like import OpenAILike
-            llm = OpenAILike(
-                model=resolved.openrouter_llm_model,
-                api_base="https://openrouter.ai/api/v1",
-                api_key=resolved.openrouter_api_key,
-                request_timeout=180.0,
-            )
+            from ..providers.llm.registry import get as _llm_get
+            llm = _llm_get(resolved.cloud_backend)(resolved)
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "

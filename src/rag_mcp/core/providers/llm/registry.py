@@ -77,3 +77,4 @@ def available() -> list[str]:
 # ── Built-in provider registrations ────────────────────────────────────
 register("ollama", "rag_mcp.core.providers.llm.ollama:build")
 register("llamacpp", "rag_mcp.core.providers.llm.llamacpp:build")
+register("openrouter", "rag_mcp.core.providers.llm.openrouter:build")
