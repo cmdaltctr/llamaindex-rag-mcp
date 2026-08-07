@@ -174,3 +174,7 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+**Truncated results.** The `query_graph` MCP tool defaults to `token_budget: 2000`, which silently drops nodes on anything broad — the output says `TRUNCATED: showing N of M nodes`. When you see that, **re-run with `token_budget: 8000`** before concluding the graph lacks the answer. Narrow instead with `context_filter` (e.g. `['call']`) or `depth` when even 8000 truncates, and use `get_node` when you already know the symbol.
+
+**Symbol lookups are the exception to graphify-first.** This graph is prose-heavy: "where is X defined" tends to return `docs/guides/*.md` nodes rather than the source symbol. For pure location questions (find a class, function, or file), grep/glob directly. Use graphify for relationships, call paths, and architecture — that is where it beats grep.
