@@ -232,3 +232,65 @@ def test_register_adds_new_strategy() -> None:
     # Clean up.
     chunking_registry._registry.pop("__test__", None)
     chunking_registry._cache.pop("__test__", None)
+
+
+# ── Documented provider names pinned to the live registries ──────────────
+#
+# Parses the <!-- registry-names:<kind> --> blocks in providers.md and
+# asserts set-equality against the live registries.  Fails when someone
+# adds or renames a provider without updating the guide — the precise
+# event that produced the doc-rot-sweep change.
+
+
+def _parse_registry_names_block(kind: str) -> set[str]:
+    """Extract provider names from the delimited block in providers.md.
+
+    Args:
+        kind: ``"embeddings"`` or ``"llm"``.
+
+    Returns:
+        The set of provider names listed inside the block.
+    """
+    import re
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent
+    guide = repo_root / "docs" / "guides" / "providers.md"
+    text = guide.read_text(encoding="utf-8")
+
+    pattern = rf"<!-- registry-names:{kind} -->(.*?)<!-- /registry-names:{kind} -->"
+    match = re.search(pattern, text, re.DOTALL)
+    assert match, f"No <!-- registry-names:{kind} --> block found in providers.md"
+
+    # Extract backtick-quoted names from the block body.
+    body = match.group(1)
+    names = set(re.findall(r"`(\w+)`", body))
+    return names
+
+
+def test_documented_provider_names_match_registries() -> None:
+    """Provider names in providers.md SHALL match the live registries.
+
+    Parses the ``<!-- registry-names -->`` blocks and asserts set-equality
+    against ``embed_registry.available()`` and ``llm_registry.available()``.
+    Fails in either direction: documented-not-registered or
+    registered-not-documented.
+    """
+    embed_registry._cache.clear()
+    llm_registry._cache.clear()
+
+    documented_embed = _parse_registry_names_block("embeddings")
+    live_embed = set(embed_registry.available())
+    assert documented_embed == live_embed, (
+        f"Embedding provider names in providers.md do not match the live "
+        f"registry. Documented: {sorted(documented_embed)}, "
+        f"Registered: {sorted(live_embed)}"
+    )
+
+    documented_llm = _parse_registry_names_block("llm")
+    live_llm = set(llm_registry.available())
+    assert documented_llm == live_llm, (
+        f"LLM provider names in providers.md do not match the live "
+        f"registry. Documented: {sorted(documented_llm)}, "
+        f"Registered: {sorted(live_llm)}"
+    )

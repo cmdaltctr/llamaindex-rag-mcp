@@ -70,6 +70,8 @@ OpenSpec (propose → implement → archive)
 3. **Implement** (`openspec-apply-change`) → work through `tasks.md` checkboxes
 4. **ADR** → `docs/adr/` once confirmed · **Archive** (`openspec-archive-change`) → `openspec/changes/archive/`
 
+**Documentation drift check**: when a default value changes, grep `docs/guides/` for the old value. This is a procedural partial, not automation — it depends on discipline and will sometimes be skipped, but it is strictly better than the previous state (nothing).
+
 **Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green.
 
 ## Release Automation

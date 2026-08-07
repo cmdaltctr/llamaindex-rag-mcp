@@ -66,6 +66,15 @@ The old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVI
 - **One extra indirection layer.** `_build_provider` now resolves category → sub-provider → registry → import, instead of name → registry → import. This runs once at import time — negligible runtime cost.
 - **LLM registries not yet fully wired.** `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` are defined but `metadata_extractor.py` still uses if/elif dispatch (`_dispatch_local_extraction`) rather than the registry for LLM selection. This is a known gap documented in ADR-026; the embedding path is fully registry-driven, the LLM path will follow when a second LLM sub-provider is added.
 
+> **Update (doc-rot-sweep, 2026-08-07):** The follow-up condition — "when a
+> second LLM sub-provider is added" — was met (OpenRouter). The nested dicts
+> named here (`LOCAL_LLM_PROVIDERS`, `CLOUD_LLM_PROVIDERS`) were replaced by
+> flat per-domain registries using `register(name, "module:attr")` string
+> dispatch. Metadata extraction LLM selection resolves through
+> `core/metadata/registry.py`; LLM client construction resolves through
+> `core/providers/llm/registry.py` via `compose.build_llm_model`. No
+> `if/elif` dispatch over strategy names remains.
+
 ### Neutral
 
 - **`METADATA_LLM_PROVIDER` defaults to `local` regardless of `EMBED_PROVIDER`.** This prevents surprising cloud API costs — a user setting `EMBED_PROVIDER=cloud` for embeddings does not unknowingly route metadata LLM calls to a paid API. Explicit opt-in via `METADATA_LLM_PROVIDER=cloud` is required.
@@ -87,6 +96,14 @@ The old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVI
 - [ADR-026](./026-provider-registry-and-openrouter.md) — Provider registry pattern and OpenAI-compatible API providers (registry mechanics; this ADR amends only the naming taxonomy)
 - [ADR-025](./025-pluggable-inference-backend.md) — Original pluggable inference backend (superseded by ADR-026)
 - [`src/rag_mcp/config.py`](../../src/rag_mcp/config.py) — `LOCAL_EMBED_PROVIDERS`, `CLOUD_EMBED_PROVIDERS`, `LOCAL_LLM_PROVIDERS`, `CLOUD_LLM_PROVIDERS`, `_build_provider()`, env var validation
+
+> **Update (doc-rot-sweep, 2026-08-07):** `src/rag_mcp/config.py` and
+> `src/rag_mcp/metadata_extractor.py` are v1 paths deleted in v2.0.0. The
+> registry dicts and `_build_provider()` no longer exist; provider
+> construction now lives in `compose.py` (`build_embed_model`,
+> `build_llm_model`), and registries live in
+> `core/providers/{embeddings,llm}/registry.py` and
+> `core/metadata/registry.py`.
 - [`src/rag_mcp/metadata_extractor.py`](../../src/rag_mcp/metadata_extractor.py) — `_dispatch_local_extraction()` routes on `METADATA_LLM_PROVIDER` + `LOCAL_BACKEND` / `CLOUD_BACKEND`
 - [`.env.example`](../../.env.example) — Provider configuration with inline comments
 - [`openspec/changes/local-cloud-provider-naming/`](../../openspec/changes/local-cloud-provider-naming/) — OpenSpec change with full design rationale

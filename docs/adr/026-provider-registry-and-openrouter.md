@@ -166,3 +166,36 @@ What changed:
 
 See ADR-031 for the full three-layer design and the lint contracts that keep
 provider construction inside `compose.py`.
+
+---
+
+## Update (2026-08-07, doc-rot-sweep)
+
+**Supersedes** two claims in the 2026-08-04 Phase 2 note above.
+
+1. The nested registry dicts (`LOCAL_EMBED_PROVIDERS`,
+   `CLOUD_EMBED_PROVIDERS`, `LOCAL_LLM_PROVIDERS`, `CLOUD_LLM_PROVIDERS`)
+   were **replaced**, not "physically relocated". Today: five flat
+   per-domain registries using `register(name, "module:attr")` string
+   dispatch — `core/providers/embeddings/registry.py`,
+   `core/providers/llm/registry.py`, `core/metadata/registry.py`,
+   `core/retrieval/registry.py`, `core/chunking/registry.py`. No
+   `_build_provider` function exists; construction lives in `compose.py`
+   (`build_embed_model`, `build_llm_model`).
+
+2. The known gap is **closed**. The Phase 2 note said "the LLM dispatch
+   path itself was not rewritten in this phase". Today:
+   `_dispatch_local_extraction` (`core/metadata/extractor.py`) resolves
+   through `core/metadata/registry.py` — no `if/elif` over strategy
+   names. `compose.build_llm_model` resolves through
+   `core/providers/llm/registry.py`. The Consequences bullet about LLM
+   registries not yet wired no longer holds.
+
+3. The Consequences bullet about cloud dispatch hardcoding `openrouter`
+   without checking `CLOUD_BACKEND` is also closed:
+   `_local_strategy_name()` reads `settings.cloud_backend`.
+
+References to `src/rag_mcp/config.py` and `src/rag_mcp/metadata_extractor.py`
+(lines 127–128 in the original decision text) are v1 paths deleted in
+v2.0.0. The current locations are `src/rag_mcp/config/__init__.py` and
+`src/rag_mcp/core/metadata/extractor.py` respectively.

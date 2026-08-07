@@ -89,13 +89,13 @@ the `mcp_server` fixture re-applies the mock after server import. If
 you write a test that imports `rag_mcp.server` outside that fixture,
 re-apply the mock yourself.
 
-**3. Module-level constants patched via `sys.modules`**.
-`CHROMA_PERSIST_DIR`, `COLLECTION_NAME`, `METADATA_EXTRACTION_MODE`,
-`METADATA_KEYWORD_RULES`, `OLLAMA_CLASSIFY_MODEL` are set to test
-values on `rag_mcp.config`, and on `rag_mcp.ingestion` and
-`rag_mcp.retrieval` if already loaded. Default
-`METADATA_EXTRACTION_MODE` in tests is `"disabled"` — no
-auto-categorisation unless your test opts in.
+**3. Settings are injected, not patched via `sys.modules`**.
+There is no singleton to patch. Tests use the `effective_settings(**overrides)`
+conftest factory, or `set_default_effective_settings(...)` for code that reads
+the composition-root default. The conftest default deliberately sets
+`extraction_mode="disabled"` and `pdf_reader="pypdf"` — the class defaults
+would make ingestion tests perform real LLM calls and hang on network timeouts
+(CLAUDE.md gotcha 8a).
 
 ---
 
@@ -128,16 +128,19 @@ autouse fixture clears all collections at the start of each test, but
 if you bypass the fixture or create a new `PersistentClient`, data
 leaks between tests. Use the shared client through the fixture.
 
-**`METADATA_EXTRACTION_MODE` must be patched on the extractor module.**
-`metadata_extractor.py` imports the value from `config.py` at import
-time and stores it as a module-level constant. Patching `config.py`
-alone is not enough. Patch `rag_mcp.metadata_extractor` directly when
-your test exercises a non-default mode:
+**Settings are injected, not read from the environment.**
+There is no module-level constant to patch. Use
+`set_default_effective_settings(...)` or the `effective_settings(**overrides)`
+conftest factory to control the extraction mode in tests:
 
 ```python
 def test_keyword_extraction(monkeypatch):
-    import rag_mcp.metadata_extractor as me
-    monkeypatch.setattr(me, "METADATA_EXTRACTION_MODE", "keyword")
+    from rag_mcp.core.settings import (
+        EffectiveSettings, MetadataBlock, set_default_effective_settings,
+    )
+    set_default_effective_settings(
+        EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
+    )
     ...
 ```
 
@@ -212,7 +215,7 @@ shows full assertion context.
 **Suspect the autouse fixtures.** If a test passes alone but fails in
 the suite, you are probably leaking state. Most common culprits:
 reranker singleton, `EphemeralClient` collections, the
-`METADATA_EXTRACTION_MODE` module-level copy.
+`set_default_effective_settings` default.
 
 **Suspect Ollama.** The fast suite must never call Ollama. If a fast
 test connects to Ollama, find the real network call and mock it.
