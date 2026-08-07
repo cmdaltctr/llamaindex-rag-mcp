@@ -18,6 +18,7 @@ def _set_mode(
     keyword_rules: str | None = None,
     local_backend: str | None = None,
     max_attempts: int | None = None,
+    **root_overrides,
 ):
     """Helper: install an EffectiveSettings carrying the mode under test.
 
@@ -38,7 +39,7 @@ def _set_mode(
         block_kwargs["keyword_rules"] = keyword_rules
     if max_attempts is not None:
         block_kwargs["ollama_classify_max_attempts"] = max_attempts
-    root_kwargs = {}
+    root_kwargs = dict(root_overrides)
     if local_backend is not None:
         root_kwargs["local_backend"] = local_backend
     set_default_effective_settings(
@@ -1439,3 +1440,312 @@ class TestOllamaRetry:
         result = asyncio.run(extract_metadata_async("attention"))
         assert result["category"] == "ai"
         assert len(log) == 1
+
+
+# ── Structured output enforcement ───────────────────────────────────────────
+#
+# See openspec/changes/structured-outputs-metadata-classification/.
+#
+# These are the first tests in this module to assert on the REQUEST body.
+# Everything above mocks at the response level, which means a payload key
+# could be dropped in a refactor and every existing test would still pass.
+
+
+def _capturing_async_client(monkeypatch, side_effects: list) -> list[dict]:
+    """Patch ``httpx.AsyncClient`` and record a snapshot of each request body.
+
+    Each entry in *side_effects* is one of:
+      * ``str`` — JSON (or plain) text returned as the model's response, in
+        both the Ollama (``response``) and OpenAI (``choices``) shapes so the
+        same helper serves every backend;
+      * ``int`` — an HTTP status code, raised as ``httpx.HTTPStatusError``;
+      * ``Exception`` — raised as-is.
+
+    Returns the list of captured payloads. Snapshots are deep-copied: the
+    OpenRouter downgrade mutates its payload dict in place, so keeping the
+    live reference would make every earlier capture retroactively show the
+    downgraded body.
+    """
+    import copy
+    from unittest.mock import AsyncMock, MagicMock
+
+    import httpx
+
+    payloads: list[dict] = []
+
+    async def _post(*args, **kwargs):
+        i = len(payloads)
+        payloads.append(copy.deepcopy(kwargs.get("json")))
+        if i >= len(side_effects):
+            raise AssertionError(
+                f"unexpected post call #{i + 1} "
+                f"(only {len(side_effects)} configured)"
+            )
+        effect = side_effects[i]
+        if isinstance(effect, int):
+            request = httpx.Request("POST", "https://example.invalid/v1")
+            response = httpx.Response(effect, request=request)
+            raise httpx.HTTPStatusError(
+                f"HTTP {effect}", request=request, response=response
+            )
+        if isinstance(effect, Exception):
+            raise effect
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {
+            "response": effect,
+            "choices": [{"message": {"content": effect}}],
+        }
+        return mock_response
+
+    mock_client = MagicMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    mock_client.post = _post
+
+    monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
+    return payloads
+
+
+_GOOD_RESPONSE = json.dumps(
+    {"category": "ai", "keywords": ["transformer"], "summary": "ok"}
+)
+
+
+def _set_openrouter_mode(monkeypatch, max_attempts: int = 3):
+    """Install settings routing local-mode extraction to the OpenRouter backend."""
+    _set_mode(
+        monkeypatch,
+        "local",
+        max_attempts=max_attempts,
+        metadata_llm_provider="cloud",
+        cloud_backend="openrouter",
+        openrouter_api_key="test-key",
+        openrouter_llm_model="test/model",
+    )
+
+
+def _no_sleep(monkeypatch) -> list[float]:
+    """Replace ``_retry_sleep`` with a recorder; returns the recorded delays."""
+    sleeps: list[float] = []
+
+    async def _record(seconds):
+        sleeps.append(seconds)
+
+    import rag_mcp.core.metadata.ollama as _ollama
+
+    monkeypatch.setattr(_ollama, "_retry_sleep", _record)
+    return sleeps
+
+
+class TestStructuredOutputEnforcement:
+    """Each backend must constrain generation at the serving layer."""
+
+    def test_ollama_payload_requests_json_format(self, monkeypatch) -> None:
+        """Ollama /api/generate carries format=json alongside the prompt."""
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
+        payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("transformer attention"))
+
+        assert len(payloads) == 1
+        assert payloads[0]["format"] == "json"
+        # Enforcement is additive — the prompt-level instruction and the
+        # existing-category taxonomy must survive alongside it.
+        assert "prompt" in payloads[0]
+        assert "JSON" in payloads[0]["prompt"]
+        assert result["category"] == "ai"
+
+    def test_llamacpp_payload_requests_json_object(self, monkeypatch) -> None:
+        """llama.cpp /v1/chat/completions carries an OpenAI json_object format."""
+        _set_mode(monkeypatch, "local", local_backend="llamacpp", max_attempts=1)
+        payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("transformer attention"))
+
+        assert len(payloads) == 1
+        assert payloads[0]["response_format"] == {"type": "json_object"}
+        assert result["category"] == "ai"
+
+    def test_openrouter_payload_carries_schema(self, monkeypatch) -> None:
+        """OpenRouter carries a strict three-key schema and requires routing support."""
+        _set_openrouter_mode(monkeypatch, max_attempts=1)
+        payloads = _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        asyncio.run(extract_metadata_async("transformer attention"))
+
+        assert len(payloads) == 1
+        fmt = payloads[0]["response_format"]
+        assert fmt["type"] == "json_schema"
+        # `strict` is the field that actually enforces conformance — without
+        # it the schema degrades to a hint, and the shape assertions below
+        # would still pass.
+        assert fmt["json_schema"]["strict"] is True
+        schema = fmt["json_schema"]["schema"]
+        assert schema["additionalProperties"] is False
+        assert set(schema["required"]) == {"category", "keywords", "summary"}
+        assert schema["properties"]["keywords"]["type"] == "array"
+        assert schema["properties"]["keywords"]["items"]["type"] == "string"
+        assert schema["properties"]["category"]["type"] == "string"
+        assert schema["properties"]["summary"]["type"] == "string"
+        # Support is per-endpoint, not per-model — without this the router may
+        # pick an endpoint that ignores the schema.
+        assert payloads[0]["provider"]["require_parameters"] is True
+
+    def test_returned_shape_is_unchanged(self, monkeypatch) -> None:
+        """Enforcement must not alter the metadata contract callers rely on."""
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
+        _capturing_async_client(monkeypatch, [_GOOD_RESPONSE])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("text"))
+
+        assert set(result) == {"category", "keywords", "summary"}
+
+    def test_fenced_response_still_parses_under_enforcement(
+        self, monkeypatch
+    ) -> None:
+        """The retained fence-stripping fallback stays reachable.
+
+        A server that ignores ``format`` — an older Ollama, or a downgraded
+        OpenRouter request — can still return a fenced body. Enforcement
+        lowers the odds of that; it does not make the path dead code.
+        """
+        _set_mode(monkeypatch, "local", local_backend="ollama", max_attempts=1)
+        fenced = f"```json\n{_GOOD_RESPONSE}\n```"
+        _capturing_async_client(monkeypatch, [fenced])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("text"))
+
+        assert result["category"] == "ai"
+        assert result["keywords"] == ["transformer"]
+
+
+class TestOpenRouterStructuredOutputDowngrade:
+    """A rejected schema must degrade to the prompt-only path, not to failure."""
+
+    @pytest.mark.parametrize("status", [400, 404, 422])
+    def test_downgrades_and_succeeds(self, monkeypatch, status: int) -> None:
+        """A parameter rejection drops the schema and retries successfully."""
+        _set_openrouter_mode(monkeypatch, max_attempts=3)
+        sleeps = _no_sleep(monkeypatch)
+        payloads = _capturing_async_client(
+            monkeypatch, [status, _GOOD_RESPONSE]
+        )
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("transformer attention"))
+
+        assert len(payloads) == 2
+        assert "response_format" in payloads[0]
+        assert "provider" in payloads[0]
+        # Both keys go, not just the schema: `require_parameters` alone would
+        # keep narrowing routing for no reason.
+        assert "response_format" not in payloads[1]
+        assert "provider" not in payloads[1]
+        # A payload fault is not transient — retrying it immediately is the
+        # whole point of not sleeping here.
+        assert sleeps == []
+        assert result["category"] == "ai"
+
+    def test_downgrade_logs_at_info(self, monkeypatch, caplog) -> None:
+        """The downgrade is visible to operators without being alarming."""
+        _set_openrouter_mode(monkeypatch, max_attempts=3)
+        _no_sleep(monkeypatch)
+        _capturing_async_client(monkeypatch, [404, _GOOD_RESPONSE])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        with caplog.at_level(logging.INFO):
+            asyncio.run(extract_metadata_async("text"))
+
+        assert any(
+            r.levelno == logging.INFO
+            and "structured outputs" in r.message.lower()
+            for r in caplog.records
+        )
+
+    @pytest.mark.parametrize("status", [429, 401, 403, 500])
+    def test_non_parameter_failures_keep_the_schema(
+        self, monkeypatch, status: int
+    ) -> None:
+        """Only 400/404/422 may spend the downgrade.
+
+        429 is transient and belongs on the backoff path; 401/403 are not
+        fixed by a smaller payload, and downgrading would make the eventual
+        log line point at the wrong cause. 500 is an upstream fault that says
+        nothing about the payload — pinning it here keeps the trigger set from
+        being widened to "any 4xx/5xx" by a later refactor.
+        """
+        _set_openrouter_mode(monkeypatch, max_attempts=2)
+        sleeps = _no_sleep(monkeypatch)
+        payloads = _capturing_async_client(monkeypatch, [status, status])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("text"))
+
+        assert len(payloads) == 2
+        assert all("response_format" in p for p in payloads)
+        assert all("provider" in p for p in payloads)
+        # Existing exponential backoff still governs these.
+        assert sleeps == [1]
+        assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
+
+    def test_no_downgrade_when_budget_is_a_single_attempt(
+        self, monkeypatch
+    ) -> None:
+        """A single-attempt budget is an instruction, not an obstacle.
+
+        Setting the budget to 1 asks for exactly one request per
+        classification. Spending a second on the downgrade would override that
+        to honour a different rule, so the downgrade is computed and then not
+        sent. Behaviour matches the pre-enforcement code exactly.
+        """
+        _set_openrouter_mode(monkeypatch, max_attempts=1)
+        sleeps = _no_sleep(monkeypatch)
+        payloads = _capturing_async_client(monkeypatch, [400])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        result = asyncio.run(extract_metadata_async("text"))
+
+        assert len(payloads) == 1
+        assert "response_format" in payloads[0]
+        assert sleeps == []
+        assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
+
+    def test_downgrade_happens_at_most_once(self, monkeypatch, caplog) -> None:
+        """A second rejection after downgrading falls through to the fallback."""
+        _set_openrouter_mode(monkeypatch, max_attempts=3)
+        sleeps = _no_sleep(monkeypatch)
+        payloads = _capturing_async_client(monkeypatch, [400, 400, 400])
+
+        from rag_mcp.core.metadata import extract_metadata_async
+
+        with caplog.at_level(logging.WARNING):
+            result = asyncio.run(extract_metadata_async("text"))
+
+        assert len(payloads) == 3
+        assert "response_format" in payloads[0]
+        assert "response_format" not in payloads[1]
+        assert "response_format" not in payloads[2]
+        # Attempt 1 downgraded without sleeping; attempt 2 is an ordinary
+        # failure and takes the normal backoff before attempt 3.
+        assert sleeps == [2]
+        assert result == {"category": "uncategorised", "keywords": [], "summary": ""}
+        assert any(
+            r.levelno == logging.WARNING
+            and "openrouter classification failed" in r.message.lower()
+            for r in caplog.records
+        )

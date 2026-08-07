@@ -260,6 +260,12 @@ async def _extract_ollama_async(
         "model": resolved.metadata.ollama_classify_model,
         "prompt": prompt,
         "stream": False,
+        # Constrain generation to valid JSON at the serving layer rather than
+        # relying on the prompt alone.  Small models (qwen3:0.6b) otherwise
+        # wrap their output in a markdown fence — see
+        # ``_strip_markdown_fence``, which stays as the fallback for servers
+        # that ignore or predate this option.
+        "format": "json",
     }
     url = f"{resolved.ollama_base_url}/api/generate"
 

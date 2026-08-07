@@ -31,6 +31,7 @@ architecture), see the [ADR index](../adr/).
 | 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md) | Accepted | 2026-06-28 |
 | 004 | [`--no-build` flag incompatible with editable installs in CI](004-uv-no-build-incompatible-with-editable-installs.md)           | Accepted | 2026-06-28 |
 | 005 | [fetch_k override parameter for experiment pool-size sweeps](005-fetch-k-override-for-experiment-pool-sweeps.md)                | Accepted | 2026-06-29 |
+| 006 | [OpenRouter structured outputs are per-endpoint, so `require_parameters` needs a downgrade path](006-openrouter-structured-outputs-per-endpoint.md) | Accepted | 2026-08-07 |
 
 ## Status values
 
