@@ -35,7 +35,7 @@ _BLOCK_OF = {
     "rerank_model": "retrieval",
     "top_k": "retrieval",
     "ollama_classify_model": "metadata",
-    "ollama_classify_timeout": "metadata",
+    "classify_timeout": "metadata",
 }
 
 

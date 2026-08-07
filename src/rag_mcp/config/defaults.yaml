@@ -52,8 +52,8 @@ metadata:
   extraction_mode: llamaindex
   taxonomy_mode: category
   ollama_classify_model: "qwen3:0.6b"
-  ollama_classify_max_attempts: 3
-  ollama_classify_timeout: 30.0
+  classify_max_attempts: 3
+  classify_timeout: 30.0
 
 # ── Storage (cross-cutting, flat) ─────────────────────────────────────
 CHROMA_PERSIST_DIR: ./chroma_db

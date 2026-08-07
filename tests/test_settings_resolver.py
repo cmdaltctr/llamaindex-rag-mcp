@@ -71,8 +71,8 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "llamaindex"),
     ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", None),
     ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "qwen3:0.6b"),
-    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", 3),
-    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", 30.0),
+    ("METADATA__CLASSIFY_MAX_ATTEMPTS", "metadata.classify_max_attempts", 3),
+    ("METADATA__CLASSIFY_TIMEOUT", "metadata.classify_timeout", 30.0),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", 0.85),
@@ -137,8 +137,8 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "disabled", "disabled"),
     ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", "rules.json", "rules.json"),
     ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "llama3:8b", "llama3:8b"),
-    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", "5", 5),
-    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", "60.5", 60.5),
+    ("METADATA__CLASSIFY_MAX_ATTEMPTS", "metadata.classify_max_attempts", "5", 5),
+    ("METADATA__CLASSIFY_TIMEOUT", "metadata.classify_timeout", "60.5", 60.5),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "/usr/bin/magika", "/usr/bin/magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", "0.9", 0.9),

@@ -18,5 +18,5 @@ def build(settings: Settings) -> Any:
     return Ollama(
         model=settings.metadata.ollama_classify_model,
         base_url=settings.ollama_base_url,
-        request_timeout=settings.metadata.ollama_classify_timeout,
+        request_timeout=settings.metadata.classify_timeout,
     )

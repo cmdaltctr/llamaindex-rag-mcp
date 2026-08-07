@@ -13,7 +13,7 @@ import-linter contract extended in task 10.2).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ChunkingBlock(BaseModel):
@@ -80,9 +80,15 @@ class MetadataBlock(BaseModel):
     extraction_mode: str = "llamaindex"
     keyword_rules: str | None = None
     ollama_classify_model: str = "qwen3:0.6b"
-    ollama_classify_max_attempts: int = 3
-    ollama_classify_timeout: float = 30.0
+    classify_max_attempts: int = 3
+    classify_timeout: float = 30.0
     taxonomy_mode: str = "category"
+
+    @field_validator("classify_max_attempts")
+    @classmethod
+    def _clamp_max_attempts(cls, v: int) -> int:
+        """Ensure at least one classification attempt is made."""
+        return max(1, v)
 
 
 class EffectiveSettings(BaseModel):

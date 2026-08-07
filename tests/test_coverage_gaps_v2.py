@@ -51,7 +51,7 @@ class TestOpenRouterExtraction:
     def _settings(self, **kw) -> EffectiveSettings:
         return EffectiveSettings(
             metadata=MetadataBlock(
-                extraction_mode="local", ollama_classify_max_attempts=kw.pop("attempts", 1)
+                extraction_mode="local", classify_max_attempts=kw.pop("attempts", 1)
             ),
             metadata_llm_provider="cloud",
             cloud_backend="openrouter",
@@ -89,7 +89,7 @@ class TestOpenRouterExtraction:
         async def _no_sleep(_s):
             return None
 
-        monkeypatch.setattr("rag_mcp.core.metadata.ollama._retry_sleep", _no_sleep)
+        monkeypatch.setattr("rag_mcp.core.metadata._common._retry_sleep", _no_sleep)
         result = await _extract_openrouter_chat_async(
             "text", "f.txt", self._settings()
         )

@@ -8,10 +8,15 @@ Phase 1 (behaviour-preserving mechanical extraction).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 
 logger = logging.getLogger(__name__)
+
+# Sleep hook used between classification retry attempts.  Module-level so
+# tests can replace it with a no-op without touching ``asyncio`` globally.
+_retry_sleep = asyncio.sleep
 
 # ── Category normalisation helpers ──────────────────────────────────────
 
@@ -122,3 +127,33 @@ def _strip_llm_prefix(text: str) -> str:
     cleaned = re.sub(r"(?:\s*\*{1,2})+$", "", cleaned)
     cleaned = cleaned.strip('"\'')
     return cleaned.strip()
+
+
+def _get_classify_max_attempts(resolved) -> int:
+    """Return the bounded retry budget for metadata classification.
+
+    The value is injected via ``resolved.metadata.classify_max_attempts``
+    and clamped to at least 1 by the ``field_validator`` on the settings
+    model, so no floor is needed here.
+
+    Args:
+        resolved: An :class:`EffectiveSettings` (or compatible) object.
+
+    Returns:
+        Maximum number of classification attempts (>= 1).
+    """
+    return resolved.metadata.classify_max_attempts
+
+
+def _get_classify_timeout(resolved) -> float:
+    """Return the per-attempt HTTP timeout (seconds) for classification.
+
+    The value is injected via ``resolved.metadata.classify_timeout``.
+
+    Args:
+        resolved: An :class:`EffectiveSettings` (or compatible) object.
+
+    Returns:
+        Per-attempt timeout in seconds.
+    """
+    return resolved.metadata.classify_timeout

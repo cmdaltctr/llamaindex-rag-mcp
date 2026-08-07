@@ -153,12 +153,10 @@ async def _extract_openrouter_chat_async(
     """
     import httpx
 
+    from ._common import _get_classify_max_attempts, _get_classify_timeout, _retry_sleep
     from .ollama import (
         _build_ollama_prompt,
-        _get_ollama_max_attempts,
-        _get_ollama_timeout,
         _parse_ollama_json_response,
-        _retry_sleep,
     )
 
     fallback = {"category": "uncategorised", "keywords": [], "summary": ""}
@@ -194,8 +192,8 @@ async def _extract_openrouter_chat_async(
     }
     url = "https://openrouter.ai/api/v1/chat/completions"
 
-    max_attempts = _get_ollama_max_attempts(resolved)
-    timeout_s = _get_ollama_timeout(resolved)
+    max_attempts = _get_classify_max_attempts(resolved)
+    timeout_s = _get_classify_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):

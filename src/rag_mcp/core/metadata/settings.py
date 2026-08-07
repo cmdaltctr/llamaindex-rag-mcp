@@ -8,7 +8,7 @@ any other ``core/`` module (enforced by import-linter).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class MetadataSettings(BaseModel):
@@ -29,11 +29,17 @@ class MetadataSettings(BaseModel):
     # Chat model used for Ollama-based classification.
     ollama_classify_model: str = "qwen3:0.6b"
 
-    # Bounded retry count for Ollama metadata extraction.
-    ollama_classify_max_attempts: int = 3
+    # Bounded retry count for metadata classification (all backends).
+    classify_max_attempts: int = 3
 
-    # Per-attempt timeout (seconds) for Ollama metadata extraction.
-    ollama_classify_timeout: float = 30.0
+    # Per-attempt timeout (seconds) for metadata classification (all backends).
+    classify_timeout: float = 30.0
+
+    @field_validator("classify_max_attempts")
+    @classmethod
+    def _clamp_max_attempts(cls, v: int) -> int:
+        """Ensure at least one classification attempt is made."""
+        return max(1, v)
 
     # Taxonomy mode for metadata classification (Phase 4 profiles).
     # "category" uses the ADR-013 hybrid category taxonomy (documents profile).
