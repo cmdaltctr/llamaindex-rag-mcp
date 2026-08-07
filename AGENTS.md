@@ -12,26 +12,6 @@ uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest --cov=rag_mcp      # Coverage
 ```
 
-## Mandatory Tool Rules
-
-**These override built-in tool instinct. Follow them every time.**
-
-| Task                      | Use                                                               | Never use                     |
-| ------------------------- | ----------------------------------------------------------------- | ----------------------------- |
-| Read / edit / write files | `desktop-commander-mcp` (`read_file`, `edit_block`, `write_file`) | built-in read/write/edit      |
-| Search codebase           | `desktop-commander-mcp` → `start_search`                          | built-in grep/glob            |
-| List directory            | `desktop-commander-mcp` → `list_directory`                        | built-in ls                   |
-| Library/framework docs    | `context7-mcp` → `resolve_library_id` → `query_docs`              | web search                    |
-| Specific doc URL          | `ref-mcp` → `ref_read_url`                                        | scraping                      |
-| GitHub repo architecture  | `deepwiki-mcp` → `ask_question`                                   | web search                    |
-| General web search        | `tavily-mcp` → `tavily_search`                                    | brave-search (secondary only) |
-| Academic papers           | `paper-search-mcp-cf-local` → `search_papers`                     | web search                    |
-| Web scraping              | `firecrawl-mcp` → `firecrawl_scrape`                              | —                             |
-
-## Skills — Load Before You Work
-
-Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers-search` · Codebase graph `s-graphify` · NiftyPM `s-niftypm` · RAG experiments `s-experiment`.
-
 ## Architecture Invariants
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
@@ -58,9 +38,9 @@ Web/docs `s-dev-search` · General web `s-web-search` · Papers/Zotero `s-papers
 6. **PDF reader is a factory** (ADR-020, amended Phase 5). Located at `integrations/pdf/factory.py`. Default `auto` (LiteParse if installed, else pypdf). Tests MUST set `PDF_READER=pypdf` to stay deterministic.
 7. **MCP tool annotations are mandatory.** Use `ToolAnnotations` (`readOnlyHint`, `destructiveHint`) on every tool.
 8. **`content_type` metadata takes precedence** over file extension for chunking strategy selection (implemented in `core/ingestion/chunker.py`; no dedicated ADR — ADR-022 is "Code Graph via Tree-Sitter AST", not content-type dispatch).
-8a. **Tests inject settings; they do not patch a singleton.** There is nothing to patch. Use the `effective_settings(**overrides)` conftest factory, or `set_default_effective_settings(...)` for code that reads the composition-root default. The conftest default deliberately sets `extraction_mode="disabled"` and `pdf_reader="pypdf"` — the class defaults would make ingestion tests perform real LLM calls and hang on network timeouts.
-8b. **Patch targets follow the function, not the re-export.** After the ADR-037 splits, `_get_git_commit_hash`/`_load_cache`/`_save_cache` live in `core/codebase/cache.py`, `format_codebase_map` in `core/codebase/format.py`, `Observer` in `daemon/runner.py`, and `_is_magika_available` in `integrations/magika.py`. Patching the re-exporting module is a no-op.
-8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
+   8a. **Tests inject settings; they do not patch a singleton.** There is nothing to patch. Use the `effective_settings(**overrides)` conftest factory, or `set_default_effective_settings(...)` for code that reads the composition-root default. The conftest default deliberately sets `extraction_mode="disabled"` and `pdf_reader="pypdf"` — the class defaults would make ingestion tests perform real LLM calls and hang on network timeouts.
+   8b. **Patch targets follow the function, not the re-export.** After the ADR-037 splits, `_get_git_commit_hash`/`_load_cache`/`_save_cache` live in `core/codebase/cache.py`, `format_codebase_map` in `core/codebase/format.py`, `Observer` in `daemon/runner.py`, and `_is_magika_available` in `integrations/magika.py`. Patching the re-exporting module is a no-op.
+   8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
 11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Removal trigger: v3.0.0 (ADR-037).
@@ -92,58 +72,17 @@ OpenSpec (propose → implement → archive)
 
 **Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green.
 
-### OpenSpec ↔ NiftyPM Sync
-
-The local JSON at **`niftypm/llamaindex-rag-mcp.json`** is the source of truth that bridges OpenSpec and NiftyPM cloud. Load `s-niftypm` before any NiftyPM MCP call.
-
-**JSON schema hierarchy** (descriptions required on all except checklist items):
-
-| Level     | Has description | Children                    |
-| --------- | --------------- | --------------------------- |
-| Task      | ✅ yes          | Subtasks                    |
-| Subtask   | ✅ yes          | Checklists                  |
-| Checklist | ❌ no           | Checklist items (name only) |
-
-**Forward (OpenSpec → cloud):**
-
-1. OpenSpec proposal creates `tasks.md` with numbered checkbox items.
-2. Mirror tasks into `niftypm/llamaindex-rag-mcp.json` following the schema above. Subtasks are real tasks (`create_task(task_id=PARENT)`), never markdown `- [ ]` in descriptions.
-3. Sync to cloud via the s-niftypm four-phase pipeline (labels → task lists → milestones → tasks → enrich).
-
-**Reverse (cloud → local):**
-
-```bash
-python3 ~/.config/opencode/skills/s-niftypm/scripts/reverse-sync.py \
-    --bundle /tmp/AIE-bundle.json \
-    --output niftypm/llamaindex-rag-mcp.json
-```
-
-Re-run when the NiftyPM board changes (dates, assignees, new tasks). The `meta.last_synced` timestamp detects staleness.
-
-**Task completion (bidirectional):**
-When a task is done, update **both**:
-
-- OpenSpec: check the box in `openspec/changes/<id>/tasks.md` (`- [x]`)
-- NiftyPM: `niftypm_complete_task(task_id="...")` via MCP
-- Local JSON: set `"completed": true` in `niftypm/llamaindex-rag-mcp.json`
-
-## Experiment Discipline
-
-→ Full detail: `s-experiment` skill, [`docs/guides/testing.md`](docs/guides/testing.md)
-
-Long-running scripts **must** checkpoint after each cell (`--resume`), use `print(..., flush=True)`, write to `output/` atomically (`.tmp`→rename). Never delete `output/chroma_*` indexes unless rebuilding.
-
 ## Release Automation
 
 Releases via `python-semantic-release` on every push to `main`. `feat:` → minor, `fix:`/`perf:` → patch, `feat!:` → major, `chore:`/`docs:`/`test:`/`refactor:` → no release. Never manually edit `version` in `pyproject.toml`.
 
 ## Coverage Thresholds
 
-| Tier          | Floor    | Modules                                                                              |
-| ------------- | -------- | ------------------------------------------------------------------------------------ |
+| Tier          | Floor    | Modules                                                                                                                                                 |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Core + MCP    | ≥95%     | `core/ingestion`, `core/retrieval`, `core/metadata`, `core/chunking`, `core/vectordb`, `core/profiles`, `core/settings.py`, `config/`, `transports/mcp` |
-| Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                   |
-| **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                  |
+| Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                                                                                      |
+| **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                                                                                     |
 
 > All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
@@ -170,6 +109,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
 Rules:
+
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
