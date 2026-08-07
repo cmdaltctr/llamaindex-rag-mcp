@@ -58,6 +58,11 @@ async def _extract_llamacpp_chat_async(
             {"role": "user", "content": prompt},
         ],
         "stream": False,
+        # OpenAI-compatible equivalent of Ollama's ``format: "json"`` — the
+        # llama.cpp server converts this into a GBNF grammar, so generation
+        # cannot emit a markdown fence.  ``_parse_ollama_json_response``
+        # remains the fallback for servers that ignore the field.
+        "response_format": {"type": "json_object"},
     }
     url = f"{resolved.llamacpp_chat_url}/chat/completions"
 
