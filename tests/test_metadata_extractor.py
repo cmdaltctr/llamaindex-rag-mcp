@@ -38,7 +38,7 @@ def _set_mode(
     if keyword_rules is not None:
         block_kwargs["keyword_rules"] = keyword_rules
     if max_attempts is not None:
-        block_kwargs["ollama_classify_max_attempts"] = max_attempts
+        block_kwargs["classify_max_attempts"] = max_attempts
     root_kwargs = dict(root_overrides)
     if local_backend is not None:
         root_kwargs["local_backend"] = local_backend
@@ -1532,9 +1532,9 @@ def _no_sleep(monkeypatch) -> list[float]:
     async def _record(seconds):
         sleeps.append(seconds)
 
-    import rag_mcp.core.metadata.ollama as _ollama
+    import rag_mcp.core.metadata._common as _common
 
-    monkeypatch.setattr(_ollama, "_retry_sleep", _record)
+    monkeypatch.setattr(_common, "_retry_sleep", _record)
     return sleeps
 
 

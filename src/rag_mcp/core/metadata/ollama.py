@@ -10,13 +10,20 @@ of Phase 1.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import re
 
 from ..settings import resolve_effective_settings
-from ._common import _normalise_category, _truncate_keywords, _truncate_summary, logger
+from ._common import (
+    _get_classify_max_attempts,
+    _get_classify_timeout,
+    _normalise_category,
+    _retry_sleep,
+    _truncate_keywords,
+    _truncate_summary,
+    logger,
+)
 from .taxonomy import _gather_existing_categories, _get_seed_categories
 
 
@@ -177,50 +184,6 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     }
 
 
-def _get_ollama_max_attempts(resolved) -> int:
-    """Return the bounded retry budget for Ollama metadata classification.
-
-    Reads ``OLLAMA_CLASSIFY_MAX_ATTEMPTS`` at call time so tests can
-    override it via ``monkeypatch.setenv`` without re-importing.
-
-    Returns:
-        Maximum number of attempts (>= 1).  Falls back to 3.
-    """
-    import os
-    raw = os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS")
-    if raw is None:
-        return resolved.metadata.ollama_classify_max_attempts
-    try:
-        value = int(raw)
-    except (TypeError, ValueError):
-        return resolved.metadata.ollama_classify_max_attempts
-    return max(1, value)
-
-
-def _get_ollama_timeout(resolved) -> float:
-    """Return the per-attempt HTTP timeout (seconds) for Ollama classification.
-
-    Reads ``OLLAMA_CLASSIFY_TIMEOUT`` at call time so tests can override
-    it via ``monkeypatch.setenv`` without re-importing.
-
-    Returns:
-        Per-attempt timeout in seconds.  Falls back to 30.0.
-    """
-    import os
-    raw = os.getenv("OLLAMA_CLASSIFY_TIMEOUT")
-    if raw is None:
-        return resolved.metadata.ollama_classify_timeout
-    try:
-        return float(raw)
-    except (TypeError, ValueError):
-        return resolved.metadata.ollama_classify_timeout
-
-
-# Sleep hook used between Ollama retry attempts.  Module-level so tests
-# can replace it with a no-op without touching ``asyncio`` globally.
-_retry_sleep = asyncio.sleep
-
-
 async def _extract_ollama_async(
     text: str, file_name: str = "", settings: object | None = None
 ) -> dict:
@@ -229,9 +192,10 @@ async def _extract_ollama_async(
     Uses ``httpx.AsyncClient`` for non-blocking HTTP to Ollama's
     ``/api/generate`` endpoint with a bounded retry loop.  On transient
     failures (timeouts, connection errors, network errors) the call is
-    retried up to ``OLLAMA_CLASSIFY_MAX_ATTEMPTS`` times with
-    exponential backoff (``2 ** attempt`` seconds between attempts).
-    Per-attempt HTTP timeout is ``OLLAMA_CLASSIFY_TIMEOUT`` seconds.
+    retried within a total budget of ``METADATA__CLASSIFY_MAX_ATTEMPTS``
+    attempts — the initial request included — with exponential backoff
+    (``2 ** attempt`` seconds between attempts).
+    Per-attempt HTTP timeout is ``METADATA__CLASSIFY_TIMEOUT`` seconds.
     On retry exhaustion the function returns the ``uncategorised``
     fallback dict and logs a single WARNING summarising the failure
     chain.
@@ -269,8 +233,8 @@ async def _extract_ollama_async(
     }
     url = f"{resolved.ollama_base_url}/api/generate"
 
-    max_attempts = _get_ollama_max_attempts(resolved)
-    timeout_s = _get_ollama_timeout(resolved)
+    max_attempts = _get_classify_max_attempts(resolved)
+    timeout_s = _get_classify_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):

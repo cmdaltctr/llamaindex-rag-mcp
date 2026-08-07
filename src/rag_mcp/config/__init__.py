@@ -305,7 +305,7 @@ _settings: Settings | None = None
 # after the task 8.7 split.
 
 from .legacy import (  # noqa: E402
-    _LEGACY_FLAT_ENV_VARS,
+    _RETIRED_ENV_VARS,
     check_legacy_env_vars,
 )
 from .sources import (  # noqa: E402

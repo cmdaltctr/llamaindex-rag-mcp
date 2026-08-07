@@ -8,7 +8,9 @@ rather than abort startup.
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
+from rag_mcp.core.metadata.settings import MetadataSettings
 from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
 
@@ -100,55 +102,55 @@ class TestProfileBundleDegradation:
         assert bundle["retrieval"]["top_k"] == 10
 
 
-class TestOllamaKnobResolution:
-    """Env overrides win, but a malformed value falls back to settings."""
+class TestClassifyKnobResolution:
+    """Settings-injection path for the shared classify retry/timeout knobs."""
 
     def _settings(self) -> EffectiveSettings:
         return EffectiveSettings(
             metadata=MetadataBlock(
-                ollama_classify_max_attempts=7, ollama_classify_timeout=42.0
+                classify_max_attempts=7, classify_timeout=42.0
             )
         )
 
-    def test_attempts_use_settings_when_env_unset(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_max_attempts
+    def test_attempts_flow_through_helper(self) -> None:
+        from rag_mcp.core.metadata._common import _get_classify_max_attempts
 
-        monkeypatch.delenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", raising=False)
-        assert _get_ollama_max_attempts(self._settings()) == 7
+        assert _get_classify_max_attempts(self._settings()) == 7
 
-    def test_attempts_env_override_wins(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_max_attempts
+    def test_timeout_flows_through_helper(self) -> None:
+        from rag_mcp.core.metadata._common import _get_classify_timeout
 
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "3")
-        assert _get_ollama_max_attempts(self._settings()) == 3
+        assert _get_classify_timeout(self._settings()) == 42.0
 
-    def test_malformed_attempts_falls_back(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_max_attempts
 
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "not-a-number")
-        assert _get_ollama_max_attempts(self._settings()) == 7
+class TestClassifyKnobBounds:
+    """Non-positive retry/timeout knobs are rejected, never clamped.
 
-    def test_attempts_floor_is_one(self, monkeypatch) -> None:
-        """Zero or negative attempts would skip the call entirely."""
-        from rag_mcp.core.metadata.ollama import _get_ollama_max_attempts
+    Both the config-layer model (``MetadataSettings``) and the effective
+    block (``MetadataBlock``) declare these knobs, so both are exercised:
+    a bound added to one and forgotten on the other leaves a live hole.
+    Rejecting rather than clamping is deliberate — silently rewriting an
+    operator's ``0`` to ``1`` hides their mistake, which is the same
+    silent-config failure the legacy-name tripwire exists to prevent.
+    """
 
-        monkeypatch.setenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS", "0")
-        assert _get_ollama_max_attempts(self._settings()) == 1
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    @pytest.mark.parametrize("value", [0, -5])
+    def test_non_positive_attempts_rejected(self, model, value: int) -> None:
+        """A zero or negative attempt budget fails resolution loudly."""
+        with pytest.raises(ValidationError, match="classify_max_attempts"):
+            model(classify_max_attempts=value)
 
-    def test_timeout_uses_settings_when_env_unset(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_timeout
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    @pytest.mark.parametrize("value", [0.0, -1.0])
+    def test_non_positive_timeout_rejected(self, model, value: float) -> None:
+        """A zero or negative timeout fails rather than reaching httpx."""
+        with pytest.raises(ValidationError, match="classify_timeout"):
+            model(classify_timeout=value)
 
-        monkeypatch.delenv("OLLAMA_CLASSIFY_TIMEOUT", raising=False)
-        assert _get_ollama_timeout(self._settings()) == 42.0
-
-    def test_timeout_env_override_wins(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_timeout
-
-        monkeypatch.setenv("OLLAMA_CLASSIFY_TIMEOUT", "2.5")
-        assert _get_ollama_timeout(self._settings()) == 2.5
-
-    def test_malformed_timeout_falls_back(self, monkeypatch) -> None:
-        from rag_mcp.core.metadata.ollama import _get_ollama_timeout
-
-        monkeypatch.setenv("OLLAMA_CLASSIFY_TIMEOUT", "soon")
-        assert _get_ollama_timeout(self._settings()) == 42.0
+    @pytest.mark.parametrize("model", [MetadataBlock, MetadataSettings])
+    def test_positive_values_accepted(self, model) -> None:
+        """The bound rejects only non-positive values."""
+        instance = model(classify_max_attempts=1, classify_timeout=0.5)
+        assert instance.classify_max_attempts == 1
+        assert instance.classify_timeout == 0.5

@@ -116,6 +116,16 @@ they only lived because the flat schema had nowhere better.
 | `OLLAMA_CLASSIFY_MAX_ATTEMPTS` | `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS` |
 | `OLLAMA_CLASSIFY_TIMEOUT` | `METADATA__OLLAMA_CLASSIFY_TIMEOUT` |
 
+> **Update (rename-classify-settings, 2026-08-07):** the last two rows record
+> the v2.0.0 targets, which have since been retired. Both knobs govern *all*
+> metadata LLM backends, not just Ollama, so they are now
+> `METADATA__CLASSIFY_MAX_ATTEMPTS` and `METADATA__CLASSIFY_TIMEOUT`.
+> `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS` and
+> `METADATA__OLLAMA_CLASSIFY_TIMEOUT` are themselves tripwired and will fail
+> at startup — migrate straight to the `CLASSIFY_*` forms. The third row,
+> `METADATA__OLLAMA_CLASSIFY_MODEL`, is unaffected: it really is
+> Ollama-specific.
+
 `defaults.yaml` and all three profile bundles are rewritten nested and ship
 with this change; a bundle using the flat schema, or a `hybrid.yaml`
 carrying lever blocks, is now rejected with the offending key named.

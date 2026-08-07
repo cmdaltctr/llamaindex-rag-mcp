@@ -8,16 +8,18 @@ any other ``core/`` module (enforced by import-linter).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MetadataSettings(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
     """Configuration knobs for document metadata extraction.
 
     Defaults mirror the pre-refactor ``config.py`` values exactly.
     """
+
+    # Declared after the docstring: a string literal following an
+    # assignment is a bare expression, not ``__doc__``.
+    model_config = ConfigDict(extra="forbid")
 
     # Metadata extraction mode: "disabled", "keyword", "local",
     # "llamaindex".  "ollama" is mapped to "local" for back-compat.
@@ -29,11 +31,14 @@ class MetadataSettings(BaseModel):
     # Chat model used for Ollama-based classification.
     ollama_classify_model: str = "qwen3:0.6b"
 
-    # Bounded retry count for Ollama metadata extraction.
-    ollama_classify_max_attempts: int = 3
+    # Bounded retry count for metadata classification (all backends).
+    # Rejected rather than clamped when non-positive: silently rewriting an
+    # operator's 0 to 1 hides the misconfiguration.
+    classify_max_attempts: int = Field(default=3, gt=0)
 
-    # Per-attempt timeout (seconds) for Ollama metadata extraction.
-    ollama_classify_timeout: float = 30.0
+    # Per-attempt timeout (seconds) for metadata classification (all backends).
+    # Non-positive values would reach httpx as a nonsensical deadline.
+    classify_timeout: float = Field(default=30.0, gt=0)
 
     # Taxonomy mode for metadata classification (Phase 4 profiles).
     # "category" uses the ADR-013 hybrid category taxonomy (documents profile).

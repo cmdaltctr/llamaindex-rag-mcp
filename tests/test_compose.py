@@ -35,8 +35,51 @@ _BLOCK_OF = {
     "rerank_model": "retrieval",
     "top_k": "retrieval",
     "ollama_classify_model": "metadata",
-    "ollama_classify_timeout": "metadata",
+    "classify_timeout": "metadata",
 }
+
+
+# Flat defaults for ``_settings()``. Every key must be routable: either
+# ``_BLOCK_OF`` owns it, or the root ``Settings`` model declares it. A key
+# that is neither falls through to ``root`` and is silently dropped by
+# ``Settings(extra="ignore")`` — see ``_assert_routable``.
+_DEFAULT_FLAT: dict[str, object] = {
+    "embed_provider": "local",
+    "local_backend": "ollama",
+    "embed_model": "nomic-embed-text",
+    "ollama_base_url": "http://localhost:11434",
+    "embed_batch_size": 64,
+    "metadata_llm_provider": "local",
+    "ollama_classify_model": "qwen3:0.6b",
+    "classify_timeout": 30.0,
+    "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+}
+
+
+def _assert_routable(flat: dict[str, object]) -> None:
+    """Fail if any flat key would be silently discarded.
+
+    ``_settings()`` routes a key into a nested block when ``_BLOCK_OF``
+    names one, and otherwise passes it to the root ``Settings`` model.
+    A key in neither place — a subpackage field left behind by a rename,
+    say — is accepted and dropped without a word by
+    ``Settings(extra="ignore")``, so the test relying on it silently
+    stops testing anything.
+
+    Args:
+        flat: The merged defaults-plus-overrides mapping to check.
+
+    Raises:
+        AssertionError: Naming every key that routes nowhere.
+    """
+    root_fields = set(Settings.model_fields)
+    unroutable = sorted(
+        key for key in flat if key not in _BLOCK_OF and key not in root_fields
+    )
+    assert not unroutable, (
+        f"flat keys route nowhere and would be silently dropped: {unroutable}. "
+        "Add each to _BLOCK_OF, or use its current root Settings name."
+    )
 
 
 def _settings(**overrides) -> Settings:
@@ -49,18 +92,11 @@ def _settings(**overrides) -> Settings:
     from rag_mcp.core.metadata.settings import MetadataSettings
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-    flat = {
-        "embed_provider": "local",
-        "local_backend": "ollama",
-        "embed_model": "nomic-embed-text",
-        "ollama_base_url": "http://localhost:11434",
-        "embed_batch_size": 64,
-        "metadata_llm_provider": "local",
-        "ollama_classify_model": "qwen3:0.6b",
-        "ollama_classify_timeout": 30.0,
-        "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
-    }
+    flat = dict(_DEFAULT_FLAT)
     flat.update(overrides)
+    # Guards the override path too, not just the defaults: an override
+    # naming a renamed field is the same silent no-op.
+    _assert_routable(flat)
 
     blocks: dict[str, dict] = {}
     root: dict = {}
@@ -78,6 +114,30 @@ def _settings(**overrides) -> Settings:
     }
     nested = {name: cls[name](**fields) for name, fields in blocks.items()}
     return Settings(_env_file=None, **root, **nested)
+
+
+# ── Fixture guard ───────────────────────────────────────────────────────────
+
+
+def test_every_default_key_is_routable() -> None:
+    """No default key may silently vanish into ``Settings(extra="ignore")``.
+
+    Named explicitly rather than left to the in-fixture guard so the
+    failure reads as its own test rather than as a collapse of every test
+    that builds settings.
+    """
+    _assert_routable(dict(_DEFAULT_FLAT))
+
+
+def test_routability_guard_rejects_a_renamed_key() -> None:
+    """The guard itself must fail on a key that routes nowhere.
+
+    ``classify_timeout`` was once ``ollama_classify_timeout``; the stale
+    name sat in the defaults being silently dropped. This pins that the
+    guard catches that shape of key rather than passing vacuously.
+    """
+    with pytest.raises(AssertionError, match="ollama_classify_timeout"):
+        _assert_routable({"ollama_classify_timeout": 30.0})
 
 
 # ── build_embed_model ───────────────────────────────────────────────────────

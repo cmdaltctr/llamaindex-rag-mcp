@@ -100,6 +100,11 @@ dead code.
   `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS`, which despite the name governs all
   three backends — llama.cpp and OpenRouter both call
   `_get_ollama_max_attempts`.
+
+  > **Update (rename-classify-settings, 2026-08-07):** this knob is now
+  > `METADATA__CLASSIFY_MAX_ATTEMPTS` and the helper is
+  > `_get_classify_max_attempts` in `_common.py`. The misleading `ollama_`
+  > scope this passage flags has been retired.
 - One extra round trip on the first classification against a schema-incapable
   model, repeated per document (the downgrade is not cached across calls).
 

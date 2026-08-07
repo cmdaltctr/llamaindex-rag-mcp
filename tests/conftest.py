@@ -270,8 +270,8 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     # Keep retry behaviour out of the default test path so existing
     # tests don't pay 1+2+...=O(2^n) seconds of backoff.  Retry-specific
     # tests opt back in by setting this to 2+.
-    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
-    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "5.0")
+    monkeypatch.setenv("METADATA__CLASSIFY_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("METADATA__CLASSIFY_TIMEOUT", "5.0")
 
     # NOTE: this fixture used to also monkeypatch legacy module constants
     # (config.CHROMA_PERSIST_DIR …) and then the resolved Settings singleton,

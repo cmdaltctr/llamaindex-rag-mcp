@@ -12,13 +12,15 @@ from __future__ import annotations
 import logging
 
 from ..settings import resolve_effective_settings
-from ._common import logger
+from ._common import (
+    _get_classify_max_attempts,
+    _get_classify_timeout,
+    _retry_sleep,
+    logger,
+)
 from .ollama import (
     _build_ollama_prompt,
-    _get_ollama_max_attempts,
-    _get_ollama_timeout,
     _parse_ollama_json_response,
-    _retry_sleep,
 )
 
 
@@ -66,8 +68,8 @@ async def _extract_llamacpp_chat_async(
     }
     url = f"{resolved.llamacpp_chat_url}/chat/completions"
 
-    max_attempts = _get_ollama_max_attempts(resolved)
-    timeout_s = _get_ollama_timeout(resolved)
+    max_attempts = _get_classify_max_attempts(resolved)
+    timeout_s = _get_classify_timeout(resolved)
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):

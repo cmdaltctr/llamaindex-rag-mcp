@@ -13,7 +13,7 @@ import-linter contract extended in task 10.2).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChunkingBlock(BaseModel):
@@ -80,8 +80,11 @@ class MetadataBlock(BaseModel):
     extraction_mode: str = "llamaindex"
     keyword_rules: str | None = None
     ollama_classify_model: str = "qwen3:0.6b"
-    ollama_classify_max_attempts: int = 3
-    ollama_classify_timeout: float = 30.0
+    # Both knobs reject non-positive values outright rather than clamping:
+    # silently rewriting an operator's 0 to 1 hides the misconfiguration,
+    # and a non-positive timeout reaches httpx as a nonsensical deadline.
+    classify_max_attempts: int = Field(default=3, gt=0)
+    classify_timeout: float = Field(default=30.0, gt=0)
     taxonomy_mode: str = "category"
 
 
