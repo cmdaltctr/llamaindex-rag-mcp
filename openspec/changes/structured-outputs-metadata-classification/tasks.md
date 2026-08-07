@@ -2,7 +2,7 @@
 > recorded here as completed for traceability, not because they were planned first. Group 4 closed the
 > gap that made this worth proposing at all: the pre-existing tests mock at the response level and
 > assert nothing about the request payload, so groups 1–3 were invisible to CI until group 4 landed.
-> Remaining: 5.4 (ADR decision) and 5.5 (commit + archive).
+> Remaining: 5.6 (PR + merge) and 5.7 (archive, which must wait until after merge).
 
 ## 1. Ollama backend enforcement
 
@@ -68,5 +68,9 @@
       architectural choice. Written as `docs/tdr/006-openrouter-structured-outputs-per-endpoint.md`.
       The Ollama/llama.cpp payload keys warrant no record — using a documented feature correctly is
       not a decision.
-- [ ] 5.5 Conventional Commit on a `feat/structured-outputs-metadata-classification` branch, then archive
-      the change
+- [x] 5.5 Conventional Commits on branch `feat/structured-outputs-metadata-classification`
+      → `e25338a` feat(metadata) (impl + tests + this change), `29ee8b0` docs (TDR-006)
+- [ ] 5.6 Open the PR against `main` and merge when green
+- [ ] 5.7 **After merge**, archive the change (`openspec archive`) so the spec deltas fold into
+      `openspec/specs/metadata-extraction/spec.md`. Deliberately not done before merge: archiving
+      rewrites the permanent spec, which must not claim behaviour that is not yet on `main`.
