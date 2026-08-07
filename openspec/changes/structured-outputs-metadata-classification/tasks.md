@@ -95,6 +95,14 @@
       not the pre-v2 flat `OLLAMA_CLASSIFY_MAX_ATTEMPTS`, and note that despite the `OLLAMA_` prefix it
       governs all three backends
 
+- [x] 6.5 Assert `json_schema.strict is True` and `additionalProperties is False` in the OpenRouter
+      payload test. `strict` is the field that actually enforces conformance — dropping it degrades the
+      schema to a hint while every shape assertion still passes, so the test had a hole exactly where it
+      mattered most.
+- [x] 6.6 Add HTTP 500 to the non-downgrade parametrisation. A server fault says nothing about the
+      payload, so it must keep `response_format` and take normal backoff; pinning it stops the trigger
+      set being widened to "any 4xx/5xx" in a later refactor.
+
 ## 7. Deferred — raised during review, out of scope here
 
 - [ ] 7.1 `_get_ollama_max_attempts` / `_get_ollama_timeout` read the pre-v2 flat env names

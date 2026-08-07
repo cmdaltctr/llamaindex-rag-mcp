@@ -1583,7 +1583,12 @@ class TestStructuredOutputEnforcement:
         assert len(payloads) == 1
         fmt = payloads[0]["response_format"]
         assert fmt["type"] == "json_schema"
+        # `strict` is the field that actually enforces conformance — without
+        # it the schema degrades to a hint, and the shape assertions below
+        # would still pass.
+        assert fmt["json_schema"]["strict"] is True
         schema = fmt["json_schema"]["schema"]
+        assert schema["additionalProperties"] is False
         assert set(schema["required"]) == {"category", "keywords", "summary"}
         assert schema["properties"]["keywords"]["type"] == "array"
         assert schema["properties"]["keywords"]["items"]["type"] == "string"
@@ -1670,15 +1675,17 @@ class TestOpenRouterStructuredOutputDowngrade:
             for r in caplog.records
         )
 
-    @pytest.mark.parametrize("status", [429, 401, 403])
+    @pytest.mark.parametrize("status", [429, 401, 403, 500])
     def test_non_parameter_failures_keep_the_schema(
         self, monkeypatch, status: int
     ) -> None:
-        """Rate limiting and auth failures must not spend the downgrade.
+        """Only 400/404/422 may spend the downgrade.
 
         429 is transient and belongs on the backoff path; 401/403 are not
         fixed by a smaller payload, and downgrading would make the eventual
-        log line point at the wrong cause.
+        log line point at the wrong cause. 500 is an upstream fault that says
+        nothing about the payload — pinning it here keeps the trigger set from
+        being widened to "any 4xx/5xx" by a later refactor.
         """
         _set_openrouter_mode(monkeypatch, max_attempts=2)
         sleeps = _no_sleep(monkeypatch)
