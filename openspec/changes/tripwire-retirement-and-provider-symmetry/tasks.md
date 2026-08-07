@@ -102,16 +102,16 @@
 
 ## 7. Validation
 
-- [ ] 7.1 `uv run pytest -m "not slow" -v` — all pass, count at or above the
+- [x] 7.1 `uv run pytest -m "not slow" -v` — all pass, count at or above the
       pre-change baseline.
-- [ ] 7.2 `uv run lint-imports` — 6 contracts kept, 0 broken. Delete any
+- [x] 7.2 `uv run lint-imports` — 6 contracts kept, 0 broken. Delete any
       `ignore_imports` entry made stale by the moves; a stale entry fails the
       build by design (gotcha 8c).
-- [ ] 7.3 `uv run pytest --cov=rag_mcp` — coverage at or above 90% overall, and
+- [x] 7.3 `uv run pytest --cov=rag_mcp` — coverage at or above 90% overall, and
       `core/metadata` at or above its 95% tier.
-- [ ] 7.4 Confirm no file exceeds 500 lines (`tests/test_file_size_ceiling.py`);
+- [x] 7.4 Confirm no file exceeds 500 lines (`tests/test_file_size_ceiling.py`);
       `extractor.py` should shrink.
-- [ ] 7.5 `uv run openspec validate --all --strict`.
+- [x] 7.5 `uv run openspec validate --all --strict`.
 
 ## 8. Post-release (do not run before v3.0.0 ships)
 
