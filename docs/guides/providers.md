@@ -96,7 +96,7 @@ OPENROUTER_EMBED_MODEL=text-embedding-3-small
 OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct
 ```
 
-> **Adding other OpenAI-compatible providers:** The registry pattern supports any endpoint that implements the OpenAI API (vLLM, TGI, LocalAI, Azure OpenAI, actual OpenAI). Adding one requires only a new dict entry in `config.py` with a different `api_base` — see [Adding a new provider](#adding-a-new-provider) below.
+> **Adding other OpenAI-compatible providers:** The registry pattern supports any endpoint that implements the OpenAI API (vLLM, TGI, LocalAI, Azure OpenAI, actual OpenAI). Adding one requires a new `core/providers/<kind>/<name>.py` exposing `build(settings)` with a different `api_base`, plus one `register()` line — see [Adding a new provider](#adding-a-new-provider) below.
 
 See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full rationale.
 

@@ -108,14 +108,14 @@ instance per process. If your test loads or configures the reranker,
 reset it in `setup_method` and `teardown_method`:
 
 ```python
-from rag_mcp.reranker import CrossEncoderReranker
+from rag_mcp.core.retrieval.reranker import reset_model_cache
 
 class TestSomeRerankerThing:
     def setup_method(self):
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 
     def teardown_method(self):
-        CrossEncoderReranker._instance = None
+        reset_model_cache()
 ```
 
 Otherwise the next test inherits whatever model and config the previous

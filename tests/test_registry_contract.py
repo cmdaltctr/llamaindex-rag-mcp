@@ -264,7 +264,9 @@ def _parse_registry_names_block(kind: str) -> set[str]:
 
     # Extract backtick-quoted names from the block body.
     body = match.group(1)
-    names = set(re.findall(r"`(\w+)`", body))
+    # register() accepts any string, so do not restrict to identifier
+    # characters — a name like "foo-bar" is legal and must be parsed.
+    names = set(re.findall(r"`([^`]+)`", body))
     return names
 
 
@@ -276,21 +278,23 @@ def test_documented_provider_names_match_registries() -> None:
     Fails in either direction: documented-not-registered or
     registered-not-documented.
     """
-    embed_registry._cache.clear()
-    llm_registry._cache.clear()
-
+    # No cache reset: available() reads _registry, not _cache, so clearing
+    # it cannot change this assertion and would force later tests to
+    # re-import every provider.
     documented_embed = _parse_registry_names_block("embeddings")
     live_embed = set(embed_registry.available())
     assert documented_embed == live_embed, (
         f"Embedding provider names in providers.md do not match the live "
-        f"registry. Documented: {sorted(documented_embed)}, "
-        f"Registered: {sorted(live_embed)}"
+        f"registry.\n"
+        f"  documented-not-registered: {sorted(documented_embed - live_embed)}\n"
+        f"  registered-not-documented: {sorted(live_embed - documented_embed)}"
     )
 
     documented_llm = _parse_registry_names_block("llm")
     live_llm = set(llm_registry.available())
     assert documented_llm == live_llm, (
         f"LLM provider names in providers.md do not match the live "
-        f"registry. Documented: {sorted(documented_llm)}, "
-        f"Registered: {sorted(live_llm)}"
+        f"registry.\n"
+        f"  documented-not-registered: {sorted(documented_llm - live_llm)}\n"
+        f"  registered-not-documented: {sorted(live_llm - documented_llm)}"
     )

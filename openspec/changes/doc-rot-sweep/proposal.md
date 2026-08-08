@@ -16,7 +16,7 @@ updated to say so. The docs drifted because nothing checks them.
 
 ## What Changes
 
-- **Forward-note three ADRs** (026, 027, and ADR-026's own stale 2026-08-04
+- **Forward-note two ADRs** (026 and 027, the former also carrying its own stale 2026-08-04
   update) with dated notes recording that the nested registries were replaced,
   not relocated, and that the LLM-dispatch gap is now **closed**. ADRs are
   immutable records: no decision text is rewritten.
