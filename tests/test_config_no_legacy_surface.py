@@ -107,7 +107,6 @@ class TestLegacyEnvTripwire:
             "OLLAMA_CLASSIFY_MAX_ATTEMPTS",
             "OLLAMA_CLASSIFY_TIMEOUT",
             "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
-            "METADATA__OLLAMA_CLASSIFY_TIMEOUT",
         }
 
     @pytest.mark.parametrize(
@@ -117,7 +116,6 @@ class TestLegacyEnvTripwire:
                 "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
                 "METADATA__CLASSIFY_MAX_ATTEMPTS",
             ),
-            ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "METADATA__CLASSIFY_TIMEOUT"),
         ],
     )
     def test_renamed_nested_names_are_tripwired(self, old: str, new: str) -> None:
@@ -126,6 +124,11 @@ class TestLegacyEnvTripwire:
         Pinned explicitly rather than left to the parametrised sweep above:
         these are nested keys a block model would swallow via its own
         schema, so losing them from the mapping would be silent.
+
+        ``METADATA__OLLAMA_CLASSIFY_TIMEOUT`` is deliberately absent here —
+        fix-silent-metadata-degradation reclaimed it for a genuinely
+        Ollama-specific override field; see
+        ``test_metadata_timeout_resolution.py::TestOllamaClassifyTimeoutNameReclaimed``.
         """
         assert config._RETIRED_ENV_VARS[old] == new
         with pytest.raises(ValueError, match=new):

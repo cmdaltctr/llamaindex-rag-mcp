@@ -89,6 +89,15 @@ class MetadataBlock(BaseModel):
     # one attempt, no retry.  See MetadataSettings for why it is not merged
     # with classify_timeout.
     pipeline_timeout: float = Field(default=180.0, gt=0)
+    # Per-provider overrides for the two shared timeouts above.  ``None``
+    # means "unset, use the shared value" — mirrors ``MetadataSettings``
+    # (core/metadata/settings.py); both models must stay in sync.
+    llamacpp_classify_timeout: float | None = Field(default=None, gt=0)
+    ollama_classify_timeout: float | None = Field(default=None, gt=0)
+    openrouter_classify_timeout: float | None = Field(default=None, gt=0)
+    llamacpp_pipeline_timeout: float | None = Field(default=None, gt=0)
+    ollama_pipeline_timeout: float | None = Field(default=None, gt=0)
+    openrouter_pipeline_timeout: float | None = Field(default=None, gt=0)
     taxonomy_mode: str = "category"
 
 

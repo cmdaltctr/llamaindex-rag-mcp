@@ -99,7 +99,12 @@ async def _extract_openrouter_chat_async(
     """
     import httpx
 
-    from ._common import _get_classify_max_attempts, _get_classify_timeout, _retry_sleep
+    from ._common import (
+        _get_classify_max_attempts,
+        _resolve_classify_timeout,
+        _retry_sleep,
+        _signal_degraded,
+    )
     from .ollama import (
         _build_ollama_prompt,
         _parse_ollama_json_response,
@@ -115,6 +120,7 @@ async def _extract_openrouter_chat_async(
             "OpenRouter classification failed — could not build prompt: %s",
             exc,
         )
+        _signal_degraded()
         return fallback
 
     data = {
@@ -139,7 +145,7 @@ async def _extract_openrouter_chat_async(
     url = "https://openrouter.ai/api/v1/chat/completions"
 
     max_attempts = _get_classify_max_attempts(resolved)
-    timeout_s = _get_classify_timeout(resolved)
+    timeout_s = _resolve_classify_timeout(resolved, "openrouter")
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
@@ -208,4 +214,5 @@ async def _extract_openrouter_chat_async(
         type(last_error).__name__ if last_error else "Unknown",
         last_error,
     )
+    _signal_degraded()
     return fallback

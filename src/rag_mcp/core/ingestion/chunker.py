@@ -29,6 +29,27 @@ from ..settings import resolve_effective_settings
 logger = logging.getLogger(__name__)
 
 
+class _ChunkResult(list):
+    """List of chunked nodes that also carries a metadata-degradation flag.
+
+    Behaves exactly like ``list[BaseNode]`` for every existing caller —
+    iteration, indexing, ``len()``, ``list.extend()`` — while letting
+    :func:`read_and_chunk_file_async` report whether this file's metadata
+    fell back from the configured LLM-backed mode to a lower tier, without
+    adding a key to the per-node metadata dict itself (which would leak
+    into ChromaDB).  See
+    ``openspec/changes/fix-silent-metadata-degradation/design.md`` D3.
+
+    Callers that don't care read it via ``getattr(nodes,
+    "metadata_degraded", False)`` — code/config chunking paths return a
+    plain ``list`` since they never call metadata extraction.
+    """
+
+    def __init__(self, nodes=(), *, metadata_degraded: bool = False) -> None:
+        super().__init__(nodes)
+        self.metadata_degraded = metadata_degraded
+
+
 async def read_and_chunk_file_async(
     file_path: Path,
     chunk_size: int | None = None,
@@ -64,7 +85,13 @@ async def read_and_chunk_file_async(
             path.
 
     Returns:
-        List of LlamaIndex Node objects, each with metadata attached.
+        List of LlamaIndex Node objects, each with metadata attached. For
+        the document path, the returned list also carries a
+        ``metadata_degraded`` attribute (``bool``) reporting whether
+        metadata extraction fell back from the configured LLM-backed mode;
+        code/config paths return a plain list (metadata extraction never
+        runs for them), so read it via ``getattr(nodes,
+        "metadata_degraded", False)``.
 
     Raises:
         Exception: If the file cannot be read or parsed.
@@ -157,7 +184,7 @@ async def read_and_chunk_file_async(
 
     documents = await asyncio.to_thread(_read_sync)
 
-    from ..metadata.extractor import extract_metadata_async
+    from ..metadata.extractor import extract_metadata_with_status_async
 
     if documents:
         file_text = "\n".join(
@@ -165,9 +192,15 @@ async def read_and_chunk_file_async(
             for d in documents
             if hasattr(d, "get_content")
         )
-        doc_metadata = await extract_metadata_async(file_text, file_path.name)
+        # Forward the resolved settings (invariant #9) — previously dropped
+        # here, which meant profile-level metadata configuration never
+        # reached extraction.
+        doc_metadata, metadata_degraded = await extract_metadata_with_status_async(
+            file_text, file_path.name, resolved
+        )
     else:
         doc_metadata = {}
+        metadata_degraded = False
         logger.debug(
             "No documents loaded from %s — skipping metadata extraction",
             file_path.name,
@@ -234,4 +267,4 @@ async def read_and_chunk_file_async(
         for node in nodes:
             node.metadata.update(flat_metadata)
 
-    return nodes
+    return _ChunkResult(nodes, metadata_degraded=metadata_degraded)

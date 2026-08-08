@@ -28,9 +28,14 @@ from __future__ import annotations
 
 import logging
 
-from ._common import logger
+from ._common import _degradation_flag, logger
 from .registry import available as _metadata_available, get as _metadata_get
 from ..settings import resolve_effective_settings
+
+# Extraction modes for which the system promises an LLM-produced
+# classification.  Only these can "degrade" — keyword/disabled never
+# attempt an LLM call, so there is nothing to fall back from.
+_LLM_BACKED_MODES = frozenset({"llamaindex", "local"})
 
 
 def _extract_disabled() -> dict:
@@ -108,3 +113,42 @@ async def extract_metadata_async(
         name = "keyword"
 
     return await _metadata_get(name)(file_text, file_name, resolved)
+
+
+async def extract_metadata_with_status_async(
+    file_text: str, file_name: str = "", settings: object | None = None
+) -> tuple[dict, bool]:
+    """Extract metadata and report whether it degraded from the configured mode.
+
+    Wraps :func:`extract_metadata_async` with a degradation signal: when
+    the configured mode is LLM-backed (``llamaindex`` or ``local``) but
+    extraction fell back to a lower tier — missing package, unreachable
+    backend, a timed-out call, or an unparseable response — the second
+    tuple element is ``True``. ``extract_metadata_async`` remains the
+    dict-only public entry point; this wrapper is for callers (the
+    ingestion chunker) that need to surface degradation to the caller
+    instead of only logging it (see
+    ``openspec/changes/fix-silent-metadata-degradation/design.md`` D3).
+
+    Args:
+        file_text: The full text content of the document.
+        file_name: Name of the file (used by llamaindex mode).
+        settings: Optional resolved ``EffectiveSettings``.
+
+    Returns:
+        A ``(metadata, degraded)`` tuple. ``metadata`` has the same shape
+        ``extract_metadata_async`` returns. ``degraded`` is ``True`` only
+        when the configured mode is LLM-backed and the result came from a
+        lower tier; successful extraction in the configured mode, and
+        keyword/disabled as the configured mode, always report ``False``.
+    """
+    resolved = resolve_effective_settings(settings)
+    is_llm_backed = resolved.metadata.extraction_mode.lower() in _LLM_BACKED_MODES
+
+    token = _degradation_flag.set(False)
+    try:
+        result = await extract_metadata_async(file_text, file_name, resolved)
+        degraded = is_llm_backed and _degradation_flag.get()
+        return result, degraded
+    finally:
+        _degradation_flag.reset(token)

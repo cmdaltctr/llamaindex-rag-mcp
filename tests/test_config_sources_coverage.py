@@ -118,9 +118,10 @@ class TestClassifyKnobResolution:
         assert _get_classify_max_attempts(self._settings()) == 7
 
     def test_timeout_flows_through_helper(self) -> None:
-        from rag_mcp.core.metadata._common import _get_classify_timeout
+        """No per-provider override set — the resolver falls back to the shared value."""
+        from rag_mcp.core.metadata._common import _resolve_classify_timeout
 
-        assert _get_classify_timeout(self._settings()) == 42.0
+        assert _resolve_classify_timeout(self._settings(), "llamacpp") == 42.0
 
 
 class TestClassifyKnobBounds:

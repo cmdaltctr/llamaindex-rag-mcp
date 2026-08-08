@@ -98,6 +98,7 @@ async def ingest_path_async(
             "chunks_removed": 0,
             "file_details": skipped_details,
             "collection": collection_name,
+            "metadata_degraded": 0,
         }
 
     # Type-aware ingestion: detect file types via Magika (task 6.3).
@@ -127,6 +128,7 @@ async def ingest_path_async(
     # Process files sequentially (one at a time per design).
     all_nodes: list = []
     files_indexed = 0
+    metadata_degraded_count = 0
     errors: list[str] = []
     file_details: list[dict] = []
 
@@ -166,12 +168,16 @@ async def ingest_path_async(
                 taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
                 settings=resolved_settings,
             )
+            file_metadata_degraded = getattr(nodes, "metadata_degraded", False)
             all_nodes.extend(nodes)
             files_indexed += 1
+            if file_metadata_degraded:
+                metadata_degraded_count += 1
             file_details.append(make_file_detail(
                 file_name=file_path.name,
                 status="indexed",
                 chunks=len(nodes),
+                metadata_degraded=file_metadata_degraded,
             ))
             logger.info("✓ %s — %d chunk(s)", file_path.name, len(nodes))
         except Exception as exc:
@@ -222,6 +228,7 @@ async def ingest_path_async(
             "chunks_removed": chunks_removed_total,
             "collection": collection_name,
             "file_details": all_details,
+            "metadata_degraded": metadata_degraded_count,
         }
     else:
         result = {

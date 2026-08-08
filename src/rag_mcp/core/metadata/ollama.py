@@ -17,9 +17,10 @@ import re
 from ..settings import resolve_effective_settings
 from ._common import (
     _get_classify_max_attempts,
-    _get_classify_timeout,
     _normalise_category,
+    _resolve_classify_timeout,
     _retry_sleep,
+    _signal_degraded,
     _truncate_keywords,
     _truncate_summary,
     logger,
@@ -218,6 +219,7 @@ async def _extract_ollama_async(
             "Ollama classification failed — could not build prompt: %s",
             exc,
         )
+        _signal_degraded()
         return fallback
 
     data = {
@@ -234,7 +236,7 @@ async def _extract_ollama_async(
     url = f"{resolved.ollama_base_url}/api/generate"
 
     max_attempts = _get_classify_max_attempts(resolved)
-    timeout_s = _get_classify_timeout(resolved)
+    timeout_s = _resolve_classify_timeout(resolved, "ollama")
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
@@ -284,4 +286,5 @@ async def _extract_ollama_async(
         type(last_error).__name__ if last_error else "Unknown",
         last_error,
     )
+    _signal_degraded()
     return fallback

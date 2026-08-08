@@ -29,6 +29,7 @@ def make_file_detail(
     status: str,
     chunks: int,
     error: str = "",
+    metadata_degraded: bool = False,
 ) -> dict:
     """Create a standardised per-file detail dict.
 
@@ -37,14 +38,20 @@ def make_file_detail(
         status: One of ``"indexed"``, ``"failed"``, or ``"skipped"``.
         chunks: Number of chunks produced (0 for failed/skipped).
         error: Error message, present only when status is ``"failed"``.
+        metadata_degraded: Whether this file's metadata was produced by a
+            fallback tier rather than the configured LLM-backed mode. When
+            ``False`` (the default), no marker key is added — only
+            affected files carry it (fix-silent-metadata-degradation).
 
     Returns:
         A dict with keys ``file``, ``status``, ``chunks``, and optionally
-        ``error``.
+        ``error`` and ``metadata_degraded``.
     """
     detail: dict = {"file": file_name, "status": status, "chunks": chunks}
     if error:
         detail["error"] = error
+    if metadata_degraded:
+        detail["metadata_degraded"] = True
     return detail
 
 
