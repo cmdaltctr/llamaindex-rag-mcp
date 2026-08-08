@@ -103,14 +103,29 @@ def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
     found = [(old, new) for old, new in _RETIRED_ENV_VARS.items() if old in source]
     if not found:
         return
-    lines = "\n".join(f"  {old}  ->  {new}" for old, new in sorted(found))
+    flat = sorted((old, new) for old, new in found if "__" not in old)
+    nested = sorted((old, new) for old, new in found if "__" in old)
+    sections = []
+    if flat:
+        flat_lines = "\n".join(f"  {old}  ->  {new}" for old, new in flat)
+        sections.append(
+            "Pre-v2.0.0 flat names (v2.0.0 moved subpackage settings into "
+            "nested blocks). Pydantic-settings silently discards these — "
+            "without this check they would be ignored with no error:\n"
+            f"{flat_lines}"
+        )
+    if nested:
+        nested_lines = "\n".join(f"  {old}  ->  {new}" for old, new in nested)
+        sections.append(
+            "Nested names retired by a later rename. These are rejected "
+            "outright by their settings block's extra=\"forbid\":\n"
+            f"{nested_lines}"
+        )
+    body = "\n".join(sections)
     raise ValueError(
-        "Retired configuration variable(s) found in the environment. These "
-        "names are no longer read and would have been silently ignored — "
-        "either they are pre-v2.0.0 flat names (v2.0.0 moved subpackage "
-        "settings into nested blocks), or nested names retired by a later "
-        "rename. Rename them:\n"
-        f"{lines}\n"
+        "Retired configuration variable(s) found in the environment. "
+        "Rename them:\n"
+        f"{body}\n"
         "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "
         "credentials) are unchanged. See docs/adr/037 for the full table."
     )
