@@ -1,7 +1,7 @@
 """Metadata extraction orchestrator.
 
 Dispatches to the configured extraction backend based on
-``METADATA_EXTRACTION_MODE``.  Also hosts the ``disabled`` sentinel and
+``METADATA__EXTRACTION_MODE``.  Also hosts the ``disabled`` sentinel and
 the local-mode provider dispatch.  Extracted from the original
 ``metadata_extractor.py`` monolith as part of Phase 1.
 
@@ -80,7 +80,7 @@ async def extract_metadata_async(
     """Async counterpart of ``extract_metadata()``.
 
     Dispatches to the appropriate async extraction function based on
-    ``METADATA_EXTRACTION_MODE``.
+    ``METADATA__EXTRACTION_MODE``.
 
     Args:
         file_text: The full text content of the document.

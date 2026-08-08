@@ -3,7 +3,7 @@
 Enforces the config-retirement-policy spec requirement: no operator-facing
 document SHALL instruct the reader to assign a value to a retired
 configuration variable.  Detection keys on **assignment form**
-(``^\\s*#?\\s*NAME=``), not substring: most mentions of retired names are
+(``^\\s*#?\\s*(export\\s+)?NAME=``), not substring: most mentions are
 correct migration prose, and a substring check would flag ~35 files of
 legitimate documentation.  Assignment form yields exactly the real bugs.
 
@@ -14,6 +14,7 @@ See ``openspec/changes/tripwire-retirement-and-provider-symmetry/`` and
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -51,11 +52,18 @@ def _find_retired_assignments() -> list[tuple[Path, int, str, str]]:
     Returns a list of ``(file, line_number, retired_name, replacement)``
     tuples — empty when the tree is clean.
     """
-    # Build one regex per retired name: ^\s*#?\s*NAME=
+    # Build one regex per retired name: ^\s*#?\s*(export\s+)?NAME=
     # The optional ``#`` covers commented assignments (``# TOP_K=10``),
     # which are just as misleading in ``.env.example`` as live ones.
+    # The optional ``export`` covers the shell form guides use inside code
+    # fences (``export TOP_K=10``) — an equally direct instruction to set a
+    # variable that no longer exists.
     patterns: list[tuple[str, str, re.Pattern[str]]] = [
-        (name, replacement, re.compile(rf"^\s*#?\s*{re.escape(name)}\s*="))
+        (
+            name,
+            replacement,
+            re.compile(rf"^\s*#?\s*(?:export\s+)?{re.escape(name)}\s*="),
+        )
         for name, replacement in _RETIRED_ENV_VARS.items()
     ]
 
@@ -107,3 +115,44 @@ def test_prose_mention_does_not_trip_the_check() -> None:
         "Prose mention of TOP_K in README.md was flagged — "
         "the check must distinguish assignment from mention"
     )
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "TOP_K=10",
+        "# TOP_K=10",
+        "  TOP_K = 10",
+        "export TOP_K=10",
+        "# export TOP_K=10",
+    ],
+)
+def test_assignment_forms_are_detected(tmp_path, monkeypatch, line: str) -> None:
+    """Every way a guide can tell you to set a retired variable must trip."""
+    guide = tmp_path / "guide.md"
+    guide.write_text(f"Set it like this:\n\n    {line}\n")
+    monkeypatch.setattr(
+        sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False
+    )
+    monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_PATHS", [], raising=False)
+    findings = _find_retired_assignments()
+    assert findings, f"{line!r} should have been detected as an assignment"
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "The old `TOP_K` is now `RETRIEVAL__TOP_K`.",
+        "Setting TOP_K no longer works.",
+        "See RETRIEVAL__TOP_K for the replacement.",
+    ],
+)
+def test_prose_forms_are_not_detected(tmp_path, monkeypatch, line: str) -> None:
+    """Explaining a retired variable must stay allowed."""
+    guide = tmp_path / "guide.md"
+    guide.write_text(f"{line}\n")
+    monkeypatch.setattr(
+        sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False
+    )
+    monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_PATHS", [], raising=False)
+    assert not _find_retired_assignments()

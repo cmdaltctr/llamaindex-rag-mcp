@@ -6,7 +6,7 @@ Define metadata extraction modes and fallback behaviour for enriching indexed do
 ## Requirements
 ### Requirement: Ollama LLM-based categorisation with hybrid category lookup
 
-When `METADATA__EXTRACTION_MODE` is `"local"`, the system SHALL make bounded HTTP requests to classify the document using the provider selected by `METADATA_LLM_PROVIDER`. When `METADATA_LLM_PROVIDER=ollama`, the system SHALL use Ollama's `/api/generate` endpoint with the model specified by `METADATA__OLLAMA_CLASSIFY_MODEL`. When `METADATA_LLM_PROVIDER=llamacpp`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `LLAMACPP_CHAT_URL` with the model specified by `LLAMACPP_CHAT_MODEL`. When `METADATA_LLM_PROVIDER=openrouter`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `https://openrouter.ai/api/v1` with the model specified by `OPENROUTER_LLM_MODEL` and `OPENROUTER_API_KEY` for authentication. Before sending the prompt, the system SHALL query ChromaDB for all unique category values currently in use across all metadata scan pages and SHALL include them in the prompt as "existing categories" alongside the seed categories from keyword mode. The prompt SHALL instruct the model to prefer an existing category when applicable, but to propose a new concise category label (1-3 words, lowercase) when no existing category fits. The prompt SHALL instruct the model to return a JSON object with keys `category`, `keywords`, and `summary`. On transient HTTP failure or invalid JSON response, the system SHALL retry within configured limits. After retries are exhausted, the system SHALL fall back to `{"category": "uncategorised", "keywords": [], "summary": ""}` and log a WARNING.
+When `METADATA__EXTRACTION_MODE` is `"local"`, the system SHALL make bounded HTTP requests to classify the document using the provider selected by `METADATA_LLM_PROVIDER`. When `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=ollama`, the system SHALL use Ollama's `/api/generate` endpoint with the model specified by `METADATA__OLLAMA_CLASSIFY_MODEL`. When `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=llamacpp`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `LLAMACPP_CHAT_URL` with the model specified by `LLAMACPP_CHAT_MODEL`. When `METADATA_LLM_PROVIDER=cloud` with `CLOUD_BACKEND=openrouter`, the system SHALL use the OpenAI-compatible `/v1/chat/completions` endpoint at `https://openrouter.ai/api/v1` with the model specified by `OPENROUTER_LLM_MODEL` and `OPENROUTER_API_KEY` for authentication. Before sending the prompt, the system SHALL query ChromaDB for all unique category values currently in use across all metadata scan pages and SHALL include them in the prompt as "existing categories" alongside the seed categories from keyword mode. The prompt SHALL instruct the model to prefer an existing category when applicable, but to propose a new concise category label (1-3 words, lowercase) when no existing category fits. The prompt SHALL instruct the model to return a JSON object with keys `category`, `keywords`, and `summary`. On transient HTTP failure or invalid JSON response, the system SHALL retry within configured limits. After retries are exhausted, the system SHALL fall back to `{"category": "uncategorised", "keywords": [], "summary": ""}` and log a WARNING.
 
 The deprecated `METADATA__EXTRACTION_MODE=ollama` value SHALL be silently mapped to `local` with no warning, as it is a pure rename.
 
@@ -65,7 +65,7 @@ When `METADATA__EXTRACTION_MODE` is `"llamaindex"`, the system SHALL use LlamaIn
 #### Scenario: Successful LlamaIndex extraction with ollama provider
 
 - **WHEN** `METADATA__EXTRACTION_MODE=llamaindex`
-- **AND** `METADATA_LLM_PROVIDER=ollama`
+- **AND** `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=ollama`
 - **AND** `llama-index-llms-ollama` is installed and Ollama is reachable
 - **THEN** `extract_metadata()` SHALL return a dict containing `category`, `keywords`, `summary`, and optionally `document_title`
 - **THEN** the system SHALL use `IngestionPipeline` with at least `TitleExtractor` and `KeywordExtractor`
@@ -73,7 +73,7 @@ When `METADATA__EXTRACTION_MODE` is `"llamaindex"`, the system SHALL use LlamaIn
 #### Scenario: Successful LlamaIndex extraction with llamacpp provider
 
 - **WHEN** `METADATA__EXTRACTION_MODE=llamaindex`
-- **AND** `METADATA_LLM_PROVIDER=llamacpp`
+- **AND** `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=llamacpp`
 - **AND** `llama-index-llms-openai-like` is installed and llama-server is reachable
 - **THEN** `extract_metadata()` SHALL return a dict containing `category`, `keywords`, `summary`, and optionally `document_title`
 - **THEN** the LLM SHALL be `OpenAILike` configured with `LLAMACPP_CHAT_URL` and `LLAMACPP_CHAT_MODEL`
@@ -81,7 +81,7 @@ When `METADATA__EXTRACTION_MODE` is `"llamaindex"`, the system SHALL use LlamaIn
 #### Scenario: Successful LlamaIndex extraction with openrouter provider
 
 - **WHEN** `METADATA__EXTRACTION_MODE=llamaindex`
-- **AND** `METADATA_LLM_PROVIDER=openrouter`
+- **AND** `METADATA_LLM_PROVIDER=cloud` with `CLOUD_BACKEND=openrouter`
 - **AND** `llama-index-llms-openai-like` is installed and `OPENROUTER_API_KEY` is set
 - **THEN** `extract_metadata()` SHALL return a dict containing `category`, `keywords`, `summary`, and optionally `document_title`
 - **THEN** the LLM SHALL be `OpenAILike` configured with `api_base=https://openrouter.ai/api/v1` and `model=OPENROUTER_LLM_MODEL`
@@ -158,10 +158,10 @@ When `METADATA__EXTRACTION_MODE` is `"local"`, the classification request SHALL 
 constrain generation to valid JSON, in addition to the existing prompt-level instruction. The system
 SHALL use each backend's native mechanism:
 
-- `METADATA_LLM_PROVIDER=ollama` — the request to `/api/generate` SHALL set the JSON output format flag.
-- `METADATA_LLM_PROVIDER=llamacpp` — the request to `/v1/chat/completions` SHALL set the OpenAI-compatible
+- `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=ollama` — the request to `/api/generate` SHALL set the JSON output format flag.
+- `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=llamacpp` — the request to `/v1/chat/completions` SHALL set the OpenAI-compatible
   JSON-object response format.
-- `METADATA_LLM_PROVIDER=openrouter` — the request SHALL set a JSON Schema response format describing the
+- `METADATA_LLM_PROVIDER=cloud` with `CLOUD_BACKEND=openrouter` — the request SHALL set a JSON Schema response format describing the
   three-key classification object (`category` as a string, `keywords` as an array of strings, `summary` as
   a string), with all three required. Because structured-output support on OpenRouter is determined per
   serving endpoint rather than per model, the request SHALL additionally instruct provider routing to
@@ -176,18 +176,18 @@ No new configuration setting SHALL be introduced; enforcement SHALL be unconditi
 
 #### Scenario: Ollama request constrains output format
 
-- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=ollama`
+- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=ollama`
 - **THEN** the request body sent to `/api/generate` SHALL include the JSON output format flag
 - **THEN** the request body SHALL still include the classification prompt and the existing category list
 
 #### Scenario: llama.cpp request constrains output format
 
-- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=llamacpp`
+- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=local` with `LOCAL_BACKEND=llamacpp`
 - **THEN** the request body sent to `/v1/chat/completions` SHALL include a JSON-object response format
 
 #### Scenario: OpenRouter request carries the classification schema
 
-- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=openrouter`
+- **WHEN** `METADATA__EXTRACTION_MODE=local` and `METADATA_LLM_PROVIDER=cloud` with `CLOUD_BACKEND=openrouter`
 - **THEN** the request body SHALL include a JSON Schema response format requiring `category`, `keywords`
   and `summary`
 - **THEN** the request body SHALL instruct provider routing to require parameter support

@@ -44,7 +44,7 @@
 - [x] 3.2 Confirm task 2 now passes with zero findings.
 - [x] 3.3 Update the 10 living `openspec/specs/*.md` files that name flat
       variables in requirement text to the nested names:
-      `async-ingestion`, `cloud-embed-providers`, `config-composition-root`,
+      `async-ingestion`, `cloud-embed-providers`,
       `hybrid-retrieval`, `inference-backend`, `markdown-aware-chunking`,
       `metadata-extraction`, `modular-core-extraction`, `reranking`,
       `profiles-dual-use-case`, `semantic-technical-reranker-policy`. Verify the
