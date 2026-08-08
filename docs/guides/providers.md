@@ -96,7 +96,7 @@ OPENROUTER_EMBED_MODEL=text-embedding-3-small
 OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct
 ```
 
-> **Adding other OpenAI-compatible providers:** The registry pattern supports any endpoint that implements the OpenAI API (vLLM, TGI, LocalAI, Azure OpenAI, actual OpenAI). Adding one requires only a new dict entry in `config.py` with a different `api_base` — see [Adding a new provider](#adding-a-new-provider) below.
+> **Adding other OpenAI-compatible providers:** The registry pattern supports any endpoint that implements the OpenAI API (vLLM, TGI, LocalAI, Azure OpenAI, actual OpenAI). Adding one requires a new `core/providers/<kind>/<name>.py` exposing `build(settings)` with a different `api_base`, plus one `register()` line — see [Adding a new provider](#adding-a-new-provider) below.
 
 See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full rationale.
 
@@ -109,21 +109,34 @@ See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full ratio
 
 ## Registry pattern
 
-Providers are defined in nested registry dicts in `config.py`:
+Providers are resolved through flat, per-domain lazy registries. Each registry maps a name to a `"module:attr"` import string, resolved and cached on first `get()`. Importing a registry never imports a provider module, so a missing optional dependency degrades gracefully.
 
-- `LOCAL_EMBED_PROVIDERS` / `CLOUD_EMBED_PROVIDERS` — embedding model providers
-- `LOCAL_LLM_PROVIDERS` / `CLOUD_LLM_PROVIDERS` — metadata extraction LLM providers
+| Registry | Location |
+| --- | --- |
+| Embedding providers | `core/providers/embeddings/registry.py` |
+| LLM providers | `core/providers/llm/registry.py` |
+| Metadata extraction backends | `core/metadata/registry.py` |
 
-Each entry specifies the module, class, required/optional env vars, static params, and the optional dependency name. The `_build_provider(category, sub_provider, registry_type)` function resolves env vars, dynamic-imports the module, and instantiates the class.
+Provider construction (instantiating the LlamaIndex client) lives in `compose.py` (`build_embed_model`, `build_llm_model`), enforced by `import-linter`. The registries only resolve names to callables; they do not construct.
+
+<!-- registry-names:embeddings -->
+Registered embedding providers: `ollama`, `llamacpp`, `openrouter`.
+<!-- /registry-names:embeddings -->
+
+<!-- registry-names:llm -->
+Registered LLM providers: `ollama`, `llamacpp`, `openrouter`.
+<!-- /registry-names:llm -->
 
 ### Adding a new provider
 
-1. Add an entry to the appropriate registry in `src/rag_mcp/config.py` (e.g., `LOCAL_EMBED_PROVIDERS` for a new local embedding provider)
-2. Add an optional dependency group in `pyproject.toml`
-3. Add env vars to `.env.example`
-4. Add tests in `tests/unit/test_provider_config.py`
+1. Add `core/providers/<kind>/<name>.py` exposing `build(settings)` (match the signature of `ollama.py` or `llamacpp.py`).
+2. Add one `register("<name>", "rag_mcp.core.providers.<kind>.<name>:build")` line at the bottom of that registry.
+3. Add the optional-dependency extra in `pyproject.toml` and, if it is an extra, an entry in `_PROVIDER_EXTRAS` (`core/providers/llm/registry.py`).
+4. Add env vars to `.env.example`.
+5. Add the name to the `<!-- registry-names -->` block above.
+6. Add tests in `tests/test_registry_contract.py` and `tests/unit/test_provider_config.py`.
 
-No changes to `ingestion.py`, `retrieval.py`, `metadata_extractor.py`, or `server.py` are needed — they consume providers through `config.py`.
+No changes to `core/ingestion/`, `core/retrieval/`, or `transports/` are needed — they consume providers through the registries and the composition root.
 
 ## ChromaDB dimension lock
 
