@@ -326,3 +326,26 @@ better signal until that is addressed separately.
   design (D1–D10), specs, tasks, and the lint-imports before/after evidence
 * ADR-031 — three-layer config/compose DI, which this completes
 * ADR-032 … ADR-036 — the five phases this change reconciles with the proposal
+
+---
+
+## Update (2026-08-07, tripwire retirement policy)
+
+**Supersedes:** the "removal trigger is v3.0.0" statement in §3 above.
+
+The uniform v3.0.0 removal trigger is replaced by a **shape-aware lifetime
+rule** (see `src/rag_mcp/config/legacy.py` docstring for the authority):
+
+- **Nested** retired names (carrying a block prefix) are rejected by their
+  settings block's `extra="forbid"` without the tripwire. They expire one
+  major version after the release that retired them and may then be deleted.
+- **Flat** retired names (no block prefix) are silently discarded by
+  pydantic-settings — `extra="forbid"` on the root model does not catch
+  them, verified empirically. The tripwire is the only detector, so they
+  are retained for as long as an upgrade path exists from a version that
+  read them.
+
+The previously scheduled deletion of the 25 flat pre-v2 entries at v3.0.0
+is therefore **reversed**: deleting them would restore the silent
+misconfiguration they exist to prevent. The two nested classify entries
+remain deletable one major after the classify rename.

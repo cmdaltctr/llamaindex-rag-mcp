@@ -234,6 +234,7 @@ splitter regardless of the fallback.
 | `ollama_classify_model` | `qwen3:0.6b` | Ollama model used for classification |
 | `classify_max_attempts` | `3` | Maximum attempts **including** the initial request (all metadata LLM backends) |
 | `classify_timeout` | `30.0` | Seconds per attempt (all metadata LLM backends) |
+| `pipeline_timeout` | `180.0` | Seconds for the llamaindex pipeline (one attempt, three extractors per chunk) |
 
 Set `extraction_mode=disabled` to skip classification entirely — much faster
 ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md).

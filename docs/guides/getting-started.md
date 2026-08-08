@@ -51,7 +51,7 @@ The reranker is enabled by default and significantly improves search precision. 
 
 1. Edit `.env` and set:
    ```
-   RERANK_ENABLED=true
+   RETRIEVAL__RERANK_ENABLED=true
    ```
 2. Trigger the first download by running any search with `rerank=True`. The model caches in `~/.cache/huggingface/` — no repeat downloads.
 

@@ -40,6 +40,15 @@ class MetadataSettings(BaseModel):
     # Non-positive values would reach httpx as a nonsensical deadline.
     classify_timeout: float = Field(default=30.0, gt=0)
 
+    # Timeout (seconds) for the llamaindex extraction pipeline, which runs
+    # three extractors over every chunk rather than asking one classification
+    # question.  Deliberately separate from ``classify_timeout``: that path
+    # retries, so it wants a short deadline and a fast failure, while this one
+    # makes a single long attempt.  Merging them would force classification to
+    # wait 3x this value before falling back.  Was a hardcoded 180.0 in two
+    # call sites before it was named.
+    pipeline_timeout: float = Field(default=180.0, gt=0)
+
     # Taxonomy mode for metadata classification (Phase 4 profiles).
     # "category" uses the ADR-013 hybrid category taxonomy (documents profile).
     # "file_type" classifies by Magika-detected file type (codebase profile).

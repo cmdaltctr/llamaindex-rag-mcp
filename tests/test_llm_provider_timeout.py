@@ -65,7 +65,10 @@ class TestOpenAILikeTimeoutKeyword:
     ) -> None:
         from rag_mcp.core.providers.llm.llamacpp import build
 
-        build(effective_settings())
+        # Pass an explicit timeout so the assertion pins the keyword the value
+        # arrives under, independent of the provider's default (which now
+        # resolves from ``metadata.classify_timeout``, not a hardcoded 180s).
+        build(effective_settings(), timeout=180.0)
         _assert_timeout_keyword(recorded_openai_like.last_kwargs)
 
     def test_openai_like_ignores_request_timeout(self) -> None:

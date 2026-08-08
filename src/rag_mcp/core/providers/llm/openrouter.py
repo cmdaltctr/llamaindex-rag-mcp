@@ -1,8 +1,8 @@
-"""llama.cpp LLM provider (for metadata classification).
+"""OpenRouter LLM provider (for metadata classification).
 
-Constructs ``OpenAILike`` LLM pointed at a llama.cpp server's OpenAI-
-compatible ``/v1`` endpoint.  Requires the optional dependency
-``llama-index-llms-openai-like`` (``uv sync --extra llamacpp``).
+Constructs ``OpenAILike`` LLM pointed at OpenRouter's OpenAI-compatible
+``/v1`` endpoint.  Requires the optional dependency
+``llama-index-llms-openai-like`` (``uv sync --extra openrouter``).
 """
 
 from __future__ import annotations
@@ -13,8 +13,13 @@ if TYPE_CHECKING:
     from ...config import Settings
 
 
+# The endpoint moves from an inline literal in llamaindex.py to the provider
+# definition, which is where the other providers already keep theirs.
+_OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
+
+
 def build(settings: Settings, *, timeout: float | None = None) -> Any:
-    """Construct an ``OpenAILike`` LLM for llama.cpp from *settings*.
+    """Construct an ``OpenAILike`` LLM for OpenRouter from *settings*.
 
     Args:
         settings: Resolved settings.
@@ -28,9 +33,9 @@ def build(settings: Settings, *, timeout: float | None = None) -> Any:
     from llama_index.llms.openai_like import OpenAILike
 
     return OpenAILike(
-        model=settings.llamacpp_chat_model,
-        api_base=settings.llamacpp_chat_url,
-        api_key="no-key",
+        model=settings.openrouter_llm_model,
+        api_base=_OPENROUTER_API_BASE,
+        api_key=settings.openrouter_api_key,
         # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
         # spelling and is silently dropped, leaving the 60s default in place.
         timeout=(
