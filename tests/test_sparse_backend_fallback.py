@@ -16,6 +16,10 @@ from __future__ import annotations
 
 import pytest
 
+# This file constructs `config.Settings` directly, on purpose: it exercises
+# the env-var-parsing leaf-layer validator (`_validate_provider_selections`).
+# `EffectiveSettings`/the `effective_settings` fixture never runs that
+# validator, so it cannot stand in here.
 from rag_mcp.config import Settings
 
 _VALID_BACKENDS = ("auto", "native", "bm25")
