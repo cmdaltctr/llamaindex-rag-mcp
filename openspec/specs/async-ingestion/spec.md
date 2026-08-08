@@ -92,7 +92,7 @@ same metadata dict shape as the sync version.
 
 #### Scenario: Async metadata extraction in ollama mode
 
-- **WHEN** `METADATA_EXTRACTION_MODE=ollama` and `await
+- **WHEN** `METADATA__EXTRACTION_MODE=ollama` and `await
   extract_metadata_async(text, "doc.pdf")` is called
 - **THEN** the function SHALL issue an HTTP request to Ollama using a
   non-blocking HTTP client
@@ -101,7 +101,7 @@ same metadata dict shape as the sync version.
 
 #### Scenario: Async metadata extraction in llamaindex mode
 
-- **WHEN** `METADATA_EXTRACTION_MODE=llamaindex` and
+- **WHEN** `METADATA__EXTRACTION_MODE=llamaindex` and
   `await extract_metadata_async(text, "doc.pdf")` is called
 - **THEN** the function SHALL call `IngestionPipeline.arun()` directly
   (not the sync `pipeline.run()` with a thread offload)

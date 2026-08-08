@@ -173,8 +173,15 @@ class Settings(BaseSettings):
             object.__setattr__(self, "cloud_backend", "openrouter")
 
         if self.retrieval.hybrid_sparse_backend not in ("auto", "native", "bm25"):
-            logger.warning("Unknown HYBRID_SPARSE_BACKEND=%r; falling back to bm25", self.retrieval.hybrid_sparse_backend)
-            object.__setattr__(self, "hybrid_sparse_backend", "bm25")
+            logger.warning(
+                "Unknown RETRIEVAL__HYBRID_SPARSE_BACKEND=%r; falling back to bm25",
+                self.retrieval.hybrid_sparse_backend,
+            )
+            # Write to the block that owns the field.  Every other clamp in this
+            # validator targets a root field, so `self` is correct for them; this
+            # one moved into `retrieval` with the v2 nesting and the write side
+            # was never updated, leaving the fallback silently inert.
+            object.__setattr__(self.retrieval, "hybrid_sparse_backend", "bm25")
 
         if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)

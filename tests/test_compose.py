@@ -13,6 +13,7 @@ Covers the config-composition-root spec scenarios:
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -194,20 +195,33 @@ def test_build_llm_model_local_ollama() -> None:
         assert kwargs["base_url"] == "http://localhost:11434"
 
 
-def test_build_llm_model_cloud_openrouter_not_registered() -> None:
-    """Cloud openrouter LLM is served by the extractor's HTTP path.
+def test_build_llm_model_cloud_openrouter_requires_extra(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cloud openrouter LLM is registered but requires an optional dependency.
 
-    The LLM provider registry deliberately registers only ``ollama`` and
-    ``llamacpp`` (design: ``core/providers/llm/``).  OpenRouter chat
-    extraction lives in ``core.metadata.extractor`` as a raw HTTP call
-    (``_extract_openrouter_chat_async``), so ``build_llm_model`` with
-    ``CLOUD_BACKEND=openrouter`` must raise a helpful ``KeyError``.
+    The LLM provider registry registers ``ollama``, ``llamacpp``, and
+    ``openrouter``.  ``rag_mcp.core.providers.llm.openrouter`` only imports
+    ``llama_index.llms.openai_like`` lazily inside ``build()``, so
+    ``llm_registry.get()`` resolves the module fine either way and does
+    *not* raise its own "uv sync --extra openrouter" hint here — the
+    ``ImportError`` actually surfaces from the inner lazy import when
+    ``build()`` runs. Force that import to fail via ``sys.modules`` so the
+    test is deterministic regardless of whether the ``openrouter`` extra
+    happens to be installed in the environment running the suite.
+
+    Uses ``monkeypatch.setitem`` (as ``test_provider_config.py`` does)
+    rather than ``patch.dict``: the latter restores the whole
+    ``sys.modules`` snapshot on exit, which would also evict
+    ``rag_mcp.core.providers.llm.openrouter`` — first imported lazily
+    inside this block by ``llm_registry.get()`` — from the module cache.
     """
     settings = _settings(
         metadata_llm_provider="cloud",
         cloud_backend="openrouter",
     )
-    with pytest.raises(KeyError, match="openrouter"):
+    monkeypatch.setitem(sys.modules, "llama_index.llms.openai_like", None)
+    with pytest.raises(ImportError, match="openai_like"):
         build_llm_model(settings)
 
 

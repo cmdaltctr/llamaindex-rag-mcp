@@ -19,7 +19,7 @@ The system SHALL provide an opt-in hybrid retrieval mode that fuses dense vector
 - **THEN** the system SHALL fuse rankings using Reciprocal Rank Fusion before any reranking step
 
 ### Requirement: Reciprocal Rank Fusion with k=60
-The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion formula `score(d) = Σ_r 1 / (k + rank_r(d))` with `k = 60` as the default constant. The constant SHALL be configurable via the `HYBRID_RRF_K` env var.
+The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion formula `score(d) = Σ_r 1 / (k + rank_r(d))` with `k = 60` as the default constant. The constant SHALL be configurable via the `RETRIEVAL__HYBRID_RRF_K` env var.
 
 #### Scenario: RRF score combines both retrievers
 - **GIVEN** a chunk ranked 3rd by dense retrieval and 5th by sparse retrieval
@@ -32,42 +32,42 @@ The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion
 - **THEN** the chunk's fused score SHALL include only the dense reciprocal-rank term
 
 #### Scenario: Configurable k via env
-- **GIVEN** `HYBRID_RRF_K=80` is set
+- **GIVEN** `RETRIEVAL__HYBRID_RRF_K=80` is set
 - **WHEN** hybrid retrieval runs
 - **THEN** RRF SHALL use `k = 80` instead of the default
 
 ### Requirement: Sparse backend defaults to BM25 for v1
-At startup, the system SHALL select the sparse retrieval backend based on the `HYBRID_SPARSE_BACKEND` env var, which SHALL accept `auto`, `native`, or `bm25`. **The default for v1 SHALL be `bm25`.** When `HYBRID_SPARSE_BACKEND=auto`, the system SHALL run capability detection against the installed ChromaDB version and select `native` or `bm25` accordingly. When `HYBRID_SPARSE_BACKEND=native` is set explicitly but the installed ChromaDB does not support sparse vectors, the system SHALL log a WARNING and fall back to `bm25` rather than crashing.
+At startup, the system SHALL select the sparse retrieval backend based on the `RETRIEVAL__HYBRID_SPARSE_BACKEND` env var, which SHALL accept `auto`, `native`, or `bm25`. **The default for v1 SHALL be `bm25`.** When `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`, the system SHALL run capability detection against the installed ChromaDB version and select `native` or `bm25` accordingly. When `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is set explicitly but the installed ChromaDB does not support sparse vectors, the system SHALL log a WARNING and fall back to `bm25` rather than crashing.
 
 #### Scenario: v1 default is bm25
-- **GIVEN** `HYBRID_SPARSE_BACKEND` is unset
+- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` is unset
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL use the BM25 fallback path
 - **THEN** no capability detection SHALL be invoked
 
 #### Scenario: Auto-detected native path
 - **GIVEN** the installed ChromaDB version supports sparse vectors
-- **AND** `HYBRID_SPARSE_BACKEND=auto`
+- **AND** `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL query ChromaDB for sparse rankings
 - **THEN** no in-memory BM25 index SHALL be constructed
 
 #### Scenario: Auto detection falls back when native is unsupported
 - **GIVEN** the installed ChromaDB version does not support sparse vectors
-- **AND** `HYBRID_SPARSE_BACKEND=auto`
+- **AND** `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL build or reuse an in-memory BM25 index over the active collection
 - **THEN** sparse rankings SHALL come from the BM25 index
 
 #### Scenario: Explicit native override falls back gracefully
-- **GIVEN** `HYBRID_SPARSE_BACKEND=native` is set
+- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is set
 - **AND** the installed ChromaDB does not support sparse vectors
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL log a WARNING
 - **THEN** the system SHALL fall back to the BM25 path without crashing
 
 #### Scenario: Manual BM25 override
-- **GIVEN** `HYBRID_SPARSE_BACKEND=bm25` is set
+- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25` is set
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL use the BM25 fallback regardless of native capability detection
 
@@ -149,7 +149,7 @@ Experiment 9 SHALL fail before running ingestion or query evaluation if the acti
 - **THEN** no `hybrid_bm25` cell SHALL be evaluated using the dense-only path
 
 ### Requirement: Hybrid retrieval composes with the existing reranker
-The fused candidate list produced by hybrid retrieval SHALL be passed to the existing cross-encoder reranker when `rerank=True`. The reranker SHALL receive the configured fetch pool size derived from Tier 2 settings (`RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`).
+The fused candidate list produced by hybrid retrieval SHALL be passed to the existing cross-encoder reranker when `rerank=True`. The reranker SHALL receive the configured fetch pool size derived from Tier 2 settings (`RETRIEVAL__RERANK_FETCH_MULTIPLIER`, `RETRIEVAL__RERANK_MAX_FETCH`).
 
 #### Scenario: Hybrid + rerank end-to-end
 - **WHEN** `search_documents(query="X", hybrid=True, rerank=True, top_k=5)` is called
@@ -171,7 +171,7 @@ The system SHALL accept existing ChromaDB collections without forcing a re-inges
 If the native sparse backend is selected but the implementation cannot issue a real native sparse query, the system SHALL either fall back to the BM25 sparse retriever with a WARNING or fail loudly before any native-hybrid evaluation is reported. The system SHALL NOT represent native hybrid as successful when the sparse side is an empty placeholder.
 
 #### Scenario: Native selected without implemented sparse query
-- **GIVEN** `HYBRID_SPARSE_BACKEND=native` is selected
+- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is selected
 - **AND** no real native sparse query implementation is available
 - **WHEN** hybrid retrieval is requested
 - **THEN** the system SHALL warn and use the BM25 sparse path, or raise a clear unsupported-backend error before evaluation
@@ -191,13 +191,13 @@ The system SHALL expose the following environment variables for hybrid retrieval
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HYBRID_ENABLED` | `false` | Default value of `hybrid` parameter when not specified by the caller |
-| `HYBRID_RRF_K` | `60` | RRF constant `k` |
-| `HYBRID_SPARSE_BACKEND` | `bm25` | One of `auto`, `native`, `bm25` (v1 default is `bm25`; promotion to `auto` belongs in a follow-up change) |
+| `RETRIEVAL__HYBRID_ENABLED` | `false` | Default value of `hybrid` parameter when not specified by the caller |
+| `RETRIEVAL__HYBRID_RRF_K` | `60` | RRF constant `k` |
+| `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `bm25` | One of `auto`, `native`, `bm25` (v1 default is `bm25`; promotion to `auto` belongs in a follow-up change) |
 
 #### Scenario: Default values
 - **WHEN** none of the hybrid env vars are set
-- **THEN** `HYBRID_ENABLED` SHALL be `false`
-- **THEN** `HYBRID_RRF_K` SHALL be `60`
-- **THEN** `HYBRID_SPARSE_BACKEND` SHALL be `bm25`
+- **THEN** `RETRIEVAL__HYBRID_ENABLED` SHALL be `false`
+- **THEN** `RETRIEVAL__HYBRID_RRF_K` SHALL be `60`
+- **THEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` SHALL be `bm25`
 

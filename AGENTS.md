@@ -43,7 +43,7 @@ uv run pytest --cov=rag_mcp      # Coverage
    8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
-11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Removal trigger: v3.0.0 (ADR-037).
+11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them.
 
 ## Hard Boundaries
 

@@ -124,7 +124,7 @@ Registered embedding providers: `ollama`, `llamacpp`, `openrouter`.
 <!-- /registry-names:embeddings -->
 
 <!-- registry-names:llm -->
-Registered LLM providers: `ollama`, `llamacpp`.
+Registered LLM providers: `ollama`, `llamacpp`, `openrouter`.
 <!-- /registry-names:llm -->
 
 ### Adding a new provider

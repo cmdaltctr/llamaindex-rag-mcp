@@ -30,7 +30,7 @@ _NAMES: dict[str, str] = {
     "_truncate_summary": "._common",
     "_dispatch_local_extraction": ".extractor",
     "_extract_disabled": ".extractor",
-    "_extract_openrouter_chat_async": ".extractor",
+    "_extract_openrouter_chat_async": ".openrouter",
     "extract_metadata_async": ".extractor",
     "_DEFAULT_KEYWORD_RULES": ".keyword",
     "_extract_keyword": ".keyword",

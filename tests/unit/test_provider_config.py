@@ -160,15 +160,24 @@ async def test_local_mode_dispatches_to_ollama_when_configured(monkeypatch: pyte
 
 
 @pytest.mark.asyncio
-async def test_cloud_mode_dispatches_to_openrouter(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_cloud_mode_dispatches_to_openrouter(
+    monkeypatch: pytest.MonkeyPatch, effective_settings
+) -> None:
     """extract_metadata_async with mode=local routes to openrouter when METADATA_LLM_PROVIDER=cloud."""
-    import rag_mcp.config as _config
     from rag_mcp.core.metadata import extractor as _ext
+    from rag_mcp.core.metadata import openrouter as _or
 
-    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="cloud")
+    # Set cloud_backend explicitly (rather than relying on its default) so
+    # the test proves the intended OpenRouter route: compose.py selects the
+    # registry entry from resolved.cloud_backend.
+    _settings = effective_settings(
+        extraction_mode="local",
+        metadata_llm_provider="cloud",
+        cloud_backend="openrouter",
+    )
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch.object(_ext, "_extract_openrouter_chat_async", mock_fn):
+    with patch.object(_or, "_extract_openrouter_chat_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
         mock_fn.assert_called_once_with("text", "file.txt", _settings)
 

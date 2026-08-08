@@ -115,6 +115,7 @@ forbidden_modules = [
     "rag_mcp.core.providers.embeddings.openrouter",
     "rag_mcp.core.providers.llm.ollama",
     "rag_mcp.core.providers.llm.llamacpp",
+    "rag_mcp.core.providers.llm.openrouter",
 ]
 # Imports within core/providers/ and imports made by the composition root
 # are permitted (registries resolve concrete modules lazily via importlib,
@@ -151,6 +152,11 @@ ignore_imports = [
     # is core BUSINESS logic reaching for providers directly; calling
     # compose.build_profile_resolver() is the sanctioned direction.
     "rag_mcp.daemon.watcher -> rag_mcp.compose",
+    # metadata.llamaindex resolves the LLM provider registry for the cloud
+    # (OpenRouter) branch — the registry centralises construction that was
+    # previously inline.  The contract forbids business logic from importing
+    # concrete provider modules; the registry is the sanctioned indirection.
+    "rag_mcp.core.metadata.llamaindex -> rag_mcp.core.providers.llm.registry",
 ]
 unmatched_ignore_imports_alerting = "error"
 

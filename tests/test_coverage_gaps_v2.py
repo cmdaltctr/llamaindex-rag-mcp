@@ -62,7 +62,7 @@ class TestOpenRouterExtraction:
 
     async def test_valid_response_is_parsed(self, monkeypatch) -> None:
         """A well-formed OpenRouter reply produces parsed metadata."""
-        from rag_mcp.core.metadata.extractor import _extract_openrouter_chat_async
+        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
 
         self._mock_openrouter(
             monkeypatch,
@@ -78,7 +78,7 @@ class TestOpenRouterExtraction:
 
     async def test_unreachable_falls_back_to_uncategorised(self, monkeypatch) -> None:
         """A total failure degrades rather than raising into the pipeline."""
-        from rag_mcp.core.metadata.extractor import _extract_openrouter_chat_async
+        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
 
         client = MagicMock()
         client.__aenter__ = AsyncMock(return_value=client)
@@ -102,7 +102,7 @@ class TestOpenRouterExtraction:
         mock = AsyncMock(return_value={"category": "x", "keywords": [], "summary": ""})
         with patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False), \
              patch(
-                 "rag_mcp.core.metadata.extractor._extract_openrouter_chat_async",
+                 "rag_mcp.core.metadata.openrouter._extract_openrouter_chat_async",
                  mock,
              ):
             settings = self._settings()

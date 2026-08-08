@@ -85,6 +85,10 @@ class MetadataBlock(BaseModel):
     # and a non-positive timeout reaches httpx as a nonsensical deadline.
     classify_max_attempts: int = Field(default=3, gt=0)
     classify_timeout: float = Field(default=30.0, gt=0)
+    # Separate budget for the llamaindex pipeline: three extractors per chunk,
+    # one attempt, no retry.  See MetadataSettings for why it is not merged
+    # with classify_timeout.
+    pipeline_timeout: float = Field(default=180.0, gt=0)
     taxonomy_mode: str = "category"
 
 
