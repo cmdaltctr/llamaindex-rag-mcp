@@ -18,13 +18,27 @@ if TYPE_CHECKING:
 _OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
 
 
-def build(settings: Settings) -> Any:
-    """Construct an ``OpenAILike`` LLM for OpenRouter from *settings*."""
+def build(settings: Settings, *, timeout: float | None = None) -> Any:
+    """Construct an ``OpenAILike`` LLM for OpenRouter from *settings*.
+
+    Args:
+        settings: Resolved settings.
+        timeout: Seconds to wait for a response. Defaults to
+            ``metadata.classify_timeout``; the llamaindex pipeline passes
+            ``metadata.pipeline_timeout`` instead.
+
+    Returns:
+        A configured ``OpenAILike`` LLM.
+    """
     from llama_index.llms.openai_like import OpenAILike
 
     return OpenAILike(
         model=settings.openrouter_llm_model,
         api_base=_OPENROUTER_API_BASE,
         api_key=settings.openrouter_api_key,
-        request_timeout=180.0,
+        # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
+        # spelling and is silently dropped, leaving the 60s default in place.
+        timeout=(
+            timeout if timeout is not None else settings.metadata.classify_timeout
+        ),
     )

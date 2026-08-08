@@ -158,25 +158,18 @@ async def _extract_llamaindex_async(
     """
     resolved = resolve_effective_settings(settings)
     try:
-        if resolved.metadata_llm_provider == "local":
-            if resolved.local_backend == "llamacpp":
-                from llama_index.llms.openai_like import OpenAILike
-                llm = OpenAILike(
-                    model=resolved.llamacpp_chat_model,
-                    api_base=resolved.llamacpp_chat_url,
-                    api_key="no-key",
-                    request_timeout=180.0,
-                )
-            else:
-                from llama_index.llms.ollama import Ollama
-                llm = Ollama(
-                    model=resolved.metadata.ollama_classify_model,
-                    base_url=resolved.ollama_base_url,
-                    request_timeout=180.0,
-                )
-        else:
-            from ..providers.llm.registry import get as _llm_get
-            llm = _llm_get(resolved.cloud_backend)(resolved)
+        # Both tiers resolve through the LLM provider registry — no branching
+        # over backend names, no inline construction (invariant 10).  The
+        # pipeline runs three extractors per chunk, so it passes its own
+        # budget rather than the per-attempt classification timeout.
+        from ..providers.llm.registry import get as _llm_get
+
+        backend = (
+            resolved.local_backend
+            if resolved.metadata_llm_provider == "local"
+            else resolved.cloud_backend
+        )
+        llm = _llm_get(backend)(resolved, timeout=resolved.metadata.pipeline_timeout)
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "

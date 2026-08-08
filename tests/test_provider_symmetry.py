@@ -85,3 +85,92 @@ class TestProviderSymmetry:
             f"Configurable sub-providers missing from the LLM provider "
             f"registry: {sorted(missing)}"
         )
+
+
+class TestNoInlineLLMConstruction:
+    """Backends resolve LLMs through the registry, never by hand.
+
+    The registry exists so that adding a provider is one file plus one
+    ``register()`` line (invariant 10).  An inline construction bypasses it
+    silently: the provider stays registered, the symmetry test still passes,
+    and the code path that matters never uses it.  That is exactly how the
+    OpenRouter gap survived from ADR-027 to now, so it is pinned here.
+    """
+
+    def test_llamaindex_backend_constructs_no_llm_inline(self) -> None:
+        import inspect
+
+        from rag_mcp.core.metadata import llamaindex
+
+        source = inspect.getsource(llamaindex)
+        for forbidden in ("OpenAILike(", "Ollama("):
+            assert forbidden not in source, (
+                f"{forbidden} is constructed inline in llamaindex.py — "
+                "resolve it through core.providers.llm.registry instead"
+            )
+
+    def test_llamaindex_backend_uses_the_registry(self) -> None:
+        import inspect
+
+        from rag_mcp.core.metadata import llamaindex
+
+        assert "providers.llm.registry" in inspect.getsource(llamaindex)
+
+
+class TestPipelineTimeoutIsSeparate:
+    """The pipeline budget must not collapse into the classification one."""
+
+    def test_defaults_differ(self) -> None:
+        from rag_mcp.core.settings import MetadataBlock
+
+        block = MetadataBlock()
+        assert block.classify_timeout == 30.0
+        assert block.pipeline_timeout == 180.0
+
+    def test_both_models_carry_the_field(self) -> None:
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.settings import MetadataBlock
+
+        for model in (MetadataSettings, MetadataBlock):
+            assert "pipeline_timeout" in model.model_fields
+
+    def test_providers_honour_an_explicit_timeout(self) -> None:
+        """Each provider must apply the caller's timeout, not its own default."""
+        import sys
+        import types
+
+        recorded: dict[str, object] = {}
+
+        class _Recorder:
+            def __init__(self, **kwargs: object) -> None:
+                recorded.update(kwargs)
+
+        from rag_mcp.config import Settings
+
+        settings = Settings(_env_file=None)
+
+        stub_like = types.ModuleType("llama_index.llms.openai_like")
+        stub_like.OpenAILike = _Recorder  # type: ignore[attr-defined]
+        stub_ollama = types.ModuleType("llama_index.llms.ollama")
+        stub_ollama.Ollama = _Recorder  # type: ignore[attr-defined]
+
+        original = dict(sys.modules)
+        try:
+            sys.modules["llama_index.llms.openai_like"] = stub_like
+            sys.modules["llama_index.llms.ollama"] = stub_ollama
+
+            from rag_mcp.core.providers.llm import llamacpp, ollama, openrouter
+
+            for module, key in (
+                (llamacpp, "timeout"),
+                (openrouter, "timeout"),
+                (ollama, "request_timeout"),
+            ):
+                recorded.clear()
+                module.build(settings, timeout=99.0)
+                assert recorded[key] == 99.0, (
+                    f"{module.__name__} ignored the caller's timeout"
+                )
+        finally:
+            sys.modules.clear()
+            sys.modules.update(original)
