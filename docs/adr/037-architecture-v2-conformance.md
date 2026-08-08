@@ -126,6 +126,18 @@ they only lived because the flat schema had nowhere better.
 > `METADATA__OLLAMA_CLASSIFY_MODEL`, is unaffected: it really is
 > Ollama-specific.
 
+> **Update (fix-silent-metadata-degradation, 2026-08-08):**
+> `METADATA__OLLAMA_CLASSIFY_TIMEOUT` no longer trips at startup.
+> `MetadataSettings` gained a genuinely Ollama-specific
+> `ollama_classify_timeout` override field (alongside `llamacpp_` and
+> `openrouter_` siblings, for both `classify_timeout` and
+> `pipeline_timeout`) — the exact situation the 2026-08-07 update above
+> said this name no longer described. The name is reclaimed for that new
+> field rather than staying permanently blocked; the corresponding entry
+> was removed from `_RETIRED_ENV_VARS` (`config/legacy.py`).
+> `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS` is unaffected — it stays
+> tripwired, since `classify_max_attempts` has no per-provider override.
+
 `defaults.yaml` and all three profile bundles are rewritten nested and ship
 with this change; a bundle using the flat schema, or a `hybrid.yaml`
 carrying lever blocks, is now rejected with the offending key named.

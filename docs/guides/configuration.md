@@ -235,9 +235,17 @@ splitter regardless of the fallback.
 | `classify_max_attempts` | `3` | Maximum attempts **including** the initial request (all metadata LLM backends) |
 | `classify_timeout` | `30.0` | Seconds per attempt (all metadata LLM backends) |
 | `pipeline_timeout` | `180.0` | Seconds for the llamaindex pipeline (one attempt, three extractors per chunk) |
+| `llamacpp_classify_timeout` | `None` | Per-provider override of `classify_timeout` for `llamacpp`. Falls back to the shared value when unset |
+| `ollama_classify_timeout` | `None` | Per-provider override of `classify_timeout` for `ollama`. Falls back to the shared value when unset |
+| `openrouter_classify_timeout` | `None` | Per-provider override of `classify_timeout` for `openrouter`. Falls back to the shared value when unset |
+| `llamacpp_pipeline_timeout` | `None` | Per-provider override of `pipeline_timeout` for `llamacpp`. Falls back to the shared value when unset |
+| `ollama_pipeline_timeout` | `None` | Per-provider override of `pipeline_timeout` for `ollama`. Falls back to the shared value when unset |
+| `openrouter_pipeline_timeout` | `None` | Per-provider override of `pipeline_timeout` for `openrouter`. Falls back to the shared value when unset |
 
 Set `extraction_mode=disabled` to skip classification entirely — much faster
-ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md).
+ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md),
+including the six per-provider timeout overrides above and how
+degradation from the configured mode is reported in the ingestion result.
 
 ### PDF reading
 
