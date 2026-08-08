@@ -101,9 +101,9 @@ Both groups install the same packages because both providers implement the OpenA
 
 - **ChromaDB dimension lock still applies.** Switching from `local` + `ollama` (1024-dim) to `cloud` + `openrouter` (1536-dim for `text-embedding-3-small`) requires re-ingestion. Users must delete `chroma_db/` and re-ingest.
 - **Four env vars instead of one.** Users must understand the two-tier system: `EMBED_PROVIDER`/`METADATA_LLM_PROVIDER` (category) + `LOCAL_BACKEND`/`CLOUD_BACKEND` (sub-provider). The `.env.example` and docs mitigate this with clear comments.
-- **LLM registries are not yet wired to `_build_provider`.** `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` are defined for documentation and future use, but `metadata_extractor.py` still uses if/elif dispatch (`_dispatch_local_extraction`, `_extract_llamaindex_async`) to select the LLM. Adding a new LLM sub-provider currently requires updating these functions manually, not just a dict entry. The embedding path is fully registry-driven; the LLM path is a known gap to address when a second cloud or local LLM sub-provider is added.
-- **`LOCAL_BACKEND`/`CLOUD_BACKEND` validation checks embed registries only.** At config import time, `LOCAL_BACKEND` is validated against `LOCAL_EMBED_PROVIDERS` and `CLOUD_BACKEND` against `CLOUD_EMBED_PROVIDERS`. A sub-provider valid for LLM but not embeddings would be rejected. This is acceptable while embed and LLM sub-providers are symmetric (`llamacpp`/`ollama` for local, `openrouter` for cloud), but should be widened to check the union of embed + LLM registries when they diverge.
-- **Cloud dispatch hardcodes `openrouter`.** `_dispatch_local_extraction` and `_extract_llamaindex_async` route cloud LLM calls directly to `_extract_openrouter_chat_async` without checking `CLOUD_BACKEND`. This is a shortcut valid only while `openrouter` is the sole cloud sub-provider. Adding a second cloud sub-provider requires updating both functions.
+- ~~**LLM registries are not yet wired to `_build_provider`.**~~ **Resolved — see the 2026-08-07 Update below.** At the time of this decision, `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` were defined for documentation and future use only, and `metadata_extractor.py` still used if/elif dispatch (`_dispatch_local_extraction`, `_extract_llamaindex_async`) to select the LLM. The LLM path is now registry-driven like the embedding path.
+- ~~**`LOCAL_BACKEND`/`CLOUD_BACKEND` validation checks embed registries only.**~~ **Superseded — see the 2026-08-07 Update below.** At the time of this decision, `LOCAL_BACKEND` was validated against `LOCAL_EMBED_PROVIDERS` and `CLOUD_BACKEND` against `CLOUD_EMBED_PROVIDERS` at config import time; a sub-provider valid for LLM but not embeddings would have been rejected. Neither registry dict exists any more — validation is now a `Settings` model validator (`src/rag_mcp/config/__init__.py`) checking hardcoded literals, not the old embed-only registries.
+- ~~**Cloud dispatch hardcodes `openrouter`.**~~ **Resolved — see the 2026-08-07 Update below.** At the time of this decision, `_dispatch_local_extraction` and `_extract_llamaindex_async` routed cloud LLM calls directly to `_extract_openrouter_chat_async` without checking `CLOUD_BACKEND`. `_local_strategy_name()` now reads `settings.cloud_backend`.
 
 ### Neutral
 
@@ -124,8 +124,8 @@ Both groups install the same packages because both providers implement the OpenA
 ## References
 
 - [ADR-025](./025-pluggable-inference-backend.md) — Original pluggable inference backend decision (partially superseded)
-- [`src/rag_mcp/config.py`](../../src/rag_mcp/config.py) — Provider registries and `_build_provider` function
-- [`src/rag_mcp/metadata_extractor.py`](../../src/rag_mcp/metadata_extractor.py) — `_dispatch_local_extraction` and provider-specific extraction functions
+- [`src/rag_mcp/config/__init__.py`](../../src/rag_mcp/config/__init__.py) — provider selection env vars and validation (registries and `_build_provider` originally lived here; see the 2026-08-07 Update below for their current location)
+- [`src/rag_mcp/core/metadata/extractor.py`](../../src/rag_mcp/core/metadata/extractor.py) — `_dispatch_local_extraction` and provider-specific extraction functions
 - [`openspec/changes/add-openrouter-provider/`](../../openspec/changes/add-openrouter-provider/) — OpenSpec change with full design rationale
 - [OpenRouter API documentation](https://openrouter.ai/docs) — OpenAI-compatible endpoints
 
@@ -195,7 +195,8 @@ provider construction inside `compose.py`.
    without checking `CLOUD_BACKEND` is also closed:
    `_local_strategy_name()` reads `settings.cloud_backend`.
 
-References to `src/rag_mcp/config.py` and `src/rag_mcp/metadata_extractor.py`
-(lines 127–128 in the original decision text) are v1 paths deleted in
-v2.0.0. The current locations are `src/rag_mcp/config/__init__.py` and
-`src/rag_mcp/core/metadata/extractor.py` respectively.
+The References section originally linked `src/rag_mcp/config.py` and
+`src/rag_mcp/metadata_extractor.py` — v1 paths deleted in v2.0.0. Those
+links have been updated in place to the current locations,
+`src/rag_mcp/config/__init__.py` and `src/rag_mcp/core/metadata/extractor.py`
+respectively.

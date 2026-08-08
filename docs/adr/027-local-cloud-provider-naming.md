@@ -45,9 +45,11 @@ Probing ports (11434 for Ollama, 8080 for llama.cpp) at startup is fragile and s
 
 Ollama's native `/api/embed` endpoint has better batch handling than its OpenAI-compatible `/v1/embeddings` endpoint. The `LOCAL_BACKEND=ollama` path uses `OllamaEmbedding` (native API), whilst `LOCAL_BACKEND=llamacpp` uses `OpenAIEmbedding` (OpenAI-compatible API). Dropping the ollama sub-provider would lose this optimisation.
 
-### Migration: clean break
+### Migration: intended clean break, retained as flat aliases
 
-The old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVIDER=openrouter`) are **no longer accepted**. There is no deprecation alias, no silent mapping. This is a single-user project — backward compat is debt. Unknown values trigger a `logging.warning` and fall back to the default, so a stale `.env` file degrades gracefully rather than crashing.
+The decision was a clean break: old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVIDER=openrouter`) would no longer be accepted, with no deprecation alias.
+
+**This is not what the shipped code does.** `Settings._validate_provider_selections()` (`src/rag_mcp/config/__init__.py`) still accepts `ollama`, `llamacpp`, and `openrouter` as valid `EMBED_PROVIDER` values alongside `local`/`cloud`, and `_resolve_effective_embed_provider()` treats them as direct aliases for the sub-provider, bypassing `LOCAL_BACKEND`/`CLOUD_BACKEND` category resolution entirely. A stale `.env` with `EMBED_PROVIDER=ollama` therefore keeps working exactly as it did before this ADR. Only a genuinely unknown value (neither the old flat names nor `local`/`cloud`) triggers a `logging.warning` and falls back to `local`.
 
 ## Consequences
 
@@ -61,10 +63,10 @@ The old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVI
 
 ### Negative
 
-- **Breaking change for existing `.env` files.** Users with `EMBED_PROVIDER=ollama` must migrate to `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`. Mitigation: `.env.example` has clear comments, and unknown values fall back gracefully rather than erroring.
+- **Breaking change for existing `.env` files (as designed).** Users with `EMBED_PROVIDER=ollama` were expected to migrate to `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`. Mitigation: `.env.example` has clear comments, and unknown values fall back gracefully rather than erroring. In practice the flat values were kept as accepted aliases (see the "Migration" section above) — a stale `.env` never actually broke.
 - **Four env vars instead of two.** The cognitive surface area increased. Mitigation: `LOCAL_BACKEND` and `CLOUD_BACKEND` have sensible defaults (`llamacpp` and `openrouter` respectively), so most users only set `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER`. The sub-providers are only needed when the default isn't desired.
 - **One extra indirection layer.** `_build_provider` now resolves category → sub-provider → registry → import, instead of name → registry → import. This runs once at import time — negligible runtime cost.
-- **LLM registries not yet fully wired.** `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` are defined but `metadata_extractor.py` still uses if/elif dispatch (`_dispatch_local_extraction`) rather than the registry for LLM selection. This is a known gap documented in ADR-026; the embedding path is fully registry-driven, the LLM path will follow when a second LLM sub-provider is added.
+- ~~**LLM registries not yet fully wired.**~~ **Resolved — see the Update below.** At the time of this decision, `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` were defined but `metadata_extractor.py` still used if/elif dispatch (`_dispatch_local_extraction`) rather than the registry for LLM selection. This was a known gap documented in ADR-026; the embedding path was fully registry-driven, and the LLM path followed once a second LLM sub-provider was added.
 
 > **Update (doc-rot-sweep, 2026-08-07):** The follow-up condition — "when a
 > second LLM sub-provider is added" — was met (OpenRouter). The nested dicts
@@ -88,22 +90,23 @@ The old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVI
 | **Auto-detect running servers by probing ports** | Fragile — a server might be down, or both might be running. Slow at startup. Not debuggable. Explicit config is predictable. |
 | **Single `INFERENCE_BACKEND` with three values** | Couples embeddings and metadata LLM. Setting `INFERENCE_BACKEND=openrouter` forces both to cloud — no way to mix local LLM with cloud embeddings. Already rejected in ADR-026. |
 | **Inherit `METADATA_LLM_PROVIDER` from `EMBED_PROVIDER` by default** | Surprising cloud API costs. A user setting `EMBED_PROVIDER=cloud` for embeddings would unknowingly route metadata LLM to a paid API. Explicit opt-in is safer. |
-| **Keep old names as deprecated aliases** | Backward compat is debt for a single-user project. No aliases, no silent mappings — clean break is simpler and the graceful fallback handles stale configs. |
+| **Keep old names as deprecated aliases** | Backward compat is debt for a single-user project. The decision was no aliases, no silent mappings — a clean break is simpler and the graceful fallback handles stale configs. (See Migration above: the flat values were in fact retained as accepted aliases in the shipped code.) |
 | **Do nothing / status quo** | Cannot scale to additional cloud providers without vocabulary bloat. The flat naming doesn't convey the local/cloud distinction that users actually reason about. |
 
 ## References
 
 - [ADR-026](./026-provider-registry-and-openrouter.md) — Provider registry pattern and OpenAI-compatible API providers (registry mechanics; this ADR amends only the naming taxonomy)
 - [ADR-025](./025-pluggable-inference-backend.md) — Original pluggable inference backend (superseded by ADR-026)
-- [`src/rag_mcp/config.py`](../../src/rag_mcp/config.py) — `LOCAL_EMBED_PROVIDERS`, `CLOUD_EMBED_PROVIDERS`, `LOCAL_LLM_PROVIDERS`, `CLOUD_LLM_PROVIDERS`, `_build_provider()`, env var validation
-
-> **Update (doc-rot-sweep, 2026-08-07):** `src/rag_mcp/config.py` and
-> `src/rag_mcp/metadata_extractor.py` are v1 paths deleted in v2.0.0. The
-> registry dicts and `_build_provider()` no longer exist; provider
-> construction now lives in `compose.py` (`build_embed_model`,
-> `build_llm_model`), and registries live in
-> `core/providers/{embeddings,llm}/registry.py` and
-> `core/metadata/registry.py`.
-- [`src/rag_mcp/metadata_extractor.py`](../../src/rag_mcp/metadata_extractor.py) — `_dispatch_local_extraction()` routes on `METADATA_LLM_PROVIDER` + `LOCAL_BACKEND` / `CLOUD_BACKEND`
+- [`src/rag_mcp/config/__init__.py`](../../src/rag_mcp/config/__init__.py) — `EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`, `CLOUD_BACKEND` env var validation and effective-provider resolution
+- [`src/rag_mcp/core/metadata/extractor.py`](../../src/rag_mcp/core/metadata/extractor.py) — `_dispatch_local_extraction()` routes on `METADATA_LLM_PROVIDER` + `LOCAL_BACKEND` / `CLOUD_BACKEND`
 - [`.env.example`](../../.env.example) — Provider configuration with inline comments
 - [`openspec/changes/local-cloud-provider-naming/`](../../openspec/changes/local-cloud-provider-naming/) — OpenSpec change with full design rationale
+
+> **Update (doc-rot-sweep, 2026-08-07):** the links in this section were
+> updated to their v2 locations. The original decision text cited the v1
+> paths `src/rag_mcp/config.py` and `src/rag_mcp/metadata_extractor.py`,
+> deleted in v2.0.0. The registry dicts and `_build_provider()` this ADR
+> describes no longer exist as such; provider construction now lives in
+> `compose.py` (`build_embed_model`, `build_llm_model`), and registries
+> live in `core/providers/{embeddings,llm}/registry.py` and
+> `core/metadata/registry.py`.

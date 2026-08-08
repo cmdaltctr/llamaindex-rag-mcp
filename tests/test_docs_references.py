@@ -27,8 +27,10 @@ _SCAN_DIRS: list[Path] = [
     _REPO_ROOT / "docs" / "guides",
 ]
 
-# Match src/rag_mcp/...py paths in documentation.
-_SRC_PATH_RE = re.compile(r"src/rag_mcp/[\w/.]+\.py")
+# Match src/rag_mcp/...py paths in documentation.  Path components may
+# contain hyphens (e.g. ``providers/llama-cpp.py``) as well as word
+# characters, so the class includes ``-`` alongside ``\w``, ``/``, ``.``.
+_SRC_PATH_RE = re.compile(r"src/rag_mcp/[\w./-]+\.py")
 
 
 def _scan_files() -> list[Path]:
