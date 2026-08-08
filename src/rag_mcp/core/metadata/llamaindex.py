@@ -165,7 +165,9 @@ async def _extract_llamaindex_async(
                     model=resolved.llamacpp_chat_model,
                     api_base=resolved.llamacpp_chat_url,
                     api_key="no-key",
-                    request_timeout=180.0,
+                    # OpenAILike names this ``timeout``; ``request_timeout`` is
+                    # the Ollama spelling and is silently dropped here.
+                    timeout=180.0,
                 )
             else:
                 from llama_index.llms.ollama import Ollama
@@ -180,7 +182,7 @@ async def _extract_llamaindex_async(
                 model=resolved.openrouter_llm_model,
                 api_base="https://openrouter.ai/api/v1",
                 api_key=resolved.openrouter_api_key,
-                request_timeout=180.0,
+                timeout=180.0,
             )
     except ImportError:
         logger.warning(

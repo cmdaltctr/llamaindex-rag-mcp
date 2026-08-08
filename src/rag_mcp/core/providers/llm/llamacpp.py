@@ -21,5 +21,7 @@ def build(settings: Settings) -> Any:
         model=settings.llamacpp_chat_model,
         api_base=settings.llamacpp_chat_url,
         api_key="no-key",
-        request_timeout=180.0,
+        # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
+        # spelling and is silently dropped, leaving the 60s default in place.
+        timeout=180.0,
     )
