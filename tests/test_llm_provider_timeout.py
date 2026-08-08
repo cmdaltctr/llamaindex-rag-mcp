@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -24,7 +24,7 @@ import pytest
 class _RecordingOpenAILike:
     """Stand-in for ``OpenAILike`` that records its construction kwargs."""
 
-    last_kwargs: dict[str, Any] = {}
+    last_kwargs: ClassVar[dict[str, Any]] = {}
 
     def __init__(self, **kwargs: Any) -> None:
         type(self).last_kwargs = kwargs
@@ -59,12 +59,13 @@ class TestOpenAILikeTimeoutKeyword:
     """Every OpenAILike construction site must use the honoured keyword."""
 
     def test_llamacpp_provider_passes_timeout(
-        self, recorded_openai_like: type[_RecordingOpenAILike]
+        self,
+        recorded_openai_like: type[_RecordingOpenAILike],
+        effective_settings,
     ) -> None:
-        from rag_mcp.config import Settings
         from rag_mcp.core.providers.llm.llamacpp import build
 
-        build(Settings(_env_file=None))
+        build(effective_settings())
         _assert_timeout_keyword(recorded_openai_like.last_kwargs)
 
     def test_openai_like_ignores_request_timeout(self) -> None:
