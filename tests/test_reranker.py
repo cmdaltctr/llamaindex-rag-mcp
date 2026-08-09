@@ -307,6 +307,20 @@ class TestCrossEncoderRerankerFallback:
         result = reranker.rerank("test query", [], top_k=5)
         assert result == []
 
+    def test_rerank_empty_resets_stale_failure_reason(self) -> None:
+        """An empty-results call must not leak a prior call's failure reason.
+
+        The MCP server reuses one reranker instance across searches, so a
+        stale ``last_failure_reason`` from a prior failed call would otherwise
+        surface in a later call's diagnostics even though that call did not
+        fail. ``rerank()`` resets it at the start of every call.
+        """
+        reranker = CrossEncoderReranker()
+        reranker.last_failure_reason = "inference failed: stale from prior call"
+        result = reranker.rerank("test query", [], top_k=5)
+        assert result == []
+        assert reranker.last_failure_reason is None
+
     def test_rerank_fallback_truncates_to_top_k(self) -> None:
         """When model not loaded, rerank() returns first top_k results."""
         reranker = self._make_unloaded_reranker()

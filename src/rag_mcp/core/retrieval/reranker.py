@@ -378,6 +378,10 @@ class CrossEncoderReranker:
             original results unchanged with ``_reranked`` set to
             ``False``.
         """
+        # Reset per-call failure state so a stale reason from a prior call on
+        # the same instance (the MCP server reuses one reranker) cannot leak
+        # into this call's diagnostics. It is set fresh below on a real failure.
+        self.last_failure_reason = None
         if not results:
             return results
 
