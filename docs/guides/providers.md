@@ -108,11 +108,11 @@ See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full ratio
 > `llamaindex` mode's multi-extractor pipeline) are shared defaults that
 > each backend can override independently:
 >
-> | Backend      | Classify timeout override            | Pipeline timeout override            |
-> | ------------ | -------------------------------------- | -------------------------------------- |
-> | `llamacpp`   | `METADATA__LLAMACPP_CLASSIFY_TIMEOUT`  | `METADATA__LLAMACPP_PIPELINE_TIMEOUT`  |
-> | `ollama`     | `METADATA__OLLAMA_CLASSIFY_TIMEOUT`    | `METADATA__OLLAMA_PIPELINE_TIMEOUT`    |
-> | `openrouter` | `METADATA__OPENROUTER_CLASSIFY_TIMEOUT`| `METADATA__OPENROUTER_PIPELINE_TIMEOUT`|
+> | Backend      | Classify timeout override                        | Pipeline timeout override                        |
+> | ------------ | ------------------------------------------------ | ------------------------------------------------ |
+> | `llamacpp`   | `METADATA__LLAMACPP_CLASSIFY_TIMEOUT_OVERRIDE`  | `METADATA__LLAMACPP_PIPELINE_TIMEOUT_OVERRIDE`  |
+> | `ollama`     | `METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE`    | `METADATA__OLLAMA_PIPELINE_TIMEOUT_OVERRIDE`    |
+> | `openrouter` | `METADATA__OPENROUTER_CLASSIFY_TIMEOUT_OVERRIDE`| `METADATA__OPENROUTER_PIPELINE_TIMEOUT_OVERRIDE`|
 >
 > Each is unset (`None`) by default and falls back to the shared
 > `METADATA__CLASSIFY_TIMEOUT` / `METADATA__PIPELINE_TIMEOUT` — set one

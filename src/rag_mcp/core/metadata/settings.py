@@ -56,12 +56,12 @@ class MetadataSettings(BaseModel):
     # classify budget, and vice versa, so each timeout gets its own set
     # of three overrides rather than sharing one.  A float default would
     # make "did the operator set this?" unanswerable.
-    llamacpp_classify_timeout: float | None = Field(default=None, gt=0)
-    ollama_classify_timeout: float | None = Field(default=None, gt=0)
-    openrouter_classify_timeout: float | None = Field(default=None, gt=0)
-    llamacpp_pipeline_timeout: float | None = Field(default=None, gt=0)
-    ollama_pipeline_timeout: float | None = Field(default=None, gt=0)
-    openrouter_pipeline_timeout: float | None = Field(default=None, gt=0)
+    llamacpp_classify_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_classify_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_classify_timeout_override: float | None = Field(default=None, gt=0)
+    llamacpp_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_pipeline_timeout_override: float | None = Field(default=None, gt=0)
 
     # Taxonomy mode for metadata classification (Phase 4 profiles).
     # "category" uses the ADR-013 hybrid category taxonomy (documents profile).

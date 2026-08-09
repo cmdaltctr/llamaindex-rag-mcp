@@ -191,6 +191,13 @@ def _print_ingest_result(result: dict, json_output: bool) -> None:
                 f"{chunks} chunk(s) created."
             )
 
+        degraded = result.get("metadata_degraded", 0)
+        if degraded > 0:
+            console.print(
+                f"[yellow]⚠[/yellow] {degraded} file(s) had metadata "
+                f"fall back to keyword mode."
+            )
+
 
 
 @app.command()

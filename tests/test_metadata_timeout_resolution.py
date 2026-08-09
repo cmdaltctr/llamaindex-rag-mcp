@@ -30,9 +30,9 @@ class TestResolveClassifyTimeout:
     @pytest.mark.parametrize(
         "provider,field",
         [
-            ("llamacpp", "llamacpp_classify_timeout"),
-            ("ollama", "ollama_classify_timeout"),
-            ("openrouter", "openrouter_classify_timeout"),
+            ("llamacpp", "llamacpp_classify_timeout_override"),
+            ("ollama", "ollama_classify_timeout_override"),
+            ("openrouter", "openrouter_classify_timeout_override"),
         ],
     )
     def test_override_honoured(self, provider: str, field: str) -> None:
@@ -66,9 +66,9 @@ class TestResolvePipelineTimeout:
     @pytest.mark.parametrize(
         "provider,field",
         [
-            ("llamacpp", "llamacpp_pipeline_timeout"),
-            ("ollama", "ollama_pipeline_timeout"),
-            ("openrouter", "openrouter_pipeline_timeout"),
+            ("llamacpp", "llamacpp_pipeline_timeout_override"),
+            ("ollama", "ollama_pipeline_timeout_override"),
+            ("openrouter", "openrouter_pipeline_timeout_override"),
         ],
     )
     def test_override_honoured(self, provider: str, field: str) -> None:
@@ -139,7 +139,7 @@ class TestClassifyTimeoutWiring:
             metadata=MetadataBlock(
                 classify_timeout=30.0,
                 classify_max_attempts=1,
-                llamacpp_classify_timeout=45.0,
+                llamacpp_classify_timeout_override=45.0,
             )
         )
         asyncio.run(_extract_llamacpp_chat_async("text", "file.txt", settings))
@@ -161,7 +161,7 @@ class TestClassifyTimeoutWiring:
             metadata=MetadataBlock(
                 classify_timeout=30.0,
                 classify_max_attempts=1,
-                ollama_classify_timeout=55.0,
+                ollama_classify_timeout_override=55.0,
             )
         )
         asyncio.run(_extract_ollama_async("text", "file.txt", settings))
@@ -183,7 +183,7 @@ class TestClassifyTimeoutWiring:
             metadata=MetadataBlock(
                 classify_timeout=30.0,
                 classify_max_attempts=1,
-                openrouter_classify_timeout=65.0,
+                openrouter_classify_timeout_override=65.0,
             )
         )
         asyncio.run(_extract_openrouter_chat_async("text", "file.txt", settings))
@@ -246,7 +246,7 @@ class TestPipelineTimeoutWiring:
             local_backend="llamacpp",
             metadata_llm_provider="local",
             metadata=MetadataBlock(
-                pipeline_timeout=180.0, llamacpp_pipeline_timeout=300.0
+                pipeline_timeout=180.0, llamacpp_pipeline_timeout_override=300.0
             ),
         )
         recorded = self._run(monkeypatch, settings)
@@ -267,7 +267,7 @@ class TestPipelineTimeoutWiring:
             local_backend="ollama",
             metadata_llm_provider="local",
             metadata=MetadataBlock(
-                pipeline_timeout=180.0, ollama_pipeline_timeout=250.0
+                pipeline_timeout=180.0, ollama_pipeline_timeout_override=250.0
             ),
         )
         recorded = self._run(monkeypatch, settings)
@@ -294,7 +294,7 @@ class TestPipelineTimeoutWiring:
             metadata_llm_provider="cloud",
             cloud_backend="openrouter",
             metadata=MetadataBlock(
-                pipeline_timeout=180.0, openrouter_pipeline_timeout=400.0
+                pipeline_timeout=180.0, openrouter_pipeline_timeout_override=400.0
             ),
         )
         recorded = self._run(monkeypatch, settings)
@@ -302,37 +302,37 @@ class TestPipelineTimeoutWiring:
         assert recorded["timeout"] == 400.0
 
 
-class TestOllamaClassifyTimeoutNameReclaimed:
-    """``METADATA__OLLAMA_CLASSIFY_TIMEOUT`` was a retired v2 nested name.
+class TestOllamaClassifyTimeoutOverrideAvoidsCollision:
+    """``METADATA__OLLAMA_CLASSIFY_TIMEOUT`` stays retired; the new field
+    uses ``_override`` suffix to avoid the collision.
 
-    It was tripwired because the knob it named governed ALL metadata LLM
-    backends despite its Ollama-specific name (see the ADR-037 "Update"
-    note and ``rename-classify-settings``). This change adds a genuinely
-    Ollama-specific ``ollama_classify_timeout`` override field, whose env
-    var is the identical fully-qualified name — pydantic-settings' nested
-    delimiter gives every field ``METADATA__<FIELD_NAME_UPPER>`` for free.
-    Leaving the old tripwire entry in place would permanently block the
-    new field, so it was removed from ``_RETIRED_ENV_VARS`` (config/legacy.py).
+    The retired name governed ALL backends despite its Ollama-specific
+    name (see ``rename-classify-settings`` and ADR-037). Reclaiming it for
+    a genuinely Ollama-specific field would silently change semantics for
+    any operator who had it set — their timeout would apply only to ollama
+    instead of all backends. The ``_override`` suffix avoids this: the new
+    env var is ``METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE``, and the old
+    name stays tripwired.
     """
 
-    def test_no_longer_in_retired_map(self) -> None:
+    def test_still_in_retired_map(self) -> None:
         from rag_mcp.config.legacy import _RETIRED_ENV_VARS
 
-        assert "METADATA__OLLAMA_CLASSIFY_TIMEOUT" not in _RETIRED_ENV_VARS
+        assert "METADATA__OLLAMA_CLASSIFY_TIMEOUT" in _RETIRED_ENV_VARS
 
-    def test_no_longer_trips_the_startup_tripwire(self) -> None:
+    def test_old_name_trips_the_startup_tripwire(self) -> None:
         from rag_mcp.config.legacy import check_legacy_env_vars
 
-        # Must not raise.
-        check_legacy_env_vars({"METADATA__OLLAMA_CLASSIFY_TIMEOUT": "45.0"})
+        with pytest.raises(ValueError, match="METADATA__CLASSIFY_TIMEOUT"):
+            check_legacy_env_vars({"METADATA__OLLAMA_CLASSIFY_TIMEOUT": "45.0"})
 
-    def test_env_var_resolves_into_the_new_field(self, monkeypatch) -> None:
-        """End-to-end: the env var reaches ``Settings.metadata.ollama_classify_timeout``."""
+    def test_override_env_var_resolves_into_the_new_field(self, monkeypatch) -> None:
+        """End-to-end: ``METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE`` reaches the field."""
         from rag_mcp.config import Settings
 
-        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "45.0")
+        monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE", "45.0")
         settings = Settings(_env_file=None)
-        assert settings.metadata.ollama_classify_timeout == 45.0
+        assert settings.metadata.ollama_classify_timeout_override == 45.0
 
     def test_unrelated_flat_name_is_still_retired(self) -> None:
         """The pre-v2.0.0 FLAT ``OLLAMA_CLASSIFY_TIMEOUT`` is unaffected.
@@ -345,3 +345,28 @@ class TestOllamaClassifyTimeoutNameReclaimed:
 
         with pytest.raises(ValueError, match="METADATA__CLASSIFY_TIMEOUT"):
             check_legacy_env_vars({"OLLAMA_CLASSIFY_TIMEOUT": "45.0"})
+
+
+# ── compose.py round-trip: value survives the composition root ───────────
+
+
+class TestTimeoutOverrideTravelsThroughCompose:
+    """The parity test proves field names match between the two settings
+    models. This test proves a value actually travels through
+    ``compose.settings_to_effective`` — the composition root that converts
+    ``Settings.metadata`` (config layer) into ``EffectiveSettings.metadata``
+    (core layer). A broken ``model_dump()`` or a field silently dropped
+    during the copy would pass the parity test but fail here.
+    """
+
+    def test_override_survives_compose_round_trip(self) -> None:
+        from rag_mcp.compose import settings_to_effective
+        from rag_mcp.config import Settings
+
+        settings = Settings(_env_file=None)
+        settings.metadata.ollama_classify_timeout_override = 45.0
+        settings.metadata.llamacpp_pipeline_timeout_override = 300.0
+
+        effective = settings_to_effective(settings)
+        assert effective.metadata.ollama_classify_timeout_override == 45.0
+        assert effective.metadata.llamacpp_pipeline_timeout_override == 300.0

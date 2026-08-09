@@ -154,6 +154,7 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
             "Response: %s",
             raw_response[:200],
         )
+        _signal_degraded()
         return {
             "category": _normalise_category(raw_response) or "uncategorised",
             "keywords": [],

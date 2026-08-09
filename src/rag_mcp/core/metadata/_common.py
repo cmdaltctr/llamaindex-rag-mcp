@@ -174,7 +174,7 @@ def _get_classify_max_attempts(resolved) -> int:
 def _resolve_classify_timeout(resolved, provider: str) -> float:
     """Return the effective per-attempt classify timeout for *provider*.
 
-    Returns the provider-specific override (``{provider}_classify_timeout``)
+    Returns the provider-specific override (``{provider}_classify_timeout_override``)
     when set, else the shared ``classify_timeout``.  An unrecognised
     *provider* has no matching field, so ``getattr`` falls through to the
     shared value — the same behaviour as an unset override.
@@ -187,14 +187,14 @@ def _resolve_classify_timeout(resolved, provider: str) -> float:
     Returns:
         Timeout in seconds.
     """
-    override = getattr(resolved.metadata, f"{provider}_classify_timeout", None)
+    override = getattr(resolved.metadata, f"{provider}_classify_timeout_override", None)
     return override if override is not None else resolved.metadata.classify_timeout
 
 
 def _resolve_pipeline_timeout(resolved, provider: str) -> float:
     """Return the effective llamaindex pipeline timeout for *provider*.
 
-    Returns the provider-specific override (``{provider}_pipeline_timeout``)
+    Returns the provider-specific override (``{provider}_pipeline_timeout_override``)
     when set, else the shared ``pipeline_timeout``.  An unrecognised
     *provider* has no matching field, so ``getattr`` falls through to the
     shared value — the same behaviour as an unset override.
@@ -207,5 +207,5 @@ def _resolve_pipeline_timeout(resolved, provider: str) -> float:
     Returns:
         Timeout in seconds.
     """
-    override = getattr(resolved.metadata, f"{provider}_pipeline_timeout", None)
+    override = getattr(resolved.metadata, f"{provider}_pipeline_timeout_override", None)
     return override if override is not None else resolved.metadata.pipeline_timeout

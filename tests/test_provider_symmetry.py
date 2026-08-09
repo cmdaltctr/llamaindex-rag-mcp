@@ -210,12 +210,12 @@ class TestMetadataSettingsParity:
         from rag_mcp.core.settings import MetadataBlock
 
         expected = {
-            "llamacpp_classify_timeout",
-            "ollama_classify_timeout",
-            "openrouter_classify_timeout",
-            "llamacpp_pipeline_timeout",
-            "ollama_pipeline_timeout",
-            "openrouter_pipeline_timeout",
+            "llamacpp_classify_timeout_override",
+            "ollama_classify_timeout_override",
+            "openrouter_classify_timeout_override",
+            "llamacpp_pipeline_timeout_override",
+            "ollama_pipeline_timeout_override",
+            "openrouter_pipeline_timeout_override",
         }
         for model in (MetadataSettings, MetadataBlock):
             missing = expected - set(model.model_fields)

@@ -58,9 +58,9 @@ metadata:
   # here — same convention as the six per-provider overrides below).
   #
   # Six optional per-provider overrides for classify_timeout/pipeline_timeout
-  # — llamacpp_classify_timeout, ollama_classify_timeout,
-  # openrouter_classify_timeout, llamacpp_pipeline_timeout,
-  # ollama_pipeline_timeout, openrouter_pipeline_timeout. Each defaults to
+  # — llamacpp_classify_timeout_override, ollama_classify_timeout_override,
+  # openrouter_classify_timeout_override, llamacpp_pipeline_timeout_override,
+  # ollama_pipeline_timeout_override, openrouter_pipeline_timeout_override. Each defaults to
   # null (unset) and falls back to the shared value above; set one here or
   # via METADATA__<NAME> only on the machine that needs different tuning.
 

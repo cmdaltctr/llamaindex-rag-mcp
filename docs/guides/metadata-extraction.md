@@ -77,12 +77,12 @@ Two shared timeouts govern LLM-backed extraction:
 Each also has three optional **per-provider overrides**, all `None` (unset) by default — an unset override falls back to the shared value above, so behaviour is unchanged until you set one:
 
 ```bash
-METADATA__LLAMACPP_CLASSIFY_TIMEOUT=45.0
-METADATA__OLLAMA_CLASSIFY_TIMEOUT=45.0
-METADATA__OPENROUTER_CLASSIFY_TIMEOUT=45.0
-METADATA__LLAMACPP_PIPELINE_TIMEOUT=300.0
-METADATA__OLLAMA_PIPELINE_TIMEOUT=300.0
-METADATA__OPENROUTER_PIPELINE_TIMEOUT=300.0
+METADATA__LLAMACPP_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__OPENROUTER_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__LLAMACPP_PIPELINE_TIMEOUT_OVERRIDE=300.0
+METADATA__OLLAMA_PIPELINE_TIMEOUT_OVERRIDE=300.0
+METADATA__OPENROUTER_PIPELINE_TIMEOUT_OVERRIDE=300.0
 ```
 
 Use these when different machines run different backends at different speeds — e.g. a slow local box wants a longer `llamacpp` pipeline budget without loosening the fast-fail classify budget everywhere else. `LOCAL_BACKEND` (`llamacpp`/`ollama`) or `CLOUD_BACKEND` (`openrouter`) selects which override, if any, applies at runtime.

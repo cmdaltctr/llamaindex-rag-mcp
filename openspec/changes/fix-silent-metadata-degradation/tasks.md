@@ -33,4 +33,4 @@
 
 ## 6. Discovered during implementation (not in the original task list)
 
-- [x] 6.1 `METADATA__OLLAMA_CLASSIFY_TIMEOUT` collided with an existing retired-name tripwire entry in `config/legacy.py` (`_RETIRED_ENV_VARS`), left over from `rename-classify-settings`. The old retirement was because that name governed *all* backends despite its Ollama-specific name; the new `ollama_classify_timeout` field genuinely is Ollama-specific, reclaiming the name for its correct meaning. Removed the stale entry, updated `tests/test_config_no_legacy_surface.py`, and added a dated addendum to `docs/adr/037-architecture-v2-conformance.md`. No other of the six new fields collided.
+- [x] 6.1 `METADATA__OLLAMA_CLASSIFY_TIMEOUT` collided with an existing retired-name tripwire entry in `config/legacy.py` (`_RETIRED_ENV_VARS`), left over from `rename-classify-settings`. Reclaiming the name would silently change semantics for operators who had it set (their timeout would apply only to ollama instead of all backends). All six override fields use an `_override` suffix (e.g. `ollama_classify_timeout_override`) to avoid the collision entirely; the tripwire stays active.

@@ -92,12 +92,12 @@ class MetadataBlock(BaseModel):
     # Per-provider overrides for the two shared timeouts above.  ``None``
     # means "unset, use the shared value" — mirrors ``MetadataSettings``
     # (core/metadata/settings.py); both models must stay in sync.
-    llamacpp_classify_timeout: float | None = Field(default=None, gt=0)
-    ollama_classify_timeout: float | None = Field(default=None, gt=0)
-    openrouter_classify_timeout: float | None = Field(default=None, gt=0)
-    llamacpp_pipeline_timeout: float | None = Field(default=None, gt=0)
-    ollama_pipeline_timeout: float | None = Field(default=None, gt=0)
-    openrouter_pipeline_timeout: float | None = Field(default=None, gt=0)
+    llamacpp_classify_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_classify_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_classify_timeout_override: float | None = Field(default=None, gt=0)
+    llamacpp_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_pipeline_timeout_override: float | None = Field(default=None, gt=0)
     taxonomy_mode: str = "category"
 
 

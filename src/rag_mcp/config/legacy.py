@@ -82,15 +82,7 @@ _RETIRED_ENV_VARS: dict[str, str] = {
     # the tripwire; the tripwire only improves the message.  Retain one
     # major version after the rename, then deletable (design.md D1).
     "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS": "METADATA__CLASSIFY_MAX_ATTEMPTS",
-    # "METADATA__OLLAMA_CLASSIFY_TIMEOUT" was retired here (rename-classify-
-    # settings) because the knob it named governed ALL backends despite its
-    # Ollama-specific name.  fix-silent-metadata-degradation reclaims the
-    # name for a genuinely Ollama-specific setting — MetadataSettings now
-    # declares an ``ollama_classify_timeout`` override field, so the name
-    # means what it always looked like it meant.  See ADR-037's dated
-    # update note and design.md.  Ending the retention early (rather than
-    # waiting out "one major after the rename") is deliberate: keeping the
-    # tripwire here would permanently block the new field's env var.
+    "METADATA__OLLAMA_CLASSIFY_TIMEOUT": "METADATA__CLASSIFY_TIMEOUT",
 }
 
 

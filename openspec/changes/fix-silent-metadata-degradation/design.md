@@ -40,12 +40,12 @@ Relevant constraints:
 Add six optional overrides to `MetadataSettings`, all defaulting to `None`:
 
 ```python
-llamacpp_classify_timeout:   float | None = Field(default=None, gt=0)
-ollama_classify_timeout:     float | None = Field(default=None, gt=0)
-openrouter_classify_timeout: float | None = Field(default=None, gt=0)
-llamacpp_pipeline_timeout:   float | None = Field(default=None, gt=0)
-ollama_pipeline_timeout:     float | None = Field(default=None, gt=0)
-openrouter_pipeline_timeout: float | None = Field(default=None, gt=0)
+llamacpp_classify_timeout_override:   float | None = Field(default=None, gt=0)
+ollama_classify_timeout_override:     float | None = Field(default=None, gt=0)
+openrouter_classify_timeout_override: float | None = Field(default=None, gt=0)
+llamacpp_pipeline_timeout_override:   float | None = Field(default=None, gt=0)
+ollama_pipeline_timeout_override:     float | None = Field(default=None, gt=0)
+openrouter_pipeline_timeout_override: float | None = Field(default=None, gt=0)
 ```
 
 Two resolvers in `core/metadata/_common.py`:

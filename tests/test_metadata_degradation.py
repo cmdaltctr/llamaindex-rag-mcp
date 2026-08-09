@@ -146,6 +146,66 @@ class TestDirectChatSignalsDegraded:
         assert degraded is False
 
 
+class _MalformedJSONClient:
+    """httpx.AsyncClient stand-in that returns a valid HTTP response
+    whose LLM output is malformed (non-JSON).
+
+    Drives the parser's ``except ValueError`` fallback branch — the
+    most common real-world degradation path (e.g. qwen3:0.6b emitting
+    unfenced garbage).
+    """
+
+    def __init__(self, **kwargs) -> None:
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc_info) -> None:
+        return None
+
+    async def post(self, *args, **kwargs):
+        from unittest.mock import MagicMock
+
+        resp = MagicMock()
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": "This is not JSON at all, just raw text."
+                    }
+                }
+            ]
+        }
+        return resp
+
+
+class TestParserFallbackSignalsDegraded:
+    """When the LLM returns a successful HTTP response but the body is
+    malformed JSON, the parser falls back to raw-text-as-category.
+    This MUST signal degradation — otherwise metadata_degraded stays 0
+    and a junk category gets indexed silently.
+    """
+
+    def test_malformed_json_signals_degraded(self, monkeypatch) -> None:
+        monkeypatch.setattr("httpx.AsyncClient", _MalformedJSONClient)
+        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+
+        settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
+
+        async def _run():
+            token = _degradation_flag.set(False)
+            try:
+                result = await _extract_llamacpp_chat_async("text", "f.txt", settings)
+                return result, _degradation_flag.get()
+            finally:
+                _degradation_flag.reset(token)
+
+        result, degraded = asyncio.run(_run())
+        assert degraded is True
+
+
 # ── Task 4.2: llamaindex.py signals degraded at both abandon points ─────
 
 
