@@ -117,7 +117,10 @@ class TestLegacyEnvTripwire:
                 "METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS",
                 "METADATA__CLASSIFY_MAX_ATTEMPTS",
             ),
-            ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "METADATA__CLASSIFY_TIMEOUT"),
+            (
+                "METADATA__OLLAMA_CLASSIFY_TIMEOUT",
+                "METADATA__CLASSIFY_TIMEOUT",
+            ),
         ],
     )
     def test_renamed_nested_names_are_tripwired(self, old: str, new: str) -> None:

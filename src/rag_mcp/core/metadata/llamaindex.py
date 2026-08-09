@@ -14,6 +14,8 @@ import logging
 from ..settings import resolve_effective_settings
 from ._common import (
     _normalise_category,
+    _resolve_pipeline_timeout,
+    _signal_degraded,
     _strip_llm_prefix,
     _truncate_keywords,
     _truncate_summary,
@@ -169,7 +171,9 @@ async def _extract_llamaindex_async(
             if resolved.metadata_llm_provider == "local"
             else resolved.cloud_backend
         )
-        llm = _llm_get(backend)(resolved, timeout=resolved.metadata.pipeline_timeout)
+        llm = _llm_get(backend)(
+            resolved, timeout=_resolve_pipeline_timeout(resolved, backend)
+        )
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
@@ -177,6 +181,7 @@ async def _extract_llamaindex_async(
             resolved.metadata_llm_provider,
             resolved.local_backend if resolved.metadata_llm_provider == "local" else resolved.cloud_backend,
         )
+        _signal_degraded()
         # Lazy import to avoid a circular dependency: extractor.py imports
         # this module at load time, but the fallback dispatch lives in
         # extractor.py.  The import only runs at call time.
@@ -213,7 +218,15 @@ async def _extract_llamaindex_async(
         # Call arun() directly — no nested-loop workaround needed.
         enriched_nodes = await pipeline.arun(documents=[doc])
 
-        return _aggregate_llamaindex_metadata(enriched_nodes)
+        result = _aggregate_llamaindex_metadata(enriched_nodes)
+        # The pipeline ran but produced no usable keywords or title — the
+        # LLM's output was empty or garbage.  _derive_category returns
+        # "uncategorised" only when every keyword normalises to nothing
+        # and the title is absent, so this is a real fallback, not a
+        # legitimate "I don't know" from the model.
+        if result["category"] == "uncategorised":
+            _signal_degraded()
+        return result
 
     except Exception as exc:
         logger.warning(
@@ -224,6 +237,7 @@ async def _extract_llamaindex_async(
             resolved.metadata_llm_provider,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
+        _signal_degraded()
         # Lazy import — see note above.
         from .extractor import _dispatch_local_extraction
         return await _dispatch_local_extraction(text, resolved, file_name)

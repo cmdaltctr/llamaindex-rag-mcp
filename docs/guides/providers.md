@@ -100,12 +100,27 @@ OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct
 
 See [ADR-026](../adr/026-provider-registry-and-openrouter.md) for the full rationale.
 
-> **Shared classification knobs:** `METADATA__CLASSIFY_MAX_ATTEMPTS` and
-> `METADATA__CLASSIFY_TIMEOUT` govern the retry budget and per-attempt
-> timeout for **all three** metadata LLM backends (Ollama, llama.cpp,
-> OpenRouter). The model field is per-provider (`METADATA__OLLAMA_CLASSIFY_MODEL`,
-> `LLAMACPP_CHAT_MODEL`, `OPENROUTER_LLM_MODEL`); the retry budget and
-> timeout are not.
+> **Shared classification knobs, with per-provider timeout overrides:**
+> `METADATA__CLASSIFY_MAX_ATTEMPTS` governs the retry budget for **all
+> three** metadata LLM backends (Ollama, llama.cpp, OpenRouter) — it has
+> no per-provider override. `METADATA__CLASSIFY_TIMEOUT` (per-attempt,
+> direct-chat classification) and `METADATA__PIPELINE_TIMEOUT` (the
+> `llamaindex` mode's multi-extractor pipeline) are shared defaults that
+> each backend can override independently:
+>
+> | Backend      | Classify timeout override                        | Pipeline timeout override                        |
+> | ------------ | ------------------------------------------------ | ------------------------------------------------ |
+> | `llamacpp`   | `METADATA__LLAMACPP_CLASSIFY_TIMEOUT_OVERRIDE`  | `METADATA__LLAMACPP_PIPELINE_TIMEOUT_OVERRIDE`  |
+> | `ollama`     | `METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE`    | `METADATA__OLLAMA_PIPELINE_TIMEOUT_OVERRIDE`    |
+> | `openrouter` | `METADATA__OPENROUTER_CLASSIFY_TIMEOUT_OVERRIDE`| `METADATA__OPENROUTER_PIPELINE_TIMEOUT_OVERRIDE`|
+>
+> Each is unset (`None`) by default and falls back to the shared
+> `METADATA__CLASSIFY_TIMEOUT` / `METADATA__PIPELINE_TIMEOUT` — set one
+> only on the machine that needs different tuning (e.g. a slower local
+> box wants a longer `llamacpp` pipeline budget without loosening the
+> fast-fail classify budget elsewhere). The model field stays per-provider
+> too (`METADATA__OLLAMA_CLASSIFY_MODEL`, `LLAMACPP_CHAT_MODEL`,
+> `OPENROUTER_LLM_MODEL`). See [Metadata extraction](metadata-extraction.md#timeouts).
 
 ## Registry pattern
 

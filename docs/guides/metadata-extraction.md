@@ -65,6 +65,46 @@ Override the built-in rules entirely by setting `METADATA__KEYWORD_RULES` in `.e
 METADATA__KEYWORD_RULES='[{"pattern": "f1|grand.?prix|motorsport", "category": "Motorsport"}, {"pattern": "football|goal|stadium", "category": "Sport"}]'
 ```
 
+## Timeouts
+
+Two shared timeouts govern LLM-backed extraction:
+
+| Setting                       | Default | Governs                                                                                          |
+| ------------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
+| `METADATA__CLASSIFY_TIMEOUT`   | `30.0`s | Per-attempt HTTP timeout for the `local` mode's direct-chat classification call (retried up to `METADATA__CLASSIFY_MAX_ATTEMPTS` times). |
+| `METADATA__PIPELINE_TIMEOUT`   | `180.0`s | Timeout for the `llamaindex` mode's `IngestionPipeline` run (three extractors per chunk, one attempt, no retry). |
+
+Each also has three optional **per-provider overrides**, all `None` (unset) by default — an unset override falls back to the shared value above, so behaviour is unchanged until you set one:
+
+```bash
+METADATA__LLAMACPP_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__OPENROUTER_CLASSIFY_TIMEOUT_OVERRIDE=45.0
+METADATA__LLAMACPP_PIPELINE_TIMEOUT_OVERRIDE=300.0
+METADATA__OLLAMA_PIPELINE_TIMEOUT_OVERRIDE=300.0
+METADATA__OPENROUTER_PIPELINE_TIMEOUT_OVERRIDE=300.0
+```
+
+Use these when different machines run different backends at different speeds — e.g. a slow local box wants a longer `llamacpp` pipeline budget without loosening the fast-fail classify budget everywhere else. `LOCAL_BACKEND` (`llamacpp`/`ollama`) or `CLOUD_BACKEND` (`openrouter`) selects which override, if any, applies at runtime.
+
+## Degradation reporting
+
+If the LLM call backing `llamaindex` or `local` mode fails — the required package isn't installed, the backend is unreachable, a call times out, or the response can't be parsed — extraction falls back to a lower tier (`llamaindex` → `local` → `keyword`) and logs a `WARNING`. As of this change, that fallback is also reported in the ingestion result, not just the logs:
+
+```json
+{
+  "status": "ok",
+  "files_indexed": 3,
+  "metadata_degraded": 1,
+  "file_details": [
+    { "file": "slow_doc.pdf", "status": "indexed", "chunks": 12, "metadata_degraded": true },
+    { "file": "fast_doc.pdf", "status": "indexed", "chunks": 4 }
+  ]
+}
+```
+
+`metadata_degraded` counts files whose metadata came from a fallback tier rather than the configured mode; only affected `file_details` entries carry the `metadata_degraded: true` marker. `keyword` and `disabled` as the *configured* mode never degrade — there's no LLM call to fall back from. The chunk metadata written to ChromaDB is unaffected: `category`, `keywords`, and `summary` keep their usual shape, with no extra key added.
+
 ## Filtering search results
 
 Use the `metadata_filter` parameter on the `search_documents` MCP tool:

@@ -174,3 +174,54 @@ class TestPipelineTimeoutIsSeparate:
         finally:
             sys.modules.clear()
             sys.modules.update(original)
+
+
+class TestMetadataSettingsParity:
+    """``MetadataSettings`` and ``MetadataBlock`` must declare identical fields.
+
+    ``MetadataSettings`` (core/metadata/settings.py) is consumed by the
+    config-layer resolver; ``MetadataBlock`` (core/settings.py) is the
+    mirrored block on the frozen ``EffectiveSettings`` used at runtime.
+    A field added to one and forgotten on the other is a live hole — the
+    setting parses on one side and silently vanishes on the other. See
+    design.md D1 and openspec/changes/fix-silent-metadata-degradation/.
+    """
+
+    def test_field_names_match(self) -> None:
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.settings import MetadataBlock
+
+        assert set(MetadataSettings.model_fields) == set(MetadataBlock.model_fields)
+
+    def test_field_defaults_match(self) -> None:
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.settings import MetadataBlock
+
+        for name, field in MetadataSettings.model_fields.items():
+            other = MetadataBlock.model_fields[name]
+            assert field.default == other.default, (
+                f"MetadataSettings.{name} default {field.default!r} != "
+                f"MetadataBlock.{name} default {other.default!r}"
+            )
+
+    def test_six_timeout_overrides_present_and_optional(self) -> None:
+        """All six per-provider overrides exist on both models and default to None."""
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.settings import MetadataBlock
+
+        expected = {
+            "llamacpp_classify_timeout_override",
+            "ollama_classify_timeout_override",
+            "openrouter_classify_timeout_override",
+            "llamacpp_pipeline_timeout_override",
+            "ollama_pipeline_timeout_override",
+            "openrouter_pipeline_timeout_override",
+        }
+        for model in (MetadataSettings, MetadataBlock):
+            missing = expected - set(model.model_fields)
+            assert not missing, f"{model.__name__} missing: {sorted(missing)}"
+            for name in expected:
+                assert model.model_fields[name].default is None, (
+                    f"{model.__name__}.{name} default must be None, "
+                    f"got {model.model_fields[name].default!r}"
+                )
