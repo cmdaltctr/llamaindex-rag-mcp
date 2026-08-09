@@ -11,6 +11,11 @@ enabled flag) via injection and SHALL NOT call `load_dotenv()` independently
 of the settings resolver. The reranker SHALL recover from transient failures
 rather than permanently disabling itself.
 
+When no reranker is injected, `core/retrieval/pipeline.py::search` constructs a
+fresh instance through the retrieval registry; both paths are intentional, and
+the process-wide model cache makes the fresh construction cheap (no reload).
+This is why the consecutive-failure counter is module-level, not instance state.
+
 The reranker SHALL distinguish a transient failure from a persistent one by
 tracking consecutive failures with the same error signature. Below the
 escalation threshold, a failure SHALL log at WARNING as today. At or above
@@ -46,10 +51,11 @@ model cache so tests remain isolated.
   escalation threshold, at ERROR at or above it
 - **AND** SHALL NOT crash or raise an exception
 
-#### Scenario: persistent failure escalates to ERROR after the threshold
-- **GIVEN** the reranker has failed with the same error signature on N
-  consecutive calls, where N is the configured escalation threshold
-- **WHEN** the reranker fails again with the same error signature
+#### Scenario: persistent failure escalates to ERROR at the threshold
+- **GIVEN** the reranker has failed with the same error signature on
+  N-1 consecutive calls, where N is the configured escalation threshold
+- **WHEN** the reranker fails again with the same error signature — the
+  Nth consecutive failure (e.g. the 3rd when N=3)
 - **THEN** the system SHALL log at ERROR level instead of WARNING
 - **AND** SHALL still fall back to un-reranked results without raising
 
