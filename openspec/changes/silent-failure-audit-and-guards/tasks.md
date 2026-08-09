@@ -38,39 +38,39 @@ The change stays open across both PRs with tasks.md ticked progressively. Archiv
 
 ## 1. Reranker persistent-failure escalation (`core/retrieval/reranker.py`)
 
-- [ ] 1.1 Add a module-level `_FAILURE_STATE` holding a single process-wide consecutive-failure count plus the last error signature, guarded by the existing `_CACHE_LOCK`, sibling to `_MODEL_CACHE`. It MUST NOT be instance state (a fresh reranker is built per `search()` call, so the counter would never increment) and MUST NOT live inside `_MODEL_CACHE` (that dict is written only on successful load, so a permanently failing model has no entry). Single count, not keyed by model ID — see design.md for the split-counter trap.
-- [ ] 1.2 Define the escalation threshold as a named module-level constant (3 consecutive failures) — not an env var (design.md: premature configurability).
-- [ ] 1.3 Add a shared helper that records a failure: compare the new error's signature against the stored one, increment or reset, and return the log level to use (WARNING below threshold, ERROR at or above).
-- [ ] 1.4 Wire the helper into `rerank()`'s inference `except Exception` handler (the ADR-029 CoreML shape).
-- [ ] 1.5 Wire the helper into `_load_model()`'s `except Exception` handler. Because `_load_model` retries on every call, a permanently bad model ID is the other half of the "warning on every call, invisible" pattern — covering only 1.4 would leave it untouched.
-- [ ] 1.6 Reset the counter on any successful load or successful inference.
-- [ ] 1.7 Extend `reset_model_cache()` to clear `_FAILURE_STATE` so no count leaks across test cases.
-- [ ] 1.8 Test: a single failure logs WARNING and falls back gracefully, `tests/test_reranker.py`.
-- [ ] 1.9 Test: the same error signature repeated to the threshold escalates to ERROR (assert via `caplog`), `tests/test_reranker.py`.
-- [ ] 1.10 Test: a success between failures resets the counter — the next failure logs WARNING, not ERROR.
-- [ ] 1.11 **Test through the un-injected path**: drive `search()` with `reranker=None` so a fresh instance is constructed per call, and assert escalation still fires. The existing `TestPersistentRerankFailureFallback` injects a single instance via DI, so a test written in that style would pass while production never escalates — the exact ADR-029 trap. This test is what proves the counter survives instance churn.
-- [ ] 1.12 Test: `reset_model_cache()` clears the counter, `tests/test_reranker.py`.
-- [ ] 1.13 Fix the pre-existing cache leak in `tests/test_retrieval.py::test_transient_failure_retries_then_succeeds` — it populates `_MODEL_CACHE` via `_load_model()` without calling `reset_model_cache()`. Harmless today; load-bearing once `_FAILURE_STATE` shares the same reset hook.
+- [x] 1.1 Add a module-level `_FAILURE_STATE` holding a single process-wide consecutive-failure count plus the last error signature, guarded by the existing `_CACHE_LOCK`, sibling to `_MODEL_CACHE`. It MUST NOT be instance state (a fresh reranker is built per `search()` call, so the counter would never increment) and MUST NOT live inside `_MODEL_CACHE` (that dict is written only on successful load, so a permanently failing model has no entry). Single count, not keyed by model ID — see design.md for the split-counter trap.
+- [x] 1.2 Define the escalation threshold as a named module-level constant (3 consecutive failures) — not an env var (design.md: premature configurability).
+- [x] 1.3 Add a shared helper that records a failure: compare the new error's signature against the stored one, increment or reset, and return the log level to use (WARNING below threshold, ERROR at or above).
+- [x] 1.4 Wire the helper into `rerank()`'s inference `except Exception` handler (the ADR-029 CoreML shape).
+- [x] 1.5 Wire the helper into `_load_model()`'s `except Exception` handler. Because `_load_model` retries on every call, a permanently bad model ID is the other half of the "warning on every call, invisible" pattern — covering only 1.4 would leave it untouched.
+- [x] 1.6 Reset the counter on any successful load or successful inference.
+- [x] 1.7 Extend `reset_model_cache()` to clear `_FAILURE_STATE` so no count leaks across test cases.
+- [x] 1.8 Test: a single failure logs WARNING and falls back gracefully, `tests/test_reranker.py`.
+- [x] 1.9 Test: the same error signature repeated to the threshold escalates to ERROR (assert via `caplog`), `tests/test_reranker.py`.
+- [x] 1.10 Test: a success between failures resets the counter — the next failure logs WARNING, not ERROR.
+- [x] 1.11 **Test through the un-injected path**: drive `search()` with `reranker=None` so a fresh instance is constructed per call, and assert escalation still fires. The existing `TestPersistentRerankFailureFallback` injects a single instance via DI, so a test written in that style would pass while production never escalates — the exact ADR-029 trap. This test is what proves the counter survives instance churn.
+- [x] 1.12 Test: `reset_model_cache()` clears the counter, `tests/test_reranker.py`.
+- [x] 1.13 Fix the pre-existing cache leak in `tests/test_retrieval.py::test_transient_failure_retries_then_succeeds` — it populates `_MODEL_CACHE` via `_load_model()` without calling `reset_model_cache()`. Harmless today; load-bearing once `_FAILURE_STATE` shares the same reset hook.
 
 ## 2. Reranker failure reason in diagnostics (`core/retrieval/reranker.py`, `core/retrieval/pipeline.py`)
 
-- [ ] 2.1 Record the failure on the reranker instance (e.g. `self.last_failure_reason`), set in both failure handlers and cleared on success.
-- [ ] 2.2 In `search()`, after the `rerank()` call, read it back with `getattr` and override the policy-derived `rerank_reason` when present. Required because `search` currently assigns `rerank_reason` unconditionally from the policy resolver *after* reranking, clobbering anything the reranker wrote into the result dicts.
-- [ ] 2.3 Test: `search(..., rerank=True, include_diagnostics=True)` with a failing reranker returns a `rerank_reason` describing the failure, not the policy string.
-- [ ] 2.4 Test: `include_diagnostics=False` (default) result shape is unchanged — no new keys leak into the public result dict.
+- [x] 2.1 Record the failure on the reranker instance (e.g. `self.last_failure_reason`), set in both failure handlers and cleared on success.
+- [x] 2.2 In `search()`, after the `rerank()` call, read it back with `getattr` and override the policy-derived `rerank_reason` when present. Required because `search` currently assigns `rerank_reason` unconditionally from the policy resolver *after* reranking, clobbering anything the reranker wrote into the result dicts.
+- [x] 2.3 Test: `search(..., rerank=True, include_diagnostics=True)` with a failing reranker returns a `rerank_reason` describing the failure, not the policy string.
+- [x] 2.4 Test: `include_diagnostics=False` (default) result shape is unchanged — no new keys leak into the public result dict.
 
 ## 3. Threshold scaling follows rerank outcome (`core/retrieval/pipeline.py`, `core/retrieval/policy.py`)
 
-- [ ] 3.1 Change the `_effective_threshold` call site to pass whether reranking actually *succeeded* (derivable from the `reranked` flag already propagated onto results) rather than `effective_rerank`, which is only the request. Leave the ÷30 factor itself unchanged — it is calibrated (CLAUDE.md gotcha #3).
-- [ ] 3.2 Test: successful reranking still applies the ÷30-scaled threshold (regression guard on existing `TestThresholdScaling`).
-- [ ] 3.3 Test: a failed reranker with `rerank=True` applies the **unscaled** threshold, so un-reranked cosine scores are filtered at the value the caller asked for.
-- [ ] 3.4 Test: `rerank=False` applies the unscaled threshold (unchanged behaviour).
+- [x] 3.1 Change the `_effective_threshold` call site to pass whether reranking actually *succeeded* (derivable from the `reranked` flag already propagated onto results) rather than `effective_rerank`, which is only the request. Leave the ÷30 factor itself unchanged — it is calibrated (CLAUDE.md gotcha #3).
+- [x] 3.2 Test: successful reranking still applies the ÷30-scaled threshold (regression guard on existing `TestThresholdScaling`).
+- [x] 3.3 Test: a failed reranker with `rerank=True` applies the **unscaled** threshold, so un-reranked cosine scores are filtered at the value the caller asked for.
+- [x] 3.4 Test: `rerank=False` applies the unscaled threshold (unchanged behaviour).
 
 ## 4. RERANK_ONNX_PROVIDER=coreml guard test coverage (`core/retrieval/reranker.py`)
 
-- [ ] 4.1 Test: `RERANK_ONNX_PROVIDER` unset → ONNX session constructed with `["CPUExecutionProvider"]` only.
-- [ ] 4.2 Test: `RERANK_ONNX_PROVIDER=coreml` with `CoreMLExecutionProvider` mocked into `ort.get_available_providers()` → session constructed with `["CoreMLExecutionProvider", "CPUExecutionProvider"]`.
-- [ ] 4.3 Test: `RERANK_ONNX_PROVIDER=coreml` with `CoreMLExecutionProvider` NOT available → session falls back to `["CPUExecutionProvider"]` only, no error.
+- [x] 4.1 Test: `RERANK_ONNX_PROVIDER` unset → ONNX session constructed with `["CPUExecutionProvider"]` only.
+- [x] 4.2 Test: `RERANK_ONNX_PROVIDER=coreml` with `CoreMLExecutionProvider` mocked into `ort.get_available_providers()` → session constructed with `["CoreMLExecutionProvider", "CPUExecutionProvider"]`.
+- [x] 4.3 Test: `RERANK_ONNX_PROVIDER=coreml` with `CoreMLExecutionProvider` NOT available → session falls back to `["CPUExecutionProvider"]` only, no error.
 
 ## 5. Composition root fails fast on construction errors (`compose.py::ensure_runtime_setup`)
 
@@ -116,8 +116,8 @@ The change stays open across both PRs with tasks.md ticked progressively. Archiv
 
 ## 8. Documentation and follow-up
 
-- [ ] 8.1 Add a "Resolved by" note to `docs/adr/029-disable-coreml-for-reranker-silent-fallback-lesson.md` closing decision #3's refactor reminder. It MUST state that bullet 3's "log at ERROR, not WARNING" shipped as *thresholded* escalation, not unconditional ERROR, and why (design.md) — so a later reader does not assume it shipped verbatim.
-- [ ] 8.2 Update `docs/guides/reranker.md` — the escalation threshold, the `rerank_reason` diagnostic, and the corrected threshold-scaling condition (its "Threshold auto-scaling" and "Fallback" sections both describe current behaviour that changes here).
+- [x] 8.1 Add a "Resolved by" note to `docs/adr/029-disable-coreml-for-reranker-silent-fallback-lesson.md` closing decision #3's refactor reminder. It MUST state that bullet 3's "log at ERROR, not WARNING" shipped as *thresholded* escalation, not unconditional ERROR, and why (design.md) — so a later reader does not assume it shipped verbatim.
+- [x] 8.2 Update `docs/guides/reranker.md` — the escalation threshold, the `rerank_reason` diagnostic, and the corrected threshold-scaling condition (its "Threshold auto-scaling" and "Fallback" sections both describe current behaviour that changes here).
 - [ ] 8.3 Update `docs/guides/configuration.md` — the six env vars that now fail startup on an unrecognised value, their accepted sets, and a migration note for anyone relying on the old silent clamp. Note that the failure surfaces at import time.
 - [ ] 8.4 File a separate OpenSpec change proposal, "move ensure_runtime_setup out of module scope", covering `compose.py`'s module-scope call, the module-scope constructions in `transports/mcp.py`, the experiment runners that import `compose` at module scope, and the `VECTOR_STORE` path — so every fail-loud path gets true startup-time failure, not just the ones this incident fix touches.
 - [ ] 8.5 Grep `docs/guides/` for any other place documenting the old warn-and-clamp behaviour or the old accepted-value sets and update it (doc-rot check per AGENTS.md Change Workflow).

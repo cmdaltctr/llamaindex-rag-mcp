@@ -59,7 +59,52 @@ TOKENIZER_MAX_LENGTH = int(os.getenv("RERANK_TOKENIZER_MAX_LENGTH", "2048"))
 # so the model is loaded once per process (former singleton semantics).
 
 _MODEL_CACHE: dict[str, tuple[Any, Any, int]] = {}
-_CACHE_LOCK: threading.Lock = threading.Lock()
+# RLock (not Lock): _record_failure/_reset_failure_state are called from
+# inside _load_model()'s existing `with _CACHE_LOCK:` block as well as
+# standalone from rerank(), so the lock must support reentrant acquisition.
+_CACHE_LOCK: threading.RLock = threading.RLock()
+
+# ── Process-wide failure-escalation state (ADR-029 decision #3) ────────
+# Tracks consecutive same-signature failures across both the load and
+# inference failure paths so a persistent outage escalates from WARNING
+# to ERROR instead of repeating an invisible warning on every call.
+#
+# Single process-wide count, NOT keyed by model ID: the pipeline's
+# un-injected path (`core/retrieval/registry.py`) constructs a reranker
+# with no model_id, falling back to DEFAULT_RERANK_MODEL, while
+# compose.build_reranker() passes the configured model — keying by model
+# ID would split one outage's failures across two counters, neither of
+# which would reach the threshold (design.md "split-counter trap").
+_FAILURE_THRESHOLD = 3
+_FAILURE_STATE: dict[str, Any] = {"count": 0, "last_signature": None}
+
+
+def _record_failure(error: BaseException) -> int:
+    """Record a reranker failure and return the log level to use.
+
+    Compares the new error's string signature against the stored one:
+    the same signature increments the consecutive count, a different one
+    resets it to 1.  Must be called with ``_CACHE_LOCK`` held.
+
+    Returns:
+        ``logging.ERROR`` once the count reaches ``_FAILURE_THRESHOLD``,
+        otherwise ``logging.WARNING``.
+    """
+    signature = str(error)
+    if _FAILURE_STATE["last_signature"] == signature:
+        _FAILURE_STATE["count"] += 1
+    else:
+        _FAILURE_STATE["count"] = 1
+        _FAILURE_STATE["last_signature"] = signature
+    if _FAILURE_STATE["count"] >= _FAILURE_THRESHOLD:
+        return logging.ERROR
+    return logging.WARNING
+
+
+def _reset_failure_state() -> None:
+    """Clear the consecutive-failure count. Must be called with ``_CACHE_LOCK`` held."""
+    _FAILURE_STATE["count"] = 0
+    _FAILURE_STATE["last_signature"] = None
 
 
 def reset_model_cache() -> None:
@@ -67,10 +112,13 @@ def reset_model_cache() -> None:
 
     Replaces the former ``CrossEncoderReranker._instance = None`` reset.
     Tests that need a fresh model-load path call this in setup/teardown
-    so no loaded session leaks across test cases.
+    so no loaded session leaks across test cases.  Also clears the
+    failure-escalation state so no consecutive-failure count leaks
+    across test cases.
     """
     with _CACHE_LOCK:
         _MODEL_CACHE.clear()
+        _reset_failure_state()
 
 
 def _sigmoid(value: float) -> float:
@@ -167,7 +215,14 @@ class CrossEncoderReranker:
         self._loaded: bool = False
         self._load_attempted: bool = False
         self._load_error: str | None = None
-        self._effective_max_length: int = tokenizer_max_length or TOKENIZER_MAX_LENGTH
+        self._effective_max_length: int = (
+            tokenizer_max_length or TOKENIZER_MAX_LENGTH
+        )
+        # Per-call failure reason surfaced through pipeline diagnostics
+        # (`rerank_reason`).  Unlike `_FAILURE_STATE`, this is instance
+        # state deliberately — it describes only this call, not a
+        # process-wide streak, and a fresh reranker is built per search().
+        self.last_failure_reason: str | None = None
 
     # ── Model loading ──────────────────────────────────────────────────
 
@@ -190,6 +245,8 @@ class CrossEncoderReranker:
                 self._loaded = True
                 self._load_attempted = True
                 self._load_error = None
+                self.last_failure_reason = None
+                _reset_failure_state()
                 return
 
             # If a previous attempt failed, allow retry — the failure
@@ -272,6 +329,8 @@ class CrossEncoderReranker:
                 )
                 self._loaded = True
                 self._load_error = None
+                self.last_failure_reason = None
+                _reset_failure_state()
                 _MODEL_CACHE[self._model_id] = (
                     self._session,
                     self._tokenizer,
@@ -283,10 +342,13 @@ class CrossEncoderReranker:
                 )
             except Exception as exc:
                 self._load_error = str(exc)
-                logger.warning(
-                    "Failed to load reranker model '%s': %s. Falling back to un-reranked results.",
-                    self._model_id,
-                    exc,
+                self.last_failure_reason = f"model load failed: {exc}"
+                level = _record_failure(exc)
+                logger.log(
+                    level,
+                    "Failed to load reranker model '%s': %s. "
+                    "Falling back to un-reranked results.",
+                    self._model_id, exc,
                 )
 
     # ── Public API ─────────────────────────────────────────────────────
@@ -357,9 +419,13 @@ class CrossEncoderReranker:
             # Normalise raw logits to (0, 1) via sigmoid.
             scores: list[float] = [_sigmoid(v) for v in all_logits]
         except Exception as exc:
-            logger.warning(
-                "Reranker inference failed: %s. Returning un-reranked results.",
-                exc,
+            self.last_failure_reason = f"inference failed: {exc}"
+            with _CACHE_LOCK:
+                level = _record_failure(exc)
+            logger.log(
+                level,
+                "Reranker inference failed: %s. "
+                "Returning un-reranked results.", exc,
             )
             for r in results:
                 r["_reranked"] = False
@@ -383,6 +449,10 @@ class CrossEncoderReranker:
         for result, score in zip(results, scores, strict=True):
             result["score"] = score
             result["_reranked"] = True
+
+        self.last_failure_reason = None
+        with _CACHE_LOCK:
+            _reset_failure_state()
 
         results.sort(key=lambda r: r["score"], reverse=True)
         return results[:top_k]

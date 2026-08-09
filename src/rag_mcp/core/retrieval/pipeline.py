@@ -322,6 +322,11 @@ def search(
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:
             r["reranked"] = r.pop("_reranked", False)
+        # The reranker's own failure reason (if any) is more specific than
+        # the policy string computed before reranking ran — surface it.
+        failure_reason = getattr(reranker, "last_failure_reason", None)
+        if failure_reason:
+            rerank_reason = failure_reason
 
     # Filter by similarity threshold (applies after reranking).
     #
@@ -329,7 +334,13 @@ def search(
     # than cosine similarity.  A cosine threshold of 0.3 is a weak match,
     # but the reranker may assign a valid result only 0.015 (sigmoid).
     # Scale the threshold down by 30× when reranking to avoid over-filtering.
-    effective_threshold = _effective_threshold(similarity_threshold, effective_rerank)
+    # Uses whether reranking actually succeeded (the "reranked" flag), not
+    # merely whether it was requested — a failed reranker leaves raw cosine
+    # scores in place, which the ÷30-scaled threshold would over-admit.
+    rerank_succeeded = effective_rerank and bool(results) and all(
+        r.get("reranked", False) for r in results
+    )
+    effective_threshold = _effective_threshold(similarity_threshold, rerank_succeeded)
     if effective_threshold > 0.0:
         results = [r for r in results if r["score"] >= effective_threshold]
 

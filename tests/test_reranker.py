@@ -12,6 +12,7 @@ Tests cover:
 from __future__ import annotations
 
 import builtins
+import logging
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -624,3 +625,202 @@ class TestCrossEncoderRerankerModelLoading:
         assert reranker._loaded is True
         assert reranker._load_error is None
         assert reranker._session is mock_session
+
+
+# ── Failure escalation tests (§1, ADR-029 decision #3) ──────────────────────
+
+
+class TestFailureEscalation:
+    """Tests for the module-level consecutive-failure escalation state."""
+
+    def setup_method(self) -> None:
+        """Reset the failure counter and model cache before each test."""
+        reset_model_cache()
+
+    def teardown_method(self) -> None:
+        """Reset the failure counter and model cache after each test."""
+        reset_model_cache()
+
+    def _failing_reranker(self, message: str) -> CrossEncoderReranker:
+        """Build a loaded reranker whose inference always raises ``message``."""
+        reranker = CrossEncoderReranker()
+        mock_session = MagicMock()
+        mock_session.run.side_effect = RuntimeError(message)
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+        return reranker
+
+    def _succeeding_reranker(self) -> CrossEncoderReranker:
+        """Build a loaded reranker whose inference always succeeds."""
+        reranker = CrossEncoderReranker()
+        mock_session = MagicMock()
+        mock_session.run.return_value = [np.array([[1.0]])]
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+        reranker._session = mock_session
+        reranker._tokenizer = mock_tokenizer
+        reranker._loaded = True
+        return reranker
+
+    def test_single_failure_logs_warning_and_falls_back(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A single inference failure logs WARNING and falls back gracefully."""
+        reranker = self._failing_reranker("boom")
+
+        with caplog.at_level(
+            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
+        ):
+            out = reranker.rerank(
+                "query", [{"text": "doc", "score": 0.5}], top_k=5
+            )
+
+        assert out[0]["_reranked"] is False
+        assert caplog.records
+        assert caplog.records[-1].levelno == logging.WARNING
+
+    def test_repeated_same_error_escalates_to_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """The same error signature repeated to the threshold escalates to ERROR."""
+        with caplog.at_level(
+            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
+        ):
+            for _ in range(3):
+                reranker = self._failing_reranker("persistent boom")
+                reranker.rerank(
+                    "query", [{"text": "doc", "score": 0.5}], top_k=5
+                )
+
+        levels = [r.levelno for r in caplog.records]
+        assert levels == [logging.WARNING, logging.WARNING, logging.ERROR]
+
+    def test_success_between_failures_resets_counter(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A success between failures resets the counter; the next failure warns."""
+        with caplog.at_level(
+            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
+        ):
+            for _ in range(2):
+                reranker = self._failing_reranker("flaky boom")
+                reranker.rerank(
+                    "query", [{"text": "doc", "score": 0.5}], top_k=5
+                )
+
+            success = self._succeeding_reranker()
+            success.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
+
+            caplog.clear()
+            reranker = self._failing_reranker("flaky boom")
+            reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
+
+        assert caplog.records
+        assert caplog.records[-1].levelno == logging.WARNING
+
+    def test_reset_model_cache_clears_failure_counter(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """reset_model_cache() clears the failure counter (task 1.12)."""
+        with caplog.at_level(
+            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
+        ):
+            for _ in range(2):
+                reranker = self._failing_reranker("cache-reset boom")
+                reranker.rerank(
+                    "query", [{"text": "doc", "score": 0.5}], top_k=5
+                )
+
+            reset_model_cache()
+
+            caplog.clear()
+            reranker = self._failing_reranker("cache-reset boom")
+            reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
+
+        assert caplog.records
+        assert caplog.records[-1].levelno == logging.WARNING
+
+
+# ── RERANK_ONNX_PROVIDER guard tests (§4) ────────────────────────────────────
+
+
+class TestCoreMLProviderGuard:
+    """Tests for the RERANK_ONNX_PROVIDER guard (previously untested)."""
+
+    def setup_method(self) -> None:
+        reset_model_cache()
+
+    def teardown_method(self) -> None:
+        reset_model_cache()
+
+    def _load_with_providers(self, available: list[str]) -> list[str]:
+        """Drive _load_model() and capture the providers passed to InferenceSession."""
+        reranker = CrossEncoderReranker(model_id="test/coreml-model")
+        mock_session = MagicMock()
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.model_max_length = 1000000
+
+        captured: dict[str, list[str]] = {}
+
+        def _capture_session(path, providers=None, **kwargs):
+            captured["providers"] = providers
+            return mock_session
+
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant",
+            return_value=["onnx/model.onnx"],
+        ):
+            with patch(
+                "huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"
+            ):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained",
+                    return_value=mock_tokenizer,
+                ):
+                    with patch(
+                        "onnxruntime.get_available_providers",
+                        return_value=available,
+                    ):
+                        with patch(
+                            "onnxruntime.InferenceSession",
+                            side_effect=_capture_session,
+                        ):
+                            reranker._load_model()
+
+        assert reranker._loaded is True
+        return captured["providers"]
+
+    def test_provider_unset_uses_cpu_only(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No RERANK_ONNX_PROVIDER set → CPUExecutionProvider only."""
+        monkeypatch.delenv("RERANK_ONNX_PROVIDER", raising=False)
+        providers = self._load_with_providers(available=["CPUExecutionProvider"])
+        assert providers == ["CPUExecutionProvider"]
+
+    def test_coreml_requested_and_available_prefers_coreml(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """RERANK_ONNX_PROVIDER=coreml with CoreML available → CoreML first."""
+        monkeypatch.setenv("RERANK_ONNX_PROVIDER", "coreml")
+        providers = self._load_with_providers(
+            available=["CoreMLExecutionProvider", "CPUExecutionProvider"]
+        )
+        assert providers == ["CoreMLExecutionProvider", "CPUExecutionProvider"]
+
+    def test_coreml_requested_but_unavailable_falls_back_to_cpu(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """RERANK_ONNX_PROVIDER=coreml with CoreML unavailable → CPU only, no error."""
+        monkeypatch.setenv("RERANK_ONNX_PROVIDER", "coreml")
+        providers = self._load_with_providers(available=["CPUExecutionProvider"])
+        assert providers == ["CPUExecutionProvider"]
