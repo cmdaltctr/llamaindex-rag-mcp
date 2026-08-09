@@ -428,6 +428,55 @@ class TestPipelineDegradationAggregation:
         unmarked = [fd for fd in result["file_details"] if fd["file"] != "b.txt"]
         assert all("metadata_degraded" not in fd for fd in unmarked)
 
+    def test_embedding_error_preserves_degradation_count(self, tmp_path, monkeypatch) -> None:
+        """Scenario: embedding failure preserves the degradation count.
+
+        Files are read and metadata extracted (some degrading) before
+        ``embed_and_write_async`` raises. The error result must still
+        carry ``metadata_degraded`` so the caller knows degradation
+        happened, even though the embedding step failed.
+        """
+        (tmp_path / "a.txt").write_text("hello")
+        (tmp_path / "b.txt").write_text("world")
+
+        from rag_mcp.core.ingestion.chunker import _ChunkResult
+
+        async def _fake_read_and_chunk(file_path, **kwargs):
+            degraded = file_path.name == "b.txt"
+            return _ChunkResult([], metadata_degraded=degraded)
+
+        monkeypatch.setattr(
+            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            _fake_read_and_chunk,
+        )
+
+        async def _failing_embed(*args, **kwargs):
+            raise RuntimeError("embedding backend down")
+
+        monkeypatch.setattr(
+            "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+            _failing_embed,
+        )
+
+        from rag_mcp.core.ingestion import ingest_path_async
+
+        result = asyncio.run(
+            ingest_path_async(str(tmp_path), collection_name="degr_embed_err")
+        )
+        assert result["status"] == "error"
+        assert result["error_type"] == "embedding"
+        assert result["metadata_degraded"] == 1
+
+    def test_path_not_found_includes_zero_degraded(self, monkeypatch) -> None:
+        """Every result dict includes ``metadata_degraded``, even early exits."""
+        from rag_mcp.core.ingestion import ingest_path_async
+
+        result = asyncio.run(
+            ingest_path_async("/nonexistent/path", collection_name="degr_404")
+        )
+        assert result["status"] == "error"
+        assert result["metadata_degraded"] == 0
+
 
 # ── Task 4.5: metadata dict shape is unchanged by the degradation signal ─
 

@@ -62,6 +62,7 @@ async def ingest_path_async(
             "file_details": [],
             "collection": collection_name,
             "chunks_removed": 0,
+            "metadata_degraded": 0,
         }
 
     if path_obj.is_file() and path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
@@ -75,6 +76,7 @@ async def ingest_path_async(
             "file_details": [],
             "collection": collection_name,
             "chunks_removed": 0,
+            "metadata_degraded": 0,
         }
 
     # Resolve settings ONCE at the entry-point boundary; everything below
@@ -207,6 +209,7 @@ async def ingest_path_async(
             "file_details": file_details + skipped_details,
             "collection": collection_name,
             "chunks_removed": chunks_removed_total,
+            "metadata_degraded": metadata_degraded_count,
         }
     except RuntimeError as exc:
         return {
@@ -216,6 +219,7 @@ async def ingest_path_async(
             "file_details": file_details + skipped_details,
             "collection": collection_name,
             "chunks_removed": chunks_removed_total,
+            "metadata_degraded": metadata_degraded_count,
         }
 
     all_details = file_details + skipped_details
@@ -243,6 +247,7 @@ async def ingest_path_async(
             "chunks_removed": chunks_removed_total,
             "collection": collection_name,
             "file_details": all_details,
+            "metadata_degraded": metadata_degraded_count,
         }
     if errors:
         result["warnings"] = errors
