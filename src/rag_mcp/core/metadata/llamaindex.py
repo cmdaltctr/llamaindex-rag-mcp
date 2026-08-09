@@ -218,7 +218,15 @@ async def _extract_llamaindex_async(
         # Call arun() directly — no nested-loop workaround needed.
         enriched_nodes = await pipeline.arun(documents=[doc])
 
-        return _aggregate_llamaindex_metadata(enriched_nodes)
+        result = _aggregate_llamaindex_metadata(enriched_nodes)
+        # The pipeline ran but produced no usable keywords or title — the
+        # LLM's output was empty or garbage.  _derive_category returns
+        # "uncategorised" only when every keyword normalises to nothing
+        # and the title is absent, so this is a real fallback, not a
+        # legitimate "I don't know" from the model.
+        if result["category"] == "uncategorised":
+            _signal_degraded()
+        return result
 
     except Exception as exc:
         logger.warning(

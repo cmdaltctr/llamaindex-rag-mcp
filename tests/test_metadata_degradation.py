@@ -285,8 +285,61 @@ class TestLlamaIndexSignalsDegraded:
 
         assert asyncio.run(_run()) is True
 
+    def test_pipeline_empty_metadata_signals_degraded(self, monkeypatch) -> None:
+        """Pipeline succeeds but nodes carry no usable metadata.
 
-# ── Task 4.1: extract_metadata_with_status_async detection rule ─────────
+        The LLM responded, the pipeline ran, but every node's metadata
+        is empty — _derive_category returns "uncategorised".  This is a
+        fallback that must be signalled, not silently indexed.
+        """
+        import sys
+        from unittest.mock import MagicMock, AsyncMock
+
+        # _extract_llamaindex_async accesses resolved.chunk_size directly
+        # (a pre-existing flat-alias gap). Add the property for this test.
+        from rag_mcp.core.settings import EffectiveSettings as _ES
+        monkeypatch.setattr(_ES, "chunk_size",
+                            property(lambda self: self.chunking.chunk_size),
+                            raising=False)
+        monkeypatch.setattr(_ES, "chunk_overlap",
+                            property(lambda self: self.chunking.chunk_overlap),
+                            raising=False)
+
+        monkeypatch.setitem(sys.modules, "llama_index.llms.ollama", MagicMock())
+        monkeypatch.setattr(sys.modules["llama_index.llms.ollama"], "Ollama", MagicMock())
+
+        mock_extractors = MagicMock()
+        mock_extractors.TitleExtractor = MagicMock()
+        mock_extractors.KeywordExtractor = MagicMock()
+        mock_extractors.SummaryExtractor = MagicMock()
+        monkeypatch.setitem(sys.modules, "llama_index.core.extractors", mock_extractors)
+        monkeypatch.setitem(sys.modules, "llama_index.core.node_parser", MagicMock())
+
+        # Node with empty metadata — _aggregate_llamaindex_metadata skips it.
+        empty_node = MagicMock()
+        empty_node.metadata = {}
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.arun = AsyncMock(return_value=[empty_node])
+        mock_ingestion = MagicMock()
+        mock_ingestion.IngestionPipeline = MagicMock(return_value=mock_pipeline)
+        monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
+
+        from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
+
+        settings = EffectiveSettings(local_backend="ollama")
+
+        async def _run():
+            token = _degradation_flag.set(False)
+            try:
+                result = await _extract_llamaindex_async("text", "f.txt", settings)
+                return result, _degradation_flag.get()
+            finally:
+                _degradation_flag.reset(token)
+
+        result, degraded = asyncio.run(_run())
+        assert result["category"] == "uncategorised"
+        assert degraded is True
 
 
 class TestExtractMetadataWithStatusAsync:
