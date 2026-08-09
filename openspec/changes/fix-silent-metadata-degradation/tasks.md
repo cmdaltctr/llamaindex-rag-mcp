@@ -1,6 +1,6 @@
 ## 1. Settings: six per-provider timeout overrides
 
-- [x] 1.1 Add `{llamacpp,ollama,openrouter}_classify_timeout` and `{llamacpp,ollama,openrouter}_pipeline_timeout` to `MetadataSettings` in `core/metadata/settings.py`, all `float | None = Field(default=None, gt=0)`, with docstring comments.
+- [x] 1.1 Add `{llamacpp,ollama,openrouter}_classify_timeout_override` and `{llamacpp,ollama,openrouter}_pipeline_timeout_override` to `MetadataSettings` in `core/metadata/settings.py`, all `float | None = Field(default=None, gt=0)`, with docstring comments.
 - [x] 1.2 Mirror the six fields into the `MetadataSettings` block in `core/settings.py` with identical defaults and validators.
 - [x] 1.3 Extend the settings round-trip/parity test to assert the two models declare the same fields and defaults (fails if one drifts).
 - [x] 1.4 Document the six vars in `.env.example` and `config/defaults.yaml` (nested `metadata.*`), noting each falls back to the shared `classify_timeout`/`pipeline_timeout`.
