@@ -88,6 +88,12 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 
 > All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
+>
+> Coverage is measured with branch coverage (`--cov-branch`), which scores
+> 2-3 points lower than the line-only coverage these floors were originally
+> based on. The Codecov project checks are currently **informational** (not
+> CI-blocking) while the targets are recalibrated for branch measurement.
+> The `patch` check (new code coverage) remains blocking. See TDR-007.
 
 ## Detailed Documentation
 

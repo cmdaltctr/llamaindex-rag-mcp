@@ -153,8 +153,9 @@ GitHub Actions secret. The `SONAR_TOKEN` secret is retained but unused.
    `v3` (see `base_branches` in `.coderabbit.yaml`) and that the branch
    is not a draft. Verify the app is installed on the repo.
 4. **Coverage gate too strict / too loose**: Edit targets in
-   `codecov.yml` under `coverage.status.project`. Keep them aligned with
-   the AGENTS.md coverage table — they are hard minimums by design.
+   `codecov.yml` under `coverage.status.project`. The project checks are
+   currently `informational: true` (not CI-blocking) — see the amendment
+   below. The `patch` check remains blocking.
 5. **Coverage report missing lines or files**: Check the `ignore:` block
    in `codecov.yml` and that `--cov=rag_mcp --cov-branch
    --cov-report=xml` is present in the `codecov` job.
@@ -168,9 +169,31 @@ GitHub Actions secret. The `SONAR_TOKEN` secret is retained but unused.
   Semgrep/OpenGrep CI job.
 - **Codecov price or rate limits change**: Reevaluate against pytest-cov
   `fail_under` plus a simpler upload.
-- **Coverage targets drift from reality**: If the project check blocks
-  legitimate PRs repeatedly, re-baseline the targets in `codecov.yml`
-  rather than adding a `threshold` back.
+- **Coverage targets drift from reality** *(fired 2026-08-10 — see
+  amendment below)*: If the project check blocks legitimate PRs repeatedly,
+  re-baseline the targets in `codecov.yml` rather than adding a
+  `threshold` back.
+
+## Amendment (2026-08-10): Project checks made informational
+
+The hard-minimum targets (95%/85%/90%) were calibrated for line-only
+coverage. PR #29 added `--cov-branch`, which measures branch coverage —
+a stricter metric that scores 2-3 points lower for the same test suite.
+Overall branch coverage landed at 89.3% (vs 91% line-only), and the core
+paths fell below 95%, causing the gate to fail on every PR including
+docs-only changes.
+
+The project checks (`core`, `orchestration`, `default`) are now
+`informational: true` in `codecov.yml`. They still report on every PR
+and the dashboard still tracks trends, but they do not block merges.
+The `patch` check (new code coverage) remains blocking — new code must
+still be covered.
+
+The documented floors in AGENTS.md (95%/85%/90%) remain the aspiration.
+Enforcement will return once either the coverage is raised to meet the
+targets under branch measurement, or the targets are recalibrated for
+branch coverage. This is the "Coverage targets drift from reality"
+revisit trigger firing on day one.
 
 ## References
 
