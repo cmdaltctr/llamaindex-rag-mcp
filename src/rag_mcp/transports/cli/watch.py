@@ -55,7 +55,7 @@ def watch(
       server) simultaneously on the same ChromaDB — two processes do
       not share the internal write lock.
     """
-    from ...daemon.watcher import watch_directory
+    from ...daemon.runner import watch_directory
 
     watch_directory(
         path,

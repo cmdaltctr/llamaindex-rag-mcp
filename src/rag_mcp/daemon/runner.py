@@ -6,12 +6,14 @@ design.md D8 proposed a ``debounce.py``, but the debounce timers are per-file
 state owned by :class:`DocumentIngestHandler` and cannot be lifted out without
 inventing an artificial seam. The natural boundary is event *handling* (which
 stays in ``watcher.py``) versus daemon *lifecycle* — observer setup, signal
-handling, and the content-hash helper — which lives here.
+handling — which lives here.
+
+The content-hash helper (``_sha256_file``) and ``MAX_FILE_SIZE`` moved to
+``_shared.py`` to break the watcher↔runner import cycle.
 """
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import signal
 from pathlib import Path
@@ -20,42 +22,12 @@ from watchdog.observers import Observer
 
 from .watcher import (
     DEFAULT_DEBOUNCE_SECONDS,
-    MAX_FILE_SIZE,
     MIN_DEBOUNCE_SECONDS,
     SUPPORTED_EXTENSIONS,
     DocumentIngestHandler,
 )
 
 logger = logging.getLogger(__name__)
-
-
-# ── Helper functions ─────────────────────────────────────────────────────────
-
-
-def _sha256_file(path: Path) -> str:
-    """Compute the SHA-256 hash of a file's contents.
-
-    Args:
-        path: Path to the file.
-
-    Returns:
-        Hex-encoded SHA-256 digest.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        OSError: If the file cannot be read or exceeds
-            ``MAX_FILE_SIZE``.
-    """
-    file_stat = path.stat()
-    if file_stat.st_size > MAX_FILE_SIZE:
-        raise OSError(
-            f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_stat.st_size} bytes)"
-        )
-    hasher = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
 
 
 # ── CLI entry point ──────────────────────────────────────────────────────────

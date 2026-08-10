@@ -27,6 +27,7 @@ from pathlib import Path
 from watchdog.events import PatternMatchingEventHandler
 
 from ..core.ingestion.loader import SUPPORTED_EXTENSIONS
+from ._shared import _sha256_file
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,6 @@ MIN_DEBOUNCE_SECONDS = 0.5
 MAX_CONCURRENT_INGESTS = 2
 CONSECUTIVE_ERROR_THRESHOLD = 5
 MAX_SHUTDOWN_SECONDS = 30
-MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
 MAX_HASH_CACHE_ENTRIES = 50_000
 
 
@@ -404,13 +404,3 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         """Return the number of currently in-flight ingestions."""
         with self._in_flight_lock:
             return self._in_flight_count
-
-
-# ── Re-exports ───────────────────────────────────────────────────────────────
-# Daemon lifecycle lives in ``runner.py`` after the task 8.6 split.  The
-# ``watch_directory`` re-export keeps the watcher module the public import
-# surface; consumers import it here, and the runner module cannot be imported
-# first because of the watcher<->runner import cycle (runner imports the
-# shared constants from watcher, watcher imports the hash helper from runner).
-
-from .runner import _sha256_file, watch_directory  # noqa: E402, F401

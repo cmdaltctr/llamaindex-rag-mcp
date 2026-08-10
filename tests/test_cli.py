@@ -1568,7 +1568,7 @@ class TestWatchCLI:
 
     def test_watch_delegates_to_watcher(self) -> None:
         """watch command delegates to watcher.watch_directory and exits 0."""
-        with patch("rag_mcp.daemon.watcher.watch_directory") as mock_watch:
+        with patch("rag_mcp.daemon.runner.watch_directory") as mock_watch:
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
         assert result.exit_code == 0
         mock_watch.assert_called_once()
@@ -1580,7 +1580,7 @@ class TestWatchCLI:
     def test_watch_system_exit_propagates(self) -> None:
         """SystemExit from watcher propagates as typer.Exit with matching code."""
         with patch(
-            "rag_mcp.daemon.watcher.watch_directory",
+            "rag_mcp.daemon.runner.watch_directory",
             side_effect=SystemExit(1),
         ):
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])

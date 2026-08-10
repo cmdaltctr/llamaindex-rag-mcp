@@ -14,13 +14,13 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
+from rag_mcp.daemon.runner import watch_directory
 from rag_mcp.daemon.watcher import (
     CONSECUTIVE_ERROR_THRESHOLD,
     MAX_CONCURRENT_INGESTS,
     MAX_SHUTDOWN_SECONDS,
     DocumentIngestHandler,
     _sha256_file,
-    watch_directory,
 )
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

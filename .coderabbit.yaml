@@ -187,8 +187,10 @@ reviews:
       enabled: true
     actionlint:
       enabled: true
-    semgrep:
+    opengrep:
       enabled: true
+    semgrep:
+      enabled: false
     shellcheck:
       enabled: true
     github-checks:
