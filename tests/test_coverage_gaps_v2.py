@@ -265,10 +265,13 @@ class TestVectordbLazyReexport:
     """The __getattr__ lazy re-export and get_default_store lazy-build cache."""
 
     def test_vector_store_lazy_reexport(self) -> None:
-        """Accessing VectorStore via __getattr__ returns the base class."""
+        """VectorStore is resolved lazily via __getattr__, not imported at module level."""
         import rag_mcp.core.vectordb as vdb
         from rag_mcp.core.vectordb.base import VectorStore
 
+        # If VectorStore were imported eagerly at module top level it would
+        # appear in the module dict.  Its absence proves the __getattr__ path.
+        assert "VectorStore" not in vars(vdb)
         assert vdb.VectorStore is VectorStore
 
     def test_unknown_attribute_raises_attribute_error(self) -> None:

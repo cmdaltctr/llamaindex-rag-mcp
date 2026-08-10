@@ -415,15 +415,17 @@ def test_build_vector_store_chroma_delegates_to_factory() -> None:
 # ── settings_to_effective(None) ─────────────────────────────────────────────
 
 
-def test_settings_to_effective_none_uses_get_settings() -> None:
-    """Passing None delegates to get_settings and returns a resolved EffectiveSettings."""
+def test_settings_to_effective_none_delegates_to_get_settings() -> None:
+    """Passing None calls get_settings and bakes its embed_model into the result."""
     from rag_mcp.compose import settings_to_effective
     from rag_mcp.core.settings import EffectiveSettings
 
-    result = settings_to_effective(None)
+    controlled = _settings(embed_model="controlled-embed-model")
+    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
+        result = settings_to_effective(None)
+    mock_gs.assert_called_once()
     assert isinstance(result, EffectiveSettings)
-    assert result.pdf_reader in ("auto", "liteparse", "pypdfium2", "pypdf")
-    assert result.retrieval.hybrid_sparse_backend in ("bm25", "native")
+    assert result.embed_model == "controlled-embed-model"
 
 
 # ── _resolve_active_strategies ──────────────────────────────────────────────
@@ -526,34 +528,54 @@ def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
 
 
 def test_build_embed_model_none_delegates_to_get_settings() -> None:
-    """Passing None delegates to get_settings() for embed model construction."""
-    with patch("llama_index.embeddings.ollama.OllamaEmbedding"):
+    """Passing None calls get_settings for embed model construction."""
+    controlled = _settings()
+    with (
+        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
+        patch("llama_index.embeddings.ollama.OllamaEmbedding"),
+    ):
         build_embed_model(None)
+    mock_gs.assert_called_once()
 
 
 def test_build_llm_model_none_delegates_to_get_settings() -> None:
-    """Passing None delegates to get_settings() for LLM construction."""
-    with patch("llama_index.llms.ollama.Ollama"):
+    """Passing None calls get_settings for LLM construction."""
+    controlled = _settings()
+    with (
+        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
+        patch("llama_index.llms.ollama.Ollama"),
+    ):
         build_llm_model(None)
+    mock_gs.assert_called_once()
 
 
 def test_build_vector_store_none_delegates_to_get_settings() -> None:
-    """Passing None delegates to get_settings() for vector store construction."""
+    """Passing None calls get_settings for vector store construction."""
     from rag_mcp.compose import build_vector_store
 
-    with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store"):
+    controlled = _settings(vector_store="chroma")
+    with (
+        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
+        patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store"),
+    ):
         build_vector_store(None)
+    mock_gs.assert_called_once()
 
 
 def test_build_profile_resolver_none_delegates_to_get_settings() -> None:
-    """Passing None delegates to get_settings() for profile resolver construction."""
+    """Passing None calls get_settings for profile resolver construction."""
     from rag_mcp.compose import build_profile_resolver
 
-    build_profile_resolver(None)
+    controlled = _settings()
+    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
+        build_profile_resolver(None)
+    mock_gs.assert_called_once()
 
 
 def test_build_profile_resolver_explicit_settings_skips_get_settings() -> None:
-    """Passing explicit settings exercises the non-None branch."""
+    """Passing explicit settings does NOT call get_settings."""
     from rag_mcp.compose import build_profile_resolver
 
-    build_profile_resolver(_settings())
+    with patch("rag_mcp.compose.get_settings") as mock_gs:
+        build_profile_resolver(_settings())
+    mock_gs.assert_not_called()
