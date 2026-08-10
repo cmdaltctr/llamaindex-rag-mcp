@@ -15,11 +15,9 @@ import json
 from pathlib import Path
 from unittest.mock import ANY, patch
 
-import pytest
-
-from conftest import connected_client
 from mcp.types import TextContent
 
+from conftest import connected_client
 
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
@@ -43,14 +41,10 @@ async def test_list_tools_discovers_all_seven(mcp_server) -> None:
 # ── ingest_documents ───────────────────────────────────────────────────────
 
 
-async def test_ingest_documents_with_fixtures_dir(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path) -> None:
     """Ingesting the test fixtures directory must succeed."""
     async with connected_client(mcp_server) as client:
-        result = await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)}
-        )
+        result = await client.call_tool("ingest_documents", {"path": str(fixtures_dir)})
         data = _extract_result(result)
         assert data["status"] == "ok"
         assert data["files_indexed"] > 0
@@ -59,19 +53,13 @@ async def test_ingest_documents_with_fixtures_dir(
 # ── search_documents ───────────────────────────────────────────────────────
 
 
-async def test_search_after_ingest_returns_results(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_search_after_ingest_returns_results(mcp_server, fixtures_dir: Path) -> None:
     """After ingesting fixtures, search must return results with correct shape."""
     async with connected_client(mcp_server) as client:
         # First, ingest
-        await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)}
-        )
+        await client.call_tool("ingest_documents", {"path": str(fixtures_dir)})
         # Then search
-        result = await client.call_tool(
-            "search_documents", {"query": "capital of France"}
-        )
+        result = await client.call_tool("search_documents", {"query": "capital of France"})
         data = _extract_result(result)
         assert isinstance(data, list)
         assert len(data) > 0
@@ -89,13 +77,15 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     """MCP search handler is async and returns the same list-of-dicts shape."""
     import rag_mcp.transports.mcp as server
 
-    expected = [{
-        "score": 0.9,
-        "source": "fixture.txt",
-        "page_label": None,
-        "text": "fixture text",
-        "reranked": False,
-    }]
+    expected = [
+        {
+            "score": 0.9,
+            "source": "fixture.txt",
+            "page_label": None,
+            "text": "fixture text",
+            "reranked": False,
+        }
+    ]
 
     assert inspect.iscoroutinefunction(server.search_documents)
 
@@ -131,13 +121,15 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
     """MCP omitted rerank should pass None so retrieval resolves policy."""
     from rag_mcp.config import get_settings as _gs
 
-    expected = [{
-        "score": 0.9,
-        "source": "fixture.txt",
-        "page_label": None,
-        "text": "fixture text",
-        "reranked": False,
-    }]
+    expected = [
+        {
+            "score": 0.9,
+            "source": "fixture.txt",
+            "page_label": None,
+            "text": "fixture text",
+            "reranked": False,
+        }
+    ]
 
     with patch("rag_mcp.transports.mcp.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -164,17 +156,11 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
 # ── list_indexed_documents ─────────────────────────────────────────────────
 
 
-async def test_list_after_ingest_returns_nonempty(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_list_after_ingest_returns_nonempty(mcp_server, fixtures_dir: Path) -> None:
     """After ingesting, list_indexed_documents must return non-empty."""
     async with connected_client(mcp_server) as client:
-        await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)}
-        )
-        result = await client.call_tool(
-            "list_indexed_documents", {}
-        )
+        await client.call_tool("ingest_documents", {"path": str(fixtures_dir)})
+        result = await client.call_tool("list_indexed_documents", {})
         data = _extract_result(result)
         assert isinstance(data, list)
         assert len(data) > 0
@@ -224,7 +210,8 @@ def _extract_result(result):
 
 
 async def test_ingest_with_collection_parameter(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """ingest_documents with collection param must store in named collection."""
     async with connected_client(mcp_server) as client:
@@ -239,7 +226,8 @@ async def test_ingest_with_collection_parameter(
 
 
 async def test_search_with_collection_parameter(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """search_documents with collection param must search named collection."""
     async with connected_client(mcp_server) as client:
@@ -258,7 +246,8 @@ async def test_search_with_collection_parameter(
 
 
 async def test_list_with_collection_parameter(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """list_indexed_documents with collection param must list named collection."""
     async with connected_client(mcp_server) as client:
@@ -276,7 +265,8 @@ async def test_list_with_collection_parameter(
 
 
 async def test_list_collections_tool(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """list_collections tool must return available collections."""
     async with connected_client(mcp_server) as client:
@@ -304,12 +294,14 @@ async def test_list_collections_tool(
 
 
 async def test_ingest_without_collection_defaults_to_documents(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """ingest_documents without collection must use 'documents' collection."""
     async with connected_client(mcp_server) as client:
         result = await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)},
+            "ingest_documents",
+            {"path": str(fixtures_dir)},
         )
         data = _extract_result(result)
         # Should work without specifying collection
@@ -322,7 +314,8 @@ async def test_search_without_collection_defaults_to_documents(
     """search_documents without collection must work with default."""
     async with connected_client(mcp_server) as client:
         result = await client.call_tool(
-            "search_documents", {"query": "anything"},
+            "search_documents",
+            {"query": "anything"},
         )
         data = _extract_result(result)
         assert isinstance(data, list)
@@ -342,13 +335,15 @@ async def test_list_without_collection_defaults_to_documents(
 
 
 async def test_delete_documents_by_path(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """delete_documents with path must remove chunks and return count."""
     async with connected_client(mcp_server) as client:
         # First ingest
         ingest_result = await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)},
+            "ingest_documents",
+            {"path": str(fixtures_dir)},
         )
         ingest_data = _extract_result(ingest_result)
         assert ingest_data["status"] == "ok"
@@ -356,7 +351,8 @@ async def test_delete_documents_by_path(
         # Delete by path of one file
         sample_file = fixtures_dir / "sample.txt"
         result = await client.call_tool(
-            "delete_documents", {"path": str(sample_file)},
+            "delete_documents",
+            {"path": str(sample_file)},
         )
         data = _extract_result(result)
         assert data["status"] == "ok"
@@ -365,13 +361,15 @@ async def test_delete_documents_by_path(
 
 
 async def test_delete_documents_dry_run(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """delete_documents with dry_run must preview without deleting."""
     async with connected_client(mcp_server) as client:
         # First ingest
         await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)},
+            "ingest_documents",
+            {"path": str(fixtures_dir)},
         )
 
         # Dry run
@@ -386,7 +384,8 @@ async def test_delete_documents_dry_run(
 
 
 async def test_delete_documents_drop_collection(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """delete_documents with only collection must drop the collection."""
     async with connected_client(mcp_server) as client:
@@ -398,7 +397,8 @@ async def test_delete_documents_drop_collection(
 
         # Drop collection
         result = await client.call_tool(
-            "delete_documents", {"collection": "mcp_drop_coll"},
+            "delete_documents",
+            {"collection": "mcp_drop_coll"},
         )
         data = _extract_result(result)
         assert data["status"] == "ok"
@@ -406,7 +406,8 @@ async def test_delete_documents_drop_collection(
 
 
 async def test_delete_documents_collection_dry_run(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """delete_documents with collection + dry_run must preview drop."""
     async with connected_client(mcp_server) as client:
@@ -427,13 +428,15 @@ async def test_delete_documents_collection_dry_run(
 
 
 async def test_delete_documents_by_metadata_filter(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """delete_documents with metadata_filter must remove matching chunks."""
     async with connected_client(mcp_server) as client:
         # Ingest first
         await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)},
+            "ingest_documents",
+            {"path": str(fixtures_dir)},
         )
 
         # Delete by metadata (just use a non-matching filter)
@@ -465,13 +468,15 @@ async def test_delete_documents_empty_metadata_filter_error(
 
 
 async def test_delete_documents_metadata_dry_run_with_match(
-    mcp_server, fixtures_dir: Path,
+    mcp_server,
+    fixtures_dir: Path,
 ) -> None:
     """metadata_filter + dry_run on ingested data must preview matching count."""
     async with connected_client(mcp_server) as client:
         # Ingest first so there are chunks with file_name metadata.
         await client.call_tool(
-            "ingest_documents", {"path": str(fixtures_dir)},
+            "ingest_documents",
+            {"path": str(fixtures_dir)},
         )
 
         # Use file_name metadata which is always present on ingested chunks.
@@ -526,7 +531,8 @@ async def test_delete_documents_collection_dry_run_nonexistent_coll(
 
 
 async def test_delete_documents_path_dry_run_nonexistent_coll(
-    mcp_server, sample_txt: Path,
+    mcp_server,
+    sample_txt: Path,
 ) -> None:
     """path-mode dry_run on a non-existent collection must return would_delete: 0."""
     async with connected_client(mcp_server) as client:
@@ -565,16 +571,19 @@ async def test_search_documents_metadata_filter_passed_through(
     mcp_server,
 ) -> None:
     """metadata_filter param must reach retrieval.search() unchanged."""
-    expected = [{
-        "score": 0.9,
-        "source": "ai.txt",
-        "page_label": None,
-        "text": "ai content",
-        "reranked": False,
-    }]
+    expected = [
+        {
+            "score": 0.9,
+            "source": "ai.txt",
+            "page_label": None,
+            "text": "ai content",
+            "reranked": False,
+        }
+    ]
 
     with patch(
-        "rag_mcp.transports.mcp.search", return_value=expected,
+        "rag_mcp.transports.mcp.search",
+        return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
@@ -594,13 +603,20 @@ async def test_search_documents_metadata_filter_passed_through(
 
 
 async def test_search_documents_returns_filter_matches(
-    mcp_server, tmp_path: Path, monkeypatch,
+    mcp_server,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
-    import rag_mcp.config as _config
-    from rag_mcp.core.settings import EffectiveSettings, MetadataBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        MetadataBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword", keyword_rules=None)))
+    set_default_effective_settings(
+        EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword", keyword_rules=None))
+    )
 
     ai_doc = tmp_path / "ai.txt"
     ai_doc.write_text(
@@ -641,11 +657,13 @@ async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
     expected: list[dict] = []
 
     with patch(
-        "rag_mcp.transports.mcp.search", return_value=expected,
+        "rag_mcp.transports.mcp.search",
+        return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
-                "search_documents", {"query": "anything"},
+                "search_documents",
+                {"query": "anything"},
             )
 
     data = _extract_result(result)
@@ -661,6 +679,7 @@ async def test_search_documents_validation_error_envelope(
     mcp_server,
 ) -> None:
     """A ValueError from search → validation envelope, no exception."""
+
     def _raise_value_error(*args, **kwargs):
         raise ValueError("Invalid where clause: unsupported operator $bogus")
 
@@ -703,7 +722,8 @@ async def test_search_documents_retrieval_error_envelope(
     with patch("rag_mcp.transports.mcp.search", side_effect=_raise_chroma):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
-                "search_documents", {"query": "anything"},
+                "search_documents",
+                {"query": "anything"},
             )
 
     data = _extract_result(result)
@@ -719,13 +739,15 @@ async def test_search_documents_internal_error_envelope(
     mcp_server,
 ) -> None:
     """An unexpected non-ChromaDB error → internal envelope."""
+
     def _raise_unexpected(*args, **kwargs):
         raise KeyError("missing config key 'foo'")
 
     with patch("rag_mcp.transports.mcp.search", side_effect=_raise_unexpected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
-                "search_documents", {"query": "anything"},
+                "search_documents",
+                {"query": "anything"},
             )
 
     data = _extract_result(result)
@@ -760,7 +782,8 @@ async def test_search_documents_success_has_no_status_key(
     with patch("rag_mcp.transports.mcp.search", return_value=expected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
-                "search_documents", {"query": "anything"},
+                "search_documents",
+                {"query": "anything"},
             )
 
     data = _extract_result(result)

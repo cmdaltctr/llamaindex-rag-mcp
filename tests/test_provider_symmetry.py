@@ -64,12 +64,12 @@ class TestProviderSymmetry:
         """
         dispatch_prefix = "rag_mcp.core.metadata.extractor"
         offenders = [
-            name for name, path in _metadata_registry._registry.items()
+            name
+            for name, path in _metadata_registry._registry.items()
             if path.startswith(dispatch_prefix)
         ]
         assert not offenders, (
-            f"Metadata backends still resolved to the dispatch module: "
-            f"{sorted(offenders)}"
+            f"Metadata backends still resolved to the dispatch module: {sorted(offenders)}"
         )
 
     def test_every_configurable_sub_provider_is_registered(self) -> None:
@@ -82,8 +82,7 @@ class TestProviderSymmetry:
         llm_names = set(_llm_registry.available())
         missing = _CONFIGURABLE_SUB_PROVIDERS - llm_names
         assert not missing, (
-            f"Configurable sub-providers missing from the LLM provider "
-            f"registry: {sorted(missing)}"
+            f"Configurable sub-providers missing from the LLM provider registry: {sorted(missing)}"
         )
 
 
@@ -168,9 +167,7 @@ class TestPipelineTimeoutIsSeparate:
             ):
                 recorded.clear()
                 module.build(settings, timeout=99.0)
-                assert recorded[key] == 99.0, (
-                    f"{module.__name__} ignored the caller's timeout"
-                )
+                assert recorded[key] == 99.0, f"{module.__name__} ignored the caller's timeout"
         finally:
             sys.modules.clear()
             sys.modules.update(original)

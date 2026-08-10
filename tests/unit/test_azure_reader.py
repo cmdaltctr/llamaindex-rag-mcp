@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -134,8 +134,17 @@ class TestFallback:
         """ImportError triggers fallback to local reader chain."""
         (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
 
-        with patch("rag_mcp.integrations.azure.AzureDocReader._get_client", side_effect=ImportError("no sdk")), \
-             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]):
+        with (
+            patch(
+                "rag_mcp.integrations.azure.AzureDocReader._get_client",
+                side_effect=ImportError("no sdk"),
+            ),
+            patch(
+                "rag_mcp.integrations.azure._read_with_local_chain",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+        ):
             result = await read_with_azure_fallback(tmp_path / "test.pdf")
             assert result == []
 
@@ -151,10 +160,18 @@ class TestFallback:
             call_count += 1
             raise ConnectionError("network error")
 
-        with patch("rag_mcp.integrations.azure.AzureDocReader.read", side_effect=mock_read), \
-             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]), \
-             patch("asyncio.sleep", new_callable=AsyncMock):
-            result = await read_with_azure_fallback(tmp_path / "test.pdf", max_retries=1, retry_delay=0.01)
+        with (
+            patch("rag_mcp.integrations.azure.AzureDocReader.read", side_effect=mock_read),
+            patch(
+                "rag_mcp.integrations.azure._read_with_local_chain",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch("asyncio.sleep", new_callable=AsyncMock),
+        ):
+            result = await read_with_azure_fallback(
+                tmp_path / "test.pdf", max_retries=1, retry_delay=0.01
+            )
             assert call_count == 2  # Initial + 1 retry
             assert result == []
 
@@ -163,8 +180,19 @@ class TestFallback:
         """Persistent Azure failure falls back to local chain."""
         (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
 
-        with patch("rag_mcp.integrations.azure.AzureDocReader.read", side_effect=RuntimeError("persistent")), \
-             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]), \
-             patch("asyncio.sleep", new_callable=AsyncMock):
-            result = await read_with_azure_fallback(tmp_path / "test.pdf", max_retries=1, retry_delay=0.01)
+        with (
+            patch(
+                "rag_mcp.integrations.azure.AzureDocReader.read",
+                side_effect=RuntimeError("persistent"),
+            ),
+            patch(
+                "rag_mcp.integrations.azure._read_with_local_chain",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch("asyncio.sleep", new_callable=AsyncMock),
+        ):
+            result = await read_with_azure_fallback(
+                tmp_path / "test.pdf", max_retries=1, retry_delay=0.01
+            )
             assert result == []

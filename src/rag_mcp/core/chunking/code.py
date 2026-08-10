@@ -48,6 +48,7 @@ async def chunk_code_file_async(
             chunk_overlap=chunk_overlap,
         )
         from llama_index.core import Document
+
         doc = Document(text=content, metadata={"file_path": str(file_path)})
         return splitter.get_nodes_from_documents([doc])
 
@@ -56,11 +57,14 @@ async def chunk_code_file_async(
     except Exception as exc:
         logger.warning(
             "CodeSplitter failed for %s (language=%s): %s — falling back to SentenceSplitter",
-            file_path.name, language, exc,
+            file_path.name,
+            language,
+            exc,
         )
         # Fall back to SentenceSplitter.
         content = file_path.read_text(encoding="utf-8", errors="replace")
         from llama_index.core import Document
+
         splitter = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         doc = Document(text=content, metadata={"file_path": str(file_path)})
         nodes = splitter.get_nodes_from_documents([doc])

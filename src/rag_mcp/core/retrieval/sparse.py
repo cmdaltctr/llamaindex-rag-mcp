@@ -26,13 +26,57 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-_STOP_WORDS = frozenset({
-    "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
-    "from", "has", "have", "he", "her", "his", "i", "in", "is", "it",
-    "its", "of", "on", "or", "our", "she", "that", "the", "their",
-    "them", "there", "these", "they", "this", "to", "was", "we", "were",
-    "what", "when", "where", "which", "who", "will", "with", "you", "your",
-})
+_STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "for",
+        "from",
+        "has",
+        "have",
+        "he",
+        "her",
+        "his",
+        "i",
+        "in",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "or",
+        "our",
+        "she",
+        "that",
+        "the",
+        "their",
+        "them",
+        "there",
+        "these",
+        "they",
+        "this",
+        "to",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "will",
+        "with",
+        "you",
+        "your",
+    }
+)
 
 
 def tokenize_english(text: str) -> list[str]:
@@ -65,7 +109,7 @@ class _SimpleBM25Okapi:
 
     def get_scores(self, query_tokens: list[str]) -> list[float]:
         scores: list[float] = []
-        for freqs, doc_len in zip(self.doc_freqs, self.doc_len):
+        for freqs, doc_len in zip(self.doc_freqs, self.doc_len, strict=False):
             score = 0.0
             for token in query_tokens:
                 tf = freqs.get(token, 0)
@@ -147,11 +191,7 @@ class BM25SparseRetriever:
             return []
 
         scores = cached.index.get_scores(query_tokens)
-        ranked = [
-            (idx, float(score))
-            for idx, score in enumerate(scores)
-            if float(score) > 0.0
-        ]
+        ranked = [(idx, float(score)) for idx, score in enumerate(scores) if float(score) > 0.0]
         ranked.sort(key=lambda item: item[1], reverse=True)
 
         results: list[tuple[int, str, str, dict]] = []

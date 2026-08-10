@@ -14,11 +14,10 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from rag_mcp.config import Settings
 from rag_mcp.compose import (
     build_embed_model,
     build_llm_model,
@@ -26,8 +25,8 @@ from rag_mcp.compose import (
     ensure_runtime_setup,
     reset_runtime_setup,
 )
+from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
-
 
 # Subpackage field -> the nested block that owns it (v2.0.0 schema).
 _BLOCK_OF = {
@@ -74,9 +73,7 @@ def _assert_routable(flat: dict[str, object]) -> None:
         AssertionError: Naming every key that routes nowhere.
     """
     root_fields = set(Settings.model_fields)
-    unroutable = sorted(
-        key for key in flat if key not in _BLOCK_OF and key not in root_fields
-    )
+    unroutable = sorted(key for key in flat if key not in _BLOCK_OF and key not in root_fields)
     assert not unroutable, (
         f"flat keys route nowhere and would be silently dropped: {unroutable}. "
         "Add each to _BLOCK_OF, or use its current root Settings name."
@@ -243,7 +240,7 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     from llama_index.core import Settings as LlamaIndexSettings
     from llama_index.core.embeddings import MockEmbedding
 
-    settings = _settings()
+    _ = _settings()
     reset_runtime_setup()
 
     mock_model = MockEmbedding(embed_dim=384)
@@ -260,9 +257,8 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
 
 def test_ensure_runtime_setup_degrades_gracefully() -> None:
     """A construction failure must warn, not crash."""
-    from llama_index.core import Settings as LlamaIndexSettings
 
-    settings = _settings()
+    _ = _settings()
     reset_runtime_setup()
 
     with patch(
@@ -281,7 +277,9 @@ def test_get_embed_endpoint_ollama() -> None:
     settings = _settings()
     endpoint = get_embed_endpoint(settings)
     assert endpoint == (
-        "http://localhost:11434", "nomic-embed-text", "",
+        "http://localhost:11434",
+        "nomic-embed-text",
+        "",
     )
 
 

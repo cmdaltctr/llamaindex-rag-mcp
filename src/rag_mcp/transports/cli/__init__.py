@@ -17,19 +17,16 @@ import logging
 import os
 import re
 import subprocess
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-from ...config import get_settings
-from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
-
 # Import the composition root early so the LlamaIndex global
 # ``Settings.embed_model`` is assigned before any ingest/search call
 # (previously done at import time in ``config.py``; see ADR-031).
 from ... import compose  # noqa: F401
+from ...config import get_settings
 
 _JSON_HELP = "Output results as JSON."
 
@@ -52,8 +49,7 @@ _OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 def _print_ollama_error(detail: str, json_output: bool = False) -> None:
     """Print a friendly Ollama connection error message."""
     msg = (
-        f"Cannot connect to Ollama at {_OLLAMA_URL}. "
-        "Is Ollama running? Start it with: ollama serve"
+        f"Cannot connect to Ollama at {_OLLAMA_URL}. Is Ollama running? Start it with: ollama serve"
     )
     if detail:
         msg += f"\n  Detail: {detail}"
@@ -61,7 +57,6 @@ def _print_ollama_error(detail: str, json_output: bool = False) -> None:
         typer.echo(json.dumps({"status": "error", "message": msg}))
     else:
         console.print(f"[red]Error:[/red] {msg}")
-
 
 
 def _detect_gpu_acceleration() -> None:
@@ -73,7 +68,7 @@ def _detect_gpu_acceleration() -> None:
     logger = logging.getLogger(__name__)
     try:
         result = subprocess.run(
-            ["ollama", "ps", "--format", "json"],
+            ["ollama", "ps", "--format", "json"],  # noqa: S607
             capture_output=True,
             text=True,
             timeout=5,
@@ -90,26 +85,25 @@ def _detect_gpu_acceleration() -> None:
         for model_info in models:
             name = model_info.get("name", "")
             if get_settings().embed_model in name:
-                runner = model_info.get("details", {}).get(
-                    "format", ""
-                ) or model_info.get("details", {}).get("runner", "")
+                runner = model_info.get("details", {}).get("format", "") or model_info.get(
+                    "details", {}
+                ).get("runner", "")
                 vram = model_info.get("size", "")
                 if "metal" in runner.lower() or "gpu" in runner.lower():
                     logger.debug(
                         "Ollama running %s on Metal GPU — VRAM: %s",
-                        name, vram,
+                        name,
+                        vram,
                     )
                 else:
                     logger.warning(
-                        "Ollama running %s on CPU — consider enabling "
-                        "Metal for faster embeddings",
+                        "Ollama running %s on CPU — consider enabling Metal for faster embeddings",
                         name,
                     )
                 return
 
         logger.debug(
-            "Could not determine Ollama runner — %s not found in "
-            "running models",
+            "Could not determine Ollama runner — %s not found in running models",
             get_settings().embed_model,
         )
     except FileNotFoundError:
@@ -194,7 +188,6 @@ def run_cli() -> None:
     app()
 
 
-
 # ── Register all command groups ───────────────────────────────────────────
 # Importing these modules registers their ``@app.command()`` decorators.
-from . import ingest, search, list, watch, delete, benchmark, profile  # noqa: E402,F401
+from . import benchmark, delete, ingest, list, profile, search, watch  # noqa: E402,F401

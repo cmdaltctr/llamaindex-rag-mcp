@@ -22,8 +22,7 @@ def build(settings: Settings) -> Any:
 
     if not settings.embed_model:
         raise ValueError(
-            "EMBED_MODEL environment variable is required for the ollama "
-            "embedding provider."
+            "EMBED_MODEL environment variable is required for the ollama embedding provider."
         )
 
     return OllamaEmbedding(

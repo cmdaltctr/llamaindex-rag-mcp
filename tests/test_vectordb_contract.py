@@ -55,13 +55,9 @@ class TestABCCompliance:
             "get_generation",
         }
         implemented = set(ChromaVectorStore.__abstractmethods__)
-        assert implemented == set(), (
-            f"Unimplemented abstract methods: {implemented}"
-        )
+        assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
         # Verify the ABC actually declares the expected surface.
-        abc_methods = {
-            name for name in dir(VectorStore) if callable(getattr(VectorStore, name))
-        }
+        abc_methods = {name for name in dir(VectorStore) if callable(getattr(VectorStore, name))}
         for method in abstract_methods:
             assert method in abc_methods, f"Missing ABC method: {method}"
 
@@ -147,10 +143,7 @@ class TestPagedReads:
     def test_iter_metadatas(self, store: VectorStore) -> None:
         from llama_index.core.schema import TextNode
 
-        nodes = [
-            TextNode(text=f"chunk {i}", metadata={"file_path": f"f{i}.txt"})
-            for i in range(5)
-        ]
+        nodes = [TextNode(text=f"chunk {i}", metadata={"file_path": f"f{i}.txt"}) for i in range(5)]
         store.write_nodes(nodes, "paged")
 
         metadatas = list(store.iter_metadatas("paged"))
@@ -160,9 +153,7 @@ class TestPagedReads:
     def test_iter_metadatas_small_page(self, store: VectorStore) -> None:
         from llama_index.core.schema import TextNode
 
-        nodes = [
-            TextNode(text=f"chunk {i}", metadata={"idx": i}) for i in range(5)
-        ]
+        nodes = [TextNode(text=f"chunk {i}", metadata={"idx": i}) for i in range(5)]
         store.write_nodes(nodes, "smallpage")
 
         metadatas = list(store.iter_metadatas("smallpage", page_size=2))
@@ -197,9 +188,7 @@ class TestCount:
     def test_count_after_write(self, store: VectorStore) -> None:
         from llama_index.core.schema import TextNode
 
-        store.write_nodes(
-            [TextNode(text="a"), TextNode(text="b")], "counted"
-        )
+        store.write_nodes([TextNode(text="a"), TextNode(text="b")], "counted")
         assert store.count("counted") == 2
 
     def test_count_where(self, store: VectorStore) -> None:
@@ -300,9 +289,7 @@ class TestDimensionLocking:
         from llama_index.core.schema import TextNode
 
         # First write with the test MockEmbedding (384 dims).
-        store.write_nodes(
-            [TextNode(text="initial")], "dimlock"
-        )
+        store.write_nodes([TextNode(text="initial")], "dimlock")
 
         # Swap to a different embedding dimension and try again.
         from llama_index.core.embeddings import MockEmbedding
@@ -311,9 +298,7 @@ class TestDimensionLocking:
         try:
             Settings.embed_model = MockEmbedding(embed_dim=128)
             with pytest.raises(Exception):
-                store.write_nodes(
-                    [TextNode(text="wrong dim")], "dimlock"
-                )
+                store.write_nodes([TextNode(text="wrong dim")], "dimlock")
         finally:
             Settings.embed_model = original
 

@@ -12,11 +12,9 @@ from pathlib import Path
 
 from rag_mcp.integrations.pdf.pypdf import PyPDFReader
 
-
 # Use a small corpus PDF as test fixture
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
-    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/"
-    "vaswani2017_attention.pdf"
+    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
 )
 
 
@@ -24,6 +22,7 @@ def test_pypdf_reader_returns_documents():
     """PyPDFReader.load_data returns a non-empty list of Document objects."""
     if not CORPUS_PDF.exists():
         import pytest
+
         pytest.skip("Corpus PDF not available for testing")
 
     reader = PyPDFReader()

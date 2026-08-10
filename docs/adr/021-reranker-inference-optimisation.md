@@ -71,7 +71,7 @@ behaviour change.
 ```python
 BATCH_SIZE = 32
 for i in range(0, len(pairs), BATCH_SIZE):
-    batch = pairs[i:i + BATCH_SIZE]
+    batch = pairs[i : i + BATCH_SIZE]
     encoded = self._tokenizer(batch, ...)
     outputs = self._session.run(None, ...)
     all_logits.extend(...)

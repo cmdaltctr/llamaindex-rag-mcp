@@ -1,17 +1,14 @@
-"""Unit tests for code_graph.py — AST extraction, graph construction, community/hub/bridge detection."""
+"""Unit tests for code_graph.py — AST extraction, graph construction, community/hub/bridge detection."""  # noqa: E501
 
 from __future__ import annotations
 
 from pathlib import Path
 
 import networkx as nx
-import pytest
 
 from rag_mcp.core.codebase.code_graph import (
     ASTResult,
-    Bridge,
     Community,
-    Hub,
     build_code_graph,
     detect_bridges,
     detect_communities,
@@ -19,7 +16,6 @@ from rag_mcp.core.codebase.code_graph import (
     extract_ast_relationships,
 )
 from rag_mcp.core.codebase.codebase_map import FileEntry
-
 
 # ── AST extraction tests ─────────────────────────────────────────────────
 
@@ -185,17 +181,25 @@ class TestDetectCommunities:
         # Cluster 1
         for f in ["a1.py", "a2.py", "a3.py", "a4.py", "a5.py"]:
             graph.add_node(f)
-        graph.add_edges_from([
-            ("a1.py", "a2.py"), ("a2.py", "a3.py"),
-            ("a3.py", "a4.py"), ("a4.py", "a5.py"),
-        ])
+        graph.add_edges_from(
+            [
+                ("a1.py", "a2.py"),
+                ("a2.py", "a3.py"),
+                ("a3.py", "a4.py"),
+                ("a4.py", "a5.py"),
+            ]
+        )
         # Cluster 2
         for f in ["b1.py", "b2.py", "b3.py", "b4.py", "b5.py"]:
             graph.add_node(f)
-        graph.add_edges_from([
-            ("b1.py", "b2.py"), ("b2.py", "b3.py"),
-            ("b3.py", "b4.py"), ("b4.py", "b5.py"),
-        ])
+        graph.add_edges_from(
+            [
+                ("b1.py", "b2.py"),
+                ("b2.py", "b3.py"),
+                ("b3.py", "b4.py"),
+                ("b4.py", "b5.py"),
+            ]
+        )
         communities = detect_communities(graph)
         assert len(communities) >= 1
         total_files = sum(len(c.files) for c in communities)
@@ -258,16 +262,24 @@ class TestDetectBridges:
         # Two clusters connected by a bridge node.
         for f in ["a1.py", "a2.py", "a3.py", "a4.py", "a5.py"]:
             graph.add_node(f)
-        graph.add_edges_from([
-            ("a1.py", "a2.py"), ("a2.py", "a3.py"),
-            ("a3.py", "a4.py"), ("a4.py", "a5.py"),
-        ])
+        graph.add_edges_from(
+            [
+                ("a1.py", "a2.py"),
+                ("a2.py", "a3.py"),
+                ("a3.py", "a4.py"),
+                ("a4.py", "a5.py"),
+            ]
+        )
         for f in ["b1.py", "b2.py", "b3.py", "b4.py", "b5.py"]:
             graph.add_node(f)
-        graph.add_edges_from([
-            ("b1.py", "b2.py"), ("b2.py", "b3.py"),
-            ("b3.py", "b4.py"), ("b4.py", "b5.py"),
-        ])
+        graph.add_edges_from(
+            [
+                ("b1.py", "b2.py"),
+                ("b2.py", "b3.py"),
+                ("b3.py", "b4.py"),
+                ("b4.py", "b5.py"),
+            ]
+        )
         # Bridge: a3 -> b1
         graph.add_edge("a3.py", "b1.py")
 

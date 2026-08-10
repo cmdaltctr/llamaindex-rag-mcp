@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from pathlib import Path
 
 from ..core.settings import get_default_effective_settings
@@ -80,7 +79,8 @@ class AzureDocReader:
             ) from exc
 
         return DocumentIntelligenceClient(
-            self.endpoint, AzureKeyCredential(self.key),
+            self.endpoint,
+            AzureKeyCredential(self.key),
         )
 
     def read(self, file_path: Path) -> list:
@@ -101,7 +101,8 @@ class AzureDocReader:
 
         with open(file_path, "rb") as f:
             poller = client.begin_analyze_document(
-                self.model, body=f,
+                self.model,
+                body=f,
             )
 
         # Wait for completion (Azure handles async polling).
@@ -160,36 +161,42 @@ def parse_azure_response(result, file_path: Path) -> list:
             # Split large tables into row groups.
             row_groups = _split_table_rows(table, group_size=50)
             for j, group_text in enumerate(row_groups):
-                documents.append(Document(
-                    text=group_text,
+                documents.append(
+                    Document(
+                        text=group_text,
+                        metadata={
+                            "file_path": str(file_path),
+                            "content_type": "table",
+                            "table_index": i,
+                            "row_group": j,
+                        },
+                    )
+                )
+        else:
+            documents.append(
+                Document(
+                    text=table_text,
                     metadata={
                         "file_path": str(file_path),
                         "content_type": "table",
                         "table_index": i,
-                        "row_group": j,
                     },
-                ))
-        else:
-            documents.append(Document(
-                text=table_text,
-                metadata={
-                    "file_path": str(file_path),
-                    "content_type": "table",
-                    "table_index": i,
-                },
-            ))
+                )
+            )
 
     # If no paragraphs or tables, try raw content.
     if not documents:
         content = getattr(result, "content", "") or ""
         if content:
-            documents.append(Document(
-                text=content,
-                metadata={
-                    "file_path": str(file_path),
-                    "content_type": "document/azure",
-                },
-            ))
+            documents.append(
+                Document(
+                    text=content,
+                    metadata={
+                        "file_path": str(file_path),
+                        "content_type": "document/azure",
+                    },
+                )
+            )
 
     return documents
 
@@ -303,7 +310,8 @@ async def read_with_azure_fallback(
             documents = await asyncio.to_thread(reader.read, file_path)
             logger.info(
                 "Azure Document Intelligence parsed %s (%d chunks)",
-                file_path.name, len(documents),
+                file_path.name,
+                len(documents),
             )
             return documents
         except ImportError as exc:
@@ -313,13 +321,18 @@ async def read_with_azure_fallback(
             if attempt < max_retries:
                 logger.warning(
                     "Azure read attempt %d failed for %s: %s — retrying in %.1fs",
-                    attempt + 1, file_path.name, exc, retry_delay,
+                    attempt + 1,
+                    file_path.name,
+                    exc,
+                    retry_delay,
                 )
                 await asyncio.sleep(retry_delay)
             else:
                 logger.warning(
                     "Azure read failed for %s after %d attempts: %s — falling back to local",
-                    file_path.name, max_retries + 1, exc,
+                    file_path.name,
+                    max_retries + 1,
+                    exc,
                 )
 
     # Fallback to local reader chain.
@@ -336,6 +349,7 @@ async def _read_with_local_chain(file_path: Path) -> list:
         List of LlamaIndex ``Document`` objects.
     """
     from llama_index.core import SimpleDirectoryReader
+
     from .pdf import get_pdf_reader
 
     def _read_sync() -> list:

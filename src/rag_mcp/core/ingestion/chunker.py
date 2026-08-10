@@ -17,8 +17,8 @@ from typing import Any
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
-from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..chunking.registry import get as _chunking_get
+from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..settings import resolve_effective_settings
 
 # NOTE: the ``MARKDOWN_CHUNK_SIZE`` module-level alias was removed — it was an
@@ -119,7 +119,11 @@ async def read_and_chunk_file_async(
         if ts_lang:
             chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
-                file_path, ts_lang, chunk_size, chunk_overlap, None,
+                file_path,
+                ts_lang,
+                chunk_size,
+                chunk_overlap,
+                None,
             )
 
     # Code files: use CodeSplitter with tree-sitter boundaries.
@@ -128,7 +132,11 @@ async def read_and_chunk_file_async(
         if ts_lang:
             chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
-                file_path, ts_lang, chunk_size, chunk_overlap, content_type,
+                file_path,
+                ts_lang,
+                chunk_size,
+                chunk_overlap,
+                content_type,
             )
         # Unknown code language — fall through to default splitter.
         logger.debug("No CodeSplitter mapping for code language %r", label)
@@ -137,15 +145,21 @@ async def read_and_chunk_file_async(
     if group == "config":
         chunk_config_file = _chunking_get("config")
         return chunk_config_file(
-            file_path, content_type,
+            file_path,
+            content_type,
         )
 
     # Documents: existing extension-based routing (task 6.2).
     # Azure Document Intelligence branch (task 7.8).
     if group in ("document", "") and group != "config":
-        if resolved.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
+        if resolved.document_backend == "azure" and file_path.suffix.lower() in {
+            ".pdf",
+            ".docx",
+            ".doc",
+        }:
             try:
                 from ...integrations.azure import read_with_azure_fallback
+
                 documents = await read_with_azure_fallback(file_path)
                 # Add content_type metadata to Azure documents.
                 if content_type:
@@ -169,7 +183,8 @@ async def read_and_chunk_file_async(
             except Exception as exc:
                 logger.warning(
                     "Azure reader failed for %s: %s — falling back to local chain",
-                    file_path.name, exc,
+                    file_path.name,
+                    exc,
                 )
 
     def _read_sync() -> list:
@@ -187,11 +202,7 @@ async def read_and_chunk_file_async(
     from ..metadata.extractor import extract_metadata_with_status_async
 
     if documents:
-        file_text = "\n".join(
-            d.get_content()
-            for d in documents
-            if hasattr(d, "get_content")
-        )
+        file_text = "\n".join(d.get_content() for d in documents if hasattr(d, "get_content"))
         # Forward the resolved settings (invariant #9) — previously dropped
         # here, which meant profile-level metadata configuration never
         # reached extraction.
@@ -245,9 +256,7 @@ async def read_and_chunk_file_async(
         )
 
         ensure_heading_metadata(nodes)
-        apply_heading_prepend(
-            nodes, resolved.chunking.markdown_heading_prepend
-        )
+        apply_heading_prepend(nodes, resolved.chunking.markdown_heading_prepend)
         nodes = drop_small_markdown_chunks(
             nodes,
             effective_chunk_size,

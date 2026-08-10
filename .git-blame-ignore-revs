@@ -1,0 +1,5 @@
+# Commits that git blame should skip (mass reformats, whitespace changes).
+# Enable locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# ci: add ruff lint gate — initial ruff format pass across 132 files
+70e57440671267b0d8c11876cda45603c0c109a5

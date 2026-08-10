@@ -110,6 +110,7 @@ reset it in `setup_method` and `teardown_method`:
 ```python
 from rag_mcp.core.retrieval.reranker import reset_model_cache
 
+
 class TestSomeRerankerThing:
     def setup_method(self):
         reset_model_cache()
@@ -136,8 +137,11 @@ conftest factory to control the extraction mode in tests:
 ```python
 def test_keyword_extraction(monkeypatch):
     from rag_mcp.core.settings import (
-        EffectiveSettings, MetadataBlock, set_default_effective_settings,
+        EffectiveSettings,
+        MetadataBlock,
+        set_default_effective_settings,
     )
+
     set_default_effective_settings(
         EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
     )
@@ -154,6 +158,7 @@ Import it directly:
 
 ```python
 from conftest import connected_client
+
 
 async def test_some_mcp_tool(mcp_server):
     async with connected_client(mcp_server) as session:

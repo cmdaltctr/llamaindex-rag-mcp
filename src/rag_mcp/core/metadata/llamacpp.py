@@ -9,8 +9,6 @@ original ``metadata_extractor.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
-import logging
-
 from ..settings import resolve_effective_settings
 from ._common import (
     _get_classify_max_attempts,
@@ -58,7 +56,10 @@ async def _extract_llamacpp_chat_async(
     data = {
         "model": resolved.llamacpp_chat_model,
         "messages": [
-            {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
+            {
+                "role": "system",
+                "content": "You are a document classification assistant. Return only valid JSON.",
+            },
             {"role": "user", "content": prompt},
         ],
         "stream": False,
@@ -113,7 +114,7 @@ async def _extract_llamacpp_chat_async(
             )
 
             if attempt + 1 < max_attempts:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 await _retry_sleep(backoff)
 
     logger.warning(

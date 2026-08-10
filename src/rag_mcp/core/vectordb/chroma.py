@@ -174,19 +174,17 @@ class ChromaVectorStore(VectorStore):
 
         rows: list[dict] = []
         for i, chunk_id in enumerate(ids):
-            meta = (
-                metadatas[i]
-                if i < len(metadatas) and isinstance(metadatas[i], dict)
-                else {}
-            )
+            meta = metadatas[i] if i < len(metadatas) and isinstance(metadatas[i], dict) else {}
             text = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else None
-            rows.append({
-                "id": str(chunk_id),
-                "distance": distance,
-                "document": text,
-                "metadata": dict(meta),
-            })
+            rows.append(
+                {
+                    "id": str(chunk_id),
+                    "distance": distance,
+                    "document": text,
+                    "metadata": dict(meta),
+                }
+            )
         return rows
 
     # ── Paged reads ─────────────────────────────────────────────────
@@ -255,9 +253,7 @@ class ChromaVectorStore(VectorStore):
                 return None
             return collection.get(include=include)
         except Exception as exc:
-            logger.warning(
-                "Bulk read of collection %r failed: %s", collection_name, exc
-            )
+            logger.warning("Bulk read of collection %r failed: %s", collection_name, exc)
             return None
 
     def iter_documents(
@@ -287,16 +283,8 @@ class ChromaVectorStore(VectorStore):
             if not ids:
                 break
             for idx, doc_id in enumerate(ids):
-                metadata = (
-                    metas[idx]
-                    if idx < len(metas) and isinstance(metas[idx], dict)
-                    else {}
-                )
-                text = (
-                    docs[idx]
-                    if idx < len(docs) and docs[idx] is not None
-                    else ""
-                )
+                metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
+                text = docs[idx] if idx < len(docs) and docs[idx] is not None else ""
                 yield (str(doc_id), str(text), dict(metadata))
             if len(ids) < effective_page_size:
                 break
@@ -339,9 +327,7 @@ class ChromaVectorStore(VectorStore):
             return None
         return collection.metadata
 
-    def update_collection_metadata(
-        self, collection_name: str, metadata: dict
-    ) -> None:
+    def update_collection_metadata(self, collection_name: str, metadata: dict) -> None:
         """Merge ``metadata`` into the collection's existing metadata.
 
         ChromaDB's ``modify(metadata=...)`` replaces the entire dict
@@ -360,9 +346,7 @@ class ChromaVectorStore(VectorStore):
 
     def bump_generation(self, collection_name: str) -> None:
         """Advance the process-local generation counter."""
-        self._generations[collection_name] = (
-            self._generations.get(collection_name, 0) + 1
-        )
+        self._generations[collection_name] = self._generations.get(collection_name, 0) + 1
 
     def get_generation(self, collection_name: str) -> int:
         """Return the current generation counter (0 if never written)."""

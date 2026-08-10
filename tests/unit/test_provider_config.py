@@ -15,13 +15,13 @@ import pytest
 
 from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
-
 # ── Config: provider selection ───────────────────────────────────────────
 
 
 def test_default_provider_is_local(monkeypatch: pytest.MonkeyPatch) -> None:
     """When EMBED_PROVIDER is not set, config defaults to local."""
     import os
+
     monkeypatch.delenv("EMBED_PROVIDER", raising=False)
     assert os.getenv("EMBED_PROVIDER", "local") == "local"
 
@@ -29,6 +29,7 @@ def test_default_provider_is_local(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_default_local_backend_is_llamacpp(monkeypatch: pytest.MonkeyPatch) -> None:
     """When LOCAL_BACKEND is not set, config defaults to llamacpp."""
     import os
+
     monkeypatch.delenv("LOCAL_BACKEND", raising=False)
     assert os.getenv("LOCAL_BACKEND", "llamacpp") == "llamacpp"
 
@@ -38,6 +39,7 @@ def test_unknown_provider_falls_back_to_local(
 ) -> None:
     """Unknown EMBED_PROVIDER value should warn and fall back to local."""
     from rag_mcp import config
+
     assert config.get_settings().embed_provider in {"local", "cloud"}
 
 
@@ -45,8 +47,8 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
     """Embedding provider llamacpp without optional deps raises ImportError."""
     import sys
 
-    from rag_mcp.config import Settings
     from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
     monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai", None)
@@ -69,22 +71,26 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
 async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPatch) -> None:
     """_extract_llamacpp_chat_async parses OpenAI /v1/chat/completions format."""
     from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
-
-    import rag_mcp.config as _config
     from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-    set_default_effective_settings(EffectiveSettings(llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"))
+    set_default_effective_settings(
+        EffectiveSettings(
+            llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"
+        )
+    )
 
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "choices": [
             {
                 "message": {
-                    "content": json.dumps({
-                        "category": "ai",
-                        "keywords": ["ml", "neural"],
-                        "summary": "A paper about AI.",
-                    })
+                    "content": json.dumps(
+                        {
+                            "category": "ai",
+                            "keywords": ["ml", "neural"],
+                            "summary": "A paper about AI.",
+                        }
+                    )
                 }
             }
         ]
@@ -99,6 +105,7 @@ async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPa
         mock_client_cls.return_value = mock_client
 
         from rag_mcp.core.metadata import llamacpp as _llamacpp
+
         _llamacpp._retry_sleep = AsyncMock()
 
         result = await _extract_llamacpp_chat_async("Some text about AI.")
@@ -111,11 +118,13 @@ async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPa
 async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     """_extract_llamacpp_chat_async falls back to uncategorised on retry exhaustion."""
     from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
-
-    import rag_mcp.config as _config
     from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
-    set_default_effective_settings(EffectiveSettings(llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"))
+    set_default_effective_settings(
+        EffectiveSettings(
+            llamacpp_chat_url="http://localhost:8081/v1", llamacpp_chat_model="test.gguf"
+        )
+    )
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()
@@ -125,6 +134,7 @@ async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch)
         mock_client_cls.return_value = mock_client
 
         from rag_mcp.core.metadata import llamacpp as _llamacpp
+
         _llamacpp._retry_sleep = AsyncMock()
 
         result = await _extract_llamacpp_chat_async("Some text.")
@@ -132,12 +142,17 @@ async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch)
 
 
 @pytest.mark.asyncio
-async def test_local_mode_dispatches_to_llamacpp_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """extract_metadata_async with mode=local routes to llamacpp chat when LOCAL_BACKEND=llamacpp."""
-    import rag_mcp.config as _config
+async def test_local_mode_dispatches_to_llamacpp_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """extract_metadata_async with mode=local routes to llamacpp chat when LOCAL_BACKEND=llamacpp."""  # noqa: E501
     from rag_mcp.core.metadata import extractor as _ext
 
-    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="local", local_backend="llamacpp")
+    _settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="local"),
+        metadata_llm_provider="local",
+        local_backend="llamacpp",
+    )
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
@@ -146,12 +161,17 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(monkeypatch: py
 
 
 @pytest.mark.asyncio
-async def test_local_mode_dispatches_to_ollama_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_local_mode_dispatches_to_ollama_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """extract_metadata_async with mode=local routes to ollama when LOCAL_BACKEND=ollama."""
-    import rag_mcp.config as _config
     from rag_mcp.core.metadata import extractor as _ext
 
-    _settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="local"), metadata_llm_provider="local", local_backend="ollama")
+    _settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="local"),
+        metadata_llm_provider="local",
+        local_backend="ollama",
+    )
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
     with patch("rag_mcp.core.metadata.ollama._extract_ollama_async", mock_fn):
@@ -163,7 +183,7 @@ async def test_local_mode_dispatches_to_ollama_when_configured(monkeypatch: pyte
 async def test_cloud_mode_dispatches_to_openrouter(
     monkeypatch: pytest.MonkeyPatch, effective_settings
 ) -> None:
-    """extract_metadata_async with mode=local routes to openrouter when METADATA_LLM_PROVIDER=cloud."""
+    """extract_metadata_async with mode=local routes to openrouter when METADATA_LLM_PROVIDER=cloud."""  # noqa: E501
     from rag_mcp.core.metadata import extractor as _ext
     from rag_mcp.core.metadata import openrouter as _or
 
@@ -183,11 +203,11 @@ async def test_cloud_mode_dispatches_to_openrouter(
 
 
 @pytest.mark.asyncio
-async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """llamaindex mode with local llamacpp falls back to chat mode when OpenAILike not installed."""
-    import rag_mcp.config as _config
     from rag_mcp.core.metadata import llamaindex as _lli
-    from rag_mcp.core.metadata import extractor as _ext
 
     # One injected EffectiveSettings drives both the LLM-class selection in
     # llamaindex.py and the fallback dispatch route in extractor.py.
@@ -196,6 +216,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
     mock_fn = AsyncMock(return_value={"category": "fallback", "keywords": [], "summary": ""})
 
     import builtins
+
     real_import = builtins.__import__
 
     def _failing_import(name, *args, **kwargs):
@@ -203,8 +224,10 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
             raise ImportError("not installed")
         return real_import(name, *args, **kwargs)
 
-    with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn), \
-         patch("builtins.__import__", side_effect=_failing_import):
+    with (
+        patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn),
+        patch("builtins.__import__", side_effect=_failing_import),
+    ):
         await _lli._extract_llamaindex_async("text", "file.txt", _settings)
         mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
@@ -214,8 +237,8 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(monkeypa
 
 def test_cloud_openrouter_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Embedding provider openrouter with missing API key raises ValueError."""
-    from rag_mcp.config import Settings
     from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
 
     settings = Settings(
         embed_provider="cloud",
@@ -233,8 +256,8 @@ def test_cloud_openrouter_missing_optional_deps_raises(monkeypatch: pytest.Monke
     """Embedding provider openrouter without optional deps raises ImportError."""
     import sys
 
-    from rag_mcp.config import Settings
     from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
     monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai", None)
@@ -302,6 +325,7 @@ def test_unknown_local_backend_falls_back_to_llamacpp(monkeypatch: pytest.Monkey
     def _mock_import(name, *args, **kwargs):
         if name == "llama_index.embeddings.openai":
             from llama_index.core.embeddings import MockEmbedding
+
             mock_mod = MagicMock()
             mock_mod.OpenAIEmbedding = MagicMock(return_value=MockEmbedding(embed_dim=8))
             return mock_mod
@@ -310,6 +334,7 @@ def test_unknown_local_backend_falls_back_to_llamacpp(monkeypatch: pytest.Monkey
     monkeypatch.setattr(importlib, "import_module", _mock_import)
 
     import rag_mcp.config as config_mod
+
     assert config_mod.get_settings().local_backend == "llamacpp"
 
     # Restore

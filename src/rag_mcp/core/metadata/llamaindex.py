@@ -30,6 +30,7 @@ def _get_max_chunks() -> int:
     ``monkeypatch.setenv`` after module load.
     """
     import os
+
     return int(os.getenv("LLAMANDEX_EXTRACTOR_MAX_CHUNKS", "10"))
 
 
@@ -137,7 +138,9 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
 
     logger.info(
         "LlamaIndex extraction: category=%s, keywords=%d, summary=%d chars",
-        category, len(result.get("keywords", [])), len(summary),
+        category,
+        len(result.get("keywords", [])),
+        len(summary),
     )
     return result
 
@@ -171,35 +174,36 @@ async def _extract_llamaindex_async(
             if resolved.metadata_llm_provider == "local"
             else resolved.cloud_backend
         )
-        llm = _llm_get(backend)(
-            resolved, timeout=_resolve_pipeline_timeout(resolved, backend)
-        )
+        llm = _llm_get(backend)(resolved, timeout=_resolve_pipeline_timeout(resolved, backend))
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
             "(backend=%s) — falling back to local mode",
             resolved.metadata_llm_provider,
-            resolved.local_backend if resolved.metadata_llm_provider == "local" else resolved.cloud_backend,
+            resolved.local_backend
+            if resolved.metadata_llm_provider == "local"
+            else resolved.cloud_backend,
         )
         _signal_degraded()
         # Lazy import to avoid a circular dependency: extractor.py imports
         # this module at load time, but the fallback dispatch lives in
         # extractor.py.  The import only runs at call time.
         from .extractor import _dispatch_local_extraction
+
         return await _dispatch_local_extraction(text, resolved, file_name)
 
     try:
         from llama_index.core import Document
-        from llama_index.core.ingestion import IngestionPipeline
-        from llama_index.core.node_parser import SentenceSplitter
         from llama_index.core.extractors import (
             KeywordExtractor,
             SummaryExtractor,
             TitleExtractor,
         )
+        from llama_index.core.ingestion import IngestionPipeline
+        from llama_index.core.node_parser import SentenceSplitter
 
         max_chunks = _get_max_chunks()
-        capped_text = text[:max_chunks * resolved.chunk_size]
+        capped_text = text[: max_chunks * resolved.chunk_size]
 
         doc = Document(text=capped_text, metadata={"file_name": file_name})
 
@@ -230,8 +234,7 @@ async def _extract_llamaindex_async(
 
     except Exception as exc:
         logger.warning(
-            "LlamaIndex async metadata extraction failed: %s: %s — "
-            "falling back to %s mode",
+            "LlamaIndex async metadata extraction failed: %s: %s — falling back to %s mode",
             type(exc).__name__,
             exc,
             resolved.metadata_llm_provider,
@@ -240,4 +243,5 @@ async def _extract_llamaindex_async(
         _signal_degraded()
         # Lazy import — see note above.
         from .extractor import _dispatch_local_extraction
+
         return await _dispatch_local_extraction(text, resolved, file_name)

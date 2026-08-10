@@ -27,9 +27,7 @@ async def _ingest_fixtures(client, fixtures_dir: Path) -> None:
 async def test_search_empty_store_returns_empty(mcp_server) -> None:
     """Searching with no indexed documents must return an empty list."""
     async with connected_client(mcp_server) as client:
-        result = await client.call_tool(
-            "search_documents", {"query": "anything"}
-        )
+        result = await client.call_tool("search_documents", {"query": "anything"})
         data = _extract_result(result)
         assert data == []
 
@@ -37,9 +35,7 @@ async def test_search_empty_store_returns_empty(mcp_server) -> None:
 # ── Similarity threshold filtering ─────────────────────────────────────────
 
 
-async def test_high_threshold_filters_all(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_high_threshold_filters_all(mcp_server, fixtures_dir: Path) -> None:
     """A very high similarity_threshold should filter all results."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -53,9 +49,7 @@ async def test_high_threshold_filters_all(
         assert isinstance(data, list)
 
 
-async def test_default_threshold_includes_results(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_default_threshold_includes_results(mcp_server, fixtures_dir: Path) -> None:
     """Default threshold (0.0) should include all retrieved results."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -71,9 +65,7 @@ async def test_default_threshold_includes_results(
 # ── Rerank flag propagation ────────────────────────────────────────────────
 
 
-async def test_default_search_uses_policy_resolver(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_default_search_uses_policy_resolver(mcp_server, fixtures_dir: Path) -> None:
     """Default MCP search uses policy resolver and preserves result shape."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -88,9 +80,7 @@ async def test_default_search_uses_policy_resolver(
             assert "reranked" in r
 
 
-async def test_rerank_false_sets_flag_false(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_rerank_false_sets_flag_false(mcp_server, fixtures_dir: Path) -> None:
     """Explicit rerank=False still preserves the un-reranked path."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -105,9 +95,7 @@ async def test_rerank_false_sets_flag_false(
             assert r["reranked"] is False
 
 
-async def test_rerank_enabled_sets_flag(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_rerank_enabled_sets_flag(mcp_server, fixtures_dir: Path) -> None:
     """With rerank=True, the reranked flag reflects actual reranker state."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -138,7 +126,6 @@ class TestPersistentRerankFailureFallback:
         self, mcp_server, fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A permanently failing reranker yields un-reranked results + warning."""
-        import logging
 
         import rag_mcp.core.retrieval.reranker as reranker_mod
         from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
@@ -160,7 +147,6 @@ class TestPersistentRerankFailureFallback:
         import rag_mcp.transports.mcp as server
 
         original_search = server.search
-        from rag_mcp.core.retrieval import search as _search
 
         def _search_with_failing_reranker(*args, **kwargs):
             kwargs["reranker"] = failing
@@ -196,9 +182,13 @@ class TestPersistentRerankFailureFallback:
         mock_tokenizer = MagicMock()
         mock_tokenizer.model_max_length = 1000000
 
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
+                ):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         reranker._load_model()
 
@@ -246,9 +236,7 @@ class TestThresholdScaling:
         """A moderate threshold (0.5) should become ~0.0167 with rerank."""
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
-        assert _effective_threshold(0.5, rerank=True) == pytest.approx(
-            0.5 / 30
-        )
+        assert _effective_threshold(0.5, rerank=True) == pytest.approx(0.5 / 30)
 
     def test_colosseum_score_survives_threshold(self) -> None:
         """The Colosseum query (score 0.015) must survive threshold 0.3.
@@ -269,6 +257,7 @@ class TestThresholdScaling:
 def _extract_result(result):
     """Extract the data payload from a FastMCP CallToolResult."""
     import json
+
     from mcp.types import TextContent
 
     if hasattr(result, "structuredContent") and result.structuredContent:
@@ -297,7 +286,6 @@ class TestCollectionAwareSearch:
 
         # Search "research" only
         results = search("test", collection_name="research")
-        sources = {r["source"] for r in results}
 
         # sample.txt should be in results, sample.md should not
         # (they have different file_name metadata)
@@ -428,10 +416,9 @@ class TestListCollections:
     def test_list_collections_scans_multiple_metadata_pages(self, monkeypatch):
         """Collection document counts must include all metadata pages."""
         import chromadb
-        import rag_mcp.config as _config
+
         from rag_mcp.config import get_settings as _gs
         from rag_mcp.core.retrieval import list_collections
-
         from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
@@ -451,9 +438,7 @@ class TestListCollections:
             ],
         )
 
-        stats = {
-            c["name"]: c for c in list_collections()
-        }["paged_collection_stats"]
+        stats = {c["name"]: c for c in list_collections()}["paged_collection_stats"]
         assert stats["chunk_count"] == 5
         assert stats["document_count"] == 3
 
@@ -472,7 +457,9 @@ class TestScoreConsistency:
     """
 
     async def test_filtered_and_unfiltered_scores_match(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
         from rag_mcp.core.settings import (
@@ -494,7 +481,8 @@ class TestScoreConsistency:
             "neural networks train on large datasets. LLMs use embeddings."
         )
         await ingest_path_async(
-            str(ai_file), collection_name="score_consistency",
+            str(ai_file),
+            collection_name="score_consistency",
         )
 
         unfiltered = search(
@@ -515,7 +503,9 @@ class TestScoreConsistency:
         assert unfiltered, "expected at least one chunk from unfiltered path"
         assert filtered, "expected at least one chunk from filtered path"
 
-        keyed = lambda r: (r["source"], r.get("page_label"), r["text"])
+        def keyed(r):
+            return (r["source"], r.get("page_label"), r["text"])
+
         unfiltered_by_chunk = {keyed(r): r["score"] for r in unfiltered}
 
         for r in filtered:
@@ -527,7 +517,9 @@ class TestScoreConsistency:
             assert abs(r["score"] - unfiltered_by_chunk[key]) < 1e-6
 
     async def test_threshold_consistent_across_paths(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
         from rag_mcp.core.settings import (
@@ -549,7 +541,8 @@ class TestScoreConsistency:
             "embeddings power large language models."
         )
         await ingest_path_async(
-            str(ai_file), collection_name="threshold_consistency",
+            str(ai_file),
+            collection_name="threshold_consistency",
         )
 
         # Pick a threshold mid-way through the unfiltered scores.

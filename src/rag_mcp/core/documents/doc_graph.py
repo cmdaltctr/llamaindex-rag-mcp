@@ -11,7 +11,6 @@ All settings are read from ``config.py``. No cross-imports with ``retrieval.py``
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -132,7 +131,8 @@ def build_document_graph(
 
     logger.debug(
         "Document graph: %d nodes, %d edges",
-        graph.number_of_nodes(), graph.number_of_edges(),
+        graph.number_of_nodes(),
+        graph.number_of_edges(),
     )
     return graph
 
@@ -159,16 +159,16 @@ def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
         # Small graph: single community.
         chunks = list(graph.nodes())
         categories = [
-            graph.nodes[n].get("category", "")
-            for n in chunks
-            if graph.nodes[n].get("category")
+            graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
         ]
         category = categories[0] if categories else ""
-        return [DocCommunity(
-            label=category or "all",
-            chunks=chunks,
-            category=category,
-        )]
+        return [
+            DocCommunity(
+                label=category or "all",
+                chunks=chunks,
+                category=category,
+            )
+        ]
 
     try:
         communities_sets = nx.algorithms.community.louvain_communities(graph)
@@ -182,22 +182,23 @@ def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
         chunks = sorted(comm_set)
         # Determine representative category.
         categories = [
-            graph.nodes[n].get("category", "")
-            for n in chunks
-            if graph.nodes[n].get("category")
+            graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
         ]
         if categories:
             # Most common category.
             from collections import Counter
+
             category = Counter(categories).most_common(1)[0][0]
         else:
             category = ""
         label = category or f"Topic {len(communities) + 1}"
-        communities.append(DocCommunity(
-            label=label,
-            chunks=chunks,
-            category=category,
-        ))
+        communities.append(
+            DocCommunity(
+                label=label,
+                chunks=chunks,
+                category=category,
+            )
+        )
 
     communities.sort(key=lambda c: len(c.chunks), reverse=True)
     return communities
@@ -223,14 +224,18 @@ def _filename_match_links(
             doc_parts = Path(doc_path).parts
             if len(doc_parts) < 2:
                 continue
-            if code_file in doc_path or doc_path in code_file or (
-                code_basename and code_basename in doc_path
+            if (
+                code_file in doc_path
+                or doc_path in code_file
+                or (code_basename and code_basename in doc_path)
             ):
-                links.append(CrossLink(
-                    code=code_file,
-                    doc=doc_id,
-                    relation="filename_match",
-                ))
+                links.append(
+                    CrossLink(
+                        code=code_file,
+                        doc=doc_id,
+                        relation="filename_match",
+                    )
+                )
     return links
 
 
@@ -246,11 +251,13 @@ def _symbol_match_links(
                 if not doc_path:
                     continue
                 if symbol and symbol in doc_path:
-                    links.append(CrossLink(
-                        code=code_file,
-                        doc=doc_id,
-                        relation="symbol_match",
-                    ))
+                    links.append(
+                        CrossLink(
+                            code=code_file,
+                            doc=doc_id,
+                            relation="symbol_match",
+                        )
+                    )
     return links
 
 
@@ -272,14 +279,18 @@ def _keyword_overlap_links(
         if not category and not keywords:
             continue
         for dir_name, files in code_dirs.items():
-            if dir_name.lower() in [k.lower() for k in keywords] or \
-               dir_name.lower() == category.lower():
+            if (
+                dir_name.lower() in [k.lower() for k in keywords]
+                or dir_name.lower() == category.lower()
+            ):
                 for code_file in files:
-                    links.append(CrossLink(
-                        code=code_file,
-                        doc=node,
-                        relation="keyword_overlap",
-                    ))
+                    links.append(
+                        CrossLink(
+                            code=code_file,
+                            doc=node,
+                            relation="keyword_overlap",
+                        )
+                    )
     return links
 
 
@@ -339,9 +350,6 @@ def compute_cross_links(
 from .similarity import (  # noqa: E402
     _add_doc_nodes,
     _add_edges_safe,
-    _category_edges,
-    _heading_prefix_edges,
-    _keyword_edges,
     compute_heading_edges,
     compute_metadata_edges,
     compute_similarity_edges,

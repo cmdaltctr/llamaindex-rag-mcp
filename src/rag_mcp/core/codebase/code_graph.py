@@ -10,8 +10,7 @@ All settings are read from ``config.py``. No cross-imports with ``retrieval.py``
 from __future__ import annotations
 
 import logging
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import networkx as nx
@@ -19,7 +18,6 @@ import networkx as nx
 from .codebase_map import FileEntry
 
 logger = logging.getLogger(__name__)
-
 
 
 @dataclass
@@ -90,7 +88,7 @@ def build_code_graph(
         content = ""
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             logger.warning("Could not read %s: %s", entry.path, exc)
             continue
 
@@ -123,7 +121,7 @@ def build_code_graph(
     # These are stored as file-level edges with relation="inheritance".
     for node in graph.nodes():
         node_data = graph.nodes[node]
-        for child, parent in _get_inheritance(node_data):
+        for _child, parent in _get_inheritance(node_data):
             # Find which file contains the parent class.
             for other_node in graph.nodes():
                 if other_node == node:
@@ -139,7 +137,6 @@ def build_code_graph(
                         )
 
     return graph
-
 
 
 def _get_inheritance(node_data: dict) -> list[tuple[str, str]]:
@@ -158,14 +155,8 @@ def _get_inheritance(node_data: dict) -> list[tuple[str, str]]:
 
 from .ast_extract import (  # noqa: E402
     ASTResult,
-    MAGIKA_LABEL_TO_TREESITTER,
-    extract_ast_relationships,
-    _extract_classes_and_inheritance,
-    _extract_functions,
-    _extract_python_imports,
-    _extract_ts_imports,
-    _get_parser,
     _resolve_import_path,
+    extract_ast_relationships,
 )
 from .communities import (  # noqa: E402
     detect_bridges,
@@ -174,7 +165,13 @@ from .communities import (  # noqa: E402
 )
 
 __all__ = [
-    "ASTResult", "Community", "Hub", "Bridge",
-    "build_code_graph", "extract_ast_relationships",
-    "detect_communities", "detect_hubs", "detect_bridges",
+    "ASTResult",
+    "Community",
+    "Hub",
+    "Bridge",
+    "build_code_graph",
+    "extract_ast_relationships",
+    "detect_communities",
+    "detect_hubs",
+    "detect_bridges",
 ]

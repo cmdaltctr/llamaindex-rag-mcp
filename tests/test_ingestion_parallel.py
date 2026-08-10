@@ -17,16 +17,19 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.ingestion import ingest_path_async, list_documents
+from rag_mcp.core.ingestion import ingest_path_async
 from rag_mcp.core.ingestion._state import (
     get_embed_semaphore as _get_embed_semaphore,
+)
+from rag_mcp.core.ingestion._state import (
     shutdown_requested as _shutdown_requested,
+)
+from rag_mcp.core.ingestion._state import (
     write_lock as _write_lock,
 )
 from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 from rag_mcp.core.ingestion.loader import gather_supported_files as _gather_supported_files
-
 
 # ── _gather_supported_files ──────────────────────────────────────────────
 
@@ -117,9 +120,7 @@ class TestSequentialIngestPath:
         assert result["files_indexed"] > 0
         assert result["chunks_created"] > 0
 
-    async def test_repeated_ingest_consistent_chunk_count(
-        self, dir_with_docs: Path
-    ) -> None:
+    async def test_repeated_ingest_consistent_chunk_count(self, dir_with_docs: Path) -> None:
         """Repeated sequential ingestion produces consistent chunk count."""
         r1 = await ingest_path_async(str(dir_with_docs))
         r2 = await ingest_path_async(str(dir_with_docs))
@@ -221,9 +222,7 @@ class TestConcurrencyPrimitives:
     async def test_parallel_shutdown_early_exit(self, tmp_path: Path) -> None:
         """Shutdown flag set mid-parallel causes early exit with fewer files."""
         for i in range(5):
-            (tmp_path / f"doc_{i}.txt").write_text(
-                f"content {i} " * 20
-            )
+            (tmp_path / f"doc_{i}.txt").write_text(f"content {i} " * 20)
 
         # Set the flag via progress callback after some files are read
         def _signal_midway(phase: str, current: int, total: int) -> None:

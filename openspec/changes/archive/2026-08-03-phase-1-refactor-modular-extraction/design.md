@@ -42,6 +42,7 @@ Old modules become thin shims that re-export from the new paths and emit `Deprec
 ```python
 # src/rag_mcp/metadata_extractor.py — COMPAT SHIM (deprecated, removal in v2.0.0)
 """Backward-compatible re-export. Import from rag_mcp.core.metadata instead."""
+
 from rag_mcp.core.metadata.extractor import *  # noqa: F401,F403
 ```
 

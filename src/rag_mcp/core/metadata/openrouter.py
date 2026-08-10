@@ -126,7 +126,10 @@ async def _extract_openrouter_chat_async(
     data = {
         "model": resolved.openrouter_llm_model,
         "messages": [
-            {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
+            {
+                "role": "system",
+                "content": "You are a document classification assistant. Return only valid JSON.",
+            },
             {"role": "user", "content": prompt},
         ],
         "stream": False,
@@ -204,7 +207,7 @@ async def _extract_openrouter_chat_async(
                 continue
 
             if attempt + 1 < max_attempts:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 await _retry_sleep(backoff)
 
     logger.warning(

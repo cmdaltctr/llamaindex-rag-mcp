@@ -12,25 +12,47 @@ from pathlib import Path
 import pytest
 
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
-    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/"
-    "vaswani2017_attention.pdf"
+    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
 )
+
+
+@pytest.fixture
+def liteparse_default(effective_settings):
+    """Set liteparse as the process-wide PDF reader, restored after the test.
+
+    The PDF factory reads the composition-root default, not per-call settings
+    (gotcha #8a).  This fixture saves the current default, applies liteparse,
+    and restores the original on teardown — explicit save/restore rather than
+    relying on the autouse fixture's blanket reset.
+    """
+    from rag_mcp.core.settings import (
+        get_default_effective_settings,
+        set_default_effective_settings,
+    )
+
+    original = get_default_effective_settings()
+    settings = effective_settings(extraction_mode="disabled", pdf_reader="liteparse")
+    set_default_effective_settings(settings)
+    yield settings
+    set_default_effective_settings(original)
 
 
 class TestIngestionPDFExtractor:
     """Integration tests for the factory wiring in ingestion.py."""
 
-    def test_pypdf_path_produces_nodes(self):
+    def test_pypdf_path_produces_nodes(self, effective_settings):
         """_read_and_chunk_file_async uses the factory; pypdf path unchanged."""
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
         import asyncio
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
-        nodes = asyncio.run(
-            _read_and_chunk_file_async(CORPUS_PDF)
+        from rag_mcp.core.ingestion.chunker import (
+            read_and_chunk_file_async as _read_and_chunk_file_async,
         )
+
+        settings = effective_settings(extraction_mode="disabled", pdf_reader="pypdf")
+        nodes = asyncio.run(_read_and_chunk_file_async(CORPUS_PDF, settings=settings))
 
         assert len(nodes) > 0
         # Every node should have metadata
@@ -42,28 +64,31 @@ class TestIngestionPDFExtractor:
 class TestIngestionLiteParsePath:
     """Integration tests requiring [pdf-liteparse] extra."""
 
-    def test_liteparse_path_propagates_bbox_metadata(self, monkeypatch):
+    def test_liteparse_path_propagates_bbox_metadata(self, monkeypatch, liteparse_default):
         """When PDF_READER=liteparse, nodes carry bbox metadata."""
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        # Ensure liteparse is the resolved reader
-        from rag_mcp import config as _config
-        monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "liteparse")
+        settings = liteparse_default
+
         import rag_mcp.integrations.pdf.factory as factory_mod
+
         monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
 
         import asyncio
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
-        nodes = asyncio.run(
-            _read_and_chunk_file_async(CORPUS_PDF)
+        from rag_mcp.core.ingestion.chunker import (
+            read_and_chunk_file_async as _read_and_chunk_file_async,
         )
+
+        nodes = asyncio.run(_read_and_chunk_file_async(CORPUS_PDF, settings=settings))
 
         assert len(nodes) > 0
         # Check that at least some nodes have liteparse metadata
         liteparse_nodes = [
-            n for n in nodes
-            if getattr(getattr(n, "metadata", {}), "get", lambda *a: None)("pdf_reader") == "liteparse"
+            n
+            for n in nodes
+            if getattr(getattr(n, "metadata", {}), "get", lambda *a: None)("pdf_reader")
+            == "liteparse"
         ]
         assert len(liteparse_nodes) > 0, "Expected nodes with pdf_reader=liteparse"

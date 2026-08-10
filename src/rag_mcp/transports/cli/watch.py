@@ -18,7 +18,9 @@ def watch(
         help="Directory to watch recursively for document changes.",
     ),
     debounce: float = typer.Option(
-        2.0, "--debounce", "-d",
+        2.0,
+        "--debounce",
+        "-d",
         help=(
             "Debounce interval in seconds (minimum 0.5). "
             "Controls how long to wait after the last file event "
@@ -26,11 +28,15 @@ def watch(
         ),
     ),
     collection: str = typer.Option(
-        "documents", "--collection", "-c",
+        "documents",
+        "--collection",
+        "-c",
         help="ChromaDB collection to route auto-ingested files into.",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v",
+        False,
+        "--verbose",
+        "-v",
         help="Enable DEBUG-level logging for the watcher.",
     ),
 ) -> None:
@@ -49,9 +55,11 @@ def watch(
       server) simultaneously on the same ChromaDB — two processes do
       not share the internal write lock.
     """
-    from ...daemon.watcher import watch_directory
+    from ...daemon.runner import watch_directory
 
     watch_directory(
-        path, debounce=debounce, verbose=verbose,
+        path,
+        debounce=debounce,
+        verbose=verbose,
         collection_name=collection,
     )

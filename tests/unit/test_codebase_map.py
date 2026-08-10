@@ -1,12 +1,10 @@
-"""Unit tests for codebase_map.py — Magika parsing, suffix fallback, mismatch detection, binary flagging."""
+"""Unit tests for codebase_map.py — Magika parsing, suffix fallback, mismatch detection, binary flagging."""  # noqa: E501
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from rag_mcp.core.codebase.codebase_map import (
     CodebaseMap,
@@ -18,7 +16,6 @@ from rag_mcp.core.codebase.codebase_map import (
     format_inventory,
     scan_with_suffix,
 )
-
 
 # ── Suffix fallback tests ────────────────────────────────────────────────
 
@@ -199,7 +196,12 @@ class TestFormatCodebaseMap:
         m = CodebaseMap(
             inventory=FileInventory(type_counts={"code/python": 3}),
             code_communities=[
-                {"label": "Core", "files": ["a.py", "b.py", "c.py"], "file_count": 3, "edge_count": 5},
+                {
+                    "label": "Core",
+                    "files": ["a.py", "b.py", "c.py"],
+                    "file_count": 3,
+                    "edge_count": 5,
+                },
             ],
         )
         text = format_codebase_map(m)
@@ -248,18 +250,30 @@ class TestMagikaParsing:
         (tmp_path / "app.py").write_text("x = 1")
         (tmp_path / "README.md").write_text("# Test")
 
-        mock_output = json.dumps({
-            "path": str(tmp_path / "app.py"),
-            "output": {"group": "code", "label": "python", "is_text": True},
-        }) + "\n" + json.dumps({
-            "path": str(tmp_path / "README.md"),
-            "output": {"group": "document", "label": "markdown", "is_text": True},
-        }) + "\n"
+        mock_output = (
+            json.dumps(
+                {
+                    "path": str(tmp_path / "app.py"),
+                    "output": {"group": "code", "label": "python", "is_text": True},
+                }
+            )
+            + "\n"
+            + json.dumps(
+                {
+                    "path": str(tmp_path / "README.md"),
+                    "output": {"group": "document", "label": "markdown", "is_text": True},
+                }
+            )
+            + "\n"
+        )
 
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=True), \
-             patch("subprocess.run") as mock_run:
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=True),
+            patch("subprocess.run") as mock_run,
+        ):
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
             from rag_mcp.core.codebase.codebase_map import scan_with_magika
+
             entries = scan_with_magika(str(tmp_path))
 
         assert len(entries) == 2
@@ -271,15 +285,23 @@ class TestMagikaParsing:
         """Magika correctly flags binary files."""
         (tmp_path / "app.bin").write_bytes(b"\x00\x01\x02")
 
-        mock_output = json.dumps({
-            "path": str(tmp_path / "app.bin"),
-            "output": {"group": "executable", "label": "elf", "is_text": False},
-        }) + "\n"
+        mock_output = (
+            json.dumps(
+                {
+                    "path": str(tmp_path / "app.bin"),
+                    "output": {"group": "executable", "label": "elf", "is_text": False},
+                }
+            )
+            + "\n"
+        )
 
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=True), \
-             patch("subprocess.run") as mock_run:
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=True),
+            patch("subprocess.run") as mock_run,
+        ):
             mock_run.return_value = MagicMock(stdout=mock_output, returncode=0)
             from rag_mcp.core.codebase.codebase_map import scan_with_magika
+
             entries = scan_with_magika(str(tmp_path))
 
         assert len(entries) == 1
@@ -309,9 +331,11 @@ class TestBuildCodebaseMap:
         mock_store.count.return_value = 2
         mock_store.fetch_all.return_value = {"ids": [], "embeddings": [], "metadatas": []}
 
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("rag_mcp.core.vectordb.get_default_store", return_value=mock_store), \
-             patch("rag_mcp.core.documents.doc_graph.build_document_graph") as mock_build_doc:
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("rag_mcp.core.vectordb.get_default_store", return_value=mock_store),
+            patch("rag_mcp.core.documents.doc_graph.build_document_graph") as mock_build_doc,
+        ):
             mock_build_doc.return_value = MagicMock()
 
             build_codebase_map(str(tmp_path))
@@ -327,8 +351,10 @@ class TestBuildCodebaseMap:
         """When ChromaDB collection is unavailable, code graph still works."""
         (tmp_path / "app.py").write_text("x = 1\n")
 
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("chromadb.PersistentClient") as mock_client:
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("chromadb.PersistentClient") as mock_client,
+        ):
             mock_client.return_value.get_collection.side_effect = Exception("no collection")
 
             result = build_codebase_map(str(tmp_path))

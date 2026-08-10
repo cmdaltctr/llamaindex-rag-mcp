@@ -9,7 +9,8 @@ this module (or at composition time).
 from __future__ import annotations
 
 import importlib
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 _registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
@@ -45,10 +46,7 @@ def get(name: str) -> Callable[..., Any]:
     if name in _cache:
         return _cache[name]
     if name not in _registry:
-        raise KeyError(
-            f"Unknown embedding provider {name!r}. "
-            f"Available: {sorted(_registry)}"
-        )
+        raise KeyError(f"Unknown embedding provider {name!r}. Available: {sorted(_registry)}")
     module_path, attr = _registry[name].split(":")
     try:
         mod = importlib.import_module(module_path)
@@ -62,9 +60,7 @@ def get(name: str) -> Callable[..., Any]:
             if name in _PROVIDER_EXTRAS
             else f"  Missing import: {exc}"
         )
-        raise ImportError(
-            f"Provider {name!r} requires an optional dependency.\n{hint}"
-        ) from exc
+        raise ImportError(f"Provider {name!r} requires an optional dependency.\n{hint}") from exc
     fn = getattr(mod, attr)
     _cache[name] = fn
     return fn

@@ -20,9 +20,9 @@ import pytest
 
 from rag_mcp.core.chunking import registry as chunking_registry
 from rag_mcp.core.metadata import registry as metadata_registry
-from rag_mcp.core.retrieval import registry as retrieval_registry
 from rag_mcp.core.providers.embeddings import registry as embed_registry
 from rag_mcp.core.providers.llm import registry as llm_registry
+from rag_mcp.core.retrieval import registry as retrieval_registry
 
 ALL_REGISTRIES = [
     chunking_registry,
@@ -47,9 +47,7 @@ def test_registry_is_lazy(registry) -> None:
     is already in ``sys.modules`` and ``importlib.import_module`` returns the
     cached object without executing it — making the assertion unfalsifiable.
     """
-    strategy_modules = sorted(
-        path.split(":")[0] for path in registry._registry.values()
-    )
+    strategy_modules = sorted(path.split(":")[0] for path in registry._registry.values())
     program = textwrap.dedent(
         f"""
         import sys
@@ -150,9 +148,7 @@ def test_registry_package_import_is_lazy(registry) -> None:
     for why an in-process ``sys.modules`` check is unfalsifiable here.
     """
     package = registry.__name__.rsplit(".", 1)[0]
-    strategy_modules = sorted(
-        path.split(":")[0] for path in registry._registry.values()
-    )
+    strategy_modules = sorted(path.split(":")[0] for path in registry._registry.values())
     program = textwrap.dedent(
         f"""
         import sys
@@ -188,9 +184,7 @@ def test_registry_missing_dependency_raises_import_error() -> None:
     with patch.dict(sys.modules, {target: None}):
         import importlib
 
-        fresh = importlib.import_module(
-            "rag_mcp.core.providers.embeddings.registry"
-        )
+        fresh = importlib.import_module("rag_mcp.core.providers.embeddings.registry")
         fresh._cache.clear()
         with pytest.raises(ImportError) as excinfo:
             fresh.get("llamacpp")

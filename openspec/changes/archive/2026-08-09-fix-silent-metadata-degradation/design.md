@@ -40,11 +40,11 @@ Relevant constraints:
 Add six optional overrides to `MetadataSettings`, all defaulting to `None`:
 
 ```python
-llamacpp_classify_timeout_override:   float | None = Field(default=None, gt=0)
-ollama_classify_timeout_override:     float | None = Field(default=None, gt=0)
+llamacpp_classify_timeout_override: float | None = Field(default=None, gt=0)
+ollama_classify_timeout_override: float | None = Field(default=None, gt=0)
 openrouter_classify_timeout_override: float | None = Field(default=None, gt=0)
-llamacpp_pipeline_timeout_override:   float | None = Field(default=None, gt=0)
-ollama_pipeline_timeout_override:     float | None = Field(default=None, gt=0)
+llamacpp_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+ollama_pipeline_timeout_override: float | None = Field(default=None, gt=0)
 openrouter_pipeline_timeout_override: float | None = Field(default=None, gt=0)
 ```
 
@@ -54,6 +54,7 @@ Two resolvers in `core/metadata/_common.py`:
 def _resolve_classify_timeout(resolved, provider: str) -> float:
     override = getattr(resolved.metadata, f"{provider}_classify_timeout", None)
     return override if override is not None else resolved.metadata.classify_timeout
+
 
 def _resolve_pipeline_timeout(resolved, provider: str) -> float:
     override = getattr(resolved.metadata, f"{provider}_pipeline_timeout", None)

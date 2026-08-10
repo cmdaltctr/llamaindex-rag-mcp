@@ -31,7 +31,5 @@ def build(settings: Settings, *, timeout: float | None = None) -> Any:
         base_url=settings.ollama_base_url,
         # Ollama genuinely accepts ``request_timeout`` — unlike OpenAILike,
         # which names it ``timeout`` and silently drops this spelling.
-        request_timeout=(
-            timeout if timeout is not None else settings.metadata.classify_timeout
-        ),
+        request_timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
     )

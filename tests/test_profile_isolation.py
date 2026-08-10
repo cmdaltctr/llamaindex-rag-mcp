@@ -76,9 +76,7 @@ class TestPerCollectionIsolation:
     def test_two_collections_resolve_independently(self) -> None:
         """Collections on different profiles get different levers."""
         store = _store_with({"docs": "documents", "code": "codebase"})
-        resolver = ProfileResolver(
-            store=store, server_profile="hybrid", base=EffectiveSettings()
-        )
+        resolver = ProfileResolver(store=store, server_profile="hybrid", base=EffectiveSettings())
 
         docs = resolver.resolve("docs")
         code = resolver.resolve("code")
@@ -121,9 +119,7 @@ class TestNoGlobalMutation:
 
         before = get_default_effective_settings()
         store = _store_with({"docs": "documents", "code": "codebase"})
-        resolver = ProfileResolver(
-            store=store, server_profile="hybrid", base=EffectiveSettings()
-        )
+        resolver = ProfileResolver(store=store, server_profile="hybrid", base=EffectiveSettings())
 
         docs = resolver.resolve("docs")
         code = resolver.resolve("code")
@@ -138,8 +134,6 @@ class TestNoGlobalMutation:
     def test_untagged_collection_inherits_the_server_profile(self) -> None:
         """No tag means inherit, not fall back to class defaults."""
         store = _store_with({})
-        resolver = ProfileResolver(
-            store=store, server_profile="codebase", base=EffectiveSettings()
-        )
+        resolver = ProfileResolver(store=store, server_profile="codebase", base=EffectiveSettings())
         effective = resolver.resolve("untagged")
         assert effective.retrieval.top_k == 20

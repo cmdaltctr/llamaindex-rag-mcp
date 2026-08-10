@@ -77,10 +77,12 @@ async def chunk_sentence_file_async(
         List of LlamaIndex Node objects.
     """
     resolved = resolve_effective_settings(settings)
-    effective_chunk_size = chunk_size if chunk_size is not None else (
-        resolved.chunking.markdown_chunk_size
-        if is_markdown
-        else resolved.chunking.chunk_size
+    effective_chunk_size = (
+        chunk_size
+        if chunk_size is not None
+        else (
+            resolved.chunking.markdown_chunk_size if is_markdown else resolved.chunking.chunk_size
+        )
     )
     effective_overlap = (
         chunk_overlap if chunk_overlap is not None else resolved.chunking.chunk_overlap

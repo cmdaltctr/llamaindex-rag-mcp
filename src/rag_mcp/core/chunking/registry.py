@@ -12,7 +12,8 @@ this module (or at composition time).
 from __future__ import annotations
 
 import importlib
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 _registry: dict[str, str] = {}
 _cache: dict[str, Callable[..., Any]] = {}
@@ -38,17 +39,13 @@ def get(name: str) -> Callable[..., Any]:
     if name in _cache:
         return _cache[name]
     if name not in _registry:
-        raise KeyError(
-            f"Unknown chunking strategy {name!r}. "
-            f"Available: {sorted(_registry)}"
-        )
+        raise KeyError(f"Unknown chunking strategy {name!r}. Available: {sorted(_registry)}")
     module_path, attr = _registry[name].split(":")
     try:
         mod = importlib.import_module(module_path)
     except ImportError as exc:
         raise ImportError(
-            f"Chunking strategy {name!r} could not be imported "
-            f"(module {module_path!r}): {exc}"
+            f"Chunking strategy {name!r} could not be imported (module {module_path!r}): {exc}"
         ) from exc
     fn = getattr(mod, attr)
     _cache[name] = fn
