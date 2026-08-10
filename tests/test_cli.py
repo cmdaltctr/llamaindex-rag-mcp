@@ -1754,3 +1754,211 @@ class TestDeleteConfirmationCLI:
         assert result.exit_code == 1
         mock_remove.assert_called_once()
         assert "boom" in result.output
+
+
+# ── S: GPU acceleration detection ───────────────────────────────────────────
+
+
+class TestGpuAccelerationDetection:
+    """Tests for _detect_gpu_acceleration and the _setup_logging DEBUG branch."""
+
+    _LOGGER = "rag_mcp.transports.cli"
+
+    @staticmethod
+    def _patch_embed_model(embed_model: str = "nomic-embed-text"):
+        """Patch cli.get_settings so the embed-model lookup is deterministic.
+
+        ``_detect_gpu_acceleration`` reads ``get_settings().embed_model`` to
+        decide which running model to inspect.  Without this patch the test
+        relies on ambient env state and can silently take the wrong branch.
+        """
+        from types import SimpleNamespace
+
+        return patch(
+            "rag_mcp.transports.cli.get_settings",
+            return_value=SimpleNamespace(embed_model=embed_model),
+        )
+
+    def test_returncode_nonzero_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A non-zero ollama ps exit logs a debug message naming the exit code."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("ollama ps exited" in r.getMessage() for r in caplog.records)
+
+    def test_metal_in_format_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A Metal runner for the embed model logs a debug message naming the model."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "metal"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any("on Metal GPU" in m and "nomic-embed-text" in m for m in msgs)
+
+    def test_gpu_in_runner_field_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """GPU in details.runner with format empty logs a debug message."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "", "runner": "cuda_gpu"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("on Metal GPU" in r.getMessage() for r in caplog.records)
+
+    def test_cpu_runner_logs_warning(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A CPU runner for the embed model logs a warning naming the model and CPU."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "cpu"},
+                        "size": "512 MB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.WARNING, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any("on CPU" in m and "nomic-embed-text" in m for m in msgs)
+
+    def test_embed_model_not_in_running_models(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """The embed model absent from running models logs a debug message."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {"models": [{"name": "llama3:latest", "details": {"format": "metal"}}]}
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("not found in running models" in r.getMessage() for r in caplog.records)
+
+    def test_file_not_found_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A missing ollama CLI logs a debug message without raising."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", side_effect=FileNotFoundError()),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("ollama CLI not found" in r.getMessage() for r in caplog.records)
+
+    def test_timeout_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """An ollama ps timeout logs a debug message without raising."""
+        import logging
+        import subprocess
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch(
+                "rag_mcp.transports.cli.subprocess.run",
+                side_effect=subprocess.TimeoutExpired(cmd="ollama", timeout=5),
+            ),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("timed out" in r.getMessage() for r in caplog.records)
+
+    def test_generic_exception_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """An unexpected exception logs a debug message containing the error."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch(
+                "rag_mcp.transports.cli.subprocess.run",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("unexpected" in r.getMessage() for r in caplog.records)
+
+    def test_setup_logging_calls_gpu_detection_at_debug(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_setup_logging invokes _detect_gpu_acceleration when LOG_LEVEL is DEBUG."""
+        import logging
+
+        from rag_mcp.transports.cli import _setup_logging
+
+        # basicConfig(force=True) mutates the root logger for the rest of the
+        # session.  Patch it so this test cannot pollute later tests.
+        monkeypatch.setattr(logging, "basicConfig", lambda **kwargs: None)
+        monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+        with patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect:
+            _setup_logging()
+            mock_detect.assert_called_once()
