@@ -39,7 +39,13 @@ def _sha256_file(path: Path) -> str:
             f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_stat.st_size} bytes)"
         )
     hasher = hashlib.sha256()
+    bytes_read = 0
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
+            bytes_read += len(chunk)
+            if bytes_read > MAX_FILE_SIZE:
+                raise OSError(
+                    f"File exceeds maximum size of {MAX_FILE_SIZE} bytes during read (read {bytes_read} bytes)"
+                )
             hasher.update(chunk)
     return hasher.hexdigest()
