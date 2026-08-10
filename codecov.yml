@@ -1,12 +1,15 @@
 # Codecov configuration — replaces SonarCloud coverage gating.
 # Coverage tiers mirror AGENTS.md:
 #   core + MCP >= 95%, orchestration >= 85%, overall >= 90%.
+# Project checks are informational (not CI-blocking) while targets are
+# recalibrated for branch coverage — see TDR-007 amendment.
 
 coverage:
   status:
     project:
       core:
         target: 95%
+        informational: true
         paths:
           - "src/rag_mcp/core/ingestion/"
           - "src/rag_mcp/core/retrieval/"
@@ -19,11 +22,13 @@ coverage:
           - "src/rag_mcp/transports/mcp.py"
       orchestration:
         target: 85%
+        informational: true
         paths:
           - "src/rag_mcp/daemon/"
           - "src/rag_mcp/transports/cli/"
       default:
         target: 90%
+        informational: true
 
     patch:
       default:
