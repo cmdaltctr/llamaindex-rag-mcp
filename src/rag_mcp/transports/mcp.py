@@ -35,7 +35,6 @@ from mcp.types import ToolAnnotations
 # The composition root also owns construction of the reranker (spec:
 # all provider/pipeline instantiation happens in ``compose.py``).
 from .. import compose  # noqa: F401
-from ..config import get_settings
 from ..core.ingestion import ingest_path_async
 from ..core.ingestion import list_documents as _list_documents
 from ..core.retrieval import search
@@ -166,14 +165,12 @@ async def search_documents(
                 }
             ]
 
-        if top_k is None and effective is not None:
+        if top_k is None:
             top_k = effective.top_k
         if similarity_threshold is None:
-            similarity_threshold = get_settings().retrieval.similarity_threshold
-        if hybrid is None and effective is not None:
+            similarity_threshold = effective.retrieval.similarity_threshold
+        if hybrid is None:
             hybrid = effective.hybrid_enabled
-        elif hybrid is None:
-            hybrid = get_settings().retrieval.hybrid_enabled
         return await asyncio.to_thread(
             search,
             query,

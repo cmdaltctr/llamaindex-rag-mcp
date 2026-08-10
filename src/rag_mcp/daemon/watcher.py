@@ -407,6 +407,10 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
 
 # ── Re-exports ───────────────────────────────────────────────────────────────
-# Daemon lifecycle lives in ``runner.py`` after the task 8.6 split.
+# Daemon lifecycle lives in ``runner.py`` after the task 8.6 split.  The
+# ``watch_directory`` re-export keeps the watcher module the public import
+# surface; consumers import it here, and the runner module cannot be imported
+# first because of the watcher<->runner import cycle (runner imports the
+# shared constants from watcher, watcher imports the hash helper from runner).
 
-from .runner import _sha256_file  # noqa: E402
+from .runner import _sha256_file, watch_directory  # noqa: E402, F401

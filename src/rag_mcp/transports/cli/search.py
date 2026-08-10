@@ -13,16 +13,14 @@ from io import StringIO
 import typer
 from rich.table import Table
 
-from ...config import get_settings
+from ... import compose
 from . import _print_ollama_error, _sanitise_display_name, app, console
 
 
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Natural language search query."),
-    top_k: int = typer.Option(
-        get_settings().retrieval.top_k, "--top-k", "-k", help="Max results to return."
-    ),
+    top_k: int | None = typer.Option(None, "--top-k", "-k", help="Max results to return."),
     threshold: float = typer.Option(0.0, "--threshold", "-t", help="Minimum similarity score."),
     rerank: bool | None = typer.Option(
         None,
@@ -43,7 +41,6 @@ def search(
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
-    from ... import compose
     from ...core.retrieval import search as do_search
 
     try:
@@ -51,6 +48,9 @@ def search(
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
+
+    if top_k is None:
+        top_k = effective.top_k
 
     try:
         output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()

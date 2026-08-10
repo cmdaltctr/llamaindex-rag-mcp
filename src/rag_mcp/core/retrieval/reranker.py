@@ -365,8 +365,22 @@ class CrossEncoderReranker:
                 r["_reranked"] = False
             return results[:top_k]
 
-        # Assign normalised scores and sort.
-        for result, score in zip(results, scores, strict=False):
+        # Assign normalised scores and sort.  Guard against an ONNX output
+        # whose cardinality does not match ``results``: silently truncating
+        # (or ignoring excess scores) would leave results without a
+        # ``_reranked`` flag.  Fall back to the un-reranked path instead.
+        if len(scores) != len(results):
+            logger.warning(
+                "Reranker score cardinality mismatch: %d scores for %d "
+                "results. Returning un-reranked results.",
+                len(scores),
+                len(results),
+            )
+            for r in results:
+                r["_reranked"] = False
+            return results[:top_k]
+
+        for result, score in zip(results, scores, strict=True):
             result["score"] = score
             result["_reranked"] = True
 

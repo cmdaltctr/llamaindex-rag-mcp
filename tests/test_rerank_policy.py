@@ -315,12 +315,14 @@ class TestResolveRerankPolicyFractionOverride:
 class TestPolicyDiagnostics:
     """Tests for policy reason diagnostics."""
 
-    def test_diagnostics_included_in_search(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_diagnostics_included_in_search(self, effective_settings) -> None:
         """include_diagnostics=True adds rerank_reason to results."""
         from rag_mcp.core.retrieval import search
 
-        _ = _settings(
-            rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
+        settings = effective_settings(
+            rerank_enabled=False,
+            rerank_enabled_for_semantic=True,
+            hard_technical_threshold=0.3,
         )
 
         # This will attempt actual search; we're testing the diagnostics
@@ -330,6 +332,7 @@ class TestPolicyDiagnostics:
             query="test query",
             collection_name="nonexistent_collection",
             include_diagnostics=True,
+            effective_settings=settings,
         )
 
         # Empty results are fine; we're just checking the parameter is accepted

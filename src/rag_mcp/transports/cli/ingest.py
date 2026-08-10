@@ -147,7 +147,7 @@ def _print_interrupt_result(result: dict, total_files: int, json_output: bool) -
     if json_output:
         result["interrupted"] = True
         result["message"] = f"Ingestion interrupted after {files_done}/{total_files} files"
-        typer.echo(json.dumps(result, indent=2))
+        console.print(json.dumps(result, indent=2), markup=False)
     else:
         console.print(
             f"[yellow]⚠ Ingestion interrupted after {files_done}/{total_files} files.[/yellow]"
@@ -160,7 +160,7 @@ def _print_interrupt_result(result: dict, total_files: int, json_output: bool) -
 def _print_ingest_result(result: dict, json_output: bool) -> None:
     """Print the final ingestion result."""
     if json_output:
-        typer.echo(json.dumps(result, indent=2))
+        console.print(json.dumps(result, indent=2), markup=False)
     else:
         files = result.get("files_indexed", 0)
         chunks = result.get("chunks_created", 0)
