@@ -1,7 +1,7 @@
 # TDR-002: SonarCloud security gate via GitHub Actions
 
 **Date:** 2026-06-28
-**Status:** Accepted
+**Status:** Superseded by [TDR-007](007-codecov-replaces-sonarcloud-for-coverage-gating.md)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Tags:** ci | security | sonarqube | sonarcloud
 

@@ -27,11 +27,12 @@ architecture), see the [ADR index](../adr/).
 | ID  | Title                                                                                                                           | Status   | Date       |
 | --- | ------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- |
 | 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md)                    | Accepted | 2026-06-28 |
-| 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                               | Accepted | 2026-06-28 |
+| 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                               | Superseded by [TDR-007](007-codecov-replaces-sonarcloud-for-coverage-gating.md) | 2026-06-28 |
 | 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md) | Accepted | 2026-06-28 |
 | 004 | [`--no-build` flag incompatible with editable installs in CI](004-uv-no-build-incompatible-with-editable-installs.md)           | Accepted | 2026-06-28 |
 | 005 | [fetch_k override parameter for experiment pool-size sweeps](005-fetch-k-override-for-experiment-pool-sweeps.md)                | Accepted | 2026-06-29 |
 | 006 | [OpenRouter structured outputs are per-endpoint, so `require_parameters` needs a downgrade path](006-openrouter-structured-outputs-per-endpoint.md) | Accepted | 2026-08-07 |
+| 007 | [Codecov replaces SonarCloud for coverage gating](007-codecov-replaces-sonarcloud-for-coverage-gating.md)                          | Accepted | 2026-08-10 |
 
 ## Status values
 
