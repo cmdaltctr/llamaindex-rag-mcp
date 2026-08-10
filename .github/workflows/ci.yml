@@ -117,7 +117,7 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-branch --cov-report=xml
+        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         # Pinned to SHA for security — codecov/codecov-action@v7.0.0
@@ -126,3 +126,10 @@ jobs:
           files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        # Pinned to SHA for security — codecov/test-results-action@v1
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
