@@ -137,15 +137,18 @@ async def search_documents(
 
     Args:
         query: Natural language search query.
-        top_k: Maximum number of chunks to return (default from config).
+        top_k: Maximum number of chunks to return. When None, the
+            selected collection profile supplies the default.
         similarity_threshold: Minimum relevance score to include a
-            result. 0.0 means no filtering (default).
+            result. When None, the collection profile supplies the
+            default.
         rerank: Tri-state rerank control:
             - ``True``: force reranking (explicit opt-in)
             - ``False``: force no reranking (explicit opt-out)
             - ``None``: apply policy resolver (default)
-        hybrid: If True, fuse dense vector retrieval with sparse keyword
-            retrieval via Reciprocal Rank Fusion before reranking.
+        hybrid: Fuse dense vector retrieval with sparse keyword retrieval
+            via Reciprocal Rank Fusion. When None, the collection profile
+            supplies the default.
         collection: Name of the ChromaDB collection to search.
         metadata_filter: Optional ChromaDB-compatible ``where`` clause.
 
