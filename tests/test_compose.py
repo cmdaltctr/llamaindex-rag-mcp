@@ -1,7 +1,7 @@
 """Tests for the composition root (``rag_mcp.compose``) and provider helpers.
 
 Covers the config-composition-root spec scenarios:
-- ``compose.build_embed_model`` / ``build_llm_model`` construct providers
+- ``compose.build_embed_model`` constructs the embedding provider
   by resolving lazy registries against the resolved ``Settings``.
 - ``compose.build_reranker`` constructs the DI reranker wired to
   ``settings.retrieval.rerank_model``.
@@ -20,7 +20,6 @@ import pytest
 
 from rag_mcp.compose import (
     build_embed_model,
-    build_llm_model,
     build_reranker,
     ensure_runtime_setup,
     reset_runtime_setup,
@@ -176,50 +175,6 @@ def test_build_embed_model_validates_unknown_provider() -> None:
     settings = _settings(embed_provider="bogus", local_backend="bogus")
     assert settings.embed_provider == "local"
     assert settings.local_backend == "llamacpp"
-
-
-# ── build_llm_model ─────────────────────────────────────────────────────────
-
-
-def test_build_llm_model_local_ollama() -> None:
-    """METADATA_LLM_PROVIDER=local + LOCAL_BACKEND=ollama builds an Ollama."""
-    settings = _settings()
-    with patch("llama_index.llms.ollama.Ollama") as mock_cls:
-        build_llm_model(settings)
-        mock_cls.assert_called_once()
-        kwargs = mock_cls.call_args.kwargs
-        assert kwargs["model"] == "qwen3:0.6b"
-        assert kwargs["base_url"] == "http://localhost:11434"
-
-
-def test_build_llm_model_cloud_openrouter_requires_extra(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Cloud openrouter LLM is registered but requires an optional dependency.
-
-    The LLM provider registry registers ``ollama``, ``llamacpp``, and
-    ``openrouter``.  ``rag_mcp.core.providers.llm.openrouter`` only imports
-    ``llama_index.llms.openai_like`` lazily inside ``build()``, so
-    ``llm_registry.get()`` resolves the module fine either way and does
-    *not* raise its own "uv sync --extra openrouter" hint here — the
-    ``ImportError`` actually surfaces from the inner lazy import when
-    ``build()`` runs. Force that import to fail via ``sys.modules`` so the
-    test is deterministic regardless of whether the ``openrouter`` extra
-    happens to be installed in the environment running the suite.
-
-    Uses ``monkeypatch.setitem`` (as ``test_provider_config.py`` does)
-    rather than ``patch.dict``: the latter restores the whole
-    ``sys.modules`` snapshot on exit, which would also evict
-    ``rag_mcp.core.providers.llm.openrouter`` — first imported lazily
-    inside this block by ``llm_registry.get()`` — from the module cache.
-    """
-    settings = _settings(
-        metadata_llm_provider="cloud",
-        cloud_backend="openrouter",
-    )
-    monkeypatch.setitem(sys.modules, "llama_index.llms.openai_like", None)
-    with pytest.raises(ImportError, match="openai_like"):
-        build_llm_model(settings)
 
 
 # ── build_reranker ──────────────────────────────────────────────────────────
@@ -535,17 +490,6 @@ def test_build_embed_model_none_delegates_to_get_settings() -> None:
         patch("llama_index.embeddings.ollama.OllamaEmbedding"),
     ):
         build_embed_model(None)
-    mock_gs.assert_called_once()
-
-
-def test_build_llm_model_none_delegates_to_get_settings() -> None:
-    """Passing None calls get_settings for LLM construction."""
-    controlled = _settings()
-    with (
-        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("llama_index.llms.ollama.Ollama"),
-    ):
-        build_llm_model(None)
     mock_gs.assert_called_once()
 
 

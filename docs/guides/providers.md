@@ -132,7 +132,7 @@ Providers are resolved through flat, per-domain lazy registries. Each registry m
 | LLM providers | `core/providers/llm/registry.py` |
 | Metadata extraction backends | `core/metadata/registry.py` |
 
-Provider construction (instantiating the LlamaIndex client) lives in `compose.py` (`build_embed_model`, `build_llm_model`), enforced by `import-linter`. The registries only resolve names to callables; they do not construct.
+Provider construction (instantiating the LlamaIndex client) lives in `compose.py` (`build_embed_model`), enforced by `import-linter`. The registries only resolve names to callables; they do not construct. Metadata extraction resolves LLMs through its own dispatch in `core/metadata/extractor.py`, not through the composition root.
 
 <!-- registry-names:embeddings -->
 Registered embedding providers: `ollama`, `llamacpp`, `openrouter`.
