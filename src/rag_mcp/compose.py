@@ -199,29 +199,6 @@ def build_embed_model(settings: Settings | None = None) -> Any:
     return build_fn(settings)
 
 
-def build_llm_model(settings: Settings | None = None) -> Any:
-    """Construct the LLM model for metadata classification.
-
-    Resolves via the METADATA_LLM_PROVIDER + LOCAL_BACKEND/CLOUD_BACKEND
-    two-tier scheme.
-    """
-    if settings is None:
-        settings = get_settings()
-
-    # Resolve the effective LLM provider (same two-tier logic as embeddings).
-    if settings.metadata_llm_provider == "local":
-        provider = settings.local_backend
-    elif settings.metadata_llm_provider == "cloud":
-        provider = settings.cloud_backend
-    else:
-        provider = settings.local_backend
-
-    from .core.providers.llm import registry as llm_registry
-
-    build_fn = llm_registry.get(provider)
-    return build_fn(settings)
-
-
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
@@ -270,9 +247,8 @@ def build_vector_store(settings: Settings | None = None) -> Any:
 
         return build_chroma_vector_store()
 
-    # The Settings validator should have caught this already, but guard
-    # defensively in case Settings was constructed with _env_file=None
-    # bypassing validation.
+    # Unreachable: the Settings model_validator raises on non-chroma
+    # vector_store at construction time (config/__init__.py line 198).
     raise ValueError(f"VECTOR_STORE={settings.vector_store!r} is not registered. Available: chroma")
 
 
