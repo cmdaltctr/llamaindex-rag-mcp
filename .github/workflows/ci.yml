@@ -115,7 +115,7 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-report=xml
+        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-branch --cov-report=xml
 
       - name: Upload coverage to Codecov
         # Pinned to SHA for security — codecov/codecov-action@v7.0.0
