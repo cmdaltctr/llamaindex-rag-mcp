@@ -16,6 +16,27 @@ CORPUS_PDF = Path(__file__).resolve().parents[2] / (
 )
 
 
+@pytest.fixture
+def liteparse_default(effective_settings):
+    """Set liteparse as the process-wide PDF reader, restored after the test.
+
+    The PDF factory reads the composition-root default, not per-call settings
+    (gotcha #8a).  This fixture saves the current default, applies liteparse,
+    and restores the original on teardown — explicit save/restore rather than
+    relying on the autouse fixture's blanket reset.
+    """
+    from rag_mcp.core.settings import (
+        get_default_effective_settings,
+        set_default_effective_settings,
+    )
+
+    original = get_default_effective_settings()
+    settings = effective_settings(extraction_mode="disabled", pdf_reader="liteparse")
+    set_default_effective_settings(settings)
+    yield settings
+    set_default_effective_settings(original)
+
+
 class TestIngestionPDFExtractor:
     """Integration tests for the factory wiring in ingestion.py."""
 
@@ -43,17 +64,12 @@ class TestIngestionPDFExtractor:
 class TestIngestionLiteParsePath:
     """Integration tests requiring [pdf-liteparse] extra."""
 
-    def test_liteparse_path_propagates_bbox_metadata(self, monkeypatch, effective_settings):
+    def test_liteparse_path_propagates_bbox_metadata(self, monkeypatch, liteparse_default):
         """When PDF_READER=liteparse, nodes carry bbox metadata."""
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        # The PDF factory reads the composition-root default, not per-call
-        # settings, so select the reader through the default (gotcha #8a).
-        from rag_mcp.core.settings import set_default_effective_settings
-
-        settings = effective_settings(extraction_mode="disabled", pdf_reader="liteparse")
-        set_default_effective_settings(settings)
+        settings = liteparse_default
 
         import rag_mcp.integrations.pdf.factory as factory_mod
 

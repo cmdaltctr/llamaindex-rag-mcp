@@ -17,17 +17,6 @@ from rag_mcp.core.retrieval.policy import (
     _classify_query_technical,
     _resolve_rerank_policy,
 )
-from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
-
-
-def _settings(**retrieval_overrides) -> EffectiveSettings:
-    """Build EffectiveSettings for the rerank policy under test.
-
-    Replaces monkeypatching ``config.settings``: each test now states the
-    configuration it depends on, and two tests cannot leak into each other.
-    """
-    return EffectiveSettings(retrieval=RetrievalBlock(**retrieval_overrides))
-
 
 # ── Technical query classifier tests ─────────────────────────────────────
 
@@ -143,9 +132,9 @@ class TestClassifyQueryTechnical:
 class TestResolveRerankPolicyExplicit:
     """Tests for explicit rerank=True/False overrides."""
 
-    def test_explicit_true_overrides_disabled_policy(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_explicit_true_overrides_disabled_policy(self, effective_settings) -> None:
         """rerank=True forces reranking even when policy disables it."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=False, hard_technical_threshold=0.3
         )
 
@@ -155,9 +144,9 @@ class TestResolveRerankPolicyExplicit:
         assert effective is True
         assert "explicit" in reason.lower()
 
-    def test_explicit_false_overrides_enabled_policy(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_explicit_false_overrides_enabled_policy(self, effective_settings) -> None:
         """rerank=False disables reranking even when policy enables it."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=True, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
@@ -167,9 +156,9 @@ class TestResolveRerankPolicyExplicit:
         assert effective is False
         assert "explicit" in reason.lower()
 
-    def test_explicit_true_with_technical_query(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_explicit_true_with_technical_query(self, effective_settings) -> None:
         """rerank=True forces reranking even for technical queries."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
@@ -186,9 +175,9 @@ class TestResolveRerankPolicyExplicit:
 class TestResolveRerankPolicyOmitted:
     """Tests for omitted/None rerank following RERANK_ENABLED."""
 
-    def test_omitted_follows_enabled_true(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omitted_follows_enabled_true(self, effective_settings) -> None:
         """rerank=None follows RERANK_ENABLED=True."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=True, rerank_enabled_for_semantic=False, hard_technical_threshold=0.3
         )
 
@@ -198,11 +187,9 @@ class TestResolveRerankPolicyOmitted:
         assert effective is True
         assert "default" in reason.lower()
 
-    def test_omitted_follows_enabled_false_semantic_disabled(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_omitted_follows_enabled_false_semantic_disabled(self, effective_settings) -> None:
         """rerank=None with RERANK_ENABLED=False and semantic disabled."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=False, hard_technical_threshold=0.3
         )
 
@@ -212,9 +199,9 @@ class TestResolveRerankPolicyOmitted:
         assert effective is False
         assert "semantic" in reason.lower()
 
-    def test_omitted_semantic_query_below_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omitted_semantic_query_below_threshold(self, effective_settings) -> None:
         """rerank=None enables reranking for semantic queries below threshold."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
@@ -225,9 +212,9 @@ class TestResolveRerankPolicyOmitted:
         assert "semantic" in reason.lower()
         assert "0.00" in reason
 
-    def test_omitted_technical_query_above_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omitted_technical_query_above_threshold(self, effective_settings) -> None:
         """rerank=None disables reranking for technical queries above threshold."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
@@ -239,9 +226,9 @@ class TestResolveRerankPolicyOmitted:
         assert "technical" in reason.lower()
         assert "0.67" in reason
 
-    def test_omitted_at_threshold_boundary(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omitted_at_threshold_boundary(self, effective_settings) -> None:
         """rerank=None at exactly the threshold disables reranking."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.5
         )
 
@@ -253,9 +240,9 @@ class TestResolveRerankPolicyOmitted:
         assert "technical" in reason.lower()
         assert "0.50" in reason
 
-    def test_omitted_just_below_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omitted_just_below_threshold(self, effective_settings) -> None:
         """rerank=None just below threshold enables reranking."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.6
         )
 
@@ -274,9 +261,9 @@ class TestResolveRerankPolicyOmitted:
 class TestResolveRerankPolicyFractionOverride:
     """Tests for technical_fraction parameter override."""
 
-    def test_fraction_override_used(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_fraction_override_used(self, effective_settings) -> None:
         """technical_fraction parameter overrides classifier."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
@@ -291,9 +278,9 @@ class TestResolveRerankPolicyFractionOverride:
         assert "technical" in reason.lower()
         assert "0.80" in reason
 
-    def test_fraction_override_low(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_fraction_override_low(self, effective_settings) -> None:
         """technical_fraction parameter can force low fraction."""
-        settings = _settings(
+        settings = effective_settings(
             rerank_enabled=False, rerank_enabled_for_semantic=True, hard_technical_threshold=0.3
         )
 
