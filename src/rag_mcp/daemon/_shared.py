@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -33,19 +34,20 @@ def _sha256_file(path: Path) -> str:
         OSError: If the file cannot be read or exceeds
             :data:`MAX_FILE_SIZE`.
     """
-    file_stat = path.stat()
-    if file_stat.st_size > MAX_FILE_SIZE:
-        raise OSError(
-            f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_stat.st_size} bytes)"
-        )
     hasher = hashlib.sha256()
-    bytes_read = 0
-    with open(path, "rb") as f:
+    total_bytes = 0
+    with path.open("rb") as f:
+        file_size = os.fstat(f.fileno()).st_size
+        if file_size > MAX_FILE_SIZE:
+            raise OSError(
+                f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_size} bytes)"
+            )
         for chunk in iter(lambda: f.read(8192), b""):
-            bytes_read += len(chunk)
-            if bytes_read > MAX_FILE_SIZE:
+            total_bytes += len(chunk)
+            if total_bytes > MAX_FILE_SIZE:
                 raise OSError(
-                    f"File exceeds maximum size of {MAX_FILE_SIZE} bytes during read (read {bytes_read} bytes)"
+                    f"File exceeds maximum size of {MAX_FILE_SIZE} bytes during read"
+                    f" (read {total_bytes} bytes)"
                 )
             hasher.update(chunk)
     return hasher.hexdigest()
