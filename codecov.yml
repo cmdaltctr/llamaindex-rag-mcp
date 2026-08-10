@@ -7,7 +7,6 @@ coverage:
     project:
       core:
         target: 95%
-        threshold: 1%
         paths:
           - "src/rag_mcp/core/ingestion/"
           - "src/rag_mcp/core/retrieval/"
@@ -20,13 +19,11 @@ coverage:
           - "src/rag_mcp/transports/mcp.py"
       orchestration:
         target: 85%
-        threshold: 1%
         paths:
           - "src/rag_mcp/daemon/"
           - "src/rag_mcp/transports/cli/"
       default:
         target: 90%
-        threshold: 1%
 
     patch:
       default:
