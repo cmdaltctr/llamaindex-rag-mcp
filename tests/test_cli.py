@@ -1754,3 +1754,138 @@ class TestDeleteConfirmationCLI:
         assert result.exit_code == 1
         mock_remove.assert_called_once()
         assert "boom" in result.output
+
+
+# ── S: GPU acceleration detection ───────────────────────────────────────────
+
+
+class TestGpuAccelerationDetection:
+    """Tests for _detect_gpu_acceleration and the _setup_logging DEBUG branch."""
+
+    def test_returncode_nonzero_logs_debug(self) -> None:
+        """A non-zero ollama ps exit logs debug and returns without raising."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        with patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result):
+            _detect_gpu_acceleration()
+
+    def test_metal_in_format_logs_debug(self) -> None:
+        """A Metal runner for the embed model logs a debug message."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "metal"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result):
+            _detect_gpu_acceleration()
+
+    def test_gpu_in_runner_field_logs_debug(self) -> None:
+        """GPU in details.runner with format empty logs a debug message."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "", "runner": "cuda_gpu"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result):
+            _detect_gpu_acceleration()
+
+    def test_cpu_runner_logs_warning(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A CPU runner for the embed model logs a Metal-enabling warning."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "cpu"},
+                        "size": "512 MB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            caplog.at_level(logging.WARNING, logger="rag_mcp.transports.cli"),
+        ):
+            _detect_gpu_acceleration()
+        assert any("Metal" in r.message for r in caplog.records)
+
+    def test_embed_model_not_in_running_models(self) -> None:
+        """The embed model absent from running models logs a debug message."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {"models": [{"name": "llama3:latest", "details": {"format": "metal"}}]}
+        )
+        with patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result):
+            _detect_gpu_acceleration()
+
+    def test_file_not_found_logs_debug(self) -> None:
+        """A missing ollama CLI logs debug without raising."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with patch("rag_mcp.transports.cli.subprocess.run", side_effect=FileNotFoundError()):
+            _detect_gpu_acceleration()
+
+    def test_timeout_logs_debug(self) -> None:
+        """An ollama ps timeout logs debug without raising."""
+        import subprocess
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with patch(
+            "rag_mcp.transports.cli.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd="ollama", timeout=5),
+        ):
+            _detect_gpu_acceleration()
+
+    def test_generic_exception_logs_debug(self) -> None:
+        """An unexpected exception logs debug without raising."""
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with patch(
+            "rag_mcp.transports.cli.subprocess.run",
+            side_effect=RuntimeError("unexpected"),
+        ):
+            _detect_gpu_acceleration()
+
+    def test_setup_logging_calls_gpu_detection_at_debug(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_setup_logging invokes _detect_gpu_acceleration when LOG_LEVEL is DEBUG."""
+        from rag_mcp.transports.cli import _setup_logging
+
+        monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+        with patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect:
+            _setup_logging()
+            mock_detect.assert_called_once()

@@ -14,7 +14,7 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -308,3 +308,252 @@ def test_get_embed_endpoint_openrouter() -> None:
         "text-embedding-3-small",
         "sk-test",
     )
+
+
+# ── resolve_sparse_backend (native path) ────────────────────────────────────
+
+
+class TestResolveSparseBackendNative:
+    """The explicit 'native' backend path with capability probing."""
+
+    @staticmethod
+    def _settings(backend: str):
+        from rag_mcp.config import Settings
+        from rag_mcp.core.retrieval.settings import RetrievalSettings
+
+        return Settings(
+            _env_file=None,
+            retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
+        )
+
+    def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A native request with the probe passing returns native."""
+        import rag_mcp.compose as compose
+        import rag_mcp.core.retrieval.sparse as sparse
+
+        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
+        assert compose.resolve_sparse_backend(self._settings("native")) == "native"
+
+    def test_native_with_probe_false_falls_back_to_bm25(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.CaptureFixture[str],
+    ) -> None:
+        """A native request with the probe failing falls back to bm25 with a warning."""
+        import logging
+
+        import rag_mcp.compose as compose
+        import rag_mcp.core.retrieval.sparse as sparse
+
+        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+            result = compose.resolve_sparse_backend(self._settings("native"))
+        assert result == "bm25"
+        assert any("native" in r.message and "bm25" in r.message for r in caplog.records)
+
+
+# ── resolve_pdf_reader (import probing) ─────────────────────────────────────
+
+
+class TestResolvePdfReader:
+    """The resolve_pdf_reader import-probe branches."""
+
+    def test_liteparse_available_returns_liteparse(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A liteparse reader with the package importable returns liteparse."""
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        settings = Settings(_env_file=None, pdf_reader="liteparse")
+        assert compose.resolve_pdf_reader(settings) == "liteparse"
+
+    def test_liteparse_missing_falls_back_to_pypdf(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A liteparse reader with the package absent falls back to pypdf."""
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "liteparse", None)
+        settings = Settings(_env_file=None, pdf_reader="liteparse")
+        assert compose.resolve_pdf_reader(settings) == "pypdf"
+
+    def test_auto_resolves_to_liteparse_when_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An auto reader resolves to liteparse when the package is importable."""
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        settings = Settings(_env_file=None, pdf_reader="auto")
+        assert compose.resolve_pdf_reader(settings) == "liteparse"
+
+    def test_auto_falls_back_to_pypdf_when_none_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An auto reader falls back to pypdf when both optional packages are absent."""
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "liteparse", None)
+        monkeypatch.setitem(sys.modules, "pypdfium2", None)
+        settings = Settings(_env_file=None, pdf_reader="auto")
+        assert compose.resolve_pdf_reader(settings) == "pypdf"
+
+
+# ── build_vector_store (chroma path) ────────────────────────────────────────
+
+
+def test_build_vector_store_chroma_delegates_to_factory() -> None:
+    """build_vector_store with chroma delegates to build_chroma_vector_store."""
+    from rag_mcp.compose import build_vector_store
+
+    with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+        build_vector_store(_settings(vector_store="chroma"))
+        mock_build.assert_called_once()
+
+
+# ── settings_to_effective(None) ─────────────────────────────────────────────
+
+
+def test_settings_to_effective_none_uses_get_settings() -> None:
+    """Passing None delegates to get_settings and returns a resolved EffectiveSettings."""
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.core.settings import EffectiveSettings
+
+    result = settings_to_effective(None)
+    assert isinstance(result, EffectiveSettings)
+    assert result.pdf_reader in ("auto", "liteparse", "pypdfium2", "pypdf")
+    assert result.retrieval.hybrid_sparse_backend in ("bm25", "native")
+
+
+# ── _resolve_active_strategies ──────────────────────────────────────────────
+
+
+class TestResolveActiveStrategies:
+    """The startup strategy resolution gate."""
+
+    def test_disabled_mode_skips_metadata(self) -> None:
+        """A 'disabled' extraction mode is not passed to the metadata registry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="disabled"),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get") as mock_metadata,
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            _resolve_active_strategies(settings)
+            mock_metadata.assert_not_called()
+
+    def test_unknown_name_skips_resolution(self) -> None:
+        """A chunking name not in registry.available() skips the get() call."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.chunking.settings import ChunkingSettings
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            chunking=ChunkingSettings(strategy_fallback="totally-bogus"),
+        )
+        with (
+            patch.object(chunking_reg, "get") as mock_chunking,
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            _resolve_active_strategies(settings)
+            mock_chunking.assert_not_called()
+
+    def test_valid_name_is_resolved(self) -> None:
+        """A registered chunking name triggers registry.get()."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.chunking.settings import ChunkingSettings
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            chunking=ChunkingSettings(strategy_fallback="sentence"),
+        )
+        with (
+            patch.object(chunking_reg, "get") as mock_chunking,
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            _resolve_active_strategies(settings)
+            mock_chunking.assert_any_call("sentence")
+
+
+# ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
+
+
+def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
+    """A vector store ImportError warns rather than crashing."""
+    from llama_index.core.embeddings import MockEmbedding
+
+    from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
+
+    _ = _settings()
+    reset_runtime_setup()
+    mock_model = MockEmbedding(embed_dim=384)
+    with (
+        patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
+        patch("rag_mcp.compose.build_vector_store", side_effect=ImportError("missing")),
+    ):
+        ensure_runtime_setup()
+    reset_runtime_setup()
+
+
+# ── build functions (settings=None delegation) ──────────────────────────────
+
+
+def test_build_embed_model_none_delegates_to_get_settings() -> None:
+    """Passing None delegates to get_settings() for embed model construction."""
+    with patch("llama_index.embeddings.ollama.OllamaEmbedding"):
+        build_embed_model(None)
+
+
+def test_build_llm_model_none_delegates_to_get_settings() -> None:
+    """Passing None delegates to get_settings() for LLM construction."""
+    with patch("llama_index.llms.ollama.Ollama"):
+        build_llm_model(None)
+
+
+def test_build_vector_store_none_delegates_to_get_settings() -> None:
+    """Passing None delegates to get_settings() for vector store construction."""
+    from rag_mcp.compose import build_vector_store
+
+    with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store"):
+        build_vector_store(None)
+
+
+def test_build_profile_resolver_none_delegates_to_get_settings() -> None:
+    """Passing None delegates to get_settings() for profile resolver construction."""
+    from rag_mcp.compose import build_profile_resolver
+
+    build_profile_resolver(None)
+
+
+def test_build_profile_resolver_explicit_settings_skips_get_settings() -> None:
+    """Passing explicit settings exercises the non-None branch."""
+    from rag_mcp.compose import build_profile_resolver
+
+    build_profile_resolver(_settings())

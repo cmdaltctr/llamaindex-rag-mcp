@@ -256,3 +256,43 @@ class TestSentenceChunkerSettings:
             settings=EffectiveSettings(),
         )
         assert nodes
+
+
+# ── core/vectordb/__init__.py: lazy re-export and lazy build ──────────────
+
+
+class TestVectordbLazyReexport:
+    """The __getattr__ lazy re-export and get_default_store lazy-build cache."""
+
+    def test_vector_store_lazy_reexport(self) -> None:
+        """Accessing VectorStore via __getattr__ returns the base class."""
+        import rag_mcp.core.vectordb as vdb
+        from rag_mcp.core.vectordb.base import VectorStore
+
+        assert vdb.VectorStore is VectorStore
+
+    def test_unknown_attribute_raises_attribute_error(self) -> None:
+        """An unknown attribute raises AttributeError mentioning the module name."""
+        import rag_mcp.core.vectordb as vdb
+
+        with pytest.raises(AttributeError, match="rag_mcp.core.vectordb"):
+            _ = vdb.Nope
+
+    def test_get_default_store_lazy_build_caches(self) -> None:
+        """get_default_store lazily builds and caches the store on first access."""
+        from rag_mcp.core.vectordb import get_default_store, reset_default_store
+
+        reset_default_store()
+        sentinel = MagicMock()
+        with patch(
+            "rag_mcp.core.vectordb.chroma.build_chroma_vector_store",
+            return_value=sentinel,
+        ) as mock_build:
+            result1 = get_default_store()
+            assert result1 is sentinel
+            assert mock_build.call_count == 1
+            # Second call must return the cached store without rebuilding.
+            result2 = get_default_store()
+            assert result2 is sentinel
+            assert mock_build.call_count == 1
+        reset_default_store()
