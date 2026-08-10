@@ -1,0 +1,43 @@
+# Codecov configuration — replaces SonarCloud coverage gating.
+# Coverage tiers mirror AGENTS.md:
+#   core + MCP >= 95%, orchestration >= 85%, overall >= 90%.
+
+coverage:
+  status:
+    project:
+      core:
+        target: 95%
+        paths:
+          - "src/rag_mcp/core/ingestion/"
+          - "src/rag_mcp/core/retrieval/"
+          - "src/rag_mcp/core/metadata/"
+          - "src/rag_mcp/core/chunking/"
+          - "src/rag_mcp/core/vectordb/"
+          - "src/rag_mcp/core/profiles/"
+          - "src/rag_mcp/core/settings.py"
+          - "src/rag_mcp/config/"
+          - "src/rag_mcp/transports/mcp.py"
+      orchestration:
+        target: 85%
+        paths:
+          - "src/rag_mcp/daemon/"
+          - "src/rag_mcp/transports/cli/"
+      default:
+        target: 90%
+
+    patch:
+      default:
+        target: 90%
+
+ignore:
+  - "tests/**"
+  - "experiments/**"
+  - "**/__init__.py"
+  - "**/__pycache__/**"
+  - ".venv/**"
+  - "chroma_db/**"
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
