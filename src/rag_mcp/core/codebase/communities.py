@@ -17,7 +17,6 @@ from .code_graph import Bridge, Community, Hub
 logger = logging.getLogger(__name__)
 
 
-
 def detect_communities(graph: nx.DiGraph) -> list[Community]:
     """Detect communities in the code graph using Louvain.
 
@@ -34,11 +33,13 @@ def detect_communities(graph: nx.DiGraph) -> list[Community]:
     if graph.number_of_nodes() < 5:
         # Small graph: single community.
         files = list(graph.nodes())
-        return [Community(
-            label=", ".join(Path(f).name for f in files[:3]),
-            files=files,
-            edge_count=graph.number_of_edges(),
-        )]
+        return [
+            Community(
+                label=", ".join(Path(f).name for f in files[:3]),
+                files=files,
+                edge_count=graph.number_of_edges(),
+            )
+        ]
 
     # Convert to undirected for Louvain.
     undirected = graph.to_undirected()
@@ -47,11 +48,13 @@ def detect_communities(graph: nx.DiGraph) -> list[Community]:
         communities_sets = nx.algorithms.community.louvain_communities(undirected)
     except Exception as exc:
         logger.warning("Louvain community detection failed: %s", exc)
-        return [Community(
-            label="all",
-            files=list(graph.nodes()),
-            edge_count=graph.number_of_edges(),
-        )]
+        return [
+            Community(
+                label="all",
+                files=list(graph.nodes()),
+                edge_count=graph.number_of_edges(),
+            )
+        ]
 
     communities: list[Community] = []
     for comm_set in communities_sets:
@@ -61,16 +64,15 @@ def detect_communities(graph: nx.DiGraph) -> list[Community]:
         label = "/".join(filenames) if filenames else "unnamed"
 
         # Count internal edges.
-        internal_edges = sum(
-            1 for u, v in graph.edges()
-            if u in comm_set and v in comm_set
-        )
+        internal_edges = sum(1 for u, v in graph.edges() if u in comm_set and v in comm_set)
 
-        communities.append(Community(
-            label=label,
-            files=files,
-            edge_count=internal_edges,
-        ))
+        communities.append(
+            Community(
+                label=label,
+                files=files,
+                edge_count=internal_edges,
+            )
+        )
 
     # Sort by size (largest first).
     communities.sort(key=lambda c: len(c.files), reverse=True)
@@ -167,12 +169,13 @@ def detect_bridges(
                 neighbor_comms.add(comm_idx)
 
         if len(neighbor_comms) >= 2:
-            bridges.append(Bridge(
-                file=node,
-                betweenness=score,
-                communities=sorted(neighbor_comms),
-            ))
+            bridges.append(
+                Bridge(
+                    file=node,
+                    betweenness=score,
+                    communities=sorted(neighbor_comms),
+                )
+            )
 
     bridges.sort(key=lambda b: b.betweenness, reverse=True)
     return bridges
-

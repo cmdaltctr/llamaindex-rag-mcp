@@ -57,6 +57,32 @@ jobs:
           PDF_READER: liteparse
         run: uv run --no-sync pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
 
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Ruff check
+        run: uv run --no-sync ruff check .
+
+      - name: Ruff format check
+        run: uv run --no-sync ruff format --check .
+
   sonarcloud:
     name: SonarCloud Scan
     runs-on: ubuntu-latest

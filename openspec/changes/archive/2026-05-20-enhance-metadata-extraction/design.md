@@ -74,10 +74,12 @@ The response is parsed with `json.loads()`. If parsing fails, the raw response i
 ```python
 _llm: Optional["Ollama"] = None
 
+
 def _get_llm():
     global _llm
     if _llm is None:
         from llama_index.llms.ollama import Ollama
+
         _llm = Ollama(model=OLLAMA_CLASSIFY_MODEL, base_url=OLLAMA_BASE_URL, request_timeout=60.0)
     return _llm
 ```

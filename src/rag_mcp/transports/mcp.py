@@ -21,17 +21,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
+from typing import Any
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
-
-from ..config import get_settings
-from ..core.ingestion import ingest_path_async, list_documents as _list_documents
-from ..core.profiles import ProfileResolver
-from ..core.retrieval import search
 
 # Import the composition root early so the LlamaIndex global
 # ``Settings.embed_model`` is assigned before any retrieval call
@@ -39,6 +35,10 @@ from ..core.retrieval import search
 # The composition root also owns construction of the reranker (spec:
 # all provider/pipeline instantiation happens in ``compose.py``).
 from .. import compose  # noqa: F401
+from ..config import get_settings
+from ..core.ingestion import ingest_path_async
+from ..core.ingestion import list_documents as _list_documents
+from ..core.retrieval import search
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,7 @@ _profile_resolver = compose.build_profile_resolver()
 # client, vector store connection) can be added without restructuring the
 # module. See PROPOSAL §5.2 (transports/mcp.py compatibility note).
 
+
 @asynccontextmanager
 async def _noop_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """Yield an empty context — no pre-loaded resources today.
@@ -76,6 +77,7 @@ mcp = FastMCP("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
 
 
 # ── Tool 1: Ingest ----------------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -109,6 +111,7 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
 
 
 # ── Tool 2: Search ----------------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -155,11 +158,13 @@ async def search_documents(
         try:
             effective = _profile_resolver.resolve(collection)
         except ValueError as exc:
-            return [{
-                "status": "error",
-                "error_type": "validation",
-                "message": str(exc),
-            }]
+            return [
+                {
+                    "status": "error",
+                    "error_type": "validation",
+                    "message": str(exc),
+                }
+            ]
 
         if top_k is None and effective is not None:
             top_k = effective.top_k
@@ -183,15 +188,16 @@ async def search_documents(
         )
     except ValueError as exc:
         logger.warning("search_documents validation error: %s", exc)
-        return [{
-            "status": "error",
-            "error_type": "validation",
-            "message": str(exc),
-        }]
+        return [
+            {
+                "status": "error",
+                "error_type": "validation",
+                "message": str(exc),
+            }
+        ]
     except Exception as exc:
         is_chroma = (
-            type(exc).__module__.startswith("chromadb")
-            or "chroma" in type(exc).__name__.lower()
+            type(exc).__module__.startswith("chromadb") or "chroma" in type(exc).__name__.lower()
         )
         if is_chroma or metadata_filter is not None:
             error_type = "retrieval"
@@ -199,16 +205,21 @@ async def search_documents(
             error_type = "internal"
         logger.warning(
             "search_documents %s error: %s: %s",
-            error_type, type(exc).__name__, exc,
+            error_type,
+            type(exc).__name__,
+            exc,
         )
-        return [{
-            "status": "error",
-            "error_type": error_type,
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        return [
+            {
+                "status": "error",
+                "error_type": error_type,
+                "message": f"{type(exc).__name__}: {exc}",
+            }
+        ]
 
 
 # ── Tool 3: List indexed documents ------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -224,19 +235,19 @@ def list_indexed_documents(collection: str = "documents") -> list[dict]:
         return _list_documents(collection_name=collection)
     except Exception as exc:
         logger.warning("list_indexed_documents error: %s: %s", type(exc).__name__, exc)
-        return [{
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        return [
+            {
+                "status": "error",
+                "message": f"{type(exc).__name__}: {exc}",
+            }
+        ]
 
 
 # ── Tool 4: List collections -------------------------------------------------
 
+
 @mcp.tool(
-    description=(
-        "List all available ChromaDB collections with their document "
-        "and chunk counts."
-    ),
+    description=("List all available ChromaDB collections with their document and chunk counts."),
     annotations=ToolAnnotations(readOnlyHint=True),
 )
 def list_collections() -> list[dict]:
@@ -247,13 +258,16 @@ def list_collections() -> list[dict]:
         return _list_collections()
     except Exception as exc:
         logger.warning("list_collections error: %s: %s", type(exc).__name__, exc)
-        return [{
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        return [
+            {
+                "status": "error",
+                "message": f"{type(exc).__name__}: {exc}",
+            }
+        ]
 
 
 # ── Tool 5: Delete documents -------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -278,9 +292,9 @@ def delete_documents(
     """
     from ..core.ingestion import (
         preview_delete,
-        remove_document,
         remove_by_metadata,
         remove_collection,
+        remove_document,
     )
 
     try:
@@ -302,9 +316,7 @@ def delete_documents(
                     metadata_filter=metadata_filter,
                     collection_name=collection,
                 )
-            result = remove_by_metadata(
-                metadata_filter, collection_name=collection
-            )
+            result = remove_by_metadata(metadata_filter, collection_name=collection)
             result["mode"] = "metadata"
             return result
 
@@ -322,6 +334,7 @@ def delete_documents(
 
 
 # ── Tool 6: Codebase map ----------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -345,10 +358,12 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
         return get_codebase_map_text(path=path, refresh=refresh)
     except Exception as exc:
         logger.warning("get_codebase_map error: %s: %s", type(exc).__name__, exc)
-        return json.dumps({
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        })
+        return json.dumps(
+            {
+                "status": "error",
+                "message": f"{type(exc).__name__}: {exc}",
+            }
+        )
 
 
 # ── Tool 7: Change collection profile (Phase 4) ─────────────────────
@@ -380,16 +395,12 @@ def change_collection_profile(
     if profile not in ("documents", "codebase"):
         return {
             "status": "error",
-            "message": (
-                f"Invalid profile {profile!r}. Available: documents, codebase."
-            ),
+            "message": (f"Invalid profile {profile!r}. Available: documents, codebase."),
         }
 
     if not confirm:
         try:
-            contract = generate_safety_contract(
-                collection, profile, resolver=_profile_resolver
-            )
+            contract = generate_safety_contract(collection, profile, resolver=_profile_resolver)
         except Exception as exc:
             return {"status": "error", "message": str(exc)}
         return {

@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import os
 
-
 # ── Retired env-var tripwire (design.md D9, layer 2) ─────────────────
 #
 # Two groups with different lifetimes — see the module docstring for the
@@ -118,7 +117,7 @@ def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
         nested_lines = "\n".join(f"  {old}  ->  {new}" for old, new in nested)
         sections.append(
             "Nested names retired by a later rename. These are rejected "
-            "outright by their settings block's extra=\"forbid\":\n"
+            'outright by their settings block\'s extra="forbid":\n'
             f"{nested_lines}"
         )
     body = "\n".join(sections)
@@ -129,4 +128,3 @@ def check_legacy_env_vars(env: dict[str, str] | None = None) -> None:
         "Cross-cutting names (EMBED_MODEL, RAG_PROFILE, PDF_READER, "
         "credentials) are unchanged. See docs/adr/037 for the full table."
     )
-

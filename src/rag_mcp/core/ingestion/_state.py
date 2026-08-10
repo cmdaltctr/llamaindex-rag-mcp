@@ -41,5 +41,6 @@ def reset_embed_semaphores() -> None:
     with _embed_semaphores_lock:
         _embed_semaphores.clear()
 
+
 # ── Shutdown flag for graceful SIGINT handling ───────────────────────────
 shutdown_requested = threading.Event()

@@ -68,9 +68,7 @@ class TestIngestResponsiveness:
         )
 
         # Start re-ingest — it will block inside _patched_read_and_chunk.
-        ingest_task = asyncio.create_task(
-            ingest_path_async(dir_with_docs, collection_name=coll)
-        )
+        ingest_task = asyncio.create_task(ingest_path_async(dir_with_docs, collection_name=coll))
 
         # Give the task a moment to enter the patched function.
         await asyncio.sleep(0.1)
@@ -115,9 +113,7 @@ class TestIngestResponsiveness:
             _patched_read_and_chunk,
         )
 
-        ingest_task = asyncio.create_task(
-            ingest_path_async(dir_with_docs, collection_name=coll)
-        )
+        ingest_task = asyncio.create_task(ingest_path_async(dir_with_docs, collection_name=coll))
         await asyncio.sleep(0.1)
 
         # Same property, same reasoning as the search test above.
@@ -133,21 +129,21 @@ class TestIngestResponsiveness:
         _pause.set()
         await ingest_task
 
-    async def test_async_search_offloads_blocking_retrieval(
-        self, monkeypatch
-    ) -> None:
+    async def test_async_search_offloads_blocking_retrieval(self, monkeypatch) -> None:
         """Slow synchronous retrieval runs in a worker, not the event loop."""
         from rag_mcp.transports.mcp import search_documents
 
         def slow_search(*args, **kwargs):
             time.sleep(0.3)
-            return [{
-                "score": 1.0,
-                "source": "slow.txt",
-                "page_label": None,
-                "text": "slow result",
-                "reranked": False,
-            }]
+            return [
+                {
+                    "score": 1.0,
+                    "source": "slow.txt",
+                    "page_label": None,
+                    "text": "slow result",
+                    "reranked": False,
+                }
+            ]
 
         monkeypatch.setattr("rag_mcp.transports.mcp.search", slow_search)
 
@@ -162,13 +158,15 @@ class TestIngestResponsiveness:
             "the blocking search completed before the loop yielded — it is "
             "not running in a worker thread, or the sleep was too long"
         )
-        assert await search_task == [{
-            "score": 1.0,
-            "source": "slow.txt",
-            "page_label": None,
-            "text": "slow result",
-            "reranked": False,
-        }]
+        assert await search_task == [
+            {
+                "score": 1.0,
+                "source": "slow.txt",
+                "page_label": None,
+                "text": "slow result",
+                "reranked": False,
+            }
+        ]
 
 
 class TestResponsivenessRegression:
@@ -187,7 +185,9 @@ class TestResponsivenessRegression:
 
         original = _ing.read_and_chunk_file_async
 
-        async def _blocking_patched(file_path, chunk_size=None, chunk_overlap=None, content_type=None, **kwargs):
+        async def _blocking_patched(
+            file_path, chunk_size=None, chunk_overlap=None, content_type=None, **kwargs
+        ):
             time.sleep(2)
             return await original(file_path, chunk_size, chunk_overlap, content_type=content_type)
 
@@ -206,9 +206,7 @@ class TestResponsivenessRegression:
         await ingest_path_async(dir_with_docs, collection_name=coll)
 
         # Start re-ingest as a task — the patch adds a 2 s block.
-        ingest_task = asyncio.create_task(
-            ingest_path_async(dir_with_docs, collection_name=coll)
-        )
+        ingest_task = asyncio.create_task(ingest_path_async(dir_with_docs, collection_name=coll))
 
         # Wait for the ingest to start and enter the blocking sleep.
         await asyncio.sleep(0.15)
@@ -277,9 +275,7 @@ class TestSplitterOffload:
             _slow_get_nodes,
         )
 
-        ingest_task = asyncio.create_task(
-            ingest_path_async(dir_with_docs, collection_name=coll)
-        )
+        ingest_task = asyncio.create_task(ingest_path_async(dir_with_docs, collection_name=coll))
 
         # Wait until the splitter is genuinely blocking, rather than
         # guessing with a sleep.

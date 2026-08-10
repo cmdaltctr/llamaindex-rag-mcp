@@ -7,11 +7,7 @@ Tests cover:
 
 from __future__ import annotations
 
-import os
-import signal
-import threading
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -23,9 +19,7 @@ from rag_mcp.core.ingestion.writer import embed_and_write_async as _embed_and_wr
 class TestShutdownFlag:
     """Tests for _shutdown_requested event flag."""
 
-    async def test_shutdown_flag_cleared_on_new_ingest(
-        self, dir_with_docs: Path
-    ) -> None:
+    async def test_shutdown_flag_cleared_on_new_ingest(self, dir_with_docs: Path) -> None:
         """Shutdown flag is cleared at the start of each ingest_path_async call."""
         _shutdown_requested.set()
         assert _shutdown_requested.is_set()
@@ -33,14 +27,10 @@ class TestShutdownFlag:
         result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
 
-    async def test_shutdown_flag_stops_sequential_early(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_shutdown_flag_stops_sequential_early(self, tmp_path: Path) -> None:
         """Sequential ingestion stops when shutdown flag is set mid-run."""
         for i in range(5):
-            (tmp_path / f"doc_{i}.txt").write_text(
-                f"Content of document {i}. " * 20
-            )
+            (tmp_path / f"doc_{i}.txt").write_text(f"Content of document {i}. " * 20)
 
         def _signal_after_first(phase: str, current: int, total: int) -> None:
             if phase == "read" and current >= 1:
@@ -99,9 +89,7 @@ class TestPathResolution:
         fake_home.mkdir()
         test_dir = fake_home / "test_rag_dir"
         test_dir.mkdir()
-        (test_dir / "doc.txt").write_text(
-            "Content for tilde expansion test. " * 10
-        )
+        (test_dir / "doc.txt").write_text("Content for tilde expansion test. " * 10)
 
         monkeypatch.setenv("HOME", str(fake_home))
 
@@ -115,9 +103,7 @@ class TestPathResolution:
         """ingest_path_async resolves relative paths from the current directory."""
         subdir = tmp_path / "subdir"
         subdir.mkdir()
-        (subdir / "doc.txt").write_text(
-            "Relative path content. " * 10
-        )
+        (subdir / "doc.txt").write_text("Relative path content. " * 10)
 
         monkeypatch.chdir(tmp_path)
         result = await ingest_path_async("subdir/doc.txt")

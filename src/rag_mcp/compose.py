@@ -17,7 +17,7 @@ from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 
-from .config import Settings, get_settings, _resolve_effective_embed_provider
+from .config import Settings, _resolve_effective_embed_provider, get_settings
 from .core.providers.embeddings import registry as embed_registry
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ _runtime_setup_done: bool = False
 # LiteParse installed?"), which is construction work, not settings data.
 # Keeping them in config.py forced it to import core.retrieval.sparse,
 # inverting the layering the config-is-leaf contract now forbids.
+
 
 def resolve_sparse_backend(settings: Settings) -> str:
     """Resolve the configured sparse backend to ``bm25`` or ``native``.
@@ -77,7 +78,8 @@ def resolve_pdf_reader(settings: Settings) -> str:
         except ImportError:
             logger.error(
                 "PDF_READER=%s was requested but the package is not "
-                "installed. Falling back to pypdf.", reader,
+                "installed. Falling back to pypdf.",
+                reader,
             )
             return "pypdf"
 
@@ -91,6 +93,7 @@ def resolve_pdf_reader(settings: Settings) -> str:
             continue
 
     return "pypdf"
+
 
 def _resolve_sparse_backend_for(settings: Settings) -> str:
     """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
@@ -270,10 +273,7 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     # The Settings validator should have caught this already, but guard
     # defensively in case Settings was constructed with _env_file=None
     # bypassing validation.
-    raise ValueError(
-        f"VECTOR_STORE={settings.vector_store!r} is not registered. "
-        f"Available: chroma"
-    )
+    raise ValueError(f"VECTOR_STORE={settings.vector_store!r} is not registered. Available: chroma")
 
 
 def build_profile_resolver(settings: Settings | None = None) -> Any:

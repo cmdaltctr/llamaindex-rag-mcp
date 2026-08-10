@@ -44,6 +44,7 @@ def _signal_degraded() -> None:
     """
     _degradation_flag.set(True)
 
+
 # ── Category normalisation helpers ──────────────────────────────────────
 
 _MAX_CATEGORY_WORDS = 3
@@ -79,7 +80,8 @@ def _normalise_category(raw: str) -> str:
     if word_count > _MAX_CATEGORY_WORDS:
         logger.debug(
             "Category '%s' exceeds %d words — falling back to uncategorised",
-            cleaned, _MAX_CATEGORY_WORDS,
+            cleaned,
+            _MAX_CATEGORY_WORDS,
         )
         return "uncategorised"
 
@@ -146,12 +148,12 @@ def _strip_llm_prefix(text: str) -> str:
     # Truncate at the first double-newline — LLMs often append an
     # explanation paragraph (e.g. "This title encapsulates...").
     if "\n\n" in cleaned:
-        cleaned = cleaned[:cleaned.index("\n\n")]
+        cleaned = cleaned[: cleaned.index("\n\n")]
     # Strip surrounding markdown bold markers (one or more ** groups) and quotes.
     cleaned = cleaned.strip()
     cleaned = re.sub(r"^(?:\*{1,2}\s*)+", "", cleaned)
     cleaned = re.sub(r"(?:\s*\*{1,2})+$", "", cleaned)
-    cleaned = cleaned.strip('"\'')
+    cleaned = cleaned.strip("\"'")
     return cleaned.strip()
 
 

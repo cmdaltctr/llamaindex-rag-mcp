@@ -61,9 +61,7 @@ def _sparse_bm25_query(
     ]
 
 
-def _emit_mixed_coverage_warning(
-    collection_name: str, store: VectorStore
-) -> None:
+def _emit_mixed_coverage_warning(collection_name: str, store: VectorStore) -> None:
     if collection_name in _warned_collections:
         return
     total = 0
@@ -119,17 +117,29 @@ def _hybrid_query_rows(
     _dense_query_rows = _retrieval_get("dense")
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
-            _dense_query_rows, store, collection_name, query, fetch_k,
+            _dense_query_rows,
+            store,
+            collection_name,
+            query,
+            fetch_k,
             metadata_filter,
         )
         if backend == "native":
             _emit_mixed_coverage_warning(collection_name, store)
             sparse_future = executor.submit(
-                _native_sparse_query, collection_name, store, query, fetch_k,
+                _native_sparse_query,
+                collection_name,
+                store,
+                query,
+                fetch_k,
             )
         else:
             sparse_future = executor.submit(
-                _sparse_bm25_query, collection_name, store, query, fetch_k,
+                _sparse_bm25_query,
+                collection_name,
+                store,
+                query,
+                fetch_k,
             )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
@@ -277,20 +287,30 @@ def search(
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
     resolved_fetch_k = _resolve_fetch_k(
-        top_k, effective_rerank, chunk_count, resolved_settings,
+        top_k,
+        effective_rerank,
+        chunk_count,
+        resolved_settings,
         fetch_k_override=fetch_k,
     )
 
     _dense_query_rows = _retrieval_get("dense")
     if hybrid:
         results = _hybrid_query_rows(
-            resolved_store, collection_name, query, resolved_fetch_k,
-            resolved_settings.retrieval.hybrid_rrf_k, resolved_settings,
+            resolved_store,
+            collection_name,
+            query,
+            resolved_fetch_k,
+            resolved_settings.retrieval.hybrid_rrf_k,
+            resolved_settings,
             metadata_filter,
         )
     else:
         results = _dense_query_rows(
-            resolved_store, collection_name, query, resolved_fetch_k,
+            resolved_store,
+            collection_name,
+            query,
+            resolved_fetch_k,
             metadata_filter,
         )
 
@@ -311,9 +331,7 @@ def search(
     # Scale the threshold down by 30× when reranking to avoid over-filtering.
     effective_threshold = _effective_threshold(similarity_threshold, effective_rerank)
     if effective_threshold > 0.0:
-        results = [
-            r for r in results if r["score"] >= effective_threshold
-        ]
+        results = [r for r in results if r["score"] >= effective_threshold]
 
     results.sort(key=lambda r: r["score"], reverse=True)
     results = results[:top_k]
@@ -355,19 +373,17 @@ def list_collections(
                 for meta in resolved_store.iter_metadatas(name):
                     if meta is None:
                         continue
-                    source = (
-                        meta.get("file_path")
-                        or meta.get("file_name")
-                        or "unknown"
-                    )
+                    source = meta.get("file_path") or meta.get("file_name") or "unknown"
                     doc_sources.add(source)
 
-            collections.append({
-                "name": name,
-                "document_count": len(doc_sources),
-                "chunk_count": chunk_count,
-            })
-        except Exception:
+            collections.append(
+                {
+                    "name": name,
+                    "document_count": len(doc_sources),
+                    "chunk_count": chunk_count,
+                }
+            )
+        except Exception:  # noqa: S112
             # Skip collections that can't be accessed
             continue
     return collections

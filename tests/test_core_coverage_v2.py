@@ -10,10 +10,9 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from conftest import connected_client
-
 from rag_mcp.core.settings import EffectiveSettings
-
 
 # ── core/ingestion/chunker.py: the Azure document branch ────────────────
 
@@ -69,17 +68,13 @@ class TestAzureDocumentBranch:
         small = await read_and_chunk_file_async(
             md,
             settings=EffectiveSettings(
-                chunking=ChunkingBlock(
-                    markdown_chunk_size=256, chunk_size=4096, chunk_overlap=16
-                )
+                chunking=ChunkingBlock(markdown_chunk_size=256, chunk_size=4096, chunk_overlap=16)
             ),
         )
         large = await read_and_chunk_file_async(
             md,
             settings=EffectiveSettings(
-                chunking=ChunkingBlock(
-                    markdown_chunk_size=4096, chunk_size=256, chunk_overlap=16
-                )
+                chunking=ChunkingBlock(markdown_chunk_size=4096, chunk_size=256, chunk_overlap=16)
             ),
         )
         assert len(small) > len(large), (
@@ -148,9 +143,7 @@ class TestMcpHandlersNeverRaise:
         targets = {
             "search_documents": "rag_mcp.transports.mcp.search",
             "list_indexed_documents": "rag_mcp.transports.mcp._list_documents",
-            "get_codebase_map": (
-                "rag_mcp.core.codebase.codebase_map.get_codebase_map_text"
-            ),
+            "get_codebase_map": ("rag_mcp.core.codebase.codebase_map.get_codebase_map_text"),
         }
         with patch(targets[tool], side_effect=RuntimeError("boom")):
             async with connected_client(mcp_server) as client:

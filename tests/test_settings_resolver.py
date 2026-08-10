@@ -16,7 +16,6 @@ import pytest
 
 from rag_mcp.config import Settings
 
-
 # ── Env var → (field name, documented default) ──────────────────────────
 # EMBED_MODEL is handled separately because the model validator requires
 # it whenever the effective embedding provider resolves to ollama.
@@ -121,7 +120,12 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     # Retrieval.
     ("RETRIEVAL__TOP_K", "retrieval.top_k", "25", 25),
     ("RETRIEVAL__RERANK_ENABLED", "retrieval.rerank_enabled", "true", True),
-    ("RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC", "retrieval.rerank_enabled_for_semantic", "false", False),
+    (
+        "RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC",
+        "retrieval.rerank_enabled_for_semantic",
+        "false",
+        False,
+    ),
     ("RETRIEVAL__HARD_TECHNICAL_THRESHOLD", "retrieval.hard_technical_threshold", "0.7", 0.7),
     ("RETRIEVAL__SIMILARITY_THRESHOLD", "retrieval.similarity_threshold", "0.5", 0.5),
     ("RETRIEVAL__RERANK_FETCH_MULTIPLIER", "retrieval.rerank_fetch_multiplier", "5", 5),
@@ -146,9 +150,19 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("CODEBASE_MAP_MAX_FILES", "codebase_map_max_files", "10000", 10000),
     ("CODEBASE_MAP_MAX_DEPTH", "codebase_map_max_depth", "20", 20),
     # Document backend (endpoint/key/model keep distinct valid overrides).
-    ("AZURE_DOC_INTELLIGENCE_ENDPOINT", "azure_doc_intelligence_endpoint", "https://example.azure.com/", "https://example.azure.com/"),
+    (
+        "AZURE_DOC_INTELLIGENCE_ENDPOINT",
+        "azure_doc_intelligence_endpoint",
+        "https://example.azure.com/",
+        "https://example.azure.com/",
+    ),
     ("AZURE_DOC_INTELLIGENCE_KEY", "azure_doc_intelligence_key", "key-123", "key-123"),
-    ("AZURE_DOC_INTELLIGENCE_MODEL", "azure_doc_intelligence_model", "prebuilt-read", "prebuilt-read"),
+    (
+        "AZURE_DOC_INTELLIGENCE_MODEL",
+        "azure_doc_intelligence_model",
+        "prebuilt-read",
+        "prebuilt-read",
+    ),
 ]
 
 

@@ -223,8 +223,7 @@ def test_yaml_defaults_match_model_field_defaults() -> None:
             block_cls = Settings.model_fields[key].annotation
             for leaf, leaf_value in value.items():
                 assert leaf in block_cls.model_fields, (
-                    f"defaults.yaml {key}.{leaf} has no field on "
-                    f"{block_cls.__name__}"
+                    f"defaults.yaml {key}.{leaf} has no field on {block_cls.__name__}"
                 )
                 expected = block_cls.model_fields[leaf].default
                 assert _normalise_yaml_value(expected, leaf_value) == expected, (
@@ -239,8 +238,7 @@ def test_yaml_defaults_match_model_field_defaults() -> None:
             )
             expected = Settings.model_fields[field_name].default
             assert _normalise_yaml_value(expected, value) == expected, (
-                f"defaults.yaml {key}={value!r} disagrees with the model "
-                f"default {expected!r}"
+                f"defaults.yaml {key}={value!r} disagrees with the model default {expected!r}"
             )
 
 
@@ -249,5 +247,3 @@ def test_every_subpackage_block_is_present_in_yaml() -> None:
     data = _load_packaged_yaml()
     for block in ("chunking", "ingestion", "retrieval", "metadata"):
         assert block in data, f"defaults.yaml is missing the {block!r} block"
-
-

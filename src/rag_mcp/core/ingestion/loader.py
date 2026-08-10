@@ -22,8 +22,6 @@ logger = logging.getLogger(__name__)
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
 
 
-
-
 def make_file_detail(
     file_name: str,
     status: str,
@@ -81,12 +79,14 @@ def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
         supported_set = set(files)
         unsupported = sorted(all_files - supported_set, key=lambda p: p.name)
         for f in unsupported:
-            skipped.append(make_file_detail(
-                file_name=f.name,
-                status="skipped",
-                chunks=0,
-                error=f"Unsupported extension: {f.suffix}",
-            ))
+            skipped.append(
+                make_file_detail(
+                    file_name=f.name,
+                    status="skipped",
+                    chunks=0,
+                    error=f"Unsupported extension: {f.suffix}",
+                )
+            )
             logger.info("⏭ %s — unsupported extension %s", f.name, f.suffix)
 
     return files, skipped
@@ -119,7 +119,4 @@ def list_documents(
         source = meta.get("file_path") or meta.get("file_name") or "unknown"
         source_counts[source] = source_counts.get(source, 0) + 1
 
-    return [
-        {"source": src, "chunks": cnt}
-        for src, cnt in sorted(source_counts.items())
-    ]
+    return [{"source": src, "chunks": cnt} for src, cnt in sorted(source_counts.items())]

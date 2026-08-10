@@ -16,9 +16,7 @@ import pytest
 from rag_mcp.core.settings import (
     EffectiveSettings,
     MetadataBlock,
-    RetrievalBlock,
 )
-
 
 # ── core/metadata/extractor.py: the OpenRouter cloud path ───────────────
 
@@ -31,9 +29,7 @@ class TestOpenRouterExtraction:
 
         response = MagicMock()
         response.raise_for_status = MagicMock()
-        response.json.return_value = {
-            "choices": [{"message": {"content": payload}}]
-        }
+        response.json.return_value = {"choices": [{"message": {"content": payload}}]}
 
         async def _post(*args, **kwargs):
             calls["n"] += 1
@@ -66,13 +62,9 @@ class TestOpenRouterExtraction:
 
         self._mock_openrouter(
             monkeypatch,
-            json.dumps(
-                {"category": "ai", "keywords": ["transformer"], "summary": "ok"}
-            ),
+            json.dumps({"category": "ai", "keywords": ["transformer"], "summary": "ok"}),
         )
-        result = await _extract_openrouter_chat_async(
-            "text", "f.txt", self._settings()
-        )
+        result = await _extract_openrouter_chat_async("text", "f.txt", self._settings())
         assert result["category"] == "ai"
         assert "transformer" in result["keywords"]
 
@@ -90,9 +82,7 @@ class TestOpenRouterExtraction:
             return None
 
         monkeypatch.setattr("rag_mcp.core.metadata._common._retry_sleep", _no_sleep)
-        result = await _extract_openrouter_chat_async(
-            "text", "f.txt", self._settings()
-        )
+        result = await _extract_openrouter_chat_async("text", "f.txt", self._settings())
         assert result["category"] == "uncategorised"
 
     async def test_cloud_provider_routes_to_openrouter(self, monkeypatch) -> None:
@@ -100,11 +90,13 @@ class TestOpenRouterExtraction:
         from rag_mcp.core.metadata import extractor as ext
 
         mock = AsyncMock(return_value={"category": "x", "keywords": [], "summary": ""})
-        with patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False), \
-             patch(
-                 "rag_mcp.core.metadata.openrouter._extract_openrouter_chat_async",
-                 mock,
-             ):
+        with (
+            patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False),
+            patch(
+                "rag_mcp.core.metadata.openrouter._extract_openrouter_chat_async",
+                mock,
+            ),
+        ):
             settings = self._settings()
             assert ext._local_strategy_name(settings) == "openrouter"
 
@@ -118,9 +110,7 @@ class TestCodebaseMapRendering:
     def _map(self, **kw):
         from rag_mcp.core.codebase.codebase_map import CodebaseMap, FileInventory
 
-        return CodebaseMap(
-            inventory=FileInventory(type_counts={"code/python": 2}), **kw
-        )
+        return CodebaseMap(inventory=FileInventory(type_counts={"code/python": 2}), **kw)
 
     def test_renders_code_communities(self) -> None:
         from rag_mcp.core.codebase.format import format_codebase_map
@@ -153,12 +143,9 @@ class TestCodebaseMapRendering:
         text = format_codebase_map(
             self._map(
                 doc_communities=[
-                    {"label": "Guides", "chunks": ["c1"], "chunk_count": 1,
-                     "category": "docs"}
+                    {"label": "Guides", "chunks": ["c1"], "chunk_count": 1, "category": "docs"}
                 ],
-                cross_links=[
-                    {"code": "a.py", "doc": "a.md", "relation": "filename_match"}
-                ],
+                cross_links=[{"code": "a.py", "doc": "a.md", "relation": "filename_match"}],
             )
         )
         assert "Guides" in text
@@ -219,16 +206,12 @@ class TestCapabilityProbes:
         monkeypatch.setattr(sparse, "_detect_native_sparse_capability", _boom)
         assert compose.resolve_sparse_backend(self._settings("bm25")) == "bm25"
 
-    @pytest.mark.parametrize(
-        "available, expected", [(True, "native"), (False, "bm25")]
-    )
+    @pytest.mark.parametrize("available, expected", [(True, "native"), (False, "bm25")])
     def test_auto_follows_the_probe(self, monkeypatch, available, expected) -> None:
         import rag_mcp.compose as compose
         import rag_mcp.core.retrieval.sparse as sparse
 
-        monkeypatch.setattr(
-            sparse, "_detect_native_sparse_capability", lambda: available
-        )
+        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: available)
         assert compose.resolve_sparse_backend(self._settings("auto")) == expected
 
     def test_pdf_reader_explicit_value_is_returned(self) -> None:

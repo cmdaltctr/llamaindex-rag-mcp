@@ -12,15 +12,13 @@ Tests cover:
 from __future__ import annotations
 
 import builtins
-import math
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 
 from rag_mcp.core.retrieval.reranker import (
-    CrossEncoderReranker,
     TOKENIZER_MAX_LENGTH,
+    CrossEncoderReranker,
     _select_onnx_variant,
     _sigmoid,
     reset_model_cache,
@@ -225,9 +223,13 @@ class TestCrossEncoderRerankerSingleton:
         # model_max_length sentinel > 100000 is capped to TOKENIZER_MAX_LENGTH.
         mock_tokenizer.model_max_length = 1000000
 
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
+                ):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         first = CrossEncoderReranker(model_id="cache-test/model")
                         first._load_model()
@@ -250,9 +252,13 @@ class TestCrossEncoderRerankerSingleton:
         mock_tokenizer = MagicMock()
         mock_tokenizer.model_max_length = 1000000
 
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
+                ):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         first = CrossEncoderReranker(model_id="cache-reset/model")
                         first._load_model()
@@ -261,9 +267,13 @@ class TestCrossEncoderRerankerSingleton:
         reset_model_cache()
 
         second = CrossEncoderReranker(model_id="cache-reset/model")
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]) as variant_mock:
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ) as variant_mock:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                with patch(
+                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
+                ):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         second._load_model()
             variant_mock.assert_called_once()
@@ -300,10 +310,7 @@ class TestCrossEncoderRerankerFallback:
         """When model not loaded, rerank() returns first top_k results."""
         reranker = self._make_unloaded_reranker()
         with patch.object(reranker, "_load_model"):
-            results = [
-                {"text": f"result {i}", "score": 0.5}
-                for i in range(5)
-            ]
+            results = [{"text": f"result {i}", "score": 0.5} for i in range(5)]
             out = reranker.rerank("query", results, top_k=3)
             assert len(out) == 3
             assert all(r["_reranked"] is False for r in out)
@@ -431,9 +438,7 @@ class TestCrossEncoderRerankerMockedInference:
 
         mock_session = MagicMock()
         # 5 logits → 5 reranked results
-        mock_session.run.return_value = [
-            np.array([[4.0], [3.0], [2.0], [1.0], [0.0]])
-        ]
+        mock_session.run.return_value = [np.array([[4.0], [3.0], [2.0], [1.0], [0.0]])]
 
         mock_tokenizer = MagicMock()
         mock_tokenizer.return_value = {
@@ -445,9 +450,7 @@ class TestCrossEncoderRerankerMockedInference:
         reranker._tokenizer = mock_tokenizer
         reranker._loaded = True
 
-        results = [
-            {"text": f"doc {i}", "score": 0.1} for i in range(5)
-        ]
+        results = [{"text": f"doc {i}", "score": 0.1} for i in range(5)]
         out = reranker.rerank("query", results, top_k=2)
 
         assert len(out) == 2
@@ -601,7 +604,9 @@ class TestCrossEncoderRerankerModelLoading:
         mock_session = MagicMock()
         mock_tokenizer_cls = MagicMock()
 
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ):
             with patch(
                 "huggingface_hub.hf_hub_download",
                 return_value="/fake/model.onnx",

@@ -45,11 +45,11 @@ Replace flat dicts with nested:
 
 ```python
 LOCAL_EMBED_PROVIDERS = {
-    "llamacpp": { ... },  # OpenAIEmbedding at localhost:8080/v1
-    "ollama":   { ... },  # OllamaEmbedding at localhost:11434
+    "llamacpp": {...},  # OpenAIEmbedding at localhost:8080/v1
+    "ollama": {...},  # OllamaEmbedding at localhost:11434
 }
 CLOUD_EMBED_PROVIDERS = {
-    "openrouter": { ... },  # OpenAIEmbedding at openrouter.ai/api/v1
+    "openrouter": {...},  # OpenAIEmbedding at openrouter.ai/api/v1
 }
 # Same pattern for LLM_PROVIDERS
 ```

@@ -38,7 +38,7 @@ the fp16 graph. The model fails to load on **all** providers, not just CoreML.
 The fix is one line — disable the single broken optimiser:
 
 ```python
-disabled_optimizers=frozenset(["SimplifiedLayerNormFusion"])
+disabled_optimizers = frozenset(["SimplifiedLayerNormFusion"])
 ```
 
 **Finding 2 — int8 is 2.3× faster than fp16.** int8 quantisation halves the
@@ -85,13 +85,11 @@ When loading any fp16 variant (whether as a fallback or via manual env
 override), pass `disabled_optimizers` to prevent the graph optimiser crash:
 
 ```python
-disabled = (
-    frozenset(["SimplifiedLayerNormFusion"])
-    if "fp16" in onnx_filename
-    else None
-)
+disabled = frozenset(["SimplifiedLayerNormFusion"]) if "fp16" in onnx_filename else None
 self._session = ort.InferenceSession(
-    onnx_path, providers=providers, disabled_optimizers=disabled,
+    onnx_path,
+    providers=providers,
+    disabled_optimizers=disabled,
 )
 ```
 

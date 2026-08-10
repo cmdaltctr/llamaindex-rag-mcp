@@ -247,6 +247,36 @@ source = ["rag_mcp"]
 # shims themselves (task 9.5). Every module under src/rag_mcp is now real
 # code with real consumers, so nothing is excluded from the gate.
 
+# ─── Ruff (lint + format) ────────────────────────────────────────────
+# Replaces flake8, black, isort, and bandit in one tool. The rule sets:
+#   E  pycodestyle errors (PEP 8 style)
+#   F  Pyflakes (unused imports, undefined names, redefinitions)
+#   I  isort (import ordering)
+#   UP pyupgrade (modernise syntax for the target Python version)
+#   B  flake8-bugbear (common pitfall patterns)
+#   S  flake8-bandit (security: hardcoded secrets, injection, weak crypto)
+# Gitleaks runs separately as a pre-commit hook for literal secret scanning.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = [
+    "graphify-out",
+    "chroma_db",
+    "chroma_db_test",
+    "models",
+    "experiments",
+    ".opencode",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+
+# S101 (assert) is expected in test code.
+# S108 (/tmp paths) and B017 (broad pytest.raises) are standard test patterns.
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S108", "B017", "S603", "S607"]
+
 [dependency-groups]
 dev = [
     "huggingface-hub>=0.36.2",
@@ -254,9 +284,11 @@ dev = [
     "ipywidgets>=8.1.8",
     "jupytext>=1.19.4",
     "openapi-spec-validator>=0.7.1",
+    "pre-commit>=4.0.0",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
+    "ruff>=0.12.0",
 ]
 
 # ─── Semantic Release ────────────────────────────────────────────────

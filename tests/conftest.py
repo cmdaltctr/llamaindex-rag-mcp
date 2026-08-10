@@ -13,7 +13,6 @@ import os
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
-from unittest.mock import patch
 
 # ── IMPORTANT: EMBED_MODEL for test collection ─────────────────────────
 # config.py now requires EMBED_MODEL when LOCAL_BACKEND=ollama, and test
@@ -32,7 +31,6 @@ import chromadb
 import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
-from mcp import ClientSession
 from mcp.shared.memory import create_connected_server_and_client_session
 
 # ── Constants ──────────────────────────────────────────────────────────────
@@ -102,9 +100,9 @@ def _clear_registry_caches() -> None:
     """
     from rag_mcp.core.chunking import registry as _chunking
     from rag_mcp.core.metadata import registry as _metadata
-    from rag_mcp.core.retrieval import registry as _retrieval
     from rag_mcp.core.providers.embeddings import registry as _embed
     from rag_mcp.core.providers.llm import registry as _llm
+    from rag_mcp.core.retrieval import registry as _retrieval
 
     for reg in (_chunking, _metadata, _retrieval, _embed, _llm):
         reg._cache.clear()
@@ -126,10 +124,9 @@ def effective_settings():
     Builds a frozen :class:`EffectiveSettings` with sensible defaults so
     later test migrations are one-line changes (task 4.1).
     """
-    from rag_mcp.core.settings import EffectiveSettings
-
     from rag_mcp.core.settings import (
         ChunkingBlock,
+        EffectiveSettings,
         IngestionBlock,
         MetadataBlock,
         RetrievalBlock,
@@ -316,9 +313,7 @@ async def connected_client(mcp_server):
     This is an async context manager, not a fixture, to avoid teardown
     issues with pytest-asyncio and anyio task groups.
     """
-    async with create_connected_server_and_client_session(
-        mcp_server
-    ) as session:
+    async with create_connected_server_and_client_session(mcp_server) as session:
         yield session
 
 

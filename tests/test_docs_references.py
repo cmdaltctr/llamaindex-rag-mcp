@@ -62,6 +62,5 @@ def test_documented_src_paths_exist() -> None:
 
     if findings:
         pytest.fail(
-            "Documentation cites src/rag_mcp/ paths that do not exist:\n"
-            + "\n".join(findings)
+            "Documentation cites src/rag_mcp/ paths that do not exist:\n" + "\n".join(findings)
         )

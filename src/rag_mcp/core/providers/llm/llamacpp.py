@@ -33,7 +33,5 @@ def build(settings: Settings, *, timeout: float | None = None) -> Any:
         api_key="no-key",
         # OpenAILike names this ``timeout``; ``request_timeout`` is the Ollama
         # spelling and is silently dropped, leaving the 60s default in place.
-        timeout=(
-            timeout if timeout is not None else settings.metadata.classify_timeout
-        ),
+        timeout=(timeout if timeout is not None else settings.metadata.classify_timeout),
     )

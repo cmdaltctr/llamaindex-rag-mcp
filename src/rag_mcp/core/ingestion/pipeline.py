@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from .loader import SUPPORTED_EXTENSIONS
 from ..settings import resolve_effective_settings
 from ._state import shutdown_requested
 from .chunker import read_and_chunk_file_async
-from .loader import gather_supported_files, make_file_detail
+from .loader import SUPPORTED_EXTENSIONS, gather_supported_files, make_file_detail
 from .writer import embed_and_write_async, remove_document
 
 logger = logging.getLogger(__name__)
@@ -82,13 +82,9 @@ async def ingest_path_async(
     # Resolve settings ONCE at the entry-point boundary; everything below
     # receives the resolved instance.
     resolved_settings = resolve_effective_settings(effective_settings)
-    _chunk_size = (
-        chunk_size if chunk_size is not None else resolved_settings.chunking.chunk_size
-    )
+    _chunk_size = chunk_size if chunk_size is not None else resolved_settings.chunking.chunk_size
     _chunk_overlap = (
-        chunk_overlap
-        if chunk_overlap is not None
-        else resolved_settings.chunking.chunk_overlap
+        chunk_overlap if chunk_overlap is not None else resolved_settings.chunking.chunk_overlap
     )
 
     files_to_index, skipped_details = gather_supported_files(path_obj)
@@ -121,9 +117,7 @@ async def ingest_path_async(
     for _f in files_to_index:
         if shutdown_requested.is_set():
             break
-        _del_result = await asyncio.to_thread(
-            remove_document, str(_f), collection_name
-        )
+        _del_result = await asyncio.to_thread(remove_document, str(_f), collection_name)
         if _del_result.get("status") == "ok":
             chunks_removed_total += _del_result.get("chunks_removed", 0)
 
@@ -147,11 +141,13 @@ async def ingest_path_async(
 
         # Skip binary files (task 6.5).
         if content_type and content_type.startswith("binary"):
-            file_details.append(make_file_detail(
-                file_name=file_path.name,
-                status="skipped",
-                chunks=0,
-            ))
+            file_details.append(
+                make_file_detail(
+                    file_name=file_path.name,
+                    status="skipped",
+                    chunks=0,
+                )
+            )
             logger.info("⊘ %s — binary file skipped", file_path.name)
             if progress_callback:
                 progress_callback("read", i + 1, len(files_to_index))
@@ -175,21 +171,25 @@ async def ingest_path_async(
             files_indexed += 1
             if file_metadata_degraded:
                 metadata_degraded_count += 1
-            file_details.append(make_file_detail(
-                file_name=file_path.name,
-                status="indexed",
-                chunks=len(nodes),
-                metadata_degraded=file_metadata_degraded,
-            ))
+            file_details.append(
+                make_file_detail(
+                    file_name=file_path.name,
+                    status="indexed",
+                    chunks=len(nodes),
+                    metadata_degraded=file_metadata_degraded,
+                )
+            )
             logger.info("✓ %s — %d chunk(s)", file_path.name, len(nodes))
         except Exception as exc:
             errors.append(f"{file_path.name}: {exc}")
-            file_details.append(make_file_detail(
-                file_name=file_path.name,
-                status="failed",
-                chunks=0,
-                error=str(exc),
-            ))
+            file_details.append(
+                make_file_detail(
+                    file_name=file_path.name,
+                    status="failed",
+                    chunks=0,
+                    error=str(exc),
+                )
+            )
             logger.warning("✗ %s — %s", file_path.name, exc)
 
         if progress_callback:
@@ -198,7 +198,9 @@ async def ingest_path_async(
     # Embed and write to ChromaDB (async, yields the loop).
     try:
         chunks_created = await embed_and_write_async(
-            all_nodes, progress_callback, collection_name=collection_name,
+            all_nodes,
+            progress_callback,
+            collection_name=collection_name,
             embed_concurrency=resolved_settings.ingestion.embed_concurrency,
         )
     except ConnectionError as exc:

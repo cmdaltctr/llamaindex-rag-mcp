@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, ConfigDict
 
 
 def _parse_legacy_bool(value: object) -> object:

@@ -24,7 +24,6 @@ class ChunkingBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
     chunk_size: int = 512
     chunk_overlap: int = 100
     markdown_chunk_size: int = 1024
@@ -41,7 +40,6 @@ class IngestionBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
     embed_concurrency: int = 2
     embed_batch_size: int = 100
 
@@ -53,7 +51,6 @@ class RetrievalBlock(BaseModel):
     # instances by reference between overlays, so a mutable block would
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
-
 
     top_k: int = 10
     similarity_threshold: float = 0.0
@@ -75,7 +72,6 @@ class MetadataBlock(BaseModel):
     # instances by reference between overlays, so a mutable block would
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
-
 
     extraction_mode: str = "llamaindex"
     keyword_rules: str | None = None

@@ -61,7 +61,8 @@ def compute_similarity_edges(
 
     # Filter to document-type chunks only (skip code chunks).
     doc_indices = [
-        i for i, meta in enumerate(metadatas)
+        i
+        for i, meta in enumerate(metadatas)
         if meta and meta.get("content_type", "").startswith("document")
     ]
 
@@ -87,16 +88,20 @@ def compute_similarity_edges(
         for j in range(i + 1, len(doc_indices)):
             sim = float(sim_matrix[i, j])
             if sim >= threshold:
-                edges.append(Edge(
-                    source=doc_ids[i],
-                    target=doc_ids[j],
-                    relation="similar",
-                    weight=sim,
-                ))
+                edges.append(
+                    Edge(
+                        source=doc_ids[i],
+                        target=doc_ids[j],
+                        relation="similar",
+                        weight=sim,
+                    )
+                )
 
     logger.debug(
         "Computed %d similarity edges from %d document chunks (threshold=%.2f)",
-        len(edges), len(doc_indices), threshold,
+        len(edges),
+        len(doc_indices),
+        threshold,
     )
     return edges
 
@@ -112,12 +117,14 @@ def _category_edges(doc_entries: list[tuple[str, dict]]) -> list[Edge]:
             cat_i = doc_entries[i][1].get("category")
             cat_j = doc_entries[j][1].get("category")
             if cat_i and cat_j and cat_i == cat_j:
-                edges.append(Edge(
-                    source=doc_entries[i][0],
-                    target=doc_entries[j][0],
-                    relation="category",
-                    weight=1.0,
-                ))
+                edges.append(
+                    Edge(
+                        source=doc_entries[i][0],
+                        target=doc_entries[j][0],
+                        relation="category",
+                        weight=1.0,
+                    )
+                )
     return edges
 
 
@@ -130,13 +137,15 @@ def _keyword_edges(doc_entries: list[tuple[str, dict]]) -> list[Edge]:
             kw_j = set(doc_entries[j][1].get("keywords", []))
             shared = kw_i & kw_j
             if shared:
-                edges.append(Edge(
-                    source=doc_entries[i][0],
-                    target=doc_entries[j][0],
-                    relation="keyword",
-                    weight=0.5,
-                    shared_keywords=list(shared),
-                ))
+                edges.append(
+                    Edge(
+                        source=doc_entries[i][0],
+                        target=doc_entries[j][0],
+                        relation="keyword",
+                        weight=0.5,
+                        shared_keywords=list(shared),
+                    )
+                )
     return edges
 
 
@@ -190,12 +199,14 @@ def _heading_prefix_edges(doc_chunks: list[tuple[str, str | None]]) -> list[Edge
             if chunk_id == other_id or not other_path:
                 continue
             if other_path.startswith(header_path + "/"):
-                edges.append(Edge(
-                    source=chunk_id,
-                    target=other_id,
-                    relation="heading_child",
-                    weight=1.0,
-                ))
+                edges.append(
+                    Edge(
+                        source=chunk_id,
+                        target=other_id,
+                        relation="heading_child",
+                        weight=1.0,
+                    )
+                )
     return edges
 
 
@@ -273,5 +284,3 @@ def _add_edges_safe(graph: nx.Graph, edges: list[Edge]) -> None:
             if edge.shared_keywords:
                 attrs["shared_keywords"] = edge.shared_keywords
             graph.add_edge(edge.source, edge.target, **attrs)
-
-

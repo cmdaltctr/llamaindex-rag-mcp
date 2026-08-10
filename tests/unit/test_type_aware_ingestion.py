@@ -1,9 +1,9 @@
-"""Unit tests for type-aware ingestion dispatch — CodeSplitter, config, binary skip, content_type metadata."""
+"""Unit tests for type-aware ingestion dispatch — CodeSplitter, config, binary skip, content_type metadata."""  # noqa: E501
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -21,7 +21,11 @@ class TestCodeSplitterDispatch:
         code = "def foo():\n    pass\n\ndef bar():\n    pass\n"
         (tmp_path / "app.py").write_text(code)
         nodes = await _chunk_code_file_async(
-            tmp_path / "app.py", "python", 1024, 100, "code/python",
+            tmp_path / "app.py",
+            "python",
+            1024,
+            100,
+            "code/python",
         )
         assert len(nodes) >= 1
         for node in nodes:
@@ -38,7 +42,11 @@ class TestCodeSplitterDispatch:
             side_effect=Exception("boom"),
         ):
             nodes = await _chunk_code_file_async(
-                tmp_path / "app.py", "python", 1024, 100, "code/python",
+                tmp_path / "app.py",
+                "python",
+                1024,
+                100,
+                "code/python",
             )
         assert len(nodes) >= 1
         assert nodes[0].metadata.get("content_type") == "code/python"
@@ -51,7 +59,8 @@ class TestConfigFileChunking:
         """Config files produce a single whole-file chunk."""
         (tmp_path / "config.yaml").write_text("key: value\n")
         nodes = _chunk_config_file(
-            tmp_path / "config.yaml", "config/yaml",
+            tmp_path / "config.yaml",
+            "config/yaml",
         )
         assert len(nodes) == 1
         assert nodes[0].metadata.get("content_type") == "config/yaml"
@@ -67,7 +76,8 @@ class TestContentTypeDispatch:
         code = "def foo():\n    pass\n"
         (tmp_path / "app.py").write_text(code)
         nodes = await _read_and_chunk_file_async(
-            tmp_path / "app.py", content_type="code/python",
+            tmp_path / "app.py",
+            content_type="code/python",
         )
         assert len(nodes) >= 1
         assert all(n.metadata.get("content_type") == "code/python" for n in nodes)
@@ -77,7 +87,8 @@ class TestContentTypeDispatch:
         """config/* content_type dispatches to whole-file chunking."""
         (tmp_path / "settings.json").write_text('{"key": "value"}')
         nodes = await _read_and_chunk_file_async(
-            tmp_path / "settings.json", content_type="config/json",
+            tmp_path / "settings.json",
+            content_type="config/json",
         )
         assert len(nodes) == 1
         assert nodes[0].metadata.get("content_type") == "config/json"
@@ -87,7 +98,8 @@ class TestContentTypeDispatch:
         """None content_type falls back to extension-based routing."""
         (tmp_path / "doc.md").write_text("# Hello\n\nWorld")
         nodes = await _read_and_chunk_file_async(
-            tmp_path / "doc.md", content_type=None,
+            tmp_path / "doc.md",
+            content_type=None,
         )
         # Should produce nodes via the existing markdown path.
         assert len(nodes) >= 1
@@ -98,7 +110,8 @@ class TestContentTypeDispatch:
         # A .txt file with code/python content_type should use CodeSplitter.
         (tmp_path / "script.txt").write_text("def foo():\n    pass\n")
         nodes = await _read_and_chunk_file_async(
-            tmp_path / "script.txt", content_type="code/python",
+            tmp_path / "script.txt",
+            content_type="code/python",
         )
         assert len(nodes) >= 1
         assert all(n.metadata.get("content_type") == "code/python" for n in nodes)
@@ -124,12 +137,27 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("rag_mcp.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory), \
-             patch("rag_mcp.core.ingestion.pipeline.gather_supported_files", return_value=([tmp_path / "app.py", tmp_path / "image.png"], [])), \
-             patch("rag_mcp.core.ingestion.pipeline.remove_document", return_value={"status": "ok", "chunks_removed": 0}), \
-             patch("rag_mcp.core.ingestion.pipeline.embed_and_write_async", new_callable=AsyncMock, return_value=1):
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch(
+                "rag_mcp.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory
+            ),
+            patch(
+                "rag_mcp.core.ingestion.pipeline.gather_supported_files",
+                return_value=([tmp_path / "app.py", tmp_path / "image.png"], []),
+            ),
+            patch(
+                "rag_mcp.core.ingestion.pipeline.remove_document",
+                return_value={"status": "ok", "chunks_removed": 0},
+            ),
+            patch(
+                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                new_callable=AsyncMock,
+                return_value=1,
+            ),
+        ):
             from rag_mcp.core.ingestion import ingest_path_async
+
             result = await ingest_path_async(str(tmp_path))
 
         skipped = [d for d in result["file_details"] if d.get("status") == "skipped"]

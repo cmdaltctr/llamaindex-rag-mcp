@@ -26,11 +26,10 @@ Degradation ladder
 
 from __future__ import annotations
 
-import logging
-
-from ._common import _degradation_flag, logger
-from .registry import available as _metadata_available, get as _metadata_get
 from ..settings import resolve_effective_settings
+from ._common import _degradation_flag, logger
+from .registry import available as _metadata_available
+from .registry import get as _metadata_get
 
 # Extraction modes for which the system promises an LLM-produced
 # classification.  Only these can "degrade" — keyword/disabled never
@@ -70,9 +69,7 @@ async def _dispatch_local_extraction(
     registry — this only maps provider configuration to a strategy name.
     """
     resolved = resolve_effective_settings(settings)
-    return await _metadata_get(_local_strategy_name(resolved))(
-        text, file_name, resolved
-    )
+    return await _metadata_get(_local_strategy_name(resolved))(text, file_name, resolved)
 
 
 # Provider config value → registered strategy name.

@@ -250,9 +250,7 @@ class VectorStore(ABC):
         """
 
     @abstractmethod
-    def update_collection_metadata(
-        self, collection_name: str, metadata: dict
-    ) -> None:
+    def update_collection_metadata(self, collection_name: str, metadata: dict) -> None:
         """Update collection-level metadata, merging with existing keys.
 
         Args:

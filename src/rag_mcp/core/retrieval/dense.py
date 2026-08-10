@@ -123,13 +123,15 @@ def _dense_query_rows(
     rows: list[dict] = []
     for row in raw_rows:
         meta = row.get("metadata", {})
-        rows.append({
-            "id": row.get("id", ""),
-            "score": _distance_to_score(row.get("distance")),
-            "source": _result_source(meta),
-            "page_label": meta.get("page_label"),
-            "text": row.get("document", ""),
-            "metadata": dict(meta),
-            "reranked": False,
-        })
+        rows.append(
+            {
+                "id": row.get("id", ""),
+                "score": _distance_to_score(row.get("distance")),
+                "source": _result_source(meta),
+                "page_label": meta.get("page_label"),
+                "text": row.get("document", ""),
+                "metadata": dict(meta),
+                "reranked": False,
+            }
+        )
     return rows

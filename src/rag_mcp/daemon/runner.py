@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import signal
-import time
 from pathlib import Path
 
 from watchdog.observers import Observer
@@ -28,8 +27,6 @@ from .watcher import (
 )
 
 logger = logging.getLogger(__name__)
-
-
 
 
 # ── Helper functions ─────────────────────────────────────────────────────────
@@ -52,8 +49,7 @@ def _sha256_file(path: Path) -> str:
     file_stat = path.stat()
     if file_stat.st_size > MAX_FILE_SIZE:
         raise OSError(
-            f"File exceeds maximum size of {MAX_FILE_SIZE} bytes "
-            f"(got {file_stat.st_size} bytes)"
+            f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_stat.st_size} bytes)"
         )
     hasher = hashlib.sha256()
     with open(path, "rb") as f:
@@ -91,8 +87,7 @@ def watch_directory(
     # Validate debounce
     if debounce < MIN_DEBOUNCE_SECONDS:
         console.print(
-            f"[red]Error:[/red] --debounce must be >= {MIN_DEBOUNCE_SECONDS}s "
-            f"(got {debounce}s)"
+            f"[red]Error:[/red] --debounce must be >= {MIN_DEBOUNCE_SECONDS}s (got {debounce}s)"
         )
         raise SystemExit(1)
 
@@ -119,7 +114,8 @@ def watch_directory(
 
     # Create handler and observer
     handler = DocumentIngestHandler(
-        debounce_seconds=debounce, watch_root=watch_path,
+        debounce_seconds=debounce,
+        watch_root=watch_path,
         collection_name=collection_name,
     )
     observer = Observer()
@@ -148,9 +144,7 @@ def watch_directory(
 
     # Start watching
     observer.start()
-    console.print(
-        f"Watching [bold]{watch_path}[/bold] for document changes…"
-    )
+    console.print(f"Watching [bold]{watch_path}[/bold] for document changes…")
     console.print(
         f"  [dim]Collection: {collection_name} | "
         f"Debounce: {debounce}s | "
@@ -169,4 +163,3 @@ def watch_directory(
         signal.signal(signal.SIGINT, _original_handler)
 
     console.print("[green]Watcher stopped cleanly.[/green]")
-

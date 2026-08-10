@@ -108,8 +108,7 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
     """
     if model_id is None:
         raise ValueError(
-            "model_id is required; compose.build_reranker() resolves it from "
-            "the injected settings"
+            "model_id is required; compose.build_reranker() resolves it from the injected settings"
         )
     model_lower = model_id.lower()
 
@@ -168,9 +167,7 @@ class CrossEncoderReranker:
         self._loaded: bool = False
         self._load_attempted: bool = False
         self._load_error: str | None = None
-        self._effective_max_length: int = (
-            tokenizer_max_length or TOKENIZER_MAX_LENGTH
-        )
+        self._effective_max_length: int = tokenizer_max_length or TOKENIZER_MAX_LENGTH
 
     # ── Model loading ──────────────────────────────────────────────────
 
@@ -211,7 +208,8 @@ class CrossEncoderReranker:
                 from transformers import AutoTokenizer
 
                 logger.info(
-                    "Loading reranker model: %s", self._model_id,
+                    "Loading reranker model: %s",
+                    self._model_id,
                 )
 
                 # Download the pre-exported ONNX model from HuggingFace Hub.
@@ -231,7 +229,9 @@ class CrossEncoderReranker:
                     except Exception as download_exc:
                         logger.debug(
                             "ONNX variant %s unavailable for %s: %s",
-                            candidate, self._model_id, download_exc,
+                            candidate,
+                            self._model_id,
+                            download_exc,
                         )
 
                 if onnx_path is None:
@@ -247,9 +247,7 @@ class CrossEncoderReranker:
                 # 512 tokens; ModernBERT supports 8192.  Using a max_length
                 # larger than the model's position embeddings causes an ONNX
                 # broadcast error at runtime.
-                model_max = getattr(
-                    self._tokenizer, "model_max_length", TOKENIZER_MAX_LENGTH
-                )
+                model_max = getattr(self._tokenizer, "model_max_length", TOKENIZER_MAX_LENGTH)
                 # Some tokenizers return a sentinel (e.g. 1000000) for
                 # "very large" — cap at our configured default in that case.
                 if not isinstance(model_max, int) or model_max > 100000:
@@ -264,10 +262,7 @@ class CrossEncoderReranker:
                 # (e.g. for fixed-input models or future CoreML versions).
                 _onnx_provider = os.getenv("RERANK_ONNX_PROVIDER", "cpu")
                 available = ort.get_available_providers()
-                if (
-                    _onnx_provider == "coreml"
-                    and "CoreMLExecutionProvider" in available
-                ):
+                if _onnx_provider == "coreml" and "CoreMLExecutionProvider" in available:
                     providers = ["CoreMLExecutionProvider", "CPUExecutionProvider"]
                 else:
                     providers = ["CPUExecutionProvider"]
@@ -283,15 +278,15 @@ class CrossEncoderReranker:
                     self._effective_max_length,
                 )
                 logger.info(
-                    "Reranker model loaded successfully "
-                    "(variant: %s)", onnx_filename,
+                    "Reranker model loaded successfully (variant: %s)",
+                    onnx_filename,
                 )
             except Exception as exc:
                 self._load_error = str(exc)
                 logger.warning(
-                    "Failed to load reranker model '%s': %s. "
-                    "Falling back to un-reranked results.",
-                    self._model_id, exc,
+                    "Failed to load reranker model '%s': %s. Falling back to un-reranked results.",
+                    self._model_id,
+                    exc,
                 )
 
     # ── Public API ─────────────────────────────────────────────────────
@@ -344,7 +339,7 @@ class CrossEncoderReranker:
             BATCH_SIZE = 32
             all_logits: list[float] = []
             for i in range(0, len(pairs), BATCH_SIZE):
-                batch = pairs[i:i + BATCH_SIZE]
+                batch = pairs[i : i + BATCH_SIZE]
                 encoded = self._tokenizer(
                     batch,
                     padding=True,
@@ -363,15 +358,15 @@ class CrossEncoderReranker:
             scores: list[float] = [_sigmoid(v) for v in all_logits]
         except Exception as exc:
             logger.warning(
-                "Reranker inference failed: %s. "
-                "Returning un-reranked results.", exc,
+                "Reranker inference failed: %s. Returning un-reranked results.",
+                exc,
             )
             for r in results:
                 r["_reranked"] = False
             return results[:top_k]
 
         # Assign normalised scores and sort.
-        for result, score in zip(results, scores):
+        for result, score in zip(results, scores, strict=False):
             result["score"] = score
             result["_reranked"] = True
 

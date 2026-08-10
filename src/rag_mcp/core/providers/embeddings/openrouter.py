@@ -30,9 +30,7 @@ def build(settings: Settings) -> Any:
         ) from None
 
     if not settings.openrouter_api_key:
-        raise ValueError(
-            "OPENROUTER_API_KEY is required for the openrouter embedding provider."
-        )
+        raise ValueError("OPENROUTER_API_KEY is required for the openrouter embedding provider.")
     if not settings.openrouter_embed_model:
         raise ValueError(
             "OPENROUTER_EMBED_MODEL is required for the openrouter embedding provider."

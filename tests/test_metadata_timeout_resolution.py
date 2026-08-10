@@ -20,7 +20,6 @@ import pytest
 
 from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
-
 # ── Task 2.2: resolver unit tests ───────────────────────────────────────
 
 
@@ -39,9 +38,7 @@ class TestResolveClassifyTimeout:
         """A set override wins over the shared classify_timeout."""
         from rag_mcp.core.metadata._common import _resolve_classify_timeout
 
-        settings = EffectiveSettings(
-            metadata=MetadataBlock(classify_timeout=30.0, **{field: 99.0})
-        )
+        settings = EffectiveSettings(metadata=MetadataBlock(classify_timeout=30.0, **{field: 99.0}))
         assert _resolve_classify_timeout(settings, provider) == 99.0
 
     @pytest.mark.parametrize("provider", ["llamacpp", "ollama", "openrouter"])
@@ -224,9 +221,7 @@ class TestPipelineTimeoutWiring:
 
             return _build
 
-        monkeypatch.setattr(
-            "rag_mcp.core.providers.llm.registry.get", _fake_llm_get
-        )
+        monkeypatch.setattr("rag_mcp.core.providers.llm.registry.get", _fake_llm_get)
 
         async def _fake_dispatch(text, settings, file_name):
             return {"category": "uncategorised", "keywords": [], "summary": ""}
@@ -266,9 +261,7 @@ class TestPipelineTimeoutWiring:
         settings = EffectiveSettings(
             local_backend="ollama",
             metadata_llm_provider="local",
-            metadata=MetadataBlock(
-                pipeline_timeout=180.0, ollama_pipeline_timeout_override=250.0
-            ),
+            metadata=MetadataBlock(pipeline_timeout=180.0, ollama_pipeline_timeout_override=250.0),
         )
         recorded = self._run(monkeypatch, settings)
         assert recorded["backend"] == "ollama"

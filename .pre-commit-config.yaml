@@ -1,0 +1,28 @@
+# Pre-commit hooks: Ruff (lint + format) and Gitleaks (secret scanning).
+# Install:  uv run pre-commit install
+# Run all:  uv run pre-commit run --all-files
+# Update:   uv run pre-commit autoupdate
+repos:
+  # Ruff uses local hooks so the pre-commit version matches the dev
+  # dependency in pyproject.toml exactly. No version drift between the
+  # editor, CLI, pre-commit, and CI.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (lint + auto-fix)
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+
+  # Gitleaks scans for hardcoded secrets (API keys, tokens, private keys).
+  # Complements Ruff's S ruleset: Ruff flags dangerous code patterns,
+  # Gitleaks finds literal secret strings by entropy and known formats.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

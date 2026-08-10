@@ -10,13 +10,11 @@ rewired through the vector store ABC in Phase 3.
 
 from __future__ import annotations
 
-import logging
-
+from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ._common import _normalise_category, logger
 from .keyword import _load_keyword_rules
-from ..settings import resolve_effective_settings
 
 
 def _get_seed_categories(settings: object | None = None) -> frozenset[str]:
@@ -38,9 +36,7 @@ def _get_seed_categories(settings: object | None = None) -> frozenset[str]:
     return frozenset(seen)
 
 
-def _collect_categories_from_collection(
-    store: VectorStore, collection_name: str
-) -> set[str]:
+def _collect_categories_from_collection(store: VectorStore, collection_name: str) -> set[str]:
     """Extract normalised category names from a single collection.
 
     Args:
@@ -81,9 +77,7 @@ def _gather_existing_categories() -> list[str]:
         categories: set[str] = set()
         for collection_name in store.list_collections():
             try:
-                categories.update(
-                    _collect_categories_from_collection(store, collection_name)
-                )
+                categories.update(_collect_categories_from_collection(store, collection_name))
             except Exception as col_exc:
                 logger.debug(
                     "Skipping collection '%s' during category lookup: %s",

@@ -9,7 +9,6 @@ at dispatch time (task 3.8, config-composition-root spec).
 from __future__ import annotations
 
 import ast
-import importlib
 from pathlib import Path
 
 import pytest

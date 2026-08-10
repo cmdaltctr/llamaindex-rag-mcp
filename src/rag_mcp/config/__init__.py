@@ -21,16 +21,10 @@ existing imports working during migration.
 from __future__ import annotations
 
 import logging
-import os
-import warnings
-from importlib.resources import files
-from typing import Annotated, Any
-
-import yaml
-from pydantic import BeforeValidator, Field, model_validator
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from dotenv import load_dotenv
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from ..core.chunking.settings import ChunkingSettings
 from ..core.ingestion.settings import IngestionSettings
@@ -161,7 +155,10 @@ class Settings(BaseSettings):
             object.__setattr__(self, "embed_provider", "local")
 
         if self.metadata_llm_provider not in ("local", "cloud"):
-            logger.warning("Unknown METADATA_LLM_PROVIDER=%r; falling back to local", self.metadata_llm_provider)
+            logger.warning(
+                "Unknown METADATA_LLM_PROVIDER=%r; falling back to local",
+                self.metadata_llm_provider,
+            )
             object.__setattr__(self, "metadata_llm_provider", "local")
 
         if self.local_backend not in ("llamacpp", "ollama"):
@@ -169,7 +166,9 @@ class Settings(BaseSettings):
             object.__setattr__(self, "local_backend", "llamacpp")
 
         if self.cloud_backend not in ("openrouter",):
-            logger.warning("Unknown CLOUD_BACKEND=%r; falling back to openrouter", self.cloud_backend)
+            logger.warning(
+                "Unknown CLOUD_BACKEND=%r; falling back to openrouter", self.cloud_backend
+            )
             object.__setattr__(self, "cloud_backend", "openrouter")
 
         if self.retrieval.hybrid_sparse_backend not in ("auto", "native", "bm25"):
@@ -188,7 +187,9 @@ class Settings(BaseSettings):
             object.__setattr__(self, "pdf_reader", "auto")
 
         if self.document_backend not in ("local", "azure"):
-            logger.warning("Unknown DOCUMENT_BACKEND=%r; falling back to local", self.document_backend)
+            logger.warning(
+                "Unknown DOCUMENT_BACKEND=%r; falling back to local", self.document_backend
+            )
             object.__setattr__(self, "document_backend", "local")
 
         # Vector store selection (Phase 3, ADR-034).  Only "chroma" is
@@ -238,12 +239,12 @@ class Settings(BaseSettings):
         yaml_source = _YamlDefaultsSource(settings_cls)
         profile_source = _ProfileYamlSettingsSource(settings_cls)
         return (
-            init_settings,        # explicit args (highest)
-            env_settings,         # env vars
-            dotenv_settings,      # .env file
-            profile_source,       # config/profiles/<RAG_PROFILE>.yaml
-            yaml_source,          # defaults.yaml
-            file_secret_settings, # unused (lowest)
+            init_settings,  # explicit args (highest)
+            env_settings,  # env vars
+            dotenv_settings,  # .env file
+            profile_source,  # config/profiles/<RAG_PROFILE>.yaml
+            yaml_source,  # defaults.yaml
+            file_secret_settings,  # unused (lowest)
         )
 
 
@@ -274,6 +275,7 @@ def _resolve_effective_embed_provider(settings: Settings) -> str:
 
 
 # ── Resolved singleton ──────────────────────────────────────────────
+
 
 def get_settings() -> Settings:
     """Return the resolved Settings singleton.
@@ -311,11 +313,11 @@ _settings: Settings | None = None
 # Settings sources and the legacy-name tripwire live in sibling modules
 # after the task 8.7 split.
 
-from .legacy import (  # noqa: E402
+from .legacy import (  # noqa: E402, F401
     _RETIRED_ENV_VARS,
     check_legacy_env_vars,
 )
-from .sources import (  # noqa: E402
+from .sources import (  # noqa: E402, F401
     _load_profile_bundle,
     _parse_legacy_bool,
     _ProfileYamlSettingsSource,

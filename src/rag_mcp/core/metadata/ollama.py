@@ -11,7 +11,6 @@ of Phase 1.
 from __future__ import annotations
 
 import json
-import logging
 import re
 
 from ..settings import resolve_effective_settings
@@ -57,19 +56,16 @@ def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
         )
     else:
         # ChromaDB empty and no seeds?  Only happens with empty custom rules.
-        category_section = (
-            "EXISTING CATEGORIES:\n"
-            "- uncategorised\n"
-        )
+        category_section = "EXISTING CATEGORIES:\n- uncategorised\n"
 
     return (
         "You are a document classifier. Analyse the document below and "
         "return ONLY a JSON object — no explanations, no markdown, no "
         "backticks.  The JSON must have exactly these keys:\n\n"
-        "  - \"category\": The best category label (string).\n"
-        "  - \"keywords\": 3-5 relevant keywords from the document "
+        '  - "category": The best category label (string).\n'
+        '  - "keywords": 3-5 relevant keywords from the document '
         "(list of strings).\n"
-        "  - \"summary\": A single-sentence summary of the document "
+        '  - "summary": A single-sentence summary of the document '
         "(string, max 300 chars).\n\n"
         "INSTRUCTIONS:\n"
         "1. First, determine if the document fits one of the "
@@ -77,9 +73,9 @@ def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
         "2. If YES: use that exact category name.\n"
         "3. If NO existing category fits: propose ONE new concise "
         "category label — 1-3 words, lowercase, underscores for spaces "
-        "(e.g., \"music_theory\", \"environmental_science\").\n"
+        '(e.g., "music_theory", "environmental_science").\n'
         "4. Prefer existing categories over creating new ones.\n"
-        "5. If genuinely uncertain, use \"uncategorised\".\n\n"
+        '5. If genuinely uncertain, use "uncategorised".\n\n'
         f"{category_section}\n"
         f"Document:\n{text[:3000]}"
     )
@@ -150,8 +146,7 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     except ValueError:
         # Couldn't parse JSON — use raw text as category.
         logger.warning(
-            "Ollama returned non-JSON response. Using raw text as category. "
-            "Response: %s",
+            "Ollama returned non-JSON response. Using raw text as category. Response: %s",
             raw_response[:200],
         )
         _signal_degraded()
@@ -168,11 +163,9 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
 
     raw_keywords = parsed.get("keywords", [])
     if isinstance(raw_keywords, list):
-        keywords = _truncate_keywords([
-            str(k).strip().lower()
-            for k in raw_keywords
-            if k and str(k).strip()
-        ])
+        keywords = _truncate_keywords(
+            [str(k).strip().lower() for k in raw_keywords if k and str(k).strip()]
+        )
     else:
         keywords = []
 
@@ -255,8 +248,7 @@ async def _extract_ollama_async(
             result = _parse_ollama_json_response(raw)
 
             logger.info(
-                "Ollama classified document as: %s (keywords=%d, "
-                "summary=%d chars, attempt=%d/%d)",
+                "Ollama classified document as: %s (keywords=%d, summary=%d chars, attempt=%d/%d)",
                 result["category"],
                 len(result.get("keywords", [])),
                 len(result.get("summary", "")),
@@ -277,12 +269,11 @@ async def _extract_ollama_async(
 
             # Don't sleep after the final attempt.
             if attempt + 1 < max_attempts:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 await _retry_sleep(backoff)
 
     logger.warning(
-        "Ollama classification failed after %d attempt(s) — "
-        "falling back to uncategorised: %s: %s",
+        "Ollama classification failed after %d attempt(s) — falling back to uncategorised: %s: %s",
         max_attempts,
         type(last_error).__name__ if last_error else "Unknown",
         last_error,

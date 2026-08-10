@@ -52,8 +52,8 @@ def test_top_k_is_honoured(effective_settings):
 dotted names:
 
 ```python
-effective_settings(top_k=20)                     # routed to retrieval.top_k
-effective_settings(**{"retrieval.top_k": 20})    # the same thing
+effective_settings(top_k=20)  # routed to retrieval.top_k
+effective_settings(**{"retrieval.top_k": 20})  # the same thing
 effective_settings(chroma_persist_dir="/tmp/x")  # a top-level field
 ```
 

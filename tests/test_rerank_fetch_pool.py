@@ -9,9 +9,6 @@ Covers Section 2 of the rag-retrieval-quality-improvements OpenSpec change:
 
 from __future__ import annotations
 
-import pytest
-
-from rag_mcp import config as _config
 from rag_mcp.core.retrieval.policy import _resolve_fetch_k
 from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
 
@@ -97,7 +94,9 @@ def test_override_bypasses_formula() -> None:
     # With defaults (max=100, mult=3), top_k=50 would compute fetch_k=150.
     # Override to 50 → must get 50, not 150.
     fetch_k = _resolve_fetch_k(
-        top_k=50, rerank=True, collection_count=10000,
+        top_k=50,
+        rerank=True,
+        collection_count=10000,
         fetch_k_override=50,
         settings=_settings(),
     )
@@ -105,7 +104,9 @@ def test_override_bypasses_formula() -> None:
 
     # Override to 200 → must get 200.
     fetch_k = _resolve_fetch_k(
-        top_k=50, rerank=True, collection_count=10000,
+        top_k=50,
+        rerank=True,
+        collection_count=10000,
         fetch_k_override=200,
         settings=_settings(),
     )
@@ -120,9 +121,11 @@ def test_override_distinct_values_no_collapse() -> None:
     """
     values = [
         _resolve_fetch_k(
-            top_k=50, rerank=True, collection_count=10000,
+            top_k=50,
+            rerank=True,
+            collection_count=10000,
             fetch_k_override=v,
-        settings=_settings(),
+            settings=_settings(),
         )
         for v in (50, 100, 200, 500)
     ]
@@ -133,7 +136,9 @@ def test_override_distinct_values_no_collapse() -> None:
 def test_override_still_clamps_to_collection() -> None:
     """An override larger than the collection SHALL be clamped down."""
     fetch_k = _resolve_fetch_k(
-        top_k=50, rerank=True, collection_count=30,
+        top_k=50,
+        rerank=True,
+        collection_count=30,
         fetch_k_override=500,
         settings=_settings(),
     )
@@ -145,7 +150,9 @@ def test_override_none_preserves_formula() -> None:
     # Same as test_default_pool_is_at_least_50_when_reranking but with
     # explicit fetch_k_override=None to prove the default path is unchanged.
     fetch_k = _resolve_fetch_k(
-        top_k=5, rerank=True, collection_count=1000,
+        top_k=5,
+        rerank=True,
+        collection_count=1000,
         fetch_k_override=None,
         settings=_settings(),
     )

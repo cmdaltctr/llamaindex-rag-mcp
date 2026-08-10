@@ -71,10 +71,12 @@ on `ValueError`. Same pattern as `watcher.py:222-242`.
 try:
     path_obj.relative_to(Path.cwd())
 except ValueError:
-    return json.dumps({
-        "status": "error",
-        "message": f"Path resolves outside the project root: {path}",
-    })
+    return json.dumps(
+        {
+            "status": "error",
+            "message": f"Path resolves outside the project root: {path}",
+        }
+    )
 ```
 
 **H2**: Fetch the real ChromaDB collection in `build_codebase_map()` using the
@@ -87,6 +89,7 @@ collection = None
 try:
     import chromadb
     from .config import CHROMA_PERSIST_DIR
+
     db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
     collection = db.get_collection("documents")
     if collection.count() == 0:
@@ -117,9 +120,11 @@ graph.add_node(
     inheritance=ast.inheritance,  # was missing
 )
 
+
 # code_graph.py — _get_inheritance()
 def _get_inheritance(node_data: dict) -> list[tuple[str, str]]:
     return node_data.get("inheritance", [])  # was: return []
+
 
 # code_graph.py — regex fix
 r"^\s*class\s+(\w+)\s*(?:\(([^)]+)\))?\s*:"  # was: required (...)

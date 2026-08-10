@@ -12,8 +12,7 @@ from pathlib import Path
 import pytest
 
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
-    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/"
-    "vaswani2017_attention.pdf"
+    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
 )
 
 
@@ -26,11 +25,12 @@ class TestIngestionPDFExtractor:
             pytest.skip("Corpus PDF not available")
 
         import asyncio
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
-        nodes = asyncio.run(
-            _read_and_chunk_file_async(CORPUS_PDF)
+        from rag_mcp.core.ingestion.chunker import (
+            read_and_chunk_file_async as _read_and_chunk_file_async,
         )
+
+        nodes = asyncio.run(_read_and_chunk_file_async(CORPUS_PDF))
 
         assert len(nodes) > 0
         # Every node should have metadata
@@ -49,21 +49,26 @@ class TestIngestionLiteParsePath:
 
         # Ensure liteparse is the resolved reader
         from rag_mcp import config as _config
+
         monkeypatch.setattr(_config, "RESOLVED_PDF_READER", "liteparse")
         import rag_mcp.integrations.pdf.factory as factory_mod
+
         monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
 
         import asyncio
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
-        nodes = asyncio.run(
-            _read_and_chunk_file_async(CORPUS_PDF)
+        from rag_mcp.core.ingestion.chunker import (
+            read_and_chunk_file_async as _read_and_chunk_file_async,
         )
+
+        nodes = asyncio.run(_read_and_chunk_file_async(CORPUS_PDF))
 
         assert len(nodes) > 0
         # Check that at least some nodes have liteparse metadata
         liteparse_nodes = [
-            n for n in nodes
-            if getattr(getattr(n, "metadata", {}), "get", lambda *a: None)("pdf_reader") == "liteparse"
+            n
+            for n in nodes
+            if getattr(getattr(n, "metadata", {}), "get", lambda *a: None)("pdf_reader")
+            == "liteparse"
         ]
         assert len(liteparse_nodes) > 0, "Expected nodes with pdf_reader=liteparse"

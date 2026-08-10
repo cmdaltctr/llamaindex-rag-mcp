@@ -16,8 +16,6 @@ from __future__ import annotations
 import asyncio
 import json
 
-import pytest
-
 from rag_mcp.core.metadata._common import _degradation_flag
 from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
 
@@ -63,9 +61,7 @@ class _AlwaysSucceedsClient:
             "choices": [
                 {
                     "message": {
-                        "content": json.dumps(
-                            {"category": "ai", "keywords": ["a"], "summary": "s"}
-                        )
+                        "content": json.dumps({"category": "ai", "keywords": ["a"], "summary": "s"})
                     }
                 }
             ]
@@ -90,6 +86,7 @@ class TestDirectChatSignalsDegraded:
         observe no mutation. Set, await, and read all inside one coroutine
         so they share the same Task context.
         """
+
         async def _wrapped():
             token = _degradation_flag.set(False)
             try:
@@ -170,13 +167,7 @@ class _MalformedJSONClient:
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
         resp.json.return_value = {
-            "choices": [
-                {
-                    "message": {
-                        "content": "This is not JSON at all, just raw text."
-                    }
-                }
-            ]
+            "choices": [{"message": {"content": "This is not JSON at all, just raw text."}}]
         }
         return resp
 
@@ -225,9 +216,7 @@ class TestLlamaIndexSignalsDegraded:
         async def _fake_ollama(text, file_name="", settings=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr(
-            "rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama
-        )
+        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama)
 
         from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
 
@@ -267,9 +256,7 @@ class TestLlamaIndexSignalsDegraded:
         async def _fake_ollama(text, file_name="", settings=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr(
-            "rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama
-        )
+        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama)
 
         from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
 
@@ -293,17 +280,18 @@ class TestLlamaIndexSignalsDegraded:
         fallback that must be signalled, not silently indexed.
         """
         import sys
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import AsyncMock, MagicMock
 
         # _extract_llamaindex_async accesses resolved.chunk_size directly
         # (a pre-existing flat-alias gap). Add the property for this test.
         from rag_mcp.core.settings import EffectiveSettings as _ES
-        monkeypatch.setattr(_ES, "chunk_size",
-                            property(lambda self: self.chunking.chunk_size),
-                            raising=False)
-        monkeypatch.setattr(_ES, "chunk_overlap",
-                            property(lambda self: self.chunking.chunk_overlap),
-                            raising=False)
+
+        monkeypatch.setattr(
+            _ES, "chunk_size", property(lambda self: self.chunking.chunk_size), raising=False
+        )
+        monkeypatch.setattr(
+            _ES, "chunk_overlap", property(lambda self: self.chunking.chunk_overlap), raising=False
+        )
 
         monkeypatch.setitem(sys.modules, "llama_index.llms.ollama", MagicMock())
         monkeypatch.setattr(sys.modules["llama_index.llms.ollama"], "Ollama", MagicMock())
@@ -347,6 +335,7 @@ class TestExtractMetadataWithStatusAsync:
 
     def test_llamaindex_success_raises_no_signal(self, monkeypatch) -> None:
         """Scenario: successful extraction raises no degradation signal."""
+
         async def _fake_llamaindex(text, file_name="", settings=None) -> dict:
             return {"category": "ai", "keywords": ["x"], "summary": "s"}
 
@@ -366,8 +355,10 @@ class TestExtractMetadataWithStatusAsync:
 
     def test_llamaindex_fallback_signals_degraded(self, monkeypatch) -> None:
         """Scenario: timeout fallback is signalled."""
+
         async def _degrading_llamaindex(text, file_name="", settings=None) -> dict:
             from rag_mcp.core.metadata._common import _signal_degraded
+
             _signal_degraded()
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
@@ -387,14 +378,14 @@ class TestExtractMetadataWithStatusAsync:
 
     def test_local_mode_fallback_signals_degraded(self, monkeypatch) -> None:
         """Configured mode 'local' also counts as LLM-backed."""
+
         async def _degrading_ollama(text, file_name="", settings=None) -> dict:
             from rag_mcp.core.metadata._common import _signal_degraded
+
             _signal_degraded()
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr(
-            "rag_mcp.core.metadata.ollama._extract_ollama_async", _degrading_ollama
-        )
+        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _degrading_ollama)
 
         from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
 
@@ -455,9 +446,7 @@ class TestChunkerForwardsSettings:
     """
 
     def test_custom_keyword_rule_reaches_extraction(self, sample_txt) -> None:
-        custom_rules = json.dumps(
-            [{"pattern": "capital|paris|berlin", "category": "geography"}]
-        )
+        custom_rules = json.dumps([{"pattern": "capital|paris|berlin", "category": "geography"}])
         settings = EffectiveSettings(
             metadata=MetadataBlock(extraction_mode="keyword", keyword_rules=custom_rules)
         )
@@ -499,9 +488,7 @@ class TestPipelineDegradationAggregation:
 
         from rag_mcp.core.ingestion import ingest_path_async
 
-        result = asyncio.run(
-            ingest_path_async(str(tmp_path), collection_name="degr_zero_test")
-        )
+        result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_zero_test"))
         assert result["status"] == "ok"
         assert result["metadata_degraded"] == 0
         assert all("metadata_degraded" not in fd for fd in result["file_details"])
@@ -525,16 +512,11 @@ class TestPipelineDegradationAggregation:
 
         from rag_mcp.core.ingestion import ingest_path_async
 
-        result = asyncio.run(
-            ingest_path_async(str(tmp_path), collection_name="degr_one_test")
-        )
+        result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_one_test"))
         assert result["status"] == "ok"
         assert result["metadata_degraded"] == 1
 
-        marked = [
-            fd for fd in result["file_details"]
-            if fd.get("metadata_degraded") is True
-        ]
+        marked = [fd for fd in result["file_details"] if fd.get("metadata_degraded") is True]
         assert len(marked) == 1
         assert marked[0]["file"] == "b.txt"
 
@@ -573,9 +555,7 @@ class TestPipelineDegradationAggregation:
 
         from rag_mcp.core.ingestion import ingest_path_async
 
-        result = asyncio.run(
-            ingest_path_async(str(tmp_path), collection_name="degr_embed_err")
-        )
+        result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_embed_err"))
         assert result["status"] == "error"
         assert result["error_type"] == "embedding"
         assert result["metadata_degraded"] == 1
@@ -584,9 +564,7 @@ class TestPipelineDegradationAggregation:
         """Every result dict includes ``metadata_degraded``, even early exits."""
         from rag_mcp.core.ingestion import ingest_path_async
 
-        result = asyncio.run(
-            ingest_path_async("/nonexistent/path", collection_name="degr_404")
-        )
+        result = asyncio.run(ingest_path_async("/nonexistent/path", collection_name="degr_404"))
         assert result["status"] == "error"
         assert result["metadata_degraded"] == 0
 
@@ -602,9 +580,7 @@ class TestMetadataShapeUnchanged:
 
         settings = EffectiveSettings(
             local_backend="llamacpp",
-            metadata=MetadataBlock(
-                extraction_mode="local", classify_max_attempts=1
-            ),
+            metadata=MetadataBlock(extraction_mode="local", classify_max_attempts=1),
         )
 
         from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async

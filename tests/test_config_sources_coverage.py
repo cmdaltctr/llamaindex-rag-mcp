@@ -107,9 +107,7 @@ class TestClassifyKnobResolution:
 
     def _settings(self) -> EffectiveSettings:
         return EffectiveSettings(
-            metadata=MetadataBlock(
-                classify_max_attempts=7, classify_timeout=42.0
-            )
+            metadata=MetadataBlock(classify_max_attempts=7, classify_timeout=42.0)
         )
 
     def test_attempts_flow_through_helper(self) -> None:

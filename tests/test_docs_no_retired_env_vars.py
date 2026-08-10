@@ -87,8 +87,7 @@ def test_no_operator_doc_assigns_a_retired_variable() -> None:
     findings = _find_retired_assignments()
     if findings:
         details = "\n".join(
-            f"  {path.relative_to(_REPO_ROOT)}:{lineno}  "
-            f"{name}  ->  use {replacement}"
+            f"  {path.relative_to(_REPO_ROOT)}:{lineno}  {name}  ->  use {replacement}"
             for path, lineno, name, replacement in findings
         )
         pytest.fail(
@@ -107,10 +106,7 @@ def test_prose_mention_does_not_trip_the_check() -> None:
     findings = _find_retired_assignments()
     # Filter to README.md findings for TOP_K — there must be none,
     # because the mention is inside backticks, not in assignment form.
-    readme_topk = [
-        f for f in findings
-        if f[0].name == "README.md" and f[2] == "TOP_K"
-    ]
+    readme_topk = [f for f in findings if f[0].name == "README.md" and f[2] == "TOP_K"]
     assert readme_topk == [], (
         "Prose mention of TOP_K in README.md was flagged — "
         "the check must distinguish assignment from mention"
@@ -131,9 +127,7 @@ def test_assignment_forms_are_detected(tmp_path, monkeypatch, line: str) -> None
     """Every way a guide can tell you to set a retired variable must trip."""
     guide = tmp_path / "guide.md"
     guide.write_text(f"Set it like this:\n\n    {line}\n")
-    monkeypatch.setattr(
-        sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False
-    )
+    monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False)
     monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_PATHS", [], raising=False)
     findings = _find_retired_assignments()
     assert findings, f"{line!r} should have been detected as an assignment"
@@ -151,8 +145,6 @@ def test_prose_forms_are_not_detected(tmp_path, monkeypatch, line: str) -> None:
     """Explaining a retired variable must stay allowed."""
     guide = tmp_path / "guide.md"
     guide.write_text(f"{line}\n")
-    monkeypatch.setattr(
-        sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False
-    )
+    monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_DIRS", [tmp_path], raising=False)
     monkeypatch.setattr(sys.modules[__name__], "_OPERATOR_PATHS", [], raising=False)
     assert not _find_retired_assignments()

@@ -7,8 +7,8 @@ behaviour, cache invalidation, and reranker integration.
 
 from __future__ import annotations
 
-import logging
 import inspect
+import logging
 from unittest.mock import MagicMock
 
 import pytest
@@ -29,7 +29,7 @@ class FakeCollection:
         self.get_calls += 1
         limit = kwargs.get("limit")
         offset = kwargs.get("offset", 0)
-        rows = self.rows[offset: offset + limit] if limit is not None else self.rows
+        rows = self.rows[offset : offset + limit] if limit is not None else self.rows
         return {
             "ids": [row["id"] for row in rows],
             "documents": [row["text"] for row in rows],
@@ -101,11 +101,7 @@ class FakeStore:
             if not ids:
                 break
             for idx, doc_id in enumerate(ids):
-                metadata = (
-                    metas[idx]
-                    if idx < len(metas) and isinstance(metas[idx], dict)
-                    else {}
-                )
+                metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
                 text = docs[idx] if idx < len(docs) else ""
                 yield (str(doc_id), str(text), dict(metadata))
             if len(ids) < page_size:
@@ -142,7 +138,6 @@ def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
 
     assert param is not None
     assert param.default is None
-
 
 
 async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
@@ -236,9 +231,21 @@ def test_bm25_sparse_retriever_ranks_exact_rare_term_first() -> None:
     collection = FakeCollection(
         "rare_terms",
         [
-            {"id": "semantic", "text": "Ancient amphitheatres hosted spectacles.", "metadata": {"file_path": "semantic.txt"}},
-            {"id": "rare", "text": "The continuity note contains ZXQ-77 for the Colosseum.", "metadata": {"file_path": "rare.txt"}},
-            {"id": "noise", "text": "Modern stadium design uses concrete.", "metadata": {"file_path": "noise.txt"}},
+            {
+                "id": "semantic",
+                "text": "Ancient amphitheatres hosted spectacles.",
+                "metadata": {"file_path": "semantic.txt"},
+            },
+            {
+                "id": "rare",
+                "text": "The continuity note contains ZXQ-77 for the Colosseum.",
+                "metadata": {"file_path": "rare.txt"},
+            },
+            {
+                "id": "noise",
+                "text": "Modern stadium design uses concrete.",
+                "metadata": {"file_path": "noise.txt"},
+            },
         ],
     )
     store = FakeStore(collection)
@@ -337,14 +344,24 @@ def test_remove_collection_generation_invalidates_cache() -> None:
 def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     """The dense-only default must remain byte-for-byte compatible."""
     import chromadb
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
-        [{"id": "dense", "text": "dense text", "metadata": {"file_path": "dense.txt"}, "distance": 1.0}],
+        [
+            {
+                "id": "dense",
+                "text": "dense text",
+                "metadata": {"file_path": "dense.txt"},
+                "distance": 1.0,
+            }
+        ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
 
     implicit = retrieval.search("query", top_k=1, rerank=False)
@@ -356,21 +373,38 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
 def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     """Hybrid + rerank must feed the reranker the fused dense+sparse pool."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
-    import rag_mcp.core.retrieval.dense as _dense
 
+    import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     dense_rows = [
-        {"id": "dense", "text": "semantic amphitheatre", "metadata": {"file_path": "dense.txt"}, "distance": 0.1},
-        {"id": "sparse", "text": "ZXQ-77 exact identifier", "metadata": {"file_path": "sparse.txt"}, "distance": 9.0},
+        {
+            "id": "dense",
+            "text": "semantic amphitheatre",
+            "metadata": {"file_path": "dense.txt"},
+            "distance": 0.1,
+        },
+        {
+            "id": "sparse",
+            "text": "ZXQ-77 exact identifier",
+            "metadata": {"file_path": "sparse.txt"},
+            "distance": 9.0,
+        },
     ]
     collection = FakeCollection("documents", dense_rows)
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2)))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
+    )
 
     captured: dict[str, list[dict]] = {}
 
@@ -392,22 +426,40 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
 def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     """MCP/CLI public result shape should not leak internal fusion fields."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
         [
-            {"id": "dense", "text": "semantic amphitheatre", "metadata": {"file_path": "dense.txt"}, "distance": 0.1},
-            {"id": "sparse", "text": "Colosseum exact identifier", "metadata": {"file_path": "sparse.txt"}, "distance": 9.0},
+            {
+                "id": "dense",
+                "text": "semantic amphitheatre",
+                "metadata": {"file_path": "dense.txt"},
+                "distance": 0.1,
+            },
+            {
+                "id": "sparse",
+                "text": "Colosseum exact identifier",
+                "metadata": {"file_path": "sparse.txt"},
+                "distance": 9.0,
+            },
         ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2)))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
+    )
 
     public_results = retrieval.search("Colosseum", top_k=2, rerank=False, hybrid=True)
 
@@ -423,19 +475,34 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
 def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     """Experiment 9 can opt into fusion rank diagnostics explicitly."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "documents",
-        [{"id": "target", "text": "Colosseum exact identifier", "metadata": {"file_path": "target.txt"}, "distance": 5.0}],
+        [
+            {
+                "id": "target",
+                "text": "Colosseum exact identifier",
+                "metadata": {"file_path": "target.txt"},
+                "distance": 5.0,
+            }
+        ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=1, rerank_fetch_multiplier=1)))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=1, rerank_fetch_multiplier=1))
+    )
 
     results = retrieval.search(
         "Colosseum",
@@ -453,22 +520,34 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
 def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     """Native sparse mixed coverage should warn once with remediation text."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "mixed_native",
         [
-            {"id": "with_sparse", "text": "has sparse", "metadata": {"file_path": "a.txt", "has_sparse_vector": True}},
+            {
+                "id": "with_sparse",
+                "text": "has sparse",
+                "metadata": {"file_path": "a.txt", "has_sparse_vector": True},
+            },
             {"id": "without_sparse", "text": "missing sparse", "metadata": {"file_path": "b.txt"}},
         ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(hybrid_sparse_backend="native")))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(hybrid_sparse_backend="native"))
+    )
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     if hasattr(retrieval, "_warned_collections"):
         retrieval._warned_collections.clear()
@@ -491,14 +570,22 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
 def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) -> None:
     """Native coverage checks must respect CHROMA_SCAN_PAGE_SIZE paging."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     rows = [
-        {"id": "with_sparse", "text": "has sparse", "metadata": {"file_path": "a.txt", "has_sparse_vector": True}},
+        {
+            "id": "with_sparse",
+            "text": "has sparse",
+            "metadata": {"file_path": "a.txt", "has_sparse_vector": True},
+        },
         {"id": "without_sparse", "text": "missing sparse", "metadata": {"file_path": "b.txt"}},
-        {"id": "without_sparse_2", "text": "missing sparse again", "metadata": {"file_path": "c.txt"}},
+        {
+            "id": "without_sparse_2",
+            "text": "missing sparse again",
+            "metadata": {"file_path": "c.txt"},
+        },
     ]
     collection = FakeCollection("paged_native", rows)
     # Page size is read from the composition-root default, not the config
@@ -509,7 +596,9 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     )
 
     set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=1))
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_collections.clear()
@@ -525,21 +614,41 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
 def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch, caplog) -> None:
     """Selected native without real query support must use BM25 sparse results."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "native_fallback",
         [
-            {"id": "dense", "text": "generic amphitheatre", "metadata": {"file_path": "dense.txt"}, "distance": 0.1},
-            {"id": "bm25", "text": "Colosseum exact rare term", "metadata": {"file_path": "bm25.txt"}, "distance": 9.0},
+            {
+                "id": "dense",
+                "text": "generic amphitheatre",
+                "metadata": {"file_path": "dense.txt"},
+                "distance": 0.1,
+            },
+            {
+                "id": "bm25",
+                "text": "Colosseum exact rare term",
+                "metadata": {"file_path": "bm25.txt"},
+                "distance": 9.0,
+            },
         ],
     )
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2)))
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"native_fallback": collection}))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
+    )
+    monkeypatch.setattr(
+        chromadb,
+        "PersistentClient",
+        lambda **_: FakePersistentClient({"native_fallback": collection}),
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_native_fallback_collections.clear()
@@ -555,23 +664,32 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
         )
 
     assert any(row["source"] == "bm25.txt" and row["sparse_rank"] == 1 for row in results)
-    assert any("Falling back to the BM25 sparse retriever" in record.message for record in caplog.records)
+    assert any(
+        "Falling back to the BM25 sparse retriever" in record.message for record in caplog.records
+    )
 
 
 def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> None:
     """BM25 indexes all chunks it sees and must not warn about sparse coverage."""
     import chromadb
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "bm25_no_warn",
         [
             {"id": "a", "text": "rare token", "metadata": {"file_path": "a.txt"}},
-            {"id": "b", "text": "other token", "metadata": {"file_path": "b.txt", "has_sparse_vector": True}},
+            {
+                "id": "b",
+                "text": "other token",
+                "metadata": {"file_path": "b.txt", "has_sparse_vector": True},
+            },
         ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"bm25_no_warn": collection}))
+    monkeypatch.setattr(
+        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"bm25_no_warn": collection})
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "bm25")
 
@@ -648,22 +766,42 @@ def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) 
 def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     """Dense top_k can miss the exact Colosseum chunk; hybrid recovers it."""
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
 
     collection = FakeCollection(
         "colosseum_regression",
         [
-            {"id": "dense_decoy", "text": "Roman venues hosted public entertainment in an ancient city.", "metadata": {"file_path": "decoy.txt"}, "distance": 0.01},
-            {"id": "gold", "text": "The capital of Italy is Rome. It is known for the Colosseum.", "metadata": {"file_path": "sample.md"}, "distance": 10.0},
+            {
+                "id": "dense_decoy",
+                "text": "Roman venues hosted public entertainment in an ancient city.",
+                "metadata": {"file_path": "decoy.txt"},
+                "distance": 0.01,
+            },
+            {
+                "id": "gold",
+                "text": "The capital of Italy is Rome. It is known for the Colosseum.",
+                "metadata": {"file_path": "sample.md"},
+                "distance": 10.0,
+            },
         ],
     )
-    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: FakePersistentClient({"colosseum_regression": collection}))
+    monkeypatch.setattr(
+        chromadb,
+        "PersistentClient",
+        lambda **_: FakePersistentClient({"colosseum_regression": collection}),
+    )
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock, set_default_effective_settings
+    from rag_mcp.core.settings import (
+        EffectiveSettings,
+        RetrievalBlock,
+        set_default_effective_settings,
+    )
 
-    set_default_effective_settings(EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2)))
+    set_default_effective_settings(
+        EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
+    )
 
     dense_only = retrieval.search(
         "Where was the Colosseum built?",
@@ -693,16 +831,26 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     default path (introduced by this change) untested.
     """
     import chromadb
-    import rag_mcp.config as config
-    import rag_mcp.core.retrieval.pipeline as retrieval
+
     import rag_mcp.core.retrieval.dense as _dense
+    import rag_mcp.core.retrieval.pipeline as retrieval
     import rag_mcp.core.retrieval.registry as retrieval_registry
 
     collection = FakeCollection(
         "documents",
         [
-            {"id": "1", "text": "ZXQ-77 appears here", "metadata": {"file_path": "a.txt"}, "distance": 0.1},
-            {"id": "2", "text": "unrelated text", "metadata": {"file_path": "b.txt"}, "distance": 0.9},
+            {
+                "id": "1",
+                "text": "ZXQ-77 appears here",
+                "metadata": {"file_path": "a.txt"},
+                "distance": 0.1,
+            },
+            {
+                "id": "2",
+                "text": "unrelated text",
+                "metadata": {"file_path": "b.txt"},
+                "distance": 0.9,
+            },
         ],
     )
     monkeypatch.setattr(
@@ -728,7 +876,6 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     results = retrieval.search("ZXQ-77", top_k=1, rerank=True, reranker=None)
 
     assert constructed == ["built"], (
-        "search() did not construct the default reranker through "
-        "retrieval_registry.get('reranker')"
+        "search() did not construct the default reranker through retrieval_registry.get('reranker')"
     )
     assert results and results[0]["reranked"] is True

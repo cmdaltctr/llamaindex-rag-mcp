@@ -37,16 +37,12 @@ class TestSparseBackendFallback:
         assert settings.retrieval.hybrid_sparse_backend == "bm25"
 
     @pytest.mark.parametrize("good", _VALID_BACKENDS)
-    def test_valid_backend_is_preserved(
-        self, monkeypatch: pytest.MonkeyPatch, good: str
-    ) -> None:
+    def test_valid_backend_is_preserved(self, monkeypatch: pytest.MonkeyPatch, good: str) -> None:
         monkeypatch.setenv("RETRIEVAL__HYBRID_SPARSE_BACKEND", good)
         settings = Settings(_env_file=None)
         assert settings.retrieval.hybrid_sparse_backend == good
 
-    def test_clamp_does_not_create_a_root_attribute(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_clamp_does_not_create_a_root_attribute(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Pin the specific defect: the write must not land on the root model.
 
         A root ``hybrid_sparse_backend`` attribute is the signature of the bug —

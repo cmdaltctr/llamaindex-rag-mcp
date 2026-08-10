@@ -53,12 +53,15 @@ def get_pdf_reader() -> Any:
 
     if reader == "pypdf":
         from .pypdf import PyPDFReader
+
         return PyPDFReader()
     elif reader == "pypdfium2":
         from .pypdfium import PyPDFium2Reader
+
         return PyPDFium2Reader()
     elif reader == "liteparse":
         from .liteparse import LiteParseReader
+
         return LiteParseReader()
     else:
         raise ValueError(
