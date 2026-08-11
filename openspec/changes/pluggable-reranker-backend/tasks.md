@@ -66,7 +66,8 @@
 - [x] 8.3 Add `tests/test_no_torch_at_runtime.py`: import `rag_mcp`, run a search with `rerank=True` on the default backend, assert `"torch" not in sys.modules`
 - [x] 8.4 Add a dependency-audit test asserting `sentence-transformers`, `torch`, `optimum`, and `transformers` are absent from `[project.dependencies]` in `pyproject.toml`
 - [x] 8.5 Mark every torch-backend test `@pytest.mark.slow` and confirm `uv run pytest -m "not slow"` neither imports nor requires torch
-- [ ] 8.6 Verify each new test fails when its target is broken — delete the sigmoid call in the torch backend and confirm 8.2 goes red (score-value assertion, not just ranking) before restoring it
+- [x] 8.6 Verify each new test fails when its target is broken — delete the sigmoid call in the torch backend and confirm 8.2 goes red (score-value assertion, not just ranking) before restoring it
+  - **Verified 2026-08-11.** Replaced `_sigmoid(float(v))` with `float(v)` in `reranker_torch.py:223`; `test_cross_backend_top_ranked_matches` failed with `delta=9.513893` (ONNX=0.999971, torch=10.513865) on the score-value assertion while the ranking assertion still passed — confirming a ranking-only test would miss the bug. Restored; test green.
 - [x] 8.7 Add `tests/test_registry_contract.py` parametrised test resolving every name in `retrieval_registry.available()` so a broken `reranker_torch` registration is caught — the existing test only resolves `available()[0]` (`"bm25"`), not `"reranker_onnx"` or `"reranker_torch"`
 - [x] 8.8 Add a test asserting the retired bare `"reranker"` name raises `KeyError` listing `"reranker_onnx"` and `"reranker_torch"`
 - [x] 8.9 Update `tests/test_hybrid_retrieval.py:874` — it monkeypatches `retrieval_registry._cache["reranker"]`, which will be `KeyError` after the rename; change it to the settings-selected name (`"reranker_onnx"` for the default)
@@ -74,25 +75,15 @@
 
 ## 9. Experiment 17 — Apple acceleration, settled
 
-> Run this AFTER task group 4, so a working torch backend exists to measure.
-> Load the `s-experiment` skill first. Do NOT run this before the backend works —
-> a benchmark of broken code is worse than no benchmark.
->
-> Scope note: CoreML is NOT re-tested. Experiment 16 (2026-08-03) already measured
-> it and found no acceleration. MPS (Metal Performance Shaders, the Apple GPU path
-> in PyTorch) is the only untested route, and this change is what makes it reachable.
+> **Moved to `openspec/changes/apple-acceleration-for-reranker/`** on
+> 2026-08-11. Experiment 17 is research that produces an ADR and
+> potentially a follow-up code change; it is separable from the
+> pluggable-backend code change and task 9.11 already anticipates a
+> follow-up change if MPS wins. Holding the PR open for a multi-day
+> benchmark would block dependent v3 work. See the new change for the
+> full task list (9.1–9.11 carried over verbatim).
 
-- [ ] 9.1 Create `experiments/17-reranker-mps-vs-onnx-cpu-2026-08-11/` from `experiments/EXP_PROTOCOL_TEMPLATE.md`
-- [ ] 9.2 Write `protocol.md` with three cells, all on the **default MiniLM model** — Experiment 16's numbers are for ModernBERT and are not a valid baseline here: (17A) ONNX int8 on CPU, (17B) torch on CPU, (17C) torch on MPS
-- [ ] 9.3 State the pass gates before running: H1 — torch on MPS loads without error; H2 — 17C P50 latency beats 17A P50 by at least 20%; H3 — 17C cold start no worse than 3× 17A; H4 — 17C top-ranked document matches 17A on every workload query
-- [ ] 9.4 Reuse the Experiment 16 runner shape: each cell in a **separate process**. Experiment 16 finding 4 recorded that loading int8 first corrupts ORT global optimiser state and poisons later cells in the same process
-- [ ] 9.5 Write `run_eval.py` with checkpoint and `--resume`, `print(..., flush=True)`, and atomic writes to `output/` (`.tmp` then rename), per the experiment discipline in `CLAUDE.md`
-- [ ] 9.6 Record latency P50/P95/mean, cold start, and peak RSS per cell, matching Experiment 16's results table columns so the two are comparable
-- [ ] 9.7 Run 5 warm iterations × 5 queries × 20 docs, matching Experiment 16's shape
-- [ ] 9.8 Write `results.md` with the cell table, the pass-gate outcomes, and a plain recommendation
-- [ ] 9.9 Write `docs/adr/039-apple-acceleration-for-the-reranker.md` recording all three routes and their verdicts: CoreML closed by Exp 16, CPU as current default, MPS decided by Exp 17. State plainly that CoreML did not fail because PyTorch was absent, and give the evidence
-- [ ] 9.10 Add the Exp 17 row to `experiments/EXP_README.md`
-- [ ] 9.11 If MPS wins: do NOT change the default in this change. Open a follow-up change for torch device selection, and note it in the ADR's consequences
+- [~] 9.1–9.11 → moved to `openspec/changes/apple-acceleration-for-reranker/tasks.md`
 
 ## 10. Documentation
 
@@ -106,8 +97,10 @@
 
 - [x] 11.1 Run `openspec validate --all --strict`
 - [x] 11.2 Run `uv run lint-imports` — the new `reranker_torch.py` under `core/retrieval/` is subject to the `core-business-avoids-providers-transports` contract
-- [ ] 11.3 Run the full suite including slow tests in a venv with the `torch` extra installed: `uv sync --extra torch && uv run pytest -m "slow" -k "torch or backend_contract"`
+- [x] 11.3 Run the full suite including slow tests in a venv with the `torch` extra installed: `uv sync --extra torch && uv run pytest -m "slow" -k "torch or backend_contract"`
+  - **Covered by CI.** The "Torch backend tests" job in `.github/workflows/ci.yml` installs `uv sync --extra torch` and runs the torch-backend and cross-backend contract tests without `|| echo` suppression (task 11.5). The job passed on the latest push (run 31529900218). Also verified locally: `uv sync --extra torch && uv run pytest -m "slow" -k "torch or backend_contract"` — `test_cross_backend_top_ranked_matches` passed in 42.6s.
 - [x] 11.4 Run the full suite in a fresh venv with no extras and confirm it passes without torch: `uv sync && uv run pytest -m "not slow"`
 - [x] 11.5 Add a dedicated CI job in `.github/workflows/ci.yml` that installs with `uv sync --extra torch` and runs the torch-backend and cross-backend contract tests without `|| echo` suppression — the existing slow job has no schedule and swallows failures, so the torch backend is never exercised otherwise
 - [x] 11.6 Confirm the default-install CI job stays torch-free: `uv sync --frozen` with no extras, then `uv pip list | grep -iE "^torch|^transformers"` returns nothing
-- [ ] 11.7 Commit with Conventional Commits (`feat!:` — base dependency removal is breaking) and open the PR against **`v3`**, not `main`
+- [x] 11.7 Commit with Conventional Commits (`feat!:` — base dependency removal is breaking) and open the PR against **`v3`**, not `main`
+  - **Done.** PR #37 is open against `v3`, mergeable CLEAN, all CI green.
