@@ -173,11 +173,6 @@ class BM25SparseRetriever:
         self.collection_name = collection_name
         self._store = store
 
-    @classmethod
-    def clear_all_caches(cls) -> None:
-        with cls._cache_lock:
-            cls._cache.clear()
-
     def query(self, query_text: str, top_n: int) -> list[tuple[int, str, str, dict]]:
         """Return ``[(rank, doc_id, text, metadata), ...]`` for BM25 matches."""
         if top_n <= 0:
