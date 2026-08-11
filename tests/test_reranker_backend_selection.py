@@ -377,6 +377,33 @@ def test_read_pad_token_config_missing_pad_token_id_falls_back() -> None:
             assert pad_token is None
 
 
+@pytest.mark.parametrize("bad_pad_id", [True, False, -1])
+def test_read_pad_token_config_invalid_pad_id_falls_back(bad_pad_id: object) -> None:
+    """A bool or negative pad_token_id SHALL return (None, None), not the bad value.
+
+    ``bool`` is an ``int`` subclass in Python, so ``isinstance(True, int)``
+    is ``True``; without an explicit bool exclusion, ``pad_token_id: true``
+    in config.json would pass through as ``pad_id=1``. A negative id is
+    not a valid vocabulary index either. Both must be treated the same as
+    a missing value, not returned as a partial pair.
+    """
+    import json
+
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+
+    files = {
+        "config.json": json.dumps({"pad_token_id": bad_pad_id}),
+        "tokenizer_config.json": json.dumps({"pad_token": "<pad>"}),
+    }
+    _download, _open = _make_download_side_effect(files)
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
+            pad_id, pad_token = read_pad_token_config("test/model")
+            assert pad_id is None
+            assert pad_token is None
+
+
 def test_resolve_unknown_backend_name_raises_keyerror() -> None:
     """Unknown backend name SHALL raise KeyError (defensive guard)."""
     from rag_mcp.core.retrieval.backend import resolve_reranker_backend

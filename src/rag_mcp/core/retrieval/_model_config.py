@@ -87,7 +87,11 @@ def read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:
         with open(config_path) as f:
             config = json.load(f)
         raw_pad_id = config.get("pad_token_id")
-        pad_id = raw_pad_id if isinstance(raw_pad_id, int) else None
+        pad_id = (
+            raw_pad_id
+            if isinstance(raw_pad_id, int) and not isinstance(raw_pad_id, bool) and raw_pad_id >= 0
+            else None
+        )
 
         tc_path = hf_hub_download(repo_id=model_id, filename="tokenizer_config.json")
         with open(tc_path) as f:
