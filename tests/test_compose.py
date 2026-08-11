@@ -164,17 +164,16 @@ def test_build_embed_model_llamacpp_two_tier() -> None:
 
 
 def test_build_embed_model_validates_unknown_provider() -> None:
-    """Unknown provider values are clamped by the Settings validator.
+    """Unknown provider values raise at Settings construction (§7.3).
 
-    The Settings model falls back to ``local`` with a warning before
-    compose ever resolves a registry — so compose itself cannot see an
-    unregistered provider through a validated Settings object.  (The
-    registry-level ``KeyError`` path is covered in
+    The Settings model validator raises ValueError naming the offending
+    value before compose ever resolves a registry — so compose itself
+    cannot see an unregistered provider through a validated Settings
+    object.  (The registry-level ``KeyError`` path is covered in
     ``test_registry_contract.py``.)
     """
-    settings = _settings(embed_provider="bogus", local_backend="bogus")
-    assert settings.embed_provider == "local"
-    assert settings.local_backend == "llamacpp"
+    with pytest.raises(ValueError, match="EMBED_PROVIDER='bogus'"):
+        _settings(embed_provider="bogus")
 
 
 # ── build_reranker ──────────────────────────────────────────────────────────

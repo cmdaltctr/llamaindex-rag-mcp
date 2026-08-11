@@ -38,6 +38,47 @@ from .sources import LegacyBool  # noqa: E402
 logger = logging.getLogger(__name__)
 
 
+# ── Provider-selection validation helper ──────────────────────────────
+
+
+def _validate_provider_value(
+    obj: object,
+    field: str,
+    accepted: tuple[str, ...],
+    env_name: str,
+) -> None:
+    """Strip whitespace, reset empty to default, raise on unrecognised value.
+
+    An empty or whitespace-only value (``SETTING=`` in .env) is how operators
+    unset a knob, so it resets to the field's declared default rather than
+    raising.  A non-empty value not in ``accepted`` raises ValueError naming
+    the offending value and the accepted set.  The stripped value is stored
+    so that padded input like ``" auto "`` resolves to ``"auto"``.
+
+    Args:
+        obj: The model instance owning the field (``self`` or a nested block).
+        field: The field name on ``obj``.
+        accepted: The recognised values.
+        env_name: The environment variable name for the error message.
+    """
+    raw = getattr(obj, field)
+    if not isinstance(raw, str):
+        return
+    stripped = raw.strip()
+    if not stripped:
+        # Empty after strip = operator unset the knob.  Reset to the
+        # declared default so "" does not reach runtime code that would
+        # probe it (e.g. resolve_sparse_backend on "").
+        object.__setattr__(obj, field, type(obj).model_fields[field].default)
+        return
+    if stripped not in accepted:
+        raise ValueError(
+            f"{env_name}={raw!r} is not recognised. Accepted values: {', '.join(accepted)}."
+        )
+    # Store the stripped value so " auto " becomes "auto".
+    object.__setattr__(obj, field, stripped)
+
+
 # ── Root Settings model ─────────────────────────────────────────────
 
 
@@ -130,67 +171,43 @@ class Settings(BaseSettings):
     rag_profile: str = "documents"
 
     # ── Validation ────────────────────────────────────────────────
-    @model_validator(mode="after")
-    def _validate_embed_model_required(self) -> Settings:
-        """Preserve the legacy EMBED_MODEL validation.
-
-        EMBED_MODEL is required when the effective embedding provider
-        resolves to ollama (either via the flat or two-tier scheme).
-        """
-        effective = _resolve_effective_embed_provider(self)
-        if effective == "ollama" and not self.embed_model:
-            raise ValueError(
-                "EMBED_MODEL environment variable is required when "
-                "the embedding provider is ollama. Set it in a .env file:\n\n"
-                "    EMBED_MODEL=qwen3-embedding:8b\n\n"
-                "See .env.example for alternatives."
-            )
-        return self
-
+    # Provider validation runs BEFORE the EMBED_MODEL-required check so a
+    # bad EMBED_PROVIDER reports itself, not a missing EMBED_MODEL (§6.1).
+    # Pydantic runs mode="after" validators in definition order.
     @model_validator(mode="after")
     def _validate_provider_selections(self) -> Settings:
-        """Clamp unknown provider values to known defaults with a warning."""
-        if self.embed_provider not in ("local", "cloud", "ollama", "llamacpp", "openrouter"):
-            logger.warning("Unknown EMBED_PROVIDER=%r; falling back to local", self.embed_provider)
-            object.__setattr__(self, "embed_provider", "local")
+        """Validate provider-selection fields: raise on unrecognised values.
 
-        if self.metadata_llm_provider not in ("local", "cloud"):
-            logger.warning(
-                "Unknown METADATA_LLM_PROVIDER=%r; falling back to local",
-                self.metadata_llm_provider,
-            )
-            object.__setattr__(self, "metadata_llm_provider", "local")
+        Six provider settings raise ValueError on an unrecognised non-empty
+        value, matching the VECTOR_STORE precedent (ADR-034).  An empty or
+        whitespace-only value (``SETTING=`` in .env) is treated as unset and
+        reset to the field's declared default — raising on it would be
+        hostile to a common operator idiom.
 
-        if self.local_backend not in ("llamacpp", "ollama"):
-            logger.warning("Unknown LOCAL_BACKEND=%r; falling back to llamacpp", self.local_backend)
-            object.__setattr__(self, "local_backend", "llamacpp")
-
-        if self.cloud_backend not in ("openrouter",):
-            logger.warning(
-                "Unknown CLOUD_BACKEND=%r; falling back to openrouter", self.cloud_backend
-            )
-            object.__setattr__(self, "cloud_backend", "openrouter")
-
-        if self.retrieval.hybrid_sparse_backend not in ("auto", "native", "bm25"):
-            logger.warning(
-                "Unknown RETRIEVAL__HYBRID_SPARSE_BACKEND=%r; falling back to bm25",
-                self.retrieval.hybrid_sparse_backend,
-            )
-            # Write to the block that owns the field.  Every other clamp in this
-            # validator targets a root field, so `self` is correct for them; this
-            # one moved into `retrieval` with the v2 nesting and the write side
-            # was never updated, leaving the fallback silently inert.
-            object.__setattr__(self.retrieval, "hybrid_sparse_backend", "bm25")
-
-        if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
-            logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
-            object.__setattr__(self, "pdf_reader", "auto")
-
-        if self.document_backend not in ("local", "azure"):
-            logger.warning(
-                "Unknown DOCUMENT_BACKEND=%r; falling back to local", self.document_backend
-            )
-            object.__setattr__(self, "document_backend", "local")
+        Two deliberate graceful-degradation policies are unchanged:
+        DOCUMENT_BACKEND=azure with missing credentials falls back to local
+        (cloud-opt-in hard boundary), and an unrecognised RAG_PROFILE falls
+        back to documents (profile system design).  PDF_READER's unknown-value
+        handling is also unchanged (governed by the pdf-reader capability).
+        """
+        _validate_provider_value(
+            self,
+            "embed_provider",
+            ("local", "cloud", "ollama", "llamacpp", "openrouter"),
+            "EMBED_PROVIDER",
+        )
+        _validate_provider_value(
+            self, "metadata_llm_provider", ("local", "cloud"), "METADATA_LLM_PROVIDER"
+        )
+        _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
+        _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")
+        _validate_provider_value(
+            self.retrieval,
+            "hybrid_sparse_backend",
+            ("auto", "native", "bm25"),
+            "RETRIEVAL__HYBRID_SPARSE_BACKEND",
+        )
+        _validate_provider_value(self, "document_backend", ("local", "azure"), "DOCUMENT_BACKEND")
 
         # Vector store selection (Phase 3, ADR-034).  Only "chroma" is
         # registered today; unknown values raise at compose time with a
@@ -201,7 +218,9 @@ class Settings(BaseSettings):
                 f"implementation. Available: chroma"
             )
 
-        # Azure credential check.
+        # Azure credential check — deliberate graceful degradation.
+        # DOCUMENT_BACKEND=azure is a valid value, but without credentials
+        # the cloud-opt-in hard boundary requires a local fallback.
         if self.document_backend == "azure":
             if not self.azure_doc_intelligence_endpoint or not self.azure_doc_intelligence_key:
                 logger.warning(
@@ -210,9 +229,17 @@ class Settings(BaseSettings):
                 )
                 object.__setattr__(self, "document_backend", "local")
 
+        # PDF reader — governed by the pdf-reader capability spec, which
+        # has its own warn-and-fallback contract.  Unchanged here.
+        if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
+            logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
+            object.__setattr__(self, "pdf_reader", "auto")
+
         # Profile selection (Phase 4).  Unknown values fall back to
         # "documents" with a warning rather than raising — the profile
         # system degrades gracefully to the document-grounding default.
+        # This warn-and-fallback is a deliberate design decision, not an
+        # oversight: see silent-failure-audit-and-guards/design.md.
         if self.rag_profile not in ("documents", "codebase", "hybrid"):
             logger.warning(
                 "Unknown RAG_PROFILE=%r; falling back to documents",
@@ -220,6 +247,25 @@ class Settings(BaseSettings):
             )
             object.__setattr__(self, "rag_profile", "documents")
 
+        return self
+
+    @model_validator(mode="after")
+    def _validate_embed_model_required(self) -> Settings:
+        """Preserve the legacy EMBED_MODEL validation.
+
+        EMBED_MODEL is required when the effective embedding provider
+        resolves to ollama (either via the flat or two-tier scheme).
+        Runs after _validate_provider_selections so a bad EMBED_PROVIDER
+        reports itself, not a missing EMBED_MODEL.
+        """
+        effective = _resolve_effective_embed_provider(self)
+        if effective == "ollama" and not self.embed_model:
+            raise ValueError(
+                "EMBED_MODEL environment variable is required when "
+                "the embedding provider is ollama. Set it in a .env file:\n\n"
+                "    EMBED_MODEL=qwen3-embedding:8b\n\n"
+                "See .env.example for alternatives."
+            )
         return self
 
     @classmethod
