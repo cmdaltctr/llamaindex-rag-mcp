@@ -315,10 +315,17 @@ def search(
         )
 
     # Optional: re-score with cross-encoder reranker.
+    active_backend: str | None = None
     if effective_rerank and results:
         if reranker is None:
-            reranker = _retrieval_get("reranker")()
+            from .backend import build_reranker_from_settings
+
+            reranker = build_reranker_from_settings(resolved_settings)
         results = reranker.rerank(query, results, top_k=top_k)
+        # Record which backend actually ran (may differ from the settings
+        # value when the torch extra is missing and the helper fell back
+        # to ONNX).
+        active_backend = getattr(reranker, "backend_name", None)
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:
             r["reranked"] = r.pop("_reranked", False)
@@ -351,6 +358,12 @@ def search(
     if include_diagnostics:
         for r in results:
             r["rerank_reason"] = rerank_reason
+            # Attach the active backend name alongside the failure reason
+            # so a torch-fallback or a failed backend is distinguishable
+            # from reranking being switched off (ADR-029 §3 deferred
+            # item 2, now landed).
+            if active_backend is not None:
+                r["rerank_backend"] = active_backend
 
     if not include_diagnostics:
         results = [_strip_internal_result_fields(r) for r in results]

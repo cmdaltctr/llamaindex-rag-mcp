@@ -64,6 +64,11 @@ class RetrievalSettings(BaseModel):
     # Reranker model HuggingFace ID.
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
+    # Reranker inference backend: "onnx" (default, torch-free) or "torch"
+    # (opt-in via the ``torch`` optional extra).  Validated at settings
+    # resolution by ``_validate_provider_value`` — see config/__init__.py.
+    rerank_backend: str = "onnx"
+
     # ── Hybrid retrieval ────────────────────────────────────────────
 
     # Enable dense + sparse fusion via Reciprocal Rank Fusion.

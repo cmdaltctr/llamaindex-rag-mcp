@@ -60,4 +60,5 @@ def available() -> list[str]:
 register("dense", "rag_mcp.core.retrieval.dense:_dense_query_rows")
 register("bm25", "rag_mcp.core.retrieval.sparse:BM25SparseRetriever")
 register("fusion", "rag_mcp.core.retrieval.fusion:rrf_with_metadata")
-register("reranker", "rag_mcp.core.retrieval.reranker:CrossEncoderReranker")
+register("reranker_onnx", "rag_mcp.core.retrieval.reranker:CrossEncoderReranker")
+register("reranker_torch", "rag_mcp.core.retrieval.reranker_torch:SentenceTransformerReranker")

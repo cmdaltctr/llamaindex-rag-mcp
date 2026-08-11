@@ -203,23 +203,29 @@ def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
     The reranker is a plain class (former ``__new__`` singleton).  The
-    underlying ONNX session is cached process-wide inside
-    ``core.retrieval.reranker`` keyed by model ID, so constructing a new
-    instance here does NOT re-download or re-load the model.
+    underlying model is cached process-wide inside
+    ``core.retrieval._reranker_cache`` keyed by ``(backend, model_id)``,
+    so constructing a new instance here does NOT re-download or re-load
+    the model.
+
+    Backend selection flows through ``core.retrieval.backend`` so both
+    this path and the lazy pipeline path share the same fallback
+    behaviour (design decision 5).
 
     Args:
         settings: Resolved settings (defaults to the singleton).
 
     Returns:
-        A ``CrossEncoderReranker`` instance wired to
-        ``settings.retrieval.rerank_model``.
+        A reranker instance wired to
+        ``settings.retrieval.rerank_model`` and selected by
+        ``settings.retrieval.rerank_backend``.
     """
     if settings is None:
         settings = get_settings()
 
-    from .core.retrieval.reranker import CrossEncoderReranker
+    from .core.retrieval.backend import build_reranker_from_settings
 
-    return CrossEncoderReranker(model_id=settings.retrieval.rerank_model)
+    return build_reranker_from_settings(settings)
 
 
 def build_vector_store(settings: Settings | None = None) -> Any:

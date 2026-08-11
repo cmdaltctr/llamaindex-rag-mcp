@@ -229,6 +229,7 @@ splitter regardless of the fallback.
 | `rerank_fetch_multiplier` | `3` | Fetch `top_k × 3` candidates before reranking |
 | `rerank_max_fetch` | `100` | Cap on that candidate pool |
 | `rerank_model` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
+| `rerank_backend` | `onnx` | Reranker inference backend (`onnx` or `torch`). `torch` requires `uv sync --extra torch`. See [ADR-038](../adr/038-pluggable-reranker-backend.md) |
 | `hybrid_enabled` | `false` | Combine keyword and embedding search. **Profile-owned** |
 | `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
 | `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto`. Unrecognised values fail startup |

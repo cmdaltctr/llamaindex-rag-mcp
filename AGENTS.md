@@ -51,7 +51,7 @@ uv run pytest --cov=rag_mcp      # Coverage
 | Type      | Rule                                                                                                                                                |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⚠️ Ask    | Cloud dependencies & API keys — local-first by default, cloud allowed as opt-in (see ADR-024). All cloud features must degrade gracefully to local. |
-| 🚫 Never  | PyTorch at runtime. ONNX Runtime only.                                                                                                              |
+| 🚫 Never  | PyTorch in the base install or on the default retrieval path. ONNX Runtime only. PyTorch behind the optional `torch` extra is ⚠️ Ask.              |
 | 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                                                                                                  |
 | 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                                                                                |
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |

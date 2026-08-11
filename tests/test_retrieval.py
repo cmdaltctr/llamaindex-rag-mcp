@@ -255,17 +255,18 @@ class TestPersistentRerankFailureFallback:
 
         mock_session = MagicMock()
         mock_tokenizer = MagicMock()
-        mock_tokenizer.model_max_length = 1000000
 
         with patch(
             "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch(
-                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
-                ):
+                with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        reranker._load_model()
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            reranker._load_model()
 
         # Retry succeeded: model loaded, error cleared, cache populated.
         assert reranker._loaded is True

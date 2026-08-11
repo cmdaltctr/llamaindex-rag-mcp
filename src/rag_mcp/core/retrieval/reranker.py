@@ -7,6 +7,8 @@ re-score query-document pairs for better retrieval precision.
 Inference runs entirely through **ONNX Runtime** — no PyTorch or
 optimum is imported at runtime.  The pre-exported ONNX model is
 downloaded from HuggingFace Hub on first use and cached locally.
+Tokenisation uses the pure-Rust **``tokenizers``** package, which
+cannot pull ``torch`` the way ``transformers`` can.
 
 Raw logit outputs are normalised to the (0, 1) range with a sigmoid
 transform so that scores are directly comparable with vector cosine
@@ -14,10 +16,10 @@ similarity.
 
 The reranker is a plain class constructed by ``rag_mcp.compose`` with
 injected settings (model ID).  The underlying ONNX session and tokenizer
-are cached **process-wide** keyed by model ID, preserving the load-once
-semantics of the former ``__new__`` singleton: the model is downloaded
-and loaded exactly once per process regardless of how many reranker
-instances are constructed.
+are cached **process-wide** keyed by ``(backend_name, model_id)``,
+preserving the load-once semantics of the former ``__new__`` singleton:
+the model is downloaded and loaded exactly once per process regardless
+of how many reranker instances are constructed.
 
 If loading fails transiently, the next call will retry.  If it
 fails permanently, ``rerank()`` gracefully falls back to returning
@@ -26,12 +28,25 @@ the original results un-reranked.
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
 import platform
-import threading
 from typing import Any
+
+from ._reranker_cache import (  # noqa: F401
+    _CACHE_LOCK,
+    _MODEL_CACHE,
+    _record_failure,
+    _reset_failure_state,
+    reset_model_cache,
+)
+
+# Backend name used as the cache-key axis.  Each backend module sets its
+# own so the ``(backend_name, model_id)`` key never collides across
+# backends — see ``_reranker_cache.py``.
+_BACKEND_NAME = "onnx"
 
 logger = logging.getLogger(__name__)
 
@@ -52,73 +67,6 @@ DEFAULT_RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 # processing full-length pairs increases latency.  2,048 balances context
 # window utilisation with latency — most RAG chunks are 512-1,024 tokens.
 TOKENIZER_MAX_LENGTH = int(os.getenv("RERANK_TOKENIZER_MAX_LENGTH", "2048"))
-
-# ── Process-wide model cache ──────────────────────────────────────────
-# Maps model ID -> (onnx session, tokenizer, effective max length).
-# Populated on first successful load; reused by every reranker instance
-# so the model is loaded once per process (former singleton semantics).
-
-_MODEL_CACHE: dict[str, tuple[Any, Any, int]] = {}
-# RLock (not Lock): _record_failure/_reset_failure_state are called from
-# inside _load_model()'s existing `with _CACHE_LOCK:` block as well as
-# standalone from rerank(), so the lock must support reentrant acquisition.
-_CACHE_LOCK: threading.RLock = threading.RLock()
-
-# ── Process-wide failure-escalation state (ADR-029 decision #3) ────────
-# Tracks consecutive same-signature failures across both the load and
-# inference failure paths so a persistent outage escalates from WARNING
-# to ERROR instead of repeating an invisible warning on every call.
-#
-# Single process-wide count, NOT keyed by model ID: the pipeline's
-# un-injected path (`core/retrieval/registry.py`) constructs a reranker
-# with no model_id, falling back to DEFAULT_RERANK_MODEL, while
-# compose.build_reranker() passes the configured model — keying by model
-# ID would split one outage's failures across two counters, neither of
-# which would reach the threshold (design.md "split-counter trap").
-_FAILURE_THRESHOLD = 3
-_FAILURE_STATE: dict[str, Any] = {"count": 0, "last_signature": None}
-
-
-def _record_failure(error: BaseException) -> int:
-    """Record a reranker failure and return the log level to use.
-
-    Compares the new error's string signature against the stored one:
-    the same signature increments the consecutive count, a different one
-    resets it to 1.  Must be called with ``_CACHE_LOCK`` held.
-
-    Returns:
-        ``logging.ERROR`` once the count reaches ``_FAILURE_THRESHOLD``,
-        otherwise ``logging.WARNING``.
-    """
-    signature = str(error)
-    if _FAILURE_STATE["last_signature"] == signature:
-        _FAILURE_STATE["count"] += 1
-    else:
-        _FAILURE_STATE["count"] = 1
-        _FAILURE_STATE["last_signature"] = signature
-    if _FAILURE_STATE["count"] >= _FAILURE_THRESHOLD:
-        return logging.ERROR
-    return logging.WARNING
-
-
-def _reset_failure_state() -> None:
-    """Clear the consecutive-failure count. Must be called with ``_CACHE_LOCK`` held."""
-    _FAILURE_STATE["count"] = 0
-    _FAILURE_STATE["last_signature"] = None
-
-
-def reset_model_cache() -> None:
-    """Clear the process-wide model cache (test isolation hook).
-
-    Replaces the former ``CrossEncoderReranker._instance = None`` reset.
-    Tests that need a fresh model-load path call this in setup/teardown
-    so no loaded session leaks across test cases.  Also clears the
-    failure-escalation state so no consecutive-failure count leaks
-    across test cases.
-    """
-    with _CACHE_LOCK:
-        _MODEL_CACHE.clear()
-        _reset_failure_state()
 
 
 def _sigmoid(value: float) -> float:
@@ -180,6 +128,39 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
     return ["onnx/model.onnx"]
 
 
+def _read_max_position_embeddings(model_id: str) -> int:
+    """Read ``max_position_embeddings`` from the model's ``config.json``.
+
+    The ``tokenizers`` package does not expose ``model_max_length`` the
+    way ``transformers.AutoTokenizer`` did.  This fetches ``config.json``
+    from the same HuggingFace snapshot and takes
+    ``max_position_embeddings``.  Falls back to
+    ``TOKENIZER_MAX_LENGTH`` when the file is absent, the key is
+    missing, or the value is an implausible sentinel (e.g. 1000000).
+
+    Shared between the ONNX and torch backends so both cap the effective
+    max length at the model's own limit.
+
+    Args:
+        model_id: HuggingFace model ID.
+
+    Returns:
+        The model's maximum sequence length, or the configured default.
+    """
+    try:
+        from huggingface_hub import hf_hub_download
+
+        config_path = hf_hub_download(repo_id=model_id, filename="config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        model_max = config.get("max_position_embeddings")
+        if not isinstance(model_max, int) or model_max > 100000:
+            return TOKENIZER_MAX_LENGTH
+        return model_max
+    except Exception:
+        return TOKENIZER_MAX_LENGTH
+
+
 class CrossEncoderReranker:
     """Plain-class cross-encoder reranker backed by pure ONNX Runtime.
 
@@ -192,6 +173,10 @@ class CrossEncoderReranker:
     If model loading fails, ``rerank()`` returns inputs unchanged
     and will retry on the next call (transient failure recovery).
     """
+
+    # Backend name surfaced through pipeline diagnostics
+    # (``rerank_backend``).  Matches the registry name suffix.
+    backend_name: str = "onnx"
 
     def __init__(
         self,
@@ -237,7 +222,7 @@ class CrossEncoderReranker:
             return
 
         with _CACHE_LOCK:
-            cached = _MODEL_CACHE.get(self._model_id)
+            cached = _MODEL_CACHE.get((_BACKEND_NAME, self._model_id))
             if cached is not None:
                 self._session, self._tokenizer, self._effective_max_length = cached
                 self._loaded = True
@@ -266,7 +251,7 @@ class CrossEncoderReranker:
             try:
                 import onnxruntime as ort
                 from huggingface_hub import hf_hub_download
-                from transformers import AutoTokenizer
+                from tokenizers import Tokenizer
 
                 logger.info(
                     "Loading reranker model: %s",
@@ -301,19 +286,20 @@ class CrossEncoderReranker:
                         f"Tried: {', '.join(candidates)}"
                     )
 
-                self._tokenizer = AutoTokenizer.from_pretrained(
-                    self._model_id,
-                )
+                self._tokenizer = Tokenizer.from_pretrained(self._model_id)
                 # Cap max_length at the model's own limit.  MiniLM supports
                 # 512 tokens; ModernBERT supports 8192.  Using a max_length
                 # larger than the model's position embeddings causes an ONNX
-                # broadcast error at runtime.
-                model_max = getattr(self._tokenizer, "model_max_length", TOKENIZER_MAX_LENGTH)
-                # Some tokenizers return a sentinel (e.g. 1000000) for
-                # "very large" — cap at our configured default in that case.
-                if not isinstance(model_max, int) or model_max > 100000:
-                    model_max = TOKENIZER_MAX_LENGTH
-                self._effective_max_length = min(TOKENIZER_MAX_LENGTH, model_max)
+                # broadcast error at runtime.  The tokenizers package does
+                # not expose model_max_length, so read it from config.json.
+                model_max = _read_max_position_embeddings(self._model_id)
+                self._effective_max_length = min(self._effective_max_length, model_max)
+                # Configure truncation and padding on the tokenizer once.
+                # The tokenizer is cached process-wide, so these settings
+                # persist for the process lifetime — subsequent instances
+                # reuse the already-configured tokenizer from the cache.
+                self._tokenizer.enable_truncation(max_length=self._effective_max_length)
+                self._tokenizer.enable_padding()
                 # CoreML does not support the dynamic sequence lengths that
                 # cross-encoder tokenisation produces (variable batch padding).
                 # It fails with "Error in dynamically resizing for sequence
@@ -335,7 +321,7 @@ class CrossEncoderReranker:
                 self._load_error = None
                 self.last_failure_reason = None
                 _reset_failure_state()
-                _MODEL_CACHE[self._model_id] = (
+                _MODEL_CACHE[(_BACKEND_NAME, self._model_id)] = (
                     self._session,
                     self._tokenizer,
                     self._effective_max_length,
@@ -403,6 +389,12 @@ class CrossEncoderReranker:
         try:
             import numpy as np  # lightweight; always available with onnxruntime
 
+            # Determine which inputs the ONNX graph declares.  BERT-family
+            # models produce token_type_ids; some other families do not.
+            # Passing an undeclared input to ORT raises a cryptic input-name
+            # error, so omit it when the graph does not ask for it.
+            input_names = {inp.name for inp in self._session.get_inputs()}
+
             # Batch inference: processing all candidates in a single ONNX
             # call causes excessive memory allocation and poor cache
             # utilisation.  Batches of 32 balance throughput and latency.
@@ -410,17 +402,24 @@ class CrossEncoderReranker:
             all_logits: list[float] = []
             for i in range(0, len(pairs), BATCH_SIZE):
                 batch = pairs[i : i + BATCH_SIZE]
-                encoded = self._tokenizer(
-                    batch,
-                    padding=True,
-                    truncation=True,
-                    max_length=self._effective_max_length,
-                    return_tensors="np",
-                )
-                outputs = self._session.run(
-                    None,
-                    dict(encoded.items()),
-                )
+                # tokenizers.Tokenizer.encode_batch returns a list of
+                # Encoding objects.  Property mapping differs from the
+                # transformers AutoTokenizer: Encoding.ids → input_ids,
+                # Encoding.attention_mask → attention_mask,
+                # Encoding.type_ids → token_type_ids.  tokenizers returns
+                # Python lists (u32 underneath); ORT expects int64 arrays.
+                encodings = self._tokenizer.encode_batch(batch)
+                feed: dict[str, Any] = {
+                    "input_ids": np.asarray([enc.ids for enc in encodings], dtype=np.int64),
+                    "attention_mask": np.asarray(
+                        [enc.attention_mask for enc in encodings], dtype=np.int64
+                    ),
+                }
+                if "token_type_ids" in input_names:
+                    feed["token_type_ids"] = np.asarray(
+                        [enc.type_ids for enc in encodings], dtype=np.int64
+                    )
+                outputs = self._session.run(None, feed)
                 batch_logits = np.asarray(outputs[0]).flatten()
                 all_logits.extend(float(v) for v in batch_logits)
 

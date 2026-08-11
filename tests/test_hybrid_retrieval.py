@@ -861,7 +861,7 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     constructed: list[str] = []
 
     class RecordingReranker:
-        def __init__(self) -> None:
+        def __init__(self, model_id: str | None = None) -> None:
             constructed.append("built")
 
         def rerank(self, query: str, results: list[dict], top_k: int) -> list[dict]:
@@ -870,12 +870,14 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
             return results[:top_k]
 
     # Replace the registry's resolved entry, not the module attribute, so the
-    # assertion fails if dispatch stops going through the registry.
-    monkeypatch.setitem(retrieval_registry._cache, "reranker", RecordingReranker)
+    # assertion fails if dispatch stops going through the registry.  The cache
+    # key changed from "reranker" to "reranker_onnx" when the bare name was
+    # retired (design decision 4).
+    monkeypatch.setitem(retrieval_registry._cache, "reranker_onnx", RecordingReranker)
 
     results = retrieval.search("ZXQ-77", top_k=1, rerank=True, reranker=None)
 
     assert constructed == ["built"], (
-        "search() did not construct the default reranker through retrieval_registry.get('reranker')"
+        "search() did not construct the default reranker through the registry"
     )
     assert results and results[0]["reranked"] is True
