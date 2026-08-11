@@ -214,7 +214,98 @@ def test_read_max_position_embeddings_no_config_falls_back() -> None:
         assert result == TOKENIZER_MAX_LENGTH
 
 
-# ── backend.py edge cases ───────────────────────────────────────────────
+# ── _read_pad_token_config (module-level function) ─────────────────────
+
+
+def _make_download_side_effect(files: dict[str, str]):
+    """Return a side_effect for hf_hub_download that maps filename to path.
+
+    *files* maps ``"config.json"`` / ``"tokenizer_config.json"`` to the
+    JSON content that should be read from that path.  Files not in the
+    dict raise ``FileNotFoundError``.
+    """
+    from unittest.mock import mock_open
+
+    paths = {}
+
+    def _download(repo_id, filename, **kwargs):
+        if filename not in files:
+            raise FileNotFoundError(f"{filename} not found")
+        path = f"/fake/{filename}"
+        paths[path] = files[filename]
+        return path
+
+    def _open(path, *args, **kwargs):
+        if path not in paths:
+            raise FileNotFoundError(path)
+        return mock_open(read_data=paths[path])()
+
+    return _download, _open
+
+
+def test_read_pad_token_config_reads_bert_defaults() -> None:
+    """_read_pad_token_config SHALL read pad_token_id from config.json."""
+    import json
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    files = {
+        "config.json": json.dumps({"pad_token_id": 0}),
+        "tokenizer_config.json": json.dumps({"pad_token": "[PAD]"}),
+    }
+    _download, _open = _make_download_side_effect(files)
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 0
+            assert pad_token == "[PAD]"  # noqa: S105
+
+
+def test_read_pad_token_config_reads_roberta_values() -> None:
+    """_read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
+    import json
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    files = {
+        "config.json": json.dumps({"pad_token_id": 1}),
+        "tokenizer_config.json": json.dumps({"pad_token": "<pad>"}),
+    }
+    _download, _open = _make_download_side_effect(files)
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 1
+            assert pad_token == "<pad>"  # noqa: S105
+
+
+def test_read_pad_token_config_missing_config_falls_back() -> None:
+    """Missing config.json SHALL return (None, None) without raising."""
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
+        pad_id, pad_token = _read_pad_token_config("test/model")
+        assert pad_id is None
+        assert pad_token is None
+
+
+def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
+    """Missing tokenizer_config.json SHALL still return pad_id from config.json."""
+    import json
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    # Only config.json is available; tokenizer_config.json is not.
+    files = {"config.json": json.dumps({"pad_token_id": 0})}
+    _download, _open = _make_download_side_effect(files)
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 0
+            assert pad_token is None
 
 
 def test_resolve_unknown_backend_name_raises_keyerror() -> None:

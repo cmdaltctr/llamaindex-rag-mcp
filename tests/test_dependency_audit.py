@@ -1,14 +1,16 @@
-"""Base dependency audit test (task 8.4).
+"""Base dependency audit test (task 8.4) and resolved-install-graph test.
 
 Asserts that sentence-transformers, torch, optimum, and transformers are
-absent from [project.dependencies] in pyproject.toml. The previous
+absent from both the declared base dependencies in ``pyproject.toml`` and
+the resolved install graph in the current environment. The previous
 violation entered through a transitive dependency that no one audited;
-this test turns the prose requirement into an automated CI check.
+these tests turn the prose requirement into automated CI checks.
 """
 
 from __future__ import annotations
 
-import re
+import importlib.metadata
+import tomllib
 from pathlib import Path
 
 
@@ -20,20 +22,9 @@ def _read_base_dependencies() -> list[str]:
     section.
     """
     repo_root = Path(__file__).resolve().parent.parent
-    text = (repo_root / "pyproject.toml").read_text(encoding="utf-8")
-
-    # Find the [project] section's dependencies array. It starts after
-    # "dependencies = [" and ends at the closing "]".
-    match = re.search(
-        r"^dependencies\s*=\s*\[(.*?)^\]",  # noqa: UP032
-        text,
-        re.MULTILINE | re.DOTALL,
-    )
-    assert match, "Could not find dependencies array in pyproject.toml"
-
-    # Extract quoted strings from the block.
-    deps = re.findall(r'["\']([^"\']+)["\']', match.group(1))
-    return deps
+    with (repo_root / "pyproject.toml").open("rb") as f:
+        data = tomllib.load(f)
+    return data.get("project", {}).get("dependencies", [])
 
 
 def test_base_dependencies_exclude_torch_ecosystem() -> None:
@@ -67,4 +58,41 @@ def test_base_dependencies_include_tokenizers() -> None:
     assert any(d.startswith("tokenizers") for d in deps_lower), (
         "tokenizers must be a base dependency — it replaces "
         "transformers.AutoTokenizer for the ONNX reranker."
+    )
+
+
+def test_resolved_install_excludes_torch_ecosystem() -> None:
+    """The resolved install graph SHALL NOT include torch-ecosystem packages.
+
+    Checks ``importlib.metadata.distributions()`` — the actual installed
+    packages in the current environment — not just the declarations in
+    ``pyproject.toml``. A base dep could pull torch transitively without
+    appearing in the declarations list; this test catches that.
+
+    Skipped when the ``torch`` extra is installed (detected by checking
+    if ``sentence_transformers`` is importable), since the extra
+    legitimately installs torch.
+    """
+    # Skip if the torch extra is installed — it legitimately brings torch.
+    try:
+        import sentence_transformers  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        import pytest
+
+        pytest.skip("torch extra is installed — torch is expected in the graph")
+
+    forbidden = {
+        "sentence-transformers",
+        "torch",
+        "optimum",
+        "transformers",
+    }
+    installed = {dist.metadata["Name"].lower() for dist in importlib.metadata.distributions()}
+    found = forbidden & installed
+    assert not found, (
+        f"Forbidden packages found in the resolved install graph: {found}. "
+        f"A base dependency likely pulls torch transitively. "
+        f"Run 'uv pip list | grep -iE \"^torch|^transformers\"' to investigate."
     )

@@ -18,7 +18,7 @@ The rule has also created a dependency trap. `transformers` is a **base** depend
 - Surface the reranker's success flag and failure reason into `include_diagnostics` output (ADR-029 §3 deferred item 2), so the active backend and its health are observable.
 - Amend the `🚫 Never` boundary in `CLAUDE.md` from a blanket ban to a scoped one: no PyTorch in the base install or on the default retrieval path; PyTorch behind an optional extra is an ⚠️ Ask.
 
-- Run Experiment 17 to close the Apple-acceleration question. The torch backend opens MPS (Metal Performance Shaders, the Apple GPU path in PyTorch), which is the only untested route to the machine's fast hardware. Three cells on the default model: ONNX int8 on CPU, torch on CPU, torch on MPS. The result goes into an ADR so the question stops recurring.
+- Run Experiment 17 to close the Apple-acceleration question. The torch backend opens MPS (Metal Performance Shaders) via PyTorch's MPS backend — the only untested route to the machine's GPU for this project's reranker. MPS is an Apple framework built on Metal, not a PyTorch feature; it is accessible through MPSGraph, Core ML, TensorFlow's Metal plugin, MLX, and PyTorch. For this project's reranker, the torch backend is the path that makes it reachable. Three cells on the default model: ONNX int8 on CPU, torch on CPU, torch on MPS. The result goes into an ADR so the question stops recurring.
 
   > **Split on 2026-08-11.** Experiment 17 moved to `openspec/changes/apple-acceleration-for-reranker/` — it is research that produces an ADR and potentially a follow-up code change, separable from the pluggable-backend code. Task 9.11 already anticipated a follow-up change if MPS wins. The pluggable-backend PR (#37) merges without waiting for the benchmark.
 

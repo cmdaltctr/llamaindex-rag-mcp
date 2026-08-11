@@ -6,9 +6,12 @@
 > broken code is worse than no benchmark.
 >
 > Scope note: CoreML is NOT re-tested. Experiment 16 (2026-08-03) already
-> measured it and found no acceleration. MPS (Metal Performance Shaders,
-> the Apple GPU path in PyTorch) is the only untested route, and the
-> pluggable-reranker-backend change is what makes it reachable.
+> measured it and found no acceleration. MPS (Metal Performance Shaders)
+> is the only untested route. MPS is an Apple framework built on Metal,
+> not a PyTorch feature — it is accessible through MPSGraph, Core ML,
+> TensorFlow's Metal plugin, MLX, and PyTorch's MPS backend. For this
+> project's reranker, the torch backend is the path that makes MPS
+> reachable, and the pluggable-reranker-backend change is what opened it.
 
 - [ ] 9.1 Create `experiments/17-reranker-mps-vs-onnx-cpu-2026-08-11/` from `experiments/EXP_PROTOCOL_TEMPLATE.md`
 - [ ] 9.2 Write `protocol.md` with three cells, all on the **default MiniLM model** — Experiment 16's numbers are for ModernBERT and are not a valid baseline here: (17A) ONNX int8 on CPU, (17B) torch on CPU, (17C) torch on MPS
@@ -18,6 +21,6 @@
 - [ ] 9.6 Record latency P50/P95/mean, cold start, and peak RSS per cell, matching Experiment 16's results table columns so the two are comparable
 - [ ] 9.7 Run 5 warm iterations × 5 queries × 20 docs, matching Experiment 16's shape
 - [ ] 9.8 Write `results.md` with the cell table, the pass-gate outcomes, and a plain recommendation
-- [ ] 9.9 Write `docs/adr/039-apple-acceleration-for-the-reranker.md` recording all three routes and their verdicts: CoreML closed by Exp 16, CPU as current default, MPS decided by Exp 17. State plainly that CoreML did not fail because PyTorch was absent, and give the evidence
+- [ ] 9.9 Write `docs/adr/039-apple-acceleration-for-the-reranker.md` recording all three routes and their verdicts: CoreML closed by Exp 16, CPU as current default, MPS decided by Exp 17. State plainly that CoreML did not fail because PyTorch was absent, and give the evidence. State accurately that MPS is an Apple framework (not a PyTorch feature) and that PyTorch's MPS backend is the route this project uses to reach it
 - [ ] 9.10 Add the Exp 17 row to `experiments/EXP_README.md`
 - [ ] 9.11 If MPS wins: do NOT change the default in this change. Open a follow-up change for torch device selection, and note it in the ADR's consequences

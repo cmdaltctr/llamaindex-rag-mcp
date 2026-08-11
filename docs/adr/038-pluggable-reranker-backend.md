@@ -64,7 +64,7 @@ architecture.
    `_sigmoid` once. Passing `activation_fn=None` would NOT disable
    activation — for `num_labels=1` it resolves to `nn.Sigmoid()`,
    double-applying sigmoid and compressing scores to roughly
-   `[0.5, 0.73]`. The cross-backend contract test compares score *values*
+   `[0.5, 0.73]`. The cross-backend contract test compares score _values_
    across backends (not just ranking or range) because double-sigmoid
    preserves monotonicity and stays in `(0, 1)`.
 
@@ -112,12 +112,12 @@ after, then `diff`).
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-|--------|-----------------|
-| Pin `transformers<5` forever | Defers the problem and ages out of tokeniser fixes |
-| Keep `transformers` in base deps, ignore v5 risk | An upstream release silently violates the project's own boundary |
-| Let each backend define its own normalisation | Multiplies the calibrated ÷30 constant by the number of backends; each copy drifts independently |
-| Keep `"reranker"` as an alias for the default | A stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent |
+| Option                                           | Rejected Because                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Pin `transformers<5` forever                     | Defers the problem and ages out of tokeniser fixes                                                                  |
+| Keep `transformers` in base deps, ignore v5 risk | An upstream release silently violates the project's own boundary                                                    |
+| Let each backend define its own normalisation    | Multiplies the calibrated ÷30 constant by the number of backends; each copy drifts independently                    |
+| Keep `"reranker"` as an alias for the default    | A stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent |
 
 ## References
 
@@ -130,3 +130,22 @@ after, then `diff`).
 - ADR-039 — Apple acceleration verdict (Experiment 17)
 - `tests/test_reranker_backend_contract.py` — cross-backend score parity
 - `tests/test_no_torch_at_runtime.py` — runtime torch-free tripwire
+
+---
+
+## Addendum 2026-08-11: MPS framing clarification
+
+The original text says "The torch backend opens the MPS route to Apple
+GPU acceleration." This is accurate for this project's reranker but
+imprecise about MPS itself.
+
+MPS (Metal Performance Shaders) is an Apple framework built on Metal —
+not a PyTorch feature. It is accessible through multiple paths: the
+native MPSGraph framework (Swift/Objective-C), Core ML, TensorFlow's
+Metal plugin, MLX, and PyTorch's MPS backend. For this project's
+reranker, the torch backend is the path that makes MPS reachable,
+because we have no Swift/Metal, MLX, or TensorFlow-Metal integration.
+
+The ADR's decision and consequences are unchanged. The clarification
+is factual — MPS is an Apple framework that PyTorch wraps, not a
+PyTorch feature.
