@@ -491,16 +491,38 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
     reset_runtime_setup()
 
 
-def test_pytest_collection_succeeds_under_conftest_defaults() -> None:
-    """Pytest collection succeeds under conftest provider defaults (§5.6).
+def test_import_compose_succeeds_under_conftest_defaults() -> None:
+    """Importing rag_mcp.compose in a fresh subprocess survives §5 (§5.6).
 
-    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama, and
-    EMBED_MODEL via setdefault before any import.  Once construction
-    failures propagate at import (§5), invalid defaults would break
-    collection itself, not just execution.  This test pins that the
-    defaults remain valid: if it runs, collection succeeded.
+    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama,
+    EMBED_MODEL, OLLAMA_BASE_URL, and METADATA_LLM_PROVIDER via
+    setdefault before any import.  Once construction failures propagate
+    at import (§5), invalid defaults would break collection itself.
+    This test runs the import in a fresh subprocess so the result is
+    not masked by the parent process's cached module.
     """
-    import rag_mcp.compose  # noqa: F401 — proves import-time setup survived
+    import os
+    import subprocess
+    import sys
+
+    env = {
+        **os.environ,
+        "EMBED_PROVIDER": "local",
+        "LOCAL_BACKEND": "ollama",
+        "EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_BASE_URL": "http://localhost:11434",
+        "METADATA_LLM_PROVIDER": "local",
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", "import rag_mcp.compose"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"import rag_mcp.compose failed in fresh subprocess:\n"
+        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
+    )
 
 
 # ── build functions (settings=None delegation) ──────────────────────────────
