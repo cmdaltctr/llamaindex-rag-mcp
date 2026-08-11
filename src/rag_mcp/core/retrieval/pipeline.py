@@ -179,7 +179,7 @@ def search(
             ``effective_settings`` is provided, else ``settings.top_k``.
         similarity_threshold: Minimum score to include a result
             (0.0 = no filtering, default from env).  When ``rerank``
-            is True the threshold is scaled down by 30× because
+            is True the threshold is scaled down by 30x because
             cross-encoder sigmoid scores occupy a lower range than
             cosine similarity.  For example, 0.3 becomes 0.01.
         rerank: Tri-state rerank control:
@@ -204,7 +204,7 @@ def search(
             ``fused_rank``) and policy resolution reason for experiments.
             Public MCP/CLI callers leave this False so result shape stays stable.
         technical_fraction: Optional workload-level identifier-heavy fraction
-            (0.0–1.0). When provided, it overrides the single-query classifier
+            (0.0-1.0). When provided, it overrides the single-query classifier
             for policy resolution.
         fetch_k: Optional override for the candidate pool size.  When set,
             bypasses the ``max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)``
@@ -228,14 +228,14 @@ def search(
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
-            score      – float (0–1, vector similarity or reranker score)
-            source     – source file path
-            page_label – page number (or None)
-            text       – the chunk text
-            reranked   – bool (True if cross-encoder re-scored the result)
+            score      - float (0-1, vector similarity or reranker score)
+            source     - source file path
+            page_label - page number (or None)
+            text       - the chunk text
+            reranked   - bool (True if cross-encoder re-scored the result)
 
         When ``include_diagnostics=True``, each result also includes:
-            rerank_reason – string explaining the policy decision
+            rerank_reason - string explaining the policy decision
 
     Raises:
         ValueError: If ``metadata_filter`` is rejected by the store
@@ -322,14 +322,25 @@ def search(
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:
             r["reranked"] = r.pop("_reranked", False)
+        # The reranker's own failure reason (if any) is more specific than
+        # the policy string computed before reranking ran — surface it.
+        failure_reason = getattr(reranker, "last_failure_reason", None)
+        if failure_reason:
+            rerank_reason = failure_reason
 
     # Filter by similarity threshold (applies after reranking).
     #
     # Reranker scores are sigmoid-normalised and occupy a different range
     # than cosine similarity.  A cosine threshold of 0.3 is a weak match,
     # but the reranker may assign a valid result only 0.015 (sigmoid).
-    # Scale the threshold down by 30× when reranking to avoid over-filtering.
-    effective_threshold = _effective_threshold(similarity_threshold, effective_rerank)
+    # Scale the threshold down by 30x when reranking to avoid over-filtering.
+    # Uses whether reranking actually succeeded (the "reranked" flag), not
+    # merely whether it was requested — a failed reranker leaves raw cosine
+    # scores in place, which the ÷30-scaled threshold would over-admit.
+    rerank_succeeded = (
+        effective_rerank and bool(results) and all(r.get("reranked", False) for r in results)
+    )
+    effective_threshold = _effective_threshold(similarity_threshold, rerank_succeeded)
     if effective_threshold > 0.0:
         results = [r for r in results if r["score"] >= effective_threshold]
 

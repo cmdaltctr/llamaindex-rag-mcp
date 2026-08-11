@@ -22,7 +22,9 @@ The cross-encoder evaluates each (query, document) pair jointly, which is slower
 
 Cross-encoder sigmoid scores occupy a much lower range than cosine similarity. Valid reranker results can score as low as 0.015, while cosine similarity rarely goes below 0.3 for relevant matches.
 
-When `rerank=True`, the `similarity_threshold` is **automatically scaled down by 30×** so that a user-supplied value of 0.3 becomes 0.01. You always supply a threshold in cosine-similarity terms; the system handles the conversion transparently.
+When `rerank=True` **and reranking actually succeeds**, the `similarity_threshold` is **automatically scaled down by 30×** so that a user-supplied value of 0.3 becomes 0.01. You always supply a threshold in cosine-similarity terms; the system handles the conversion transparently.
+
+The scaling follows the rerank *outcome*, not the request: if `rerank=True` but the reranker fails (see Fallback below), the returned scores are still raw cosine similarities, so the threshold is applied **unscaled**. Scaling an unscaled score range would make filtering roughly 30× too permissive on exactly the results that fell back to un-reranked.
 
 Calibrated from experiment data in `experiments/reranker-threshold-calibration-2026-05-12/`:
 
@@ -68,4 +70,8 @@ The first time you call `search_documents` with `rerank=True`, the ~23 MB quanti
 
 ## Fallback
 
-If the reranker model fails to load (no internet for first download, corrupt cache, etc.), the server **gracefully falls back** to un-reranked vector search results. A warning appears in stderr logs. The server never crashes due to reranker issues. The next call retries loading automatically.
+If the reranker model fails to load (no internet for first download, corrupt cache, etc.) or inference raises, the server **gracefully falls back** to un-reranked vector search results. The server never crashes due to reranker issues. The next call retries loading automatically.
+
+**Failure escalation** (ADR-029 decision #3): each failure logs a warning as before, but the server tracks consecutive failures with the same error signature process-wide. Below 3 consecutive same-signature failures it logs at WARNING; at or above that threshold it logs at ERROR, so a persistent outage (like the 5-week CoreML incident in ADR-029) stops looking identical to an occasional transient hiccup in the logs. Any successful load or inference resets the counter.
+
+**Diagnostics**: when `include_diagnostics=True`, the `rerank_reason` field on each result describes the reranker's own failure (e.g. `"inference failed: ..."` or `"model load failed: ..."`) rather than only the policy decision that requested reranking — so a broken reranker is distinguishable from a policy-driven skip without grepping logs.
