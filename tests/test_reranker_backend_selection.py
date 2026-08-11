@@ -217,26 +217,46 @@ def test_read_max_position_embeddings_no_config_falls_back() -> None:
 # ── _read_pad_token_config (module-level function) ─────────────────────
 
 
+def _make_download_side_effect(files: dict[str, str]):
+    """Return a side_effect for hf_hub_download that maps filename to path.
+
+    *files* maps ``"config.json"`` / ``"tokenizer_config.json"`` to the
+    JSON content that should be read from that path.  Files not in the
+    dict raise ``FileNotFoundError``.
+    """
+    from unittest.mock import mock_open
+
+    paths = {}
+
+    def _download(repo_id, filename, **kwargs):
+        if filename not in files:
+            raise FileNotFoundError(f"{filename} not found")
+        path = f"/fake/{filename}"
+        paths[path] = files[filename]
+        return path
+
+    def _open(path, *args, **kwargs):
+        if path not in paths:
+            raise FileNotFoundError(path)
+        return mock_open(read_data=paths[path])()
+
+    return _download, _open
+
+
 def test_read_pad_token_config_reads_bert_defaults() -> None:
     """_read_pad_token_config SHALL read pad_token_id from config.json."""
     import json
-    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import _read_pad_token_config
 
-    config = json.dumps({"pad_token_id": 0})
-    tc = json.dumps({"pad_token": "[PAD]"})
+    files = {
+        "config.json": json.dumps({"pad_token_id": 0}),
+        "tokenizer_config.json": json.dumps({"pad_token": "[PAD]"}),
+    }
+    _download, _open = _make_download_side_effect(files)
 
-    # Two files: config.json then tokenizer_config.json
-    call_count = [0]
-
-    def _mock_open(*args, **kwargs):
-        data = config if call_count[0] == 0 else tc
-        call_count[0] += 1
-        return mock_open(read_data=data)()
-
-    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
-        with patch("builtins.open", _mock_open):
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
             pad_id, pad_token = _read_pad_token_config("test/model")
             assert pad_id == 0
             assert pad_token == "[PAD]"  # noqa: S105
@@ -245,22 +265,17 @@ def test_read_pad_token_config_reads_bert_defaults() -> None:
 def test_read_pad_token_config_reads_roberta_values() -> None:
     """_read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
     import json
-    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import _read_pad_token_config
 
-    config = json.dumps({"pad_token_id": 1})
-    tc = json.dumps({"pad_token": "<pad>"})
+    files = {
+        "config.json": json.dumps({"pad_token_id": 1}),
+        "tokenizer_config.json": json.dumps({"pad_token": "<pad>"}),
+    }
+    _download, _open = _make_download_side_effect(files)
 
-    call_count = [0]
-
-    def _mock_open(*args, **kwargs):
-        data = config if call_count[0] == 0 else tc
-        call_count[0] += 1
-        return mock_open(read_data=data)()
-
-    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
-        with patch("builtins.open", _mock_open):
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
             pad_id, pad_token = _read_pad_token_config("test/model")
             assert pad_id == 1
             assert pad_token == "<pad>"  # noqa: S105
@@ -279,22 +294,15 @@ def test_read_pad_token_config_missing_config_falls_back() -> None:
 def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
     """Missing tokenizer_config.json SHALL still return pad_id from config.json."""
     import json
-    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import _read_pad_token_config
 
-    config = json.dumps({"pad_token_id": 0})
+    # Only config.json is available; tokenizer_config.json is not.
+    files = {"config.json": json.dumps({"pad_token_id": 0})}
+    _download, _open = _make_download_side_effect(files)
 
-    call_count = [0]
-
-    def _mock_open(*args, **kwargs):
-        if call_count[0] == 0:
-            call_count[0] += 1
-            return mock_open(read_data=config)()
-        raise FileNotFoundError("tokenizer_config.json not found")
-
-    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
-        with patch("builtins.open", _mock_open):
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
             pad_id, pad_token = _read_pad_token_config("test/model")
             assert pad_id == 0
             assert pad_token is None

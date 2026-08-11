@@ -131,10 +131,12 @@ def _read_max_position_embeddings(model_id: str) -> int:
     """Read ``max_position_embeddings`` from the model's ``config.json``.
 
     Re-exported from ``_model_config.py`` for backward compatibility.
+    Passes the configured ``TOKENIZER_MAX_LENGTH`` as the fallback so
+    the model-config helper does not duplicate the env-var read.
     """
     from ._model_config import read_max_position_embeddings
 
-    return read_max_position_embeddings(model_id)
+    return read_max_position_embeddings(model_id, TOKENIZER_MAX_LENGTH)
 
 
 def _read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:

@@ -97,11 +97,20 @@ an ONNX broadcast error at inference time.
 - **THEN** the effective maximum SHALL be reduced to 512
 - **AND** inference SHALL NOT raise a dimension mismatch error
 
-#### Scenario: tokeniser reports no usable maximum
+#### Scenario: tokeniser and model config report no usable maximum
 
 - **GIVEN** a tokeniser that reports no maximum sequence length, or reports an implausible sentinel value
+- **AND** the model's `config.json` either lacks `max_position_embeddings` or reports an implausible sentinel value
 - **WHEN** the reranker initialises
 - **THEN** the configured default maximum SHALL apply
+
+#### Scenario: model config provides maximum when tokeniser does not
+
+- **GIVEN** a tokeniser that reports no maximum sequence length
+- **AND** a model whose `config.json` reports `max_position_embeddings` as 512
+- **WHEN** the reranker initialises
+- **THEN** the effective maximum SHALL be 512
+- **AND** the configured default maximum SHALL NOT apply
 
 #### Scenario: platform-aware ONNX variant selection
 
@@ -310,8 +319,10 @@ from unrelated decisions.
 #### Scenario: runtime tripwire on the default path
 
 - **GIVEN** a base install with no optional extras
-- **WHEN** the package is imported and a search is run with `rerank=True`
+- **AND** `RETRIEVAL__RERANK_BACKEND` is not set (or is set to `onnx`)
+- **WHEN** the package is imported and a search is run with `rerank=True` in a clean subprocess
 - **THEN** `torch` SHALL NOT appear in the set of loaded modules
+- **AND** the ONNX backend SHALL perform the re-scoring
 
 #### Scenario: installing the extra does not change defaults
 

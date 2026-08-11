@@ -86,12 +86,8 @@ after, then `diff`).
 - The default install stays torch-free — verified by a runtime tripwire
   test (`tests/test_no_torch_at_runtime.py`) and a dependency-audit test
   (`tests/test_dependency_audit.py`), not by convention.
-- The torch backend opens the MPS route to Apple GPU acceleration via
-  PyTorch's MPS backend. MPS (Metal Performance Shaders) is an Apple
-  framework, not a PyTorch feature — it is accessible through MPSGraph,
-  Core ML, MLX, and PyTorch. For this project's reranker, the torch
-  backend is the path that makes it reachable. Measured in Experiment 17
-  (ADR-039 records the verdict).
+- The torch backend opens the MPS route to Apple GPU acceleration,
+  measured in Experiment 17 (ADR-039 records the verdict).
 - Score-range parity is enforced by test, not by review.
 
 ### Negative
@@ -134,3 +130,22 @@ after, then `diff`).
 - ADR-039 — Apple acceleration verdict (Experiment 17)
 - `tests/test_reranker_backend_contract.py` — cross-backend score parity
 - `tests/test_no_torch_at_runtime.py` — runtime torch-free tripwire
+
+---
+
+## Addendum 2026-08-11: MPS framing clarification
+
+The original text says "The torch backend opens the MPS route to Apple
+GPU acceleration." This is accurate for this project's reranker but
+imprecise about MPS itself.
+
+MPS (Metal Performance Shaders) is an Apple framework built on Metal —
+not a PyTorch feature. It is accessible through multiple paths: the
+native MPSGraph framework (Swift/Objective-C), Core ML, TensorFlow's
+Metal plugin, MLX, and PyTorch's MPS backend. For this project's
+reranker, the torch backend is the path that makes MPS reachable,
+because we have no Swift/Metal, MLX, or TensorFlow-Metal integration.
+
+The ADR's decision and consequences are unchanged. The clarification
+is factual — MPS is an Apple framework that PyTorch wraps, not a
+PyTorch feature.

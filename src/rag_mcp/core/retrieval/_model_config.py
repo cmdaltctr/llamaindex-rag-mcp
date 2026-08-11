@@ -12,25 +12,21 @@ Imported by ``reranker.py`` (ONNX backend) and ``reranker_torch.py``
 from __future__ import annotations
 
 import json
-import os
-
-# Fallback when the model's config.json is unavailable or lacks the key.
-# Mirrors ``TOKENIZER_MAX_LENGTH`` in ``reranker.py`` — kept as a local
-# constant to avoid a circular import (``reranker.py`` imports from here).
-_DEFAULT_MAX_LENGTH = int(os.getenv("RERANK_TOKENIZER_MAX_LENGTH", "2048"))
 
 
-def read_max_position_embeddings(model_id: str) -> int:
+def read_max_position_embeddings(model_id: str, fallback: int) -> int:
     """Read ``max_position_embeddings`` from the model's ``config.json``.
 
-    Falls back to the configured default when the file is absent, the
-    key is missing, or the value is an implausible sentinel.
+    Falls back to *fallback* when the file is absent, the key is
+    missing, or the value is an implausible sentinel.
 
     Args:
         model_id: HuggingFace model ID.
+        fallback: Configured default to use when the model's config
+            is unavailable or lacks a usable value.
 
     Returns:
-        The model's maximum sequence length, or the configured default.
+        The model's maximum sequence length, or *fallback*.
     """
     try:
         from huggingface_hub import hf_hub_download
@@ -40,10 +36,10 @@ def read_max_position_embeddings(model_id: str) -> int:
             config = json.load(f)
         model_max = config.get("max_position_embeddings")
         if not isinstance(model_max, int) or model_max > 100000:
-            return _DEFAULT_MAX_LENGTH
+            return fallback
         return model_max
     except Exception:
-        return _DEFAULT_MAX_LENGTH
+        return fallback
 
 
 def read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:
