@@ -28,7 +28,6 @@ the original results un-reranked.
 
 from __future__ import annotations
 
-import json
 import logging
 import math
 import os
@@ -131,34 +130,21 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
 def _read_max_position_embeddings(model_id: str) -> int:
     """Read ``max_position_embeddings`` from the model's ``config.json``.
 
-    The ``tokenizers`` package does not expose ``model_max_length`` the
-    way ``transformers.AutoTokenizer`` did.  This fetches ``config.json``
-    from the same HuggingFace snapshot and takes
-    ``max_position_embeddings``.  Falls back to
-    ``TOKENIZER_MAX_LENGTH`` when the file is absent, the key is
-    missing, or the value is an implausible sentinel (e.g. 1000000).
-
-    Shared between the ONNX and torch backends so both cap the effective
-    max length at the model's own limit.
-
-    Args:
-        model_id: HuggingFace model ID.
-
-    Returns:
-        The model's maximum sequence length, or the configured default.
+    Re-exported from ``_model_config.py`` for backward compatibility.
     """
-    try:
-        from huggingface_hub import hf_hub_download
+    from ._model_config import read_max_position_embeddings
 
-        config_path = hf_hub_download(repo_id=model_id, filename="config.json")
-        with open(config_path) as f:
-            config = json.load(f)
-        model_max = config.get("max_position_embeddings")
-        if not isinstance(model_max, int) or model_max > 100000:
-            return TOKENIZER_MAX_LENGTH
-        return model_max
-    except Exception:
-        return TOKENIZER_MAX_LENGTH
+    return read_max_position_embeddings(model_id)
+
+
+def _read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:
+    """Read ``pad_token_id`` and ``pad_token`` from the model's config.
+
+    Re-exported from ``_model_config.py`` for backward compatibility.
+    """
+    from ._model_config import read_pad_token_config
+
+    return read_pad_token_config(model_id)
 
 
 class CrossEncoderReranker:
@@ -299,7 +285,17 @@ class CrossEncoderReranker:
                 # persist for the process lifetime — subsequent instances
                 # reuse the already-configured tokenizer from the cache.
                 self._tokenizer.enable_truncation(max_length=self._effective_max_length)
-                self._tokenizer.enable_padding()
+                # Read the model's pad token config so padding uses the
+                # correct pad_id and pad_token for non-BERT-family models
+                # (e.g. RoBERTa uses pad_id=1, pad_token="<pad>").  Falls
+                # back to library defaults when config is unavailable.
+                pad_id, pad_token = _read_pad_token_config(self._model_id)
+                _pad_kwargs: dict[str, int | str] = {}
+                if pad_id is not None:
+                    _pad_kwargs["pad_id"] = pad_id
+                if pad_token is not None:
+                    _pad_kwargs["pad_token"] = pad_token
+                self._tokenizer.enable_padding(**_pad_kwargs)
                 # CoreML does not support the dynamic sequence lengths that
                 # cross-encoder tokenisation produces (variable batch padding).
                 # It fails with "Error in dynamically resizing for sequence

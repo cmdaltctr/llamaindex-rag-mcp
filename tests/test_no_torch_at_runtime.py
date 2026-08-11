@@ -6,11 +6,18 @@ the default backend does not load torch into sys.modules.
 This turns the existing prose requirement ("no PyTorch at runtime") into
 an automated CI check. The previous violation entered through a
 transitive dependency that no one audited.
+
+The subprocess test (issue #40) runs a full search in a clean
+interpreter, because in-process ``sys.modules`` checks are unfalsifiable
+once other tests have imported modules.
 """
 
 from __future__ import annotations
 
+import subprocess
 import sys
+import textwrap
+from pathlib import Path
 
 
 def test_torch_absent_after_default_backend_search() -> None:
@@ -55,4 +62,116 @@ def test_torch_absent_after_backend_module_import() -> None:
     assert "torch" not in sys.modules, (
         "torch was imported when the backend resolution module was imported. "
         "The torch import must be lazy, inside the torch backend's _load_model."
+    )
+
+
+def test_torch_absent_after_full_search_subprocess() -> None:
+    """A full search with rerank=True SHALL NOT load torch (issue #40).
+
+    Runs a search in a clean subprocess with mocked ChromaDB and
+    embeddings, then asserts ``torch`` is absent from ``sys.modules``.
+    The subprocess is necessary because in-process checks are
+    unfalsifiable once other tests have imported modules.
+
+    The reranker model may or may not be cached locally — either way,
+    the ONNX backend path uses ``onnxruntime`` and ``tokenizers``,
+    neither of which imports torch. If the model is not cached, the
+    reranker fails gracefully and the search returns un-reranked
+    results; the import path is the same either way.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    script = textwrap.dedent(
+        """
+        import os, sys, json, tempfile
+
+        # ── Env vars (match conftest _isolate_env) ────────────────────
+        os.environ.setdefault("EMBED_PROVIDER", "local")
+        os.environ.setdefault("LOCAL_BACKEND", "ollama")
+        os.environ.setdefault("EMBED_MODEL", "nomic-embed-text")
+        os.environ.setdefault("OLLAMA_BASE_URL", "http://localhost:11434")
+        os.environ.setdefault("METADATA_LLM_PROVIDER", "local")
+        os.environ.setdefault("METADATA__EXTRACTION_MODE", "disabled")
+        os.environ.setdefault("METADATA__KEYWORD_RULES", "")
+        os.environ.setdefault("PDF_READER", "pypdf")
+
+        # ── Mock ChromaDB (EphemeralClient, no disk) ──────────────────
+        import chromadb
+        _client = chromadb.EphemeralClient()
+        for c in _client.list_collections():
+            _client.delete_collection(c.name)
+        chromadb.PersistentClient = lambda **kw: _client
+        chromadb.EphemeralClient = lambda **kw: _client
+
+        # ── Mock embedding model (no Ollama) ──────────────────────────
+        from llama_index.core import Settings
+        from llama_index.core.embeddings import MockEmbedding
+        Settings.embed_model = MockEmbedding(embed_dim=384)
+
+        # ── Reset vector store singleton ──────────────────────────────
+        from rag_mcp.core.vectordb import reset_default_store
+        reset_default_store()
+
+        # ── Install default EffectiveSettings (match conftest) ────────
+        from rag_mcp.core.settings import (
+            EffectiveSettings,
+            MetadataBlock,
+            set_default_effective_settings,
+        )
+        set_default_effective_settings(
+            EffectiveSettings(
+                metadata=MetadataBlock(extraction_mode="disabled"),
+                pdf_reader="pypdf",
+                collection_name="torch_tripwire",
+                chroma_persist_dir=os.path.join(
+                    tempfile.gettempdir(), f"torch_tripwire_{os.getpid()}"
+                ),
+            )
+        )
+
+        # ── Ingest a small document ───────────────────────────────────
+        import asyncio
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
+
+        test_file = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, prefix="torch_tripwire_"
+        )
+        test_file.write("# Machine Learning\\n\\nMachine learning is a subset of AI.")
+        test_file.close()
+
+        async def _run():
+            await ingest_path_async(test_file.name, collection_name="torch_tripwire")
+            results = search("machine learning", collection_name="torch_tripwire", rerank=True)
+            return results
+
+        results = asyncio.run(_run())
+
+        os.unlink(test_file.name)
+
+        # ── Assert torch is not in sys.modules ────────────────────────
+        torch_loaded = "torch" in sys.modules
+        print(json.dumps({"torch_loaded": torch_loaded, "results_count": len(results)}))
+        sys.exit(1 if torch_loaded else 0)
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        cwd=str(repo_root),
+        timeout=120,
+    )
+    assert result.returncode == 0, (
+        f"Subprocess search failed (exit {result.returncode}).\\n"
+        f"stdout: {result.stdout}\\n"
+        f"stderr: {result.stderr[-2000:]}"
+    )
+    # Parse the JSON output to confirm torch was not loaded.
+    import json
+
+    output = json.loads(result.stdout.strip().splitlines()[-1])
+    assert not output["torch_loaded"], (
+        "torch was loaded into sys.modules during a full search with "
+        "rerank=True on the default (ONNX) backend. A dependency change "
+        "likely reintroduced torch into the default path."
     )

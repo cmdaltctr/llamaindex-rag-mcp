@@ -214,7 +214,90 @@ def test_read_max_position_embeddings_no_config_falls_back() -> None:
         assert result == TOKENIZER_MAX_LENGTH
 
 
-# ── backend.py edge cases ───────────────────────────────────────────────
+# ── _read_pad_token_config (module-level function) ─────────────────────
+
+
+def test_read_pad_token_config_reads_bert_defaults() -> None:
+    """_read_pad_token_config SHALL read pad_token_id from config.json."""
+    import json
+    from unittest.mock import mock_open
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    config = json.dumps({"pad_token_id": 0})
+    tc = json.dumps({"pad_token": "[PAD]"})
+
+    # Two files: config.json then tokenizer_config.json
+    call_count = [0]
+
+    def _mock_open(*args, **kwargs):
+        data = config if call_count[0] == 0 else tc
+        call_count[0] += 1
+        return mock_open(read_data=data)()
+
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", _mock_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 0
+            assert pad_token == "[PAD]"  # noqa: S105
+
+
+def test_read_pad_token_config_reads_roberta_values() -> None:
+    """_read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
+    import json
+    from unittest.mock import mock_open
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    config = json.dumps({"pad_token_id": 1})
+    tc = json.dumps({"pad_token": "<pad>"})
+
+    call_count = [0]
+
+    def _mock_open(*args, **kwargs):
+        data = config if call_count[0] == 0 else tc
+        call_count[0] += 1
+        return mock_open(read_data=data)()
+
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", _mock_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 1
+            assert pad_token == "<pad>"  # noqa: S105
+
+
+def test_read_pad_token_config_missing_config_falls_back() -> None:
+    """Missing config.json SHALL return (None, None) without raising."""
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
+        pad_id, pad_token = _read_pad_token_config("test/model")
+        assert pad_id is None
+        assert pad_token is None
+
+
+def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
+    """Missing tokenizer_config.json SHALL still return pad_id from config.json."""
+    import json
+    from unittest.mock import mock_open
+
+    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+
+    config = json.dumps({"pad_token_id": 0})
+
+    call_count = [0]
+
+    def _mock_open(*args, **kwargs):
+        if call_count[0] == 0:
+            call_count[0] += 1
+            return mock_open(read_data=config)()
+        raise FileNotFoundError("tokenizer_config.json not found")
+
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", _mock_open):
+            pad_id, pad_token = _read_pad_token_config("test/model")
+            assert pad_id == 0
+            assert pad_token is None
 
 
 def test_resolve_unknown_backend_name_raises_keyerror() -> None:
