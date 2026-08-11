@@ -169,7 +169,55 @@ def test_torch_backend_inference_failure_returns_un_reranked() -> None:
 
     assert len(out) == 1
     assert out[0]["_reranked"] is False
+    assert reranker.last_failure_reason is not None
     assert "inference failed" in reranker.last_failure_reason
+
+
+def test_torch_backend_score_cardinality_mismatch() -> None:
+    """Score cardinality mismatch SHALL return un-reranked results."""
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    import numpy as np
+
+    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+
+    reranker = SentenceTransformerReranker()
+    reranker._loaded = True
+
+    # Return 2 logits for 3 results → cardinality mismatch
+    mock_cross_encoder = MagicMock()
+    mock_cross_encoder.predict.return_value = np.array([1.0, 2.0])
+    reranker._cross_encoder = mock_cross_encoder
+
+    mock_torch = MagicMock()
+    with patch.dict(sys.modules, {"torch": mock_torch}):
+        results = [
+            {"text": "a", "score": 0.5},
+            {"text": "b", "score": 0.5},
+            {"text": "c", "score": 0.5},
+        ]
+        out = reranker.rerank("query", results, top_k=3)
+
+    assert len(out) == 3
+    assert all(r["_reranked"] is False for r in out)
+
+
+def test_torch_backend_cache_hit_reuses_model() -> None:
+    """Cache hit SHALL reuse the cached cross-encoder without reloading."""
+    from unittest.mock import MagicMock
+
+    from rag_mcp.core.retrieval._reranker_cache import _MODEL_CACHE
+    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+
+    reranker = SentenceTransformerReranker()
+    mock_ce = MagicMock()
+    _MODEL_CACHE[("torch", reranker._model_id)] = (mock_ce,)
+
+    reranker._load_model()
+    assert reranker._loaded is True
+    assert reranker._cross_encoder is mock_ce
+    assert reranker.last_failure_reason is None
 
 
 # ── Task 8.1: every backend returns normalised scores ──────────────────

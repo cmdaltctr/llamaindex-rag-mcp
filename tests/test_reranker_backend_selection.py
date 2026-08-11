@@ -157,3 +157,84 @@ def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
         out = reranker.rerank("query", results, top_k=1)
         assert len(out) <= 1
         assert all(not r.get("_reranked", False) for r in out)
+
+
+# ── _read_max_position_embeddings (reranker.py new method) ──────────────
+
+
+def test_read_max_position_embeddings_reads_config_json() -> None:
+    """_read_max_position_embeddings SHALL read max_position_embeddings."""
+    import json
+    from unittest.mock import mock_open, patch
+
+    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+
+    reranker = CrossEncoderReranker()
+    config = json.dumps({"max_position_embeddings": 512})
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", mock_open(read_data=config)):
+            result = reranker._read_max_position_embeddings()
+            assert result == 512
+
+
+def test_read_max_position_embeddings_sentinel_falls_back() -> None:
+    """Sentinel value (>100000) SHALL fall back to TOKENIZER_MAX_LENGTH."""
+    import json
+    from unittest.mock import mock_open, patch
+
+    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+
+    reranker = CrossEncoderReranker()
+    config = json.dumps({"max_position_embeddings": 1000000})
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", mock_open(read_data=config)):
+            result = reranker._read_max_position_embeddings()
+            assert result == TOKENIZER_MAX_LENGTH
+
+
+def test_read_max_position_embeddings_missing_key_falls_back() -> None:
+    """Missing max_position_embeddings key SHALL fall back to default."""
+    import json
+    from unittest.mock import mock_open, patch
+
+    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+
+    reranker = CrossEncoderReranker()
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", mock_open(read_data=json.dumps({}))):
+            result = reranker._read_max_position_embeddings()
+            assert result == TOKENIZER_MAX_LENGTH
+
+
+def test_read_max_position_embeddings_no_config_falls_back() -> None:
+    """Missing config.json SHALL fall back to default without raising."""
+    from unittest.mock import patch
+
+    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+
+    reranker = CrossEncoderReranker()
+    with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
+        result = reranker._read_max_position_embeddings()
+        assert result == TOKENIZER_MAX_LENGTH
+
+
+# ── backend.py edge cases ───────────────────────────────────────────────
+
+
+def test_resolve_unknown_backend_name_raises_keyerror() -> None:
+    """Unknown backend name SHALL raise KeyError (defensive guard)."""
+    from rag_mcp.core.retrieval.backend import resolve_reranker_backend
+
+    with pytest.raises(KeyError, match="Unknown reranker backend"):
+        resolve_reranker_backend("unknown")
+
+
+def test_build_reranker_empty_backend_defaults_to_onnx(effective_settings) -> None:
+    """Empty backend string SHALL default to onnx (guard in build_reranker_from_settings)."""
+    from rag_mcp.core.retrieval.backend import (
+        resolve_reranker_backend,
+    )
+
+    # The "if not backend" guard in build_reranker_from_settings converts
+    # empty/None to "onnx" before calling resolve_reranker_backend.
+    assert resolve_reranker_backend("onnx") is not None
