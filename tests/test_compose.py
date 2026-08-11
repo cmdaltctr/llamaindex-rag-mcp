@@ -164,17 +164,16 @@ def test_build_embed_model_llamacpp_two_tier() -> None:
 
 
 def test_build_embed_model_validates_unknown_provider() -> None:
-    """Unknown provider values are clamped by the Settings validator.
+    """Unknown provider values raise at Settings construction (§7.3).
 
-    The Settings model falls back to ``local`` with a warning before
-    compose ever resolves a registry — so compose itself cannot see an
-    unregistered provider through a validated Settings object.  (The
-    registry-level ``KeyError`` path is covered in
+    The Settings model validator raises ValueError naming the offending
+    value before compose ever resolves a registry — so compose itself
+    cannot see an unregistered provider through a validated Settings
+    object.  (The registry-level ``KeyError`` path is covered in
     ``test_registry_contract.py``.)
     """
-    settings = _settings(embed_provider="bogus", local_backend="bogus")
-    assert settings.embed_provider == "local"
-    assert settings.local_backend == "llamacpp"
+    with pytest.raises(ValueError, match="EMBED_PROVIDER='bogus'"):
+        _settings(embed_provider="bogus")
 
 
 # ── build_reranker ──────────────────────────────────────────────────────────
@@ -210,8 +209,14 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     reset_runtime_setup()
 
 
-def test_ensure_runtime_setup_degrades_gracefully() -> None:
-    """A construction failure must warn, not crash."""
+def test_ensure_runtime_setup_propagates_embed_model_failure() -> None:
+    """A construction failure must propagate, not be swallowed (§5.4).
+
+    Previously ensure_runtime_setup caught ImportError/ValueError from
+    build_embed_model and logged a warning, leaving the process running
+    with no embed model set.  Now the exception propagates so startup
+    fails loudly.
+    """
 
     _ = _settings()
     reset_runtime_setup()
@@ -220,7 +225,8 @@ def test_ensure_runtime_setup_degrades_gracefully() -> None:
         "rag_mcp.compose.build_embed_model",
         side_effect=ImportError("optional dep missing"),
     ):
-        ensure_runtime_setup()  # must not raise
+        with pytest.raises(ImportError, match="optional dep missing"):
+            ensure_runtime_setup()
     reset_runtime_setup()
 
 
@@ -462,8 +468,13 @@ class TestResolveActiveStrategies:
 # ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
 
 
-def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
-    """A vector store ImportError warns rather than crashing."""
+def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
+    """A vector store construction failure must propagate (§5.5).
+
+    Previously ensure_runtime_setup caught ImportError/ValueError from
+    build_vector_store and logged a warning, leaving the process running
+    with no default store registered.  Now the exception propagates.
+    """
     from llama_index.core.embeddings import MockEmbedding
 
     from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
@@ -475,8 +486,43 @@ def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
         patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
         patch("rag_mcp.compose.build_vector_store", side_effect=ImportError("missing")),
     ):
-        ensure_runtime_setup()
+        with pytest.raises(ImportError, match="missing"):
+            ensure_runtime_setup()
     reset_runtime_setup()
+
+
+def test_import_compose_succeeds_under_conftest_defaults() -> None:
+    """Importing rag_mcp.compose in a fresh subprocess survives §5 (§5.6).
+
+    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama,
+    EMBED_MODEL, OLLAMA_BASE_URL, and METADATA_LLM_PROVIDER via
+    setdefault before any import.  Once construction failures propagate
+    at import (§5), invalid defaults would break collection itself.
+    This test runs the import in a fresh subprocess so the result is
+    not masked by the parent process's cached module.
+    """
+    import os
+    import subprocess
+    import sys
+
+    env = {
+        **os.environ,
+        "EMBED_PROVIDER": "local",
+        "LOCAL_BACKEND": "ollama",
+        "EMBED_MODEL": "nomic-embed-text",
+        "OLLAMA_BASE_URL": "http://localhost:11434",
+        "METADATA_LLM_PROVIDER": "local",
+    }
+    result = subprocess.run(
+        [sys.executable, "-c", "import rag_mcp.compose"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"import rag_mcp.compose failed in fresh subprocess:\n"
+        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
+    )
 
 
 # ── build functions (settings=None delegation) ──────────────────────────────

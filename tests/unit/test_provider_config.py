@@ -7,7 +7,6 @@ sub-providers resolve to the correct LlamaIndex classes.
 
 from __future__ import annotations
 
-import importlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -295,49 +294,179 @@ def test_metadata_llm_provider_defaults_to_local(monkeypatch: pytest.MonkeyPatch
     # modules that imported `settings` keep reading the same object.
 
 
-def test_unknown_embed_provider_falls_back_to_local(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unknown EMBED_PROVIDER value falls back to local."""
+def test_unknown_embed_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unknown EMBED_PROVIDER value raises at settings resolution (§7.5)."""
     monkeypatch.setenv("EMBED_PROVIDER", "nonexistent")
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
 
-    # Settings is resolved on demand now — build a fresh instance from the
-    # patched environment instead of reloading the module (the old pattern
-    # relied on a module-level singleton that no longer exists).
-    import rag_mcp.config as config_mod
+    from rag_mcp.config import Settings
 
-    config_mod._settings = None
-    assert config_mod.get_settings().embed_provider == "local"
-
-    # Restore
-    monkeypatch.setenv("EMBED_PROVIDER", "local")
+    with pytest.raises(ValueError, match="EMBED_PROVIDER='nonexistent'"):
+        Settings(_env_file=None)
 
 
-def test_unknown_local_backend_falls_back_to_llamacpp(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unknown LOCAL_BACKEND value falls back to llamacpp after config reload."""
+def test_unknown_local_backend_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unknown LOCAL_BACKEND value raises at settings resolution (§7.6)."""
 
     monkeypatch.setenv("EMBED_PROVIDER", "local")
     monkeypatch.setenv("LOCAL_BACKEND", "nonexistent")
     monkeypatch.setenv("LLAMACPP_EMBED_MODEL", "test-model")
 
-    real_import_module = importlib.import_module
+    from rag_mcp.config import Settings
 
-    def _mock_import(name, *args, **kwargs):
-        if name == "llama_index.embeddings.openai":
-            from llama_index.core.embeddings import MockEmbedding
+    with pytest.raises(ValueError, match="LOCAL_BACKEND='nonexistent'"):
+        Settings(_env_file=None)
 
-            mock_mod = MagicMock()
-            mock_mod.OpenAIEmbedding = MagicMock(return_value=MockEmbedding(embed_dim=8))
-            return mock_mod
-        return real_import_module(name, *args, **kwargs)
 
-    monkeypatch.setattr(importlib, "import_module", _mock_import)
+# ── §6.10-6.15: provider-validation raise behaviour ───────────────────────
 
-    import rag_mcp.config as config_mod
 
-    assert config_mod.get_settings().local_backend == "llamacpp"
+# (env_name, field_path, default, accepted_override)
+# field_path uses dotted notation for nested fields.
+_PROVIDER_FIELDS: list[tuple[str, str, str, str]] = [
+    ("EMBED_PROVIDER", "embed_provider", "local", "ollama"),
+    ("METADATA_LLM_PROVIDER", "metadata_llm_provider", "local", "cloud"),
+    ("LOCAL_BACKEND", "local_backend", "llamacpp", "ollama"),
+    ("CLOUD_BACKEND", "cloud_backend", "openrouter", "openrouter"),
+    ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25", "native"),
+    ("DOCUMENT_BACKEND", "document_backend", "local", "azure"),
+]
 
-    # Restore
-    monkeypatch.setattr(importlib, "import_module", real_import_module)
+
+def _get_nested(obj: object, dotted: str) -> object:
+    for part in dotted.split("."):
+        obj = getattr(obj, part)
+    return obj
+
+
+@pytest.mark.parametrize(
+    "env_name, field_path, expected_default, _",
+    _PROVIDER_FIELDS,
+    ids=[p[0] for p in _PROVIDER_FIELDS],
+)
+def test_empty_provider_value_resets_to_default(
+    env_name: str,
+    field_path: str,
+    expected_default: str,
+    _: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty or whitespace-only value resets to the field default (§6.10).
+
+    ``SETTING=`` in .env is how operators unset a knob.  Raising on it
+    would be hostile.  The field is reset to its declared default.
+    """
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv(env_name, "   ")
+    settings = Settings(_env_file=None)
+    assert _get_nested(settings, field_path) == expected_default
+
+
+@pytest.mark.parametrize(
+    "env_name, field_path, _default, valid_value",
+    _PROVIDER_FIELDS,
+    ids=[p[0] for p in _PROVIDER_FIELDS],
+)
+def test_whitespace_padded_valid_value_is_stripped(
+    env_name: str,
+    field_path: str,
+    _default: str,
+    valid_value: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A whitespace-padded valid value resolves to the stripped value (§6.10)."""
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv(env_name, f"  {valid_value}  ")
+    # DOCUMENT_BACKEND=azure triggers the credential check; set dummy
+    # credentials so the value is preserved rather than falling back.
+    if env_name == "DOCUMENT_BACKEND" and valid_value == "azure":
+        monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "https://example.azure.com/")
+        monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_KEY", "dummy-key")
+    settings = Settings(_env_file=None)
+    assert _get_nested(settings, field_path) == valid_value
+
+
+@pytest.mark.parametrize(
+    "env_name",
+    [p[0] for p in _PROVIDER_FIELDS],
+    ids=[p[0] for p in _PROVIDER_FIELDS],
+)
+def test_unknown_provider_value_raises_with_value_in_message(
+    env_name: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each raising branch names the offending value (§6.11)."""
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv(env_name, "totally-bogus")
+    with pytest.raises(ValueError, match=f"{env_name}='totally-bogus'"):
+        Settings(_env_file=None)
+
+
+def test_bad_embed_provider_reported_before_missing_embed_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A bad EMBED_PROVIDER reports itself, not a missing EMBED_MODEL (§6.12).
+
+    Guards the validator ordering: _validate_provider_selections runs
+    before _validate_embed_model_required.
+    """
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("EMBED_PROVIDER", "bogus")
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
-    monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
+    monkeypatch.delenv("EMBED_MODEL", raising=False)
+    with pytest.raises(ValueError, match="EMBED_PROVIDER='bogus'"):
+        Settings(_env_file=None)
+
+
+def test_document_backend_azure_missing_credentials_falls_back_to_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DOCUMENT_BACKEND=azure without credentials falls back to local (§6.13).
+
+    Regression guard for the deliberate graceful-degradation boundary
+    this change must not cross.
+    """
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("DOCUMENT_BACKEND", "azure")
+    monkeypatch.delenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", raising=False)
+    monkeypatch.delenv("AZURE_DOC_INTELLIGENCE_KEY", raising=False)
+    settings = Settings(_env_file=None)
+    assert settings.document_backend == "local"
+
+
+def test_rag_profile_unknown_falls_back_to_documents(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unrecognised RAG_PROFILE falls back to documents (§6.14).
+
+    Regression guard: RAG_PROFILE is warn-and-fallback by design.
+    """
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("RAG_PROFILE", "nonexistent")
+    settings = Settings(_env_file=None)
+    assert settings.rag_profile == "documents"
+
+
+def test_vector_store_unknown_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """VECTOR_STORE unknown-value behaviour is unchanged (§6.15)."""
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("VECTOR_STORE", "faiss")
+    with pytest.raises(ValueError, match="VECTOR_STORE='faiss'"):
+        Settings(_env_file=None)
+
+
+def test_pdf_reader_unknown_clamps_to_auto(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PDF_READER unknown-value behaviour is unchanged (§6.15)."""
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("PDF_READER", "definitely-not-a-reader")
+    settings = Settings(_env_file=None)
+    assert settings.pdf_reader == "auto"

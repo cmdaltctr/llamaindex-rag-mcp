@@ -260,13 +260,13 @@ def test_embed_model_required_for_ollama(
 # ── Provider-selection clamping ─────────────────────────────────────────
 
 
-def test_cloud_backend_invalid_value_clamped_to_openrouter(
+def test_cloud_backend_invalid_value_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """CLOUD_BACKEND has a single valid value; others clamp to openrouter."""
+    """CLOUD_BACKEND has a single valid value; others raise (§7.4)."""
     monkeypatch.setenv("CLOUD_BACKEND", "definitely-not-a-backend")
-    settings = _fresh_settings(monkeypatch)
-    assert settings.cloud_backend == "openrouter"
+    with pytest.raises(ValueError, match="CLOUD_BACKEND='definitely-not-a-backend'"):
+        _fresh_settings(monkeypatch)
 
 
 def test_document_backend_azure_without_credentials_falls_back_to_local(
