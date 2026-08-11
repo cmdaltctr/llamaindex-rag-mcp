@@ -81,7 +81,7 @@ jobs:
 
       - name: Set up Python
         # Pinned to SHA for security — actions/setup-python@v6.3.0
-        uses: actions/setup-python@ece7cb06caefa5fff7d0ccb6301d7b5580bf5edae39
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.12"
 

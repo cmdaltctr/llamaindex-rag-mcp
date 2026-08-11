@@ -35,11 +35,12 @@ import os
 import platform
 from typing import Any
 
-from ._reranker_cache import (
+from ._reranker_cache import (  # noqa: F401
     _CACHE_LOCK,
     _MODEL_CACHE,
     _record_failure,
     _reset_failure_state,
+    reset_model_cache,
 )
 
 # Backend name used as the cache-key axis.  Each backend module sets its
