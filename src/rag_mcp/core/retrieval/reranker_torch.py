@@ -112,7 +112,7 @@ class SentenceTransformerReranker:
 
             self._load_attempted = True
 
-            try:
+            try:  # pragma: no cover — requires torch extra, covered by dedicated CI job
                 # Lazy import: sentence_transformers pulls torch, which is
                 # an optional extra.  Importing here keeps the registry
                 # import cheap and makes the missing-extra case catchable.
@@ -193,7 +193,7 @@ class SentenceTransformerReranker:
 
         pairs = [(query, r["text"]) for r in results]
 
-        try:
+        try:  # pragma: no cover — requires torch extra, covered by dedicated CI job
             import torch
 
             # Suppress the library's default sigmoid (applied when
