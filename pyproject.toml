@@ -13,7 +13,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
     "onnxruntime>=1.17.0,<1.26.0",
-    "transformers>=4.40.0",
+    "tokenizers>=0.20",
     "huggingface-hub>=0.20.0",
     "typer>=0.25.1",
     # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
@@ -51,6 +51,14 @@ llamacpp = [
 openrouter = [
     "llama-index-embeddings-openai>=0.2.0",
     "llama-index-llms-openai-like>=0.2.0",
+]
+# PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
+# Linux. Default backend stays ONNX; installing this does not change
+# defaults.  Pin >=5.0: v3.x uses activation_fct, the activation_fn
+# kwarg did not exist until v4.x, and v5.4+ changed activation_fn
+# persistence on predict().  See ADR-038.
+torch = [
+    "sentence-transformers>=5.0",
 ]
 
 [project.scripts]

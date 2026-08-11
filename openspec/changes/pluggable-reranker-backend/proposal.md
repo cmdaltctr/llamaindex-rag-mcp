@@ -12,7 +12,7 @@ The rule has also created a dependency trap. `transformers` is a **base** depend
 - Add `RETRIEVAL__RERANK_BACKEND` (`onnx` | `torch`, default `onnx`) so backend choice is settings-driven rather than hardcoded.
 - Register both backends in `core/retrieval/registry.py`. Rename the existing `reranker` entry to `reranker_onnx`.
 - Route backend selection through `compose.build_reranker()` **and** the lazy fallback at `core/retrieval/pipeline.py:320`, which currently hardcodes the registry name.
-- Add a `torch` optional extra: `sentence-transformers>=3.0`.
+- Add a `torch` optional extra: `sentence-transformers>=5.0`.
 - Add a runtime tripwire test asserting `torch` is absent from `sys.modules` after a default-backend search. This turns the existing prose requirement into CI.
 - Add a cross-backend contract test asserting both backends return scores in `(0, 1)` and produce comparable rankings on shared fixtures.
 - Surface the reranker's success flag and failure reason into `include_diagnostics` output (ADR-029 §3 deferred item 2), so the active backend and its health are observable.
@@ -38,17 +38,19 @@ CoreML specifically is settled and is NOT revisited. Experiment 16 (2026-08-03) 
 - `src/rag_mcp/core/retrieval/reranker.py` — tokeniser swap; `model_max_length` handling moves in-module since `tokenizers` does not expose it the same way (existing sentinel guard at lines 311-317 already covers most of this).
 - `src/rag_mcp/core/retrieval/reranker_torch.py` — new.
 - `src/rag_mcp/core/retrieval/registry.py` — two `register()` lines.
-- `src/rag_mcp/core/retrieval/settings.py` — one field.
+- `src/rag_mcp/core/retrieval/settings.py` — one field on `RetrievalSettings`.
+- `src/rag_mcp/core/settings.py` — the same field on `RetrievalBlock` (Pydantic silently drops undeclared fields during the `model_dump()` copy in `compose.settings_to_effective`).
+- `src/rag_mcp/config/__init__.py` — one `_validate_provider_value` call in `_validate_provider_selections`.
 - `src/rag_mcp/core/retrieval/pipeline.py:320` — registry name from settings, not a literal.
 - `src/rag_mcp/compose.py::build_reranker` — backend dispatch.
 
 **Dependencies**
 - Base: `transformers` removed, `tokenizers>=0.20` added.
-- New extra: `torch = ["sentence-transformers>=3.0"]`.
-- Base install footprint drops by roughly 47 MB.
+- New extra: `torch = ["sentence-transformers>=5.0"]`.
+- Base install footprint drops — the exact saving is measured in a fresh venv at implementation time (ADR-038 records the real number). The estimate is smaller than the 47 MB isolated-wheel comparison suggests, because `tokenizers` and `huggingface-hub` are already pulled transitively by `chromadb`.
 
 **Risk**
-- The ÷30 threshold scaling (`core/retrieval/policy.py::_effective_threshold`) is calibrated against sigmoid-normalised ONNX logits from `experiments/1-reranker-threshold-calibration-2026-05-12/`. `sentence_transformers.CrossEncoder.predict()` returns **raw logits** unless the model config declares an activation. A torch backend returning unnormalised scores would make the threshold filter pass everything or drop everything with no error raised — the ADR-029 silent-failure shape, in a new place. Sigmoid parity is a hard requirement, not an implementation detail.
+- The ÷30 threshold scaling (`core/retrieval/policy.py::_effective_threshold`) is calibrated against sigmoid-normalised ONNX logits from `experiments/1-reranker-threshold-calibration-2026-05-12/`. `CrossEncoder.predict()` applies `nn.Sigmoid()` by default for `num_labels=1`; the torch backend overrides this with `torch.nn.Identity()` and applies the module's own `_sigmoid` to guarantee parity. Passing `activation_fn=None` would NOT disable the default sigmoid — it would double-sigmoid the logits, compressing scores to roughly `[0.5, 0.73]` and silently breaking the ÷30 threshold. The contract test compares score values across backends, not just ranking or range, because double-sigmoid preserves monotonicity and stays in `(0, 1)`.
 
 **Experiments**
 - New: `experiments/17-reranker-mps-vs-onnx-cpu-2026-08-11/`. Runs after the torch backend works, never before.

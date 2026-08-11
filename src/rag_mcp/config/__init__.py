@@ -207,6 +207,12 @@ class Settings(BaseSettings):
             ("auto", "native", "bm25"),
             "RETRIEVAL__HYBRID_SPARSE_BACKEND",
         )
+        _validate_provider_value(
+            self.retrieval,
+            "rerank_backend",
+            ("onnx", "torch"),
+            "RETRIEVAL__RERANK_BACKEND",
+        )
         _validate_provider_value(self, "document_backend", ("local", "azure"), "DOCUMENT_BACKEND")
 
         # Vector store selection (Phase 3, ADR-034).  Only "chroma" is

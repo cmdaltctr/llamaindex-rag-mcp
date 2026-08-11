@@ -222,19 +222,20 @@ class TestCrossEncoderRerankerSingleton:
         """
         mock_session = MagicMock()
         mock_tokenizer = MagicMock()
-        # model_max_length sentinel > 100000 is capped to TOKENIZER_MAX_LENGTH.
-        mock_tokenizer.model_max_length = 1000000
 
         with patch(
             "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch(
-                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
-                ):
+                with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        first = CrossEncoderReranker(model_id="cache-test/model")
-                        first._load_model()
+                        with patch.object(
+                            CrossEncoderReranker,
+                            "_read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            first = CrossEncoderReranker(model_id="cache-test/model")
+                            first._load_model()
 
         assert first._loaded is True
 
@@ -252,18 +253,20 @@ class TestCrossEncoderRerankerSingleton:
         """After reset_model_cache(), a new instance must reload from scratch."""
         mock_session = MagicMock()
         mock_tokenizer = MagicMock()
-        mock_tokenizer.model_max_length = 1000000
 
         with patch(
             "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch(
-                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
-                ):
+                with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        first = CrossEncoderReranker(model_id="cache-reset/model")
-                        first._load_model()
+                        with patch.object(
+                            CrossEncoderReranker,
+                            "_read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            first = CrossEncoderReranker(model_id="cache-reset/model")
+                            first._load_model()
 
         assert first._loaded is True
         reset_model_cache()
@@ -273,11 +276,14 @@ class TestCrossEncoderRerankerSingleton:
             "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ) as variant_mock:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch(
-                    "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
-                ):
+                with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        second._load_model()
+                        with patch.object(
+                            CrossEncoderReranker,
+                            "_read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            second._load_model()
             variant_mock.assert_called_once()
 
         assert second._loaded is True
@@ -560,9 +566,10 @@ class TestCrossEncoderRerankerMockedInference:
         results = [{"text": "doc", "score": 0.5}]
         reranker.rerank("query", results, top_k=1)
 
-        # Verify max_length kwarg was passed through
-        call_kwargs = mock_tokenizer.call_args.kwargs
-        assert call_kwargs["max_length"] == 2048
+        # In the tokenizers API, truncation/padding are configured on the
+        # tokenizer object during _load_model, not passed per-call.
+        # Verify the effective max length is set to TOKENIZER_MAX_LENGTH.
+        assert reranker._effective_max_length == 2048
 
 
 # ── Model loading tests ─────────────────────────────────────────────────────
@@ -628,14 +635,19 @@ class TestCrossEncoderRerankerModelLoading:
                 return_value="/fake/model.onnx",
             ):
                 with patch(
-                    "transformers.AutoTokenizer.from_pretrained",
+                    "tokenizers.Tokenizer.from_pretrained",
                     return_value=mock_tokenizer_cls,
                 ):
                     with patch(
                         "onnxruntime.InferenceSession",
                         return_value=mock_session,
                     ):
-                        reranker._load_model()
+                        with patch.object(
+                            CrossEncoderReranker,
+                            "_read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            reranker._load_model()
 
         assert reranker._loaded is True
         assert reranker._load_error is None
@@ -764,7 +776,6 @@ class TestCoreMLProviderGuard:
         reranker = CrossEncoderReranker(model_id="test/coreml-model")
         mock_session = MagicMock()
         mock_tokenizer = MagicMock()
-        mock_tokenizer.model_max_length = 1000000
 
         captured: dict[str, list[str]] = {}
 
@@ -778,7 +789,7 @@ class TestCoreMLProviderGuard:
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch(
-                    "transformers.AutoTokenizer.from_pretrained",
+                    "tokenizers.Tokenizer.from_pretrained",
                     return_value=mock_tokenizer,
                 ):
                     with patch(
@@ -789,7 +800,12 @@ class TestCoreMLProviderGuard:
                             "onnxruntime.InferenceSession",
                             side_effect=_capture_session,
                         ):
-                            reranker._load_model()
+                            with patch.object(
+                                CrossEncoderReranker,
+                                "_read_max_position_embeddings",
+                                return_value=512,
+                            ):
+                                reranker._load_model()
 
         assert reranker._loaded is True
         return captured["providers"]
@@ -854,6 +870,8 @@ class TestCacheHitDoesNotResetFailureStreak:
         )
 
         # Seed the cache with a session that fails at inference time.
+        # The cache key is now (backend_name, model_id) — a tuple — so
+        # the cache-hit path finds the seeded entry.
         seed = CrossEncoderReranker()
         failing_session = MagicMock()
         failing_session.run.side_effect = RuntimeError("persistent cache-hit boom")
@@ -862,7 +880,7 @@ class TestCacheHitDoesNotResetFailureStreak:
             "input_ids": np.array([[1, 2]]),
             "attention_mask": np.array([[1, 1]]),
         }
-        _MODEL_CACHE[seed._model_id] = (
+        _MODEL_CACHE[("onnx", seed._model_id)] = (
             failing_session,
             mock_tokenizer,
             seed._effective_max_length,

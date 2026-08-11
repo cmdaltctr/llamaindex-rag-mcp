@@ -39,11 +39,23 @@ lazily during retrieval, so the two paths cannot diverge.
 - **THEN** the system SHALL fail with an error naming the accepted values
 - **AND** SHALL NOT start with a silently substituted default
 
+#### Scenario: retired registry name is rejected
+- **GIVEN** the bare registry name `"reranker"` has been retired in favour of `"reranker_onnx"` and `"reranker_torch"`
+- **WHEN** registry resolution is attempted with that name
+- **THEN** it SHALL raise `KeyError` listing `"reranker_onnx"` and `"reranker_torch"` as available names
+
 #### Scenario: torch backend selected but extra not installed
 - **GIVEN** `RETRIEVAL__RERANK_BACKEND=torch` and the `torch` optional extra is NOT installed
 - **WHEN** the reranker is constructed
 - **THEN** the system SHALL emit an error naming the extra required to install it
-- **AND** SHALL fall back to un-reranked results rather than crashing
+- **AND** SHALL fall back to the ONNX backend rather than crashing
+
+#### Scenario: torch extra missing and ONNX backend also fails
+- **GIVEN** `RETRIEVAL__RERANK_BACKEND=torch`, the `torch` optional extra is NOT installed, AND the ONNX backend cannot load its model
+- **WHEN** a search is run with `rerank=True`
+- **THEN** the system SHALL return un-reranked results truncated to `top_k`
+- **AND** every result SHALL carry `"reranked": false`
+- **AND** the system SHALL NOT raise
 
 ### Requirement: all backends share one score range and public contract
 

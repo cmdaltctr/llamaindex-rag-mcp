@@ -280,9 +280,11 @@ time.
 **uv** ([ADR-001](../adr/001-use-uv-as-package-manager.md)) — fast, one
 lockfile, no virtualenv juggling.
 
-**ONNX Runtime, never PyTorch**
-([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md)) — PyTorch
-is a multi-gigabyte dependency for something that only needs inference.
+**ONNX Runtime for the default reranker path**
+([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md),
+[ADR-038](../adr/038-pluggable-reranker-backend.md)) — the default install
+stays torch-free; a torch-backed reranker is available behind the `torch`
+optional extra.
 
 **qwen3-embedding:0.6b**
 ([ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md)) — better retrieval

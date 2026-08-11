@@ -5,10 +5,10 @@ See `proposal.md` — Why. The constraints that shape the approach:
 - The reranker is already registry-dispatched (`core/retrieval/registry.py:66`). Invariant 10 in `CLAUDE.md` says a new strategy is one file plus one `register()` line. The reranker is the only registry slot with a single entry, which is why the constraint reads as a wall rather than a choice.
 - Two construction paths exist. `compose.build_reranker()` is the production path and injects the instance into `search()`. `pipeline.py:320` constructs one lazily when nothing is injected. Both hardcode the ONNX backend today.
 - `_MODEL_CACHE` (`reranker.py:61`) is keyed by model ID alone and holds `(session, tokenizer, max_length)`.
-- All three ADR-029 §3 deferred items landed in PR #27, **merged into `v3` at `67330ca`**: `_record_failure` (`reranker.py:82`) escalates to `logging.ERROR` after three consecutive same-signature failures, `last_failure_reason` is reset per call, and `pipeline.py:307-309` folds it into `rerank_reason`. This change inherits that work rather than repeating it, and adds only the backend name to diagnostics.
-- `_effective_threshold` divides the similarity threshold by 30 when reranking. Calibrated in `experiments/1-reranker-threshold-calibration-2026-05-12/` against sigmoid-normalised scores: strong matches 0.79–1.0, weak-correct 0.015, noise below 0.003. PR #27 also gated the ÷30 on `rerank_succeeded` (`pipeline.py:320-323`), so a *failed* rerank no longer gets the scaled threshold. That guard reads the `reranked` flag, so it does not protect against a backend that succeeds while emitting scores on the wrong scale — see Risks.
-- **This change targets `v3`, not `main`.** Breaking work goes to `v3`; `main` cuts a release on every push. PR #27 also targeted `v3`, and `v3` is 74 commits ahead of `main`. The dependency is already satisfied, so there is no blocker.
-- Invariant 11: no file exceeds 500 lines. `reranker.py` is at 451.
+- All three ADR-029 §3 deferred items landed in PR #27, **merged into `v3` at `67330ca`**: `_record_failure` (`reranker.py:82`) escalates to `logging.ERROR` after three consecutive same-signature failures, `last_failure_reason` is reset per call, and `pipeline.py:327-329` folds it into `rerank_reason`. This change inherits that work rather than repeating it, and adds only the backend name to diagnostics.
+- `_effective_threshold` divides the similarity threshold by 30 when reranking. Calibrated in `experiments/1-reranker-threshold-calibration-2026-05-12/` against sigmoid-normalised scores: strong matches 0.79–1.0, weak-correct 0.015, noise below 0.003. PR #27 also gated the ÷30 on `rerank_succeeded` (`pipeline.py:340-343`), so a *failed* rerank no longer gets the scaled threshold. That guard reads the `reranked` flag, so it does not protect against a backend that succeeds while emitting scores on the wrong scale — see Risks.
+- **This change targets `v3`, not `main`.** Breaking work goes to `v3`; `main` cuts a release on every push. PR #27 also targeted `v3`, and `v3` is 83 commits ahead of `main`. The dependency is already satisfied, so there is no blocker.
+- Invariant 11: no file exceeds 500 lines. `reranker.py` is at 466.
 
 ## Goals / Non-Goals
 
@@ -47,9 +47,11 @@ The cache moves to a shared module, `core/retrieval/_reranker_cache.py`, keyed b
 
 ### 3. Sigmoid parity is enforced by contract test, not by convention
 
-`sentence_transformers.CrossEncoder.predict()` returns raw logits unless the model config declares an activation. The torch backend therefore calls `predict(..., activation_fn=None)` and applies the module's own `_sigmoid` — the same function the ONNX path uses — rather than trusting the library's default.
+`CrossEncoder.predict()` applies `nn.Sigmoid()` by default when `num_labels=1` (which is the case for `cross-encoder/ms-marco-MiniLM-L-6-v2`). The torch backend therefore calls `predict(..., activation_fn=torch.nn.Identity())` to suppress the library's default, then applies the module's own `_sigmoid` — the same function the ONNX path uses. This guarantees byte-identical parity with the ONNX backend's sigmoid and removes a library-version-dependent behaviour from the critical path.
 
-This is the highest-risk part of the change and it fails silently if wrong, so it gets a test that compares both backends over shared fixtures rather than a code comment.
+Passing `activation_fn=None` would NOT disable activation — for `num_labels=1` it resolves to `nn.Sigmoid()`, and applying `_sigmoid` on top would double-sigmoid the logits, compressing scores to roughly `[0.5, 0.73]` and silently breaking the ÷30 threshold.
+
+The contract test compares score *values* across backends (not just ranking or range), because double-sigmoid preserves monotonicity and stays in `(0, 1)` — a ranking-only or range-only test would miss it.
 
 *Alternative:* let each backend define its own normalisation and rescale the threshold per backend. Rejected — it multiplies the calibrated constant by the number of backends and each copy drifts independently.
 
@@ -57,13 +59,13 @@ This is the highest-risk part of the change and it fails silently if wrong, so i
 
 `RETRIEVAL__RERANK_BACKEND` lands in `RetrievalBlock` and flows through `EffectiveSettings` like every other lever (invariant 9). `compose.build_reranker()` maps it to a registry name. `pipeline.py:320` reads it off the already-resolved `resolved_settings` rather than re-resolving.
 
-Registry names become `reranker_onnx` and `reranker_torch`. The bare `reranker` name is retired rather than aliased — a stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent, and `test_registry_contract.py` already asserts every registered name resolves.
+Registry names become `reranker_onnx` and `reranker_torch`. The bare `reranker` name is retired rather than aliased — a stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent. A parametrised test resolving every name in `retrieval_registry.available()` is added (task 8.7), because the existing `test_registry_contract.py` only resolves `available()[0]` (`"bm25"`), not the reranker entries. A test asserting the retired bare `"reranker"` name raises `KeyError` is added as task 8.8.
 
 *Alternative:* keep `reranker` as an alias for the default. Rejected for the reason above.
 
 ### 5. Missing extra degrades, it does not crash
 
-`RETRIEVAL__RERANK_BACKEND=torch` without the extra installed raises `ImportError` inside the registry's lazy resolution. `compose.build_reranker()` catches it, logs at ERROR naming `uv sync --extra torch`, and returns the ONNX backend.
+`RETRIEVAL__RERANK_BACKEND=torch` without the extra installed raises `ImportError` inside the registry's lazy resolution. A shared backend-resolution helper in `core/retrieval/` catches it, logs at ERROR naming `uv sync --extra torch`, and falls back to the ONNX backend. Both construction paths — `compose.build_reranker()` and the lazy path at `pipeline.py:320` — call this helper, so the fallback behaviour is identical whether the reranker is injected or constructed on demand. If the ONNX backend also fails to load, the existing graceful-degradation path returns un-reranked results truncated to `top_k` (ADR-029 contract).
 
 An unknown backend name is different and fails hard at settings resolution, because that is a typo the operator can fix immediately. A missing extra is a deployment state that should not take the server down.
 
@@ -85,9 +87,9 @@ Experiment 17 therefore compares three cells on the **default MiniLM model**, be
 
 The experiment does not change any default. If MPS wins, the follow-up change adds device selection to the torch backend and carries its own ADR.
 
-### 7. `reranker.py` is at 451 of 500 lines
+### 7. `reranker.py` is at 466 of 500 lines
 
-Extracting the cache into `_reranker_cache.py` removes roughly 60 lines, which absorbs the tokeniser-swap delta. `tests/test_file_size_ceiling.py` enforces this, so it is a build failure rather than a review note if the budget is missed.
+Extracting the cache into `_reranker_cache.py` removes roughly 60 lines, which absorbs the tokeniser-swap delta. The cache extraction (task group 2) lands before the tokeniser swap (task group 3) to stay under the ceiling mid-implementation. `tests/test_file_size_ceiling.py` enforces this, so it is a build failure rather than a review note if the budget is missed.
 
 ## Risks / Trade-offs
 
@@ -99,7 +101,7 @@ Extracting the cache into `_reranker_cache.py` removes roughly 60 lines, which a
 
 **Two backends double the "which one actually ran" surface** → This is precisely what cost five weeks in ADR-029. Mitigated by decision 4 (one resolution point, no aliases) and by shipping the diagnostics work in the same change rather than deferring it again.
 
-**Torch backend rots from disuse** → It is not on the default path, so nothing exercises it in the fast suite. Accepted with mitigation: the contract test runs it under the `slow` marker, and CI runs the slow suite on a schedule. If that proves insufficient, the honest response is to remove the backend rather than ship a broken option.
+**Torch backend rots from disuse** → It is not on the default path, so nothing exercises it in the fast suite. Mitigated by a dedicated CI job (task 11.5) that installs `uv sync --extra torch` and runs the torch-backend and cross-backend contract tests without `|| echo` suppression. The existing slow job in `.github/workflows/ci.yml` has no scheduled trigger and swallows failures with `|| echo "Slow tests skipped"`, so relying on it would mean the torch backend is never exercised. If the dedicated job proves insufficient, the honest response is to remove the backend rather than ship a broken option.
 
 ## Migration Plan
 
@@ -114,7 +116,7 @@ Rollback: revert the commit. No persisted state changes, so nothing to undo in C
 
 Sequencing matters within the change. The tokeniser swap and the base-dependency removal land together — doing the removal first leaves the ONNX path importing a package that is no longer declared.
 
-## Open Questions
+## Resolved Questions
 
-- Whether `sentence-transformers>=3.0` is the right floor, or whether v4/v5 should be the minimum. Resolvable at implementation time against whatever is current; it does not change the specs, the approach, or the task breakdown.
-- Whether the slow-suite CI schedule needs a dedicated job for the torch extra or can extend the existing one. A CI configuration detail, deferrable to the PR.
+- **`sentence-transformers` version floor.** Resolved: `>=5.0`. The `activation_fn` kwarg on `predict()` did not exist until v4.x (v3.x uses `activation_fct`), and v5.4+ changed `activation_fn` persistence behaviour on `predict()`. Pinning `>=5.0` ensures the Identity-override contract (decision 3) is stable.
+- **CI for the torch extra.** Resolved: a dedicated CI job is added in task 11.5, not deferred to the PR. The existing slow job cannot serve this role — it has no schedule and suppresses failures.

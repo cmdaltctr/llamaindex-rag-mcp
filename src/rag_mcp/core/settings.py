@@ -60,6 +60,7 @@ class RetrievalBlock(BaseModel):
     rerank_fetch_multiplier: int = 3
     rerank_max_fetch: int = 100
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_backend: str = "onnx"
     hybrid_enabled: bool = False
     hybrid_rrf_k: int = 60
     hybrid_sparse_backend: str = "bm25"
