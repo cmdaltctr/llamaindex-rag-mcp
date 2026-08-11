@@ -89,7 +89,11 @@ def test_resolved_install_excludes_torch_ecosystem() -> None:
         "optimum",
         "transformers",
     }
-    installed = {dist.metadata["Name"].lower() for dist in importlib.metadata.distributions()}
+    installed = {
+        name.lower()
+        for dist in importlib.metadata.distributions()
+        if (name := dist.metadata["Name"]) is not None
+    }
     found = forbidden & installed
     assert not found, (
         f"Forbidden packages found in the resolved install graph: {found}. "

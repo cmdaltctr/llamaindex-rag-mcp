@@ -12,13 +12,17 @@ Imported by ``reranker.py`` (ONNX backend) and ``reranker_torch.py``
 from __future__ import annotations
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def read_max_position_embeddings(model_id: str, fallback: int) -> int:
     """Read ``max_position_embeddings`` from the model's ``config.json``.
 
     Falls back to *fallback* when the file is absent, the key is
-    missing, or the value is an implausible sentinel.
+    missing, or the value is an implausible sentinel (non-positive,
+    a bool, or larger than 100000).
 
     Args:
         model_id: HuggingFace model ID.
@@ -35,10 +39,20 @@ def read_max_position_embeddings(model_id: str, fallback: int) -> int:
         with open(config_path) as f:
             config = json.load(f)
         model_max = config.get("max_position_embeddings")
-        if not isinstance(model_max, int) or model_max > 100000:
+        if (
+            not isinstance(model_max, int)
+            or isinstance(model_max, bool)
+            or not (0 < model_max <= 100000)
+        ):
             return fallback
         return model_max
-    except Exception:
+    except Exception as exc:
+        logger.debug(
+            "Could not read max_position_embeddings for %s, using fallback %d: %s",
+            model_id,
+            fallback,
+            exc,
+        )
         return fallback
 
 
@@ -52,40 +66,45 @@ def read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:
     ``pad_token_id`` from ``config.json`` and ``pad_token`` from
     ``tokenizer_config.json`` so padding uses the model's own values.
 
-    Falls back to ``(None, None)`` when either file or key is absent —
-    the caller passes these to ``enable_padding()`` which treats
-    ``None`` as "use library default".
+    The two values are returned atomically: if either file or key is
+    missing, both come back ``None`` rather than a partial pair. A
+    partial pair (e.g. ``pad_id=None, pad_token="<pad>"``) would let
+    ``enable_padding()`` apply the library's default ``pad_id=0``
+    alongside a mismatched token string, which is the exact silent
+    mispadding this helper exists to prevent.
 
     Args:
         model_id: HuggingFace model ID.
 
     Returns:
         ``(pad_token_id, pad_token)`` from the model config, or
-        ``(None, None)`` when unavailable.
+        ``(None, None)`` when either value is unavailable.
     """
     try:
         from huggingface_hub import hf_hub_download
-
-        pad_id: int | None = None
-        pad_token: str | None = None
 
         config_path = hf_hub_download(repo_id=model_id, filename="config.json")
         with open(config_path) as f:
             config = json.load(f)
         raw_pad_id = config.get("pad_token_id")
-        if isinstance(raw_pad_id, int):
-            pad_id = raw_pad_id
+        pad_id = raw_pad_id if isinstance(raw_pad_id, int) else None
 
-        try:
-            tc_path = hf_hub_download(repo_id=model_id, filename="tokenizer_config.json")
-            with open(tc_path) as f:
-                tc = json.load(f)
-            raw_pad_token = tc.get("pad_token")
-            if isinstance(raw_pad_token, str):
-                pad_token = raw_pad_token
-        except Exception:  # noqa: S110
-            pass  # tokenizer_config.json is not always present
+        tc_path = hf_hub_download(repo_id=model_id, filename="tokenizer_config.json")
+        with open(tc_path) as f:
+            tc = json.load(f)
+        raw_pad_token = tc.get("pad_token")
+        pad_token = raw_pad_token if isinstance(raw_pad_token, str) else None
 
+        if pad_id is None or pad_token is None:
+            logger.debug(
+                "Incomplete pad token config for %s (pad_id=%r, pad_token=%r), "
+                "using library defaults",
+                model_id,
+                pad_id,
+                pad_token,
+            )
+            return None, None
         return pad_id, pad_token
-    except Exception:
+    except Exception as exc:
+        logger.debug("Could not read pad token config for %s: %s", model_id, exc)
         return None, None

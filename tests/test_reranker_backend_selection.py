@@ -214,7 +214,46 @@ def test_read_max_position_embeddings_no_config_falls_back() -> None:
         assert result == TOKENIZER_MAX_LENGTH
 
 
-# ── _read_pad_token_config (module-level function) ─────────────────────
+def test_read_max_position_embeddings_zero_falls_back() -> None:
+    """A non-positive max_position_embeddings SHALL fall back to default.
+
+    A value of 0 (or negative) is as implausible as the >100000
+    sentinel: passed straight through, it would make
+    ``enable_truncation(max_length=0)`` truncate every input to nothing.
+    """
+    import json
+    from unittest.mock import mock_open
+
+    from rag_mcp.core.retrieval.reranker import (
+        TOKENIZER_MAX_LENGTH,
+        _read_max_position_embeddings,
+    )
+
+    config = json.dumps({"max_position_embeddings": 0})
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", mock_open(read_data=config)):
+            result = _read_max_position_embeddings("test/model")
+            assert result == TOKENIZER_MAX_LENGTH
+
+
+def test_read_max_position_embeddings_bool_falls_back() -> None:
+    """A bool value SHALL fall back to default (bool is an int subclass)."""
+    import json
+    from unittest.mock import mock_open
+
+    from rag_mcp.core.retrieval.reranker import (
+        TOKENIZER_MAX_LENGTH,
+        _read_max_position_embeddings,
+    )
+
+    config = json.dumps({"max_position_embeddings": True})
+    with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
+        with patch("builtins.open", mock_open(read_data=config)):
+            result = _read_max_position_embeddings("test/model")
+            assert result == TOKENIZER_MAX_LENGTH
+
+
+# ── read_pad_token_config (rag_mcp.core.retrieval._model_config) ───────
 
 
 def _make_download_side_effect(files: dict[str, str]):
@@ -244,10 +283,10 @@ def _make_download_side_effect(files: dict[str, str]):
 
 
 def test_read_pad_token_config_reads_bert_defaults() -> None:
-    """_read_pad_token_config SHALL read pad_token_id from config.json."""
+    """read_pad_token_config SHALL read pad_token_id from config.json."""
     import json
 
-    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({"pad_token_id": 0}),
@@ -257,16 +296,16 @@ def test_read_pad_token_config_reads_bert_defaults() -> None:
 
     with patch("huggingface_hub.hf_hub_download", side_effect=_download):
         with patch("builtins.open", side_effect=_open):
-            pad_id, pad_token = _read_pad_token_config("test/model")
+            pad_id, pad_token = read_pad_token_config("test/model")
             assert pad_id == 0
             assert pad_token == "[PAD]"  # noqa: S105
 
 
 def test_read_pad_token_config_reads_roberta_values() -> None:
-    """_read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
+    """read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
     import json
 
-    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({"pad_token_id": 1}),
@@ -276,26 +315,31 @@ def test_read_pad_token_config_reads_roberta_values() -> None:
 
     with patch("huggingface_hub.hf_hub_download", side_effect=_download):
         with patch("builtins.open", side_effect=_open):
-            pad_id, pad_token = _read_pad_token_config("test/model")
+            pad_id, pad_token = read_pad_token_config("test/model")
             assert pad_id == 1
             assert pad_token == "<pad>"  # noqa: S105
 
 
 def test_read_pad_token_config_missing_config_falls_back() -> None:
     """Missing config.json SHALL return (None, None) without raising."""
-    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
 
     with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
-        pad_id, pad_token = _read_pad_token_config("test/model")
+        pad_id, pad_token = read_pad_token_config("test/model")
         assert pad_id is None
         assert pad_token is None
 
 
 def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
-    """Missing tokenizer_config.json SHALL still return pad_id from config.json."""
+    """Missing tokenizer_config.json SHALL return (None, None), not a partial pair.
+
+    ``pad_token_id`` alone is not enough: ``enable_padding()`` needs both
+    the id and the token string, and applying one without the other risks
+    a mismatched pad_id/pad_token pair (the bug this helper prevents).
+    """
     import json
 
-    from rag_mcp.core.retrieval.reranker import _read_pad_token_config
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
 
     # Only config.json is available; tokenizer_config.json is not.
     files = {"config.json": json.dumps({"pad_token_id": 0})}
@@ -303,8 +347,33 @@ def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
 
     with patch("huggingface_hub.hf_hub_download", side_effect=_download):
         with patch("builtins.open", side_effect=_open):
-            pad_id, pad_token = _read_pad_token_config("test/model")
-            assert pad_id == 0
+            pad_id, pad_token = read_pad_token_config("test/model")
+            assert pad_id is None
+            assert pad_token is None
+
+
+def test_read_pad_token_config_missing_pad_token_id_falls_back() -> None:
+    """config.json without pad_token_id SHALL return (None, None), not a partial pair.
+
+    Asymmetric case: tokenizer_config.json has a usable ``pad_token``
+    but config.json lacks ``pad_token_id``. Returning ``pad_token``
+    alone would let ``enable_padding()`` apply the library's default
+    ``pad_id=0`` alongside a mismatched token string.
+    """
+    import json
+
+    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+
+    files = {
+        "config.json": json.dumps({}),
+        "tokenizer_config.json": json.dumps({"pad_token": "<pad>"}),
+    }
+    _download, _open = _make_download_side_effect(files)
+
+    with patch("huggingface_hub.hf_hub_download", side_effect=_download):
+        with patch("builtins.open", side_effect=_open):
+            pad_id, pad_token = read_pad_token_config("test/model")
+            assert pad_id is None
             assert pad_token is None
 
 
