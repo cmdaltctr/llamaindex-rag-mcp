@@ -210,8 +210,14 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     reset_runtime_setup()
 
 
-def test_ensure_runtime_setup_degrades_gracefully() -> None:
-    """A construction failure must warn, not crash."""
+def test_ensure_runtime_setup_propagates_embed_model_failure() -> None:
+    """A construction failure must propagate, not be swallowed (§5.4).
+
+    Previously ensure_runtime_setup caught ImportError/ValueError from
+    build_embed_model and logged a warning, leaving the process running
+    with no embed model set.  Now the exception propagates so startup
+    fails loudly.
+    """
 
     _ = _settings()
     reset_runtime_setup()
@@ -220,7 +226,8 @@ def test_ensure_runtime_setup_degrades_gracefully() -> None:
         "rag_mcp.compose.build_embed_model",
         side_effect=ImportError("optional dep missing"),
     ):
-        ensure_runtime_setup()  # must not raise
+        with pytest.raises(ImportError, match="optional dep missing"):
+            ensure_runtime_setup()
     reset_runtime_setup()
 
 
@@ -462,8 +469,13 @@ class TestResolveActiveStrategies:
 # ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
 
 
-def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
-    """A vector store ImportError warns rather than crashing."""
+def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
+    """A vector store construction failure must propagate (§5.5).
+
+    Previously ensure_runtime_setup caught ImportError/ValueError from
+    build_vector_store and logged a warning, leaving the process running
+    with no default store registered.  Now the exception propagates.
+    """
     from llama_index.core.embeddings import MockEmbedding
 
     from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
@@ -475,8 +487,21 @@ def test_ensure_runtime_setup_vector_store_failure_degrades() -> None:
         patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
         patch("rag_mcp.compose.build_vector_store", side_effect=ImportError("missing")),
     ):
-        ensure_runtime_setup()
+        with pytest.raises(ImportError, match="missing"):
+            ensure_runtime_setup()
     reset_runtime_setup()
+
+
+def test_pytest_collection_succeeds_under_conftest_defaults() -> None:
+    """Pytest collection succeeds under conftest provider defaults (§5.6).
+
+    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama, and
+    EMBED_MODEL via setdefault before any import.  Once construction
+    failures propagate at import (§5), invalid defaults would break
+    collection itself, not just execution.  This test pins that the
+    defaults remain valid: if it runs, collection succeeded.
+    """
+    import rag_mcp.compose  # noqa: F401 — proves import-time setup survived
 
 
 # ── build functions (settings=None delegation) ──────────────────────────────

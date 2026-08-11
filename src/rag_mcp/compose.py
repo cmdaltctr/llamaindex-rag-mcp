@@ -324,6 +324,12 @@ def ensure_runtime_setup() -> None:
     registers it as the process-wide default so all pipeline callers
     share one instance (and one generation counter dict).  Safe to call
     multiple times — only runs once.
+
+    Construction failures (``ImportError`` for missing optional deps,
+    ``ValueError`` for missing credentials) propagate instead of being
+    swallowed.  Because this function runs at module scope, the failure
+    surfaces at import time — consistent with the existing
+    ``VECTOR_STORE`` unknown-value check (ADR-034).
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -334,16 +340,17 @@ def ensure_runtime_setup() -> None:
 
     check_legacy_env_vars()
     settings = get_settings()
-    try:
-        LlamaIndexSettings.embed_model = build_embed_model(settings)
-    except (ImportError, ValueError) as exc:
-        logger.warning("Failed to construct embedding model: %s", exc)
-    try:
-        from .core.vectordb import set_default_store
+    # Construction failures propagate instead of being swallowed.  A process
+    # that reports successful startup MUST have a working embed model and a
+    # registered default vector store — leaving either unset and continuing
+    # turns a construction failure into a confusing downstream error (or
+    # silent misbehaviour) instead of a clear startup failure.  Because
+    # ensure_runtime_setup() runs at module scope, the failure surfaces at
+    # import time, consistent with the existing VECTOR_STORE check.
+    LlamaIndexSettings.embed_model = build_embed_model(settings)
+    from .core.vectordb import set_default_store
 
-        set_default_store(build_vector_store(settings))
-    except (ImportError, ValueError) as exc:
-        logger.warning("Failed to construct vector store: %s", exc)
+    set_default_store(build_vector_store(settings))
     # Install the process-wide default EffectiveSettings so core entry points
     # have a composition-root-provided fallback when no instance is passed.
     from .core.settings import set_default_effective_settings
