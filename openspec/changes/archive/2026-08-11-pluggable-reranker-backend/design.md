@@ -6,13 +6,14 @@ See `proposal.md` — Why. The constraints that shape the approach:
 - Two construction paths exist. `compose.build_reranker()` is the production path and injects the instance into `search()`. `pipeline.py:320` constructs one lazily when nothing is injected. Both hardcode the ONNX backend today.
 - `_MODEL_CACHE` (`reranker.py:61`) is keyed by model ID alone and holds `(session, tokenizer, max_length)`.
 - All three ADR-029 §3 deferred items landed in PR #27, **merged into `v3` at `67330ca`**: `_record_failure` (`reranker.py:82`) escalates to `logging.ERROR` after three consecutive same-signature failures, `last_failure_reason` is reset per call, and `pipeline.py:327-329` folds it into `rerank_reason`. This change inherits that work rather than repeating it, and adds only the backend name to diagnostics.
-- `_effective_threshold` divides the similarity threshold by 30 when reranking. Calibrated in `experiments/1-reranker-threshold-calibration-2026-05-12/` against sigmoid-normalised scores: strong matches 0.79–1.0, weak-correct 0.015, noise below 0.003. PR #27 also gated the ÷30 on `rerank_succeeded` (`pipeline.py:340-343`), so a *failed* rerank no longer gets the scaled threshold. That guard reads the `reranked` flag, so it does not protect against a backend that succeeds while emitting scores on the wrong scale — see Risks.
+- `_effective_threshold` divides the similarity threshold by 30 when reranking. Calibrated in `experiments/1-reranker-threshold-calibration-2026-05-12/` against sigmoid-normalised scores: strong matches 0.79–1.0, weak-correct 0.015, noise below 0.003. PR #27 also gated the ÷30 on `rerank_succeeded` (`pipeline.py:340-343`), so a _failed_ rerank no longer gets the scaled threshold. That guard reads the `reranked` flag, so it does not protect against a backend that succeeds while emitting scores on the wrong scale — see Risks.
 - **This change targets `v3`, not `main`.** Breaking work goes to `v3`; `main` cuts a release on every push. PR #27 also targeted `v3`, and `v3` is 83 commits ahead of `main`. The dependency is already satisfied, so there is no blocker.
 - Invariant 11: no file exceeds 500 lines. `reranker.py` is at 466.
 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Make backend choice a settings value that both construction paths honour.
 - Sever the ONNX path from `transformers` permanently, so no upstream release can force an architecture decision.
 - Guarantee score-range parity across backends, enforced by test rather than by review.
@@ -20,6 +21,7 @@ See `proposal.md` — Why. The constraints that shape the approach:
 - Close the Apple-acceleration question with numbers. Experiment 16 killed CoreML. The torch backend opens the only untested route to the Apple GPU, which is MPS (Metal Performance Shaders). Experiment 17 measures it against the ONNX CPU baseline and records the answer in an ADR, so nobody asks again.
 
 **Non-Goals:**
+
 - Changing the default backend, default model, or any retrieval quality behaviour. A default install must produce byte-identical search results before and after.
 - Re-running the ÷30 calibration. Sigmoid parity is required precisely so the existing calibration stays valid.
 - Re-testing CoreML. Experiment 16 (2026-08-03) already measured it: fp16 + CoreML 5393 ms P50 against fp16 + CPU 5670 ms, so CoreML accelerated nothing. ORT partitions the graph and most operations fall back to CPU regardless. int8 + CPU won at 2348 ms. CoreML is settled and stays off.
@@ -35,7 +37,7 @@ See `proposal.md` — Why. The constraints that shape the approach:
 
 The one behavioural gap: `tokenizers.Tokenizer` does not expose `model_max_length`. The existing code reads it off the tokenizer and guards against sentinel values (`reranker.py:311-317`). Replacement reads `config.json` from the same HuggingFace snapshot via `huggingface_hub` and takes `max_position_embeddings`, falling back to `TOKENIZER_MAX_LENGTH` when absent. The existing sentinel guard logic carries over unchanged.
 
-*Alternatives:* pin `transformers<5` forever — defers the problem and ages out of tokeniser fixes. Vendor a tokeniser — absurd for this scope.
+_Alternatives:_ pin `transformers<5` forever — defers the problem and ages out of tokeniser fixes. Vendor a tokeniser — absurd for this scope.
 
 ### 2. Cache key becomes `(backend, model_id)`
 
@@ -51,9 +53,9 @@ The cache moves to a shared module, `core/retrieval/_reranker_cache.py`, keyed b
 
 Passing `activation_fn=None` would NOT disable activation — for `num_labels=1` it resolves to `nn.Sigmoid()`, and applying `_sigmoid` on top would double-sigmoid the logits, compressing scores to roughly `[0.5, 0.73]` and silently breaking the ÷30 threshold.
 
-The contract test compares score *values* across backends (not just ranking or range), because double-sigmoid preserves monotonicity and stays in `(0, 1)` — a ranking-only or range-only test would miss it.
+The contract test compares score _values_ across backends (not just ranking or range), because double-sigmoid preserves monotonicity and stays in `(0, 1)` — a ranking-only or range-only test would miss it.
 
-*Alternative:* let each backend define its own normalisation and rescale the threshold per backend. Rejected — it multiplies the calibrated constant by the number of backends and each copy drifts independently.
+_Alternative:_ let each backend define its own normalisation and rescale the threshold per backend. Rejected — it multiplies the calibrated constant by the number of backends and each copy drifts independently.
 
 ### 4. Backend name resolves once, at the same boundary as every other setting
 
@@ -61,7 +63,7 @@ The contract test compares score *values* across backends (not just ranking or r
 
 Registry names become `reranker_onnx` and `reranker_torch`. The bare `reranker` name is retired rather than aliased — a stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent. A parametrised test resolving every name in `retrieval_registry.available()` is added (task 8.7), because the existing `test_registry_contract.py` only resolves `available()[0]` (`"bm25"`), not the reranker entries. A test asserting the retired bare `"reranker"` name raises `KeyError` is added as task 8.8.
 
-*Alternative:* keep `reranker` as an alias for the default. Rejected for the reason above.
+_Alternative:_ keep `reranker` as an alias for the default. Rejected for the reason above.
 
 ### 5. Missing extra degrades, it does not crash
 
@@ -73,11 +75,13 @@ An unknown backend name is different and fails hard at settings resolution, beca
 
 Three routes to the Apple hardware exist. Two are closed.
 
-| Route | Needs torch | Status |
-|---|---|---|
-| CoreML via ONNX Runtime | No | Closed. Experiment 16 measured no gain. Graph partitions to CPU anyway. |
-| CPU via ONNX Runtime | No | Current default. int8, 2348 ms P50 on ModernBERT. |
-| MPS via PyTorch | Yes | Never measured. Opened by this change. |
+| Route                         | Needs torch | Status                                                                  |
+| ----------------------------- | ----------- | ----------------------------------------------------------------------- |
+| CoreML via ONNX Runtime       | No          | Closed. Experiment 16 measured no gain. Graph partitions to CPU anyway. |
+| CPU via ONNX Runtime          | No          | Current default. int8, 2348 ms P50 on ModernBERT.                       |
+| MPS via PyTorch's MPS backend | Yes         | Never measured. Opened by this change.                                  |
+
+MPS (Metal Performance Shaders) is an Apple framework built on Metal — not a PyTorch feature. It is accessible through multiple paths: the native MPSGraph framework, Core ML, TensorFlow's Metal plugin, MLX, and PyTorch's MPS backend. For this project's reranker, the torch backend is the path that makes MPS reachable, because we have no Swift/Metal, MLX, or TensorFlow-Metal integration.
 
 The common belief that CoreML failed because PyTorch was absent is wrong on the mechanism. `onnxruntime` reports `CoreMLExecutionProvider` as available in a venv with no torch installed and no torch in `sys.modules`. CoreML is an Apple C++ framework reached natively, not through Python. The ADR-029 error, `Error in dynamically resizing for sequence length (error: -7)`, is a CoreML shape error, not an import error.
 

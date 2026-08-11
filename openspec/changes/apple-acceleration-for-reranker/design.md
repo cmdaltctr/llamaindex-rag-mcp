@@ -10,11 +10,14 @@ See `proposal.md` — Why. The constraints that shape the approach:
 ## Goals / Non-Goals
 
 **Goals:**
-- Measure MPS (Metal Performance Shaders) against the ONNX CPU baseline on the default model.
+
+- Measure MPS (Metal Performance Shaders, accessed via PyTorch's MPS backend) against the ONNX CPU baseline on the default model.
 - Record the verdict in ADR-039 so the Apple-acceleration question stops recurring.
 - State plainly that CoreML did not fail because PyTorch was absent — it failed because ORT partitions the graph. Give the evidence.
+- State accurately that MPS is an Apple framework, not a PyTorch feature. PyTorch's MPS backend is one of several ways to reach it (MPSGraph, Core ML, TensorFlow Metal plugin, MLX, direct Metal kernels). For this project's reranker, the torch backend is the path that makes MPS reachable.
 
 **Non-Goals:**
+
 - Changing the default backend or execution provider. Any default change is a follow-up change with its own ADR.
 - Re-testing CoreML. Experiment 16 settled it.
 - Benchmarking the ModernBERT model. Experiment 16 covered it. This experiment is about the default model only.

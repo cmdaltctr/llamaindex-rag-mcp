@@ -64,7 +64,7 @@ architecture.
    `_sigmoid` once. Passing `activation_fn=None` would NOT disable
    activation — for `num_labels=1` it resolves to `nn.Sigmoid()`,
    double-applying sigmoid and compressing scores to roughly
-   `[0.5, 0.73]`. The cross-backend contract test compares score *values*
+   `[0.5, 0.73]`. The cross-backend contract test compares score _values_
    across backends (not just ranking or range) because double-sigmoid
    preserves monotonicity and stays in `(0, 1)`.
 
@@ -86,8 +86,12 @@ after, then `diff`).
 - The default install stays torch-free — verified by a runtime tripwire
   test (`tests/test_no_torch_at_runtime.py`) and a dependency-audit test
   (`tests/test_dependency_audit.py`), not by convention.
-- The torch backend opens the MPS route to Apple GPU acceleration,
-  measured in Experiment 17 (ADR-039 records the verdict).
+- The torch backend opens the MPS route to Apple GPU acceleration via
+  PyTorch's MPS backend. MPS (Metal Performance Shaders) is an Apple
+  framework, not a PyTorch feature — it is accessible through MPSGraph,
+  Core ML, MLX, and PyTorch. For this project's reranker, the torch
+  backend is the path that makes it reachable. Measured in Experiment 17
+  (ADR-039 records the verdict).
 - Score-range parity is enforced by test, not by review.
 
 ### Negative
@@ -112,12 +116,12 @@ after, then `diff`).
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-|--------|-----------------|
-| Pin `transformers<5` forever | Defers the problem and ages out of tokeniser fixes |
-| Keep `transformers` in base deps, ignore v5 risk | An upstream release silently violates the project's own boundary |
-| Let each backend define its own normalisation | Multiplies the calibrated ÷30 constant by the number of backends; each copy drifts independently |
-| Keep `"reranker"` as an alias for the default | A stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent |
+| Option                                           | Rejected Because                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Pin `transformers<5` forever                     | Defers the problem and ages out of tokeniser fixes                                                                  |
+| Keep `transformers` in base deps, ignore v5 risk | An upstream release silently violates the project's own boundary                                                    |
+| Let each backend define its own normalisation    | Multiplies the calibrated ÷30 constant by the number of backends; each copy drifts independently                    |
+| Keep `"reranker"` as an alias for the default    | A stale alias resolving to the wrong backend is exactly the silent-divergence failure this change exists to prevent |
 
 ## References
 
