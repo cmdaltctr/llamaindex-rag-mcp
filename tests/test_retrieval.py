@@ -225,9 +225,7 @@ class TestPersistentRerankFailureFallback:
                 raise ImportError("persistent onnx failure")
             return real_import(name, *args, **kwargs)
 
-        with caplog.at_level(
-            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
-        ):
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
             with patch("builtins.__import__", side_effect=_selective_import):
                 for _ in range(3):
                     search(
@@ -237,9 +235,7 @@ class TestPersistentRerankFailureFallback:
                     )
 
         load_failure_records = [
-            r
-            for r in caplog.records
-            if "Failed to load reranker model" in r.getMessage()
+            r for r in caplog.records if "Failed to load reranker model" in r.getMessage()
         ]
         assert len(load_failure_records) == 3
         assert [r.levelno for r in load_failure_records] == [
@@ -284,7 +280,7 @@ class TestThresholdScaling:
 
     When the reranker is active, sigmoid-normalised scores occupy a much
     lower range than cosine similarity.  The search() function should
-    scale the threshold down by 30× automatically to avoid over-filtering.
+    scale the threshold down by 30x automatically to avoid over-filtering.
     """
 
     def test_no_rerank_threshold_unchanged(self) -> None:
@@ -294,7 +290,7 @@ class TestThresholdScaling:
         assert _effective_threshold(0.3, rerank=False) == 0.3
 
     def test_rerank_threshold_scaled_down(self) -> None:
-        """With reranking, the threshold must be scaled down 30×."""
+        """With reranking, the threshold must be scaled down 30x."""
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=True) == pytest.approx(0.01)
@@ -322,7 +318,7 @@ class TestThresholdScaling:
 
         This was the motivating case: the reranker correctly identified
         the Colosseum chunk but gave it a low sigmoid score (0.015).
-        With 30× scaling, threshold 0.3 → 0.01, so 0.015 passes.
+        With 30x scaling, threshold 0.3 → 0.01, so 0.015 passes.
         """
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
@@ -395,9 +391,17 @@ class TestRerankReasonDiagnostics:
 
         _patch_dense(
             monkeypatch,
-            [{"id": "1", "source": "f.md", "page_label": None,
-              "text": "hello world", "score": 0.9, "metadata": {},
-              "reranked": False}],
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.9,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
         )
         failing = _mock_reranker_instance(fails=True)
         fake_store = MagicMock()
@@ -432,9 +436,17 @@ class TestRerankReasonDiagnostics:
 
         _patch_dense(
             monkeypatch,
-            [{"id": "1", "source": "f.md", "page_label": None,
-              "text": "hello world", "score": 0.9, "metadata": {},
-              "reranked": False}],
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.9,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
         )
         failing = _mock_reranker_instance(fails=True)
         fake_store = MagicMock()
@@ -470,9 +482,17 @@ class TestThresholdFollowsRerankOutcome:
         # which survives the scaled threshold (0.3 / 30 = 0.01).
         _patch_dense(
             monkeypatch,
-            [{"id": "1", "source": "f.md", "page_label": None,
-              "text": "hello world", "score": 0.2, "metadata": {},
-              "reranked": False}],
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
         )
         succeeding = _mock_reranker_instance(fails=False, logit=-3.0)
         fake_store = MagicMock()
@@ -499,15 +519,23 @@ class TestThresholdFollowsRerankOutcome:
         ``_effective_threshold`` was called with the *requested* rerank
         intent rather than the outcome, so a failed rerank kept scoring
         raw cosine similarity while filtering at the ÷30-scaled threshold
-        — about 30× too permissive.
+        — about 30x too permissive.
         """
         from rag_mcp.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
-            [{"id": "1", "source": "f.md", "page_label": None,
-              "text": "hello world", "score": 0.2, "metadata": {},
-              "reranked": False}],
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
         )
         failing = _mock_reranker_instance(fails=True)
         fake_store = MagicMock()
@@ -525,17 +553,23 @@ class TestThresholdFollowsRerankOutcome:
         # Raw score 0.2 < unscaled threshold 0.3 -> filtered out.
         assert results == []
 
-    def test_rerank_false_applies_unscaled_threshold(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_rerank_false_applies_unscaled_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """rerank=False applies the unscaled threshold, unchanged (task 3.4)."""
         from rag_mcp.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
-            [{"id": "1", "source": "f.md", "page_label": None,
-              "text": "hello world", "score": 0.2, "metadata": {},
-              "reranked": False}],
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
         )
         fake_store = MagicMock()
         fake_store.count.return_value = 1

@@ -8,12 +8,11 @@ The provider-selection validation SHALL run before any validation that consumes 
 
 The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_PROVIDER` is not set but `INFERENCE_BACKEND` is, the system SHALL map the value and log a deprecation warning.
 
-#### Scenario: Default provider is ollama
+#### Scenario: Default provider is local
 
 - **WHEN** `EMBED_PROVIDER` is not set and `INFERENCE_BACKEND` is not set
 - **THEN** the system SHALL use `local` as the embedding provider
 - **THEN** the concrete backend SHALL be resolved from `LOCAL_BACKEND`
-- **THEN** the scenario name is retained from the pre-split spec for delta continuity; the shipped default moved from `ollama` to `local` when the `local`/`cloud` provider split landed
 
 #### Scenario: Explicit ollama provider
 
@@ -77,13 +76,12 @@ The system SHALL use two independent env vars for provider selection: `EMBED_PRO
 - **THEN** embeddings SHALL use OpenRouter
 - **AND** metadata extraction LLM SHALL use the local backend selected by `LOCAL_BACKEND`
 
-#### Scenario: Only embed provider set, metadata LLM defaults to ollama
+#### Scenario: Only embed provider set, metadata LLM defaults to local
 
 - **WHEN** `EMBED_PROVIDER=openrouter`
 - **AND** `METADATA_LLM_PROVIDER` is not set
 - **THEN** metadata extraction LLM SHALL default to `local`
 - **THEN** no paid cloud LLM calls SHALL be made without explicit opt-in
-- **THEN** the scenario name is retained from the pre-split spec for delta continuity; the shipped default moved from `ollama` to `local` when the `local`/`cloud` provider split landed
 
 #### Scenario: Unknown metadata LLM provider value
 

@@ -215,9 +215,7 @@ class CrossEncoderReranker:
         self._loaded: bool = False
         self._load_attempted: bool = False
         self._load_error: str | None = None
-        self._effective_max_length: int = (
-            tokenizer_max_length or TOKENIZER_MAX_LENGTH
-        )
+        self._effective_max_length: int = tokenizer_max_length or TOKENIZER_MAX_LENGTH
         # Per-call failure reason surfaced through pipeline diagnostics
         # (`rerank_reason`).  Unlike `_FAILURE_STATE`, this is instance
         # state deliberately — it describes only this call, not a
@@ -246,7 +244,13 @@ class CrossEncoderReranker:
                 self._load_attempted = True
                 self._load_error = None
                 self.last_failure_reason = None
-                _reset_failure_state()
+                # Deliberately do NOT call _reset_failure_state() here.
+                # A cache hit means the model loaded successfully in the
+                # past, but inference may be persistently failing (the
+                # ADR-029 CoreML shape).  Resetting the streak on every
+                # cache hit would prevent escalation from ever firing
+                # through the un-injected search() path, which builds a
+                # fresh reranker per call.
                 return
 
             # If a previous attempt failed, allow retry — the failure
@@ -346,9 +350,9 @@ class CrossEncoderReranker:
                 level = _record_failure(exc)
                 logger.log(
                     level,
-                    "Failed to load reranker model '%s': %s. "
-                    "Falling back to un-reranked results.",
-                    self._model_id, exc,
+                    "Failed to load reranker model '%s': %s. Falling back to un-reranked results.",
+                    self._model_id,
+                    exc,
                 )
 
     # ── Public API ─────────────────────────────────────────────────────
@@ -428,8 +432,8 @@ class CrossEncoderReranker:
                 level = _record_failure(exc)
             logger.log(
                 level,
-                "Reranker inference failed: %s. "
-                "Returning un-reranked results.", exc,
+                "Reranker inference failed: %s. Returning un-reranked results.",
+                exc,
             )
             for r in results:
                 r["_reranked"] = False

@@ -79,10 +79,17 @@ handling is unchanged — it is governed by the `pdf-reader` capability.
 
 #### Scenario: Unknown RETRIEVAL__HYBRID_SPARSE_BACKEND fails startup
 
-- **WHEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` is set to a value other than `auto`, `native`, or `bm25`
+- **WHEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` is set to a non-empty value other than `auto`, `native`, or `bm25`
 - **THEN** settings resolution SHALL raise `ValueError` naming the offending value
 - **THEN** the system SHALL NOT fall back to `bm25`
 - **AND** this is distinct from the `native`-requested-but-unsupported capability fallback, which is unchanged (`hybrid-retrieval`)
+
+#### Scenario: Empty or whitespace-only RETRIEVAL__HYBRID_SPARSE_BACKEND uses the default
+
+- **WHEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` is set to an empty string or whitespace-only value
+- **THEN** settings resolution SHALL reset the field to its declared default (`bm25`)
+- **THEN** settings resolution SHALL NOT raise
+- **AND** this rule applies to all six provider-selection settings uniformly (task 6.9)
 
 #### Scenario: Unrecognised DOCUMENT_BACKEND value fails startup
 

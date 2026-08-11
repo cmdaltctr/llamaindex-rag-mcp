@@ -44,6 +44,7 @@ uv run pytest --cov=rag_mcp      # Coverage
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
 11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them.
+12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
 
 ## Hard Boundaries
 

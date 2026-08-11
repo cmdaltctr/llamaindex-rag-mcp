@@ -16,6 +16,7 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from rag_mcp.core.retrieval.reranker import (
     TOKENIZER_MAX_LENGTH,
@@ -691,29 +692,19 @@ class TestFailureEscalation:
         """A single inference failure logs WARNING and falls back gracefully."""
         reranker = self._failing_reranker("boom")
 
-        with caplog.at_level(
-            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
-        ):
-            out = reranker.rerank(
-                "query", [{"text": "doc", "score": 0.5}], top_k=5
-            )
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+            out = reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
 
         assert out[0]["_reranked"] is False
         assert caplog.records
         assert caplog.records[-1].levelno == logging.WARNING
 
-    def test_repeated_same_error_escalates_to_error(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_repeated_same_error_escalates_to_error(self, caplog: pytest.LogCaptureFixture) -> None:
         """The same error signature repeated to the threshold escalates to ERROR."""
-        with caplog.at_level(
-            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
-        ):
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
             for _ in range(3):
                 reranker = self._failing_reranker("persistent boom")
-                reranker.rerank(
-                    "query", [{"text": "doc", "score": 0.5}], top_k=5
-                )
+                reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
 
         levels = [r.levelno for r in caplog.records]
         assert levels == [logging.WARNING, logging.WARNING, logging.ERROR]
@@ -722,14 +713,10 @@ class TestFailureEscalation:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """A success between failures resets the counter; the next failure warns."""
-        with caplog.at_level(
-            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
-        ):
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
             for _ in range(2):
                 reranker = self._failing_reranker("flaky boom")
-                reranker.rerank(
-                    "query", [{"text": "doc", "score": 0.5}], top_k=5
-                )
+                reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
 
             success = self._succeeding_reranker()
             success.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
@@ -745,14 +732,10 @@ class TestFailureEscalation:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """reset_model_cache() clears the failure counter (task 1.12)."""
-        with caplog.at_level(
-            logging.WARNING, logger="rag_mcp.core.retrieval.reranker"
-        ):
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
             for _ in range(2):
                 reranker = self._failing_reranker("cache-reset boom")
-                reranker.rerank(
-                    "query", [{"text": "doc", "score": 0.5}], top_k=5
-                )
+                reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
 
             reset_model_cache()
 
@@ -793,9 +776,7 @@ class TestCoreMLProviderGuard:
             "rag_mcp.core.retrieval.reranker._select_onnx_variant",
             return_value=["onnx/model.onnx"],
         ):
-            with patch(
-                "huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"
-            ):
+            with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch(
                     "transformers.AutoTokenizer.from_pretrained",
                     return_value=mock_tokenizer,
@@ -813,9 +794,7 @@ class TestCoreMLProviderGuard:
         assert reranker._loaded is True
         return captured["providers"]
 
-    def test_provider_unset_uses_cpu_only(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_provider_unset_uses_cpu_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """No RERANK_ONNX_PROVIDER set → CPUExecutionProvider only."""
         monkeypatch.delenv("RERANK_ONNX_PROVIDER", raising=False)
         providers = self._load_with_providers(available=["CPUExecutionProvider"])
@@ -838,3 +817,63 @@ class TestCoreMLProviderGuard:
         monkeypatch.setenv("RERANK_ONNX_PROVIDER", "coreml")
         providers = self._load_with_providers(available=["CPUExecutionProvider"])
         assert providers == ["CPUExecutionProvider"]
+
+
+# ── Cache-hit escalation regression (CodeRabbit/Greptile finding) ──────────
+
+
+class TestCacheHitDoesNotResetFailureStreak:
+    """A cache hit must not clear the process-wide failure counter.
+
+    Regression guard for the bug where ``_load_model()``'s cache-hit
+    branch called ``_reset_failure_state()``, defeating escalation when
+    the model loads successfully once but inference persistently fails.
+    In production, ``search()`` builds a fresh reranker per call, so each
+    call hits the cache and would reset the counter before failing again.
+    """
+
+    def setup_method(self) -> None:
+        reset_model_cache()
+
+    def teardown_method(self) -> None:
+        reset_model_cache()
+
+    def test_cached_session_with_persistent_inference_failure_escalates(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Three fresh rerankers reusing a cached session must escalate to ERROR.
+
+        Seeds ``_MODEL_CACHE`` with a session whose inference always fails,
+        then builds three fresh instances whose ``_load_model()`` takes the
+        cache-hit branch (no re-download).  Without the fix, each cache hit
+        resets the streak and the level stays WARNING.
+        """
+        from rag_mcp.core.retrieval.reranker import (
+            _MODEL_CACHE,
+            CrossEncoderReranker,
+        )
+
+        # Seed the cache with a session that fails at inference time.
+        seed = CrossEncoderReranker()
+        failing_session = MagicMock()
+        failing_session.run.side_effect = RuntimeError("persistent cache-hit boom")
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.return_value = {
+            "input_ids": np.array([[1, 2]]),
+            "attention_mask": np.array([[1, 1]]),
+        }
+        _MODEL_CACHE[seed._model_id] = (
+            failing_session,
+            mock_tokenizer,
+            seed._effective_max_length,
+        )
+
+        # Build three fresh rerankers. Each _load_model() hits the cache,
+        # picks up the failing session, then inference raises.
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+            for _ in range(3):
+                reranker = CrossEncoderReranker()
+                reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
+
+        levels = [r.levelno for r in caplog.records]
+        assert levels == [logging.WARNING, logging.WARNING, logging.ERROR]
