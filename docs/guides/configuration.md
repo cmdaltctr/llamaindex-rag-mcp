@@ -171,12 +171,18 @@ Defaults below are what ships in `defaults.yaml`.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `EMBED_PROVIDER` | `local` | `local` or `cloud` |
+| `EMBED_PROVIDER` | `local` | `local`, `cloud`, `ollama`, `llamacpp`, or `openrouter` |
 | `METADATA_LLM_PROVIDER` | `local` | `local` or `cloud`, independent of the above |
 | `LOCAL_BACKEND` | `llamacpp` | `llamacpp` or `ollama` |
 | `CLOUD_BACKEND` | `openrouter` | `openrouter` |
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+
+An unrecognised value for any of these six settings fails startup with
+a clear error naming the value and the accepted set.  An empty or
+whitespace-only value (`SETTING=` in `.env`) is treated as unset and
+resets to the default.  This matches the existing `VECTOR_STORE`
+behaviour ([ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)).
 
 Optional dependencies:
 
@@ -222,7 +228,7 @@ splitter regardless of the fallback.
 | `rerank_model` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
 | `hybrid_enabled` | `false` | Combine keyword and embedding search. **Profile-owned** |
 | `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
-| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto` |
+| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto`. Unrecognised values fail startup |
 
 ### Metadata — `METADATA__*`
 
@@ -262,13 +268,15 @@ determinism.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `DOCUMENT_BACKEND` | `local` | `local` or `azure` |
+| `DOCUMENT_BACKEND` | `local` | `local` or `azure`. Unrecognised values fail startup |
 | `AZURE_DOC_INTELLIGENCE_ENDPOINT` | — | Azure endpoint URL |
 | `AZURE_DOC_INTELLIGENCE_KEY` | — | Azure key |
 | `AZURE_DOC_INTELLIGENCE_MODEL` | `prebuilt-layout` | Azure model |
 
-Azure is opt-in and degrades to local parsing if unreachable
-([ADR-024](../adr/024-dual-deployment-modes.md)).
+Azure is opt-in and degrades to local parsing if credentials are missing
+or unreachable ([ADR-024](../adr/024-dual-deployment-modes.md)).  An
+unrecognised `DOCUMENT_BACKEND` value (not `local` or `azure`) fails
+startup rather than silently falling back.
 
 ### Codebase map
 

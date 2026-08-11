@@ -49,7 +49,13 @@ Ollama's native `/api/embed` endpoint has better batch handling than its OpenAI-
 
 The decision was a clean break: old values (`EMBED_PROVIDER=ollama`, `EMBED_PROVIDER=llamacpp`, `EMBED_PROVIDER=openrouter`) would no longer be accepted, with no deprecation alias.
 
-**This is not what the shipped code does.** `Settings._validate_provider_selections()` (`src/rag_mcp/config/__init__.py`) still accepts `ollama`, `llamacpp`, and `openrouter` as valid `EMBED_PROVIDER` values alongside `local`/`cloud`, and `_resolve_effective_embed_provider()` treats them as direct aliases for the sub-provider, bypassing `LOCAL_BACKEND`/`CLOUD_BACKEND` category resolution entirely. A stale `.env` with `EMBED_PROVIDER=ollama` therefore keeps working exactly as it did before this ADR. Only a genuinely unknown value (neither the old flat names nor `local`/`cloud`) triggers a `logging.warning` and falls back to `local`.
+**This is not what the shipped code does.** `Settings._validate_provider_selections()` (`src/rag_mcp/config/__init__.py`) still accepts `ollama`, `llamacpp`, and `openrouter` as valid `EMBED_PROVIDER` values alongside `local`/`cloud`, and `_resolve_effective_embed_provider()` treats them as direct aliases for the sub-provider, bypassing `LOCAL_BACKEND`/`CLOUD_BACKEND` category resolution entirely. A stale `.env` with `EMBED_PROVIDER=ollama` therefore keeps working exactly as it did before this ADR.
+
+> **Update (silent-failure-audit-and-guards, 2026-08-11):** A genuinely
+> unknown value no longer triggers a warning and falls back. It raises
+> `ValueError` at settings-resolution time, matching the `VECTOR_STORE`
+> precedent (ADR-034). See `docs/guides/configuration.md` for the
+> accepted sets.
 
 ## Consequences
 
@@ -58,12 +64,12 @@ The decision was a clean break: old values (`EMBED_PROVIDER=ollama`, `EMBED_PROV
 - **Mental model matches intent.** Users configure `EMBED_PROVIDER=local` or `EMBED_PROVIDER=cloud` — the category they actually care about. The sub-provider (`LOCAL_BACKEND=llamacpp`) is a secondary implementation detail with a sensible default.
 - **Extensible without vocabulary bloat.** Adding a new cloud provider (e.g., `openai`) means adding one entry to `CLOUD_EMBED_PROVIDERS` — the user-facing `EMBED_PROVIDER=cloud` value doesn't change. Compare this to the flat scheme, where each new provider would add another value to `EMBED_PROVIDER`.
 - **Mix-and-match is obvious.** A user can set `EMBED_PROVIDER=cloud` (paid cloud embeddings) with `METADATA_LLM_PROVIDER=local` (free local LLM for metadata classification) without any coupling surprises. The two axes are independent.
-- **Graceful degradation.** Unknown `EMBED_PROVIDER`, `LOCAL_BACKEND`, or `CLOUD_BACKEND` values log a warning and fall back to the default rather than crashing. A typo doesn't brick the server.
+- ~~**Graceful degradation.** Unknown `EMBED_PROVIDER`, `LOCAL_BACKEND`, or `CLOUD_BACKEND` values log a warning and fall back to the default rather than crashing. A typo doesn't brick the server.~~ **Superseded — see note below.**
 - **Sub-provider-specific env var prefixes preserved.** `LLAMACPP_*`, `OLLAMA_*`, `OPENROUTER_*` prefixes are unchanged — they're implementation details of the sub-provider, not user-facing categories. This means existing per-provider configuration (model names, URLs, API keys) didn't need renaming.
 
 ### Negative
 
-- **Breaking change for existing `.env` files (as designed).** Users with `EMBED_PROVIDER=ollama` were expected to migrate to `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`. Mitigation: `.env.example` has clear comments, and unknown values fall back gracefully rather than erroring. In practice the flat values were kept as accepted aliases (see the "Migration" section above) — a stale `.env` never actually broke.
+- **Breaking change for existing `.env` files (as designed).** Users with `EMBED_PROVIDER=ollama` were expected to migrate to `EMBED_PROVIDER=local` + `LOCAL_BACKEND=ollama`. Mitigation: `.env.example` has clear comments. In practice the flat values were kept as accepted aliases (see the "Migration" section above) — a stale `.env` never actually broke. (Note: as of `silent-failure-audit-and-guards`, unknown values no longer fall back — they raise at startup. The accepted aliases `ollama`, `llamacpp`, `openrouter` are unaffected.)
 - **Four env vars instead of two.** The cognitive surface area increased. Mitigation: `LOCAL_BACKEND` and `CLOUD_BACKEND` have sensible defaults (`llamacpp` and `openrouter` respectively), so most users only set `EMBED_PROVIDER` and `METADATA_LLM_PROVIDER`. The sub-providers are only needed when the default isn't desired.
 - **One extra indirection layer.** `_build_provider` now resolves category → sub-provider → registry → import, instead of name → registry → import. This runs once at import time — negligible runtime cost.
 - ~~**LLM registries not yet fully wired.**~~ **Resolved — see the Update below.** At the time of this decision, `LOCAL_LLM_PROVIDERS` and `CLOUD_LLM_PROVIDERS` were defined but `metadata_extractor.py` still used if/elif dispatch (`_dispatch_local_extraction`) rather than the registry for LLM selection. This was a known gap documented in ADR-026; the embedding path was fully registry-driven, and the LLM path followed once a second LLM sub-provider was added.
