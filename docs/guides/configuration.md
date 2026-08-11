@@ -182,8 +182,10 @@ An unrecognised value for any of the four provider selections above
 (`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
 `CLOUD_BACKEND`), plus `RETRIEVAL__HYBRID_SPARSE_BACKEND` and
 `DOCUMENT_BACKEND`, fails startup with a clear error naming the value
-and the accepted set.  An empty or whitespace-only value
-(`SETTING=` in `.env`) is treated as unset and resets to the default.
+and the accepted set.  Leading and trailing whitespace is stripped
+before validation, so `EMBED_PROVIDER=" local "` resolves to `local`.
+An empty or whitespace-only value (`SETTING=` in `.env`) is treated
+as unset and resets to the default.
 
 Optional dependencies:
 
