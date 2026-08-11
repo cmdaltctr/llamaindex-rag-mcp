@@ -64,8 +64,17 @@ The decision was a clean break: old values (`EMBED_PROVIDER=ollama`, `EMBED_PROV
 - **Mental model matches intent.** Users configure `EMBED_PROVIDER=local` or `EMBED_PROVIDER=cloud` — the category they actually care about. The sub-provider (`LOCAL_BACKEND=llamacpp`) is a secondary implementation detail with a sensible default.
 - **Extensible without vocabulary bloat.** Adding a new cloud provider (e.g., `openai`) means adding one entry to `CLOUD_EMBED_PROVIDERS` — the user-facing `EMBED_PROVIDER=cloud` value doesn't change. Compare this to the flat scheme, where each new provider would add another value to `EMBED_PROVIDER`.
 - **Mix-and-match is obvious.** A user can set `EMBED_PROVIDER=cloud` (paid cloud embeddings) with `METADATA_LLM_PROVIDER=local` (free local LLM for metadata classification) without any coupling surprises. The two axes are independent.
-- ~~**Graceful degradation.** Unknown `EMBED_PROVIDER`, `LOCAL_BACKEND`, or `CLOUD_BACKEND` values log a warning and fall back to the default rather than crashing. A typo doesn't brick the server.~~ **Superseded — see note below.**
+- **Graceful degradation.** Unknown `EMBED_PROVIDER`, `LOCAL_BACKEND`, or `CLOUD_BACKEND` values log a warning and fall back to the default rather than crashing. A typo doesn't brick the server.
 - **Sub-provider-specific env var prefixes preserved.** `LLAMACPP_*`, `OLLAMA_*`, `OPENROUTER_*` prefixes are unchanged — they're implementation details of the sub-provider, not user-facing categories. This means existing per-provider configuration (model names, URLs, API keys) didn't need renaming.
+
+> **Update (silent-failure-audit-and-guards, 2026-08-11):** the "Graceful
+> degradation" bullet above described the original shipped behaviour. As of
+> that change, unknown `EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`,
+> `LOCAL_BACKEND`, `CLOUD_BACKEND`, `RETRIEVAL__HYBRID_SPARSE_BACKEND`, and
+> `DOCUMENT_BACKEND` values no longer fall back — they raise at startup with
+> a clear error naming the value and the accepted set. The accepted aliases
+> (`ollama`, `llamacpp`, `openrouter` for `EMBED_PROVIDER`) are unaffected.
+> Empty or whitespace-only values reset to the default rather than raising.
 
 ### Negative
 

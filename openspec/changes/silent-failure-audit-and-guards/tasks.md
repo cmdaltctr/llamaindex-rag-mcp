@@ -104,7 +104,7 @@ The change stays open across both PRs with tasks.md ticked progressively. Archiv
 
 §6 was prototyped against the working tree and `uv run pytest -m "not slow"` was run, giving `11 failed, 1095 passed, 1 skipped` across **4 modules**. Collection succeeded and no unrelated module cascaded, which also empirically confirms task 5.6's assumption.
 
-§5 was **not** in that prototype run. 7.1 below was found by reading the test, not by running it: `tests/test_compose.py::test_ensure_runtime_setup_degrades_gracefully` patches `build_embed_model` to raise and asserts `# must not raise`, so it goes red the moment §5 removes the guard. Before trusting this list is complete, measure §5 the same way (apply only §5, run the suite, record the count).
+§5 was **not** in that prototype run. 7.1 below was found by reading the test, not by running it: `tests/test_compose.py::test_ensure_runtime_setup_degrades_gracefully` patches `build_embed_model` to raise and asserts `# must not raise`, so it goes red the moment §5 removes the guard. **§5 measurement (confirmed during implementation):** applying §5 alone breaks exactly 1 test — `test_ensure_runtime_setup_degrades_gracefully` (7.1). No other module cascaded. The rewrite landed in the same commit (PR2 Commit A), so the branch was never red.
 
 - [x] 7.1 `tests/test_compose.py::test_ensure_runtime_setup_degrades_gracefully` — asserts the §5 swallow (`# must not raise`). Rewrite to `pytest.raises`. **Must land in the same commit as §5.1-5.2** (PR2 Commit A, see Delivery sequence) — if §5's code and this rewrite are separate commits the branch is red in between and bisect breaks.
 - [x] 7.2 `tests/test_sparse_backend_fallback.py` — **7 failures**: `test_invalid_backend_falls_back_to_bm25` (parametrised over `total_nonsense`, `BM25`, `""`, `sparse`, `none`), plus `test_clamp_does_not_create_a_root_attribute` and `test_warning_names_the_nested_variable`. Retire the module: those last two are the regression guard for a recently-fixed bug in the clamp's write target, and removing the clamp deletes the code path that bug lived in. Record that rationale in the commit message so the deletion is a decision, not collateral. The `""` and whitespace cases are now covered by task 6.9's reset-to-default rule, not by this clamp.
@@ -112,7 +112,7 @@ The change stays open across both PRs with tasks.md ticked progressively. Archiv
 - [x] 7.4 `tests/test_settings_resolver.py::test_cloud_backend_invalid_value_clamped_to_openrouter` — asserts the `CLOUD_BACKEND` clamp. Rewrite to `pytest.raises`. (Found only by running the suite; missed by reading assertions.)
 - [x] 7.5 `tests/unit/test_provider_config.py::test_unknown_embed_provider_falls_back_to_local` — rewrite to `pytest.raises`.
 - [x] 7.6 `tests/unit/test_provider_config.py::test_unknown_local_backend_falls_back_to_llamacpp` — rewrite to `pytest.raises`.
-- [x] 7.7 Tasks 7.2-7.6 (the §6 red set) **must land in the same commit as the §6 raises** (PR2 Commit B). Re-run `uv run pytest -m "not slow"` after 7.1-7.6 and confirm the suite is green. The §6 count is measured; the §5 count (7.1) must be confirmed by the §5 measurement above before this task can pass.
+- [x] 7.7 Tasks 7.2-7.6 (the §6 red set) **must land in the same commit as the §6 raises** (PR2 Commit B). Re-run `uv run pytest -m "not slow"` after 7.1-7.6 and confirm the suite is green. The §6 count is measured (11 failures); the §5 count (7.1) is confirmed above (1 failure). Full suite green after both commits.
 
 ## 8. Documentation and follow-up
 
@@ -128,3 +128,4 @@ The change stays open across both PRs with tasks.md ticked progressively. Archiv
 - [x] 9.1 `openspec validate silent-failure-audit-and-guards --strict`
 - [x] 9.2 `uv run pytest -m "not slow" --cov=rag_mcp` — confirm `core/retrieval` and `config/` stay at or above the ≥95% coverage tier.
 - [x] 9.3 Manual check: start the server with a deliberately misconfigured `EMBED_PROVIDER` and confirm it fails fast naming that variable, not a downstream one.
+- [x] 9.4 `uv run --no-sync lint-imports` — confirms no stale `ignore_imports` entries and all import contracts pass (part of the pre-PR gate per §PR 2 above).

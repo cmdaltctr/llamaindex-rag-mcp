@@ -9,14 +9,14 @@ The reason this was deferred from `silent-failure-audit-and-guards` is that "not
 ## What Changes
 
 - Separate genuinely-inline-dispatched modes from typos in `METADATA__EXTRACTION_MODE` and `CHUNKING__STRATEGY_FALLBACK`.
-- For `METADATA__EXTRACTION_MODE`: the accepted set is `disabled`, `keyword`, `local`, `llamaindex`, `ollama`, `llamacpp`, `openrouter`. Values not in this set raise at settings resolution.
-- For `CHUNKING__STRATEGY_FALLBACK`: validate against the chunking registry's available names. A name not in the registry raises.
+- For `METADATA__EXTRACTION_MODE`: the accepted set is `disabled`, `keyword`, `local`, `llamaindex`, `ollama`, `llamacpp`, `openrouter`. Values not in this set raise at settings resolution. This is pure-data validation — the accepted set is a static literal, so it stays in `config/` without importing any `core/` registry.
+- For `CHUNKING__STRATEGY_FALLBACK`: validate against the chunking registry's available names **in `compose.py`**, not in `config/`. The `config/` package is a leaf that cannot import `core/` business logic (architecture invariant #1), so registry membership is checked at startup in `_resolve_active_strategies` before the silent `continue` fires. A name not in the registry raises at startup.
 - Update `_resolve_active_strategies` to remove the silent `continue` for names that should have been pre-validated, or document why the `continue` remains for specific inline-dispatched values.
 
 ## Impact
 
-- **Code**: `src/rag_mcp/config/__init__.py` (validation), `src/rag_mcp/compose.py` (`_resolve_active_strategies`).
-- **Tests**: new tests for each unrecognised mode/strategy raising at settings resolution.
+- **Code**: `src/rag_mcp/config/__init__.py` (pure-data validation for `METADATA__EXTRACTION_MODE` only), `src/rag_mcp/compose.py` (`_resolve_active_strategies` — chunking registry membership check at startup).
+- **Tests**: new tests for unrecognised `METADATA__EXTRACTION_MODE` raising at settings resolution; new tests for unrecognised `CHUNKING__STRATEGY_FALLBACK` raising at startup in `compose.py`.
 - **Breaking**: a deployment with a typo in `CHUNKING__STRATEGY_FALLBACK` or `METADATA__EXTRACTION_MODE` (currently silently ignored) will fail startup.
 
 ## Filed by

@@ -178,11 +178,12 @@ Defaults below are what ships in `defaults.yaml`.
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
 
-An unrecognised value for any of these six settings fails startup with
-a clear error naming the value and the accepted set.  An empty or
-whitespace-only value (`SETTING=` in `.env`) is treated as unset and
-resets to the default.  This matches the existing `VECTOR_STORE`
-behaviour ([ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)).
+An unrecognised value for any of the four provider selections above
+(`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
+`CLOUD_BACKEND`), plus `RETRIEVAL__HYBRID_SPARSE_BACKEND` and
+`DOCUMENT_BACKEND`, fails startup with a clear error naming the value
+and the accepted set.  An empty or whitespace-only value
+(`SETTING=` in `.env`) is treated as unset and resets to the default.
 
 Optional dependencies:
 
