@@ -229,9 +229,8 @@ class TestCrossEncoderRerankerSingleton:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        with patch.object(
-                            CrossEncoderReranker,
-                            "_read_max_position_embeddings",
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             first = CrossEncoderReranker(model_id="cache-test/model")
@@ -260,9 +259,8 @@ class TestCrossEncoderRerankerSingleton:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        with patch.object(
-                            CrossEncoderReranker,
-                            "_read_max_position_embeddings",
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             first = CrossEncoderReranker(model_id="cache-reset/model")
@@ -278,9 +276,8 @@ class TestCrossEncoderRerankerSingleton:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        with patch.object(
-                            CrossEncoderReranker,
-                            "_read_max_position_embeddings",
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             second._load_model()
@@ -642,9 +639,8 @@ class TestCrossEncoderRerankerModelLoading:
                         "onnxruntime.InferenceSession",
                         return_value=mock_session,
                     ):
-                        with patch.object(
-                            CrossEncoderReranker,
-                            "_read_max_position_embeddings",
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             reranker._load_model()
@@ -800,9 +796,8 @@ class TestCoreMLProviderGuard:
                             "onnxruntime.InferenceSession",
                             side_effect=_capture_session,
                         ):
-                            with patch.object(
-                                CrossEncoderReranker,
-                                "_read_max_position_embeddings",
+                            with patch(
+                                "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
                                 return_value=512,
                             ):
                                 reranker._load_model()

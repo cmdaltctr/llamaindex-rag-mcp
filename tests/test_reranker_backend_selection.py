@@ -151,7 +151,7 @@ def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
     assert all(not r.get("_reranked", False) for r in out)
 
 
-# ── _read_max_position_embeddings (reranker.py new method) ──────────────
+# ── _read_max_position_embeddings (module-level function) ──────────────
 
 
 def test_read_max_position_embeddings_reads_config_json() -> None:
@@ -159,13 +159,12 @@ def test_read_max_position_embeddings_reads_config_json() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+    from rag_mcp.core.retrieval.reranker import _read_max_position_embeddings
 
-    reranker = CrossEncoderReranker()
     config = json.dumps({"max_position_embeddings": 512})
     with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
         with patch("builtins.open", mock_open(read_data=config)):
-            result = reranker._read_max_position_embeddings()
+            result = _read_max_position_embeddings("test/model")
             assert result == 512
 
 
@@ -174,13 +173,15 @@ def test_read_max_position_embeddings_sentinel_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+    from rag_mcp.core.retrieval.reranker import (
+        TOKENIZER_MAX_LENGTH,
+        _read_max_position_embeddings,
+    )
 
-    reranker = CrossEncoderReranker()
     config = json.dumps({"max_position_embeddings": 1000000})
     with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
         with patch("builtins.open", mock_open(read_data=config)):
-            result = reranker._read_max_position_embeddings()
+            result = _read_max_position_embeddings("test/model")
             assert result == TOKENIZER_MAX_LENGTH
 
 
@@ -189,23 +190,27 @@ def test_read_max_position_embeddings_missing_key_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+    from rag_mcp.core.retrieval.reranker import (
+        TOKENIZER_MAX_LENGTH,
+        _read_max_position_embeddings,
+    )
 
-    reranker = CrossEncoderReranker()
     with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
         with patch("builtins.open", mock_open(read_data=json.dumps({}))):
-            result = reranker._read_max_position_embeddings()
+            result = _read_max_position_embeddings("test/model")
             assert result == TOKENIZER_MAX_LENGTH
 
 
 def test_read_max_position_embeddings_no_config_falls_back() -> None:
     """Missing config.json SHALL fall back to default without raising."""
 
-    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
+    from rag_mcp.core.retrieval.reranker import (
+        TOKENIZER_MAX_LENGTH,
+        _read_max_position_embeddings,
+    )
 
-    reranker = CrossEncoderReranker()
     with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
-        result = reranker._read_max_position_embeddings()
+        result = _read_max_position_embeddings("test/model")
         assert result == TOKENIZER_MAX_LENGTH
 
 

@@ -128,6 +128,39 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
     return ["onnx/model.onnx"]
 
 
+def _read_max_position_embeddings(model_id: str) -> int:
+    """Read ``max_position_embeddings`` from the model's ``config.json``.
+
+    The ``tokenizers`` package does not expose ``model_max_length`` the
+    way ``transformers.AutoTokenizer`` did.  This fetches ``config.json``
+    from the same HuggingFace snapshot and takes
+    ``max_position_embeddings``.  Falls back to
+    ``TOKENIZER_MAX_LENGTH`` when the file is absent, the key is
+    missing, or the value is an implausible sentinel (e.g. 1000000).
+
+    Shared between the ONNX and torch backends so both cap the effective
+    max length at the model's own limit.
+
+    Args:
+        model_id: HuggingFace model ID.
+
+    Returns:
+        The model's maximum sequence length, or the configured default.
+    """
+    try:
+        from huggingface_hub import hf_hub_download
+
+        config_path = hf_hub_download(repo_id=model_id, filename="config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        model_max = config.get("max_position_embeddings")
+        if not isinstance(model_max, int) or model_max > 100000:
+            return TOKENIZER_MAX_LENGTH
+        return model_max
+    except Exception:
+        return TOKENIZER_MAX_LENGTH
+
+
 class CrossEncoderReranker:
     """Plain-class cross-encoder reranker backed by pure ONNX Runtime.
 
@@ -175,35 +208,6 @@ class CrossEncoderReranker:
         self.last_failure_reason: str | None = None
 
     # ── Model loading ──────────────────────────────────────────────────
-
-    def _read_max_position_embeddings(self) -> int:
-        """Read ``max_position_embeddings`` from the model's ``config.json``.
-
-        The ``tokenizers`` package does not expose ``model_max_length`` the
-        way ``transformers.AutoTokenizer`` did.  This fetches ``config.json``
-        from the same HuggingFace snapshot and takes
-        ``max_position_embeddings``.  Falls back to
-        ``TOKENIZER_MAX_LENGTH`` when the file is absent, the key is
-        missing, or the value is an implausible sentinel (e.g. 1000000).
-
-        Returns:
-            The model's maximum sequence length, or the configured default.
-        """
-        try:
-            from huggingface_hub import hf_hub_download
-
-            config_path = hf_hub_download(repo_id=self._model_id, filename="config.json")
-            with open(config_path) as f:
-                config = json.load(f)
-            model_max = config.get("max_position_embeddings")
-            if not isinstance(model_max, int) or model_max > 100000:
-                return TOKENIZER_MAX_LENGTH
-            return model_max
-        except Exception:
-            # config.json missing or unreadable — fall back to the
-            # configured default.  The sentinel guard above applies
-            # to the returned value as well.
-            return TOKENIZER_MAX_LENGTH
 
     def _load_model(self) -> None:
         """Attempt to load the cross-encoder ONNX model.
@@ -288,8 +292,8 @@ class CrossEncoderReranker:
                 # larger than the model's position embeddings causes an ONNX
                 # broadcast error at runtime.  The tokenizers package does
                 # not expose model_max_length, so read it from config.json.
-                model_max = self._read_max_position_embeddings()
-                self._effective_max_length = min(TOKENIZER_MAX_LENGTH, model_max)
+                model_max = _read_max_position_embeddings(self._model_id)
+                self._effective_max_length = min(self._effective_max_length, model_max)
                 # Configure truncation and padding on the tokenizer once.
                 # The tokenizer is cached process-wide, so these settings
                 # persist for the process lifetime — subsequent instances

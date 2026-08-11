@@ -25,7 +25,12 @@ from ._reranker_cache import (
     _record_failure,
     _reset_failure_state,
 )
-from .reranker import DEFAULT_RERANK_MODEL, TOKENIZER_MAX_LENGTH, _sigmoid
+from .reranker import (
+    DEFAULT_RERANK_MODEL,
+    TOKENIZER_MAX_LENGTH,
+    _read_max_position_embeddings,
+    _sigmoid,
+)
 
 # Backend name used as the cache-key axis — see ``_reranker_cache.py``.
 _BACKEND_NAME = "torch"
@@ -123,6 +128,12 @@ class SentenceTransformerReranker:
                     "Loading torch reranker model: %s",
                     self._model_id,
                 )
+
+                # Cap max_length at the model's own limit, matching the
+                # ONNX backend's truncation behaviour so both backends
+                # score the same token span (score-parity contract).
+                model_max = _read_max_position_embeddings(self._model_id)
+                self._effective_max_length = min(self._effective_max_length, model_max)
 
                 self._cross_encoder = CrossEncoder(
                     self._model_id,
