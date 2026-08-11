@@ -28,7 +28,7 @@ lazily during retrieval, so the two paths cannot diverge.
 - **AND** every result SHALL carry `"reranked": true`
 
 #### Scenario: lazily constructed reranker honours the configured backend
-- **GIVEN** `RETRIEVAL__RERANK_BACKEND=torch`
+- **GIVEN** `RETRIEVAL__RERANK_BACKEND=torch` and the `torch` optional extra is installed
 - **WHEN** a search is run with `rerank=True` and no reranker instance is injected
 - **THEN** the reranker constructed on demand SHALL be the torch backend
 - **AND** it SHALL NOT fall back to the ONNX backend silently

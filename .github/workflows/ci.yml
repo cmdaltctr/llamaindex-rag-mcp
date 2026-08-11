@@ -44,10 +44,16 @@ jobs:
       # Verify the default install stays torch-free (ADR-038).
       - name: Verify default install is torch-free
         run: |
-          uv pip list 2>/dev/null | grep -iE "^torch|^transformers" && {
+          set -euo pipefail
+          if ! packages="$(uv pip list)"; then
+            echo "FAIL: unable to inspect default install" >&2
+            exit 1
+          fi
+          if printf '%s\n' "$packages" | grep -qiE '^(torch|transformers)([[:space:]]|$)'; then
             echo "FAIL: torch or transformers found in default install"
             exit 1
-          } || echo "OK: default install is torch-free"
+          fi
+          echo "OK: default install is torch-free"
 
       # Phase 2 (config/compose/DI layering): import-linter contracts must
       # pass — settings models stay pure data, providers are constructed
@@ -78,6 +84,8 @@ jobs:
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         # Pinned to SHA for security — actions/setup-python@v6.3.0

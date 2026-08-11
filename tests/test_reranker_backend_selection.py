@@ -47,11 +47,13 @@ def test_settings_to_effective_rerank_backend_torch(effective_settings) -> None:
 def test_unknown_rerank_backend_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     """RETRIEVAL__RERANK_BACKEND=tensorflow must fail at settings resolution."""
     monkeypatch.setenv("RETRIEVAL__RERANK_BACKEND", "tensorflow")
-    # Force a fresh settings resolution — get_settings caches.
-    from rag_mcp.config import get_settings
+    # Construct Settings() directly to avoid the get_settings() cache —
+    # an earlier test may have already resolved and cached settings,
+    # which would return the cached object without re-reading env vars.
+    from rag_mcp.config import Settings
 
     with pytest.raises(ValueError, match="RETRIEVAL__RERANK_BACKEND.*Accepted values: onnx, torch"):
-        get_settings()
+        Settings()
 
 
 def test_empty_rerank_backend_resets_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -99,31 +101,30 @@ def test_lazy_and_injected_paths_select_same_backend(effective_settings) -> None
 
 
 def test_torch_missing_falls_back_to_onnx(effective_settings) -> None:
-    """When torch is requested but the extra is missing, ONNX is used."""
+    """When torch is requested but the extra is missing, ONNX is used.
+
+    The capability probe (_is_torch_extra_available) runs before registry
+    resolution, so the fallback fires even though the registry import for
+    reranker_torch would succeed (torch is imported lazily inside
+    _load_model).
+    """
     from rag_mcp.core.retrieval.backend import resolve_reranker_backend
     from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
-    # Patch the _retrieval_get reference imported into backend.py (not
-    # registry.get — the import is bound at module load time).
-    def selective_get(name: str):
-        if name == "reranker_torch":
-            raise ImportError("no sentence_transformers")
-        from rag_mcp.core.retrieval.registry import get
-
-        return get(name)
-
-    with patch("rag_mcp.core.retrieval.backend._retrieval_get", side_effect=selective_get):
-        cls = resolve_reranker_backend("torch")
-        assert cls is CrossEncoderReranker, (
-            f"Expected ONNX fallback (CrossEncoderReranker), got {cls.__name__}"
-        )
+    # No mocking needed — sentence_transformers is not installed in the
+    # fast suite, so _is_torch_extra_available() naturally returns False.
+    cls = resolve_reranker_backend("torch")
+    assert cls is CrossEncoderReranker, (
+        f"Expected ONNX fallback (CrossEncoderReranker), got {cls.__name__}"
+    )
 
 
 def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
     """RETRIEVAL__RERANK_BACKEND=torch, no extra, ONNX also fails → un-reranked.
 
-    The search SHALL return un-reranked results truncated to top_k,
-    set last_failure_reason, and never raise.
+    The capability probe falls back to ONNX. When the ONNX backend's model
+    also can't load, the search SHALL return un-reranked results truncated
+    to top_k, set last_failure_reason, and never raise.
     """
     from rag_mcp.core.retrieval.backend import build_reranker_from_settings
     from rag_mcp.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
@@ -131,32 +132,23 @@ def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
     settings = effective_settings(rerank_backend="torch")
     reset_model_cache()
 
-    # Patch the _retrieval_get reference in backend.py to raise ImportError
-    # for torch, letting ONNX resolve normally. The ONNX backend's _load_model
-    # will then fail gracefully since no model is available.
-    def selective_get(name: str):
-        if name == "reranker_torch":
-            raise ImportError("no sentence_transformers")
-        from rag_mcp.core.retrieval.registry import get
-
-        return get(name)
-
-    with patch("rag_mcp.core.retrieval.backend._retrieval_get", side_effect=selective_get):
-        reranker = build_reranker_from_settings(settings)
-        # Should have fallen back to ONNX
-        assert isinstance(reranker, CrossEncoderReranker), (
-            f"Expected ONNX fallback, got {type(reranker).__name__}"
-        )
-        # Force the ONNX model load to fail (simulates "ONNX also fails"):
-        # mock _load_model as a no-op so _loaded stays False.
-        reranker._load_model = lambda: None  # type: ignore[method-assign]
-        reranker.last_failure_reason = "simulated ONNX failure"
-        # Verify graceful degradation: rerank with no loaded model returns
-        # un-reranked results truncated to top_k, never raises.
-        results = [{"text": "test", "score": 0.5}]
-        out = reranker.rerank("query", results, top_k=1)
-        assert len(out) <= 1
-        assert all(not r.get("_reranked", False) for r in out)
+    # No mocking of _retrieval_get needed — the probe naturally detects
+    # the missing extra and falls back to ONNX.
+    reranker = build_reranker_from_settings(settings)
+    # Should have fallen back to ONNX
+    assert isinstance(reranker, CrossEncoderReranker), (
+        f"Expected ONNX fallback, got {type(reranker).__name__}"
+    )
+    # Force the ONNX model load to fail (simulates "ONNX also fails"):
+    # mock _load_model as a no-op so _loaded stays False.
+    reranker._load_model = lambda: None  # type: ignore[method-assign]
+    reranker.last_failure_reason = "simulated ONNX failure"
+    # Verify graceful degradation: rerank with no loaded model returns
+    # un-reranked results truncated to top_k, never raises.
+    results = [{"text": "test", "score": 0.5}]
+    out = reranker.rerank("query", results, top_k=1)
+    assert len(out) <= 1
+    assert all(not r.get("_reranked", False) for r in out)
 
 
 # ── _read_max_position_embeddings (reranker.py new method) ──────────────
@@ -165,7 +157,7 @@ def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
 def test_read_max_position_embeddings_reads_config_json() -> None:
     """_read_max_position_embeddings SHALL read max_position_embeddings."""
     import json
-    from unittest.mock import mock_open, patch
+    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
@@ -180,7 +172,7 @@ def test_read_max_position_embeddings_reads_config_json() -> None:
 def test_read_max_position_embeddings_sentinel_falls_back() -> None:
     """Sentinel value (>100000) SHALL fall back to TOKENIZER_MAX_LENGTH."""
     import json
-    from unittest.mock import mock_open, patch
+    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
 
@@ -195,7 +187,7 @@ def test_read_max_position_embeddings_sentinel_falls_back() -> None:
 def test_read_max_position_embeddings_missing_key_falls_back() -> None:
     """Missing max_position_embeddings key SHALL fall back to default."""
     import json
-    from unittest.mock import mock_open, patch
+    from unittest.mock import mock_open
 
     from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
 
@@ -208,7 +200,6 @@ def test_read_max_position_embeddings_missing_key_falls_back() -> None:
 
 def test_read_max_position_embeddings_no_config_falls_back() -> None:
     """Missing config.json SHALL fall back to default without raising."""
-    from unittest.mock import patch
 
     from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH, CrossEncoderReranker
 

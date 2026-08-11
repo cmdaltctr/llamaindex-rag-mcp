@@ -124,7 +124,10 @@ class SentenceTransformerReranker:
                     self._model_id,
                 )
 
-                self._cross_encoder = CrossEncoder(self._model_id)
+                self._cross_encoder = CrossEncoder(
+                    self._model_id,
+                    max_length=self._effective_max_length,
+                )
                 self._loaded = True
                 self._load_error = None
                 self.last_failure_reason = None
