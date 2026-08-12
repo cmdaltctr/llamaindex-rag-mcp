@@ -89,7 +89,11 @@ def tokenize_english(text: str) -> list[str]:
 
 
 class _SimpleBM25Okapi:
-    """Small BM25Okapi fallback used when ``rank_bm25`` is not installed."""
+    """Small BM25Okapi fallback used when ``rank_bm25`` is not installed.
+
+    Mirrors the IDF formula and epsilon clipping of ``rank_bm25.BM25Okapi``
+    so the fallback does not mask scoring divergences on tiny corpora.
+    """
 
     def __init__(self, corpus: list[list[str]], k1: float = 1.5, b: float = 0.75) -> None:
         self.corpus = corpus
@@ -102,10 +106,22 @@ class _SimpleBM25Okapi:
         for freqs in self.doc_freqs:
             nd.update(freqs.keys())
         corpus_size = len(corpus)
-        self.idf = {
-            term: math.log(1 + (corpus_size - freq + 0.5) / (freq + 0.5))
-            for term, freq in nd.items()
-        }
+        # RSJ IDF: log((N - df + 0.5) / (df + 0.5)) — same as rank_bm25.
+        # Negative IDFs (term in more than half the corpus) are clipped to
+        # epsilon * average_idf, matching rank_bm25's default epsilon=0.25.
+        idf_sum = 0.0
+        negative_idfs: list[str] = []
+        self.idf: dict[str, float] = {}
+        for term, freq in nd.items():
+            idf = math.log(corpus_size - freq + 0.5) - math.log(freq + 0.5)
+            self.idf[term] = idf
+            idf_sum += idf
+            if idf < 0:
+                negative_idfs.append(term)
+        avg_idf = idf_sum / len(self.idf) if self.idf else 0.0
+        eps = 0.25 * avg_idf
+        for term in negative_idfs:
+            self.idf[term] = eps
 
     def get_scores(self, query_tokens: list[str]) -> list[float]:
         scores: list[float] = []

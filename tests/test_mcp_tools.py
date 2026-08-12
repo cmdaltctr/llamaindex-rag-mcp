@@ -176,9 +176,9 @@ async def test_list_after_ingest_returns_nonempty(mcp_server, fixtures_dir: Path
 async def test_search_without_query_returns_error(mcp_server) -> None:
     """Calling search_documents without query must return an error."""
     async with connected_client(mcp_server) as client:
-        # FastMCP wraps pydantic validation errors as isError=True
+        # MCPServer wraps pydantic validation errors as is_error=True
         result = await client.call_tool("search_documents", {})
-        assert result.isError is True
+        assert result.is_error is True
         # Verify the error mentions the missing field
         error_text = result.content[0].text
         assert "query" in error_text.lower()
@@ -189,14 +189,14 @@ async def test_search_without_query_returns_error(mcp_server) -> None:
 
 
 def _extract_result(result):
-    """Extract the data payload from a FastMCP CallToolResult.
+    """Extract the data payload from an MCPServer CallToolResult.
 
-    Handles both structuredContent (newer FastMCP) and TextContent
-    (older fallback) response formats.
+    Handles both structured_content (v2) and TextContent (older fallback)
+    response formats.
     """
-    # Check for structured content first
-    if hasattr(result, "structuredContent") and result.structuredContent:
-        return result.structuredContent.get("result", result.structuredContent)
+    # Check for structured content first (v2: structured_content)
+    if hasattr(result, "structured_content") and result.structured_content:
+        return result.structured_content.get("result", result.structured_content)
 
     # Fallback: parse TextContent
     if result.content and isinstance(result.content[0], TextContent):

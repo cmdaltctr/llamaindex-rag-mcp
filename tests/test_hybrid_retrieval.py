@@ -285,7 +285,11 @@ def test_bm25_rebuilds_when_generation_advances(monkeypatch) -> None:
 
     collection = FakeCollection(
         "cache_rebuild",
-        [{"id": "old", "text": "old token", "metadata": {}}],
+        [
+            {"id": "old", "text": "old token", "metadata": {}},
+            {"id": "fill1", "text": "filler alpha content", "metadata": {}},
+            {"id": "fill2", "text": "filler beta content", "metadata": {}},
+        ],
     )
     store = FakeStore(collection)
     store._generations["cache_rebuild"] = 0
@@ -308,7 +312,11 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
 
     collection = FakeCollection(
         "delete_rebuild",
-        [{"id": "gone", "text": "raredelete token", "metadata": {}}],
+        [
+            {"id": "gone", "text": "raredelete token", "metadata": {}},
+            {"id": "fill1", "text": "filler alpha content", "metadata": {}},
+            {"id": "fill2", "text": "filler beta content", "metadata": {}},
+        ],
     )
     store = FakeStore(collection)
     store._generations["delete_rebuild"] = 0
@@ -328,14 +336,22 @@ def test_remove_collection_generation_invalidates_cache() -> None:
 
     collection = FakeCollection(
         "drop_rebuild",
-        [{"id": "old", "text": "dropme token", "metadata": {}}],
+        [
+            {"id": "old", "text": "dropme token", "metadata": {}},
+            {"id": "fill1", "text": "filler alpha content", "metadata": {}},
+            {"id": "fill2", "text": "filler beta content", "metadata": {}},
+        ],
     )
     store = FakeStore(collection)
     store._generations["drop_rebuild"] = 0
     retriever = BM25SparseRetriever("drop_rebuild", store=store)
 
     retriever.query("dropme", top_n=5)
-    collection.rows[:] = [{"id": "new", "text": "replacement token", "metadata": {}}]
+    collection.rows[:] = [
+        {"id": "new", "text": "replacement token", "metadata": {}},
+        {"id": "fill1", "text": "filler alpha content", "metadata": {}},
+        {"id": "fill2", "text": "filler beta content", "metadata": {}},
+    ]
     store.bump_generation("drop_rebuild")
 
     assert [row[1] for row in retriever.query("replacement", top_n=5)] == ["new"]
@@ -632,6 +648,12 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
                 "text": "Colosseum exact rare term",
                 "metadata": {"file_path": "bm25.txt"},
                 "distance": 9.0,
+            },
+            {
+                "id": "filler",
+                "text": "modern stadium concrete design",
+                "metadata": {"file_path": "filler.txt"},
+                "distance": 5.0,
             },
         ],
     )

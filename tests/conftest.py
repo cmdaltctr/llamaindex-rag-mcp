@@ -31,7 +31,7 @@ import chromadb
 import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
-from mcp.shared.memory import create_connected_server_and_client_session
+from mcp.client import Client
 
 # ── Constants ──────────────────────────────────────────────────────────────
 
@@ -308,13 +308,16 @@ def mcp_server():
 
 @asynccontextmanager
 async def connected_client(mcp_server):
-    """Create an in-memory MCP ClientSession connected to the server.
+    """Create an in-memory MCP Client connected to the server.
 
     This is an async context manager, not a fixture, to avoid teardown
     issues with pytest-asyncio and anyio task groups.
+
+    Uses the v2 ``mcp.client.Client`` (replaces the v1
+    ``create_connected_server_and_client_session`` helper).
     """
-    async with create_connected_server_and_client_session(mcp_server) as session:
-        yield session
+    async with Client(mcp_server) as client:
+        yield client
 
 
 # ── Fixture file paths ─────────────────────────────────────────────────────

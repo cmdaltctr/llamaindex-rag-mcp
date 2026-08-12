@@ -4,36 +4,50 @@ version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [
-    # Caps <2/<1 below are deliberate for the v3 minor-upgrade window.
-    # Lift them as part of the next major dependency upgrade cycle
-    # (mcp 2.0 rewrites the HTTP stack to httpx2; huggingface-hub 1.0
-    # changed download/streaming APIs).
-    "mcp[cli]>=1.0.0,<2",
-    "llama-index>=0.11.0",
-    "llama-index-vector-stores-chroma>=0.2.0",
-    "llama-index-readers-file>=0.2.0",
-    "chromadb>=0.5.0",
-    "llama-index-embeddings-ollama>=0.2.0",
+    # mcp 2.0 + huggingface-hub 1.0 caps lifted in the major dependency
+    # upgrade cycle. mcp 2.0 rewrites the HTTP stack to httpx2;
+    # huggingface-hub 1.0 migrated from requests to httpx and removed
+    # legacy params (resume_download, force_filename, local_dir_use_symlinks)
+    # — none of which this project uses.
+    "mcp[cli]>=2.0.0",
+    # llama-index family: floors follow the tightest sibling (design D6).
+    # llama-index-llms-ollama 0.9.0 is the first to require core>=0.14.5,
+    # so the whole set moves together to stay self-consistent under
+    # chromadb 1.x. See ADR-042.
+    "llama-index>=0.14.5",
+    "llama-index-vector-stores-chroma>=0.5.0",
+    "llama-index-readers-file>=0.5.0",
+    # chromadb 1.0.0 reverts list_collections() to returning Collection
+    # objects; 0.6.0–0.9.x returned bare strings, breaking
+    # ChromaVectorStoreAdapter.list_collections. See ADR-042.
+    # https://docs.trychroma.com/docs/overview/migration
+    "chromadb>=1.0.0",
+    "llama-index-embeddings-ollama>=0.7.0",
     "python-dotenv>=1.0.0",
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
-    "onnxruntime>=1.17.0,<1.26.0",
+    "onnxruntime>=1.20.0",
     "tokenizers>=0.20",
-    "huggingface-hub>=0.20.0,<1",
+    "huggingface-hub>=1.0.0",
     "typer>=0.25.1",
     # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
-    "watchdog>=4.0.0",
+    "watchdog>=5.0.0",
     # Async HTTP client for Ollama metadata extraction (non-blocking)
     "httpx>=0.27.0",
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
-    "llama-index-llms-ollama>=0.4.0",
+    "llama-index-llms-ollama>=0.9.0",
     "docx2txt>=0.9",
     # PDF parser (Rust + PDFium, Apache-2.0). Default reader when installed.
     # See ADR-020. Prebuilt wheels for macOS, Linux, Windows.
     "liteparse>=2.0.0",
-    # Code graph: AST extraction and community detection
-    "tree-sitter>=0.21.0",
-    "tree-sitter-language-pack>=0.1.0",
-    "networkx>=3.0",
+    # Code graph: AST extraction and community detection.
+    # tree-sitter-language-pack 1.12.3 fixes a silent-failure mode where
+    # get_parser() returned a vendored parser class that produced unusable
+    # trees on Python 3.14 (and broke import below 3.14). ast_extract.py
+    # wraps the call in a broad except, so the silent variant degraded
+    # every AST extraction to a logged warning. See ADR-042.
+    "tree-sitter>=0.23.0",
+    "tree-sitter-language-pack>=1.12.3",
+    "networkx>=3.2",
     "pydantic-settings>=2.14.1",
     "pyyaml>=6.0.3",
 ]
@@ -49,12 +63,12 @@ azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
 llamacpp = [
-    "llama-index-embeddings-openai>=0.2.0",
-    "llama-index-llms-openai-like>=0.2.0",
+    "llama-index-embeddings-openai>=0.5.0",
+    "llama-index-llms-openai-like>=0.5.0",
 ]
 openrouter = [
-    "llama-index-embeddings-openai>=0.2.0",
-    "llama-index-llms-openai-like>=0.2.0",
+    "llama-index-embeddings-openai>=0.5.0",
+    "llama-index-llms-openai-like>=0.5.0",
 ]
 # PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
 # Linux. Default backend stays ONNX; installing this does not change
@@ -63,9 +77,10 @@ openrouter = [
 # persistence on predict().  See ADR-038.
 torch = [
     "sentence-transformers>=5.0",
-    # Cap <5 for the v3 minor-upgrade window; transformers 5.0 reworks
-    # the model loading API. Lift in the next major dependency upgrade.
-    "transformers>=4.40.0,<5",
+    # transformers 5.0 cap lifted in the major dependency upgrade cycle
+    # (coupled with huggingface-hub 1.0 — all transformers <5 versions
+    # require huggingface-hub <1.0).
+    "transformers>=5.0.0",
 ]
 
 [project.scripts]
@@ -294,7 +309,6 @@ select = ["E", "F", "I", "UP", "B", "S"]
 
 [dependency-groups]
 dev = [
-    "huggingface-hub>=0.36.2",
     "import-linter>=2.13",
     "ipywidgets>=8.1.8",
     "jupytext>=1.19.4",
@@ -303,7 +317,9 @@ dev = [
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.12.0",
+    # ruff floor raised so pre-commit (which runs ``uv run ruff``) formats
+    # identically on the floors and on the locked version. See ADR-042.
+    "ruff>=0.16.0",
 ]
 
 # ─── Semantic Release ────────────────────────────────────────────────
