@@ -45,13 +45,14 @@ uv run pytest --cov=rag_mcp      # Coverage
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
 11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them.
 12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
+13. **Dependency floors are enforced by `tests/test_dependency_floors.py` and the `floors` CI job.** The test fails when a declared floor drifts more than one minor below its locked version (or sits above it). The `floors` job installs with `--resolution lowest-direct` and runs the fast suite. When raising a floor, update the exemption dict in the test if the gap is intentional (with a comment naming the reason). See ADR-042.
 
 ## Hard Boundaries
 
 | Type      | Rule                                                                                                                                                |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⚠️ Ask    | Cloud dependencies & API keys — local-first by default, cloud allowed as opt-in (see ADR-024). All cloud features must degrade gracefully to local. |
-| 🚫 Never  | PyTorch in the base install or on the default retrieval path. ONNX Runtime only. PyTorch behind the optional `torch` extra is ⚠️ Ask.              |
+| 🚫 Never  | PyTorch in the base install or on the default retrieval path. ONNX Runtime only. PyTorch behind the optional `torch` extra is ⚠️ Ask.               |
 | 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                                                                                                  |
 | 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                                                                                |
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |

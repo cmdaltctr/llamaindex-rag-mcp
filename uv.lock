@@ -4253,7 +4253,6 @@ torch = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "huggingface-hub" },
     { name = "import-linter" },
     { name = "ipywidgets" },
     { name = "jupytext" },
@@ -4268,23 +4267,23 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "azure-ai-documentintelligence", marker = "extra == 'azure'", specifier = ">=1.0.0" },
-    { name = "chromadb", specifier = ">=0.5.0" },
+    { name = "chromadb", specifier = ">=1.0.0" },
     { name = "docx2txt", specifier = ">=0.9" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "huggingface-hub", specifier = ">=1.0.0" },
     { name = "liteparse", specifier = ">=2.0.0" },
-    { name = "llama-index", specifier = ">=0.11.0" },
-    { name = "llama-index-embeddings-ollama", specifier = ">=0.2.0" },
-    { name = "llama-index-embeddings-openai", marker = "extra == 'llamacpp'", specifier = ">=0.2.0" },
-    { name = "llama-index-embeddings-openai", marker = "extra == 'openrouter'", specifier = ">=0.2.0" },
-    { name = "llama-index-llms-ollama", specifier = ">=0.4.0" },
-    { name = "llama-index-llms-openai-like", marker = "extra == 'llamacpp'", specifier = ">=0.2.0" },
-    { name = "llama-index-llms-openai-like", marker = "extra == 'openrouter'", specifier = ">=0.2.0" },
-    { name = "llama-index-readers-file", specifier = ">=0.2.0" },
-    { name = "llama-index-vector-stores-chroma", specifier = ">=0.2.0" },
+    { name = "llama-index", specifier = ">=0.14.5" },
+    { name = "llama-index-embeddings-ollama", specifier = ">=0.7.0" },
+    { name = "llama-index-embeddings-openai", marker = "extra == 'llamacpp'", specifier = ">=0.5.0" },
+    { name = "llama-index-embeddings-openai", marker = "extra == 'openrouter'", specifier = ">=0.5.0" },
+    { name = "llama-index-llms-ollama", specifier = ">=0.9.0" },
+    { name = "llama-index-llms-openai-like", marker = "extra == 'llamacpp'", specifier = ">=0.5.0" },
+    { name = "llama-index-llms-openai-like", marker = "extra == 'openrouter'", specifier = ">=0.5.0" },
+    { name = "llama-index-readers-file", specifier = ">=0.5.0" },
+    { name = "llama-index-vector-stores-chroma", specifier = ">=0.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=2.0.0" },
-    { name = "networkx", specifier = ">=3.0" },
-    { name = "onnxruntime", specifier = ">=1.17.0" },
+    { name = "networkx", specifier = ">=3.2" },
+    { name = "onnxruntime", specifier = ">=1.20.0" },
     { name = "pydantic-settings", specifier = ">=2.14.1" },
     { name = "pypdfium2", marker = "extra == 'pdf-pypdfium2'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
@@ -4293,16 +4292,15 @@ requires-dist = [
     { name = "sentence-transformers", marker = "extra == 'torch'", specifier = ">=5.0" },
     { name = "tokenizers", specifier = ">=0.20" },
     { name = "transformers", marker = "extra == 'torch'", specifier = ">=5.0.0" },
-    { name = "tree-sitter", specifier = ">=0.21.0" },
-    { name = "tree-sitter-language-pack", specifier = ">=0.1.0" },
+    { name = "tree-sitter", specifier = ">=0.23.0" },
+    { name = "tree-sitter-language-pack", specifier = ">=1.12.3" },
     { name = "typer", specifier = ">=0.25.1" },
-    { name = "watchdog", specifier = ">=4.0.0" },
+    { name = "watchdog", specifier = ">=5.0.0" },
 ]
 provides-extras = ["hybrid", "pdf-pypdfium2", "azure", "llamacpp", "openrouter", "torch"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "huggingface-hub", specifier = ">=0.36.2" },
     { name = "import-linter", specifier = ">=2.13" },
     { name = "ipywidgets", specifier = ">=8.1.8" },
     { name = "jupytext", specifier = ">=1.19.4" },
@@ -4311,7 +4309,7 @@ dev = [
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "ruff", specifier = ">=0.12.0" },
+    { name = "ruff", specifier = ">=0.16.0" },
 ]
 
 [[package]]
