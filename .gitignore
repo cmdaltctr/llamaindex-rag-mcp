@@ -59,6 +59,11 @@ coverage.xml
 # IDE
 .idea/
 .vscode/
+.sonarlint/
+
+# Ruff
+.ruff_cache/
+
 # VS Code comment tracking files (e.g. .README.md.comments.json)
 .comments.json
 *.comments.json
