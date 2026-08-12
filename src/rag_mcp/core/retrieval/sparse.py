@@ -107,7 +107,7 @@ class _SimpleBM25Okapi:
             nd.update(freqs.keys())
         corpus_size = len(corpus)
         # RSJ IDF: log((N - df + 0.5) / (df + 0.5)) — same as rank_bm25.
-        # Negative IDFs (term in ≥ half the corpus) are clipped to
+        # Negative IDFs (term in more than half the corpus) are clipped to
         # epsilon * average_idf, matching rank_bm25's default epsilon=0.25.
         idf_sum = 0.0
         negative_idfs: list[str] = []
