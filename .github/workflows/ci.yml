@@ -76,11 +76,28 @@ jobs:
   # runs the fast test suite. This converts the floors in pyproject.toml
   # from a comment into a tested contract. Without it they rot again on
   # the next upgrade cycle. See raise-dependency-floors OpenSpec change.
+  #
+  # Matrix covers the base install plus every non-torch extra, because
+  # `uv sync` does not install optional dependencies unless an extra is
+  # selected — without the matrix the floors in [project.optional-dependencies]
+  # would never be exercised at their lower bounds. The torch extra is
+  # excluded here because it has its own dedicated job below (ADR-038) and
+  # must never enter the default install path.
   floors:
-    name: Floor resolution
+    name: Floor resolution${{ matrix.extra && format(' ({0})', matrix.extra) || '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        extra:
+          - "" # base install, no extras
+          - hybrid
+          - pdf-pypdfium2
+          - azure
+          - llamacpp
+          - openrouter
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -98,7 +115,7 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies at declared floors
-        run: uv sync --resolution lowest-direct
+        run: uv sync --resolution lowest-direct${{ matrix.extra && format(' --extra {0}', matrix.extra) || '' }}
 
       - name: Run tests (fast) at floors
         env:

@@ -13,7 +13,7 @@ ADR-039/040). It was not flagged in the original comment block for the
 major-upgrade cycle, but lifting it closes the last remaining upper cap
 in `pyproject.toml`.
 
-onnxruntime 1.28.0 (released 2025-07-25) includes:
+onnxruntime 1.28.0 (released 2026-07-25) includes:
 
 - ONNX 1.22.0 and protobuf 6.33.5 upgrade (internal)
 - cuDNN/cuFFT now optional at runtime for CUDA EP

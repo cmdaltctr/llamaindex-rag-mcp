@@ -13,7 +13,7 @@ public APIs. The `chore/deps-major-upgrade` branch is the cycle that lifts
 those caps. This ADR covers the **mcp 2.0** lift only; huggingface-hub 1.0
 is a separate change.
 
-mcp 2.0 (released 2026-08) is a breaking release. The official migration
+mcp 2.0 (released 2026-07-28) is a breaking release. The official migration
 guide lives at <https://py.sdk.modelcontextprotocol.io/v2/migration>. The
 headline changes that touch this project:
 

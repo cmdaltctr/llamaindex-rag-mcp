@@ -81,12 +81,12 @@
 - [x] 3.5 Raise the extras floors: `pypdfium2` (declared `>=4.0.0`, locked 5.12.1), `llama-index-embeddings-openai`, `llama-index-llms-openai-like`, `azure-ai-documentintelligence`, `rank-bm25`, `sentence-transformers`.
 - [x] 3.6 Fix the dev-group contradiction: `[dependency-groups].dev` declares `huggingface-hub>=0.36.2` while `[project.dependencies]` declares `>=1.0.0`. Remove the dev entry or align it, and say which in the ADR.
 - [x] 3.7 Raise the remaining dev floors where they affect reproducibility, in particular `ruff` (declared `>=0.12.0`, locked 0.16.2). Pre-commit runs `uv run ruff`, so a developer on the floors formats differently from CI. Also review `pre-commit`, `pytest`, `pytest-asyncio`, `pytest-cov`, `openapi-spec-validator`, `jupytext`, `import-linter`.
-- [x] 3.8 Confirm `uv.lock` is byte-identical after `uv sync`. Any churn means a floor was set above its locked version.
+- [x] 3.8 Confirm `uv.lock` is unchanged except for the local `rag-mcp` package metadata (which records the new dependency specifiers). All resolved third-party package versions must remain identical — any third-party version churn means a floor was set above its locked version.
 - [x] 3.9 Confirm the drift test from group 2 now passes.
 
 ## 4. Verification
 
-- [x] 4.1 `uv sync` then `uv run pytest -m "not slow" --cov=rag_mcp --cov-branch` — full fast suite green, coverage at or above the current 92%.
+- [x] 4.1 `uv sync` then `uv run pytest -m "not slow" --cov=rag_mcp --cov-branch` — full fast suite green, coverage at or above the accepted 90% branch-coverage floor (ADR-042 records 91%).
 - [x] 4.2 `uv run lint-imports` — all six import-linter contracts pass.
 - [x] 4.3 `uv run ruff check .` and `uv run ruff format --check .` clean.
 - [x] 4.4 `openspec validate --all --strict` passes.

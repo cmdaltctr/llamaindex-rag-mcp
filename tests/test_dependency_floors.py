@@ -24,8 +24,11 @@ _UV_LOCK = _REPO_ROOT / "uv.lock"
 # Per-package exemptions from the one-minor drift rule. Each entry names the
 # reason so it is reviewable. A silent skip list is how the floors rotted in
 # the first place (design D3) — every exemption here is a deliberate decision
-# recorded in ADR-042, not a workaround.
-_EXEMPT: dict[str, str] = {
+# recorded in ADR-042, not a workaround. Exemptions apply ONLY to the drift
+# check; the missing-package and floor-above-lock checks always run, so an
+# exempt package still has to be present in uv.lock with a floor at or below
+# the locked version.
+_DRIFT_EXEMPT: dict[str, str] = {
     # ADR-040: 1.0 was the only relevant break (requests→httpx, removed
     # legacy params); all 1.x minors are compatible.
     "huggingface-hub": "ADR-040: 1.0 was the only relevant break; all 1.x compatible",
@@ -208,21 +211,25 @@ def test_declared_floors_match_lockfile() -> None:
     missing_offenders: list[str] = []
 
     for name, source, floor in floors:
-        if name in _EXEMPT:
-            continue
         if name not in locked:
             missing_offenders.append(f"  {name} ({source}): not found in uv.lock")
             continue
         locked_version = locked[name]
 
         # Floor above lock → the lockfile violates the declared contract.
+        # Runs for every package, including drift-exempt ones.
         if _version_gt(floor, locked_version):
             above_offenders.append(
                 f"  {name} ({source}): floor {_fmt(floor)} above locked {_fmt(locked_version)}"
             )
             continue
 
-        # Floor more than one minor below lock → drift.
+        # Floor more than one minor below lock → drift. Exemptions apply here
+        # only; the missing-package and floor-above-lock checks above always
+        # run so an exempt package cannot silently disappear or sit above the
+        # locked version.
+        if name in _DRIFT_EXEMPT:
+            continue
         distance = _minor_distance(floor, locked_version)
         if distance > 1:
             drift_offenders.append(
