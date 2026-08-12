@@ -4,7 +4,11 @@ version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [
-    "mcp[cli]>=1.0.0",
+    # Caps <2/<1 below are deliberate for the v3 minor-upgrade window.
+    # Lift them as part of the next major dependency upgrade cycle
+    # (mcp 2.0 rewrites the HTTP stack to httpx2; huggingface-hub 1.0
+    # changed download/streaming APIs).
+    "mcp[cli]>=1.0.0,<2",
     "llama-index>=0.11.0",
     "llama-index-vector-stores-chroma>=0.2.0",
     "llama-index-readers-file>=0.2.0",
@@ -14,7 +18,7 @@ dependencies = [
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
     "onnxruntime>=1.17.0,<1.26.0",
     "tokenizers>=0.20",
-    "huggingface-hub>=0.20.0",
+    "huggingface-hub>=0.20.0,<1",
     "typer>=0.25.1",
     # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
     "watchdog>=4.0.0",
@@ -59,6 +63,9 @@ openrouter = [
 # persistence on predict().  See ADR-038.
 torch = [
     "sentence-transformers>=5.0",
+    # Cap <5 for the v3 minor-upgrade window; transformers 5.0 reworks
+    # the model loading API. Lift in the next major dependency upgrade.
+    "transformers>=4.40.0,<5",
 ]
 
 [project.scripts]
