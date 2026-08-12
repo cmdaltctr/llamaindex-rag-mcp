@@ -130,23 +130,15 @@ def _select_onnx_variant(model_id: str | None = None) -> list[str]:
 def _read_max_position_embeddings(model_id: str) -> int:
     """Read ``max_position_embeddings`` from the model's ``config.json``.
 
-    Re-exported from ``_model_config.py`` for backward compatibility.
-    Passes the configured ``TOKENIZER_MAX_LENGTH`` as the fallback so
-    the model-config helper does not duplicate the env-var read.
+    Thin wrapper around ``_model_config.read_max_position_embeddings``
+    that supplies the configured ``TOKENIZER_MAX_LENGTH`` as the
+    fallback, so callers within this module don't repeat the env-var
+    read. Kept here (rather than inlined at the call site) because the
+    test suite imports it as ``reranker._read_max_position_embeddings``.
     """
     from ._model_config import read_max_position_embeddings
 
     return read_max_position_embeddings(model_id, TOKENIZER_MAX_LENGTH)
-
-
-def _read_pad_token_config(model_id: str) -> tuple[int | None, str | None]:
-    """Read ``pad_token_id`` and ``pad_token`` from the model's config.
-
-    Re-exported from ``_model_config.py`` for backward compatibility.
-    """
-    from ._model_config import read_pad_token_config
-
-    return read_pad_token_config(model_id)
 
 
 class CrossEncoderReranker:
@@ -291,7 +283,9 @@ class CrossEncoderReranker:
                 # correct pad_id and pad_token for non-BERT-family models
                 # (e.g. RoBERTa uses pad_id=1, pad_token="<pad>").  Falls
                 # back to library defaults when config is unavailable.
-                pad_id, pad_token = _read_pad_token_config(self._model_id)
+                from ._model_config import read_pad_token_config
+
+                pad_id, pad_token = read_pad_token_config(self._model_id)
                 _pad_kwargs: dict[str, int | str] = {}
                 if pad_id is not None:
                     _pad_kwargs["pad_id"] = pad_id

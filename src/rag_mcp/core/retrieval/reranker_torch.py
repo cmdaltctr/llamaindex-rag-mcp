@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from ._model_config import read_max_position_embeddings
 from ._reranker_cache import (
     _CACHE_LOCK,
     _MODEL_CACHE,
@@ -28,7 +29,6 @@ from ._reranker_cache import (
 from .reranker import (
     DEFAULT_RERANK_MODEL,
     TOKENIZER_MAX_LENGTH,
-    _read_max_position_embeddings,
     _sigmoid,
 )
 
@@ -132,7 +132,7 @@ class SentenceTransformerReranker:
                 # Cap max_length at the model's own limit, matching the
                 # ONNX backend's truncation behaviour so both backends
                 # score the same token span (score-parity contract).
-                model_max = _read_max_position_embeddings(self._model_id)
+                model_max = read_max_position_embeddings(self._model_id, TOKENIZER_MAX_LENGTH)
                 self._effective_max_length = min(self._effective_max_length, model_max)
 
                 self._cross_encoder = CrossEncoder(
