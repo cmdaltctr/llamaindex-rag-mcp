@@ -26,7 +26,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
 # Import the composition root early so the LlamaIndex global
@@ -62,7 +62,7 @@ _profile_resolver = compose.build_profile_resolver()
 
 
 @asynccontextmanager
-async def _noop_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
+async def _noop_lifespan(server: MCPServer) -> AsyncIterator[dict[str, Any]]:
     """Yield an empty context — no pre-loaded resources today.
 
     Replacing this with a real lifespan (e.g. one that constructs the
@@ -72,7 +72,7 @@ async def _noop_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     yield {}
 
 
-mcp = FastMCP("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
+mcp = MCPServer("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
 
 
 # ── Tool 1: Ingest ----------------------------------------------------------
@@ -85,7 +85,7 @@ mcp = FastMCP("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
         "target ChromaDB collection. Supported formats: PDF, "
         "DOCX, PPTX, TXT, Markdown, HTML, CSV."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(destructive_hint=True),
 )
 async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store.
@@ -122,7 +122,7 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         "collection name to scope the search and an optional "
         "metadata_filter to restrict results by metadata fields."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    annotations=ToolAnnotations(read_only_hint=True),
 )
 async def search_documents(
     query: str,
@@ -227,7 +227,7 @@ async def search_documents(
         "with their source paths and chunk counts. Optionally "
         "scope to a specific ChromaDB collection."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    annotations=ToolAnnotations(read_only_hint=True),
 )
 def list_indexed_documents(collection: str = "documents") -> list[dict]:
     """List all documents that have been indexed so far."""
@@ -248,7 +248,7 @@ def list_indexed_documents(collection: str = "documents") -> list[dict]:
 
 @mcp.tool(
     description=("List all available ChromaDB collections with their document and chunk counts."),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    annotations=ToolAnnotations(read_only_hint=True),
 )
 def list_collections() -> list[dict]:
     """List all ChromaDB collections with counts."""
@@ -278,7 +278,7 @@ def list_collections() -> list[dict]:
         "without path or metadata_filter, the collection itself is "
         "dropped). Use dry_run=true to preview without modifying data."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(destructive_hint=True),
 )
 def delete_documents(
     path: str | None = None,
@@ -343,7 +343,7 @@ def delete_documents(
         "agents starting a session on an unfamiliar codebase. Results are cached "
         "per-project keyed by git commit hash. Use refresh=true to force rebuild."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False),
+    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """Generate a compact codebase map for the given project path.
@@ -379,7 +379,7 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
         "levers apply to future ingests only. Returns a preview on first "
         "call; pass confirm=true to apply."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(destructive_hint=True),
 )
 def change_collection_profile(
     collection: str,

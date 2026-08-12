@@ -4,11 +4,11 @@ version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [
-    # Caps <2/<1 below are deliberate for the v3 minor-upgrade window.
-    # Lift them as part of the next major dependency upgrade cycle
-    # (mcp 2.0 rewrites the HTTP stack to httpx2; huggingface-hub 1.0
-    # changed download/streaming APIs).
-    "mcp[cli]>=1.0.0,<2",
+    # mcp 2.0 cap lifted: migrated from FastMCP (v1) to MCPServer (v2),
+    # which rewrites the HTTP stack to httpx2.
+    # NOTE: huggingface-hub is still capped <1 below — its download/streaming
+    # API changes are not yet addressed in this cycle.
+    "mcp[cli]>=2.0.0",
     "llama-index>=0.11.0",
     "llama-index-vector-stores-chroma>=0.2.0",
     "llama-index-readers-file>=0.2.0",

@@ -591,13 +591,13 @@ class TestThresholdFollowsRerankOutcome:
 
 
 def _extract_result(result):
-    """Extract the data payload from a FastMCP CallToolResult."""
+    """Extract the data payload from an MCPServer CallToolResult."""
     import json
 
     from mcp.types import TextContent
 
-    if hasattr(result, "structuredContent") and result.structuredContent:
-        return result.structuredContent.get("result", result.structuredContent)
+    if hasattr(result, "structured_content") and result.structured_content:
+        return result.structured_content.get("result", result.structured_content)
 
     if result.content and isinstance(result.content[0], TextContent):
         return json.loads(result.content[0].text)
