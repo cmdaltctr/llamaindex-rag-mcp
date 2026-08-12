@@ -125,6 +125,17 @@ they only lived because the flat schema had nowhere better.
 > at startup — migrate straight to the `CLASSIFY_*` forms. The third row,
 > `METADATA__OLLAMA_CLASSIFY_MODEL`, is unaffected: it really is
 > Ollama-specific.
+>
+> **Update (rename-classify-settings, 2026-08-07, validation hardening):** the
+> same change replaced the call-time `max(1, value)` clamp on
+> `classify_max_attempts` with `Field(gt=0)` on both `MetadataSettings` and
+> `MetadataBlock`, and added the same bound to `classify_timeout` (previously
+> unguarded, so a non-positive value reached `httpx.AsyncClient(timeout=...)`).
+> A configuration that previously ran with
+> `METADATA__CLASSIFY_MAX_ATTEMPTS=0` was silently rewritten to `1`; it now
+> fails at settings resolution with a named `ValidationError`. This is
+> deliberate — silently rewriting an operator's value hides the error, the
+> same reasoning that governs the tripwire and ADR-029's fail-loud lesson.
 
 `defaults.yaml` and all three profile bundles are rewritten nested and ship
 with this change; a bundle using the flat schema, or a `hybrid.yaml`

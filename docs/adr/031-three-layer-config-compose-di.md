@@ -170,6 +170,19 @@ cycle and to align with the lazy-registry design.
   parsing semantic is preserved. The refactor moves where values are read, not
   what values mean.
 
+> **Update (silent-failure-audit-and-guards, 2026-08-11):** the composition
+> root's failure semantics tightened. `ensure_runtime_setup()` now lets
+> construction failures (missing optional dependency, missing credentials,
+> failed embedding-model build) propagate instead of warn-and-continue, so a
+> bad configuration raises at import time — `rag-mcp --help` and every other
+> command fail loudly rather than running on a degraded store. This was
+> accepted deliberately: `VECTOR_STORE`'s unknown-value check already raised
+> through the same import-time path (ADR-034), the retired-env-var tripwire
+> (`config/legacy.py`) had already established "loud failure over silent
+> misconfiguration", and a stderr traceback with a non-zero exit is the whole
+> point of ADR-029. Full rationale in the archived change's `design.md`
+> (decision D5).
+
 ## Alternatives Considered
 
 | Option | Rejected Because |
