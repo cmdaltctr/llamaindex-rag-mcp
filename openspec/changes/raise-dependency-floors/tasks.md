@@ -107,7 +107,7 @@
 
 ## 6. Ship
 
-- [ ] 6.1 Commit as `chore(deps)!: raise dependency floors to tested versions`, with a `BREAKING CHANGE` footer naming each package and its new minimum.
+- [x] 6.1 Commit as `chore(deps)!: raise dependency floors to tested versions`, with a `BREAKING CHANGE` footer naming each package and its new minimum.
 - [ ] 6.2 Open the PR against `v3`, not `main`.
 - [ ] 6.3 Confirm all CI jobs green, including the new `floors` job.
 - [ ] 6.4 Archive the change with `openspec archive raise-dependency-floors`.
