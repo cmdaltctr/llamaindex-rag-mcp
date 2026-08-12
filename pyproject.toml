@@ -4,10 +4,11 @@ version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [
-    # mcp 2.0 cap lifted: migrated from FastMCP (v1) to MCPServer (v2),
-    # which rewrites the HTTP stack to httpx2.
-    # NOTE: huggingface-hub is still capped <1 below — its download/streaming
-    # API changes are not yet addressed in this cycle.
+    # mcp 2.0 + huggingface-hub 1.0 caps lifted in the major dependency
+    # upgrade cycle. mcp 2.0 rewrites the HTTP stack to httpx2;
+    # huggingface-hub 1.0 migrated from requests to httpx and removed
+    # legacy params (resume_download, force_filename, local_dir_use_symlinks)
+    # — none of which this project uses.
     "mcp[cli]>=2.0.0",
     "llama-index>=0.11.0",
     "llama-index-vector-stores-chroma>=0.2.0",
@@ -18,7 +19,7 @@ dependencies = [
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
     "onnxruntime>=1.17.0,<1.26.0",
     "tokenizers>=0.20",
-    "huggingface-hub>=0.20.0,<1",
+    "huggingface-hub>=1.0.0",
     "typer>=0.25.1",
     # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
     "watchdog>=4.0.0",
@@ -63,9 +64,10 @@ openrouter = [
 # persistence on predict().  See ADR-038.
 torch = [
     "sentence-transformers>=5.0",
-    # Cap <5 for the v3 minor-upgrade window; transformers 5.0 reworks
-    # the model loading API. Lift in the next major dependency upgrade.
-    "transformers>=4.40.0,<5",
+    # transformers 5.0 cap lifted in the major dependency upgrade cycle
+    # (coupled with huggingface-hub 1.0 — all transformers <5 versions
+    # require huggingface-hub <1.0).
+    "transformers>=5.0.0",
 ]
 
 [project.scripts]

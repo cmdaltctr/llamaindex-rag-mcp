@@ -46,6 +46,7 @@ development of the LlamaIndex RAG MCP Server.
 | [037](./037-architecture-v2-conformance.md)                        | Architecture v2 Conformance                                                                  | 2026-08-05 | Accepted |
 | [038](./038-pluggable-reranker-backend.md)                         | Pluggable Reranker Backend                                                                   | 2026-08-11 | Accepted |
 | [039](./039-mcp-2-0-upgrade.md)                                    | MCP Python SDK 2.0 Upgrade                                                                   | 2026-08-12 | Accepted |
+| [040](./040-huggingface-hub-1-0-upgrade.md)                        | huggingface-hub 1.0 + transformers 5.0 Upgrade                                               | 2026-08-12 | Accepted |
 
 ## Convention
 
