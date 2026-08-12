@@ -17,7 +17,7 @@ dependencies = [
     "llama-index-embeddings-ollama>=0.2.0",
     "python-dotenv>=1.0.0",
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
-    "onnxruntime>=1.17.0,<1.26.0",
+    "onnxruntime>=1.17.0",
     "tokenizers>=0.20",
     "huggingface-hub>=1.0.0",
     "typer>=0.25.1",
