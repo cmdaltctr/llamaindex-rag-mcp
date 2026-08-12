@@ -1,11 +1,14 @@
 # dependency-floor-integrity Specification
 
 ## Purpose
+
 Guarantees that the lower version bounds declared in `pyproject.toml` describe
 a dependency set that actually installs and passes the test suite, so a
 consumer resolving without the lockfile gets a working package rather than an
 untested combination.
+
 ## Requirements
+
 ### Requirement: Declared floors form an installable, tested contract
 
 The lowest versions permitted by `[project.dependencies]` and
@@ -84,6 +87,23 @@ convention.
 - **THEN** the drift test MUST fail, because the lockfile would no longer
   satisfy the declared contract
 
+#### Scenario: A missing package is rejected
+
+- **WHEN** a declared dependency is not found in `uv.lock`
+- **THEN** the drift test MUST fail naming that package and its source table
+
+#### Scenario: Exemptions apply only to drift, not to presence or contract
+
+- **WHEN** a package is listed in the drift-exemption table
+- **THEN** the drift test MUST still verify the package is present in
+  `uv.lock`
+- **AND** the drift test MUST still verify the package's floor does not sit
+  above its locked version
+- **AND** the drift test MUST skip only the one-minor drift check for that
+  package
+- **AND** each exemption entry MUST name the reason inline in the test source
+- **AND** each exemption MUST be recorded in an architecture decision record
+
 ---
 
 ### Requirement: Floor raises are declared as breaking changes
@@ -106,4 +126,3 @@ capture the evidence for each raise.
   constrains it
 - **THEN** the decision record MUST list it as a watch item naming the
   constraining parent
-
