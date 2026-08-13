@@ -456,6 +456,7 @@ def test_rag_profile_unknown_falls_back_to_documents(
 
 def test_vector_store_unknown_raises_at_runtime_startup(monkeypatch: pytest.MonkeyPatch) -> None:
     """VECTOR_STORE validation runs when the runtime starts."""
+    from llama_index.core import Settings as LlamaIndexSettings
     from llama_index.core.embeddings import MockEmbedding
 
     from rag_mcp import compose
@@ -463,16 +464,19 @@ def test_vector_store_unknown_raises_at_runtime_startup(monkeypatch: pytest.Monk
 
     monkeypatch.setenv("VECTOR_STORE", "faiss")
     settings = Settings(_env_file=None)
+    original_embed_model = LlamaIndexSettings.embed_model
     compose.reset_runtime_setup()
 
-    with (
-        patch.object(compose, "get_settings", return_value=settings),
-        patch.object(compose, "build_embed_model", return_value=MockEmbedding(embed_dim=384)),
-    ):
-        with pytest.raises(ValueError, match="VECTOR_STORE='faiss'"):
-            compose.ensure_runtime_setup()
-
-    compose.reset_runtime_setup()
+    try:
+        with (
+            patch.object(compose, "get_settings", return_value=settings),
+            patch.object(compose, "build_embed_model", return_value=MockEmbedding(embed_dim=384)),
+        ):
+            with pytest.raises(ValueError, match="VECTOR_STORE='faiss'"):
+                compose.ensure_runtime_setup()
+    finally:
+        LlamaIndexSettings.embed_model = original_embed_model
+        compose.reset_runtime_setup()
 
 
 def test_pdf_reader_unknown_clamps_to_auto(monkeypatch: pytest.MonkeyPatch) -> None:

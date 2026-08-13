@@ -7,8 +7,11 @@ flag handling, progress reporting, and error messages.
 from __future__ import annotations
 
 import json
+import os
 import re
 import signal
+import subprocess
+import sys
 from io import StringIO
 from pathlib import Path
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
@@ -57,10 +60,22 @@ class TestEntryPoint:
     def test_help_does_not_initialise_runtime(self) -> None:
         """--help does not construct embedding or vector-store dependencies."""
         with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
-            result = runner.invoke(app, ["--help"])
+            result = runner.invoke(app, ["--help"], env={"EMBED_PROVIDER": "not-a-provider"})
 
         assert result.exit_code == 0
         mock_setup.assert_not_called()
+
+    def test_help_accepts_invalid_provider_in_fresh_process(self) -> None:
+        """--help does not validate providers before Click handles the request."""
+        result = subprocess.run(
+            [str(Path(sys.executable).with_name("rag-mcp")), "--help"],
+            env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr[-500:]
+        assert "ingest" in result.stdout
 
     def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
         """Invalid provider configuration fails before the server starts."""
@@ -1787,17 +1802,15 @@ class TestGpuAccelerationDetection:
 
     @staticmethod
     def _patch_embed_model(embed_model: str = "nomic-embed-text"):
-        """Patch cli.get_settings so the embed-model lookup is deterministic.
+        """Patch the composition-root summary for deterministic model lookup.
 
-        ``_detect_gpu_acceleration`` reads ``get_settings().embed_model`` to
-        decide which running model to inspect.  Without this patch the test
-        relies on ambient env state and can silently take the wrong branch.
+        ``_detect_gpu_acceleration`` reads the resolved runtime summary when
+        no model is explicitly provided. Without this patch the test relies
+        on ambient environment state and can silently take the wrong branch.
         """
-        from types import SimpleNamespace
-
         return patch(
-            "rag_mcp.transports.cli.get_settings",
-            return_value=SimpleNamespace(embed_model=embed_model),
+            "rag_mcp.transports.cli.compose.runtime_summary",
+            return_value=(embed_model, 32, 2),
         )
 
     def test_returncode_nonzero_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
@@ -1968,18 +1981,30 @@ class TestGpuAccelerationDetection:
             _detect_gpu_acceleration()
         assert any("unexpected" in r.getMessage() for r in caplog.records)
 
-    def test_setup_logging_calls_gpu_detection_at_debug(
+    def test_runtime_initialisation_calls_gpu_detection_at_debug(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """_setup_logging invokes _detect_gpu_acceleration when LOG_LEVEL is DEBUG."""
+        """Runtime initialisation invokes GPU detection when debug logging is enabled."""
         import logging
 
-        from rag_mcp.transports.cli import _setup_logging
+        from rag_mcp.transports.cli import _initialise_runtime
 
-        # basicConfig(force=True) mutates the root logger for the rest of the
-        # session.  Patch it so this test cannot pollute later tests.
-        monkeypatch.setattr(logging, "basicConfig", lambda **kwargs: None)
-        monkeypatch.setenv("LOG_LEVEL", "DEBUG")
-        with patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect:
-            _setup_logging()
-            mock_detect.assert_called_once()
+        monkeypatch.setattr(
+            "rag_mcp.transports.cli._runtime_details_enabled",
+            True,
+        )
+        monkeypatch.setattr(
+            logging.getLogger("rag_mcp.transports.cli"),
+            "isEnabledFor",
+            lambda level: level == logging.DEBUG,
+        )
+        with (
+            patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"),
+            patch(
+                "rag_mcp.transports.cli.compose.runtime_summary",
+                return_value=("nomic-embed-text", 32, 2),
+            ),
+            patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect,
+        ):
+            _initialise_runtime()
+        mock_detect.assert_called_once_with("nomic-embed-text")

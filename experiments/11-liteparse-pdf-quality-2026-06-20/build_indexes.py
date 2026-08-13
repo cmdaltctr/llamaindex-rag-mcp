@@ -39,12 +39,12 @@ load_dotenv(PROJECT_ROOT / ".env")
 # so the only variable is the parser, not downstream processing.
 from llama_index.core import Document, Settings  # noqa: E402
 from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
-from rag_mcp.ingestion import (  # noqa: E402
-    _embed_and_write_async,
-    _gather_supported_files,
-)
 
-from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: E402
+from rag_mcp.core.ingestion import (  # noqa: E402
+    embed_and_write_async,
+    gather_supported_files,
+)
+from rag_mcp.core.settings import get_default_effective_settings  # noqa: E402
 
 CORPUS_DIR = SCRIPT_DIR / "corpus"
 OUTPUT_DIR = SCRIPT_DIR / "output"
@@ -124,11 +124,11 @@ def _parse_with_liteparse(file_path: Path) -> list[Document]:
     return documents
 
 
-def _chunk_documents(documents: list[Document]) -> list:
+def _chunk_documents(documents: list[Document], *, chunk_size: int, chunk_overlap: int) -> list:
     """Run the same SentenceSplitter the production pipeline uses."""
     splitter = SentenceSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
     )
     nodes = splitter.get_nodes_from_documents(documents)
     return nodes
@@ -136,7 +136,8 @@ def _chunk_documents(documents: list[Document]) -> list:
 
 async def _build(parser: str) -> dict[str, Any]:
     """Build a complete ChromaDB index from corpus/ using the named parser."""
-    files, skipped = _gather_supported_files(CORPUS_DIR)
+    effective_settings = get_default_effective_settings()
+    files, skipped = gather_supported_files(CORPUS_DIR)
     if not files:
         raise SystemExit(
             f"No supported files in {CORPUS_DIR}. Populate corpus/ per "
@@ -173,7 +174,11 @@ async def _build(parser: str) -> dict[str, Any]:
 
         parse_seconds = time.perf_counter() - file_started
         chunk_started = time.perf_counter()
-        nodes = _chunk_documents(documents)
+        nodes = _chunk_documents(
+            documents,
+            chunk_size=effective_settings.chunking.chunk_size,
+            chunk_overlap=effective_settings.chunking.chunk_overlap,
+        )
         chunk_seconds = time.perf_counter() - chunk_started
 
         all_nodes.extend(nodes)
@@ -204,7 +209,10 @@ async def _build(parser: str) -> dict[str, Any]:
         f"\nEmbedding {len(all_nodes)} chunks via {Settings.embed_model.model_name}...", flush=True
     )
     embed_started = time.perf_counter()
-    chunks_written = await _embed_and_write_async(all_nodes)
+    chunks_written = await embed_and_write_async(
+        all_nodes,
+        embed_concurrency=effective_settings.ingestion.embed_concurrency,
+    )
     embed_seconds = time.perf_counter() - embed_started
 
     total_seconds = time.perf_counter() - build_started
@@ -236,9 +244,6 @@ async def _build(parser: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    from rag_mcp import compose
-
-    compose.ensure_runtime_setup()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--parser",
@@ -261,6 +266,9 @@ def main() -> None:
     print(f"CHROMA_PERSIST_DIR={chroma_dir}", flush=True)
     print(f"PDF_READER={os.environ.get('PDF_READER', '<unset>')}", flush=True)
 
+    from rag_mcp import compose
+
+    compose.ensure_runtime_setup()
     asyncio.run(_build(args.parser))
 
 

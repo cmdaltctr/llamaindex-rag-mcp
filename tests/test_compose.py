@@ -14,6 +14,7 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,6 +24,7 @@ from rag_mcp.compose import (
     build_reranker,
     ensure_runtime_setup,
     reset_runtime_setup,
+    runtime_summary,
 )
 from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
@@ -174,6 +176,14 @@ def test_build_embed_model_validates_unknown_provider() -> None:
     """
     with pytest.raises(ValueError, match="EMBED_PROVIDER='bogus'"):
         _settings(embed_provider="bogus")
+
+
+def test_runtime_summary_reads_resolved_settings_once() -> None:
+    """Runtime logging details are resolved by the composition root."""
+    settings = _settings(embed_model="summary-model", embed_batch_size=24, embed_concurrency=3)
+    with patch("rag_mcp.compose.get_settings", return_value=settings) as mock_settings:
+        assert runtime_summary() == ("summary-model", 24, 3)
+    mock_settings.assert_called_once()
 
 
 # ── build_reranker ──────────────────────────────────────────────────────────
@@ -491,7 +501,10 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
     reset_runtime_setup()
 
 
-@pytest.mark.parametrize("module", ["rag_mcp.compose", "rag_mcp.transports.mcp"])
+@pytest.mark.parametrize(
+    "module",
+    ["rag_mcp.compose", "rag_mcp.transports.mcp", "rag_mcp.transports.cli"],
+)
 def test_import_does_not_initialise_runtime(module: str) -> None:
     """Composition and MCP modules import without validating providers.
 
@@ -534,6 +547,25 @@ def test_pytest_collection_does_not_initialise_runtime() -> None:
         "pytest collection initialised the runtime:\n"
         f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
     )
+
+
+def test_experiment_help_does_not_initialise_runtime() -> None:
+    """The Experiment 11 runner parses help before runtime construction."""
+    import os
+    import subprocess
+
+    script = (
+        Path(__file__).parent.parent
+        / "experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py"
+    )
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr[-500:]
+    assert "--parser" in result.stdout
 
 
 # ── build functions (settings=None delegation) ──────────────────────────────

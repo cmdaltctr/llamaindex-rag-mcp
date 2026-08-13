@@ -51,6 +51,19 @@ async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path
         assert data["files_indexed"] > 0
 
 
+async def test_ingest_documents_returns_lazy_setup_error(mcp_server) -> None:
+    """Lazy profile-resolver construction errors return an MCP error result."""
+    with patch(
+        "rag_mcp.transports.mcp._get_profile_resolver",
+        side_effect=ImportError("missing optional dependency"),
+    ):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool("ingest_documents", {"path": "ignored.txt"})
+
+    data = _extract_result(result)
+    assert data == {"status": "error", "message": "ImportError: missing optional dependency"}
+
+
 # ── search_documents ───────────────────────────────────────────────────────
 
 

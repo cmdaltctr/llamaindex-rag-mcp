@@ -26,9 +26,9 @@ from rich.logging import RichHandler
 # The composition root is initialised from ``callback`` after Click has
 # handled help and version flags.
 from ... import compose
-from ...config import get_settings
 
 _JSON_HELP = "Output results as JSON."
+_runtime_details_enabled = False
 
 app = typer.Typer(
     name="rag-mcp",
@@ -59,13 +59,15 @@ def _print_ollama_error(detail: str, json_output: bool = False) -> None:
         console.print(f"[red]Error:[/red] {msg}")
 
 
-def _detect_gpu_acceleration() -> None:
+def _detect_gpu_acceleration(embed_model: str | None = None) -> None:
     """Check Ollama runner type and log GPU acceleration status.
 
     Only runs when ``LOG_LEVEL=DEBUG``.  Never raises — logs a warning
     on any failure.
     """
     logger = logging.getLogger(__name__)
+    if embed_model is None:
+        embed_model = compose.runtime_summary()[0]
     try:
         result = subprocess.run(
             ["ollama", "ps", "--format", "json"],  # noqa: S607
@@ -84,7 +86,7 @@ def _detect_gpu_acceleration() -> None:
         models = data.get("models", [])
         for model_info in models:
             name = model_info.get("name", "")
-            if get_settings().embed_model in name:
+            if embed_model in name:
                 runner = model_info.get("details", {}).get("format", "") or model_info.get(
                     "details", {}
                 ).get("runner", "")
@@ -104,7 +106,7 @@ def _detect_gpu_acceleration() -> None:
 
         logger.debug(
             "Could not determine Ollama runner — %s not found in running models",
-            get_settings().embed_model,
+            embed_model,
         )
     except FileNotFoundError:
         logger.debug("Could not determine Ollama runner — ollama CLI not found")
@@ -114,12 +116,14 @@ def _detect_gpu_acceleration() -> None:
         logger.debug("Could not determine Ollama runner — %s", exc)
 
 
-def _setup_logging(*, include_runtime_details: bool = True) -> None:
+def _setup_logging() -> None:
     """Configure Python logging for rag_mcp modules.
 
     All output goes to stderr to keep stdout clean for the MCP protocol.
     Controlled by LOG_LEVEL env var (default: INFO).
     """
+    global _runtime_details_enabled
+
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, level, logging.INFO)
 
@@ -137,18 +141,7 @@ def _setup_logging(*, include_runtime_details: bool = True) -> None:
         handlers=[handler],
         force=True,
     )
-
-    if include_runtime_details:
-        logger = logging.getLogger(__name__)
-        logger.info(
-            "Embedding model: %s | batch_size: %d | concurrency: %d",
-            get_settings().embed_model,
-            get_settings().ingestion.embed_batch_size,
-            get_settings().ingestion.embed_concurrency,
-        )
-
-        if log_level <= logging.DEBUG:
-            _detect_gpu_acceleration()
+    _runtime_details_enabled = True
 
 
 def _sanitise_display_name(name: str) -> str:
@@ -172,6 +165,18 @@ def _initialise_runtime() -> None:
     except (ImportError, ValueError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
+    if not _runtime_details_enabled:
+        return
+    embed_model, batch_size, concurrency = compose.runtime_summary()
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Embedding model: %s | batch_size: %d | concurrency: %d",
+        embed_model,
+        batch_size,
+        concurrency,
+    )
+    if logger.isEnabledFor(logging.DEBUG):
+        _detect_gpu_acceleration(embed_model)
 
 
 @app.callback(invoke_without_command=True)
@@ -195,9 +200,14 @@ def callback(
 
 def run_cli() -> None:
     """Entry point for CLI mode — delegates to the Typer app."""
+    global _runtime_details_enabled
+
     if not {"--help", "-h", "--version"}.intersection(sys.argv[1:]):
-        _setup_logging(include_runtime_details=False)
-    app()
+        _setup_logging()
+    try:
+        app()
+    finally:
+        _runtime_details_enabled = False
 
 
 # ── Register all command groups ───────────────────────────────────────────

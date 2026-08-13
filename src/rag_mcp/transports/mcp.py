@@ -105,6 +105,9 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         effective = _get_profile_resolver().resolve(collection)
     except ValueError as exc:
         return {"status": "error", "message": str(exc)}
+    except Exception as exc:
+        logger.warning("ingest_documents setup error: %s: %s", type(exc).__name__, exc)
+        return {"status": "error", "message": f"{type(exc).__name__}: {exc}"}
     try:
         return await ingest_path_async(
             path, collection_name=collection, effective_settings=effective

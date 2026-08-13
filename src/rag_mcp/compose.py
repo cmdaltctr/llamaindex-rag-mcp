@@ -198,6 +198,16 @@ def build_embed_model(settings: Settings | None = None) -> Any:
     return build_fn(settings)
 
 
+def runtime_summary() -> tuple[str, int, int]:
+    """Return resolved embedding settings for startup logging."""
+    settings = get_settings()
+    return (
+        settings.embed_model,
+        settings.ingestion.embed_batch_size,
+        settings.ingestion.embed_concurrency,
+    )
+
+
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
