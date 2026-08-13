@@ -21,6 +21,6 @@
 - [ ] 9.6 Record latency P50/P95/mean, cold start, and peak RSS per cell, matching Experiment 16's results table columns so the two are comparable
 - [ ] 9.7 Run 5 warm iterations × 5 queries × 20 docs, matching Experiment 16's shape
 - [ ] 9.8 Write `results.md` with the cell table, the pass-gate outcomes, and a plain recommendation
-- [ ] 9.9 Write `docs/adr/039-apple-acceleration-for-the-reranker.md` recording all three routes and their verdicts: CoreML closed by Exp 16, CPU as current default, MPS decided by Exp 17. State plainly that CoreML did not fail because PyTorch was absent, and give the evidence. State accurately that MPS is an Apple framework (not a PyTorch feature) and that PyTorch's MPS backend is the route this project uses to reach it
+- [ ] 9.9 Write `docs/adr/043-apple-acceleration-for-the-reranker.md` recording all three routes and their verdicts: CoreML closed by Exp 16, CPU as current default, MPS decided by Exp 17. State plainly that CoreML did not fail because PyTorch was absent, and give the evidence. State accurately that MPS is an Apple framework (not a PyTorch feature) and that PyTorch's MPS backend is the route this project uses to reach it
 - [ ] 9.10 Add the Exp 17 row to `experiments/EXP_README.md`
 - [ ] 9.11 If MPS wins: do NOT change the default in this change. Open a follow-up change for torch device selection, and note it in the ADR's consequences

@@ -12,7 +12,7 @@ See `proposal.md` — Why. The constraints that shape the approach:
 **Goals:**
 
 - Measure MPS (Metal Performance Shaders, accessed via PyTorch's MPS backend) against the ONNX CPU baseline on the default model.
-- Record the verdict in ADR-039 so the Apple-acceleration question stops recurring.
+- Record the verdict in ADR-043 so the Apple-acceleration question stops recurring.
 - State plainly that CoreML did not fail because PyTorch was absent — it failed because ORT partitions the graph. Give the evidence.
 - State accurately that MPS is an Apple framework, not a PyTorch feature. PyTorch's MPS backend is one of several ways to reach it (MPSGraph, Core ML, TensorFlow Metal plugin, MLX, direct Metal kernels). For this project's reranker, the torch backend is the path that makes MPS reachable.
 
@@ -37,7 +37,7 @@ The 20% threshold is the minimum that would justify the complexity of a torch de
 
 ### 3. ADR records all three routes, not just the winner
 
-ADR-039 covers CoreML (closed by Exp 16), CPU (current default), and MPS (decided by Exp 17). The question "why not X?" is answered for all three values of X. This is what stops the question from recurring — a partial ADR that only covers the winner invites someone to ask about the losers next month.
+ADR-043 covers CoreML (closed by Exp 16), CPU (current default), and MPS (decided by Exp 17). The question "why not X?" is answered for all three values of X. This is what stops the question from recurring — a partial ADR that only covers the winner invites someone to ask about the losers next month.
 
 ### 4. No default change in this change
 
