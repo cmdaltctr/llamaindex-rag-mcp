@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 from unittest.mock import ANY, patch
 
+import pytest
 from mcp.types import TextContent
 
 from conftest import connected_client
@@ -558,6 +559,8 @@ def test_main_calls_mcp_run() -> None:
     """main() prepares runtime state, then calls mcp.run(transport='stdio')."""
     with (
         patch("rag_mcp.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
+        patch("rag_mcp.transports.mcp._get_reranker") as mock_reranker,
+        patch("rag_mcp.transports.mcp._get_profile_resolver") as mock_resolver,
         patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
     ):
         from rag_mcp.transports.mcp import main
@@ -565,7 +568,51 @@ def test_main_calls_mcp_run() -> None:
         main()
 
     mock_setup.assert_called_once()
+    mock_reranker.assert_called_once()
+    mock_resolver.assert_called_once()
     mock_run.assert_called_once_with(transport="stdio")
+
+
+def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) -> None:
+    """main() reports startup configuration errors without starting the server."""
+    with (
+        patch(
+            "rag_mcp.transports.mcp.compose.ensure_runtime_setup",
+            side_effect=ValueError("EMBED_PROVIDER='invalid'"),
+        ),
+        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+        pytest.raises(SystemExit, match="1"),
+    ):
+        from rag_mcp.transports.mcp import main
+
+        main()
+
+    assert "Error: EMBED_PROVIDER='invalid'" in capsys.readouterr().err
+    mock_run.assert_not_called()
+
+
+def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lazy MCP runtime resources are cached after their first construction."""
+    import rag_mcp.transports.mcp as mcp_module
+
+    reranker = object()
+    resolver = object()
+    monkeypatch.setattr(mcp_module, "_reranker", None)
+    monkeypatch.setattr(mcp_module, "_profile_resolver", None)
+
+    with (
+        patch.object(mcp_module.compose, "build_reranker", return_value=reranker) as build_reranker,
+        patch.object(
+            mcp_module.compose, "build_profile_resolver", return_value=resolver
+        ) as build_resolver,
+    ):
+        assert mcp_module._get_reranker() is reranker
+        assert mcp_module._get_reranker() is reranker
+        assert mcp_module._get_profile_resolver() is resolver
+        assert mcp_module._get_profile_resolver() is resolver
+
+    build_reranker.assert_called_once()
+    build_resolver.assert_called_once()
 
 
 # ── search_documents: metadata_filter exposure ─────────────────────────────
