@@ -115,6 +115,13 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies at declared floors
+        # UV_LINK_MODE=copy avoids hardlinking package files from the uv
+        # cache into .venv. nltk >=3.10.3 refuses to open multiply-linked
+        # data files (CWE-59 hardening), and this job re-resolves
+        # transitive deps (unlike the frozen `test` job), so it can pick
+        # up the newer nltk release that trips that check.
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --resolution lowest-direct${{ matrix.extra && format(' --extra {0}', matrix.extra) || '' }}
 
       - name: Run tests (fast) at floors
