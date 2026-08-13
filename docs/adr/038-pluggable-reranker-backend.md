@@ -87,7 +87,7 @@ after, then `diff`).
   test (`tests/test_no_torch_at_runtime.py`) and a dependency-audit test
   (`tests/test_dependency_audit.py`), not by convention.
 - The torch backend opens the MPS route to Apple GPU acceleration,
-  measured in Experiment 17 (ADR-039 records the verdict).
+  measured in Experiment 17 (ADR-043 records the verdict).
 - Score-range parity is enforced by test, not by review.
 
 ### Negative
@@ -127,7 +127,7 @@ after, then `diff`).
 - `src/rag_mcp/core/retrieval/_reranker_cache.py` — shared model cache
 - ADR-005 — the original "no PyTorch at runtime" boundary (scoped, not reversed)
 - ADR-029 — observability: `rerank_reason` and `rerank_backend` diagnostics
-- ADR-039 — Apple acceleration verdict (Experiment 17)
+- ADR-043 — Apple acceleration verdict (Experiment 17)
 - `tests/test_reranker_backend_contract.py` — cross-backend score parity
 - `tests/test_no_torch_at_runtime.py` — runtime torch-free tripwire
 
