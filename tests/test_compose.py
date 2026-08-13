@@ -413,10 +413,11 @@ class TestResolveActiveStrategies:
             patch.object(chunking_reg, "get"),
             patch.object(metadata_reg, "get") as mock_metadata,
             patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
         ):
             _resolve_active_strategies(settings)
             mock_metadata.assert_not_called()
+            mock_llm.assert_not_called()
 
     def test_unknown_chunking_name_raises_at_startup(self) -> None:
         """A chunking fallback absent from the registry fails startup."""
@@ -544,7 +545,7 @@ class TestResolveActiveStrategies:
             patch.object(llm_reg, "get") as mock_llm,
         ):
             _resolve_active_strategies(settings)
-            mock_llm.assert_any_call("llamacpp")
+            mock_llm.assert_called_once_with("llamacpp")
 
     def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
         """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
@@ -569,9 +570,10 @@ class TestResolveActiveStrategies:
             patch.object(llm_reg, "get") as mock_llm,
         ):
             _resolve_active_strategies(settings)
-            mock_llm.assert_any_call("openrouter")
+            mock_llm.assert_called_once_with("openrouter")
 
-    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self) -> None:
+    @pytest.mark.parametrize("mode", ["keyword", "disabled"])
+    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self, mode: str) -> None:
         """'keyword'/'disabled' modes never call the LLM registry."""
         from rag_mcp.compose import _resolve_active_strategies
         from rag_mcp.config import Settings
@@ -583,7 +585,7 @@ class TestResolveActiveStrategies:
 
         settings = Settings(
             _env_file=None,
-            metadata=MetadataSettings(extraction_mode="keyword"),
+            metadata=MetadataSettings(extraction_mode=mode),
         )
         with (
             patch.object(chunking_reg, "get"),
