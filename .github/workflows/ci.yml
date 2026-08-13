@@ -29,6 +29,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
 
       - name: Run tests (fast)
@@ -115,6 +117,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies at declared floors
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --resolution lowest-direct${{ matrix.extra && format(' --extra {0}', matrix.extra) || '' }}
 
       - name: Run tests (fast) at floors
@@ -196,6 +200,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
 
       - name: Ruff check

@@ -138,9 +138,12 @@ class TestIngestCLI:
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_single_txt_file(self, mock_signal: MagicMock, sample_txt: Path) -> None:
-        """Ingesting a valid .txt file exits 0 with success message."""
-        result = runner.invoke(app, ["ingest", str(sample_txt)])
+        """Ingesting a valid .txt file initialises runtime and exits 0."""
+        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+            result = runner.invoke(app, ["ingest", str(sample_txt)])
+
         assert result.exit_code == 0
+        mock_setup.assert_called_once()
         # Rich renders to console (stderr), but CliRunner captures output
         # The success message should appear somewhere
         output = result.output or ""
