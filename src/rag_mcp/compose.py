@@ -4,10 +4,9 @@ This is the **only** module that instantiates provider and pipeline
 objects.  It reads the resolved ``Settings`` from ``rag_mcp.config``
 and wires objects together by resolving registries.
 
-Importing this module triggers the LlamaIndex global ``Settings.embed_model``
-assignment (previously done at import time in ``config.py``).  This means
-entry points (``server.py``, ``cli.py``) should import ``compose`` early
-in their startup sequence.
+Entry points call :func:`ensure_runtime_setup` during startup to assign the
+LlamaIndex global ``Settings.embed_model`` and register the default vector
+store. Importing this module has no runtime side effects.
 """
 
 from __future__ import annotations
@@ -333,9 +332,8 @@ def ensure_runtime_setup() -> None:
 
     Construction failures (``ImportError`` for missing optional deps,
     ``ValueError`` for missing credentials) propagate instead of being
-    swallowed.  Because this function runs at module scope, the failure
-    surfaces at import time — consistent with the existing
-    ``VECTOR_STORE`` unknown-value check (ADR-034).
+    swallowed. Entry points call this function at startup so failures have
+    a controlled error boundary.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -351,8 +349,6 @@ def ensure_runtime_setup() -> None:
     # registered default vector store — leaving either unset and continuing
     # turns a construction failure into a confusing downstream error (or
     # silent misbehaviour) instead of a clear startup failure.  Because
-    # ensure_runtime_setup() runs at module scope, the failure surfaces at
-    # import time, consistent with the existing VECTOR_STORE check.
     LlamaIndexSettings.embed_model = build_embed_model(settings)
     from .core.vectordb import set_default_store
 
@@ -374,8 +370,3 @@ def reset_runtime_setup() -> None:
     """
     global _runtime_setup_done
     _runtime_setup_done = False
-
-
-# Trigger runtime setup on import (preserves the pre-refactor side effect
-# where importing config.py would set Settings.embed_model).
-ensure_runtime_setup()

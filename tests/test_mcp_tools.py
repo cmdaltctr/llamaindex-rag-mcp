@@ -555,12 +555,16 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 
 
 def test_main_calls_mcp_run() -> None:
-    """main() must configure logging and call mcp.run(transport='stdio')."""
-    with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+    """main() prepares runtime state, then calls mcp.run(transport='stdio')."""
+    with (
+        patch("rag_mcp.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
+        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+    ):
         from rag_mcp.transports.mcp import main
 
         main()
 
+    mock_setup.assert_called_once()
     mock_run.assert_called_once_with(transport="stdio")
 
 

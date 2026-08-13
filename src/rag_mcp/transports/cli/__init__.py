@@ -17,15 +17,15 @@ import logging
 import os
 import re
 import subprocess
+import sys
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-# Import the composition root early so the LlamaIndex global
-# ``Settings.embed_model`` is assigned before any ingest/search call
-# (previously done at import time in ``config.py``; see ADR-031).
-from ... import compose  # noqa: F401
+# The composition root is initialised from ``callback`` after Click has
+# handled help and version flags.
+from ... import compose
 from ...config import get_settings
 
 _JSON_HELP = "Output results as JSON."
@@ -114,7 +114,7 @@ def _detect_gpu_acceleration() -> None:
         logger.debug("Could not determine Ollama runner — %s", exc)
 
 
-def _setup_logging() -> None:
+def _setup_logging(*, include_runtime_details: bool = True) -> None:
     """Configure Python logging for rag_mcp modules.
 
     All output goes to stderr to keep stdout clean for the MCP protocol.
@@ -138,16 +138,17 @@ def _setup_logging() -> None:
         force=True,
     )
 
-    logger = logging.getLogger(__name__)
-    logger.info(
-        "Embedding model: %s | batch_size: %d | concurrency: %d",
-        get_settings().embed_model,
-        get_settings().ingestion.embed_batch_size,
-        get_settings().ingestion.embed_concurrency,
-    )
+    if include_runtime_details:
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "Embedding model: %s | batch_size: %d | concurrency: %d",
+            get_settings().embed_model,
+            get_settings().ingestion.embed_batch_size,
+            get_settings().ingestion.embed_concurrency,
+        )
 
-    if log_level <= logging.DEBUG:
-        _detect_gpu_acceleration()
+        if log_level <= logging.DEBUG:
+            _detect_gpu_acceleration()
 
 
 def _sanitise_display_name(name: str) -> str:
@@ -164,6 +165,15 @@ def _version(value: bool) -> None:
         raise typer.Exit()
 
 
+def _initialise_runtime() -> None:
+    """Initialise runtime dependencies for a command that will execute."""
+    try:
+        compose.ensure_runtime_setup()
+    except (ImportError, ValueError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from None
+
+
 @app.callback(invoke_without_command=True)
 def callback(
     ctx: typer.Context,
@@ -176,6 +186,7 @@ def callback(
     ),
 ) -> None:
     """Run with no arguments to start the MCP stdio server."""
+    _initialise_runtime()
     if ctx.invoked_subcommand is None:
         from ..mcp import main as mcp_main
 
@@ -184,7 +195,8 @@ def callback(
 
 def run_cli() -> None:
     """Entry point for CLI mode — delegates to the Typer app."""
-    _setup_logging()
+    if not {"--help", "-h", "--version"}.intersection(sys.argv[1:]):
+        _setup_logging(include_runtime_details=False)
     app()
 
 

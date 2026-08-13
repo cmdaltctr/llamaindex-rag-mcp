@@ -31,27 +31,20 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(PROJECT_ROOT / ".env")
 
 # Import project internals. We use the existing chunking + embedding pipeline
 # so the only variable is the parser, not downstream processing.
-from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: E402
+from llama_index.core import Document, Settings  # noqa: E402
+from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
 from rag_mcp.ingestion import (  # noqa: E402
     _embed_and_write_async,
     _gather_supported_files,
 )
-from llama_index.core import Document, Settings  # noqa: E402
-from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
 
-# Phase 2 (ADR-031): importing ``compose`` performs the runtime setup the old
-# ``config.py`` did at import time — LlamaIndex ``Settings.embed_model`` must
-# be assigned before embedding.  ``Settings`` itself now lives on
-# ``llama_index.core`` (``rag_mcp.config.Settings`` is the pydantic resolver,
-# not the LlamaIndex global).
-from rag_mcp import compose  # noqa: E402
-
+from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE  # noqa: E402
 
 CORPUS_DIR = SCRIPT_DIR / "corpus"
 OUTPUT_DIR = SCRIPT_DIR / "output"
@@ -114,18 +107,20 @@ def _parse_with_liteparse(file_path: Path) -> list[Document]:
             max((item.y + item.height for item in page.text_items), default=0.0),
         ]
 
-        documents.append(Document(
-            text=page_text,
-            metadata={
-                "pdf_reader": "liteparse",
-                "page": page.page_num,
-                "column": column,
-                "section_bbox": json.dumps(bbox),
-                "bbox_schema_version": 1,
-                "file_path": str(file_path),
-                "file_name": file_path.name,
-            },
-        ))
+        documents.append(
+            Document(
+                text=page_text,
+                metadata={
+                    "pdf_reader": "liteparse",
+                    "page": page.page_num,
+                    "column": column,
+                    "section_bbox": json.dumps(bbox),
+                    "bbox_schema_version": 1,
+                    "file_path": str(file_path),
+                    "file_name": file_path.name,
+                },
+            )
+        )
     return documents
 
 
@@ -148,8 +143,9 @@ async def _build(parser: str) -> dict[str, Any]:
             f"corpus/README.md before running."
         )
     if skipped:
-        print(f"Skipping {len(skipped)} unsupported files: "
-              f"{[s['file'] for s in skipped]}", flush=True)
+        print(
+            f"Skipping {len(skipped)} unsupported files: {[s['file'] for s in skipped]}", flush=True
+        )
 
     print(f"Building index with parser={parser} for {len(files)} PDFs...", flush=True)
 
@@ -164,14 +160,15 @@ async def _build(parser: str) -> dict[str, Any]:
         try:
             documents = parse_fn(file_path)
         except Exception as exc:
-            print(f"  [{index}/{len(files)}] FAILED {file_path.name}: {exc}",
-                  flush=True)
-            timing.append({
-                "file": file_path.name,
-                "status": "failed",
-                "error": str(exc),
-                "parse_seconds": round(time.perf_counter() - file_started, 3),
-            })
+            print(f"  [{index}/{len(files)}] FAILED {file_path.name}: {exc}", flush=True)
+            timing.append(
+                {
+                    "file": file_path.name,
+                    "status": "failed",
+                    "error": str(exc),
+                    "parse_seconds": round(time.perf_counter() - file_started, 3),
+                }
+            )
             continue
 
         parse_seconds = time.perf_counter() - file_started
@@ -180,17 +177,22 @@ async def _build(parser: str) -> dict[str, Any]:
         chunk_seconds = time.perf_counter() - chunk_started
 
         all_nodes.extend(nodes)
-        timing.append({
-            "file": file_path.name,
-            "status": "ok",
-            "pages": len(documents),
-            "chunks": len(nodes),
-            "parse_seconds": round(parse_seconds, 3),
-            "chunk_seconds": round(chunk_seconds, 3),
-        })
-        print(f"  [{index}/{len(files)}] {file_path.name}: "
-              f"{len(documents)} pages, {len(nodes)} chunks, "
-              f"parse={parse_seconds:.2f}s", flush=True)
+        timing.append(
+            {
+                "file": file_path.name,
+                "status": "ok",
+                "pages": len(documents),
+                "chunks": len(nodes),
+                "parse_seconds": round(parse_seconds, 3),
+                "chunk_seconds": round(chunk_seconds, 3),
+            }
+        )
+        print(
+            f"  [{index}/{len(files)}] {file_path.name}: "
+            f"{len(documents)} pages, {len(nodes)} chunks, "
+            f"parse={parse_seconds:.2f}s",
+            flush=True,
+        )
 
     if not all_nodes:
         raise SystemExit(
@@ -198,8 +200,9 @@ async def _build(parser: str) -> dict[str, Any]:
             "Check the parser install and corpus contents."
         )
 
-    print(f"\nEmbedding {len(all_nodes)} chunks via {Settings.embed_model.model_name}...",
-          flush=True)
+    print(
+        f"\nEmbedding {len(all_nodes)} chunks via {Settings.embed_model.model_name}...", flush=True
+    )
     embed_started = time.perf_counter()
     chunks_written = await _embed_and_write_async(all_nodes)
     embed_seconds = time.perf_counter() - embed_started
@@ -220,17 +223,22 @@ async def _build(parser: str) -> dict[str, Any]:
 
     timing_path = OUTPUT_DIR / f"build_{parser}_timing.json"
     timing_path.parent.mkdir(parents=True, exist_ok=True)
-    timing_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False),
-                           encoding="utf-8")
+    timing_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nSummary written to {timing_path}", flush=True)
-    print(f"Total: {total_seconds:.1f}s "
-          f"(parse {summary['parse_seconds_total']}s, "
-          f"chunk {summary['chunk_seconds_total']}s, "
-          f"embed {summary['embed_seconds_total']}s)", flush=True)
+    print(
+        f"Total: {total_seconds:.1f}s "
+        f"(parse {summary['parse_seconds_total']}s, "
+        f"chunk {summary['chunk_seconds_total']}s, "
+        f"embed {summary['embed_seconds_total']}s)",
+        flush=True,
+    )
     return summary
 
 
 def main() -> None:
+    from rag_mcp import compose
+
+    compose.ensure_runtime_setup()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--parser",
@@ -241,9 +249,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if not CORPUS_DIR.exists() or not any(CORPUS_DIR.glob("*.pdf")):
-        raise SystemExit(
-            f"No PDFs in {CORPUS_DIR}. Populate corpus/ per corpus/README.md."
-        )
+        raise SystemExit(f"No PDFs in {CORPUS_DIR}. Populate corpus/ per corpus/README.md.")
 
     chroma_dir = os.environ.get("CHROMA_PERSIST_DIR")
     if not chroma_dir:

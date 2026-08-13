@@ -491,15 +491,12 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
     reset_runtime_setup()
 
 
-def test_import_compose_succeeds_under_conftest_defaults() -> None:
-    """Importing rag_mcp.compose in a fresh subprocess survives §5 (§5.6).
+@pytest.mark.parametrize("module", ["rag_mcp.compose", "rag_mcp.transports.mcp"])
+def test_import_does_not_initialise_runtime(module: str) -> None:
+    """Composition and MCP modules import without validating providers.
 
-    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama,
-    EMBED_MODEL, OLLAMA_BASE_URL, and METADATA_LLM_PROVIDER via
-    setdefault before any import.  Once construction failures propagate
-    at import (§5), invalid defaults would break collection itself.
-    This test runs the import in a fresh subprocess so the result is
-    not masked by the parent process's cached module.
+    A bad provider must only fail when an entry point starts the runtime.
+    This subprocess avoids the parent process's imported-module cache.
     """
     import os
     import subprocess
@@ -507,20 +504,34 @@ def test_import_compose_succeeds_under_conftest_defaults() -> None:
 
     env = {
         **os.environ,
-        "EMBED_PROVIDER": "local",
-        "LOCAL_BACKEND": "ollama",
-        "EMBED_MODEL": "nomic-embed-text",
-        "OLLAMA_BASE_URL": "http://localhost:11434",
-        "METADATA_LLM_PROVIDER": "local",
+        "EMBED_PROVIDER": "not-a-provider",
     }
     result = subprocess.run(
-        [sys.executable, "-c", "import rag_mcp.compose"],
+        [sys.executable, "-c", f"import {module}"],
         env=env,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, (
-        f"import rag_mcp.compose failed in fresh subprocess:\n"
+        f"import {module} failed in fresh subprocess:\n"
+        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
+    )
+
+
+def test_pytest_collection_does_not_initialise_runtime() -> None:
+    """Pytest collection succeeds even when runtime configuration is invalid."""
+    import os
+    import subprocess
+
+    env = {**os.environ, "EMBED_PROVIDER": "not-a-provider"}
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "tests/test_compose.py"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "pytest collection initialised the runtime:\n"
         f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
     )
 

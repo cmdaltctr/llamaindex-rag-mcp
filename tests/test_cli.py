@@ -54,6 +54,24 @@ class TestEntryPoint:
         assert "search" in result.output
         assert "list" in result.output
 
+    def test_help_does_not_initialise_runtime(self) -> None:
+        """--help does not construct embedding or vector-store dependencies."""
+        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+            result = runner.invoke(app, ["--help"])
+
+        assert result.exit_code == 0
+        mock_setup.assert_not_called()
+
+    def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
+        """Invalid provider configuration fails before the server starts."""
+        with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+            result = runner.invoke(app, [], env={"EMBED_PROVIDER": "not-a-provider"})
+
+        assert result.exit_code == 1
+        assert "EMBED_PROVIDER" in result.output
+        assert "Traceback" not in result.output
+        mock_run.assert_not_called()
+
     def test_unknown_subcommand(self) -> None:
         """Unknown subcommand produces a non-zero exit code."""
         result = runner.invoke(app, ["bogus"])

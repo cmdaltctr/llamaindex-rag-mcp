@@ -29,12 +29,10 @@ from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-# Import the composition root early so the LlamaIndex global
-# ``Settings.embed_model`` is assigned before any retrieval call
-# (previously done at import time in ``config.py``; see ADR-031).
-# The composition root also owns construction of the reranker (spec:
-# all provider/pipeline instantiation happens in ``compose.py``).
-from .. import compose  # noqa: F401
+# The composition root owns all runtime construction. ``main()`` invokes it
+# after this module has been imported, keeping imports safe for discovery and
+# test collection.
+from .. import compose
 from ..core.ingestion import ingest_path_async
 from ..core.ingestion import list_documents as _list_documents
 from ..core.retrieval import search
@@ -44,14 +42,24 @@ logger = logging.getLogger(__name__)
 # Load .env from the working directory (project root when run via `uv run`)
 load_dotenv()
 
-# Pre-constructed reranker wired by the composition root.  Construction is
-# cheap (the ONNX session loads lazily on first rerank), and the process-wide
-# model cache preserves load-once semantics regardless of instance count.
-_reranker = compose.build_reranker()
+_reranker: Any | None = None
+_profile_resolver: Any | None = None
 
-# Phase 4: profile resolver for per-collection profile resolution.
-# Reads collection metadata tags through the vector store interface.
-_profile_resolver = compose.build_profile_resolver()
+
+def _get_reranker() -> Any:
+    """Return the process-wide reranker after server startup."""
+    global _reranker
+    if _reranker is None:
+        _reranker = compose.build_reranker()
+    return _reranker
+
+
+def _get_profile_resolver() -> Any:
+    """Return the process-wide profile resolver after server startup."""
+    global _profile_resolver
+    if _profile_resolver is None:
+        _profile_resolver = compose.build_profile_resolver()
+    return _profile_resolver
 
 
 # ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
@@ -94,7 +102,7 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
     MCP tool handlers).
     """
     try:
-        effective = _profile_resolver.resolve(collection)
+        effective = _get_profile_resolver().resolve(collection)
     except ValueError as exc:
         return {"status": "error", "message": str(exc)}
     try:
@@ -158,7 +166,7 @@ async def search_documents(
     """
     try:
         try:
-            effective = _profile_resolver.resolve(collection)
+            effective = _get_profile_resolver().resolve(collection)
         except ValueError as exc:
             return [
                 {
@@ -183,7 +191,7 @@ async def search_documents(
             hybrid=hybrid,
             collection_name=collection,
             metadata_filter=metadata_filter,
-            reranker=_reranker,
+            reranker=_get_reranker(),
             effective_settings=effective,
         )
     except ValueError as exc:
@@ -400,7 +408,9 @@ def change_collection_profile(
 
     if not confirm:
         try:
-            contract = generate_safety_contract(collection, profile, resolver=_profile_resolver)
+            contract = generate_safety_contract(
+                collection, profile, resolver=_get_profile_resolver()
+            )
         except Exception as exc:
             return {"status": "error", "message": str(exc)}
         return {
@@ -426,6 +436,13 @@ def main() -> None:
         stream=sys.stderr,
         force=True,
     )
+    try:
+        compose.ensure_runtime_setup()
+        _get_reranker()
+        _get_profile_resolver()
+    except (ImportError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from None
     mcp.run(transport="stdio")
 
 
