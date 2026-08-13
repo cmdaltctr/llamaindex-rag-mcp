@@ -505,8 +505,11 @@ class TestResolveActiveStrategies:
 
     def test_unregistered_metadata_selection_raises_generic_message(self) -> None:
         """A Settings-accepted metadata mode absent from the registry (a
-        registry/Settings drift, since Settings already restricts the
-        field to registered names) raises the non-chunking diagnostic."""
+        registry/Settings drift) raises the non-chunking diagnostic.
+        Settings validates the mode against its documented accepted set,
+        which is wider than the registered names — 'disabled' and 'local'
+        are accepted without registry entries — so acceptance by Settings
+        does not guarantee the registry holds an implementation."""
         from rag_mcp.compose import _resolve_active_strategies
         from rag_mcp.config import Settings
         from rag_mcp.core.chunking import registry as chunking_reg
