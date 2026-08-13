@@ -10,9 +10,9 @@ Set `METADATA__EXTRACTION_MODE` in `.env`:
 
 | Mode                | What it does                                                                                                                                                                                   | Speed       | Status |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------ |
-| `keyword` (default) | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords.                                                                                                       | Instant     | Ready  |
+| `keyword`            | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords.                                                                                                       | Instant     | Ready  |
 | `local`             | Sends the first 3000 chars to a lightweight chat model via the configured `METADATA_LLM_PROVIDER` (default `local` + `LOCAL_BACKEND=llamacpp`). Returns `category`, `keywords`, and `summary`. | ~2s/file    | Ready  |
-| `llamaindex`        | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`.                            | ~5–30s/file | Ready  |
+| `llamaindex` (default) | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`.                         | ~5–30s/file | Ready  |
 | `disabled`          | No metadata extracted. No `category` field written to chunks.                                                                                                                                  | N/A         | Ready  |
 | `ollama`            | Uses the registered Ollama extraction strategy directly.                                                                                                                                       | Varies      | Ready  |
 | `llamacpp`          | Uses the registered llama.cpp extraction strategy directly.                                                                                                                                    | Varies      | Ready  |
@@ -23,7 +23,8 @@ The accepted values are `disabled`, `keyword`, `local`, `llamaindex`,
 
 ```bash
 # In .env
-METADATA__EXTRACTION_MODE=keyword   # default
+METADATA__EXTRACTION_MODE=llamaindex   # default
+METADATA__EXTRACTION_MODE=keyword
 METADATA__EXTRACTION_MODE=local
 METADATA__EXTRACTION_MODE=disabled
 

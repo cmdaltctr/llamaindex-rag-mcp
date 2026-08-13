@@ -308,7 +308,11 @@ def test_unknown_metadata_extraction_mode_raises_at_settings_resolution(
 ) -> None:
     """An unknown metadata mode must fail before runtime dispatch."""
     monkeypatch.setenv("METADATA__EXTRACTION_MODE", "typo")
-    with pytest.raises(ValueError, match="METADATA__EXTRACTION_MODE='typo'"):
+    with pytest.raises(
+        ValueError,
+        match=r"METADATA__EXTRACTION_MODE='typo'.*Accepted values: "
+        r"disabled, keyword, local, llamaindex, ollama, llamacpp, openrouter",
+    ):
         _fresh_settings(monkeypatch)
 
 

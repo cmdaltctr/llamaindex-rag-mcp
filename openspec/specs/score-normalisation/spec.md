@@ -48,10 +48,14 @@ regardless of whether reranking is active.
 
 #### Scenario: normalised scores are comparable with vector scores
 - **GIVEN** documents have been indexed
-- **WHEN** `search_documents` is called first with `rerank=False` and then
-  with `rerank=True` using the same `similarity_threshold=0.5`
-- **THEN** the threshold SHALL filter results correctly in both cases
-- **AND** no result with `score < 0.5` SHALL appear in either response
+- **WHEN** `search_documents` is called with `rerank=False` and
+  `similarity_threshold=0.5`
+- **THEN** no result with `score < 0.5` SHALL appear in that response
+- **WHEN** `search_documents` is called with `rerank=True` (reranker
+  available and successful) and the same `similarity_threshold=0.5`
+- **THEN** the ÷30-scaled effective threshold SHALL apply, per the
+  "Threshold scaling follows rerank outcome" requirement below
+- **AND** no result with `score < 0.5 / 30` SHALL appear in that response
 
 #### Scenario: ranking order preserved after normalisation
 - **GIVEN** documents have been indexed

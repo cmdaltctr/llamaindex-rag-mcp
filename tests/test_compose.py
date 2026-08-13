@@ -438,7 +438,11 @@ class TestResolveActiveStrategies:
             patch.object(embed_reg, "get"),
             patch.object(llm_reg, "get"),
         ):
-            with pytest.raises(ValueError, match="CHUNKING__STRATEGY_FALLBACK='totally-bogus'"):
+            with pytest.raises(
+                ValueError,
+                match=r"CHUNKING__STRATEGY_FALLBACK='totally-bogus'.*"
+                r"Available: code, config, sentence",
+            ):
                 _resolve_active_strategies(settings)
             mock_chunking.assert_not_called()
 
@@ -487,6 +491,79 @@ class TestResolveActiveStrategies:
         ):
             _resolve_active_strategies(settings)
             mock_chunking.assert_any_call("sentence")
+
+    def test_local_llm_alias_resolves_to_local_backend(self) -> None:
+        """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="local"),
+            metadata_llm_provider="local",
+            local_backend="llamacpp",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_any_call("llamacpp")
+
+    def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
+        """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+            metadata_llm_provider="cloud",
+            cloud_backend="openrouter",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_any_call("openrouter")
+
+    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self) -> None:
+        """'keyword'/'disabled' modes never call the LLM registry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="keyword"),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_not_called()
 
 
 # ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
