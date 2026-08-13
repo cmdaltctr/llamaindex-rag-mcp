@@ -423,13 +423,14 @@ class TestResolveActiveStrategies:
             patch.object(chunking_reg, "get"),
             patch.object(metadata_reg, "get") as mock_metadata,
             patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
         ):
             _resolve_active_strategies(settings)
             mock_metadata.assert_not_called()
+            mock_llm.assert_not_called()
 
-    def test_unknown_name_skips_resolution(self) -> None:
-        """A chunking name not in registry.available() skips the get() call."""
+    def test_unknown_chunking_name_raises_at_startup(self) -> None:
+        """A chunking fallback absent from the registry fails startup."""
         from rag_mcp.compose import _resolve_active_strategies
         from rag_mcp.config import Settings
         from rag_mcp.core.chunking import registry as chunking_reg
@@ -441,6 +442,34 @@ class TestResolveActiveStrategies:
         settings = Settings(
             _env_file=None,
             chunking=ChunkingSettings(strategy_fallback="totally-bogus"),
+        )
+        with (
+            patch.object(chunking_reg, "get") as mock_chunking,
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=r"CHUNKING__STRATEGY_FALLBACK='totally-bogus'.*"
+                r"Available: code, config, sentence",
+            ):
+                _resolve_active_strategies(settings)
+            mock_chunking.assert_not_called()
+
+    def test_markdown_chunking_fallback_skips_registry_resolution(self) -> None:
+        """The inline document-path fallback does not need a registry entry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.chunking.settings import ChunkingSettings
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            chunking=ChunkingSettings(strategy_fallback="markdown"),
         )
         with (
             patch.object(chunking_reg, "get") as mock_chunking,
@@ -473,6 +502,112 @@ class TestResolveActiveStrategies:
         ):
             _resolve_active_strategies(settings)
             mock_chunking.assert_any_call("sentence")
+
+    def test_unregistered_metadata_selection_raises_generic_message(self) -> None:
+        """A Settings-accepted metadata mode absent from the registry (a
+        registry/Settings drift) raises the non-chunking diagnostic.
+        Settings validates the mode against its documented accepted set,
+        which is wider than the registered names — 'disabled' and 'local'
+        are accepted without registry entries — so acceptance by Settings
+        does not guarantee the registry holds an implementation."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "available", return_value=()),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Configured metadata selection 'llamaindex' is not registered\\.",
+            ):
+                _resolve_active_strategies(settings)
+
+    def test_local_llm_alias_resolves_to_local_backend(self) -> None:
+        """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="local"),
+            metadata_llm_provider="local",
+            local_backend="llamacpp",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_called_once_with("llamacpp")
+
+    def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
+        """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+            metadata_llm_provider="cloud",
+            cloud_backend="openrouter",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_called_once_with("openrouter")
+
+    @pytest.mark.parametrize("mode", ["keyword", "disabled"])
+    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self, mode: str) -> None:
+        """'keyword'/'disabled' modes never call the LLM registry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode=mode),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_not_called()
 
 
 # ── ensure_runtime_setup (vector-store failure) ─────────────────────────────

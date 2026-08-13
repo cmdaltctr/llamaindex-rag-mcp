@@ -291,6 +291,31 @@ def test_document_backend_azure_kept_with_credentials(
     assert settings.document_backend == "azure"
 
 
+# ── Metadata extraction mode validation ─────────────────────────────────
+
+
+def test_metadata_extraction_mode_local_is_accepted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The inline-dispatched ``local`` mode is a recognised setting."""
+    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "local")
+    settings = _fresh_settings(monkeypatch)
+    assert settings.metadata.extraction_mode == "local"
+
+
+def test_unknown_metadata_extraction_mode_raises_at_settings_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unknown metadata mode must fail before runtime dispatch."""
+    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "typo")
+    with pytest.raises(
+        ValueError,
+        match=r"METADATA__EXTRACTION_MODE='typo'.*Accepted values: "
+        r"disabled, keyword, local, llamaindex, ollama, llamacpp, openrouter",
+    ):
+        _fresh_settings(monkeypatch)
+
+
 # ── Legacy boolean semantics ────────────────────────────────────────────
 
 

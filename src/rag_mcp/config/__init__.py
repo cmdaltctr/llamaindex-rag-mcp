@@ -37,6 +37,16 @@ from .sources import LegacyBool  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
+_METADATA_EXTRACTION_MODES = (
+    "disabled",
+    "keyword",
+    "local",
+    "llamaindex",
+    "ollama",
+    "llamacpp",
+    "openrouter",
+)
+
 
 # ── Provider-selection validation helper ──────────────────────────────
 
@@ -198,6 +208,12 @@ class Settings(BaseSettings):
         )
         _validate_provider_value(
             self, "metadata_llm_provider", ("local", "cloud"), "METADATA_LLM_PROVIDER"
+        )
+        _validate_provider_value(
+            self.metadata,
+            "extraction_mode",
+            _METADATA_EXTRACTION_MODES,
+            "METADATA__EXTRACTION_MODE",
         )
         _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
         _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")

@@ -317,16 +317,40 @@ def _resolve_active_strategies(settings: Settings) -> None:
         ("chunking", chunking_registry, settings.chunking.strategy_fallback),
         ("metadata", metadata_registry, settings.metadata.extraction_mode),
         ("embeddings", embed_registry, _resolve_effective_embed_provider(settings)),
-        ("llm", llm_registry, settings.metadata_llm_provider),
     ]
+    if settings.metadata.extraction_mode in ("llamaindex", "local"):
+        # Only these two modes route through the LLM registry (see
+        # core.metadata.extractor._LLM_BACKED_MODES). Resolve the
+        # local/cloud alias to the concrete backend name here so the
+        # actually-selected provider is what gets validated below —
+        # not the alias itself, which is always a valid registry miss.
+        llm_backend = (
+            settings.cloud_backend
+            if settings.metadata_llm_provider == "cloud"
+            else settings.local_backend
+        )
+        active.append(("llm", llm_registry, llm_backend))
 
     for label, registry, name in active:
-        if not name or name in ("disabled", "none"):
+        if label == "chunking" and name == "markdown":
+            # The default document path is dispatched inline by
+            # core.ingestion.chunker, so it has no callable registry entry.
+            continue
+        if label == "metadata" and name in ("disabled", "local"):
+            # Both modes are validated by Settings. ``disabled`` has no
+            # implementation, while ``local`` selects a provider strategy
+            # inline in core.metadata.extractor.
             continue
         if name not in registry.available():
-            # Not a registry-backed selection (e.g. a mode handled inline);
-            # leave validation to the consuming dispatcher.
-            continue
+            available = ", ".join(registry.available())
+            if label == "chunking":
+                raise ValueError(
+                    f"CHUNKING__STRATEGY_FALLBACK={name!r} is not a registered "
+                    f"strategy. Available: {available}"
+                )
+            raise ValueError(
+                f"Configured {label} selection {name!r} is not registered. Available: {available}"
+            )
         registry.get(name)
         logger.debug("Resolved active %s strategy %r at startup", label, name)
 
