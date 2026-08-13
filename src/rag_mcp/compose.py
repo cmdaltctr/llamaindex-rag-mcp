@@ -312,12 +312,30 @@ def _resolve_active_strategies(settings: Settings) -> None:
     ]
 
     for label, registry, name in active:
-        if not name or name in ("disabled", "none"):
+        if label == "chunking" and name == "markdown":
+            # The default document path is dispatched inline by
+            # core.ingestion.chunker, so it has no callable registry entry.
+            continue
+        if label == "metadata" and name in ("disabled", "local"):
+            # Both modes are validated by Settings. ``disabled`` has no
+            # implementation, while ``local`` selects a provider strategy
+            # inline in core.metadata.extractor.
+            continue
+        if label == "llm" and name in ("local", "cloud"):
+            # Settings validates these provider-selection aliases. The
+            # metadata extractor resolves them through LOCAL_BACKEND or
+            # CLOUD_BACKEND before accessing the LLM registry.
             continue
         if name not in registry.available():
-            # Not a registry-backed selection (e.g. a mode handled inline);
-            # leave validation to the consuming dispatcher.
-            continue
+            available = ", ".join(registry.available())
+            if label == "chunking":
+                raise ValueError(
+                    f"CHUNKING__STRATEGY_FALLBACK={name!r} is not a registered "
+                    f"strategy. Available: {available}"
+                )
+            raise ValueError(
+                f"Configured {label} selection {name!r} is not registered. Available: {available}"
+            )
         registry.get(name)
         logger.debug("Resolved active %s strategy %r at startup", label, name)
 

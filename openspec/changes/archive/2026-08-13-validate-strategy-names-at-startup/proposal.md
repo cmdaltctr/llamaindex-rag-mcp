@@ -10,7 +10,7 @@ The reason this was deferred from `silent-failure-audit-and-guards` is that "not
 
 - Separate genuinely-inline-dispatched modes from typos in `METADATA__EXTRACTION_MODE` and `CHUNKING__STRATEGY_FALLBACK`.
 - For `METADATA__EXTRACTION_MODE`: the accepted set is `disabled`, `keyword`, `local`, `llamaindex`, `ollama`, `llamacpp`, `openrouter`. Values not in this set raise at settings resolution. This is pure-data validation — the accepted set is a static literal, so it stays in `config/` without importing any `core/` registry.
-- For `CHUNKING__STRATEGY_FALLBACK`: validate against the chunking registry's available names **in `compose.py`**, not in `config/`. The `config/` package is a leaf that cannot import `core/` business logic (architecture invariant #1), so registry membership is checked at startup in `_resolve_active_strategies` before the silent `continue` fires. A name not in the registry raises at startup.
+- For `CHUNKING__STRATEGY_FALLBACK`: validate registered names against the chunking registry **in `compose.py`**, not in `config/`. `markdown` is the documented inline document-path fallback, so it is accepted without a registry entry. The `config/` package is a leaf that cannot import `core/` business logic (architecture invariant #1), so registry membership is checked at startup in `_resolve_active_strategies`. An unrecognised name raises at startup.
 - Update `_resolve_active_strategies` to remove the silent `continue` for names that should have been pre-validated, or document why the `continue` remains for specific inline-dispatched values.
 
 ## Impact

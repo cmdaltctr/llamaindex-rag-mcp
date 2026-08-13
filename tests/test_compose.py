@@ -418,8 +418,8 @@ class TestResolveActiveStrategies:
             _resolve_active_strategies(settings)
             mock_metadata.assert_not_called()
 
-    def test_unknown_name_skips_resolution(self) -> None:
-        """A chunking name not in registry.available() skips the get() call."""
+    def test_unknown_chunking_name_raises_at_startup(self) -> None:
+        """A chunking fallback absent from the registry fails startup."""
         from rag_mcp.compose import _resolve_active_strategies
         from rag_mcp.config import Settings
         from rag_mcp.core.chunking import registry as chunking_reg
@@ -431,6 +431,30 @@ class TestResolveActiveStrategies:
         settings = Settings(
             _env_file=None,
             chunking=ChunkingSettings(strategy_fallback="totally-bogus"),
+        )
+        with (
+            patch.object(chunking_reg, "get") as mock_chunking,
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(ValueError, match="CHUNKING__STRATEGY_FALLBACK='totally-bogus'"):
+                _resolve_active_strategies(settings)
+            mock_chunking.assert_not_called()
+
+    def test_markdown_chunking_fallback_skips_registry_resolution(self) -> None:
+        """The inline document-path fallback does not need a registry entry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.chunking.settings import ChunkingSettings
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            chunking=ChunkingSettings(strategy_fallback="markdown"),
         )
         with (
             patch.object(chunking_reg, "get") as mock_chunking,
