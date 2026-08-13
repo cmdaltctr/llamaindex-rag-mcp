@@ -492,6 +492,35 @@ class TestResolveActiveStrategies:
             _resolve_active_strategies(settings)
             mock_chunking.assert_any_call("sentence")
 
+    def test_unregistered_metadata_selection_raises_generic_message(self) -> None:
+        """A Settings-accepted metadata mode absent from the registry (a
+        registry/Settings drift, since Settings already restricts the
+        field to registered names) raises the non-chunking diagnostic."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "available", return_value=()),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Configured metadata selection 'llamaindex' is not registered\\.",
+            ):
+                _resolve_active_strategies(settings)
+
     def test_local_llm_alias_resolves_to_local_backend(self) -> None:
         """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
         from rag_mcp.compose import _resolve_active_strategies
