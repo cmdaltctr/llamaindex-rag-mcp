@@ -29,6 +29,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
 
       - name: Run tests (fast)
@@ -115,6 +117,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies at declared floors
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --resolution lowest-direct${{ matrix.extra && format(' --extra {0}', matrix.extra) || '' }}
 
       - name: Run tests (fast) at floors
@@ -134,6 +138,8 @@ jobs:
   # torch-backend and cross-backend contract tests without suppression.
   torch-extra:
     name: Torch backend tests
+    # The full-suite codecov job is the sole coverage upload. This narrow
+    # optional-backend suite would otherwise replace the aggregate report.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,15 +170,7 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --cov=rag_mcp --cov-branch --cov-report=xml --tb=short -v
-
-      - name: Upload torch coverage to Codecov
-        # Pinned to SHA for security — codecov/codecov-action@v7.0.0
-        uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1
-        with:
-          files: ./coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+        run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --tb=short -v
 
   lint:
     name: Lint (Ruff)
@@ -196,6 +194,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
 
       - name: Ruff check
