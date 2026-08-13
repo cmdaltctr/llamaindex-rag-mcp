@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ...config import Settings
+    from ....config import Settings
 
 
 def build(settings: Settings, *, timeout: float | None = None) -> Any:

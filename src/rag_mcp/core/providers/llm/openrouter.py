@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ...config import Settings
+    from ....config import Settings
 
 
 # The endpoint moves from an inline literal in llamaindex.py to the provider

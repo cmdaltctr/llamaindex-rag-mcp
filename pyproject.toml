@@ -371,3 +371,5 @@ token = { env = "GH_TOKEN" }
 [tool.pyright]
 include = ["src", "tests", "experiments"]
 exclude = ["**/.venv", "**/__pycache__", "**/.opencode"]
+venvPath = "."
+venv = ".venv"

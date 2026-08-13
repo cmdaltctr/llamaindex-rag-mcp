@@ -308,7 +308,7 @@ class TestResolveSparseBackendNative:
     def test_native_with_probe_false_falls_back_to_bm25(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """A native request with the probe failing falls back to bm25 with a warning."""
         import logging
