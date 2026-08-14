@@ -92,3 +92,25 @@ def test_config_validates_pdf_reader_value(monkeypatch):
 
     # The default should be pypdf
     assert _config.get_settings().pdf_reader in {"pypdf", "auto", "liteparse", "pypdfium2"}
+
+
+def test_registry_import_failure_raises_naming_import_error(monkeypatch):
+    """A broken adapter import raises ImportError naming the reader.
+
+    Poisons ``sys.modules`` for the pypdf adapter (the shared
+    missing-optional-dependency simulation pattern from
+    ``test_registry_contract.py``) so the registry's lazy import fails.
+    """
+    import sys
+    from unittest.mock import patch
+
+    import pytest
+
+    from rag_mcp.integrations.pdf import registry as pdf_registry
+
+    pdf_registry._cache.clear()
+    target = "rag_mcp.integrations.pdf.pypdf"
+    with patch.dict(sys.modules, {target: None}):
+        with pytest.raises(ImportError, match="PDF reader 'pypdf' could not be imported"):
+            pdf_registry.get("pypdf")
+    pdf_registry._cache.clear()

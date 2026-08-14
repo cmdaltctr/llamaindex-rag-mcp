@@ -328,15 +328,10 @@ def build_codebase_map(path: str) -> CodebaseMap:
     Returns:
         A ``CodebaseMap`` with all components assembled.
     """
-    # File inventory
     inventory = detect_file_types(path)
 
-    # Resolve settings once at this boundary and thread the instance into
-    # the community detectors below — neither detector performs a global
-    # settings lookup of its own (settings-dependency-injection contract).
-    effective = get_default_effective_settings()
+    effective = get_default_effective_settings()  # boundary resolves once; detectors take it
 
-    # Code graph
     code_files = [e for e in inventory.entries if e.group == "code" and e.is_text]
     code_communities: list[dict] = []
     hubs: list[dict] = []

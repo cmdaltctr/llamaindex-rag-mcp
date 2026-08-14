@@ -39,7 +39,7 @@
 - [x] 5.1 Extend import-linter coverage to include `core.community` and enforce the acyclic `core → integrations` dependency direction.
 - [x] 5.2 Test both strategies through codebase and document graph consumers, including deterministic membership, unknown-name failure, missing-extra failure, weighted edges, and isolated nodes.
 - [x] 5.3 Confirm community detection makes no LLM call and that no algorithm-specific object escapes the shared strategy boundary.
-- [ ] 5.4 Confirm a base-only lowest-direct dependency installation runs Louvain and the fast test suite without importing Leiden packages.
+- [x] 5.4 Confirm a base-only lowest-direct dependency installation runs Louvain and the fast test suite without importing Leiden packages.
 - [x] 5.5 Confirm an installation with the Leiden extra passes targeted graph tests on every supported Python version.
 
 ## 6. Documentation and Decision Record
@@ -54,4 +54,4 @@
 - [x] 7.1 Run `openspec validate add-pluggable-community-detection --strict` and correct every validation error.
 - [x] 7.2 Run targeted community, codebase-map, document-graph, settings, composition-root, dependency-floor, and import-contract tests.
 - [x] 7.3 Run `uv run ruff check`, `uv run pyright`, and `uv run lint-imports` for affected modules.
-- [ ] 7.4 Ask for approval, then run the full fast suite with branch coverage and confirm all project coverage floors remain satisfied.
+- [x] 7.4 Ask for approval, then run the full fast suite with branch coverage and confirm all project coverage floors remain satisfied.

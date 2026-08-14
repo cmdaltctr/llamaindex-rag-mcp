@@ -50,6 +50,18 @@ from rag_mcp.core.documents.doc_graph import detect_document_communities
 _REPEATS = 3  # membership repeats for the determinism checks
 _ALGORITHMS = ["louvain", "leiden"]
 
+# Base-only CI installations (the floors job) run the fast suite without
+# the community-leiden extra; the real-Leiden assertions execute in the
+# worktree and the dedicated community-leiden-extra CI job instead.
+_LEIDEN_INSTALLED = leidenalg_adapter.is_leiden_available()
+
+
+def _skip_leiden_without_extra(algorithm: str) -> None:
+    """Skip the ``leiden`` parameter when the optional extra is absent."""
+    if algorithm == "leiden" and not _LEIDEN_INSTALLED:
+        pytest.skip("community-leiden extra not installed")
+
+
 # Env vars mirroring tests/conftest.py so a subprocess importing compose
 # can resolve its embed model without network access (compose runs
 # ensure_runtime_setup() at import time).
@@ -199,6 +211,7 @@ class TestDispatchThroughConsumers:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_detect_communities_runs_both_strategies(self, effective_settings, algorithm):
         """The code-graph consumer recovers the planted rings for both strategies."""
+        _skip_leiden_without_extra(algorithm)
         graph = _code_rings()
         communities = detect_communities(
             graph, settings=effective_settings(community_algorithm=algorithm)
@@ -228,6 +241,7 @@ class TestDispatchThroughConsumers:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_detect_document_communities_runs_both_strategies(self, effective_settings, algorithm):
         """The doc-graph consumer recovers the rings and propagates categories."""
+        _skip_leiden_without_extra(algorithm)
         graph = _doc_rings()
         communities = detect_document_communities(
             graph, settings=effective_settings(community_algorithm=algorithm)
@@ -286,6 +300,10 @@ def test_compose_gate_rejects_unknown_strategy():
 def test_compose_gate_accepts_registered_strategies():
     """Both registered names pass the startup gate when their deps are present."""
     for name in ("louvain", "leiden"):
+        if name == "leiden" and not _LEIDEN_INSTALLED:
+            # The unavailable-extra failure path is covered by the
+            # missing-extra tests below; nothing to accept without the extra.
+            continue
         _validate_community_strategy(Settings(_env_file=None, community_algorithm=name))
 
 
@@ -323,6 +341,7 @@ class TestPartitionBehaviour:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_weighted_edges_steer_grouping(self, algorithm):
         """Heavy intra-group weights make both strategies recover the planted split."""
+        _skip_leiden_without_extra(algorithm)
         graph, group_a, group_b = _weighted_planted()
         result = partition_graph(graph, algorithm=algorithm, seed=0)
         assert {frozenset(community) for community in result} == {
@@ -333,6 +352,7 @@ class TestPartitionBehaviour:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_isolated_nodes_covered_exactly_once(self, algorithm):
         """Degree-0 nodes join the partition exactly once, as singleton communities."""
+        _skip_leiden_without_extra(algorithm)
         graph = _ring_plus_isolated()
         result = partition_graph(graph, algorithm=algorithm, seed=0)
         # Sorted flatten catches both missing and duplicated nodes.
@@ -370,6 +390,7 @@ class TestBoundaryPurity:
         completed = _run_python(code)
         assert completed.returncode == 0, completed.stderr
 
+    @pytest.mark.skipif(not _LEIDEN_INSTALLED, reason="community-leiden extra not installed")
     def test_leiden_returns_plain_python_partition(self):
         """Leiden results are ``list[set]`` of original node ids — no igraph types."""
         graph = _code_rings().to_undirected()
@@ -428,3 +449,44 @@ class TestRegistryContract:
             community_registry._registry.pop(fake, None)
             community_registry._cache.pop(fake, None)
         assert fake not in community_registry.available()
+
+
+# ── Partition-contract validation (spec: one partition contract) ─────────
+
+
+class TestPartitionContractValidation:
+    """``validate_partition`` rejects every contract violation by name.
+
+    These branches are the teeth of the "no algorithm-specific object
+    escapes" scenario — a strategy returning igraph types, empty sets,
+    overlapping memberships, or partial coverage fails at the boundary,
+    never inside a consumer's formatting loop.
+    """
+
+    def test_rejects_non_list_or_non_set_result(self):
+        """A tuple of frozensets (igraph-style) is rejected with a type error."""
+        from rag_mcp.core.community import validate_partition
+
+        with pytest.raises(ValueError, match="list\\[set\\[Hashable\\]\\]"):
+            validate_partition((frozenset({"a"}),), {"a"})
+
+    def test_rejects_empty_community(self):
+        """An empty community set violates the non-empty rule."""
+        from rag_mcp.core.community import validate_partition
+
+        with pytest.raises(ValueError, match="empty community"):
+            validate_partition([{"a"}, set()], {"a"})
+
+    def test_rejects_overlapping_communities(self):
+        """A node in two communities violates the disjoint rule."""
+        from rag_mcp.core.community import validate_partition
+
+        with pytest.raises(ValueError, match="more than\\s+one community"):
+            validate_partition([{"a", "b"}, {"b", "c"}], {"a", "b", "c"})
+
+    def test_rejects_incomplete_coverage(self):
+        """A partition missing input nodes violates the complete rule."""
+        from rag_mcp.core.community import validate_partition
+
+        with pytest.raises(ValueError, match="complete coverage"):
+            validate_partition([{"a"}], {"a", "z"})
