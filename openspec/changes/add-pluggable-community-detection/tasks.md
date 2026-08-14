@@ -1,21 +1,21 @@
 ## 1. Baseline and Contract Tests
 
-- [ ] 1.1 Add regression tests that run existing codebase and document Louvain detection repeatedly and demonstrate the current unseeded determinism gap.
-- [ ] 1.2 Add shared partition-contract tests for complete, disjoint, non-empty node coverage and the existing fewer-than-five-node bypass.
-- [ ] 1.3 Record current codebase and document community output shapes so strategy extraction cannot alter labels, categories, edge counts, hubs, bridges, or cross-links.
+- [x] 1.1 Add regression tests that run existing codebase and document Louvain detection repeatedly and demonstrate the current unseeded determinism gap.
+- [x] 1.2 Add shared partition-contract tests for complete, disjoint, non-empty node coverage and the existing fewer-than-five-node bypass.
+- [x] 1.3 Record current codebase and document community output shapes so strategy extraction cannot alter labels, categories, edge counts, hubs, bridges, or cross-links.
 
 ## 2. Community Strategy Core
 
-- [ ] 2.1 Create `core/community/` with the flat partition protocol and a lazy strategy registry modelled on the existing chunking and provider registries.
-- [ ] 2.2 Implement and register the built-in NetworkX Louvain strategy with injected seed support and a default seed of `0`.
-- [ ] 2.3 Add immutable community algorithm and seed fields to the settings models and propagate them into `EffectiveSettings`.
-- [ ] 2.4 Thread `EffectiveSettings` from the codebase-map boundary into codebase and document community detection without adding a global settings lookup.
-- [ ] 2.5 Replace both direct Louvain calls with registry resolution while preserving their existing small-graph and error-handling behaviour.
-- [ ] 2.6 Add startup validation for unknown community strategy names and list available names in the error.
+- [x] 2.1 Create `core/community/` with the flat partition protocol and a lazy strategy registry modelled on the existing chunking and provider registries.
+- [x] 2.2 Implement and register the built-in NetworkX Louvain strategy with injected seed support and a default seed of `0`.
+- [x] 2.3 Add immutable community algorithm and seed fields to the settings models and propagate them into `EffectiveSettings`.
+- [x] 2.4 Thread `EffectiveSettings` from the codebase-map boundary into codebase and document community detection without adding a global settings lookup.
+- [x] 2.5 Replace both direct Louvain calls with registry resolution while preserving their existing small-graph and error-handling behaviour.
+- [x] 2.6 Add startup validation for unknown community strategy names and list available names in the error.
 
 ## 3. Optional Leiden Integration
 
-- [ ] 3.1 Verify `leidenalg` and `igraph` wheel support, Python compatibility, locked size, and dependency-floor impact on every supported platform before declaring version floors.
+- [x] 3.1 Verify `leidenalg` and `igraph` wheel support, Python compatibility, locked size, and dependency-floor impact on every supported platform before declaring version floors.
 - [ ] 3.2 Add a `community-leiden` optional dependency extra without changing the base installation.
 - [ ] 3.3 Create an acyclic lazy `integrations/leidenalg.py` adapter that preserves stable node identifiers, isolated nodes, edge weights, resolution semantics, and the injected seed during NetworkX-to-igraph conversion.
 - [ ] 3.4 Implement and register the flat Leiden strategy against the shared partition contract.

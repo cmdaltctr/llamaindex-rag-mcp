@@ -331,6 +331,11 @@ def build_codebase_map(path: str) -> CodebaseMap:
     # File inventory
     inventory = detect_file_types(path)
 
+    # Resolve settings once at this boundary and thread the instance into
+    # the community detectors below — neither detector performs a global
+    # settings lookup of its own (settings-dependency-injection contract).
+    effective = get_default_effective_settings()
+
     # Code graph
     code_files = [e for e in inventory.entries if e.group == "code" and e.is_text]
     code_communities: list[dict] = []
@@ -341,7 +346,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
             from .code_graph import build_code_graph, detect_communities, detect_hubs
 
             code_graph = build_code_graph(code_files, path)
-            communities = detect_communities(code_graph)
+            communities = detect_communities(code_graph, settings=effective)
             code_communities = [
                 {
                     "label": c.label,
@@ -382,7 +387,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
             from ..documents.doc_graph import build_document_graph, detect_document_communities
 
             doc_graph = build_document_graph(collection)
-            doc_comms = detect_document_communities(doc_graph)
+            doc_comms = detect_document_communities(doc_graph, settings=effective)
             doc_communities = [
                 {
                     "label": c.label,

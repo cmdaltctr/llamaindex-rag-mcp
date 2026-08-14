@@ -157,6 +157,12 @@ class Settings(BaseSettings):
     codebase_map_cache_dir: str = ".opencode"
     codebase_map_max_files: int = 5000
     codebase_map_max_depth: int = 10
+    # Community detection algorithm shared by codebase and document graphs.
+    # Validation is registry-driven: compose checks the name against the
+    # community registry at startup and fails with the available names
+    # (config must not duplicate registry knowledge — invariant #10).
+    community_algorithm: str = "louvain"
+    community_seed: int = 0
 
     # ── Document backend ──────────────────────────────────────────
     document_backend: str = "local"
