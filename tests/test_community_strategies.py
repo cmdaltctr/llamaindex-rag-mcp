@@ -229,6 +229,7 @@ class TestDispatchThroughConsumers:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_detect_communities_membership_repeatable(self, effective_settings, algorithm):
         """Seeded repeats return the same membership for both strategies."""
+        _skip_leiden_without_extra(algorithm)
         graph = _code_rings()
         signatures = set()
         for _ in range(_REPEATS):
@@ -261,6 +262,7 @@ class TestDispatchThroughConsumers:
     @pytest.mark.parametrize("algorithm", _ALGORITHMS)
     def test_detect_document_communities_membership_repeatable(self, effective_settings, algorithm):
         """Seeded repeats return the same doc-graph membership for both strategies."""
+        _skip_leiden_without_extra(algorithm)
         graph = _doc_rings()
         signatures = set()
         for _ in range(_REPEATS):

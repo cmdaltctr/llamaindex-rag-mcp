@@ -23,12 +23,18 @@ The system SHALL retain the existing local fallback when Azure credentials, depe
 #### Scenario: Credentials are missing
 - **WHEN** Azure is selected without its required endpoint or key
 - **THEN** the effective backend SHALL resolve to local before document reading
-- **AND** startup SHALL report the degradation
+- **AND** startup SHALL report the degradation naming the missing credential
+
+#### Scenario: Azure SDK dependency is missing
+- **WHEN** Azure is selected and the optional Azure SDK dependency is not installed
+- **THEN** the effective backend SHALL resolve to local before document reading
+- **AND** the diagnostic SHALL name the missing dependency
 
 #### Scenario: Azure fails at runtime
 - **WHEN** Azure reading fails after the configured retry budget
 - **THEN** the same document SHALL be attempted through the local backend
 - **AND** the caller SHALL receive the local result when fallback succeeds
+- **AND** the diagnostic SHALL name the Azure runtime failure as the fallback reason
 
 ### Requirement: Backend dispatch is lazy and extensible
 Configured backend names SHALL resolve lazily without importing optional SDKs at module load time. Adding another backend SHALL not require strategy-specific branching in the ingestion consumer.

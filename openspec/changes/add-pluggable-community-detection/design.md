@@ -56,7 +56,7 @@ Add cross-cutting immutable settings for the community algorithm and seed. The d
 
 `compose.py` validates the selected registered name and probes optional strategy availability once. Selecting unavailable Leiden fails startup with an installation instruction. Runtime fallback to Louvain is rejected because an explicit algorithm setting is an operator contract.
 
-The resolved settings instance flows from the codebase-map boundary into codebase and document community functions. Neither detector performs a global settings lookup.
+The resolved settings instance flows from the codebase-map boundary into codebase and document community functions. Neither detector performs a module-level settings lookup: both take the instance as a parameter, and the `None` default is the sanctioned entry-point boundary exception (ADR-037), resolved once through `resolve_effective_settings` to the composition-root default when a caller omits it. The codebase-map boundary and the tests always pass an explicit instance.
 
 ### 5. Preserve the existing consumer contract
 

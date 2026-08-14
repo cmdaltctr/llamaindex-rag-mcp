@@ -7,7 +7,7 @@
 - Define one async document-backend contract shared by local and Azure implementations.
 - Register `local` and `azure` lazily under their configured names.
 - Move dispatch out of the ingestion chunker without changing supported file types or emitted document metadata.
-- Preserve cloud opt-in: missing credentials and Azure runtime failures degrade to the local backend with visible diagnostics.
+- Preserve cloud opt-in: missing credentials, missing Azure SDK dependencies, and Azure runtime failures degrade to the local backend with visible diagnostics naming the reason.
 - Add contract tests for retry, fallback, optional SDK imports, metadata parity, and no event-loop blocking.
 
 ## Capabilities

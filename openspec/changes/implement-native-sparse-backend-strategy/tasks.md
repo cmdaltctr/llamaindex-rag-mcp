@@ -16,6 +16,7 @@
 - [ ] 3.2 Keep `auto` in the composition root and resolve it to a registered concrete name.
 - [ ] 3.3 Route the hybrid pipeline through the registry without inline backend branching.
 - [ ] 3.4 Preserve explicit warning-to-BM25 fallback and report the backend that ran.
+- [ ] 3.5 Validate the configured backend name against the registered set before any capability probing, replacing `resolve_sparse_backend`'s current behaviour where every non-`bm25`/`auto` value is silently treated as `native` (a typo such as `sparse` must fail startup listing the registered names).
 
 ## 4. Calibration and Compatibility
 
