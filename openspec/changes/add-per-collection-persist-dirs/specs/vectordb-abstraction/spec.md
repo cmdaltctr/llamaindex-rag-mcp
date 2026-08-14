@@ -1,62 +1,4 @@
-# vectordb-abstraction Specification
-
-## Purpose
-TBD - created by archiving change phase-3-refactor-vectordb-abstraction. Update Purpose after archive.
-## Requirements
-### Requirement: VectorStore abstract contract
-
-The system SHALL define a `VectorStore` abstract base class in
-`core/vectordb/base.py` covering every vector-store operation the pipeline
-uses: collection creation, document write with upsert semantics, dense query
-with metadata filtering, document deletion, collection metadata read and
-update, and collection generation bumping. All pipeline code (ingestion
-writer, retrieval pipeline) SHALL access the store only through this
-interface, never through ChromaDB APIs directly.
-
-#### Scenario: Contract covers all current operations
-
-- **WHEN** the ABC is compared against the ChromaDB calls made by the
-  pre-refactor pipeline
-- **THEN** every operation in use MUST have a corresponding ABC method
-- **AND** an integration test MUST verify the contract against the ChromaDB
-  implementation
-
-#### Scenario: Pipeline uses only the interface
-
-- **WHEN** the codebase is searched for direct ChromaDB client usage outside
-  `core/vectordb/`
-- **THEN** no direct usage MUST remain in `core/ingestion/` or
-  `core/retrieval/`
-
----
-
-### Requirement: ChromaDB-specific behaviours encoded honestly
-
-The interface SHALL explicitly model the ChromaDB behaviours the system
-relies on — dimension locking at collection creation, metadata filter
-syntax, and generation bumping for upsert semantics — as documented contract
-behaviour rather than hidden implementation detail.
-
-#### Scenario: Dimension locking
-
-- **WHEN** a collection is created through the interface
-- **THEN** the vector dimension MUST be fixed at creation time
-- **AND** attempting to write vectors of a different dimension MUST fail with
-  a clear error (ChromaDB dim-lock, ADR-003)
-
-#### Scenario: Metadata filtering
-
-- **WHEN** a query supplies a metadata filter
-- **THEN** the implementation MUST translate it to the store's filter syntax
-  (ChromaDB `where` clause) and return only matching results
-
-#### Scenario: Generation bumping
-
-- **WHEN** documents are upserted into an existing collection
-- **THEN** the collection generation MUST be bumped exactly as the
-  pre-refactor `_bump_collection_generation()` logic did
-
----
+## MODIFIED Requirements
 
 ### Requirement: ChromaDB as first implementation
 
@@ -84,9 +26,11 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 #### Scenario: Existing collections keep working
 
 - **WHEN** the server starts against an existing flat `chroma_persist_dir`
-  (default `./chroma_db`) containing collections
+  (default `./chroma_db`) containing collections in the pre-change layout
 - **THEN** all previously indexed collections MUST be readable and queryable
-  with no data migration
+  after the documented storage-layout migration defined by the
+  `collection-storage-layout` capability, which MUST preserve stored
+  embeddings, or after an equivalent re-ingest, which recomputes them
 
 #### Scenario: Existing tests pass against the implementation
 
@@ -102,7 +46,11 @@ The system SHALL select the vector store implementation via a
 `VECTOR_STORE` environment variable defaulting to `chroma`, read from
 `config/` and constructed in `compose.py`. The constructed store SHALL be
 passed to consumers by injection, including to the codebase map subsystem
-under `core/codebase/`.
+under `core/codebase/`. The store's persist directory SHALL be resolved per
+collection by the composition root according to the
+`collection-storage-layout` capability before construction; the store
+implementation SHALL NOT independently read a flat global persist-directory
+default to decide where to place data.
 
 #### Scenario: Default is chroma
 
@@ -122,3 +70,11 @@ under `core/codebase/`.
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
 
+#### Scenario: Persist directory arrives resolved
+
+- **WHEN** the composition root constructs the store for an operation on a
+  collection
+- **THEN** the persist directory SHALL already be resolved from the
+  collection-storage-layout rules
+- **AND** the store SHALL reject a missing injected directory and MUST NOT
+  consult a global flat default during any production client access
