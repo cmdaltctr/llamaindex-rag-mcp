@@ -54,6 +54,15 @@ Not in scope: an HTTP Chroma server mode, transport-layer changes,
 cross-process locking, and change detection itself (covered by
 `add-ingestion-change-detection`).
 
+**Cloud evolution (deferred, recorded):** this change keeps the embedded
+`PersistentClient` model. The per-collection layout does not lock out a
+future move to a Chroma server or managed cloud deployment — the swap
+happens at the single construction seam in `compose.py`
+(`PersistentClient(path=...)` → `HttpClient(host=..., port=...)`), already
+pinned by the `vectordb-abstraction` "persist directory arrives resolved"
+contract. The ADR for this change SHALL record the cloud-evolution path so
+the decision is deliberate, not accidental.
+
 ## Capabilities
 
 ### New Capabilities
@@ -82,9 +91,26 @@ cross-process locking, and change detection itself (covered by
 - **On-disk data**: existing `./chroma_db` collections require a one-time
   migration or re-ingest; document the exact steps.
 - **Dependencies**: none new.
-- **Open design question (resolvable during design)**: whether the
-  grouping table is static config (`.env`/`defaults.yaml`) or
-  runtime-mutable (an agent-facing tool assigning collections to groups,
-  requiring a small persistent-state file). This determines
-  config-only vs config-plus-state-file scope; it does not affect the
-  capability split above.
+- **Resolved design question — the middle path**: the grouping table is
+  **static configuration** (`.env`/`defaults.yaml`) now, with a
+  **runtime-mutable grouping tool (Option 2) as a named additive follow-up
+  change** when agent-driven collection creation actually demands it. The
+  layout contract — "a collection name resolves to a persist directory,
+  resolved at the composition root" — is identical under both, so nothing
+  built now is discarded when Option 2 lands. Prior art: LlamaIndex — with
+  10+ vector store integrations — uses static construction-time layout
+  everywhere and implements no runtime grouping mutation; its
+  `from_namespaced_persist_dir` discovers namespaces from the filesystem
+  (directory listing as registry), the trick this change borrows for the
+  default rule.
+- **ADR future work**: the ADR for this change SHALL record three deferred
+  paths: (1) Option 2 — runtime-mutable grouping via an MCP tool writing a
+  state file, additive on top of this layout contract, triggered when the
+  agentic retrieval loop starts creating collections dynamically;
+  (2) the agentic retrieval loop itself — multi-query fan-out,
+  self-correcting retrieval, per-session namespaces — which is where RAG
+  quality work lives and is the workload that eventually justifies
+  Option 2; (3) cloud evolution — swapping `PersistentClient` for
+  `HttpClient` (self-hosted `chroma run` or managed cloud) at the single
+  `compose.py` construction seam. Recording them makes the deferral
+  deliberate rather than accidental.
