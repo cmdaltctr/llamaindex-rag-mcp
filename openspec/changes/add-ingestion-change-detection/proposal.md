@@ -16,11 +16,13 @@ system.
 ## What Changes
 
 - Add content-hash change detection to `ingest_path_async` itself: before the
-  delete-and-re-embed loop, compute a SHA-256 hash of each discovered file and
-  compare it against the hash stored in ChromaDB chunk metadata for that
-  `file_path`. Files whose hash matches are skipped (no delete, no re-chunk,
-  no re-embed). Files whose hash differs (or that have no stored hash) are
-  re-ingested and their chunks' metadata is stamped with the new hash.
+  delete-and-re-embed loop, compute a SHA-256 hash of each eligible non-binary
+  file and compare it against the hash stored in ChromaDB chunk metadata for
+  that `file_path`. Files whose hash matches every stored chunk hash are
+  skipped (no delete, no re-chunk, no re-embed). Files whose hash differs, or
+  whose chunks have missing or mixed hashes, are re-ingested and their chunks'
+  metadata is stamped with the new hash. A file whose content hash cannot be
+  read is reported as a per-file failure without stopping sibling files.
 - Store the file content hash as a ChromaDB chunk metadata field (additive;
   existing chunks without the field are treated as "no stored hash" and are
   re-ingested once, after which they carry the field).
@@ -48,19 +50,20 @@ Not in scope: porting LlamaIndex's docstore abstraction, per-chunk hashing
 
 ### Modified Capabilities
 
-- `async-ingestion`: adds a requirement that ingestion skips files whose
-  stored content hash matches, stamps re-ingested chunks with the hash, and
-  reports skipped files additively in the result dict. Follows the additive
-  result-field precedent set by `metadata_degraded`.
+- `async-ingestion`: adds requirements covering unchanged-file skips,
+  per-file hash-read failures, binary-file exclusion, unconditional hash
+  stamping, and additive result reporting. Follows the result-field precedent
+  set by `metadata_degraded`.
 
 ## Impact
 
 - **Code**: `core/ingestion/pipeline.py` (skip logic before the delete loop),
-  `core/ingestion/writer.py` (hash metadata stamp on write, hash lookup
-  helper), new `core/ingestion/hashing.py` (relocated `_sha256_file`),
-  `daemon/_shared.py` (re-export or import switch), `daemon/watcher.py`
-  (import path only), `config/` ingestion settings block (new
-  `skip_unchanged` flag, default `true`).
+  `core/ingestion/writer.py` (hash metadata stamp and lookup helper),
+  `core/vectordb/` (store-neutral filtered metadata read plus the ChromaDB
+  implementation), new `core/ingestion/hashing.py` (relocated
+  `_sha256_file`), `daemon/_shared.py` (re-export or import switch),
+  `daemon/watcher.py` (import path only), `config/` ingestion settings block
+  (new `skip_unchanged` flag, default `true`).
 - **Contracts**: ingestion result dict gains additive keys; `file_details`
   gains one new status value. MCP tool and CLI report surfaces pass the new
   counter through unchanged.

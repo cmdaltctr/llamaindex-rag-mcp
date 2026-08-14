@@ -68,9 +68,13 @@ same file. Reuse `_sha256_file`'s chunked-read implementation (it caps at
 
 ### D2: Hash storage — ChromaDB chunk metadata field
 
-Store the hash as a metadata field (e.g. `source_content_hash`) on every
-chunk written for the file. Lookup: `collection.get(where={"file_path": ...})`
-and read the field off the first returned chunk.
+Store the hash as the canonical `source_content_hash` metadata field on every
+chunk written for the file. Add a store-neutral filtered metadata read to the
+`VectorStore` contract and implement it for ChromaDB; pipeline code must not
+call ChromaDB APIs directly. For each `file_path`, inspect every matching
+chunk. A file is unchanged only when at least one chunk exists and every
+chunk has a non-null `source_content_hash` equal to the current file hash.
+Missing, mixed, or different hashes make the file eligible for re-ingestion.
 
 Alternatives considered:
 
@@ -83,8 +87,8 @@ Alternatives considered:
 
 Metadata-on-chunk keeps the hash exactly as stale as the chunks themselves:
 `remove_document` deletes chunks, the hash goes with them. The existing
-`chunks_metadata` write path already stamps per-chunk fields, so the change
-is additive there.
+`VectorStore.write_nodes` path already persists per-chunk metadata, so the
+change is additive there.
 
 ### D3: Helper location — `core/ingestion/hashing.py`
 
@@ -98,24 +102,29 @@ The layering rule forces this: the pipeline (`core/`) must not import from
 
 ### D4: Skip decision point — pipeline, before the delete loop
 
-In `ingest_path_async`, after file discovery and Magika detection, compute
-hashes and query stored hashes; partition files into `unchanged` and
-`to_ingest`. Only `to_ingest` files enter the existing delete loop and
-chunk/embed loop. Skipped files get `file_details` entries with
+In `ingest_path_async`, after file discovery and Magika detection, exclude
+binary files from change detection and keep their existing `status: "skipped"`
+handling. Compute hashes for the remaining eligible files, query all stored
+chunk hashes, and partition the files into `unchanged` and `to_ingest`. Only
+`to_ingest` files enter the existing delete and chunk/embed loops. Files
+skipped by change detection get `file_details` entries with
 `status: "skipped_unchanged"` and feed the `files_skipped_unchanged` counter.
 
 Doing it before the delete loop matters: deleting first would discard the
-stored hash, making the skip impossible. Hash computation is I/O-bound →
-wrap in `asyncio.to_thread` to honour the loop-responsiveness contract
-(async-ingestion spec).
+stored hash, making the skip impossible. Hash computation is I/O-bound, so
+wrap it in `asyncio.to_thread` to honour the loop-responsiveness contract. If
+`sha256_file` raises `FileNotFoundError` or `OSError`, record that file as
+`status: "failed"`, leave its existing chunks untouched, and continue with
+sibling files. A hash-read failure must never abort the call or cause a file
+to be classified as unchanged.
 
 ### D5: Opt-out — `INGESTION__SKIP_UNCHANGED` (default `true`)
 
-A boolean on the existing ingestion settings block (`config/__init__.py`
-`IngestionSettings`, mirrored in `core/settings.py`), following the nested
-env-var convention (ADR-037). No new tool parameters, no CLI flag beyond
-what settings already surface — the env var is the escape hatch for
-embedding-model or chunking-parameter changes.
+Add the boolean to `IngestionSettings` in `core/ingestion/settings.py` and to
+the matching frozen `IngestionBlock` in `core/settings.py`. The config model
+already nests `IngestionSettings`, so the flag follows the nested env-var
+convention (ADR-037). No new tool parameter or CLI flag is needed; the env var
+is the escape hatch for embedding-model or chunking-parameter changes.
 
 ### D6: Watcher stays as-is
 
@@ -129,20 +138,18 @@ check proves sufficient, but that is not worth the churn here.
 - [First ingest against a pre-existing collection re-embeds everything once]
   → Documented in the spec as the legacy-chunks scenario; unavoidable without
   a backfill pass that would itself need to read every file. Acceptable.
-- [Hash read adds one `collection.get()` per file per ingest] → A metadata
-  query, not an embedding; negligible against the cost it avoids. Runs via
-  `to_thread`.
+- [Hash reads add one filtered metadata query per file per ingest] → Each
+  query reads only metadata through the `VectorStore` contract. The cost is
+  negligible against the embedding work it avoids. Calls run via `to_thread`.
 - [Settings change (chunk size, embedding model) leaves stale-but-matching
   hashes, so unchanged files keep old vectors] → Mitigated by the opt-out
   flag; also surfaced in the proposal's behavioural note. A future change
   could mix chunk/embed params into the stored hash string; deliberately
   deferred (YAGNI until someone hits it).
-- [Hash lookup reads only the first chunk's field] → All chunks of a file
-  are written in one batch with one hash value, so any chunk carries the
-  truth. A partial-write crash leaves mixed hashes; the delete-then-write
-  order means the next ingest of that file sees the old hash on surviving
-  chunks and re-ingests — the failure mode degrades to "re-ingest", never
-  "wrongly skip".
+- [Stored chunks have mixed or missing hashes after interrupted writes or
+  metadata drift] → D2 validates every matching chunk and treats any missing,
+  mixed, or different hash as changed. This prevents a matching first chunk
+  from hiding stale chunks.
 
 ## Migration Plan
 

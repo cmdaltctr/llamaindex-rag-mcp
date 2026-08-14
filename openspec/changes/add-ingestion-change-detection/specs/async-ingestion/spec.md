@@ -4,12 +4,14 @@
 
 When `ingest_path_async` is called on a path whose files have been previously
 ingested into the target collection, the system SHALL compute a SHA-256 hash
-of each discovered file's content and compare it against the content hash
-stored in the collection's chunk metadata for that `file_path`. Files whose
-computed hash matches the stored hash SHALL be skipped entirely: no chunk
-deletion, no re-chunking, no re-embedding, and no metadata extraction SHALL
-run for those files. Files whose hash differs, files with no stored hash, and
-files with no existing chunks SHALL be ingested normally.
+of each eligible non-binary file's content and compare it against the
+`source_content_hash` stored in every chunk for that `file_path`. A file SHALL
+be skipped entirely only when at least one chunk exists and every matching
+chunk has a non-null hash equal to the computed hash: no chunk deletion,
+re-chunking, re-embedding, or metadata extraction SHALL run for that file.
+Files with different, missing, or mixed hashes and files with no existing
+chunks SHALL be ingested normally. Binary files SHALL retain the existing
+`status: "skipped"` behaviour and SHALL NOT participate in change detection.
 
 #### Scenario: Unchanged file is skipped on re-ingest
 
@@ -32,33 +34,58 @@ files with no existing chunks SHALL be ingested normally.
 
 - **WHEN** `ingest_path_async` runs against a collection persisted before
   content hashing existed (chunks carry no content-hash metadata)
-- **THEN** all files SHALL be re-ingested on that call
-- **THEN** the re-ingested chunks SHALL carry the content hash
-- **AND** a subsequent call with no file changes SHALL skip all files
+- **THEN** all eligible non-binary files SHALL be re-ingested on that call
+- **THEN** the re-ingested chunks SHALL carry `source_content_hash`
+- **AND** a subsequent call with no file changes SHALL skip all eligible
+  non-binary files
 
 #### Scenario: Mixed directory skips only unchanged files
 
-- **WHEN** a directory contains three previously ingested files and exactly
-  one has been modified
+- **WHEN** a directory contains three previously ingested eligible non-binary
+  files and exactly one has been modified
 - **AND** `ingest_path_async` is called on the directory
 - **THEN** only the modified file SHALL be re-ingested
 - **THEN** the two unchanged files SHALL be skipped
 
+#### Scenario: Mixed or missing chunk hashes force re-ingestion
+
+- **WHEN** a file's existing chunks contain mixed hashes or a missing
+  `source_content_hash`
+- **AND** `ingest_path_async` is called with that file unmodified
+- **THEN** the file SHALL be re-ingested
+- **THEN** every replacement chunk SHALL carry the current hash
+
+#### Scenario: Hash-read failure does not abort sibling files
+
+- **WHEN** `sha256_file` raises `FileNotFoundError` or `OSError` for one file
+  in a multi-file ingestion
+- **THEN** that file SHALL be reported in `file_details` with
+  `status: "failed"` and `chunks: 0`
+- **THEN** its existing chunks SHALL remain untouched
+- **AND** ingestion SHALL continue for the sibling files
+
+#### Scenario: Binary files retain the existing skip behaviour
+
+- **WHEN** a discovered supported-extension file is detected as binary
+- **THEN** the file SHALL appear in `file_details` with `status: "skipped"`
+- **THEN** the file SHALL NOT contribute to `files_skipped_unchanged`
+
 ### Requirement: Content hash stored in chunk metadata
 
-For every file ingested while change detection is in effect, the system SHALL
-store the file's SHA-256 content hash as a field in the ChromaDB chunk
-metadata of every chunk belonging to that file. The field SHALL be additive:
-existing metadata fields (including `file_path`) SHALL retain their names and
-types. A file whose content changes between two ingests SHALL have its
-chunks' stored hash replaced with the new hash.
+For every ingested file, the system SHALL store the file's SHA-256 content
+hash as `source_content_hash` in the ChromaDB metadata of every chunk belonging
+to that file. Hash stamping SHALL occur whether `skip_unchanged` is `true` or
+`false`. The field SHALL be additive: existing metadata fields (including
+`file_path`) SHALL retain their names and types. A file whose content changes
+between two ingests SHALL have every chunk's stored hash replaced with the new
+hash.
 
 #### Scenario: Chunks carry the content hash after ingest
 
-- **WHEN** a supported file is ingested into a collection
-- **THEN** every chunk written for that file SHALL include a content-hash
-  metadata field whose value is the SHA-256 hex digest of the file's bytes at
-  ingest time
+- **WHEN** a supported non-binary file is ingested into a collection
+- **THEN** every chunk written for that file SHALL include
+  `source_content_hash` whose value is the SHA-256 hex digest of the file's
+  bytes at ingest time
 
 #### Scenario: Hash reflects the latest ingest
 
@@ -70,27 +97,29 @@ chunks' stored hash replaced with the new hash.
 ### Requirement: Ingestion result reports skipped files
 
 The ingestion result dict SHALL report skipped files additively. The result
-SHALL carry a top-level `files_skipped_unchanged` integer counting the files
-skipped by change detection. Each skipped file SHALL appear in
-`file_details` with `status: "skipped_unchanged"` and `chunks: 0`. All
-existing result keys (`status`, `files_indexed`, `chunks_created`,
-`chunks_removed`, `collection`, `file_details`, `metadata_degraded`,
-`warnings`) and all existing `file_details` keys SHALL retain their current
-names and types. Skipped files SHALL NOT be counted in `files_indexed`, and
-their chunks SHALL NOT be counted in `chunks_removed`.
+SHALL carry a top-level `files_skipped_unchanged` integer counting eligible
+non-binary files skipped by change detection. Each file skipped by change
+detection SHALL appear in `file_details` with `status: "skipped_unchanged"`
+and `chunks: 0`. This status is distinct from the existing `"skipped"` status
+for unsupported-extension and binary files. All existing result keys
+(`status`, `files_indexed`, `chunks_created`, `chunks_removed`, `collection`,
+`file_details`, `metadata_degraded`, `warnings`) and all existing
+`file_details` keys SHALL retain their current names and types. Skipped files
+SHALL NOT be counted in `files_indexed`, and their chunks SHALL NOT be counted
+in `chunks_removed`.
 
 #### Scenario: Fully unchanged directory reports all files skipped
 
-- **WHEN** `ingest_path_async` is called on a directory where every file is
-  unchanged since the previous ingest into the same collection
+- **WHEN** `ingest_path_async` is called on a directory where every eligible
+  non-binary file is unchanged since the previous ingest into the collection
 - **THEN** the result dict SHALL contain `files_skipped_unchanged` equal to
-  the number of discovered files
+  the number of eligible non-binary files
 - **THEN** `files_indexed` SHALL be `0` and `chunks_created` SHALL be `0`
 - **THEN** the result `status` SHALL be `"ok"`
 
 #### Scenario: Partially changed directory reports mixed counts
 
-- **WHEN** a directory of three files with one modified is ingested
+- **WHEN** three eligible non-binary files with one modified are ingested
 - **THEN** `files_skipped_unchanged` SHALL be `2` and `files_indexed` SHALL
   be `1`
 - **THEN** exactly two `file_details` entries SHALL have
@@ -109,17 +138,17 @@ their chunks SHALL NOT be counted in `chunks_removed`.
 The system SHALL expose a `skip_unchanged` ingestion setting, configurable
 via the nested environment variable `INGESTION__SKIP_UNCHANGED` with default
 `true`. When set to `false`, `ingest_path_async` SHALL re-ingest every
-discovered file regardless of stored hashes, while still stamping chunks
-with current content hashes. This covers callers who need a forced re-embed
-(for example after changing the embedding model or chunking parameters,
-which alter desired vectors without altering file content).
+eligible non-binary file regardless of stored hashes, while still stamping
+every chunk with the current `source_content_hash`. This covers forced
+re-embeds after changing the embedding model or chunking parameters, which
+alter desired vectors without altering file content.
 
 #### Scenario: Opt-out forces full re-ingest
 
 - **WHEN** `INGESTION__SKIP_UNCHANGED=false` is set
 - **AND** `ingest_path_async` is called on an unchanged, previously ingested
   directory
-- **THEN** every file SHALL be re-chunked and re-embedded
+- **THEN** every eligible non-binary file SHALL be re-chunked and re-embedded
 - **THEN** `files_skipped_unchanged` SHALL be `0`
 
 #### Scenario: Default leaves change detection active
