@@ -12,7 +12,7 @@ strategies resolve through :mod:`core.community.registry` on demand.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Hashable
+from collections.abc import Callable, Hashable, Iterable
 from typing import Any
 
 import networkx as nx
@@ -36,7 +36,7 @@ __all__ = [
 ]
 
 
-def validate_partition(partition: Any, nodes: Any) -> None:
+def validate_partition(partition: Any, nodes: Iterable[Hashable]) -> None:
     """Validate the flat partition contract.
 
     A valid partition covers every input node exactly once: communities are
@@ -71,11 +71,14 @@ def validate_partition(partition: Any, nodes: Any) -> None:
             )
         seen |= community
 
-    missing = set(nodes) - seen
+    # Materialise once: the docstring accepts any iterable, and a one-shot
+    # iterable consumed by ``missing`` would make the count below lie.
+    node_set = set(nodes)
+    missing = node_set - seen
     if missing:
         raise ValueError(
             f"Partition covers {len(seen)} nodes but the graph has "
-            f"{len(set(nodes))} node(s); missing: {sorted(map(str, missing))[:5]}. "
+            f"{len(node_set)} node(s); missing: {sorted(map(str, missing))[:5]}. "
             "The partition contract requires complete coverage."
         )
 

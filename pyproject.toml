@@ -59,6 +59,15 @@ hybrid = [
 pdf-pypdfium2 = [
     "pypdfium2>=4.0.0",
 ]
+# Optional Leiden community detection (COMMUNITY_ALGORITHM=leiden).
+# Floors pair on the igraph 1.x boundary: leidenalg 0.11+ declares
+# igraph<2.0,>=1.0.0, both ship abi3 wheels for macOS (arm64/x86_64),
+# manylinux (x86_64/aarch64), and Windows x86_64. Locked footprint
+# ~4-9 MB. See ADR-043 (add-pluggable-community-detection).
+community-leiden = [
+    "leidenalg>=0.11.0",
+    "igraph>=1.0.0",
+]
 azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
@@ -170,6 +179,7 @@ source_modules = [
     "rag_mcp.core.profiles",
     "rag_mcp.core.codebase",
     "rag_mcp.core.documents",
+    "rag_mcp.core.community",
     "rag_mcp.daemon",
 ]
 forbidden_modules = [
@@ -187,6 +197,19 @@ ignore_imports = [
     # previously inline.  The contract forbids business logic from importing
     # concrete provider modules; the registry is the sanctioned indirection.
     "rag_mcp.core.metadata.llamaindex -> rag_mcp.core.providers.llm.registry",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Community partitioning is shared infrastructure. It must not depend on
+# either domain consumer, otherwise codebase and document graph packages
+# become coupled through the strategy layer (OpenSpec task 5.1).
+[[tool.importlinter.contracts]]
+name = "community-strategies-independent-of-consumers"
+type = "forbidden"
+source_modules = ["rag_mcp.core.community"]
+forbidden_modules = [
+    "rag_mcp.core.codebase",
+    "rag_mcp.core.documents",
 ]
 unmatched_ignore_imports_alerting = "error"
 

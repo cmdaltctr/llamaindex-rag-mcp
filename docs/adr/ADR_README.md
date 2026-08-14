@@ -49,6 +49,7 @@ development of the LlamaIndex RAG MCP Server.
 | [040](./040-huggingface-hub-1-0-upgrade.md)                        | huggingface-hub 1.0 + transformers 5.0 Upgrade                                               | 2026-08-12 | Accepted |
 | [041](./041-onnxruntime-1-28-upgrade.md)                           | onnxruntime 1.28.0 Upgrade                                                                   | 2026-08-12 | Accepted |
 | [042](./042-dependency-floor-integrity.md)                         | Dependency Floor Integrity                                                                   | 2026-08-12 | Accepted |
+| [043](./043-pluggable-community-detection.md)                    | Pluggable Community Detection                                                                | 2026-08-14 | Accepted |
 
 ## Convention
 

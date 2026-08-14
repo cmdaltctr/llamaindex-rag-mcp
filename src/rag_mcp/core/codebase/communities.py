@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import networkx as nx
 
@@ -78,7 +79,9 @@ def detect_communities(
 
     communities: list[Community] = []
     for comm_set in communities_sets:
-        files = sorted(comm_set)
+        # Code-graph nodes are file paths (str); the shared strategy contract
+        # stays generic so other graph consumers can use any hashable ID.
+        files = sorted(cast(set[str], comm_set))
         # Label by top filenames.
         filenames = [Path(f).stem for f in files[:3]]
         label = "/".join(filenames) if filenames else "unnamed"

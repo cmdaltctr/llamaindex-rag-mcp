@@ -2,17 +2,20 @@
 
 Computes pairwise cosine similarity between document chunk embeddings,
 builds metadata-based and heading-hierarchy edges, and detects document
-communities using Louvain. Also computes cross-links between code and
-document communities.
+communities through the shared strategy registry. Also computes cross-links
+between code and document communities.
 
-All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
+Settings arrive through the frozen ``EffectiveSettings`` value object. The
+module has no cross-imports with ``core/retrieval``.
 """
 
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 import networkx as nx
 
@@ -202,15 +205,15 @@ def detect_document_communities(
 
     communities: list[DocCommunity] = []
     for comm_set in communities_sets:
-        chunks = sorted(comm_set)
+        # Document-graph node IDs are strings; the shared strategy contract
+        # remains generic for consumers that use other hashable identifiers.
+        chunks = sorted(cast(set[str], comm_set))
         # Determine representative category.
         categories = [
             graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
         ]
         if categories:
             # Most common category.
-            from collections import Counter
-
             category = Counter(categories).most_common(1)[0][0]
         else:
             category = ""

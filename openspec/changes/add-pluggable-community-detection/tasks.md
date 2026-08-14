@@ -16,42 +16,42 @@
 ## 3. Optional Leiden Integration
 
 - [x] 3.1 Verify `leidenalg` and `igraph` wheel support, Python compatibility, locked size, and dependency-floor impact on every supported platform before declaring version floors.
-- [ ] 3.2 Add a `community-leiden` optional dependency extra without changing the base installation.
-- [ ] 3.3 Create an acyclic lazy `integrations/leidenalg.py` adapter that preserves stable node identifiers, isolated nodes, edge weights, resolution semantics, and the injected seed during NetworkX-to-igraph conversion.
-- [ ] 3.4 Implement and register the flat Leiden strategy against the shared partition contract.
-- [ ] 3.5 Make explicit Leiden selection fail at startup with an installation instruction when the optional dependency is unavailable; do not silently fall back to Louvain.
-- [ ] 3.6 Compare Louvain and Leiden runtime, partition coverage, connectivity, and determinism on representative codebase and document graph fixtures; record results for the architectural decision.
+- [x] 3.2 Add a `community-leiden` optional dependency extra without changing the base installation.
+- [x] 3.3 Create an acyclic lazy `integrations/leidenalg.py` adapter that preserves stable node identifiers, isolated nodes, edge weights, resolution semantics, and the injected seed during NetworkX-to-igraph conversion.
+- [x] 3.4 Implement and register the flat Leiden strategy against the shared partition contract.
+- [x] 3.5 Make explicit Leiden selection fail at startup with an installation instruction when the optional dependency is unavailable; do not silently fall back to Louvain.
+- [x] 3.6 Compare Louvain and Leiden runtime, partition coverage, connectivity, and determinism on representative codebase and document graph fixtures; record results for the architectural decision.
 
 ## 4. Complete Integrations and Registry Eligibility Audit
 
-- [ ] 4.1 Recursively inventory every Python module under `src/rag_mcp/integrations/`, including package facades, Azure, Magika, the PDF factory, all three PDF adapters, and the new Leiden adapter; record a baseline module count.
-- [ ] 4.2 Record each integration module's native or optional availability, configuration selector, shared contract, fallback owner, callers, and disposition as registry strategy, capability integration, factory, facade, or direct implementation.
-- [ ] 4.3 Audit community detection, chunking, metadata extraction, embedding providers, LLM providers, sparse retrieval, and reranking using the same classification criteria.
-- [ ] 4.4 Verify Magika against the criteria and document whether it remains a single capability integration or has interchangeable configured implementations requiring registration.
-- [ ] 4.5 Verify whether concrete `pypdf`, `pypdfium2`, and `liteparse` implementations must register behind the existing `auto` factory; preserve the factory's capability-resolution role and ADR-020 semantics.
-- [ ] 4.6 Verify whether `document_backend=local|azure` forms one interchangeable strategy contract; retain current credential degradation until a dedicated migration is approved.
-- [ ] 4.7 Register confirmed missing strategy implementations whose migration preserves behaviour, dependency boundaries, factory APIs, and persisted-data compatibility.
-- [ ] 4.8 Create separate OpenSpec follow-up proposals for audit findings that would change defaults, public behaviour, fallback semantics, dependencies, or stored data.
-- [ ] 4.9 Add contract tests that compare documented configurable strategy names with live registries and fail when any `integrations/**/*.py` module is absent from the maintained inventory.
+- [x] 4.1 Recursively inventory every Python module under `src/rag_mcp/integrations/`, including package facades, Azure, Magika, the PDF factory, all three PDF adapters, and the new Leiden adapter; record a baseline module count.
+- [x] 4.2 Record each integration module's native or optional availability, configuration selector, shared contract, fallback owner, callers, and disposition as registry strategy, capability integration, factory, facade, or direct implementation.
+- [x] 4.3 Audit community detection, chunking, metadata extraction, embedding providers, LLM providers, sparse retrieval, and reranking using the same classification criteria.
+- [x] 4.4 Verify Magika against the criteria and document whether it remains a single capability integration or has interchangeable configured implementations requiring registration.
+- [x] 4.5 Verify whether concrete `pypdf`, `pypdfium2`, and `liteparse` implementations must register behind the existing `auto` factory; preserve the factory's capability-resolution role and ADR-020 semantics.
+- [x] 4.6 Verify whether `document_backend=local|azure` forms one interchangeable strategy contract; retain current credential degradation until a dedicated migration is approved.
+- [x] 4.7 Register confirmed missing strategy implementations whose migration preserves behaviour, dependency boundaries, factory APIs, and persisted-data compatibility.
+- [x] 4.8 Create separate OpenSpec follow-up proposals for audit findings that would change defaults, public behaviour, fallback semantics, dependencies, or stored data.
+- [x] 4.9 Add contract tests that compare documented configurable strategy names with live registries and fail when any `integrations/**/*.py` module is absent from the maintained inventory.
 
 ## 5. Architecture and Behaviour Verification
 
-- [ ] 5.1 Extend import-linter coverage to include `core.community` and enforce the acyclic `core → integrations` dependency direction.
-- [ ] 5.2 Test both strategies through codebase and document graph consumers, including deterministic membership, unknown-name failure, missing-extra failure, weighted edges, and isolated nodes.
-- [ ] 5.3 Confirm community detection makes no LLM call and that no algorithm-specific object escapes the shared strategy boundary.
+- [x] 5.1 Extend import-linter coverage to include `core.community` and enforce the acyclic `core → integrations` dependency direction.
+- [x] 5.2 Test both strategies through codebase and document graph consumers, including deterministic membership, unknown-name failure, missing-extra failure, weighted edges, and isolated nodes.
+- [x] 5.3 Confirm community detection makes no LLM call and that no algorithm-specific object escapes the shared strategy boundary.
 - [ ] 5.4 Confirm a base-only lowest-direct dependency installation runs Louvain and the fast test suite without importing Leiden packages.
-- [ ] 5.5 Confirm an installation with the Leiden extra passes targeted graph tests on every supported Python version.
+- [x] 5.5 Confirm an installation with the Leiden extra passes targeted graph tests on every supported Python version.
 
 ## 6. Documentation and Decision Record
 
-- [ ] 6.1 Document the community algorithm and seed settings in `.env.example`, configuration guidance, and graph documentation.
-- [ ] 6.2 Document installation and startup-error behaviour for the optional Leiden extra.
-- [ ] 6.3 Create an ADR recording the registry placement, flat partition contract, deterministic seed policy, and selection of `leidenalg` over NetworkX backends, graspologic, and a local algorithm port.
-- [ ] 6.4 Add the strategy-registration inventory and eligibility rule to the architecture guide, including the Magika classification.
+- [x] 6.1 Document the community algorithm and seed settings in `.env.example`, configuration guidance, and graph documentation.
+- [x] 6.2 Document installation and startup-error behaviour for the optional Leiden extra.
+- [x] 6.3 Create an ADR recording the registry placement, flat partition contract, deterministic seed policy, and selection of `leidenalg` over NetworkX backends, graspologic, and a local algorithm port.
+- [x] 6.4 Add the strategy-registration inventory and eligibility rule to the architecture guide, including the Magika classification.
 
 ## 7. Final Validation
 
-- [ ] 7.1 Run `openspec validate add-pluggable-community-detection --strict` and correct every validation error.
-- [ ] 7.2 Run targeted community, codebase-map, document-graph, settings, composition-root, dependency-floor, and import-contract tests.
-- [ ] 7.3 Run `uv run ruff check`, `uv run pyright`, and `uv run lint-imports` for affected modules.
+- [x] 7.1 Run `openspec validate add-pluggable-community-detection --strict` and correct every validation error.
+- [x] 7.2 Run targeted community, codebase-map, document-graph, settings, composition-root, dependency-floor, and import-contract tests.
+- [x] 7.3 Run `uv run ruff check`, `uv run pyright`, and `uv run lint-imports` for affected modules.
 - [ ] 7.4 Ask for approval, then run the full fast suite with branch coverage and confirm all project coverage floors remain satisfied.
