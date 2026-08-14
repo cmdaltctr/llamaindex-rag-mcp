@@ -33,10 +33,11 @@
 - [ ] 5.6 Unit test: result-shape contract — all pre-existing keys and types unchanged, new key present on error-path dicts too
 - [ ] 5.7 Confirm existing suites still pass: `uv run pytest tests/test_ingestion.py tests/test_watcher.py tests/test_cli.py -m "not slow"`
 
-## 6. Surface pass and docs
+## 6. Documentation, ADR, and surface pass
 
 - [ ] 6.1 Pass `files_skipped_unchanged` through the CLI report (`transports/cli/_report.py` summary table) and leave the MCP tool result pass-through as-is (dict already flows through)
 - [ ] 6.2 Update `docs/guides/ingestion.md` with the skip behaviour, the one-time legacy re-ingest, and the `INGESTION__SKIP_UNCHANGED` escape hatch
 - [ ] 6.3 Grep `docs/guides/` for stale claims that ingestion always re-embeds; fix any found
-- [ ] 6.4 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage floors hold for touched modules (`core/ingestion` ≥95%)
-- [ ] 6.5 Run `ruff check`, `ruff format --check`, and the import-contract suite; fix any violations
+- [ ] 6.4 Write `docs/adr/ADR-0XX-ingestion-change-detection.md` recording: (a) hash source decision — SHA-256 of file bytes over mtime+size proxy (misses same-size edits, breaks on checkout-mtime resets) and git-commit keying (only valid in repos; ingestion targets often are not); (b) hash storage in Chroma chunk metadata over a sidecar state file (hash lifetime stays exactly as stale as the chunks; no second store to drift); (c) the skip-before-delete ordering constraint (deleting first discards the stored hash); (d) the known limitation that the hash covers file content only — embedding-model or chunking-parameter changes require `INGESTION__SKIP_UNCHANGED=false` or a collection rebuild, deliberately not mixed into the hash (YAGNI); (e) cross-reference to `add-per-collection-persist-dirs`: a collection migrated to a fresh persist dir re-ingests once, which is the legacy-chunks scenario by design
+- [ ] 6.5 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm coverage floors hold for touched modules (`core/ingestion` ≥95%)
+- [ ] 6.6 Run `ruff check`, `ruff format --check`, and the import-contract suite; fix any violations
