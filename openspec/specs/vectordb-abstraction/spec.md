@@ -83,7 +83,8 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 #### Scenario: Existing collections keep working
 
-- **WHEN** the server starts against existing `output/chroma_*` data
+- **WHEN** the server starts against an existing flat `chroma_persist_dir`
+  (default `./chroma_db`) containing collections
 - **THEN** all previously indexed collections MUST be readable and queryable
   with no data migration
 
@@ -98,8 +99,8 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 ### Requirement: Store selection via configuration
 
 The system SHALL select the vector store implementation via a
-`VECTOR_STORE` environment variable defaulting to `chroma`, resolved through
-`config.py` and constructed in `compose.py`. The constructed store SHALL be
+`VECTOR_STORE` environment variable defaulting to `chroma`, read from
+`config/` and constructed in `compose.py`. The constructed store SHALL be
 passed to consumers by injection, including to the codebase map subsystem
 under `core/codebase/`.
 

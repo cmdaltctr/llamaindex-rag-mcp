@@ -30,25 +30,27 @@ the legacy-chunks scenario already covered by that change's spec delta.
 
 - Default per-collection isolation: when no explicit mapping exists, each
   collection resolves to its own persist directory
-  (`{chroma_db_dir}/{collection_name}` by default), giving each collection
+  (`{chroma_persist_dir}/{collection_name}` by default), giving each collection
   its own SQLite file and eliminating cross-collection write lock
   contention with no HTTP server and no change to stdio transport.
 - Opt-in grouping: an explicit mapping table assigns collections to shared
   persist directories (for example `journal_a` and `journal_b` both into a
   `journals` directory), for callers who want them co-located.
-- The resolver lives in `config/` (single source of truth for settings
-  data, no business logic) with `compose.py` performing resolution and
-  wiring — same registry-dispatch pattern as the reranker-per-profile
-  setting, no `if/elif` over collection names.
+- `config/__init__.py` owns the mapping data and mirrors it in
+  `core/settings.py`. `compose.py` owns the pure `dict.get` resolution and
+  a directory-keyed store provider. The provider builds or reuses the store
+  for each operation's resolved directory and injects it into every consumer,
+  with no registry and no `if/elif` over collection names.
 - `ChromaVectorStore.__init__(persist_dir=...)`
   (`core/vectordb/chroma.py`) already accepts a per-instance override; the
   change routes construction through the resolved directory rather than
   the flat global default.
 - **BREAKING (behavioural, with migration path)**: collections previously
   living in the shared flat `./chroma_db` directory are not visible under
-  the new default directory layout. A one-time migration (or documented
-  re-ingest) moves or rebuilds them. The existing
-  `chroma_persist_dir` setting remains honoured as the parent root.
+  the new default directory layout. A one-time ChromaDB API export/import
+  migration preserves their stored embeddings. Documented re-ingestion is
+  the fallback and recomputes embeddings. The existing `chroma_persist_dir`
+  setting remains honoured as the parent root.
 
 Not in scope: an HTTP Chroma server mode, transport-layer changes,
 cross-process locking, and change detection itself (covered by
@@ -56,12 +58,11 @@ cross-process locking, and change detection itself (covered by
 
 **Cloud evolution (deferred, recorded):** this change keeps the embedded
 `PersistentClient` model. The per-collection layout does not lock out a
-future move to a Chroma server or managed cloud deployment — the swap
-happens at the single construction seam in `compose.py`
-(`PersistentClient(path=...)` → `HttpClient(host=..., port=...)`), already
-pinned by the `vectordb-abstraction` "persist directory arrives resolved"
-contract. The ADR for this change SHALL record the cloud-evolution path so
-the decision is deliberate, not accidental.
+future move to a Chroma server or managed cloud deployment. `compose.py`
+remains the store-selection seam, while ChromaDB client construction stays
+inside `core/vectordb/chroma.py` under the existing single-import-site
+contract. A future HTTP-backed implementation can replace the local store at
+that seam. The ADR for this change SHALL record this cloud-evolution path.
 
 ## Capabilities
 
@@ -110,7 +111,8 @@ the decision is deliberate, not accidental.
   (2) the agentic retrieval loop itself — multi-query fan-out,
   self-correcting retrieval, per-session namespaces — which is where RAG
   quality work lives and is the workload that eventually justifies
-  Option 2; (3) cloud evolution — swapping `PersistentClient` for
-  `HttpClient` (self-hosted `chroma run` or managed cloud) at the single
-  `compose.py` construction seam. Recording them makes the deferral
-  deliberate rather than accidental.
+  Option 2; (3) cloud evolution — selecting an `HttpClient`-backed store
+  (self-hosted `chroma run` or managed cloud) at the `compose.py`
+  store-selection seam, with ChromaDB construction remaining inside
+  `core/vectordb/chroma.py`. Recording them makes the deferral deliberate
+  rather than accidental.

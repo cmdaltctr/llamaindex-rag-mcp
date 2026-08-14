@@ -68,32 +68,49 @@ Alternatives considered:
 ### D2: Static mapping table, resolved at the composition root
 
 The grouping table is configuration data: a dict mapping collection name →
-group directory name, loaded via the nested settings convention (env var
-JSON or defaults source, exact encoding in tasks). The default rule needs
-no table entry: unmapped collection → own subdirectory.
+group directory name, loaded from a flat, JSON-encoded environment variable
+or the defaults source. It follows the cross-cutting Storage convention used
+by `CHROMA_PERSIST_DIR` and `VECTOR_STORE`; the nested `__` convention applies
+only to subpackage blocks. The default rule needs no table entry: an unmapped
+collection resolves to its own subdirectory.
 
 Resolution lives in `compose.py`, using dispatch over configured data (a
 `dict.get` plus the default rule) — no `if/elif` over collection names, no
 registry needed for a pure lookup. `config/` holds the data; `compose.py`
 holds the resolution; consistent with the config-composition-root
-invariant. `ChromaVectorStore` construction receives the resolved
-directory, and the lazy flat-default read inside `_get_client()` is
-retired for the production path.
+invariant. A directory-keyed provider builds or reuses one
+`ChromaVectorStore` for the operation's resolved path, then injects that store
+through MCP, CLI, watcher, ingestion, retrieval, deletion, listing, profile,
+and codebase-map paths. The production `_get_client()` path rejects a missing
+injected directory instead of reading the lazy flat default.
 
 Filesystem-as-registry (the LlamaIndex trick): a group directory that does
 not exist is created on first use; listing the parent directory enumerates
 all storage locations. No sidecar state file exists in this option.
 
-### D3: Migration = file moves, not re-embedding
+Collection names and mapped group names MUST be validated before path
+construction. Each value must be a non-empty, safe single path component.
+Absolute paths, separators, `.`, and `..` are rejected so no resolved path can
+escape `chroma_persist_dir`. The resolver does not rely on ChromaDB validation.
 
-A Chroma `persist_dir` directory is self-contained (SQLite + supporting
-files). Migrating a collection from the flat layout to its own
-subdirectory is a directory move/rename, performed by a small CLI command
-(`rag-mcp migrate-storage` or a documented manual step — tasks decide) on
-a stopped server. No embedding recomputation. Rollback is the reverse
-move. Collections the operator elects not to migrate are simply re-ingested
-into fresh directories; with `add-ingestion-change-detection` landed, the
-first re-ingest into a fresh directory is also the last full one.
+### D3: Migration = API export/import, not directory moves
+
+A Chroma `persist_dir` is self-contained, but every collection in the legacy
+flat layout shares its SQLite database. No per-collection directory exists to
+move. With the server stopped, `rag-mcp migrate-storage` exports each
+collection through the ChromaDB API, including IDs, embeddings, documents,
+and metadata, then imports those records into the resolved destination. The
+migration copies stored vectors and MUST NOT invoke the embedding provider.
+
+The command creates a backup of the source root before writing. It builds each
+destination in a sibling staging directory, verifies the copied records, then
+renames the staging directory into place. An existing destination is copied to
+staging first and may receive another grouped collection only when no
+collection name or record conflicts. An exact prior import is skipped, so a
+partial run can resume safely. A conflict aborts before the destination swap;
+a failed import leaves the source and existing destination unchanged. Rollback
+restores the source backup and the retained pre-swap destination backup.
+Re-ingestion remains a fallback and recomputes embeddings.
 
 ### D4: Empty/absent directories never create collections implicitly
 
@@ -102,12 +119,20 @@ Directory creation happens lazily on first write via Chroma's own
 returns a path; it does not touch the filesystem. This keeps resolution
 pure and testable without disk I/O.
 
+### D5: Mapping changes require explicit migration
+
+`collection_group_map` is static after a collection's first write. Changing an
+own-directory, group-directory, or group-to-group mapping without moving data
+would make the collection appear empty at its new path. The operator MUST run
+the D3 migration for each mapping change, or re-ingest the collection. The
+resolver never moves existing data automatically.
+
 ## Risks / Trade-offs
 
 - [BREAKING: existing collections invisible under the new default layout]
-  → One-time migration command (D3) + clear release notes; the flat
-  directory remains readable by pointing a group mapping at it for
-  transition periods.
+  → One-time migration command (D3) + clear release notes. Group mappings
+  always resolve below the parent root, so they cannot expose the legacy flat
+  store. Transitional compatibility uses migration or re-ingestion only.
 - [Two agents writing the SAME collection still contend] → Out of scope;
   documented. Same-collection concurrency requires the server mode
   (deferred).
@@ -122,16 +147,16 @@ pure and testable without disk I/O.
 
 ## Migration Plan
 
-1. Ship with a transition default: if the flat `./chroma_db` directory
-   contains collections and no per-collection subdirectory exists yet,
-   the operator runs the migration command once (server stopped), which
-   moves each collection's data to its resolved subdirectory.
-2. Rollback: move directories back (or remap via a group entry pointing
-   at the original flat directory) and revert the commit.
-3. Re-ingest is always a functional alternative to migration (see D3).
+1. Detect collections in the configured flat `chroma_persist_dir` (default
+   `./chroma_db`) and require the server to be stopped.
+2. Back up the source root. Export and import each collection through the
+   ChromaDB API into its resolved staging destination, then verify IDs,
+   embeddings, documents, and metadata before the destination swap.
+3. Resume exact prior imports, reject conflicts, and report partial failures.
+   Restore retained backups for rollback.
+4. Use re-ingestion only as the documented fallback. It recomputes embeddings.
 
 ## Open Questions
 
-None blocking. The env-var encoding of the mapping table (JSON dict vs
-repeated vars) is decided during implementation per ergonomics; either
-satisfies the spec.
+None blocking. The mapping table uses one flat, JSON-encoded environment
+variable, as defined in D2.

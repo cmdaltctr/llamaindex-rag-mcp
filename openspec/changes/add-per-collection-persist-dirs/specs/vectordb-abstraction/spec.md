@@ -25,11 +25,12 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 #### Scenario: Existing collections keep working
 
-- **WHEN** the server starts against existing `output/chroma_*` data
+- **WHEN** the server starts against an existing flat `chroma_persist_dir`
+  (default `./chroma_db`) containing collections in the pre-change layout
 - **THEN** all previously indexed collections MUST be readable and queryable
   after the documented storage-layout migration defined by the
-  `collection-storage-layout` capability (or an equivalent re-ingest),
-  with no embedding recomputation during migration
+  `collection-storage-layout` capability, which MUST preserve stored
+  embeddings, or after an equivalent re-ingest, which recomputes them
 
 #### Scenario: Existing tests pass against the implementation
 
@@ -42,8 +43,8 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 ### Requirement: Store selection via configuration
 
 The system SHALL select the vector store implementation via a
-`VECTOR_STORE` environment variable defaulting to `chroma`, resolved through
-`config.py` and constructed in `compose.py`. The constructed store SHALL be
+`VECTOR_STORE` environment variable defaulting to `chroma`, read from
+`config/` and constructed in `compose.py`. The constructed store SHALL be
 passed to consumers by injection, including to the codebase map subsystem
 under `core/codebase/`. The store's persist directory SHALL be resolved per
 collection by the composition root according to the
@@ -75,5 +76,5 @@ default to decide where to place data.
   collection
 - **THEN** the persist directory SHALL already be resolved from the
   collection-storage-layout rules
-- **THEN** the store SHALL NOT consult a global flat default at client
-  construction time
+- **AND** the store SHALL reject a missing injected directory and MUST NOT
+  consult a global flat default during any production client access
