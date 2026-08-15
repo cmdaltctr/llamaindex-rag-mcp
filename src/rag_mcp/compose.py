@@ -4,10 +4,9 @@ This is the **only** module that instantiates provider and pipeline
 objects.  It reads the resolved ``Settings`` from ``rag_mcp.config``
 and wires objects together by resolving registries.
 
-Importing this module triggers the LlamaIndex global ``Settings.embed_model``
-assignment (previously done at import time in ``config.py``).  This means
-entry points (``server.py``, ``cli.py``) should import ``compose`` early
-in their startup sequence.
+Entry points call :func:`ensure_runtime_setup` during startup to assign the
+LlamaIndex global ``Settings.embed_model`` and register the default vector
+store. Importing this module has no runtime side effects.
 """
 
 from __future__ import annotations
@@ -201,6 +200,16 @@ def build_embed_model(settings: Settings | None = None) -> Any:
     return build_fn(settings)
 
 
+def runtime_summary() -> tuple[str, int, int]:
+    """Return resolved embedding settings for startup logging."""
+    settings = get_settings()
+    return (
+        settings.embed_model,
+        settings.ingestion.embed_batch_size,
+        settings.ingestion.embed_concurrency,
+    )
+
+
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
@@ -338,16 +347,40 @@ def _resolve_active_strategies(settings: Settings) -> None:
         ("chunking", chunking_registry, settings.chunking.strategy_fallback),
         ("metadata", metadata_registry, settings.metadata.extraction_mode),
         ("embeddings", embed_registry, _resolve_effective_embed_provider(settings)),
-        ("llm", llm_registry, settings.metadata_llm_provider),
     ]
+    if settings.metadata.extraction_mode in ("llamaindex", "local"):
+        # Only these two modes route through the LLM registry (see
+        # core.metadata.extractor._LLM_BACKED_MODES). Resolve the
+        # local/cloud alias to the concrete backend name here so the
+        # actually-selected provider is what gets validated below —
+        # not the alias itself, which is always a valid registry miss.
+        llm_backend = (
+            settings.cloud_backend
+            if settings.metadata_llm_provider == "cloud"
+            else settings.local_backend
+        )
+        active.append(("llm", llm_registry, llm_backend))
 
     for label, registry, name in active:
-        if not name or name in ("disabled", "none"):
+        if label == "chunking" and name == "markdown":
+            # The default document path is dispatched inline by
+            # core.ingestion.chunker, so it has no callable registry entry.
+            continue
+        if label == "metadata" and name in ("disabled", "local"):
+            # Both modes are validated by Settings. ``disabled`` has no
+            # implementation, while ``local`` selects a provider strategy
+            # inline in core.metadata.extractor.
             continue
         if name not in registry.available():
-            # Not a registry-backed selection (e.g. a mode handled inline);
-            # leave validation to the consuming dispatcher.
-            continue
+            available = ", ".join(registry.available())
+            if label == "chunking":
+                raise ValueError(
+                    f"CHUNKING__STRATEGY_FALLBACK={name!r} is not a registered "
+                    f"strategy. Available: {available}"
+                )
+            raise ValueError(
+                f"Configured {label} selection {name!r} is not registered. Available: {available}"
+            )
         registry.get(name)
         logger.debug("Resolved active %s strategy %r at startup", label, name)
 
@@ -367,9 +400,8 @@ def ensure_runtime_setup() -> None:
 
     Construction failures (``ImportError`` for missing optional deps,
     ``ValueError`` for missing credentials) propagate instead of being
-    swallowed.  Because this function runs at module scope, the failure
-    surfaces at import time — consistent with the existing
-    ``VECTOR_STORE`` unknown-value check (ADR-034).
+    swallowed. Entry points call this function at startup so failures have
+    a controlled error boundary.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -385,8 +417,6 @@ def ensure_runtime_setup() -> None:
     # registered default vector store — leaving either unset and continuing
     # turns a construction failure into a confusing downstream error (or
     # silent misbehaviour) instead of a clear startup failure.  Because
-    # ensure_runtime_setup() runs at module scope, the failure surfaces at
-    # import time, consistent with the existing VECTOR_STORE check.
     LlamaIndexSettings.embed_model = build_embed_model(settings)
     from .core.vectordb import set_default_store
 
@@ -408,8 +438,3 @@ def reset_runtime_setup() -> None:
     """
     global _runtime_setup_done
     _runtime_setup_done = False
-
-
-# Trigger runtime setup on import (preserves the pre-refactor side effect
-# where importing config.py would set Settings.embed_model).
-ensure_runtime_setup()

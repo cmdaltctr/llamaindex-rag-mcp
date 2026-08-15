@@ -33,6 +33,8 @@ architecture), see the [ADR index](../adr/).
 | 005 | [fetch_k override parameter for experiment pool-size sweeps](005-fetch-k-override-for-experiment-pool-sweeps.md)                | Accepted | 2026-06-29 |
 | 006 | [OpenRouter structured outputs are per-endpoint, so `require_parameters` needs a downgrade path](006-openrouter-structured-outputs-per-endpoint.md) | Accepted | 2026-08-07 |
 | 007 | [CI quality toolchain consolidation — Ruff, CodeRabbit, Codecov](007-ci-quality-toolchain-consolidation.md)                        | Accepted | 2026-08-10 |
+| 008 | [Copy uv cache files for NLTK Pathsec in Linux CI](008-copy-uv-cache-files-for-nltk-pathsec.md)                                    | Accepted | 2026-08-13 |
+| 009 | [Dead TYPE_CHECKING imports in provider modules](009-dead-type-checking-imports-in-provider-modules.md)                            | Accepted | 2026-08-13 |
 
 ## Status values
 

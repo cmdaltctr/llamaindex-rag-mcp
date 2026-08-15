@@ -16,6 +16,6 @@ Leiden: leidenalg RBConfigurationVertexPartition (γ=1.0), igraph backend.
   (complete, disjoint, non-empty coverage, including isolated nodes).
 - Determinism: all repeats returned identical memberships for both
   algorithms at seed 0.
-- Runtime difference at this scale is milliseconds; see ADR-043 for
+- Runtime difference at this scale is milliseconds; see ADR-044 for
   the selection rationale (quality of partitions, not speed, drives
   the optional-extra offer).

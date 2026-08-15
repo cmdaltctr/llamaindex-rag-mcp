@@ -205,7 +205,7 @@ Connection details for each: [Providers](providers.md).
 | `markdown_chunk_size` | `1024` | Larger, because Markdown splits on headings |
 | `markdown_heading_prepend` | `false` | Prepend the heading path to each chunk |
 | `markdown_min_chunk_fraction` | `0.0` | Drop chunks below this fraction of the target |
-| `strategy_fallback` | `markdown` | Strategy for file types we cannot identify. **Profile-owned** |
+| `strategy_fallback` | `markdown` | Strategy for file types we cannot identify. **Profile-owned**. Accepted values: inline `markdown`, or registered `code`, `config`, and `sentence` |
 
 Known file types always use content-type dispatch — a `.py` file gets the code
 splitter regardless of the fallback.
@@ -238,7 +238,7 @@ splitter regardless of the fallback.
 
 | Field | Default | What it does |
 |---|---|---|
-| `extraction_mode` | `llamaindex` | `disabled`, `keyword`, `local`, or `llamaindex` |
+| `extraction_mode` | `llamaindex` | `disabled`, `keyword`, `local`, `llamaindex`, `ollama`, `llamacpp`, or `openrouter` |
 | `keyword_rules` | — | JSON array of custom `{pattern, category}` rules |
 | `taxonomy_mode` | `category` | `category` or `file_type`. **Profile-owned** |
 | `ollama_classify_model` | `qwen3:0.6b` | Ollama model used for classification |
@@ -252,8 +252,8 @@ splitter regardless of the fallback.
 | `ollama_pipeline_timeout_override` | `None` | Per-provider override of `pipeline_timeout` for `ollama`. Falls back to the shared value when unset |
 | `openrouter_pipeline_timeout_override` | `None` | Per-provider override of `pipeline_timeout` for `openrouter`. Falls back to the shared value when unset |
 
-Set `extraction_mode=disabled` to skip classification entirely — much faster
-ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md),
+Set `extraction_mode=disabled` to skip classification entirely. This avoids
+classification and category metadata. Details: [Metadata extraction](metadata-extraction.md),
 including the six per-provider timeout overrides above and how
 degradation from the configured mode is reported in the ingestion result.
 
@@ -321,7 +321,7 @@ uv sync --extra community-leiden
 Setting `COMMUNITY_ALGORITHM=leiden` without the extra fails startup with the
 installation instruction above. There is no silent fallback to `louvain`: an
 explicit algorithm selection is an operator contract. See
-[ADR-043](../adr/043-pluggable-community-detection.md).
+[ADR-044](../adr/044-pluggable-community-detection.md).
 
 ---
 

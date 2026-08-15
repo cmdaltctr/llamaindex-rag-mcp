@@ -63,7 +63,7 @@ pdf-pypdfium2 = [
 # Floors pair on the igraph 1.x boundary: leidenalg 0.11+ declares
 # igraph<2.0,>=1.0.0, both ship abi3 wheels for macOS (arm64/x86_64),
 # manylinux (x86_64/aarch64), and Windows x86_64. Locked footprint
-# ~4-9 MB. See ADR-043 (add-pluggable-community-detection).
+# ~4-9 MB. See ADR-044 (add-pluggable-community-detection).
 community-leiden = [
     "leidenalg>=0.11.0",
     "igraph>=1.0.0",
@@ -329,12 +329,21 @@ select = ["E", "F", "I", "UP", "B", "S"]
 # S108 (/tmp paths) and B017 (broad pytest.raises) are standard test patterns.
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S108", "B017", "S603", "S607"]
+# Experiment scripts are not production code: they call system tools
+# (sysctl), spawn child processes, and use bare DataFrame display.
+"experiments/*/test_*.py" = ["S101", "S108", "B017", "S603", "S607"]
+"experiments/*/run_eval.py" = ["S110", "S603", "S607"]
+"experiments/*/analysis.py" = ["B018"]
+"experiments/*/summarise_eval.py" = ["E501"]
 
 [dependency-groups]
 dev = [
     "import-linter>=2.13",
     "ipywidgets>=8.1.8",
     "jupytext>=1.19.4",
+    # matplotlib powers experiment analysis.py plots only — it is not a
+    # production dependency and must not ship with the package.
+    "matplotlib>=3.11.1",
     "openapi-spec-validator>=0.7.1",
     "pre-commit>=4.0.0",
     "pytest>=9.0.3",
@@ -385,3 +394,5 @@ token = { env = "GH_TOKEN" }
 [tool.pyright]
 include = ["src", "tests", "experiments"]
 exclude = ["**/.venv", "**/__pycache__", "**/.opencode"]
+venvPath = "."
+venv = ".venv"

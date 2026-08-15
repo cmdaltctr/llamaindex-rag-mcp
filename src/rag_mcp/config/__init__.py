@@ -37,6 +37,16 @@ from .sources import LegacyBool  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
+_METADATA_EXTRACTION_MODES = (
+    "disabled",
+    "keyword",
+    "local",
+    "llamaindex",
+    "ollama",
+    "llamacpp",
+    "openrouter",
+)
+
 
 # ── Provider-selection validation helper ──────────────────────────────
 
@@ -185,7 +195,7 @@ class Settings(BaseSettings):
         """Validate provider-selection fields: raise on unrecognised values.
 
         Six provider settings raise ValueError on an unrecognised non-empty
-        value, matching the VECTOR_STORE precedent (ADR-034).  An empty or
+        value. An empty or
         whitespace-only value (``SETTING=`` in .env) is treated as unset and
         reset to the field's declared default — raising on it would be
         hostile to a common operator idiom.
@@ -205,6 +215,12 @@ class Settings(BaseSettings):
         _validate_provider_value(
             self, "metadata_llm_provider", ("local", "cloud"), "METADATA_LLM_PROVIDER"
         )
+        _validate_provider_value(
+            self.metadata,
+            "extraction_mode",
+            _METADATA_EXTRACTION_MODES,
+            "METADATA__EXTRACTION_MODE",
+        )
         _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
         _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")
         _validate_provider_value(
@@ -220,15 +236,6 @@ class Settings(BaseSettings):
             "RETRIEVAL__RERANK_BACKEND",
         )
         _validate_provider_value(self, "document_backend", ("local", "azure"), "DOCUMENT_BACKEND")
-
-        # Vector store selection (Phase 3, ADR-034).  Only "chroma" is
-        # registered today; unknown values raise at compose time with a
-        # clear error listing available implementations.
-        if self.vector_store not in ("chroma",):
-            raise ValueError(
-                f"VECTOR_STORE={self.vector_store!r} is not a registered "
-                f"implementation. Available: chroma"
-            )
 
         # Azure credential check — deliberate graceful degradation.
         # DOCUMENT_BACKEND=azure is a valid value, but without credentials

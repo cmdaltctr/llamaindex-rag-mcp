@@ -14,6 +14,7 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,6 +24,7 @@ from rag_mcp.compose import (
     build_reranker,
     ensure_runtime_setup,
     reset_runtime_setup,
+    runtime_summary,
 )
 from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
@@ -176,6 +178,14 @@ def test_build_embed_model_validates_unknown_provider() -> None:
         _settings(embed_provider="bogus")
 
 
+def test_runtime_summary_reads_resolved_settings_once() -> None:
+    """Runtime logging details are resolved by the composition root."""
+    settings = _settings(embed_model="summary-model", embed_batch_size=24, embed_concurrency=3)
+    with patch("rag_mcp.compose.get_settings", return_value=settings) as mock_settings:
+        assert runtime_summary() == ("summary-model", 24, 3)
+    mock_settings.assert_called_once()
+
+
 # ── build_reranker ──────────────────────────────────────────────────────────
 
 
@@ -298,7 +308,7 @@ class TestResolveSparseBackendNative:
     def test_native_with_probe_false_falls_back_to_bm25(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """A native request with the probe failing falls back to bm25 with a warning."""
         import logging
@@ -413,13 +423,14 @@ class TestResolveActiveStrategies:
             patch.object(chunking_reg, "get"),
             patch.object(metadata_reg, "get") as mock_metadata,
             patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
         ):
             _resolve_active_strategies(settings)
             mock_metadata.assert_not_called()
+            mock_llm.assert_not_called()
 
-    def test_unknown_name_skips_resolution(self) -> None:
-        """A chunking name not in registry.available() skips the get() call."""
+    def test_unknown_chunking_name_raises_at_startup(self) -> None:
+        """A chunking fallback absent from the registry fails startup."""
         from rag_mcp.compose import _resolve_active_strategies
         from rag_mcp.config import Settings
         from rag_mcp.core.chunking import registry as chunking_reg
@@ -431,6 +442,34 @@ class TestResolveActiveStrategies:
         settings = Settings(
             _env_file=None,
             chunking=ChunkingSettings(strategy_fallback="totally-bogus"),
+        )
+        with (
+            patch.object(chunking_reg, "get") as mock_chunking,
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=r"CHUNKING__STRATEGY_FALLBACK='totally-bogus'.*"
+                r"Available: code, config, sentence",
+            ):
+                _resolve_active_strategies(settings)
+            mock_chunking.assert_not_called()
+
+    def test_markdown_chunking_fallback_skips_registry_resolution(self) -> None:
+        """The inline document-path fallback does not need a registry entry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.chunking.settings import ChunkingSettings
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            chunking=ChunkingSettings(strategy_fallback="markdown"),
         )
         with (
             patch.object(chunking_reg, "get") as mock_chunking,
@@ -464,6 +503,112 @@ class TestResolveActiveStrategies:
             _resolve_active_strategies(settings)
             mock_chunking.assert_any_call("sentence")
 
+    def test_unregistered_metadata_selection_raises_generic_message(self) -> None:
+        """A Settings-accepted metadata mode absent from the registry (a
+        registry/Settings drift) raises the non-chunking diagnostic.
+        Settings validates the mode against its documented accepted set,
+        which is wider than the registered names — 'disabled' and 'local'
+        are accepted without registry entries — so acceptance by Settings
+        does not guarantee the registry holds an implementation."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "available", return_value=()),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get"),
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Configured metadata selection 'llamaindex' is not registered\\.",
+            ):
+                _resolve_active_strategies(settings)
+
+    def test_local_llm_alias_resolves_to_local_backend(self) -> None:
+        """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="local"),
+            metadata_llm_provider="local",
+            local_backend="llamacpp",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_called_once_with("llamacpp")
+
+    def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
+        """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode="llamaindex"),
+            metadata_llm_provider="cloud",
+            cloud_backend="openrouter",
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_called_once_with("openrouter")
+
+    @pytest.mark.parametrize("mode", ["keyword", "disabled"])
+    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self, mode: str) -> None:
+        """'keyword'/'disabled' modes never call the LLM registry."""
+        from rag_mcp.compose import _resolve_active_strategies
+        from rag_mcp.config import Settings
+        from rag_mcp.core.chunking import registry as chunking_reg
+        from rag_mcp.core.metadata import registry as metadata_reg
+        from rag_mcp.core.metadata.settings import MetadataSettings
+        from rag_mcp.core.providers.embeddings import registry as embed_reg
+        from rag_mcp.core.providers.llm import registry as llm_reg
+
+        settings = Settings(
+            _env_file=None,
+            metadata=MetadataSettings(extraction_mode=mode),
+        )
+        with (
+            patch.object(chunking_reg, "get"),
+            patch.object(metadata_reg, "get"),
+            patch.object(embed_reg, "get"),
+            patch.object(llm_reg, "get") as mock_llm,
+        ):
+            _resolve_active_strategies(settings)
+            mock_llm.assert_not_called()
+
 
 # ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
 
@@ -491,15 +636,15 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
     reset_runtime_setup()
 
 
-def test_import_compose_succeeds_under_conftest_defaults() -> None:
-    """Importing rag_mcp.compose in a fresh subprocess survives §5 (§5.6).
+@pytest.mark.parametrize(
+    "module",
+    ["rag_mcp.compose", "rag_mcp.transports.mcp", "rag_mcp.transports.cli"],
+)
+def test_import_does_not_initialise_runtime(module: str) -> None:
+    """Composition and MCP modules import without validating providers.
 
-    conftest.py sets EMBED_PROVIDER=local, LOCAL_BACKEND=ollama,
-    EMBED_MODEL, OLLAMA_BASE_URL, and METADATA_LLM_PROVIDER via
-    setdefault before any import.  Once construction failures propagate
-    at import (§5), invalid defaults would break collection itself.
-    This test runs the import in a fresh subprocess so the result is
-    not masked by the parent process's cached module.
+    A bad provider must only fail when an entry point starts the runtime.
+    This subprocess avoids the parent process's imported-module cache.
     """
     import os
     import subprocess
@@ -507,22 +652,55 @@ def test_import_compose_succeeds_under_conftest_defaults() -> None:
 
     env = {
         **os.environ,
-        "EMBED_PROVIDER": "local",
-        "LOCAL_BACKEND": "ollama",
-        "EMBED_MODEL": "nomic-embed-text",
-        "OLLAMA_BASE_URL": "http://localhost:11434",
-        "METADATA_LLM_PROVIDER": "local",
+        "EMBED_PROVIDER": "not-a-provider",
     }
     result = subprocess.run(
-        [sys.executable, "-c", "import rag_mcp.compose"],
+        [sys.executable, "-c", f"import {module}"],
         env=env,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, (
-        f"import rag_mcp.compose failed in fresh subprocess:\n"
+        f"import {module} failed in fresh subprocess:\n"
         f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
     )
+
+
+def test_pytest_collection_does_not_initialise_runtime() -> None:
+    """Pytest collection succeeds even when runtime configuration is invalid."""
+    import os
+    import subprocess
+
+    env = {**os.environ, "EMBED_PROVIDER": "not-a-provider"}
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "tests/test_compose.py"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "pytest collection initialised the runtime:\n"
+        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
+    )
+
+
+def test_experiment_help_does_not_initialise_runtime() -> None:
+    """The Experiment 11 runner parses help before runtime construction."""
+    import os
+    import subprocess
+
+    script = (
+        Path(__file__).parent.parent
+        / "experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py"
+    )
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr[-500:]
+    assert "--parser" in result.stdout
 
 
 # ── build functions (settings=None delegation) ──────────────────────────────

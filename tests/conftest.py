@@ -14,10 +14,9 @@ import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-# ── IMPORTANT: EMBED_MODEL for test collection ─────────────────────────
-# config.py now requires EMBED_MODEL when LOCAL_BACKEND=ollama, and test
-# files import rag_mcp modules at module level (before fixtures run).
-# This setdefault ensures tests can be collected without a .env file.
+# ── IMPORTANT: EMBED_MODEL for test execution ─────────────────────────
+# Runtime-startup tests need a complete local provider configuration. Imports
+# and collection do not initialise this runtime.
 # LOCAL_BACKEND is set to ollama (core deps) so tests don't require
 # the llamacpp optional dependency group.
 os.environ.setdefault("EMBED_PROVIDER", "local")
@@ -230,10 +229,7 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
     Tests should run without a running Ollama server. MockEmbedding
     produces deterministic embeddings based on text hashing.
 
-    Note: The mock must be applied AFTER module imports because
-    ``config.py`` sets ``Settings.embed_model`` at import time.
-    The ``mcp_server`` fixture re-applies this mock after importing
-    those modules.
+    Runtime setup is explicit, so test imports do not replace this mock.
     """
     _patch_embed_model._mock = MockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
@@ -296,8 +292,7 @@ def mcp_server():
     The ChromaDB and embedding patches are applied via autouse fixtures
     above, so the server uses in-memory ChromaDB and mock embeddings.
 
-    Re-applies MockEmbedding after import because ``config.py``
-    sets ``Settings.embed_model = OllamaEmbedding(...)`` at import time.
+    The test fixture supplies a mock embedding model for tool handlers.
     """
     from rag_mcp.transports.mcp import mcp
 

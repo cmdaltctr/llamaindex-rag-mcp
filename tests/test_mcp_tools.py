@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 from unittest.mock import ANY, patch
 
+import pytest
 from mcp.types import TextContent
 
 from conftest import connected_client
@@ -48,6 +49,19 @@ async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path
         data = _extract_result(result)
         assert data["status"] == "ok"
         assert data["files_indexed"] > 0
+
+
+async def test_ingest_documents_returns_lazy_setup_error(mcp_server) -> None:
+    """Lazy profile-resolver construction errors return an MCP error result."""
+    with patch(
+        "rag_mcp.transports.mcp._get_profile_resolver",
+        side_effect=ImportError("missing optional dependency"),
+    ):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool("ingest_documents", {"path": "ignored.txt"})
+
+    data = _extract_result(result)
+    assert data == {"status": "error", "message": "ImportError: missing optional dependency"}
 
 
 # ── search_documents ───────────────────────────────────────────────────────
@@ -555,13 +569,63 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 
 
 def test_main_calls_mcp_run() -> None:
-    """main() must configure logging and call mcp.run(transport='stdio')."""
-    with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+    """main() prepares runtime state, then calls mcp.run(transport='stdio')."""
+    with (
+        patch("rag_mcp.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
+        patch("rag_mcp.transports.mcp._get_reranker") as mock_reranker,
+        patch("rag_mcp.transports.mcp._get_profile_resolver") as mock_resolver,
+        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+    ):
         from rag_mcp.transports.mcp import main
 
         main()
 
+    mock_setup.assert_called_once()
+    mock_reranker.assert_called_once()
+    mock_resolver.assert_called_once()
     mock_run.assert_called_once_with(transport="stdio")
+
+
+def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) -> None:
+    """main() reports startup configuration errors without starting the server."""
+    with (
+        patch(
+            "rag_mcp.transports.mcp.compose.ensure_runtime_setup",
+            side_effect=ValueError("EMBED_PROVIDER='invalid'"),
+        ),
+        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+        pytest.raises(SystemExit, match="1"),
+    ):
+        from rag_mcp.transports.mcp import main
+
+        main()
+
+    assert "Error: EMBED_PROVIDER='invalid'" in capsys.readouterr().err
+    mock_run.assert_not_called()
+
+
+def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lazy MCP runtime resources are cached after their first construction."""
+    import rag_mcp.transports.mcp as mcp_module
+
+    reranker = object()
+    resolver = object()
+    monkeypatch.setattr(mcp_module, "_reranker", None)
+    monkeypatch.setattr(mcp_module, "_profile_resolver", None)
+
+    with (
+        patch.object(mcp_module.compose, "build_reranker", return_value=reranker) as build_reranker,
+        patch.object(
+            mcp_module.compose, "build_profile_resolver", return_value=resolver
+        ) as build_resolver,
+    ):
+        assert mcp_module._get_reranker() is reranker
+        assert mcp_module._get_reranker() is reranker
+        assert mcp_module._get_profile_resolver() is resolver
+        assert mcp_module._get_profile_resolver() is resolver
+
+    build_reranker.assert_called_once()
+    build_resolver.assert_called_once()
 
 
 # ── search_documents: metadata_filter exposure ─────────────────────────────

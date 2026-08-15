@@ -1,4 +1,4 @@
-# ADR-043: Pluggable Community Detection
+# ADR-044: Pluggable Community Detection
 
 **Date:** 2026-08-14
 **Status:** Accepted

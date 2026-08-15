@@ -21,8 +21,9 @@ class MetadataSettings(BaseModel):
     # assignment is a bare expression, not ``__doc__``.
     model_config = ConfigDict(extra="forbid")
 
-    # Metadata extraction mode: "disabled", "keyword", "local",
-    # "llamaindex".  "ollama" is mapped to "local" for back-compat.
+    # Metadata extraction mode.  Root Settings validates the accepted set:
+    # "disabled", "keyword", "local", "llamaindex", "ollama",
+    # "llamacpp", and "openrouter".
     extraction_mode: str = "llamaindex"
 
     # Optional JSON string of keyword rules overriding the built-in set.
