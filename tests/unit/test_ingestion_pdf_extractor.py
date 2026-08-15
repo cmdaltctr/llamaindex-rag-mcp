@@ -20,10 +20,12 @@ CORPUS_PDF = Path(__file__).resolve().parents[2] / (
 def liteparse_default(effective_settings):
     """Set liteparse as the process-wide PDF reader, restored after the test.
 
-    The PDF factory reads the composition-root default, not per-call settings
-    (gotcha #8a).  This fixture saves the current default, applies liteparse,
-    and restores the original on teardown — explicit save/restore rather than
-    relying on the autouse fixture's blanket reset.
+    The chunker now passes ``resolved.pdf_reader`` to the factory (spec:
+    settings-dependency-injection), but the LiteParse *adapter* still reads
+    worker/OCR defaults from the composition-root default when constructed
+    without arguments — this fixture keeps those values deterministic.
+    Explicit save/restore rather than relying on the autouse fixture's
+    blanket reset.
     """
     from rag_mcp.core.settings import (
         get_default_effective_settings,
@@ -73,7 +75,7 @@ class TestIngestionLiteParsePath:
 
         import rag_mcp.integrations.pdf.factory as factory_mod
 
-        monkeypatch.setattr(factory_mod, "_pdf_reader_logged", True)
+        monkeypatch.setattr(factory_mod, "_pdf_reader_logged", set())
 
         import asyncio
 
@@ -92,3 +94,39 @@ class TestIngestionLiteParsePath:
             == "liteparse"
         ]
         assert len(liteparse_nodes) > 0, "Expected nodes with pdf_reader=liteparse"
+
+
+class TestChunkerThreadsReaderName:
+    """The chunker passes resolved.pdf_reader to the factory (spec delta)."""
+
+    def test_chunker_passes_resolved_reader_to_factory(
+        self, tmp_path, effective_settings, monkeypatch
+    ):
+        """_read_sync calls get_pdf_reader with the injected settings' name."""
+        import asyncio
+
+        from llama_index.core.schema import Document
+
+        import rag_mcp.integrations.pdf as pdf_pkg
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+
+        requested_names: list[str] = []
+
+        class StubExtractor:
+            def load_data(self, *args, **kwargs):
+                return [Document(text="stub pdf text for chunking")]
+
+        def fake_get_pdf_reader(name):
+            requested_names.append(name)
+            return StubExtractor
+
+        monkeypatch.setattr(pdf_pkg, "get_pdf_reader", fake_get_pdf_reader)
+
+        fake_pdf = tmp_path / "stub.pdf"
+        fake_pdf.write_bytes(b"%PDF-1.4 stub")
+        settings = effective_settings(extraction_mode="disabled", pdf_reader="pypdf")
+
+        nodes = asyncio.run(read_and_chunk_file_async(fake_pdf, settings=settings))
+
+        assert requested_names == ["pypdf"]
+        assert len(nodes) > 0

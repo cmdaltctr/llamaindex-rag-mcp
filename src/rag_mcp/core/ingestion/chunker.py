@@ -160,7 +160,9 @@ async def read_and_chunk_file_async(
             try:
                 from ...integrations.azure import read_with_azure_fallback
 
-                documents = await read_with_azure_fallback(file_path)
+                documents = await read_with_azure_fallback(
+                    file_path, pdf_reader=resolved.pdf_reader
+                )
                 # Add content_type metadata to Azure documents.
                 if content_type:
                     for doc in documents:
@@ -193,7 +195,7 @@ async def read_and_chunk_file_async(
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],
             filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader()},
+            file_extractor={".pdf": get_pdf_reader(resolved.pdf_reader)},
         )
         return reader.load_data()
 

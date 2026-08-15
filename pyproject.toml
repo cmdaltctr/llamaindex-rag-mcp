@@ -278,7 +278,6 @@ ignore_imports = [
     "rag_mcp.integrations.magika -> rag_mcp.core.settings",
     "rag_mcp.integrations.azure -> rag_mcp.core.settings",
     "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
-    "rag_mcp.integrations.pdf.factory -> rag_mcp.core.settings",
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings

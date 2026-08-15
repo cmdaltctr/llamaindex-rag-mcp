@@ -282,6 +282,8 @@ def _split_table_rows(table, group_size: int = 50) -> list[str]:
 
 async def read_with_azure_fallback(
     file_path: Path,
+    *,
+    pdf_reader: str,
     max_retries: int = 1,
     retry_delay: float = 5.0,
 ) -> list:
@@ -293,6 +295,8 @@ async def read_with_azure_fallback(
 
     Args:
         file_path: Path to the document file.
+        pdf_reader: Reader name from the caller's injected settings, used
+            by the local fallback chain.
         max_retries: Number of retry attempts before fallback.
         retry_delay: Delay between retries in seconds.
 
@@ -336,14 +340,15 @@ async def read_with_azure_fallback(
                 )
 
     # Fallback to local reader chain.
-    return await _read_with_local_chain(file_path)
+    return await _read_with_local_chain(file_path, pdf_reader)
 
 
-async def _read_with_local_chain(file_path: Path) -> list:
+async def _read_with_local_chain(file_path: Path, pdf_reader: str) -> list:
     """Read a document using the local reader chain (LiteParse → pypdfium2 → pypdf).
 
     Args:
         file_path: Path to the document file.
+        pdf_reader: Reader name from the caller's injected settings.
 
     Returns:
         List of LlamaIndex ``Document`` objects.
@@ -356,7 +361,7 @@ async def _read_with_local_chain(file_path: Path) -> list:
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],
             filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader()},
+            file_extractor={".pdf": get_pdf_reader(pdf_reader)},
         )
         return reader.load_data()
 

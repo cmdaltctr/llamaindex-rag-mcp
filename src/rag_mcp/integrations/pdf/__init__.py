@@ -1,9 +1,11 @@
 """Registry-backed PDF reader factory and adapters.
 
-Public API: :func:`get_pdf_reader` returns a reader adapter from the
-composition-root-resolved ``EffectiveSettings.pdf_reader`` name. ``auto``
-remains an ordered capability policy; concrete readers resolve lazily through
-``integrations.pdf.registry``. See ADR-020 for the adoption rationale.
+Public API: :func:`get_pdf_reader(reader)` returns a reader adapter for the
+caller-supplied ``EffectiveSettings.pdf_reader`` name — the factory performs
+no settings lookup of its own. ``auto`` remains an ordered capability
+policy, resolved locally for callers that bypass the composition root;
+concrete readers resolve lazily through ``integrations.pdf.registry``. See
+ADR-020 for the adoption rationale.
 """
 
 from __future__ import annotations

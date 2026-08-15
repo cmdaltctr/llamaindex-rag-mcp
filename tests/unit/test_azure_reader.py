@@ -145,8 +145,27 @@ class TestFallback:
                 return_value=[],
             ),
         ):
-            result = await read_with_azure_fallback(tmp_path / "test.pdf")
+            result = await read_with_azure_fallback(tmp_path / "test.pdf", pdf_reader="pypdf")
             assert result == []
+
+    @pytest.mark.asyncio
+    async def test_fallback_passes_reader_to_local_chain(self, tmp_path: Path) -> None:
+        """The local chain receives the caller's reader name, not a default."""
+        (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
+
+        with (
+            patch(
+                "rag_mcp.integrations.azure.AzureDocReader._get_client",
+                side_effect=ImportError("no sdk"),
+            ),
+            patch(
+                "rag_mcp.integrations.azure._read_with_local_chain",
+                new_callable=AsyncMock,
+                return_value=[],
+            ) as local_chain,
+        ):
+            await read_with_azure_fallback(tmp_path / "test.pdf", pdf_reader="pypdfium2")
+            local_chain.assert_called_once_with(tmp_path / "test.pdf", "pypdfium2")
 
     @pytest.mark.asyncio
     async def test_retry_on_network_error(self, tmp_path: Path) -> None:
@@ -170,7 +189,10 @@ class TestFallback:
             patch("asyncio.sleep", new_callable=AsyncMock),
         ):
             result = await read_with_azure_fallback(
-                tmp_path / "test.pdf", max_retries=1, retry_delay=0.01
+                tmp_path / "test.pdf",
+                pdf_reader="pypdf",
+                max_retries=1,
+                retry_delay=0.01,
             )
             assert call_count == 2  # Initial + 1 retry
             assert result == []
@@ -193,6 +215,9 @@ class TestFallback:
             patch("asyncio.sleep", new_callable=AsyncMock),
         ):
             result = await read_with_azure_fallback(
-                tmp_path / "test.pdf", max_retries=1, retry_delay=0.01
+                tmp_path / "test.pdf",
+                pdf_reader="pypdf",
+                max_retries=1,
+                retry_delay=0.01,
             )
             assert result == []
