@@ -4,19 +4,26 @@ Define a pluggable PDF reader architecture with environment-variable-driven back
 ## Requirements
 ### Requirement: PDF reader SHALL be selectable via environment variable
 
-The system SHALL read a `PDF_READER` environment variable at config-load time and resolve it to one of the supported parser backends. Accepted values SHALL be `auto`, `liteparse`, `pypdfium2`, and `pypdf`. Any other value SHALL log a warning and fall back to `auto` resolution. The resolved backend SHALL be exposed as a `RESOLVED_PDF_READER` module-level constant in `config.py` computed exactly once at import.
+The system SHALL read a `PDF_READER` environment variable at config-load
+time into the frozen `Settings.pdf_reader` field. Accepted values SHALL be
+`auto`, `liteparse`, `pypdfium2`, and `pypdf`. Any other value SHALL log a
+warning naming the offending value and fall back to `auto`. The composition
+root SHALL resolve `auto` to a concrete backend name exactly once at startup
+and bake the result into the injected `EffectiveSettings.pdf_reader`; no
+module-level resolved constant exists.
 
 #### Scenario: Explicit backend selection via env var
 - **WHEN** `PDF_READER=liteparse` is set and the `liteparse` package is importable
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"liteparse"` and the LiteParse adapter SHALL be used for all `.pdf` ingestion
+- **THEN** the injected `EffectiveSettings.pdf_reader` SHALL equal `"liteparse"` and the LiteParse adapter SHALL be used for all `.pdf` ingestion
 
 #### Scenario: Unknown value falls back to auto with warning
 - **WHEN** `PDF_READER=fastparser` (an unsupported value) is set
 - **THEN** the system SHALL log a warning naming the offending value and the fallback, and SHALL resolve as if `PDF_READER=auto` had been set
 
-#### Scenario: Resolver mirrors existing sparse-backend pattern
-- **WHEN** a developer inspects `config.py`
-- **THEN** the resolver structure SHALL follow the same shape as `_resolve_sparse_backend()` at `config.py:138-160`, including a private `_resolve_pdf_reader()` function and a `RESOLVED_PDF_READER` constant
+#### Scenario: Resolution happens once at the composition root
+- **WHEN** the server or CLI entry point starts
+- **THEN** `compose.resolve_pdf_reader` SHALL run once over the frozen settings
+- **AND** every operation below the entry point SHALL read the concrete name from its injected settings, with no repeated probing
 
 ### Requirement: Auto resolution SHALL probe backends in preference order with graceful fallback
 
@@ -73,20 +80,28 @@ Users who do not install the `[pdf-liteparse]` optional-dependency extra and do 
 
 ### Requirement: Reader failures SHALL surface as MCP error dictionaries, never exceptions
 
-Every PDF reader adapter SHALL wrap its underlying parser calls so that any exception (corrupt PDF, native crash, IO failure, encoding error) is caught and re-raised as a structured error dictionary matching the existing `_make_file_detail()` helper contract at `ingestion.py:54`: `{"file": "<filename>", "status": "failed", "chunks": 0, "error": "<human-readable detail>"}`. This shape is consumed directly by `ingest_path_async`'s `file_details` aggregation. Adapters SHALL NEVER raise an exception that propagates out of `ingest_documents` or any other MCP tool handler, per the project's "Never raise from MCP tool handlers" gotcha (AGENTS.md).
+The ingestion pipeline SHALL catch every per-file reader failure (corrupt
+PDF, native crash, IO failure, encoding error) around the chunking stage
+and convert it into a structured file detail through
+`core/ingestion/loader.py:make_file_detail`:
+`{"file": "<filename>", "status": "failed", "chunks": 0, "error":
+"<human-readable detail>"}`. Reader adapters themselves SHALL NOT be
+required to catch their parser's exceptions. No exception SHALL propagate
+out of `ingest_path_async` or any MCP tool handler, per the project's
+"Never raise from MCP tool handlers" gotcha (AGENTS.md).
 
 #### Scenario: Corrupt PDF raises inside adapter
 - **WHEN** a `.pdf` file is structurally corrupt and the underlying parser raises an exception
-- **THEN** the adapter SHALL catch the exception, log it with the filename, and return a structured error dictionary with `status="error"` and a descriptive message
+- **THEN** the ingestion pipeline SHALL catch the exception, log it with the filename, and append a structured error detail with `status="failed"` and a descriptive message
 - **AND** the exception SHALL NOT propagate to the `ingest_documents` caller
 
 #### Scenario: LiteParse native crash
 - **WHEN** the LiteParse native library crashes (segfault wrapper, FFI panic, or Rust panic propagated through `pyo3`)
-- **THEN** the adapter SHALL catch the resulting Python-visible exception, log it, and return a structured error dictionary
+- **THEN** the ingestion pipeline SHALL catch the resulting Python-visible exception, log it, and append a structured error detail
 - **AND** ingestion of subsequent files in the same batch SHALL continue uninterrupted
 
-#### Scenario: Error contract matches _make_file_detail shape
-- **WHEN** any reader adapter catches an exception and constructs an error dictionary
+#### Scenario: Error contract matches make_file_detail shape
+- **WHEN** the ingestion pipeline converts any reader failure into a file detail
 - **THEN** the dictionary SHALL contain exactly the keys `file` (str), `status` (literal `"failed"`), `chunks` (int `0`), and `error` (str with human-readable detail)
 - **AND** the dictionary SHALL be appendable to the `file_details` list in `ingest_path_async` without further transformation
 
@@ -110,22 +125,22 @@ When the LiteParse adapter is in use, every emitted `Document` object SHALL carr
 
 ### Requirement: Reader factory SHALL be extensible without modifying ingestion code
 
-The system SHALL expose a `BaseReader` protocol in `src/rag_mcp/integrations/pdf/base.py` defining the contract every PDF adapter must implement. New adapters SHALL be addable by creating a single module in `src/rag_mcp/integrations/pdf/` and registering it in the factory's resolution map. The ingestion loader call site SHALL NOT require modification when a new reader is added; only `config.py` (env var accepted values) and the factory map SHALL change.
-
-The former `src/rag_mcp/readers/` package SHALL resolve via a deprecated re-export shim (removal scheduled for v2.0.0) so existing `from rag_mcp.readers import ...` consumers keep working with a `DeprecationWarning`.
+New reader adapters SHALL be addable by creating a single module in
+`src/rag_mcp/integrations/pdf/` and registering it with one
+`registry.register()` call. The shared contract is the duck-typed
+`load_data(file) -> list[Document]` method — there is no separate protocol
+module. The ingestion call sites SHALL NOT require modification when a new
+reader is added; only the accepted values in `config/` and the registry
+registration SHALL change. The factory receives the reader name from its
+caller: `get_pdf_reader(reader)`.
 
 #### Scenario: Adding a new adapter
-- **WHEN** a developer creates `src/rag_mcp/integrations/pdf/spdf.py` implementing `BaseReader` and adds `"spdf"` to the accepted values in `config.py`
+- **WHEN** a developer creates `src/rag_mcp/integrations/pdf/spdf.py` with a `load_data` method and adds `"spdf"` to the accepted values in `config/` plus one `register("spdf", "...")` call in the registry
 - **THEN** no other source file SHALL require modification to make `PDF_READER=spdf` functional
 
 #### Scenario: Factory returns adapter, not reader instance
-- **WHEN** `get_pdf_reader()` is called
-- **THEN** it SHALL return a callable (typically a LlamaIndex-compatible reader class or a closure wrapping one), not a parsed-document instance, so `SimpleDirectoryReader(file_extractor={".pdf": get_pdf_reader()})` works at the ingestion loader call site
-
-#### Scenario: Legacy readers import path resolves
-- **WHEN** code executes `from rag_mcp.readers import get_pdf_reader` (or any other former `readers/` export)
-- **THEN** the import SHALL succeed via the deprecated shim
-- **AND** a `DeprecationWarning` SHALL be emitted naming `rag_mcp.integrations.pdf` as the new path
+- **WHEN** `get_pdf_reader(reader)` is called with a concrete reader name
+- **THEN** it SHALL return an adapter instance with a `load_data` method, not a parsed-document instance, so `SimpleDirectoryReader(file_extractor={".pdf": get_pdf_reader(resolved.pdf_reader)})` works at the ingestion call site
 
 #### Scenario: Factory dispatch behaviour unchanged
 - **WHEN** the `auto` backend resolution runs after the relocation
@@ -141,7 +156,7 @@ resolution order SHALL prefer LiteParse when importable.
 #### Scenario: Baseline install includes liteparse
 - **WHEN** a user runs `uv sync` without any extras
 - **THEN** the `liteparse` package SHALL be importable
-- **AND** `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
+- **AND** the resolved reader SHALL be `"liteparse"`
 
 #### Scenario: Explicit override to pypdf
 - **WHEN** a user sets `PDF_READER=pypdf` in `.env`
@@ -156,9 +171,9 @@ validated this adoption (+6.9% nDCG@10); see ADR-020 for the decision record.
 
 #### Scenario: Auto default (current state)
 - **WHEN** no `PDF_READER` env var is set and `liteparse` is installed
-- **THEN** `RESOLVED_PDF_READER` SHALL resolve to `"liteparse"`
+- **THEN** the resolved reader SHALL be `"liteparse"`
 
 #### Scenario: Auto fallback when LiteParse not installed
 - **WHEN** no `PDF_READER` env var is set and `liteparse` is NOT installed
-- **THEN** `RESOLVED_PDF_READER` SHALL resolve to `"pypdf"` (always available)
+- **THEN** the resolved reader SHALL be `"pypdf"` (always available)
 
