@@ -29,7 +29,8 @@ module-level resolved constant exists.
 ### Requirement: Reader failures SHALL surface as MCP error dictionaries, never exceptions
 
 The ingestion pipeline SHALL catch every per-file reader failure (corrupt
-PDF, native crash, IO failure, encoding error) around the chunking stage
+PDF, native failure surfaced as a Python exception, IO failure, encoding
+error) around the chunking stage
 and convert it into a structured file detail through
 `core/ingestion/loader.py:make_file_detail`:
 `{"file": "<filename>", "status": "failed", "chunks": 0, "error":
@@ -99,19 +100,3 @@ record.
 
 - **WHEN** no `PDF_READER` env var is set and `liteparse` is NOT installed
 - **THEN** the resolved reader SHALL be `"pypdf"` (always available)
-
-## REMOVED Requirements
-
-### Requirement: Default behaviour SHALL be preserved when LiteParse is not installed
-
-**Reason:** Obsolete transition requirement. It describes a pre-Experiment-11
-state (`[pdf-liteparse]` optional extra, pypdf implicit default, "until
-Experiment 11 passes") that two later requirements in this same spec already
-superseded: liteparse is a core dependency (base `uv sync` installs it) and
-the default is `auto`. Its scenarios contradict the core-dependency
-requirement by assuming no optional backend is importable on a baseline
-install.
-
-**Migration:** None. The core-dependency requirement (baseline install
-includes liteparse) and the auto-default requirement fully describe current
-behaviour; no consumer depends on the transition text.

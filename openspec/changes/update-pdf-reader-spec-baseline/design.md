@@ -39,12 +39,14 @@ Where the spec and code disagreed on mechanism but agreed on behaviour
 (pipeline-owned conversion) rather than preserving the fictional adapter
 contract.
 
-### 2. Remove rather than weaken the transition requirement
+### 2. Delete the transition requirement outright
 
 The "default preserved when LiteParse not installed" requirement cannot be
 salvaged by rewording: its premise (optional extra, pre-Experiment-11
-default) is false on every axis. OpenSpec's REMOVED format records the
-reason and confirms no migration is needed.
+default) is false on every axis. It is deleted from the baseline directly
+rather than via a REMOVED delta block — the validator's MODIFIED protection
+already forced in-place baseline edits for the other requirements, so the
+PR diff is the audit trail.
 
 ## Risks / Trade-offs
 

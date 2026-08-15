@@ -66,22 +66,11 @@ installed packages.
 - **THEN** the factory SHALL return the `pypdfium2` adapter
 - **AND** the selection SHALL match what the composition root would have resolved for the same installed packages
 
-### Requirement: Default behaviour SHALL be preserved when LiteParse is not installed
-
-Users who do not install the `[pdf-liteparse]` optional-dependency extra and do not set `PDF_READER` SHALL experience semantically equivalent ingestion behaviour to the pre-change pipeline (same source files produce same chunk counts within tolerance; not byte-identical because PDF parsing is non-deterministic across library versions). The pre-change `pypdf` via `llama-index-readers-file` path SHALL remain the implicit default until Experiment 11 passes and a follow-on change flips the default to `auto`.
-
-#### Scenario: Baseline install with no env var
-- **WHEN** the project is installed via `uv sync` (no extras) and `PDF_READER` is unset
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"pypdf"` and ingestion SHALL produce the same Document objects as the pre-change pipeline
-
-#### Scenario: Baseline install with PDF_READER=auto
-- **WHEN** the project is installed via `uv sync` (no extras) and `PDF_READER=auto` is set
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"pypdf"` because no optional backend is importable
-
 ### Requirement: Reader failures SHALL surface as MCP error dictionaries, never exceptions
 
 The ingestion pipeline SHALL catch every per-file reader failure (corrupt
-PDF, native crash, IO failure, encoding error) around the chunking stage
+PDF, native failure surfaced as a Python exception, IO failure, encoding
+error) around the chunking stage
 and convert it into a structured file detail through
 `core/ingestion/loader.py:make_file_detail`:
 `{"file": "<filename>", "status": "failed", "chunks": 0, "error":
