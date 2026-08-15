@@ -169,6 +169,8 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         codebase_map_cache_dir=settings.codebase_map_cache_dir,
         codebase_map_max_files=settings.codebase_map_max_files,
         codebase_map_max_depth=settings.codebase_map_max_depth,
+        community_algorithm=settings.community_algorithm.strip() or "louvain",
+        community_seed=settings.community_seed,
         document_backend=settings.document_backend,
         azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
         azure_doc_intelligence_key=settings.azure_doc_intelligence_key,
@@ -294,6 +296,34 @@ def build_profile_resolver(settings: Settings | None = None) -> Any:
     )
 
 
+def _validate_community_strategy(settings: Settings) -> None:
+    """Validate the community strategy selection strictly at startup.
+
+    Unlike the loop below, an unknown community strategy name FAILS startup
+    (spec: community-detection-strategies) — the error lists the registered
+    names.  Availability is probed through the registry's registered probe,
+    so selecting ``leiden`` without the optional extra fails here with an
+    installation instruction instead of silently falling back to Louvain.
+
+    The empty/whitespace value idiom (``COMMUNITY_ALGORITHM=``) resets to
+    the ``louvain`` default, matching ``_validate_provider_value`` policy.
+    """
+    from .core.community import registry as community_registry
+
+    name = settings.community_algorithm.strip() or "louvain"
+    if name not in community_registry.available():
+        raise ValueError(
+            f"COMMUNITY_ALGORITHM={settings.community_algorithm!r} is not a "
+            "registered community strategy. Available: "
+            f"{', '.join(community_registry.available())}."
+        )
+    # Resolve the callable (fail-fast on a bad import string) and probe
+    # optional-dependency availability (raises ImportError with the
+    # installation instruction when the extra is missing).
+    community_registry.get(name)
+    community_registry.verify_available(name)
+
+
 def _resolve_active_strategies(settings: Settings) -> None:
     """Resolve the *configured* strategies at startup so a bad ``register()``
     import string fails fast rather than at first query (task 3.6).
@@ -353,6 +383,10 @@ def _resolve_active_strategies(settings: Settings) -> None:
             )
         registry.get(name)
         logger.debug("Resolved active %s strategy %r at startup", label, name)
+
+    # Community detection validates strictly: unknown names fail startup
+    # (no skip-on-unknown — the error listing available names IS the gate).
+    _validate_community_strategy(settings)
 
 
 def ensure_runtime_setup() -> None:

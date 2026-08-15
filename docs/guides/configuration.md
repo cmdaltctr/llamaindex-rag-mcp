@@ -295,6 +295,34 @@ startup rather than silently falling back.
 The cache key is the git commit hash. Not a git repository means no caching —
 the map rebuilds every call.
 
+### Community detection
+
+Both graph subsystems, the codebase graph and the document similarity graph,
+use the same configured strategy and seed.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `COMMUNITY_ALGORITHM` | `louvain` | `louvain` or `leiden`. Unknown names fail startup and list the available strategies |
+| `COMMUNITY_SEED` | `0` | Seed for algorithm randomness. `0` keeps partitions deterministic |
+
+`COMMUNITY_ALGORITHM` and `COMMUNITY_SEED` are cross-cutting, so their
+environment variable names are flat. An empty value
+(`COMMUNITY_ALGORITHM=`) resets to `louvain`.
+
+There is no `auto`. Whether an optional package is installed must not change
+graph output silently, so the algorithm is always explicit.
+
+**Leiden.** `leiden` requires the optional `community-leiden` extra:
+
+```bash
+uv sync --extra community-leiden
+```
+
+Setting `COMMUNITY_ALGORITHM=leiden` without the extra fails startup with the
+installation instruction above. There is no silent fallback to `louvain`: an
+explicit algorithm selection is an operator contract. See
+[ADR-044](../adr/044-pluggable-community-detection.md).
+
 ---
 
 ## How settings reach the code

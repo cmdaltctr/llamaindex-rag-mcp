@@ -85,6 +85,12 @@ DOC_SIMILARITY_THRESHOLD: 0.85
 CODEBASE_MAP_CACHE_DIR: .opencode
 CODEBASE_MAP_MAX_FILES: 5000
 CODEBASE_MAP_MAX_DEPTH: 10
+# Community detection shared by codebase and document graphs.
+# louvain = base install (default); leiden = optional community-leiden extra
+# (startup fails with an installation instruction when the extra is absent).
+COMMUNITY_ALGORITHM: louvain
+# Seed for algorithm randomness; 0 keeps partitions deterministic.
+COMMUNITY_SEED: 0
 
 # ── Document backend ──────────────────────────────────────────────────
 DOCUMENT_BACKEND: local

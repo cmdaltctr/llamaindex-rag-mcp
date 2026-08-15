@@ -19,6 +19,7 @@ from unittest.mock import patch
 import pytest
 
 from rag_mcp.core.chunking import registry as chunking_registry
+from rag_mcp.core.community import registry as community_registry
 from rag_mcp.core.metadata import registry as metadata_registry
 from rag_mcp.core.providers.embeddings import registry as embed_registry
 from rag_mcp.core.providers.llm import registry as llm_registry
@@ -30,6 +31,7 @@ ALL_REGISTRIES = [
     metadata_registry,
     embed_registry,
     llm_registry,
+    community_registry,
 ]
 
 

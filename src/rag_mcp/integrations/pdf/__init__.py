@@ -1,10 +1,9 @@
-"""Pluggable PDF reader factory and adapters.
+"""Registry-backed PDF reader factory and adapters.
 
-Public API: ``get_pdf_reader()`` returns a reader adapter based on
-``config.RESOLVED_PDF_READER``. See ADR-020 for the adoption rationale.
-
-This package was relocated from ``rag_mcp/readers/`` in Phase 5.
-The old path resolves via a deprecated re-export shim.
+Public API: :func:`get_pdf_reader` returns a reader adapter from the
+composition-root-resolved ``EffectiveSettings.pdf_reader`` name. ``auto``
+remains an ordered capability policy; concrete readers resolve lazily through
+``integrations.pdf.registry``. See ADR-020 for the adoption rationale.
 """
 
 from __future__ import annotations

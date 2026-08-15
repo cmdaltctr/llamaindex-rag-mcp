@@ -157,6 +157,7 @@ configurations at once.
 | `core/providers/` | Build embedding and LLM clients |
 | `core/codebase/` | Codebase map and code graph |
 | `core/documents/` | Document similarity graph |
+| `core/community/` | Community-detection strategies for both graphs (Louvain default, Leiden optional) |
 | `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around |
 
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
@@ -218,6 +219,19 @@ backends and retrieval stages.
 This is enforced, not just encouraged. One test fails if a dispatch module
 imports a strategy directly; another fails if it branches on strategy names.
 
+### Community strategies
+
+Community detection follows the same pattern, with one addition: the
+strategies live in `core/community/`, and both graph consumers (the codebase
+code graph and the document similarity graph) dispatch through
+`partition_graph` with an injected seed.
+
+The shared contract is flat: `list[set[Hashable]]`, every node in exactly one
+non-empty community. Algorithm-specific objects (igraph partitions, leidenalg
+results) never cross the boundary. Graphs with fewer than five nodes bypass
+partitioning entirely. No LLM is called anywhere in the pipeline, and the
+default seed of `0` keeps partitions deterministic run to run.
+
 ### A new vector database
 
 Implement `VectorStore` from `core/vectordb/base.py`, register it in
@@ -236,6 +250,104 @@ A test checks the two agree, so they cannot drift apart.
 
 ---
 
+## Registry eligibility and audit inventory
+
+A module goes into a registry when configuration selects by name among two or
+more interchangeable implementations that share one contract. That is the
+whole rule. A single capability adapter does not need a registry just because
+it lives under `integrations/`. An ordered fallback factory does not either.
+
+Native versus optional is an availability property, independent of registry
+eligibility. A base-install implementation still registers when it belongs to
+a configured strategy family (Louvain registers next to Leiden; pypdf
+registers next to liteparse and pypdfium2). An optional adapter with no named
+peers stays an integration.
+
+### Integration inventory
+
+Every Python module under `src/rag_mcp/integrations/`, classified. A contract
+test fails when a module is missing from this table.
+
+<!-- integration-inventory:start count=10 -->
+| Module | Availability | Selector | Shared contract | Fallback owner | Disposition |
+|---|---|---|---|---|---|
+| `rag_mcp.integrations` | Native | None | Package facade | None | Facade; exports stable integration APIs only |
+| `rag_mcp.integrations.azure` | Optional `azure` extra | `DOCUMENT_BACKEND=azure` | Document parsing into LlamaIndex Documents | Split today: config handles missing credentials, Azure retries, and ingestion/local readers handle runtime fallback | Capability integration; deferred to `register-document-backend-strategies` |
+| `rag_mcp.integrations.leidenalg` | Optional `community-leiden` extra | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py` | Flat partition callable | None; explicit selection fails startup | External adapter behind the community registry |
+| `rag_mcp.integrations.magika` | Optional executable | `MAGIKA_BINARY` selects the binary path, not an implementation | `FileEntry` detection results | `core/codebase/codebase_map.py` suffix detection | Capability integration; remains unregistered |
+| `rag_mcp.integrations.pdf` | Native | None | `get_pdf_reader()` | None | Public facade exposing the factory |
+| `rag_mcp.integrations.pdf.factory` | Native | `PDF_READER=auto` | Reader instance with `load_data` | Factory itself (LiteParse probe, else pypdf, for direct `auto` callers) | Registry-backed factory; `auto` stays ordered capability resolution |
+| `rag_mcp.integrations.pdf.registry` | Native | `PDF_READER` concrete values | Reader class with `load_data` | None; unknown names raise | Lazy registry for concrete PDF readers |
+| `rag_mcp.integrations.pdf.liteparse` | Base dependency (despite the stale docstring naming an extra) | `PDF_READER=liteparse` | `load_data` | `compose.resolve_pdf_reader` `auto` probe | Registered reader strategy |
+| `rag_mcp.integrations.pdf.pypdf` | Base, via `llama-index-readers-file` | `PDF_READER=pypdf` | `load_data` | Terminal `auto` tier | Registered reader strategy |
+| `rag_mcp.integrations.pdf.pypdfium` | Optional `pdf-pypdfium2` extra | `PDF_READER=pypdfium2` | `load_data` | None | Registered reader strategy |
+<!-- integration-inventory:end -->
+
+### Strategy-family audit
+
+The same rule applied to every name-dispatched family, inside and outside
+`integrations/`:
+
+| Family | Selector | Live registry / factory | Conclusion | Follow-up |
+|---|---|---|---|---|
+| Community detection | `COMMUNITY_ALGORITHM` | `core/community/registry.py` | Registered in this change: `louvain` native, `leiden` optional via `integrations/leidenalg.py` | None |
+| PDF readers | `PDF_READER` | `integrations/pdf/registry.py` behind `integrations/pdf/factory.py` | Concrete readers registered behind the unchanged `auto` factory | None |
+| Chunking | Content-type dispatch in `core/ingestion/chunker.py`; `CHUNKING__STRATEGY_FALLBACK` (default `markdown`) | `core/chunking/registry.py` | Already a registry | None |
+| Metadata extraction | `METADATA__EXTRACTION_MODE` and provider backends | `core/metadata/registry.py` | Already a registry | None |
+| Embedding providers | `EMBED_PROVIDER` | `core/providers/embeddings/registry.py` | Already a registry | None |
+| LLM providers | `LOCAL_BACKEND` / `CLOUD_BACKEND` | `core/providers/llm/registry.py` | Already a registry | None |
+| Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/registry.py` (`bm25`) | `bm25` registered; `native` is currently a warning-to-BM25 placeholder | `openspec/changes/implement-native-sparse-backend-strategy/` |
+| Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
+| Document backends | `DOCUMENT_BACKEND` | None; direct construction | `local` and `azure` do not yet form one registry contract, and fallback ownership changes with registration | `openspec/changes/register-document-backend-strategies/` |
+
+Live registry contents, kept in step with the code by contract tests:
+
+<!-- registry-names:community -->
+`leiden` `louvain`
+<!-- /registry-names:community -->
+
+<!-- registry-names:pdf -->
+`liteparse` `pypdf` `pypdfium2`
+<!-- /registry-names:pdf -->
+
+<!-- registry-names:chunking -->
+`code` `config` `sentence`
+<!-- /registry-names:chunking -->
+
+<!-- registry-names:metadata -->
+`keyword` `llamacpp` `llamaindex` `ollama` `openrouter`
+<!-- /registry-names:metadata -->
+
+<!-- registry-names:embeddings -->
+`llamacpp` `ollama` `openrouter`
+<!-- /registry-names:embeddings -->
+
+<!-- registry-names:llm -->
+`llamacpp` `ollama` `openrouter`
+<!-- /registry-names:llm -->
+
+<!-- registry-names:retrieval -->
+`bm25` `dense` `fusion` `reranker_onnx` `reranker_torch`
+<!-- /registry-names:retrieval -->
+
+### Audit conclusions
+
+- The concrete PDF readers were the one behaviour-preserving missing registry
+  family. They are now registered behind the unchanged `auto` factory.
+- Magika remains a capability adapter, not a strategy family: one configured
+  capability, no interchangeable named peers.
+- Azure and local document backends are deferred to the strict-valid follow-up
+  `openspec/changes/register-document-backend-strategies/` because fallback
+  ownership changes with registration.
+- Native sparse retrieval is deferred to
+  `openspec/changes/implement-native-sparse-backend-strategy/` because `native`
+  is currently a warning-to-BM25 placeholder and stored sparse coverage
+  matters.
+- Every other current family already uses a registry or a documented policy
+  alias or sentinel. No migration was required for this change.
+
+---
+
 ## The rules that are actually enforced
 
 These are not documentation. They fail the build.
@@ -246,6 +358,7 @@ These are not documentation. They fail the build.
 | `config/` never imports business logic | `config-is-leaf` |
 | `integrations/` never imports core or transports | `integrations-are-leaves` |
 | `core/` never imports transports or providers | `core-business-avoids-providers-transports` |
+| `core/community/` never imports either graph consumer | `community-strategies-independent-of-consumers` |
 | Settings models stay pure data | `settings-models-are-pure-data` |
 | Every package covered by some contract | `tests/test_contract_coverage.py` |
 | No global settings reads in core | `tests/test_no_global_settings_reads.py` |

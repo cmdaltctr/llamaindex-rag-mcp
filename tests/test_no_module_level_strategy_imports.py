@@ -90,6 +90,11 @@ _FORBIDDEN_STRATEGY_MODULES = {
     "rag_mcp.core.retrieval.policy",
     "rag_mcp.core.retrieval.reranker",
     "rag_mcp.core.retrieval.sparse",
+    "rag_mcp.core.community.louvain",
+    "rag_mcp.core.community.leiden",
+    "rag_mcp.integrations.pdf.liteparse",
+    "rag_mcp.integrations.pdf.pypdf",
+    "rag_mcp.integrations.pdf.pypdfium",
 }
 
 
@@ -99,6 +104,8 @@ _FORBIDDEN_STRATEGY_MODULES = {
         "core/ingestion/chunker.py",
         "core/metadata/extractor.py",
         "core/retrieval/pipeline.py",
+        "core/community/__init__.py",
+        "integrations/pdf/factory.py",
     ],
 )
 def test_no_module_level_strategy_import(rel_path: str) -> None:

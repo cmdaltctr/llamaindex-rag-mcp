@@ -2,21 +2,29 @@
 
 Computes pairwise cosine similarity between document chunk embeddings,
 builds metadata-based and heading-hierarchy edges, and detects document
-communities using Louvain. Also computes cross-links between code and
-document communities.
+communities through the shared strategy registry. Also computes cross-links
+between code and document communities.
 
-All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
+Settings arrive through the frozen ``EffectiveSettings`` value object. The
+module has no cross-imports with ``core/retrieval``.
 """
 
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 import networkx as nx
 
-from ..settings import get_default_effective_settings
+from ..community import partition_graph
+from ..settings import (
+    EffectiveSettings,
+    get_default_effective_settings,
+    resolve_effective_settings,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -140,20 +148,30 @@ def build_document_graph(
 # ── Document community detection ─────────────────────────────────────────
 
 
-def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
-    """Detect document communities using Louvain.
+def detect_document_communities(
+    graph: nx.Graph,
+    settings: EffectiveSettings | None = None,
+) -> list[DocCommunity]:
+    """Detect document communities via the configured strategy.
 
-    Partitions the document graph into topic clusters. Each community is
-    labelled with its representative category.
+    Partitions the document graph into topic clusters using the
+    ``community_algorithm`` strategy resolved through the shared
+    ``core/community`` registry, seeded with ``community_seed``. Each
+    community is labelled with its representative category.
 
     Args:
         graph: The document graph as a ``networkx.Graph``.
+        settings: Effective settings carrying the algorithm name and seed.
+            Defaults to the composition-root instance; the codebase-map
+            boundary passes its resolved instance explicitly.
 
     Returns:
         List of ``DocCommunity`` objects with labels, chunks, and categories.
     """
     if graph.number_of_nodes() == 0:
         return []
+
+    effective = resolve_effective_settings(settings)
 
     if graph.number_of_nodes() < 5:
         # Small graph: single community.
@@ -171,23 +189,31 @@ def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
         ]
 
     try:
-        communities_sets = nx.algorithms.community.louvain_communities(graph)
+        communities_sets = partition_graph(
+            graph,
+            algorithm=effective.community_algorithm,
+            seed=effective.community_seed,
+        )
     except Exception as exc:
-        logger.warning("Document Louvain failed: %s", exc)
+        logger.warning(
+            "Document community detection (%s) failed: %s",
+            effective.community_algorithm,
+            exc,
+        )
         chunks = list(graph.nodes())
         return [DocCommunity(label="all", chunks=chunks)]
 
     communities: list[DocCommunity] = []
     for comm_set in communities_sets:
-        chunks = sorted(comm_set)
+        # Document-graph node IDs are strings; the shared strategy contract
+        # remains generic for consumers that use other hashable identifiers.
+        chunks = sorted(cast(set[str], comm_set))
         # Determine representative category.
         categories = [
             graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
         ]
         if categories:
             # Most common category.
-            from collections import Counter
-
             category = Counter(categories).most_common(1)[0][0]
         else:
             category = ""

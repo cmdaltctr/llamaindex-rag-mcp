@@ -98,12 +98,14 @@ def _clear_registry_caches() -> None:
     patched function (task 3.7/3.9).
     """
     from rag_mcp.core.chunking import registry as _chunking
+    from rag_mcp.core.community import registry as _community
     from rag_mcp.core.metadata import registry as _metadata
     from rag_mcp.core.providers.embeddings import registry as _embed
     from rag_mcp.core.providers.llm import registry as _llm
     from rag_mcp.core.retrieval import registry as _retrieval
+    from rag_mcp.integrations.pdf import registry as _pdf
 
-    for reg in (_chunking, _metadata, _retrieval, _embed, _llm):
+    for reg in (_chunking, _metadata, _retrieval, _embed, _llm, _community, _pdf):
         reg._cache.clear()
 
 

@@ -5,7 +5,8 @@ PDF parser available under this project's hard constraints. This adapter
 captures bounding-box metadata on every emitted Document for future
 spatial RAG capabilities.
 
-Activated via ``[pdf-liteparse]`` extra. See ADR-020.
+LiteParse is a base dependency and the default reader selected by the
+composition root. See ADR-020.
 """
 
 from __future__ import annotations

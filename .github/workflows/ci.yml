@@ -97,6 +97,7 @@ jobs:
           - "" # base install, no extras
           - hybrid
           - pdf-pypdfium2
+          - community-leiden
           - azure
           - llamacpp
           - openrouter
@@ -135,6 +136,55 @@ jobs:
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "not slow" --tb=short -q
+
+      - name: Verify base install stays Leiden-free
+        if: matrix.extra == ''
+        run: |
+          set -euo pipefail
+          packages="$(uv pip list)"
+          if printf '%s\n' "$packages" | grep -qiE '^(leidenalg|igraph)([[:space:]]|$)'; then
+            echo "FAIL: Leiden packages found in the base installation" >&2
+            exit 1
+          fi
+          uv run --no-sync python -c "import sys; import rag_mcp.core.community; assert 'leidenalg' not in sys.modules and 'igraph' not in sys.modules"
+          echo "OK: base install uses Louvain without importing Leiden packages"
+
+  # Optional Leiden must install and pass its focused graph contracts on
+  # every supported CPython version. Both packages use abi3 wheels.
+  community-leiden-extra:
+    name: Leiden extra (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies with community-leiden extra
+        run: uv sync --frozen --extra community-leiden
+
+      - name: Run community strategy contracts
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_community_baseline.py tests/test_community_strategies.py tests/test_strategy_registration_inventory.py --tb=short -q
 
   # ── Torch-extra CI job (ADR-038, task 11.5) ───────────────────────────
   # The torch backend is opt-in. Without this dedicated job it would never
@@ -229,7 +279,10 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
-        run: uv sync --frozen
+        # community-leiden included so patch coverage exercises the optional
+        # Leiden strategy (its tests skipif-guard without the extra). The
+        # base-only absence assertion lives in the floors job instead.
+        run: uv sync --frozen --extra community-leiden
 
       - name: Run tests with coverage
         env:

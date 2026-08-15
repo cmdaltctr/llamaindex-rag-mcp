@@ -159,6 +159,12 @@ class EffectiveSettings(BaseModel):
     codebase_map_cache_dir: str = ".opencode"
     codebase_map_max_files: int = 5000
     codebase_map_max_depth: int = 10
+    # Community detection (shared by codebase and document graphs).
+    # Louvain stays the base-install default; "leiden" requires the
+    # optional community-leiden extra and fails startup when missing
+    # (no silent fallback — an explicit algorithm is an operator contract).
+    community_algorithm: str = "louvain"
+    community_seed: int = 0
 
     # ── Document backend ──────────────────────────────────────────
     document_backend: str = "local"
