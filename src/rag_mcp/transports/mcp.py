@@ -443,7 +443,10 @@ def main() -> None:
         compose.ensure_runtime_setup()
         _get_reranker()
         _get_profile_resolver()
-    except (ImportError, ValueError) as exc:
+    except (ImportError, ValueError, RuntimeError) as exc:
+        # RuntimeError carries the redacted Chroma Cloud connection
+        # failure — an explicit cloud selection never falls back to a
+        # local index, so startup must stop here.
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(1) from None
     mcp.run(transport="stdio")

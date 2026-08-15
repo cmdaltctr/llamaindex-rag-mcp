@@ -1,4 +1,12 @@
-"""Build Chroma indexes for Experiment 9a using metadata-preserving ingestion."""
+"""Build Chroma indexes for Experiment 9a using metadata-preserving ingestion.
+
+Storage goes through the shared experiment helper
+(``experiments/_lib/storage.py``) and the production vector-store
+factory, so the same script serves ``CHROMA_MODE=local`` (one persist
+directory per index) and ``CHROMA_MODE=cloud`` (named collections in a
+shared database).  Embeddings are computed by the local Ollama batch
+client below and upserted with precomputed vectors.
+"""
 
 from __future__ import annotations
 
@@ -11,13 +19,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-import chromadb
 import httpx
 from dotenv import load_dotenv
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
@@ -86,23 +93,48 @@ def _build_chroma(
     rows: list[dict[str, Any]],
     persist_dir: Path,
     *,
-    collection_name: str,
+    collection_name: str | None,
     batch_size: int,
     force: bool,
     progress_every: int = 1,
 ) -> dict[str, Any]:
-    if force:
+    from experiments._lib.storage import experiment_storage_config
+
+    model = os.getenv("EMBED_MODEL")
+    if not model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
+
+    storage = experiment_storage_config(
+        experiment_id="exp9a",
+        corpus="freshstack",
+        provider="ollama",
+        model=model,
+        persist_dir=str(persist_dir),
+    )
+    # The deterministic immutable-index name is the default; an explicit
+    # --collection-name override remains for legacy local indexes.
+    collection_name = collection_name or storage.collection_name
+    store = storage.build_store()
+
+    if force and storage.mode == "cloud":
+        if store.collection_exists(collection_name):
+            store.delete_collection(collection_name)
+    if force and storage.mode == "local":
         shutil.rmtree(persist_dir, ignore_errors=True)
     persist_dir.mkdir(parents=True, exist_ok=True)
 
-    client = chromadb.PersistentClient(path=str(persist_dir))
-    collection = client.get_or_create_collection(collection_name)
-    existing = collection.count()
+    store.create_collection(collection_name)
+    existing = store.count(collection_name)
     if existing == len(rows) and not force:
-        return {"status": "reused", "chunks": existing, "persist_dir": str(persist_dir)}
+        return {
+            "status": "reused",
+            "chunks": existing,
+            "persist_dir": str(persist_dir),
+            "collection_name": collection_name,
+        }
     if existing and force:
-        client.delete_collection(collection_name)
-        collection = client.get_or_create_collection(collection_name)
+        store.delete_collection(collection_name)
+        store.create_collection(collection_name)
         existing = 0
 
     if existing and not force:
@@ -113,11 +145,12 @@ def _build_chroma(
     # collection scan just to discover existing IDs.
     rows_to_add = list(enumerate(rows[existing:], start=existing))
     if not rows_to_add:
-        return {"status": "reused", "chunks": collection.count(), "persist_dir": str(persist_dir)}
+        return {
+            "status": "reused",
+            "chunks": store.count(collection_name),
+            "persist_dir": str(persist_dir),
+        }
 
-    model = os.getenv("EMBED_MODEL")
-    if not model:
-        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     timeout = float(os.getenv("EXP9A_OLLAMA_TIMEOUT", "120"))
     embedder = OllamaEmbedder(model=model, base_url=base_url, timeout=timeout)
@@ -125,19 +158,27 @@ def _build_chroma(
     started = time.perf_counter()
     try:
         for batch_no, offset in enumerate(range(0, len(rows_to_add), batch_size), start=1):
-            indexed_batch = rows_to_add[offset: offset + batch_size]
+            indexed_batch = rows_to_add[offset : offset + batch_size]
             batch = [row for _idx, row in indexed_batch]
             ids = [f"{row['freshstack_id']}::row{idx}" for idx, row in indexed_batch]
             docs = [row["text"] for row in batch]
-            metas = [_clean_metadata(row["metadata"] | {"freshstack_id": row["freshstack_id"]}) for row in batch]
+            metas = [
+                _clean_metadata(row["metadata"] | {"freshstack_id": row["freshstack_id"]})
+                for row in batch
+            ]
             if progress_every > 0 and (batch_no == 1 or batch_no % progress_every == 0):
                 start_row = existing + offset + 1
                 end_row = existing + offset + len(batch)
-                print(f"  embedding batch {batch_no}: rows {start_row}-{end_row}/{len(rows)}", flush=True)
+                print(
+                    f"  embedding batch {batch_no}: rows {start_row}-{end_row}/{len(rows)}",
+                    flush=True,
+                )
             embeddings = embedder.embed_batch(docs)
             if progress_every > 0 and (batch_no == 1 or batch_no % progress_every == 0):
                 print(f"  writing batch {batch_no} to Chroma", flush=True)
-            collection.add(ids=ids, documents=docs, metadatas=metas, embeddings=embeddings)
+            store.upsert_precomputed(
+                collection_name, ids=ids, documents=docs, metadatas=metas, embeddings=embeddings
+            )
             done = existing + min(offset + len(batch), len(rows_to_add))
             if done == len(rows) or done % max(batch_size * 10, 500) == 0:
                 elapsed = time.perf_counter() - started
@@ -149,8 +190,9 @@ def _build_chroma(
 
     return {
         "status": "built",
-        "chunks": collection.count(),
+        "chunks": store.count(collection_name),
         "persist_dir": str(persist_dir),
+        "collection_name": collection_name,
         "embedding_model": model,
         "elapsed_seconds": round(time.perf_counter() - started, 2),
     }
@@ -162,10 +204,12 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--dense-dir", type=Path, default=None)
     parser.add_argument("--hybrid-dir", type=Path, default=None)
-    parser.add_argument("--collection-name", default="documents")
+    parser.add_argument("--collection-name", default=None)
     parser.add_argument("--batch-size", type=int, default=int(os.getenv("EMBED_BATCH_SIZE", "100")))
     parser.add_argument("--force", action="store_true")
-    parser.add_argument("--progress-every", type=int, default=1, help="Print every N embedding batches")
+    parser.add_argument(
+        "--progress-every", type=int, default=1, help="Print every N embedding batches"
+    )
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
@@ -194,15 +238,30 @@ def main() -> None:
         shutil.rmtree(hybrid_dir, ignore_errors=True)
         print(f"Copying dense Chroma index to hybrid path: {hybrid_dir}")
         shutil.copytree(dense_dir, hybrid_dir)
-        hybrid_result = {"status": "copied-from-dense", "persist_dir": str(hybrid_dir), "chunks": len(rows)}
+        hybrid_result = {
+            "status": "copied-from-dense",
+            "persist_dir": str(hybrid_dir),
+            "chunks": len(rows),
+        }
     else:
-        client = chromadb.PersistentClient(path=str(hybrid_dir))
-        count = client.get_or_create_collection(args.collection_name).count()
+        from experiments._lib.storage import experiment_storage_config
+
+        model = os.getenv("EMBED_MODEL", "unknown")
+        hybrid_storage = experiment_storage_config(
+            experiment_id="exp9a",
+            corpus="freshstack",
+            provider="ollama",
+            model=model,
+            persist_dir=str(hybrid_dir),
+        )
+        hybrid_store = hybrid_storage.build_store()
+        hybrid_name = args.collection_name or hybrid_storage.collection_name
+        count = hybrid_store.count(hybrid_name)
         hybrid_result = {"status": "reused", "persist_dir": str(hybrid_dir), "chunks": count}
 
     summary = {
         "manifest": str(manifest),
-        "collection_name": args.collection_name,
+        "collection_name": dense_result.get("collection_name", args.collection_name),
         "parent_docs": len(rows),
         "dense": dense_result,
         "hybrid_bm25": hybrid_result,

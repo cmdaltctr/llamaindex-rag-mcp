@@ -2,15 +2,12 @@
 
 4-cell grid: {pypdf, liteparse} × {rerank-off, rerank-on}.
 Validates H1 (corpus validity), H2 (speed), H3 (reranker benefit).
+
+Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
+through ``rag_mcp.core.retrieval.search`` with an injected store from
+``experiments/_lib/storage.py`` — no environment mutation or
+module-constant patching.  Works in local and cloud Chroma modes.
 """
-
-# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
-# removed by the architecture-v2 conformance change. It is an archived
-# historical artefact, is not run in CI, and is intentionally NOT repaired:
-# its results are already recorded in results.md, and rewriting it would
-# change the code that produced them. See docs/adr/037.
-
 
 from __future__ import annotations
 
@@ -24,9 +21,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 CELLS = [
@@ -86,41 +83,71 @@ def _compute_metrics(
     return metrics
 
 
+def _resolve_cell_runtime(reader: str, rerank: bool) -> tuple[Any, str]:
+    """Build the per-reader store/collection from the shared helper.
+
+    The reader is part of the immutable index identity (parsed text
+    differs), so each reader cell resolves its own collection.
+    """
+    from experiments._lib.storage import experiment_storage_config
+
+    model = os.getenv("EMBED_MODEL", "unknown")
+    chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{reader}")
+    storage = experiment_storage_config(
+        experiment_id="exp14",
+        corpus="qasper",
+        provider="ollama",
+        model=model,
+        parser=reader,
+        persist_dir=chroma_dir,
+    )
+    store = storage.build_store()
+
+    from llama_index.core import Settings as LlamaIndexSettings
+
+    from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
+    from rag_mcp.core.vectordb import set_default_store
+
+    LlamaIndexSettings.embed_model = build_embed_model(Settings())
+    set_default_store(store)
+    return store, storage.collection_name
+
+
 def _run_cell(
     cell: dict[str, Any],
     queries: list[dict[str, Any]],
     qrels: dict[str, dict[str, int]],
     k_values: list[int],
 ) -> dict[str, Any]:
-    from rag_mcp import config, retrieval
+    from rag_mcp.core.retrieval import search
 
     reader = cell["reader"]
     rerank = cell["rerank"]
 
-    chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{reader}")
-    config.CHROMA_PERSIST_DIR = chroma_dir
-    config.HYBRID_ENABLED = False
-    config.RERANK_ENABLED = rerank
-    config.RERANK_FETCH_MULTIPLIER = 3
-    config.RERANK_MAX_FETCH = 100
-    os.environ["PDF_READER"] = reader
+    store, collection_name = _resolve_cell_runtime(reader, rerank)
 
     results: list[dict[str, Any]] = []
     for i, query in enumerate(queries):
         t0 = time.perf_counter()
-        search_results = retrieval.search(
+        search_results = search(
             query=query["text"],
             top_k=max(k_values),
             rerank=rerank,
             hybrid=False,
-            collection_name="documents",
+            collection_name=collection_name,
+            store=store,
         )
         latency_ms = (time.perf_counter() - t0) * 1000
-        results.append({
-            "query_id": query["id"],
-            "retrieved": [{"id": r["id"], "score": r.get("score", 0.0)} for r in search_results],
-            "latency_ms": latency_ms,
-        })
+        results.append(
+            {
+                "query_id": query["id"],
+                "retrieved": [
+                    {"id": r["id"], "score": r.get("score", 0.0)} for r in search_results
+                ],
+                "latency_ms": latency_ms,
+            }
+        )
         if (i + 1) % 20 == 0:
             print(f"  [{cell['name']}] {i + 1}/{len(queries)}", flush=True)
 

@@ -3,15 +3,13 @@
 Same 4-cell grid as Exp 9a but with post-ADR-021 config
 (MULTIPLIER=3, MAX_FETCH=100), giving fetch_k=150 at top_k=50.
 Reuses Exp 9a's ChromaDB indexes and ground truth.
+
+Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
+through ``rag_mcp.core.retrieval.search`` with an explicitly injected
+store obtained from ``experiments/_lib/storage.py`` — no environment
+mutation or module-constant patching.  Works in local and cloud Chroma
+modes; retrieval-only cells reuse the immutable index read-only.
 """
-
-# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
-# removed by the architecture-v2 conformance change. It is an archived
-# historical artefact, is not run in CI, and is intentionally NOT repaired:
-# its results are already recorded in results.md, and rewriting it would
-# change the code that produced them. See docs/adr/037.
-
 
 from __future__ import annotations
 
@@ -27,9 +25,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
@@ -41,45 +39,46 @@ def _load_ground_truth(path: Path) -> dict[str, Any]:
     return data
 
 
-def _patch_module_attrs(mod: Any, mode: str, chroma_dir: Path) -> None:
-    if hasattr(mod, "CHROMA_PERSIST_DIR"):
-        mod.CHROMA_PERSIST_DIR = str(chroma_dir)
-    if hasattr(mod, "HYBRID_ENABLED"):
-        mod.HYBRID_ENABLED = mode != "dense-only"
-    if hasattr(mod, "HYBRID_SPARSE_BACKEND"):
-        mod.HYBRID_SPARSE_BACKEND = "bm25"
-    if hasattr(mod, "RESOLVED_HYBRID_SPARSE_BACKEND"):
-        mod.RESOLVED_HYBRID_SPARSE_BACKEND = "bm25"
-    if hasattr(mod, "RERANK_FETCH_MULTIPLIER"):
-        mod.RERANK_FETCH_MULTIPLIER = 3
-    if hasattr(mod, "RERANK_MAX_FETCH"):
-        mod.RERANK_MAX_FETCH = 100
+def _resolve_cell_runtime(mode: str, chroma_dir: Path) -> tuple[Any, str]:
+    """Build the cell store/collection from the shared helper and clear caches.
 
+    Retrieval knobs (hybrid on/off, sparse backend, fetch pool) are
+    passed per ``search`` call instead of patched into module globals.
+    """
+    from experiments._lib.storage import experiment_storage_config
 
-def _clear_caches() -> None:
+    model = os.getenv("EMBED_MODEL", "unknown")
+    storage = experiment_storage_config(
+        experiment_id="exp9a",
+        corpus="freshstack",
+        provider="ollama",
+        model=model,
+        persist_dir=str(chroma_dir),
+    )
+    store = storage.build_store()
+
+    from llama_index.core import Settings as LlamaIndexSettings
+
+    from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
+    from rag_mcp.core.vectordb import set_default_store
+
+    LlamaIndexSettings.embed_model = build_embed_model(Settings())
+    set_default_store(store)
+
     try:
-        from rag_mcp.retrieval import _cached_query_embedding
+        from rag_mcp.core.retrieval.dense import _cached_query_embedding
+
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
     try:
-        from rag_mcp.sparse_retriever import BM25SparseRetriever
-        BM25SparseRetriever.clear_all_caches()
+        from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+
+        BM25SparseRetriever._cache.clear()
     except Exception:
         pass
-
-
-def _setup_environment(mode: str, chroma_dir: Path) -> None:
-    os.environ["HYBRID_ENABLED"] = "false" if mode == "dense-only" else "true"
-    os.environ["HYBRID_SPARSE_BACKEND"] = "bm25"
-    os.environ["CHROMA_PERSIST_DIR"] = str(chroma_dir)
-
-    for mod_name in ("rag_mcp.config", "rag_mcp.retrieval", "rag_mcp.ingestion"):
-        mod = sys.modules.get(mod_name)
-        if mod is not None:
-            _patch_module_attrs(mod, mode, chroma_dir)
-
-    _clear_caches()
+    return store, storage.collection_name
 
 
 def _parent_id(result: dict[str, Any]) -> str:
@@ -96,6 +95,7 @@ def _rank_map(parent_ids: list[str]) -> dict[str, int]:
 
 def _dcg(ranking: list[str], nugget_rels: list[set[str]], k: int, alpha: float) -> float:
     import math
+
     seen = [0 for _ in nugget_rels]
     total = 0.0
     for rank, doc_id in enumerate(ranking[:k], start=1):
@@ -109,7 +109,9 @@ def _dcg(ranking: list[str], nugget_rels: list[set[str]], k: int, alpha: float) 
     return total
 
 
-def _alpha_ndcg(parent_ids: list[str], nuggets: list[dict[str, Any]], k: int = 10, alpha: float = 0.5) -> float:
+def _alpha_ndcg(
+    parent_ids: list[str], nuggets: list[dict[str, Any]], k: int = 10, alpha: float = 0.5
+) -> float:
     nugget_rels = [set(n.get("relevant_corpus_ids") or []) for n in nuggets]
     if not nugget_rels:
         return 0.0
@@ -156,41 +158,47 @@ def _evaluate_cell(
     top_k: int,
     warmup_queries: int,
 ) -> dict[str, Any]:
-    import rag_mcp.retrieval as retrieval
+    from rag_mcp.core.retrieval import search
 
-    _setup_environment(mode, chroma_dir)
+    store, collection_name = _resolve_cell_runtime(mode, chroma_dir)
 
     for query in queries[:warmup_queries]:
-        retrieval.search(
+        search(
             query=query["query"][:4000],
             top_k=min(10, top_k),
             similarity_threshold=0.0,
             rerank=rerank,
             hybrid=mode != "dense-only",
+            collection_name=collection_name,
+            store=store,
             include_diagnostics=True,
         )
 
     per_query: list[dict[str, Any]] = []
     for index, query in enumerate(queries, start=1):
         started = time.perf_counter()
-        results = retrieval.search(
+        results = search(
             query=query["query"][:4000],
             top_k=top_k,
             similarity_threshold=0.0,
             rerank=rerank,
             hybrid=mode != "dense-only",
+            collection_name=collection_name,
+            store=store,
             include_diagnostics=True,
         )
         latency_ms = (time.perf_counter() - started) * 1000
         parent_ids = [_parent_id(result) for result in results]
         metrics = _metrics_for_query(parent_ids, query)
-        per_query.append({
-            "query_index": index,
-            "query_id": query["query_id"],
-            "category": query.get("category"),
-            "latency_ms": round(latency_ms, 2),
-            "metrics": metrics,
-        })
+        per_query.append(
+            {
+                "query_index": index,
+                "query_id": query["query_id"],
+                "category": query.get("category"),
+                "latency_ms": round(latency_ms, 2),
+                "metrics": metrics,
+            }
+        )
         if index % 25 == 0 or index == len(queries):
             print(f"    {mode}/rerank={rerank}: {index}/{len(queries)} queries", flush=True)
 
@@ -242,7 +250,7 @@ def main() -> None:
 
     gt_path = SCRIPT_DIR / "ground-truth.json"
     ground_truth = _load_ground_truth(gt_path)
-    queries = ground_truth["queries"][:args.limit_queries]
+    queries = ground_truth["queries"][: args.limit_queries]
     top_k = max(args.k_values)
     print(f"Loaded {len(queries)} queries", flush=True)
 

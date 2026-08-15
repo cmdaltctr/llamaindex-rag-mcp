@@ -51,6 +51,7 @@ development of the LlamaIndex RAG MCP Server.
 | [042](./042-dependency-floor-integrity.md)                         | Dependency Floor Integrity                                                                   | 2026-08-12 | Accepted |
 | [043](./043-apple-acceleration-for-the-reranker.md)                | Apple Acceleration for the Reranker                                                          | 2026-08-13 | Accepted |
 | [044](./044-pluggable-community-detection.md)                    | Pluggable Community Detection                                                                | 2026-08-14 | Accepted |
+| [045](./045-hosted-chroma-cloud-backend.md)                      | Hosted Chroma Cloud Backend for Experiment Storage                                           | 2026-08-15 | Accepted |
 
 ## Convention
 
