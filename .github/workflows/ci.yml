@@ -279,7 +279,10 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
-        run: uv sync --frozen
+        # community-leiden included so patch coverage exercises the optional
+        # Leiden strategy (its tests skipif-guard without the extra). The
+        # base-only absence assertion lives in the floors job instead.
+        run: uv sync --frozen --extra community-leiden
 
       - name: Run tests with coverage
         env:
