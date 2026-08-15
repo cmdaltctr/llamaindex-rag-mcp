@@ -36,6 +36,7 @@ from .. import compose
 from ..core.ingestion import ingest_path_async
 from ..core.ingestion import list_documents as _list_documents
 from ..core.retrieval import search
+from ..core.vectordb.identity import redact_cloud_secrets, redact_secret
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,40 @@ def _get_profile_resolver() -> Any:
     if _profile_resolver is None:
         _profile_resolver = compose.build_profile_resolver()
     return _profile_resolver
+
+
+def _error_detail(exc: Exception) -> str:
+    """Return exception text with active credentials redacted.
+
+    Chroma Cloud connection values and the OpenRouter API key are removed
+    (full value and any prefix of six or more characters).  When settings
+    themselves cannot be resolved the raw text cannot be redacted, so only
+    a placeholder is returned — the helper must never raise or leak
+    unredacted detail from a tool error path (gotcha #1).
+    """
+    try:
+        settings = compose.get_settings()
+    except Exception:
+        return "(details unavailable: settings could not be resolved)"
+    return redact_secret(
+        redact_cloud_secrets(
+            str(exc),
+            settings.chroma_cloud_api_key,
+            settings.chroma_cloud_tenant,
+            settings.chroma_cloud_database,
+        ),
+        settings.openrouter_api_key,
+    )
+
+
+def _error_message(exc: Exception) -> str:
+    """Format a safe error message for MCP clients."""
+    return f"{type(exc).__name__}: {_error_detail(exc)}"
+
+
+def _log_tool_error(tool: str, exc: Exception) -> None:
+    """Log a tool failure without leaking cloud connection data."""
+    logger.warning("%s error: %s: %s", tool, type(exc).__name__, _error_detail(exc))
 
 
 # ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
@@ -104,19 +139,19 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
     try:
         effective = _get_profile_resolver().resolve(collection)
     except ValueError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"status": "error", "message": _error_detail(exc)}
     except Exception as exc:
-        logger.warning("ingest_documents setup error: %s: %s", type(exc).__name__, exc)
-        return {"status": "error", "message": f"{type(exc).__name__}: {exc}"}
+        _log_tool_error("ingest_documents setup", exc)
+        return {"status": "error", "message": _error_message(exc)}
     try:
         return await ingest_path_async(
             path, collection_name=collection, effective_settings=effective
         )
     except Exception as exc:
-        logger.warning("ingest_documents error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("ingest_documents", exc)
         return {
             "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
+            "message": _error_message(exc),
         }
 
 
@@ -175,7 +210,7 @@ async def search_documents(
                 {
                     "status": "error",
                     "error_type": "validation",
-                    "message": str(exc),
+                    "message": _error_detail(exc),
                 }
             ]
 
@@ -198,12 +233,12 @@ async def search_documents(
             effective_settings=effective,
         )
     except ValueError as exc:
-        logger.warning("search_documents validation error: %s", exc)
+        _log_tool_error("search_documents validation", exc)
         return [
             {
                 "status": "error",
                 "error_type": "validation",
-                "message": str(exc),
+                "message": _error_detail(exc),
             }
         ]
     except Exception as exc:
@@ -214,17 +249,12 @@ async def search_documents(
             error_type = "retrieval"
         else:
             error_type = "internal"
-        logger.warning(
-            "search_documents %s error: %s: %s",
-            error_type,
-            type(exc).__name__,
-            exc,
-        )
+        _log_tool_error(f"search_documents {error_type}", exc)
         return [
             {
                 "status": "error",
                 "error_type": error_type,
-                "message": f"{type(exc).__name__}: {exc}",
+                "message": _error_message(exc),
             }
         ]
 
@@ -245,11 +275,11 @@ def list_indexed_documents(collection: str = "documents") -> list[dict]:
     try:
         return _list_documents(collection_name=collection)
     except Exception as exc:
-        logger.warning("list_indexed_documents error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("list_indexed_documents", exc)
         return [
             {
                 "status": "error",
-                "message": f"{type(exc).__name__}: {exc}",
+                "message": _error_message(exc),
             }
         ]
 
@@ -268,11 +298,11 @@ def list_collections() -> list[dict]:
     try:
         return _list_collections()
     except Exception as exc:
-        logger.warning("list_collections error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("list_collections", exc)
         return [
             {
                 "status": "error",
-                "message": f"{type(exc).__name__}: {exc}",
+                "message": _error_message(exc),
             }
         ]
 
@@ -337,10 +367,10 @@ def delete_documents(
         result["mode"] = "collection"
         return result
     except Exception as exc:
-        logger.warning("delete_documents error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("delete_documents", exc)
         return {
             "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
+            "message": _error_message(exc),
         }
 
 
@@ -368,11 +398,11 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
 
         return get_codebase_map_text(path=path, refresh=refresh)
     except Exception as exc:
-        logger.warning("get_codebase_map error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("get_codebase_map", exc)
         return json.dumps(
             {
                 "status": "error",
-                "message": f"{type(exc).__name__}: {exc}",
+                "message": _error_message(exc),
             }
         )
 
@@ -415,7 +445,8 @@ def change_collection_profile(
                 collection, profile, resolver=_get_profile_resolver()
             )
         except Exception as exc:
-            return {"status": "error", "message": str(exc)}
+            _log_tool_error("change_collection_profile preview", exc)
+            return {"status": "error", "message": _error_detail(exc)}
         return {
             "status": "preview",
             "contract": contract,
@@ -425,7 +456,8 @@ def change_collection_profile(
     try:
         return apply_profile_change(collection, profile)
     except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+        _log_tool_error("change_collection_profile", exc)
+        return {"status": "error", "message": _error_detail(exc)}
 
 
 def main() -> None:
@@ -447,7 +479,7 @@ def main() -> None:
         # RuntimeError carries the redacted Chroma Cloud connection
         # failure — an explicit cloud selection never falls back to a
         # local index, so startup must stop here.
-        print(f"Error: {exc}", file=sys.stderr)
+        print(f"Error: {_error_detail(exc)}", file=sys.stderr)
         raise SystemExit(1) from None
     mcp.run(transport="stdio")
 

@@ -29,13 +29,7 @@ from llama_index.vector_stores.chroma import (
 )
 
 from .base import VectorStore
-from .identity import (
-    EmbeddingIdentity,
-    IdentityGuardMixin,
-)
-from .identity import (
-    redact_secret as _redact_secret,
-)
+from .identity import EmbeddingIdentity, IdentityGuardMixin, redact_cloud_secrets
 from .paged import PagedReadMixin
 
 __all__ = [
@@ -388,15 +382,17 @@ def _construct_cloud_client(
         client.heartbeat()
     except Exception as exc:
         raise RuntimeError(
-            _redact_secret(
+            redact_cloud_secrets(
                 f"CHROMA_MODE=cloud connection check failed "
                 f"({type(exc).__name__}): {exc}. Verify CHROMA_CLOUD_API_KEY, "
                 "CHROMA_CLOUD_TENANT, and CHROMA_CLOUD_DATABASE, and network "
                 "reachability of Chroma Cloud. No local fallback is performed "
                 "after an explicit cloud selection.",
                 key,
+                tenant,
+                database,
             )
-        ) from exc
+        ) from None
     return client
 
 

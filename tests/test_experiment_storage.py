@@ -373,6 +373,7 @@ class TestExperimentStorageConfig:
             corpus="qasper",
             provider="llamacpp",
             model="m-gguf",
+            settings=_settings(),
         )
         assert config.mode == "local"
 

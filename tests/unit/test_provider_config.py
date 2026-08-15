@@ -50,7 +50,7 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
     from rag_mcp.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
-    monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai", None)
+    monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai_like", None)
 
     settings = Settings(
         embed_provider="local",
@@ -259,7 +259,7 @@ def test_cloud_openrouter_missing_optional_deps_raises(monkeypatch: pytest.Monke
     from rag_mcp.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
-    monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai", None)
+    monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai_like", None)
 
     settings = Settings(
         embed_provider="cloud",
@@ -274,24 +274,12 @@ def test_cloud_openrouter_missing_optional_deps_raises(monkeypatch: pytest.Monke
 
 
 def test_metadata_llm_provider_defaults_to_local(monkeypatch: pytest.MonkeyPatch) -> None:
-    """METADATA_LLM_PROVIDER defaults to local when not explicitly set."""
-    monkeypatch.setenv("EMBED_PROVIDER", "local")
-    monkeypatch.setenv("LOCAL_BACKEND", "ollama")
-    monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
+    """METADATA_LLM_PROVIDER defaults to local without environment sources."""
     monkeypatch.delenv("METADATA_LLM_PROVIDER", raising=False)
 
-    # Settings is resolved on demand now — build a fresh instance from the
-    # patched environment instead of reloading the module (the old pattern
-    # relied on a module-level singleton that no longer exists).
-    import rag_mcp.config as config_mod
+    from rag_mcp.config import Settings
 
-    config_mod._settings = None
-    assert config_mod.get_settings().metadata_llm_provider == "local"
-
-    # Restore
-    monkeypatch.setenv("METADATA_LLM_PROVIDER", "local")
-    # Reload re-created the settings singleton; restore the original so
-    # modules that imported `settings` keep reading the same object.
+    assert Settings(_env_file=None).metadata_llm_provider == "local"
 
 
 def test_unknown_embed_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:

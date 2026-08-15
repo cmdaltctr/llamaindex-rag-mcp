@@ -16,14 +16,15 @@ Covers the chroma-cloud-backend spec scenarios:
 - the single ``chromadb`` import boundary in production source
 
 New production names (``EmbeddingIdentity``, the cloud factory kwargs,
-``chroma_storage_summary``, ``_embedding_identity_from_settings``,
-``_redact_secret``) are resolved lazily inside each test so every
-scenario fails individually before the implementation lands.
+``chroma_storage_summary``, ``_embedding_identity_from_settings`) are
+resolved lazily inside each test so every scenario fails individually
+before the implementation lands.
 """
 
 from __future__ import annotations
 
 import re
+import traceback
 from pathlib import Path
 from unittest.mock import patch
 
@@ -34,6 +35,7 @@ from llama_index.core.schema import TextNode
 from rag_mcp.config import Settings
 from rag_mcp.core.vectordb import chroma as chroma_mod
 from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+from rag_mcp.core.vectordb.identity import redact_secret
 
 # Test key chosen so no prefix collides with words that legitimately
 # appear in error messages ("CHROMA_MODE=cloud", "tenant", "database").
@@ -454,6 +456,111 @@ class TestFactoryCloud:
             chroma_mod.build_chroma_vector_store(mode="cloud", cloud_api_key=_CLOUD_KEY)
         _assert_no_key_material(str(excinfo.value), _CLOUD_KEY)
 
+    @pytest.mark.parametrize("fail_at", ["construction", "heartbeat"])
+    def test_cloud_failure_redacts_tenant_and_database_values(
+        self, monkeypatch: pytest.MonkeyPatch, fail_at: str
+    ) -> None:
+        """Tenant/database identifiers never leak in cloud connection errors.
+
+        Regression for the audit finding that construction failures
+        disclosed the configured tenant and database. The RuntimeError
+        must carry neither the full values nor any prefix of six-plus
+        characters — the same floor ``redact_secret`` applies to the
+        API key. Identifiers start with ``acme-`` so no >=6-character
+        prefix collides with words that legitimately appear in the
+        wrapper message ("CHROMA_CLOUD_TENANT", "database", ...).
+        """
+        tenant = "acme-tenant-9f"
+        database = "acme-database-9f"
+        # Truncated echoes (9- and 8-char prefixes) prove prefix-aware
+        # redaction, not just whole-value replacement.
+        underlying = ConnectionError(
+            f"401 unauthorized: tenant={tenant} database={database} "
+            f"truncated={tenant[:9]} fragment={database[:8]}"
+        )
+        _install_fake_cloud_client(
+            monkeypatch,
+            init_error=underlying if fail_at == "construction" else None,
+            heartbeat_error=underlying if fail_at == "heartbeat" else None,
+        )
+        with pytest.raises(RuntimeError, match="CHROMA_MODE=cloud") as excinfo:
+            chroma_mod.build_chroma_vector_store(
+                mode="cloud",
+                cloud_api_key=_CLOUD_KEY,
+                cloud_tenant=tenant,
+                cloud_database=database,
+            )
+        message = str(excinfo.value)
+        for label, value in (("tenant", tenant), ("database", database)):
+            assert value not in message, f"full {label} identifier leaked in: {message!r}"
+            for size in range(6, len(value) + 1):
+                assert value[:size] not in message, (
+                    f"{label} identifier prefix ({size} chars) leaked in: {message!r}"
+                )
+
+
+# ── Factory: cloud failure traceback redaction ─────────────────────
+
+
+class TestCloudFactoryTracebackRedaction:
+    """Formatted tracebacks of cloud factory failures carry no secrets.
+
+    Regression for the audit finding that ``raise ... from exc`` chained
+    the raw SDK exception as ``__cause__``: the wrapper RuntimeError
+    message was redacted, yet ``traceback.format_exception`` re-rendered
+    the chained SDK message and echoed the configured API key, tenant,
+    and database. Any fix that keeps the formatted chain free of key
+    material passes — ``from None``, raising outside the ``except``
+    block, or chaining a redacted stand-in cause.
+    """
+
+    @pytest.mark.parametrize("fail_at", ["construction", "heartbeat"])
+    def test_formatted_traceback_contains_no_cloud_secrets(
+        self, monkeypatch: pytest.MonkeyPatch, fail_at: str
+    ) -> None:
+        """``traceback.format_exception`` renders neither the chained raw
+        SDK message nor any six-plus-character secret prefix.
+
+        The fabricated SDK failure echoes the full key, tenant, and
+        database plus truncated fragments, mirroring real 401 bodies.
+        Identifiers keep the ``acme-`` stem so no >=6-character prefix
+        collides with words that legitimately appear in the wrapper
+        message; frame source lines show variable names only, never
+        runtime values, so they cannot collide either.
+        """
+        tenant = "acme-tenant-tb"
+        database = "acme-database-tb"
+        underlying = ConnectionError(
+            f"401 Unauthorized: api_key={_CLOUD_KEY} tenant={tenant} "
+            f"database={database} truncated={_CLOUD_KEY[:9]} "
+            f"fragments={tenant[:8]}/{database[:7]}"
+        )
+        _install_fake_cloud_client(
+            monkeypatch,
+            init_error=underlying if fail_at == "construction" else None,
+            heartbeat_error=underlying if fail_at == "heartbeat" else None,
+        )
+        with pytest.raises(RuntimeError, match="CHROMA_MODE=cloud") as excinfo:
+            chroma_mod.build_chroma_vector_store(
+                mode="cloud",
+                cloud_api_key=_CLOUD_KEY,
+                cloud_tenant=tenant,
+                cloud_database=database,
+            )
+        formatted = "".join(traceback.format_exception(excinfo.value))
+        for label, value in (
+            ("API key", _CLOUD_KEY),
+            ("tenant identifier", tenant),
+            ("database identifier", database),
+        ):
+            assert value not in formatted, (
+                f"full {label} leaked in formatted traceback: {formatted!r}"
+            )
+            for size in range(6, len(value) + 1):
+                assert value[:size] not in formatted, (
+                    f"{label} prefix ({size} chars) leaked in formatted traceback: {formatted!r}"
+                )
+
 
 # ── Runtime setup: cloud failure semantics ──────────────────────────
 
@@ -542,11 +649,36 @@ class TestRedactSecret:
 
     def test_replaces_every_occurrence(self) -> None:
         message = f"connect failed for {_CLOUD_KEY} at host"
-        assert chroma_mod._redact_secret(message, _CLOUD_KEY) == "connect failed for *** at host"
+        assert redact_secret(message, _CLOUD_KEY) == "connect failed for *** at host"
 
     def test_absent_secret_returns_message_unchanged(self) -> None:
-        assert chroma_mod._redact_secret("plain message", None) == "plain message"
-        assert chroma_mod._redact_secret("plain message", "") == "plain message"
+        assert redact_secret("plain message", None) == "plain message"
+        assert redact_secret("plain message", "") == "plain message"
+
+    # ── Regression: prefix-aware redaction (validated defect, dc3f35e) ──
+    # Cloud SDK errors can echo a truncated key (a six-plus-character
+    # prefix), not only the full secret.
+
+    def test_redacts_prefix_of_six_or_more_characters(self) -> None:
+        """A truncated key echo (prefix only, no full key) is redacted."""
+        prefix = _CLOUD_KEY[:12]
+        message = f"auth rejected token={prefix} (truncated)"
+        redacted = redact_secret(message, _CLOUD_KEY)
+        _assert_no_key_material(redacted, _CLOUD_KEY)
+        assert "token=***" in redacted
+
+    def test_redacts_full_key_and_prefix_in_same_message(self) -> None:
+        """Full and truncated echoes in one message both disappear."""
+        message = f"key={_CLOUD_KEY} truncated={_CLOUD_KEY[:8]}"
+        redacted = redact_secret(message, _CLOUD_KEY)
+        _assert_no_key_material(redacted, _CLOUD_KEY)
+        assert "***" in redacted
+
+    def test_prefixes_below_six_characters_are_left_intact(self) -> None:
+        """Sub-threshold fragments survive — the redaction floor is six characters."""
+        short = _CLOUD_KEY[:5]
+        message = f"context around {short} fragment"
+        assert redact_secret(message, _CLOUD_KEY) == message
 
 
 # ── Embedding identity metadata ─────────────────────────────────────

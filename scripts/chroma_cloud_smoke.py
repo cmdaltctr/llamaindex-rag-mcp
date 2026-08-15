@@ -14,8 +14,9 @@ Prerequisites (in ``.env`` or the environment):
     CHROMA_CLOUD_TENANT=...
     CHROMA_CLOUD_DATABASE=...
 
-The API key is used for construction only — it is never printed,
-logged, or written anywhere.  Failures print a redacted message.
+Configured credentials (the Chroma Cloud API key, the OpenRouter API key)
+and connection identifiers (tenant, database) are never printed or logged.
+Failures print a redacted message.
 """
 
 from __future__ import annotations
@@ -70,14 +71,33 @@ def run_smoke() -> int:
     from llama_index.core import Settings as LlamaIndexSettings
 
     from rag_mcp.compose import build_embed_model
+    from rag_mcp.core.vectordb.identity import redact_cloud_secrets, redact_secret
 
-    LlamaIndexSettings.embed_model = build_embed_model(settings)
+    def _redact(message: str) -> str:
+        """Redact every configured cloud credential and identifier."""
+        return redact_secret(
+            redact_cloud_secrets(
+                message,
+                settings.chroma_cloud_api_key,
+                settings.chroma_cloud_tenant,
+                settings.chroma_cloud_database,
+            ),
+            settings.openrouter_api_key,
+        )
+
+    try:
+        LlamaIndexSettings.embed_model = build_embed_model(settings)
+    except Exception as exc:
+        # OpenAI-compatible clients can echo the submitted API key in
+        # construction errors; redact before logging.
+        logger.error("Embedding client construction failed: %s", _redact(str(exc)))
+        return 1
 
     collection_name = _smoke_collection_name()
     logger.info(
-        "Storage mode: cloud (tenant=%r database=%r)",
-        settings.chroma_cloud_tenant,
-        settings.chroma_cloud_database,
+        "Storage mode: cloud (tenant=%s database=%s)",
+        "set" if settings.chroma_cloud_tenant else "unset",
+        "set" if settings.chroma_cloud_database else "unset",
     )
 
     try:
@@ -121,7 +141,10 @@ def run_smoke() -> int:
             return 1
         logger.info("Row shape keys: %s", sorted(rows[0].keys()))
     except Exception as exc:
-        logger.error("Smoke operation failed: %s", exc)
+        logger.error(
+            "Smoke operation failed: %s",
+            _redact(str(exc)),
+        )
         return 1
     finally:
         # 4. Always delete the disposable collection.
@@ -130,7 +153,10 @@ def run_smoke() -> int:
                 store.delete_collection(collection_name)
                 logger.info("Deleted disposable collection %r", collection_name)
         except Exception as exc:
-            logger.warning("Cleanup failed (collection may remain): %s", exc)
+            logger.warning(
+                "Cleanup failed (collection may remain): %s",
+                _redact(str(exc)),
+            )
 
     logger.info("Smoke check passed in %.1fs", time.perf_counter() - started)
     return 0

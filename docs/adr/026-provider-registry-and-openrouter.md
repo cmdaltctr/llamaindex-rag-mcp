@@ -200,3 +200,21 @@ The References section originally linked `src/rag_mcp/config.py` and
 links have been updated in place to the current locations,
 `src/rag_mcp/config/__init__.py` and `src/rag_mcp/core/metadata/extractor.py`
 respectively.
+
+---
+
+## Update (2026-08-15, add-chroma-cloud-backend)
+
+The OpenRouter and llamacpp **embedding** providers moved from
+`OpenAIEmbedding` (`llama-index-embeddings-openai`) to
+`OpenAILikeEmbedding` (`llama-index-embeddings-openai-like>=0.3.0`).
+`OpenAIEmbedding`'s fixed pydantic model enum rejected provider-prefixed
+OpenRouter IDs such as `qwen/qwen3-embedding-4b` before a request was
+ever sent; the "Like" adapter forwards any `model_name` string unchanged.
+Both `openrouter` and `llamacpp` extras now install
+`llama-index-embeddings-openai-like` instead of
+`llama-index-embeddings-openai` (which remains a transitive dependency).
+The LLM side (`OpenAILike` from `llama-index-llms-openai-like`) is
+unchanged. This corrects the Consequences claim that both groups install
+`llama-index-embeddings-openai` and that `OpenAIEmbedding` serves the
+embedding path.

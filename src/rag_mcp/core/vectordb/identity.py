@@ -10,7 +10,8 @@ subsequent write/query.
 The guard is a mixin: :class:`ChromaVectorStore` supplies the
 ``_identity`` attribute (``None`` disables enforcement entirely, the
 pre-cloud behaviour) and collection handles; this module owns the
-read-merge-write stamping and the mismatch rejection.
+read-merge-write stamping and the mismatch rejection. It also provides
+pure helpers that redact configured Chroma Cloud connection values.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from typing import Any
 IDENTITY_PROVIDER_KEY = "rag_embed_provider"
 IDENTITY_MODEL_KEY = "rag_embed_model"
 IDENTITY_INDEX_KEY = "rag_index_identity"
+_MIN_REDACTED_PREFIX_LEN = 6
 
 
 @dataclass(frozen=True)
@@ -43,23 +45,37 @@ class EmbeddingIdentity:
 
 
 def redact_secret(message: str, secret: str | None) -> str:
-    """Replace every occurrence of ``secret`` in ``message`` with ``***``.
+    """Redact a full secret and each prefix of six or more characters.
 
-    Cloud connection errors may echo submitted credentials; every
-    user-facing message built on top of them passes through this helper
-    so key material never reaches logs or CLI output.
+    Cloud errors can echo submitted credentials or truncated fragments.
+    The full value is always removed. Longer prefixes are removed first
+    so no useful credential fragment remains in logs or client responses.
 
     Args:
         message: Raw message text.
-        secret: Secret to redact; empty/None returns the message
-            unchanged.
+        secret: Secret to redact; empty/None returns the message unchanged.
 
     Returns:
-        The message with all secret occurrences redacted.
+        The redacted message.
     """
     if not secret:
         return message
-    return message.replace(secret, "***")
+    message = message.replace(secret, "***")
+    for length in range(len(secret) - 1, _MIN_REDACTED_PREFIX_LEN - 1, -1):
+        message = message.replace(secret[:length], "***")
+    return message
+
+
+def redact_cloud_secrets(
+    message: str,
+    api_key: str | None,
+    tenant: str | None,
+    database: str | None,
+) -> str:
+    """Redact configured Chroma Cloud connection values from a message."""
+    for value in (api_key, tenant, database):
+        message = redact_secret(message, value)
+    return message
 
 
 def read_stored_identity(collection: Any) -> tuple[str | None, str | None, str | None]:

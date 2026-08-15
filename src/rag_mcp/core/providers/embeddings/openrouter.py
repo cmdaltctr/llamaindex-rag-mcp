@@ -1,8 +1,8 @@
 """OpenRouter embedding provider.
 
-Constructs ``OpenAIEmbedding`` pointed at OpenRouter's API.  Requires
-the optional dependency ``llama-index-embeddings-openai``
-(``uv sync --extra openrouter``).
+Constructs ``OpenAILikeEmbedding`` for OpenRouter's OpenAI-compatible API.
+This accepts arbitrary OpenRouter embedding model identifiers, including
+Qwen models. Requires ``llama-index-embeddings-openai-like``.
 """
 
 from __future__ import annotations
@@ -14,19 +14,19 @@ if TYPE_CHECKING:
 
 
 def build(settings: Settings) -> Any:
-    """Construct an ``OpenAIEmbedding`` for OpenRouter from *settings*.
+    """Construct an ``OpenAILikeEmbedding`` for OpenRouter from *settings*.
 
     Raises:
-        ImportError: If ``llama-index-embeddings-openai`` is not installed.
+        ImportError: If ``llama-index-embeddings-openai-like`` is absent.
         ValueError: If ``OPENROUTER_API_KEY`` or ``OPENROUTER_EMBED_MODEL``
             is not set.
     """
     try:
-        from llama_index.embeddings.openai import OpenAIEmbedding
+        from llama_index.embeddings.openai_like import OpenAILikeEmbedding
     except ImportError:
         raise ImportError(
-            "Provider 'openrouter' requires llama-index-embeddings-openai. "
-            "Install it with:  uv sync --extra openrouter"
+            "Provider 'openrouter' requires llama-index-embeddings-openai-like. "
+            "Install it with: uv sync --extra openrouter"
         ) from None
 
     if not settings.openrouter_api_key:
@@ -36,8 +36,8 @@ def build(settings: Settings) -> Any:
             "OPENROUTER_EMBED_MODEL is required for the openrouter embedding provider."
         )
 
-    return OpenAIEmbedding(
-        model=settings.openrouter_embed_model,
+    return OpenAILikeEmbedding(
+        model_name=settings.openrouter_embed_model,
         api_key=settings.openrouter_api_key,
         api_base="https://openrouter.ai/api/v1",
         embed_batch_size=settings.ingestion.embed_batch_size,

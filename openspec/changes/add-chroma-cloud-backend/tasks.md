@@ -56,4 +56,4 @@
 - [x] 6.4 Run `openspec validate add-chroma-cloud-backend --strict`
 - [x] 6.5 Run `graphify update .`
 - [x] 6.6 Obtain approval, then run `uv run pytest -m "not slow" --cov=rag_mcp --cov-branch`
-- [ ] 6.7 With user-provided credentials, run the opt-in disposable cloud smoke (never in CI); delete its collection after verification  <!-- pending: requires user-provided credentials -->
+- [x] 6.7 With user-provided credentials, run the opt-in disposable cloud smoke (never in CI); delete its collection after verification
