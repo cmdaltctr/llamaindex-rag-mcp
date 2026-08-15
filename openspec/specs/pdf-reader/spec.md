@@ -1,9 +1,7 @@
 ## Purpose
 
 Define a pluggable PDF reader architecture with environment-variable-driven backend selection, bounding-box metadata capture, graceful fallback across multiple parser backends, and structured error handling for MCP tool compliance.
-
 ## Requirements
-
 ### Requirement: PDF reader SHALL be selectable via environment variable
 
 The system SHALL read a `PDF_READER` environment variable at config-load time and resolve it to one of the supported parser backends. Accepted values SHALL be `auto`, `liteparse`, `pypdfium2`, and `pypdf`. Any other value SHALL log a warning and fall back to `auto` resolution. The resolved backend SHALL be exposed as a `RESOLVED_PDF_READER` module-level constant in `config.py` computed exactly once at import.
@@ -22,23 +20,44 @@ The system SHALL read a `PDF_READER` environment variable at config-load time an
 
 ### Requirement: Auto resolution SHALL probe backends in preference order with graceful fallback
 
-When `PDF_READER=auto` (the proposed default after Experiment 11 passes), the system SHALL probe backend imports in the order `liteparse → pypdfium2 → pypdf` and SHALL select the first importable backend. PyMuPDF is structurally excluded from accepted values entirely (AGPL-3 incompatibility — see design.md Decision 4). If no optional backend is installed, the system SHALL fall back to `pypdf` (always available via `llama-index-readers-file`).
+When the configured reader is `auto`, the system SHALL probe backend imports
+in the order `liteparse → pypdfium2 → pypdf` and SHALL select the first
+importable backend. PyMuPDF is structurally excluded from accepted values
+entirely (AGPL-3 incompatibility). If no optional backend is installed, the
+system SHALL fall back to `pypdf` (always available via
+`llama-index-readers-file`).
+
+The composition root resolves `auto` once at startup and injects the concrete
+name. Callers that bypass the composition root (direct library use, tests)
+SHALL receive the same preference order from the reader factory's local
+resolution, so the selected backend is identical on both paths for the same
+installed packages.
 
 #### Scenario: LiteParse installed and selected by auto
-- **WHEN** `PDF_READER=auto` is set and the `liteparse` package is importable
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"liteparse"`
+
+- **WHEN** the configured reader is `auto` and the `liteparse` package is importable
+- **THEN** the resolved reader SHALL be `liteparse`
 
 #### Scenario: LiteParse missing, pypdfium2 installed
-- **WHEN** `PDF_READER=auto` is set, `liteparse` is not importable, and `pypdfium2` is importable
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"pypdfium2"` and the system SHALL log an informational message that LiteParse was not available
+
+- **WHEN** the configured reader is `auto`, `liteparse` is not importable, and `pypdfium2` is importable
+- **THEN** the resolved reader SHALL be `pypdfium2` and the system SHALL log an informational message that LiteParse was not available
 
 #### Scenario: No optional backend installed
-- **WHEN** `PDF_READER=auto` is set and neither `liteparse` nor `pypdfium2` is importable
-- **THEN** `RESOLVED_PDF_READER` SHALL equal `"pypdf"` and ingestion SHALL behave identically to the pre-change pipeline
+
+- **WHEN** the configured reader is `auto` and neither `liteparse` nor `pypdfium2` is importable
+- **THEN** the resolved reader SHALL be `pypdf` and ingestion SHALL behave identically to the pre-change pipeline
 
 #### Scenario: Explicit backend requested but not installed
-- **WHEN** `PDF_READER=liteparse` is set but `liteparse` is not importable
+
+- **WHEN** the configured reader is `liteparse` but `liteparse` is not importable
 - **THEN** the system SHALL log an error naming the missing package and SHALL fall back to `pypdf` rather than raising
+
+#### Scenario: Factory-local auto resolution matches composition-root order
+
+- **WHEN** the reader factory resolves `auto` for a caller that bypassed the composition root, `liteparse` is not importable, and `pypdfium2` is importable
+- **THEN** the factory SHALL return the `pypdfium2` adapter
+- **AND** the selection SHALL match what the composition root would have resolved for the same installed packages
 
 ### Requirement: Default behaviour SHALL be preserved when LiteParse is not installed
 
@@ -142,3 +161,4 @@ validated this adoption (+6.9% nDCG@10); see ADR-020 for the decision record.
 #### Scenario: Auto fallback when LiteParse not installed
 - **WHEN** no `PDF_READER` env var is set and `liteparse` is NOT installed
 - **THEN** `RESOLVED_PDF_READER` SHALL resolve to `"pypdf"` (always available)
+
