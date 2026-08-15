@@ -17,7 +17,7 @@
 
 ## 3. Contract and regression tests
 
-- [x] 3.1 Contract test: factory-local `auto` resolution and `compose._resolve_pdf_reader` produce the same name for the same simulated installed set
+- [x] 3.1 Contract test: factory-local `auto` resolution and `compose.resolve_pdf_reader` produce the same name for the same simulated installed set
 - [x] 3.2 Test: Azure fallback chain uses the caller's reader name, not the process default
 - [x] 3.3 Update existing factory tests that call `get_pdf_reader()` with no argument
 - [x] 3.4 Confirm no new import edges: `integrations/` does not import `compose`; run `uv run lint-imports`

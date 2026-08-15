@@ -287,16 +287,17 @@ async def read_with_azure_fallback(
     max_retries: int = 1,
     retry_delay: float = 5.0,
 ) -> list:
-    """Read a document using Azure with graceful fallback to local readers.
+    """Read a document using Azure with graceful fallback to a local reader.
 
     Attempts Azure Document Intelligence first. On network error, retries
     once after ``retry_delay`` seconds. On persistent failure, falls back
-    to the local reader chain (LiteParse → pypdfium2 → pypdf).
+    to the caller-supplied local PDF reader; the factory resolves ``auto``
+    (LiteParse → pypdfium2 → pypdf).
 
     Args:
         file_path: Path to the document file.
         pdf_reader: Reader name from the caller's injected settings, used
-            by the local fallback chain.
+            by the local fallback reader.
         max_retries: Number of retry attempts before fallback.
         retry_delay: Delay between retries in seconds.
 
@@ -344,7 +345,10 @@ async def read_with_azure_fallback(
 
 
 async def _read_with_local_chain(file_path: Path, pdf_reader: str) -> list:
-    """Read a document using the local reader chain (LiteParse → pypdfium2 → pypdf).
+    """Read a document with the caller-supplied local PDF reader.
+
+    The factory resolves ``auto`` (LiteParse → pypdfium2 → pypdf); any
+    concrete name is used directly.
 
     Args:
         file_path: Path to the document file.
