@@ -15,7 +15,7 @@
 
 - [ ] 3.1 In `core/ingestion/writer.py`, stamp every chunk's metadata with the canonical `source_content_hash` field at write time, regardless of the `skip_unchanged` setting (additive field; no existing field renamed)
 - [ ] 3.2 Add a filtered metadata-read method to the `VectorStore` ABC, its ChromaDB implementation, and the vector-store contract tests; pipeline and writer code must not call ChromaDB APIs directly
-- [ ] 3.3 Add a `get_stored_hashes(file_paths, collection_name) -> dict[str, list[str | None]]` helper in `writer.py` that returns every matching chunk hash per file and is safe to call through `asyncio.to_thread`
+- [ ] 3.3 Add a `get_stored_hashes(file_paths, collection_name) -> dict[str, list[str | None]]` helper in `writer.py` that issues one filtered metadata query per file (matching the design's per-file cardinality), returns every matching chunk hash per file, and is safe to call through `asyncio.to_thread`
 
 ## 4. Pipeline skip logic
 

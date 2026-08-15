@@ -21,6 +21,14 @@ chunks SHALL be ingested normally. Binary files SHALL retain the existing
 - **THEN** the file SHALL NOT be re-chunked or re-embedded
 - **THEN** the collection's chunk count for that file SHALL remain unchanged
 
+#### Scenario: File with no stored chunks is ingested
+
+- **WHEN** an eligible non-binary file has no existing chunks in the target
+  collection (never ingested, or its previous ingest produced zero chunks)
+- **AND** `ingest_path_async` is called on its path
+- **THEN** the file SHALL be ingested normally
+- **AND** the file SHALL NOT be classified as `skipped_unchanged`
+
 #### Scenario: Modified file is re-ingested
 
 - **WHEN** a previously ingested file is modified on disk
@@ -98,7 +106,9 @@ hash.
 
 The ingestion result dict SHALL report skipped files additively. The result
 SHALL carry a top-level `files_skipped_unchanged` integer counting eligible
-non-binary files skipped by change detection. Each file skipped by change
+non-binary files skipped by change detection. The key SHALL be present with
+an integer value on every result dict, error returns included, and SHALL be
+`0` when no file was skipped. Each file skipped by change
 detection SHALL appear in `file_details` with `status: "skipped_unchanged"`
 and `chunks: 0`. This status is distinct from the existing `"skipped"` status
 for unsupported-extension and binary files. All existing result keys
@@ -119,7 +129,9 @@ in `chunks_removed`.
 
 #### Scenario: Partially changed directory reports mixed counts
 
-- **WHEN** three eligible non-binary files with one modified are ingested
+- **WHEN** a directory contains three eligible non-binary files, exactly one
+  of which has been modified since the previous ingest
+- **AND** `ingest_path_async` is called on the directory
 - **THEN** `files_skipped_unchanged` SHALL be `2` and `files_indexed` SHALL
   be `1`
 - **THEN** exactly two `file_details` entries SHALL have
@@ -132,6 +144,13 @@ in `chunks_removed`.
   existing types
 - **THEN** `files_skipped_unchanged` SHALL be present and SHALL be `0` when
   no file was skipped
+
+#### Scenario: Error results carry the skip counter
+
+- **WHEN** `ingest_path_async` returns an error result dict
+- **THEN** the dict SHALL include `files_skipped_unchanged` as an integer
+- **AND** the value SHALL be `0` unless eligible files were skipped before
+  the error
 
 ### Requirement: Change detection can be disabled per call
 

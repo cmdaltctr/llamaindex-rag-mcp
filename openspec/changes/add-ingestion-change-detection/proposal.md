@@ -18,10 +18,13 @@ system.
 - Add content-hash change detection to `ingest_path_async` itself: before the
   delete-and-re-embed loop, compute a SHA-256 hash of each eligible non-binary
   file and compare it against the hash stored in ChromaDB chunk metadata for
-  that `file_path`. Files whose hash matches every stored chunk hash are
-  skipped (no delete, no re-chunk, no re-embed). Files whose hash differs, or
-  whose chunks have missing or mixed hashes, are re-ingested and their chunks'
-  metadata is stamped with the new hash. A file whose content hash cannot be
+  that `file_path`. A file with at least one stored chunk whose hashes all
+  match the computed hash is skipped (no delete, no re-chunk, no re-embed);
+  an empty hash lookup is never a match. Files whose hash differs, whose
+  chunks have missing or mixed hashes, or that have no stored chunks at all
+  (new or previously unindexed files) are treated as having no usable stored
+  hash, are re-ingested, and their chunks' metadata is stamped with the new
+  hash. A file whose content hash cannot be
   read is reported as a per-file failure without stopping sibling files.
 - Store the file content hash as a ChromaDB chunk metadata field (additive;
   existing chunks without the field are treated as "no stored hash" and are

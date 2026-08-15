@@ -104,8 +104,11 @@ The layering rule forces this: the pipeline (`core/`) must not import from
 
 In `ingest_path_async`, after file discovery and Magika detection, exclude
 binary files from change detection and keep their existing `status: "skipped"`
-handling. Compute hashes for the remaining eligible files, query all stored
-chunk hashes, and partition the files into `unchanged` and `to_ingest`. Only
+handling. Compute hashes for the remaining eligible files, fetch all stored
+chunk hashes via `get_stored_hashes` — one filtered metadata query per file,
+with the whole eligible-file list handled inside a single
+`asyncio.to_thread` call — and partition the files into `unchanged` and
+`to_ingest`. Only
 `to_ingest` files enter the existing delete and chunk/embed loops. Files
 skipped by change detection get `file_details` entries with
 `status: "skipped_unchanged"` and feed the `files_skipped_unchanged` counter.
@@ -138,9 +141,13 @@ check proves sufficient, but that is not worth the churn here.
 - [First ingest against a pre-existing collection re-embeds everything once]
   → Documented in the spec as the legacy-chunks scenario; unavoidable without
   a backfill pass that would itself need to read every file. Acceptable.
-- [Hash reads add one filtered metadata query per file per ingest] → Each
-  query reads only metadata through the `VectorStore` contract. The cost is
-  negligible against the embedding work it avoids. Calls run via `to_thread`.
+- [Hash reads add one filtered metadata query per file per ingest] → The
+  `get_stored_hashes(file_paths, collection_name)` helper accepts the whole
+  eligible-file list but issues one filtered metadata query per file through
+  the `VectorStore` contract — the same per-file lookup pattern
+  `remove_document` already uses — with the loop executed inside a single
+  `asyncio.to_thread` call. Each query reads only metadata. The cost is
+  negligible against the embedding work it avoids.
 - [Settings change (chunk size, embedding model) leaves stale-but-matching
   hashes, so unchanged files keep old vectors] → Mitigated by the opt-out
   flag; also surfaced in the proposal's behavioural note. A future change
