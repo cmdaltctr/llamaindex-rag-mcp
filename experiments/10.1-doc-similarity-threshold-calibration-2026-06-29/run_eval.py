@@ -200,7 +200,7 @@ def main() -> None:
         "created_at_unix": time.time(),
         "settings": {
             "thresholds": args.thresholds,
-            "collection_name": args.collection_name,
+            "collection_name": collection_name,
             "seed": args.seed,
             "doc_count": doc_count,
             "embed_model": os.getenv("EMBED_MODEL"),

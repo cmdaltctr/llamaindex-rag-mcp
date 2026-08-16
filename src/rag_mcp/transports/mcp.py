@@ -40,6 +40,11 @@ from ..core.vectordb.identity import redact_cloud_secrets, redact_secret
 
 logger = logging.getLogger(__name__)
 
+# Returned by ``_error_detail`` when settings cannot be resolved; main()
+# replaces this placeholder with the real startup reason (config and
+# provider messages never echo key material by design).
+_SETTINGS_UNRESOLVED = "(details unavailable: settings could not be resolved)"
+
 # Load .env from the working directory (project root when run via `uv run`)
 load_dotenv()
 
@@ -75,7 +80,7 @@ def _error_detail(exc: Exception) -> str:
     try:
         settings = compose.get_settings()
     except Exception:
-        return "(details unavailable: settings could not be resolved)"
+        return _SETTINGS_UNRESOLVED
     return redact_secret(
         redact_cloud_secrets(
             str(exc),
@@ -479,7 +484,12 @@ def main() -> None:
         # RuntimeError carries the redacted Chroma Cloud connection
         # failure — an explicit cloud selection never falls back to a
         # local index, so startup must stop here.
-        print(f"Error: {_error_detail(exc)}", file=sys.stderr)
+        detail = _error_detail(exc)
+        if detail == _SETTINGS_UNRESOLVED:
+            # The caught error IS the settings failure; its message names
+            # the offending variable and never echoes key material.
+            detail = f"{type(exc).__name__}: {exc}"
+        print(f"Error: {detail}", file=sys.stderr)
         raise SystemExit(1) from None
     mcp.run(transport="stdio")
 

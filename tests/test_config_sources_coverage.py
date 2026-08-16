@@ -197,4 +197,6 @@ class TestChromaCloudSettingsSources:
         defaults = (
             Path(__file__).resolve().parent.parent / "src" / "rag_mcp" / "config" / "defaults.yaml"
         )
-        assert "CHROMA_CLOUD_API_KEY" not in defaults.read_text(encoding="utf-8")
+        # Case-insensitive: a lower-case YAML key would silently
+        # reintroduce a secrets-in-defaults path.
+        assert "chroma_cloud_api_key" not in defaults.read_text(encoding="utf-8").casefold()

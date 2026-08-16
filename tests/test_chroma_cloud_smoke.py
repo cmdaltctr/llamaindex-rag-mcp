@@ -159,7 +159,15 @@ def _run_smoke_with_store(
     )
 
     with caplog.at_level(level, logger="chroma_cloud_smoke"):
-        return smoke.run_smoke()
+        # run_smoke assigns the LlamaIndex global embed model; restore it
+        # afterwards so a MockEmbedding never leaks into later tests.
+        from llama_index.core import Settings as LlamaIndexSettings
+
+        embed_model_before = LlamaIndexSettings.embed_model
+        try:
+            return smoke.run_smoke()
+        finally:
+            LlamaIndexSettings.embed_model = embed_model_before
 
 
 @pytest.mark.parametrize("form", ["full", "prefix"], ids=["full", "prefix"])

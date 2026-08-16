@@ -72,7 +72,9 @@ def main() -> None:
 
     from experiments._lib.storage import experiment_storage_config
 
-    embed_model = os.getenv("EMBED_MODEL", "qwen3-embedding:0.6b")
+    embed_model = os.getenv("EMBED_MODEL")
+    if not embed_model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{args.reader}")
 

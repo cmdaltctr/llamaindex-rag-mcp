@@ -205,6 +205,10 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             metadatas=metadatas,
             embeddings=embeddings,
         )
+        # Direct-use API: unlike pipeline writes (where the ingestion
+        # writer bumps the generation), no caller owns invalidation here,
+        # so the store keeps the BM25 cache contract itself.
+        self.bump_generation(collection_name)
 
     # ── Query ───────────────────────────────────────────────────────
 

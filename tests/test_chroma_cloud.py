@@ -281,6 +281,12 @@ class TestSettingsChromaMode:
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", _CLOUD_KEY)
         assert Settings(_env_file=None).chroma_cloud_api_key == _CLOUD_KEY
 
+    def test_padded_key_is_stored_stripped(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A padded key validates but is stored stripped so it authenticates."""
+        _clear_chroma_env(monkeypatch)
+        settings = _cloud_settings(chroma_cloud_api_key=f"  {_CLOUD_KEY}\t")
+        assert settings.chroma_cloud_api_key == _CLOUD_KEY
+
 
 # ── Settings: cloud credential validation ───────────────────────────
 

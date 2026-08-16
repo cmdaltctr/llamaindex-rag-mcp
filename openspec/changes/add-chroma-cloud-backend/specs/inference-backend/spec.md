@@ -73,7 +73,7 @@ When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (d
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
 - **AND** `LLAMACPP_EMBED_URL=http://localhost:8080/v1`
 - **AND** `LLAMACPP_EMBED_MODEL=Qwen3-Embedding-0.6B-Q8_0.gguf`
-- **THEN** `Settings.embed_model` SHALL be an `OpenAILikeEmbedding` instance
+- **THEN** `compose.build_embed_model(settings)` SHALL return an `OpenAILikeEmbedding` instance
 - **THEN** embedding requests SHALL be sent to `http://localhost:8080/v1/embeddings`
 
 #### Scenario: Custom embed URL

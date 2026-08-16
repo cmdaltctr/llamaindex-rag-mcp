@@ -267,6 +267,23 @@ class TestGenerationCounter:
         store.bump_generation("g")
         assert store.get_generation("g") == 2
 
+    def test_upsert_precomputed_advances_generation(self, store: VectorStore) -> None:
+        """A direct precomputed upsert invalidates the BM25 cache.
+
+        Pipeline writes are bumped by the ingestion writer; this direct-use
+        API has no wrapper, so the store must keep the contract itself.
+        """
+        store.create_collection("precomputed")
+        assert store.get_generation("precomputed") == 0
+        store.upsert_precomputed(
+            "precomputed",
+            ids=["row-1"],
+            documents=["probe"],
+            metadatas=[{"k": "v"}],
+            embeddings=[[0.1, 0.2]],
+        )
+        assert store.get_generation("precomputed") == 1
+
     def test_generations_are_per_collection(self, store: VectorStore) -> None:
         store.bump_generation("a")
         store.bump_generation("a")

@@ -45,9 +45,11 @@ def _resolve_cell_runtime(mode: str, chroma_dir: Path) -> tuple[Any, str]:
     Retrieval knobs (hybrid on/off, sparse backend, fetch pool) are
     passed per ``search`` call instead of patched into module globals.
     """
-    from experiments._lib.storage import experiment_storage_config
+    from experiments._lib.storage import experiment_storage_config, identity_embed_model
 
-    model = os.getenv("EMBED_MODEL", "unknown")
+    model = os.getenv("EMBED_MODEL")
+    if not model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     storage = experiment_storage_config(
         experiment_id="exp9a",
         corpus="freshstack",
@@ -59,11 +61,11 @@ def _resolve_cell_runtime(mode: str, chroma_dir: Path) -> tuple[Any, str]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import Settings
     from rag_mcp.core.vectordb import set_default_store
 
-    LlamaIndexSettings.embed_model = build_embed_model(Settings())
+    # Pin the query embedder to the index identity; ambient Settings()
+    # could select a different provider and query with incompatible vectors.
+    LlamaIndexSettings.embed_model = identity_embed_model(model)
     set_default_store(store)
 
     try:

@@ -196,3 +196,27 @@ class CollectionReader:
         if result is None:
             return {"ids": []}
         return result
+
+
+def identity_embed_model(model: str):
+    """Build a query embed model pinned to the harness storage identity.
+
+    Calibration indexes are built with the local Ollama embedder
+    (``provider="ollama"`` + ``EMBED_MODEL``). An ambient ``Settings()``
+    could select a different provider (for example an openrouter cloud
+    key in ``.env``) and silently query the index with incompatible
+    vectors. Pinning the query embedder to the same identity as the
+    storage keeps build and evaluation consistent.
+
+    Args:
+        model: The embedding model used to build the index (``EMBED_MODEL``).
+
+    Returns:
+        The constructed LlamaIndex embedding model.
+    """
+    from rag_mcp.compose import build_embed_model
+    from rag_mcp.config import Settings
+
+    return build_embed_model(
+        Settings(embed_provider="local", local_backend="ollama", embed_model=model)
+    )

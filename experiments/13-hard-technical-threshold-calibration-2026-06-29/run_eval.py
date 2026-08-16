@@ -100,9 +100,11 @@ def _resolve_cell_runtime(threshold: float) -> tuple[Any, str, Any]:
     HARD_TECHNICAL_THRESHOLD into the policy resolver; the LlamaIndex
     global embed model is assigned so query embeddings match the index.
     """
-    from experiments._lib.storage import experiment_storage_config
+    from experiments._lib.storage import experiment_storage_config, identity_embed_model
 
-    model = os.getenv("EMBED_MODEL", "unknown")
+    model = os.getenv("EMBED_MODEL")
+    if not model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     chroma_dir = str(SCRIPT_DIR / "output" / "chroma_combined")
     storage = experiment_storage_config(
         experiment_id="exp13",
@@ -115,12 +117,15 @@ def _resolve_cell_runtime(threshold: float) -> tuple[Any, str, Any]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import build_embed_model, settings_to_effective
+    from rag_mcp.compose import settings_to_effective
     from rag_mcp.config import Settings
     from rag_mcp.core.vectordb import set_default_store
 
     settings = Settings()
-    LlamaIndexSettings.embed_model = build_embed_model(settings)
+    # Pin the query embedder to the index identity; ambient Settings()
+    # could select a different provider and query with incompatible
+    # vectors. Retrieval knobs still come from the ambient settings.
+    LlamaIndexSettings.embed_model = identity_embed_model(model)
     set_default_store(store)
 
     base_effective = settings_to_effective(settings)

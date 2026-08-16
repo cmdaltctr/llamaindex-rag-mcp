@@ -300,6 +300,8 @@ class Settings(BaseSettings):
                 "CHROMA_MODE=cloud requires CHROMA_CLOUD_API_KEY to be set. "
                 "Add it to your .env file (see .env.example); never commit the key."
             )
+        # Store the stripped key so padded .env values authenticate cleanly.
+        object.__setattr__(self, "chroma_cloud_api_key", self.chroma_cloud_api_key.strip())
         tenant = self.chroma_cloud_tenant.strip()
         database = self.chroma_cloud_database.strip()
         if bool(tenant) != bool(database):

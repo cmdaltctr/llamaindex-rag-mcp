@@ -400,7 +400,13 @@ class TestCalibrationRunnerMigration:
         offenders: list[str] = []
         checked = 0
         for directory in _EXPERIMENT_DIRS:
-            for path in sorted((experiments_root / directory).rglob("*.py")):
+            directory_path = experiments_root / directory
+            # A mistyped or renamed _EXPERIMENT_DIRS entry would rglob to
+            # nothing and silently shrink the guard's coverage.
+            assert directory_path.is_dir(), f"experiment directory missing: {directory}"
+            directory_files = sorted(directory_path.rglob("*.py"))
+            assert directory_files, f"experiment directory has no Python files: {directory}"
+            for path in directory_files:
                 checked += 1
                 source = path.read_text(encoding="utf-8")
                 try:

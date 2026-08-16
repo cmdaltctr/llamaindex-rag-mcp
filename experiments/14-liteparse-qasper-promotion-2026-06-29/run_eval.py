@@ -89,9 +89,11 @@ def _resolve_cell_runtime(reader: str, rerank: bool) -> tuple[Any, str]:
     The reader is part of the immutable index identity (parsed text
     differs), so each reader cell resolves its own collection.
     """
-    from experiments._lib.storage import experiment_storage_config
+    from experiments._lib.storage import experiment_storage_config, identity_embed_model
 
-    model = os.getenv("EMBED_MODEL", "unknown")
+    model = os.getenv("EMBED_MODEL")
+    if not model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{reader}")
     storage = experiment_storage_config(
         experiment_id="exp14",
@@ -105,11 +107,11 @@ def _resolve_cell_runtime(reader: str, rerank: bool) -> tuple[Any, str]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import Settings
     from rag_mcp.core.vectordb import set_default_store
 
-    LlamaIndexSettings.embed_model = build_embed_model(Settings())
+    # Pin the query embedder to the index identity; ambient Settings()
+    # could select a different provider and query with incompatible vectors.
+    LlamaIndexSettings.embed_model = identity_embed_model(model)
     set_default_store(store)
     return store, storage.collection_name
 

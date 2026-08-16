@@ -888,7 +888,7 @@ async def test_get_codebase_map_handler_is_callable(mcp_server, tmp_path) -> Non
 # cloud values are available when the error is formatted.
 
 
-def _mcp_error_log_text(caplog: pytest.CaptureFixture) -> str:
+def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
     """Concatenate the MCP transport's own warning-level-or-higher records.
 
     Filtering by logger name keeps unrelated INFO startup output (which
@@ -958,7 +958,9 @@ async def test_ingest_error_envelope_redacts_cloud_key(
     data = _extract_result(result)
     assert data["status"] == "error"
     _assert_no_key_material(str(data), _CLOUD_KEY)
-    _assert_no_key_material(_mcp_error_log_text(caplog), _CLOUD_KEY)
+    log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
+    _assert_no_key_material(log_text, _CLOUD_KEY)
 
 
 async def test_ingest_error_envelope_redacts_tenant_and_database(
@@ -983,6 +985,7 @@ async def test_ingest_error_envelope_redacts_tenant_and_database(
     _assert_no_key_material(str(data), tenant)
     _assert_no_key_material(str(data), database)
     log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
     _assert_no_key_material(log_text, tenant)
     _assert_no_key_material(log_text, database)
 
@@ -1006,7 +1009,9 @@ async def test_ingest_error_envelope_redacts_openrouter_key(
     data = _extract_result(result)
     assert data["status"] == "error"
     _assert_no_key_material(str(data), key)
-    _assert_no_key_material(_mcp_error_log_text(caplog), key)
+    log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
+    _assert_no_key_material(log_text, key)
 
 
 def test_error_detail_settings_failure_returns_placeholder(
@@ -1028,3 +1033,31 @@ def test_error_detail_settings_failure_returns_placeholder(
     assert mcp_mod._error_detail(RuntimeError("sensitive leak")) == (
         "(details unavailable: settings could not be resolved)"
     )
+
+
+def test_main_settings_failure_prints_reason(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Startup shows the settings failure reason, not the redaction placeholder.
+
+    Config validation messages name the offending variable and never echo
+    key material, so the operator sees why startup failed.
+    """
+    from rag_mcp.transports import mcp as mcp_mod
+
+    def _settings_failure() -> None:
+        raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
+
+    monkeypatch.setattr(mcp_mod.logging, "basicConfig", lambda **_kwargs: None)
+    monkeypatch.setattr(mcp_mod.compose, "ensure_runtime_setup", _settings_failure)
+    monkeypatch.setattr(mcp_mod.compose, "get_settings", _settings_failure)
+    monkeypatch.setattr(mcp_mod.mcp, "run", lambda **_kwargs: None)
+
+    with pytest.raises(SystemExit) as excinfo:
+        mcp_mod.main()
+
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert "EMBED_PROVIDER='bogus' is not an accepted value" in err
+    assert mcp_mod._SETTINGS_UNRESOLVED not in err

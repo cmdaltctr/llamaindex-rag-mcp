@@ -10,7 +10,7 @@ The system SHALL support `EMBED_PROVIDER=openrouter` for cloud embeddings via Op
 - **AND** `OPENROUTER_API_KEY=sk-or-v1-...`
 - **AND** `OPENROUTER_EMBED_MODEL=nvidia/nv-embed-v1`
 - **AND** `llama-index-embeddings-openai-like` is installed
-- **THEN** `Settings.embed_model` SHALL be an `OpenAILikeEmbedding` instance
+- **THEN** `compose.build_embed_model(settings)` SHALL return an `OpenAILikeEmbedding` instance
 - **THEN** embedding requests SHALL be sent to `https://openrouter.ai/api/v1/embeddings`
 - **THEN** the `api_key` SHALL be set to the value of `OPENROUTER_API_KEY`
 - **THEN** the `model_name` SHALL equal `OPENROUTER_EMBED_MODEL` unchanged

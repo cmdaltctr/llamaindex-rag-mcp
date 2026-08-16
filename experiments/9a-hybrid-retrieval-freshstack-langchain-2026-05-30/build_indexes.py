@@ -114,14 +114,19 @@ def _build_chroma(
     # The deterministic immutable-index name is the default; an explicit
     # --collection-name override remains for legacy local indexes.
     collection_name = collection_name or storage.collection_name
-    store = storage.build_store()
 
-    if force and storage.mode == "cloud":
-        if store.collection_exists(collection_name):
-            store.delete_collection(collection_name)
+    # Reset local storage BEFORE constructing the store: the local
+    # factory opens the on-disk Chroma client, and deleting the
+    # directory under an open client leaves writes the next process
+    # cannot see.
     if force and storage.mode == "local":
         shutil.rmtree(persist_dir, ignore_errors=True)
     persist_dir.mkdir(parents=True, exist_ok=True)
+
+    store = storage.build_store()
+
+    if force and storage.mode == "cloud" and store.collection_exists(collection_name):
+        store.delete_collection(collection_name)
 
     store.create_collection(collection_name)
     existing = store.count(collection_name)
@@ -131,6 +136,7 @@ def _build_chroma(
             "chunks": existing,
             "persist_dir": str(persist_dir),
             "collection_name": collection_name,
+            "mode": storage.mode,
         }
     if existing and force:
         store.delete_collection(collection_name)
@@ -149,6 +155,8 @@ def _build_chroma(
             "status": "reused",
             "chunks": store.count(collection_name),
             "persist_dir": str(persist_dir),
+            "collection_name": collection_name,
+            "mode": storage.mode,
         }
 
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -193,6 +201,7 @@ def _build_chroma(
         "chunks": store.count(collection_name),
         "persist_dir": str(persist_dir),
         "collection_name": collection_name,
+        "mode": storage.mode,
         "embedding_model": model,
         "elapsed_seconds": round(time.perf_counter() - started, 2),
     }
@@ -234,7 +243,17 @@ def main() -> None:
         progress_every=args.progress_every,
     )
 
-    if args.force or not hybrid_dir.exists():
+    if dense_result.get("mode") == "cloud":
+        # Cloud mode: the deterministic collection name does not depend
+        # on the persist directory, so the dense and hybrid cells share
+        # one collection — the directory copy is a local-only concern.
+        hybrid_result = {
+            "status": "shared-collection",
+            "persist_dir": str(hybrid_dir),
+            "chunks": dense_result["chunks"],
+            "collection_name": dense_result["collection_name"],
+        }
+    elif args.force or not hybrid_dir.exists():
         shutil.rmtree(hybrid_dir, ignore_errors=True)
         print(f"Copying dense Chroma index to hybrid path: {hybrid_dir}")
         shutil.copytree(dense_dir, hybrid_dir)
@@ -246,7 +265,9 @@ def main() -> None:
     else:
         from experiments._lib.storage import experiment_storage_config
 
-        model = os.getenv("EMBED_MODEL", "unknown")
+        model = os.getenv("EMBED_MODEL")
+        if not model:
+            raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
         hybrid_storage = experiment_storage_config(
             experiment_id="exp9a",
             corpus="freshstack",

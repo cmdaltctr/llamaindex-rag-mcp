@@ -16,11 +16,22 @@ if TYPE_CHECKING:
 def build(settings: Settings) -> Any:
     """Construct an ``OpenAILikeEmbedding`` for OpenRouter from *settings*.
 
+    Configuration is validated before the optional import so a missing
+    key or model reports the actual misconfiguration instead of an
+    optional-dependency ``ImportError`` on a base install.
+
     Raises:
-        ImportError: If ``llama-index-embeddings-openai-like`` is absent.
         ValueError: If ``OPENROUTER_API_KEY`` or ``OPENROUTER_EMBED_MODEL``
             is not set.
+        ImportError: If ``llama-index-embeddings-openai-like`` is absent.
     """
+    if not settings.openrouter_api_key:
+        raise ValueError("OPENROUTER_API_KEY is required for the openrouter embedding provider.")
+    if not settings.openrouter_embed_model:
+        raise ValueError(
+            "OPENROUTER_EMBED_MODEL is required for the openrouter embedding provider."
+        )
+
     try:
         from llama_index.embeddings.openai_like import OpenAILikeEmbedding
     except ImportError:
@@ -28,13 +39,6 @@ def build(settings: Settings) -> Any:
             "Provider 'openrouter' requires llama-index-embeddings-openai-like. "
             "Install it with: uv sync --extra openrouter"
         ) from None
-
-    if not settings.openrouter_api_key:
-        raise ValueError("OPENROUTER_API_KEY is required for the openrouter embedding provider.")
-    if not settings.openrouter_embed_model:
-        raise ValueError(
-            "OPENROUTER_EMBED_MODEL is required for the openrouter embedding provider."
-        )
 
     return OpenAILikeEmbedding(
         model_name=settings.openrouter_embed_model,
