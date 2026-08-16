@@ -26,20 +26,20 @@ The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_
 #### Scenario: llamacpp provider selected
 
 - **WHEN** `EMBED_PROVIDER=llamacpp`
-- **AND** `llama-index-embeddings-openai` is installed
-- **THEN** the system SHALL use `OpenAIEmbedding` with `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`
+- **AND** `llama-index-embeddings-openai-like` is installed
+- **THEN** the system SHALL use `OpenAILikeEmbedding` with `LLAMACPP_EMBED_URL` and `LLAMACPP_EMBED_MODEL`
 
 #### Scenario: openrouter provider selected
 
 - **WHEN** `EMBED_PROVIDER=openrouter`
 - **AND** `OPENROUTER_API_KEY` and `OPENROUTER_EMBED_MODEL` are set
-- **AND** `llama-index-embeddings-openai` is installed
-- **THEN** the system SHALL use `OpenAIEmbedding` with `api_base=https://openrouter.ai/api/v1`
+- **AND** `llama-index-embeddings-openai-like` is installed
+- **THEN** the system SHALL use `OpenAILikeEmbedding` with `api_base=https://openrouter.ai/api/v1`
 
 #### Scenario: llamacpp provider but optional deps not installed
 
 - **WHEN** `EMBED_PROVIDER=llamacpp`
-- **AND** `llama-index-embeddings-openai` is not installed
+- **AND** `llama-index-embeddings-openai-like` is not installed
 - **THEN** the system SHALL raise an `ImportError` instructing the user to run `uv sync --extra llamacpp`
 
 #### Scenario: Unknown provider value
@@ -71,13 +71,13 @@ The deprecated `INFERENCE_BACKEND` env var SHALL still be accepted: when `EMBED_
 
 ### Requirement: llamacpp embedding configuration
 
-When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (default `http://localhost:8080/v1`), `LLAMACPP_EMBED_MODEL` (the GGUF filename), and reuse `INGESTION__EMBED_BATCH_SIZE` for batch size. The `OpenAIEmbedding` instance SHALL be configured with `api_key="no-key"` since `llama-server` does not require authentication.
+When `INFERENCE_BACKEND=llamacpp`, the system SHALL read `LLAMACPP_EMBED_URL` (default `http://localhost:8080/v1`), `LLAMACPP_EMBED_MODEL` (the GGUF filename), and reuse `INGESTION__EMBED_BATCH_SIZE` for batch size. The `OpenAILikeEmbedding` instance SHALL be configured with `api_key="no-key"` since `llama-server` does not require authentication.
 
 #### Scenario: Embedding server reachable
 - **WHEN** `INFERENCE_BACKEND=llamacpp`
 - **AND** `LLAMACPP_EMBED_URL=http://localhost:8080/v1`
 - **AND** `LLAMACPP_EMBED_MODEL=Qwen3-Embedding-0.6B-Q8_0.gguf`
-- **THEN** `Settings.embed_model` SHALL be an `OpenAIEmbedding` instance
+- **THEN** `compose.build_embed_model(settings)` SHALL return an `OpenAILikeEmbedding` instance
 - **THEN** embedding requests SHALL be sent to `http://localhost:8080/v1/embeddings`
 
 #### Scenario: Custom embed URL
