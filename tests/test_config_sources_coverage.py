@@ -153,3 +153,50 @@ class TestClassifyKnobBounds:
         instance = model(classify_max_attempts=1, classify_timeout=0.5)
         assert instance.classify_max_attempts == 1
         assert instance.classify_timeout == 0.5
+
+
+class TestChromaCloudSettingsSources:
+    """Env-source coverage for the Chroma Cloud settings (add-chroma-cloud-backend).
+
+    Each new variable is proven to flow from the environment into the typed
+    model, following this file's monkeypatch + ``Settings(_env_file=None)``
+    pattern, while the YAML default source stays secret-free.
+    """
+
+    def test_chroma_mode_defaults_to_local(self, monkeypatch) -> None:
+        """An unset CHROMA_MODE resolves to the local default."""
+        from rag_mcp.config import Settings
+
+        monkeypatch.delenv("CHROMA_MODE", raising=False)
+        assert Settings(_env_file=None).chroma_mode == "local"
+
+    def test_chroma_mode_env_override(self, monkeypatch) -> None:
+        """CHROMA_MODE=cloud flows from the environment into the model."""
+        from rag_mcp.config import Settings
+
+        monkeypatch.setenv("CHROMA_MODE", "cloud")
+        monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "sk-env-coverage-1")
+        assert Settings(_env_file=None).chroma_mode == "cloud"
+
+    def test_tenant_and_database_env_overrides(self, monkeypatch) -> None:
+        """The optional identifiers resolve from the environment as a pair."""
+        from rag_mcp.config import Settings
+
+        monkeypatch.setenv("CHROMA_MODE", "cloud")
+        monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "sk-env-coverage-1")
+        monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-env")
+        monkeypatch.setenv("CHROMA_CLOUD_DATABASE", "database-env")
+        settings = Settings(_env_file=None)
+        assert settings.chroma_cloud_tenant == "tenant-env"
+        assert settings.chroma_cloud_database == "database-env"
+
+    def test_defaults_yaml_carries_no_cloud_api_key(self) -> None:
+        """Cloud secrets live in the environment only, never in YAML defaults."""
+        from pathlib import Path
+
+        defaults = (
+            Path(__file__).resolve().parent.parent / "src" / "rag_mcp" / "config" / "defaults.yaml"
+        )
+        # Case-insensitive: a lower-case YAML key would silently
+        # reintroduce a secrets-in-defaults path.
+        assert "chroma_cloud_api_key" not in defaults.read_text(encoding="utf-8").casefold()

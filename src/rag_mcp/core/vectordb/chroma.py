@@ -1,22 +1,25 @@
 """ChromaDB implementation of the :class:`VectorStore` ABC.
 
 Absorbs all logic from the former ``chroma_utils.py`` (paged metadata
-scans) and the ChromaDB-specific collection management formerly in the
-ingestion writer (collection creation, dimension locking via ChromaDB's
-first-write inference, generation bumping, metadata filter translation).
+scans — now :mod:`.paged`) and the ChromaDB-specific collection
+management formerly in the ingestion writer (collection creation,
+dimension locking via ChromaDB's first-write inference, generation
+bumping, metadata filter translation).
 
 This is the only module outside the test suite that imports
-``chromadb`` directly.  All pipeline code goes through the ABC.
+``chromadb`` directly, and therefore the single construction site for
+both the local ``PersistentClient`` and the cloud ``CloudClient``.
+All pipeline code goes through the ABC.
 
 Construction lives in the composition root (``compose.build_vector_store``);
 the ``build_chroma_vector_store`` factory is the lazy fallback used by
 ``vectordb.get_default_store`` when no store has been registered yet.
+Embedding-identity stamping and enforcement live in :mod:`.identity`.
 """
 
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
 from typing import Any
 
 import chromadb
@@ -26,35 +29,61 @@ from llama_index.vector_stores.chroma import (
 )
 
 from .base import VectorStore
+from .identity import EmbeddingIdentity, IdentityGuardMixin, redact_cloud_secrets
+from .paged import PagedReadMixin
+
+__all__ = [
+    "ChromaVectorStore",
+    "EmbeddingIdentity",
+    "build_chroma_vector_store",
+    "detect_native_sparse_capability",
+]
 
 logger = logging.getLogger(__name__)
 
 
-class ChromaVectorStore(VectorStore):
+class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     """ChromaDB-backed vector store (the default and only implementation).
 
-    Wraps a ``chromadb.PersistentClient`` (or the ``EphemeralClient``
-    injected by tests via ``conftest._patch_chromadb``).  Owns the
-    process-local generation counter dict that the BM25 sparse retriever
-    reads for cache invalidation.
+    Wraps an injected :class:`chromadb.api.ClientAPI` — a local
+    ``PersistentClient``, a cloud ``CloudClient``, or the
+    ``EphemeralClient`` injected by tests via ``conftest._patch_chromadb``.
+    Owns the process-local generation counter dict that the BM25 sparse
+    retriever reads for cache invalidation.
 
     The vector dimension is locked by ChromaDB on the first write to a
-    collection (ADR-003).  This implementation does not pass an explicit
-    dimension at creation time — ChromaDB infers it from the first
-    embedding.  A subsequent write with a mismatched dimension raises
-    ChromaDB's native dimension-mismatch error.
+    collection (ADR-003); a mismatched subsequent write raises
+    ChromaDB's native dimension-mismatch error.  When an
+    :class:`EmbeddingIdentity` is attached, embedding-space identity is
+    additionally enforced: a same-dimension model swap is rejected
+    before any query or write (see :mod:`.identity`).
     """
 
-    def __init__(self, persist_dir: str | None = None) -> None:
-        """Initialise the ChromaDB client and generation counter.
+    def __init__(
+        self,
+        persist_dir: str | None = None,
+        client: chromadb.api.ClientAPI | None = None,
+        embedding_identity: EmbeddingIdentity | None = None,
+    ) -> None:
+        """Initialise the store with an optional injected client.
 
         Args:
             persist_dir: Override for the ChromaDB persist directory.
-                When omitted, reads the composition root's default at
-                call time so tests and env-driven config can override.
+                Used only by the local lazy fallback when ``client`` is
+                omitted; when omitted too, the composition root's
+                default is read at call time.
+            client: Pre-constructed Chroma client (local persistent,
+                cloud, or test double).  When supplied, it serves every
+                collection operation and no client is constructed
+                lazily.
+            embedding_identity: Optional embedding configuration stamped
+                into collection metadata and enforced on write/query.
+                ``None`` (the default, direct-call path) keeps the
+                pre-cloud behaviour: no stamping, no checks.
         """
         self._persist_dir = persist_dir
-        self._client: chromadb.api.ClientAPI | None = None
+        self._client = client
+        self._identity = embedding_identity
         # Process-local generation counters (BM25 cache invalidation).
         # Formerly lived in ``core/ingestion/_state.py``; moved here so
         # the store owns the write→invalidate contract end-to-end.
@@ -101,6 +130,12 @@ class ChromaVectorStore(VectorStore):
                 return None
             raise
 
+    def _default_page_size(self) -> int:
+        """Return the composition root's default scan page size."""
+        from ..settings import get_default_effective_settings
+
+        return get_default_effective_settings().chroma_scan_page_size
+
     # ── Collection lifecycle ────────────────────────────────────────
 
     def create_collection(self, name: str) -> None:
@@ -124,12 +159,13 @@ class ChromaVectorStore(VectorStore):
         """Embed and write nodes via LlamaIndex's ChromaVectorStore adapter.
 
         The embedding uses the LlamaIndex global ``Settings.embed_model``
-        (assigned by ``compose.ensure_runtime_setup``).  ChromaDB locks
-        the vector dimension on the first write to the collection; a
-        mismatched subsequent write raises ChromaDB's native error.
+        (assigned by ``compose.ensure_runtime_setup``).  When an
+        embedding identity is attached, the collection's stored identity
+        is stamped (legacy collections) or verified first.
         """
         client = self._get_client()
         collection = client.get_or_create_collection(collection_name)
+        self._check_or_stamp_identity(collection)
         vector_store = _LlamaChromaVectorStore(chroma_collection=collection)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         VectorStoreIndex(
@@ -137,6 +173,42 @@ class ChromaVectorStore(VectorStore):
             storage_context=storage_context,
             show_progress=False,
         )
+
+    def upsert_precomputed(
+        self,
+        collection_name: str,
+        ids: list[str],
+        documents: list[str],
+        metadatas: list[dict],
+        embeddings: list[list[float]],
+    ) -> None:
+        """Upsert rows whose embeddings the caller already computed.
+
+        Calibration harnesses embed corpora through their own batched
+        clients (custom timeouts, count-based resume); this is the one
+        verified contract method the previous ABC could not express
+        (design decision 7).
+
+        Args:
+            collection_name: Target collection (created when absent).
+            ids: Stable row identifiers.
+            documents: Row texts.
+            metadatas: Per-row metadata dicts.
+            embeddings: Caller-computed embedding vectors, one per row.
+        """
+        client = self._get_client()
+        collection = client.get_or_create_collection(collection_name)
+        self._check_or_stamp_identity(collection)
+        collection.upsert(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas,
+            embeddings=embeddings,
+        )
+        # Direct-use API: unlike pipeline writes (where the ingestion
+        # writer bumps the generation), no caller owns invalidation here,
+        # so the store keeps the BM25 cache contract itself.
+        self.bump_generation(collection_name)
 
     # ── Query ───────────────────────────────────────────────────────
 
@@ -157,6 +229,7 @@ class ChromaVectorStore(VectorStore):
         collection = self._get_collection(collection_name)
         if collection is None:
             return []
+        self._guard_query_identity(collection_name, collection)
 
         query_kwargs: dict = {
             "query_embeddings": [query_embedding],
@@ -186,109 +259,6 @@ class ChromaVectorStore(VectorStore):
                 }
             )
         return rows
-
-    # ── Paged reads ─────────────────────────────────────────────────
-
-    def _resolve_page_size(self, page_size: int | None) -> int:
-        """Resolve the effective page size, validating it is positive."""
-        if page_size is None:
-            from ..settings import get_default_effective_settings
-
-            page_size = get_default_effective_settings().chroma_scan_page_size
-        if page_size <= 0:
-            raise ValueError("CHROMA_SCAN_PAGE_SIZE must be a positive integer")
-        return page_size
-
-    def iter_metadatas(
-        self,
-        collection_name: str,
-        page_size: int | None = None,
-    ) -> Iterator[dict | None]:
-        """Yield per-chunk metadata using bounded ChromaDB pages.
-
-        Absorbed from the former ``chroma_utils.iter_collection_metadatas``.
-        """
-        collection = self._get_collection(collection_name)
-        if collection is None:
-            return
-
-        effective_page_size = self._resolve_page_size(page_size)
-        offset = 0
-        while True:
-            result = collection.get(
-                include=["metadatas"],
-                limit=effective_page_size,
-                offset=offset,
-            )
-            metadatas = result.get("metadatas") or []
-            if not metadatas:
-                break
-
-            yield from metadatas
-
-            if len(metadatas) < effective_page_size:
-                break
-            offset += len(metadatas)
-
-    def fetch_all(
-        self,
-        collection_name: str,
-        include: list[str],
-    ) -> dict[str, list] | None:
-        """Return every chunk's requested fields (see :meth:`VectorStore.fetch_all`)."""
-        try:
-            collection = self._get_collection(collection_name)
-        except Exception as exc:
-            logger.warning(
-                "Could not open collection %r for bulk read: %s",
-                collection_name,
-                exc,
-            )
-            return None
-        if collection is None:
-            return None
-        try:
-            if collection.count() == 0:
-                logger.debug("Collection %r is empty", collection_name)
-                return None
-            return collection.get(include=include)
-        except Exception as exc:
-            logger.warning("Bulk read of collection %r failed: %s", collection_name, exc)
-            return None
-
-    def iter_documents(
-        self,
-        collection_name: str,
-        page_size: int | None = None,
-    ) -> Iterator[tuple[str, str, dict]]:
-        """Yield ``(id, text, metadata)`` tuples using bounded pages.
-
-        Absorbed from the former ``sparse._read_collection_rows`` logic.
-        """
-        collection = self._get_collection(collection_name)
-        if collection is None:
-            return
-
-        effective_page_size = self._resolve_page_size(page_size)
-        offset = 0
-        while True:
-            batch = collection.get(
-                include=["documents", "metadatas"],
-                limit=effective_page_size,
-                offset=offset,
-            )
-            ids = batch.get("ids") or []
-            docs = batch.get("documents") or []
-            metas = batch.get("metadatas") or []
-            if not ids:
-                break
-            for idx, doc_id in enumerate(ids):
-                metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
-                text = docs[idx] if idx < len(docs) and docs[idx] is not None else ""
-                yield (str(doc_id), str(text), dict(metadata))
-            if len(ids) < effective_page_size:
-                break
-            offset += len(ids)
 
     # ── Count ───────────────────────────────────────────────────────
 
@@ -356,18 +326,124 @@ class ChromaVectorStore(VectorStore):
 # ── Factory ───────────────────────────────────────────────────────────
 
 
-def build_chroma_vector_store(persist_dir: str | None = None) -> ChromaVectorStore:
-    """Construct a ``ChromaVectorStore`` from resolved settings.
+def _resolve_local_persist_dir(persist_dir: str | None) -> str:
+    """Resolve the local persist directory, defaulting to the composition root."""
+    if persist_dir is not None:
+        return persist_dir
+    from ..settings import get_default_effective_settings
+
+    return get_default_effective_settings().chroma_persist_dir
+
+
+def _construct_cloud_client(
+    cloud_api_key: str | None,
+    cloud_tenant: str | None,
+    cloud_database: str | None,
+) -> chromadb.api.ClientAPI:
+    """Construct and validate a ``chromadb.CloudClient``.
+
+    The client receives exactly the resolved key (plus the
+    tenant/database pair when both are supplied) and is validated with
+    a lightweight ``heartbeat()`` round trip so authentication,
+    network, and tenant/database mistakes surface at startup — never
+    mid-run.
 
     Args:
-        persist_dir: Optional override for the ChromaDB persist dir.
-            When omitted, the store reads the composition root's default
-            lazily on first client access.
+        cloud_api_key: Chroma Cloud API key.
+        cloud_tenant: Optional tenant identifier.
+        cloud_database: Optional database identifier.
 
     Returns:
-        A :class:`ChromaVectorStore` instance.
+        A validated cloud client.
+
+    Raises:
+        ValueError: When the key is missing, or tenant/database arrive
+            as a half pair (direct factory callers bypass Settings
+            validation, so the guard is repeated here).
+        RuntimeError: When construction or the connection check fails.
+            The message is redacted and names the relevant variables.
     """
-    return ChromaVectorStore(persist_dir=persist_dir)
+    key = (cloud_api_key or "").strip()
+    if not key:
+        raise ValueError(
+            "CHROMA_MODE=cloud requires CHROMA_CLOUD_API_KEY to be set. "
+            "Add it to your .env file (see .env.example); never commit the key."
+        )
+    kwargs: dict[str, str] = {"api_key": key}
+    tenant = (cloud_tenant or "").strip()
+    database = (cloud_database or "").strip()
+    if tenant or database:
+        if not (tenant and database):
+            raise ValueError(
+                "CHROMA_CLOUD_TENANT and CHROMA_CLOUD_DATABASE must be supplied "
+                "together, or both omitted so the cloud client resolves them "
+                "from the API key."
+            )
+        kwargs["tenant"] = tenant
+        kwargs["database"] = database
+    try:
+        client = chromadb.CloudClient(**kwargs)
+        client.heartbeat()
+    except Exception as exc:
+        raise RuntimeError(
+            redact_cloud_secrets(
+                f"CHROMA_MODE=cloud connection check failed "
+                f"({type(exc).__name__}): {exc}. Verify CHROMA_CLOUD_API_KEY, "
+                "CHROMA_CLOUD_TENANT, and CHROMA_CLOUD_DATABASE, and network "
+                "reachability of Chroma Cloud. No local fallback is performed "
+                "after an explicit cloud selection.",
+                key,
+                tenant,
+                database,
+            )
+        ) from None
+    return client
+
+
+def build_chroma_vector_store(
+    persist_dir: str | None = None,
+    *,
+    mode: str = "local",
+    cloud_api_key: str | None = None,
+    cloud_tenant: str | None = None,
+    cloud_database: str | None = None,
+    embedding_identity: EmbeddingIdentity | None = None,
+) -> ChromaVectorStore:
+    """Construct a :class:`ChromaVectorStore` from resolved settings.
+
+    This is the single production construction site for both Chroma
+    deployments: local mode builds a ``PersistentClient`` over the
+    resolved persist directory, cloud mode builds and validates a
+    ``CloudClient``.  Following upstream LlamaIndex's
+    client-construction/VectorStore split, the constructed client is
+    injected into the store, which remains deployment-agnostic.
+
+    Args:
+        persist_dir: Optional override for the local ChromaDB persist
+            directory.  Ignored in cloud mode.
+        mode: ``"local"`` (default) or ``"cloud"``.
+        cloud_api_key: Chroma Cloud API key (cloud mode only).
+        cloud_tenant: Optional tenant identifier (cloud mode only).
+        cloud_database: Optional database identifier (cloud mode only).
+        embedding_identity: Optional identity stamped into and enforced
+            on collections written through the returned store.
+
+    Returns:
+        A :class:`ChromaVectorStore` instance bound to the selected
+        client.
+
+    Raises:
+        ValueError: On an unrecognised mode, a missing cloud key, or a
+            half tenant/database pair.
+        RuntimeError: When the cloud connection check fails (redacted).
+    """
+    if mode == "cloud":
+        client = _construct_cloud_client(cloud_api_key, cloud_tenant, cloud_database)
+        return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
+    if mode != "local":
+        raise ValueError(f"CHROMA_MODE={mode!r} is not recognised. Accepted values: local, cloud.")
+    client = chromadb.PersistentClient(path=_resolve_local_persist_dir(persist_dir))
+    return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
 
 
 def detect_native_sparse_capability() -> bool:

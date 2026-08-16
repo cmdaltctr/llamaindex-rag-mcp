@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import logging
 from pathlib import Path
 from unittest.mock import ANY, patch
 
@@ -878,3 +879,185 @@ async def test_get_codebase_map_handler_is_callable(mcp_server, tmp_path) -> Non
         # If it failed, it must be the structured error contract (gotcha #1),
         # never an unhandled ModuleNotFoundError.
         assert "ModuleNotFoundError" not in text
+
+
+# ── Cloud credential redaction in error envelopes (add-chroma-cloud-backend) ──
+# Regression tests for the redaction defect found in commit dc3f35e. MCP
+# error responses and warning logs must remove a full or truncated API key,
+# tenant, and database value. The cloud runtime is set up first so configured
+# cloud values are available when the error is formatted.
+
+
+def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
+    """Concatenate the MCP transport's own warning-level-or-higher records.
+
+    Filtering by logger name keeps unrelated INFO startup output (which
+    legitimately names the tenant/database in the storage summary) out
+    of the assertion.
+    """
+    return " ".join(
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "rag_mcp.transports.mcp" and record.levelno >= logging.WARNING
+    )
+
+
+async def _ingest_failure_result(
+    mcp_server,
+    monkeypatch: pytest.MonkeyPatch,
+    leaked_text: str,
+    settings_overrides: dict | None = None,
+):
+    """Set up a cloud runtime, then make ingest fail with ``leaked_text``."""
+    from llama_index.core.embeddings import MockEmbedding
+
+    from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
+    from rag_mcp.core.vectordb import reset_default_store
+    from test_chroma_cloud import _cloud_settings, _install_fake_cloud_client, _shared_client
+
+    cloud_settings = _cloud_settings(
+        chroma_cloud_tenant="99999999-tenant",
+        chroma_cloud_database="88888888-database",
+        **(settings_overrides or {}),
+    )
+    reset_runtime_setup()
+    reset_default_store()
+    try:
+        _install_fake_cloud_client(monkeypatch, backing=_shared_client())
+        with (
+            patch("rag_mcp.compose.get_settings", return_value=cloud_settings),
+            patch(
+                "rag_mcp.compose.build_embed_model",
+                return_value=MockEmbedding(embed_dim=384),
+            ),
+        ):
+            ensure_runtime_setup()
+            with patch(
+                "rag_mcp.transports.mcp.ingest_path_async",
+                side_effect=RuntimeError(leaked_text),
+            ):
+                async with connected_client(mcp_server) as client:
+                    return await client.call_tool("ingest_documents", {"path": "leak-probe.txt"})
+    finally:
+        reset_runtime_setup()
+        reset_default_store()
+
+
+@pytest.mark.parametrize("form", ["full", "prefix"], ids=["full", "prefix"])
+async def test_ingest_error_envelope_redacts_cloud_key(
+    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog, form: str
+) -> None:
+    """MCP ingest error responses and logs never echo key material."""
+    from test_chroma_cloud import _CLOUD_KEY, _assert_no_key_material
+
+    leaked = _CLOUD_KEY if form == "full" else _CLOUD_KEY[:12]
+    result = await _ingest_failure_result(
+        mcp_server, monkeypatch, f"401 Unauthorized: api_key={leaked} rejected"
+    )
+
+    data = _extract_result(result)
+    assert data["status"] == "error"
+    _assert_no_key_material(str(data), _CLOUD_KEY)
+    log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
+    _assert_no_key_material(log_text, _CLOUD_KEY)
+
+
+async def test_ingest_error_envelope_redacts_tenant_and_database(
+    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    """Chroma Cloud identifiers never echo in error envelopes or logs."""
+    from test_chroma_cloud import _assert_no_key_material
+
+    # Digit-led so no >=6-char prefix collides with legitimate words such
+    # as "tenant" in the surrounding error text.
+    tenant = "9" * 8 + "-tenant"
+    database = "8" * 8 + "-database"
+    result = await _ingest_failure_result(
+        mcp_server,
+        monkeypatch,
+        f"ChromaAuthError: unauthorized for tenant={tenant} database={database} "
+        "at https://api.trychroma.com",
+    )
+
+    data = _extract_result(result)
+    assert data["status"] == "error"
+    _assert_no_key_material(str(data), tenant)
+    _assert_no_key_material(str(data), database)
+    log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
+    _assert_no_key_material(log_text, tenant)
+    _assert_no_key_material(log_text, database)
+
+
+@pytest.mark.parametrize("form", ["full", "prefix"], ids=["full", "prefix"])
+async def test_ingest_error_envelope_redacts_openrouter_key(
+    mcp_server, monkeypatch: pytest.MonkeyPatch, caplog, form: str
+) -> None:
+    """The OpenRouter embedding API key never echoes in envelopes or logs."""
+    from test_chroma_cloud import _assert_no_key_material
+
+    key = "sk-or-" + "4" * 12
+    leaked = key if form == "full" else key[:12]
+    result = await _ingest_failure_result(
+        mcp_server,
+        monkeypatch,
+        f"OpenAI error 401: invalid api_key={leaked}",
+        settings_overrides={"openrouter_api_key": key},
+    )
+
+    data = _extract_result(result)
+    assert data["status"] == "error"
+    _assert_no_key_material(str(data), key)
+    log_text = _mcp_error_log_text(caplog)
+    assert log_text, "expected a warning record from the MCP transport logger"
+    _assert_no_key_material(log_text, key)
+
+
+def test_error_detail_settings_failure_returns_placeholder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``_error_detail`` returns a placeholder, never raw text, when settings fail.
+
+    Settings construction can raise non-``ValueError`` exceptions (bad YAML,
+    unreadable file). The helper must not raise out of a tool handler and
+    must not leak unredacted detail when there is no settings object to
+    redact against (gotcha #1).
+    """
+    from rag_mcp.transports import mcp as mcp_mod
+
+    def _raise() -> None:
+        raise OSError("settings unavailable")
+
+    monkeypatch.setattr(mcp_mod.compose, "get_settings", _raise)
+    assert mcp_mod._error_detail(RuntimeError("sensitive leak")) == (
+        "(details unavailable: settings could not be resolved)"
+    )
+
+
+def test_main_settings_failure_prints_reason(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Startup shows the settings failure reason, not the redaction placeholder.
+
+    Config validation messages name the offending variable and never echo
+    key material, so the operator sees why startup failed.
+    """
+    from rag_mcp.transports import mcp as mcp_mod
+
+    def _settings_failure() -> None:
+        raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
+
+    monkeypatch.setattr(mcp_mod.logging, "basicConfig", lambda **_kwargs: None)
+    monkeypatch.setattr(mcp_mod.compose, "ensure_runtime_setup", _settings_failure)
+    monkeypatch.setattr(mcp_mod.compose, "get_settings", _settings_failure)
+    monkeypatch.setattr(mcp_mod.mcp, "run", lambda **_kwargs: None)
+
+    with pytest.raises(SystemExit) as excinfo:
+        mcp_mod.main()
+
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert "EMBED_PROVIDER='bogus' is not an accepted value" in err
+    assert mcp_mod._SETTINGS_UNRESOLVED not in err

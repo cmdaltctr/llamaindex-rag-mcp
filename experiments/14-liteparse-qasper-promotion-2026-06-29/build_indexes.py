@@ -1,6 +1,10 @@
 """Build indexes for Experiment 14: LiteParse vs pypdf on Qasper.
 
-Builds separate ChromaDB indexes for each PDF reader type.
+Builds separate ChromaDB indexes for each PDF reader type.  Storage
+goes through the shared experiment helper and the production
+vector-store factory, so the same script serves local and cloud Chroma
+modes; the reader is part of the collection identity because parsed
+text differs between readers.
 """
 
 from __future__ import annotations
@@ -15,9 +19,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
@@ -50,10 +54,12 @@ class OllamaEmbedder:
 def _load_corpus(corpus_dir: Path) -> list[dict[str, Any]]:
     docs: list[dict[str, Any]] = []
     for md_file in sorted(corpus_dir.glob("*.md")):
-        docs.append({
-            "id": md_file.stem,
-            "text": md_file.read_text(encoding="utf-8"),
-        })
+        docs.append(
+            {
+                "id": md_file.stem,
+                "text": md_file.read_text(encoding="utf-8"),
+            }
+        )
     return docs
 
 
@@ -64,15 +70,19 @@ def main() -> None:
 
     load_dotenv(PROJECT_ROOT / ".env")
 
-    import chromadb
+    from experiments._lib.storage import experiment_storage_config
 
-    embed_model = os.getenv("EMBED_MODEL", "qwen3-embedding:0.6b")
+    embed_model = os.getenv("EMBED_MODEL")
+    if not embed_model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{args.reader}")
 
     corpus_dir = SCRIPT_DIR / "qasper_pdfs"
     if not corpus_dir.exists():
-        raise SystemExit(f"Corpus directory not found: {corpus_dir}. Run prepare_qasper_pdfs.py first.")
+        raise SystemExit(
+            f"Corpus directory not found: {corpus_dir}. Run prepare_qasper_pdfs.py first."
+        )
 
     docs = _load_corpus(corpus_dir)
     print(f"Loaded {len(docs)} documents from {corpus_dir}", flush=True)
@@ -88,23 +98,33 @@ def main() -> None:
     all_embeddings: list[list[float]] = []
     ingestion_start = time.perf_counter()
     for i in range(0, len(docs), batch_size):
-        batch_texts = [d["text"] for d in docs[i:i + batch_size]]
+        batch_texts = [d["text"] for d in docs[i : i + batch_size]]
         embs = embedder.embed(batch_texts)
         all_embeddings.extend(embs)
         print(f"  Embedded {i + len(batch_texts)}/{len(docs)}", flush=True)
     ingestion_time = time.perf_counter() - ingestion_start
 
-    # Store in ChromaDB
-    print(f"Storing in ChromaDB at {chroma_dir}...", flush=True)
-    client = chromadb.PersistentClient(path=chroma_dir)
-    collection = client.get_or_create_collection("documents")
+    # Store through the production vector-store path (local or cloud).
+    # The reader is part of the collection identity: parsed text differs.
+    print(f"Storing in ChromaDB (reader={args.reader})...", flush=True)
+    storage = experiment_storage_config(
+        experiment_id="exp14",
+        corpus="qasper",
+        provider="ollama",
+        model=embed_model,
+        parser=args.reader,
+        persist_dir=chroma_dir,
+    )
+    collection_name = storage.collection_name
+    store = storage.build_store()
 
-    try:
-        collection.delete(ids=collection.get()["ids"])
-    except Exception:
-        pass
+    # Clear existing (delete + recreate replaces the v1 delete-all-ids).
+    if store.collection_exists(collection_name):
+        store.delete_collection(collection_name)
+    store.create_collection(collection_name)
 
-    collection.add(
+    store.upsert_precomputed(
+        collection_name,
         ids=[d["id"] for d in docs],
         documents=[d["text"] for d in docs],
         embeddings=all_embeddings,
@@ -112,6 +132,7 @@ def main() -> None:
     )
 
     print(f"Stored {len(docs)} documents. Ingestion time: {ingestion_time:.1f}s", flush=True)
+    print(f"Collection: {collection_name}", flush=True)
 
     build_info = {
         "built_at_unix": time.time(),
@@ -122,7 +143,8 @@ def main() -> None:
         "chroma_dir": chroma_dir,
     }
     (SCRIPT_DIR / "output" / f"index_build_{args.reader}.json").write_text(
-        json.dumps(build_info, indent=2), encoding="utf-8",
+        json.dumps(build_info, indent=2),
+        encoding="utf-8",
     )
     print("Index build metadata written", flush=True)
 

@@ -2,15 +2,13 @@
 
 Sweeps HARD_TECHNICAL_THRESHOLD × technical-query fraction on a mixed
 corpus (FreshStack technical + Qasper semantic).
+
+Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
+through ``rag_mcp.core.retrieval.search`` with an injected store from
+``experiments/_lib/storage.py`` and a per-cell ``EffectiveSettings``
+override carrying the threshold — no environment mutation or
+module-constant patching.  Works in local and cloud Chroma modes.
 """
-
-# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
-# removed by the architecture-v2 conformance change. It is an archived
-# historical artefact, is not run in CI, and is intentionally NOT repaired:
-# its results are already recorded in results.md, and rewriting it would
-# change the code that produced them. See docs/adr/037.
-
 
 from __future__ import annotations
 
@@ -25,9 +23,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 THRESHOLDS = [0.1, 0.2, 0.3, 0.5, 0.7]
@@ -95,16 +93,50 @@ def _sample_queries(
     return sampled_tech + sampled_sem
 
 
-def _setup_environment(threshold: float) -> None:
-    from rag_mcp import config
+def _resolve_cell_runtime(threshold: float) -> tuple[Any, str, Any]:
+    """Build the store, collection name, and threshold-specific settings.
 
+    The per-cell ``EffectiveSettings`` override carries the swept
+    HARD_TECHNICAL_THRESHOLD into the policy resolver; the LlamaIndex
+    global embed model is assigned so query embeddings match the index.
+    """
+    from experiments._lib.storage import experiment_storage_config, identity_embed_model
+
+    model = os.getenv("EMBED_MODEL")
+    if not model:
+        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     chroma_dir = str(SCRIPT_DIR / "output" / "chroma_combined")
-    config.CHROMA_PERSIST_DIR = chroma_dir
-    config.HYBRID_ENABLED = False
-    config.RERANK_ENABLED = True
-    config.RERANK_FETCH_MULTIPLIER = 3
-    config.RERANK_MAX_FETCH = 100
-    config.HARD_TECHNICAL_THRESHOLD = threshold
+    storage = experiment_storage_config(
+        experiment_id="exp13",
+        corpus="freshstack-qasper-mixed",
+        provider="ollama",
+        model=model,
+        persist_dir=chroma_dir,
+    )
+    store = storage.build_store()
+
+    from llama_index.core import Settings as LlamaIndexSettings
+
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.config import Settings
+    from rag_mcp.core.vectordb import set_default_store
+
+    settings = Settings()
+    # Pin the query embedder to the index identity; ambient Settings()
+    # could select a different provider and query with incompatible
+    # vectors. Retrieval knobs still come from the ambient settings.
+    LlamaIndexSettings.embed_model = identity_embed_model(model)
+    set_default_store(store)
+
+    base_effective = settings_to_effective(settings)
+    effective = base_effective.model_copy(
+        update={
+            "retrieval": base_effective.retrieval.model_copy(
+                update={"hard_technical_threshold": threshold}
+            )
+        }
+    )
+    return store, storage.collection_name, effective
 
 
 def _run_cell(
@@ -114,26 +146,33 @@ def _run_cell(
     queries: list[dict[str, Any]],
     qrels: dict[str, dict[str, int]],
     k_values: list[int],
-    collection_name: str,
+    collection_name: str | None,
 ) -> dict[str, Any]:
-    from rag_mcp import retrieval
+    from rag_mcp.core.retrieval import search
 
-    _setup_environment(threshold)
+    store, derived_name, effective = _resolve_cell_runtime(threshold)
+    target_collection = collection_name or derived_name
 
     results: list[dict[str, Any]] = []
     for i, query in enumerate(queries):
-        search_results = retrieval.search(
+        search_results = search(
             query=query["text"],
             top_k=max(k_values),
             rerank=True,
             hybrid=False,
-            collection_name=collection_name,
+            collection_name=target_collection,
+            effective_settings=effective,
+            store=store,
         )
-        results.append({
-            "query_id": query["id"],
-            "query_type": query.get("query_type", "unknown"),
-            "retrieved": [{"id": r["id"], "score": r.get("score", 0.0)} for r in search_results],
-        })
+        results.append(
+            {
+                "query_id": query["id"],
+                "query_type": query.get("query_type", "unknown"),
+                "retrieved": [
+                    {"id": r["id"], "score": r.get("score", 0.0)} for r in search_results
+                ],
+            }
+        )
         if (i + 1) % 20 == 0:
             print(f"  [{cell_name}] {i + 1}/{len(queries)}", flush=True)
 
@@ -175,7 +214,7 @@ def _save_checkpoint(data: dict[str, Any], path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Experiment 13")
     parser.add_argument("--k-values", nargs="+", type=int, default=[5, 10, 20, 50])
-    parser.add_argument("--collection-name", default="documents")
+    parser.add_argument("--collection-name", default=None)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
@@ -191,7 +230,11 @@ def main() -> None:
 
     # Load Qasper ground truth
     qasper_gt_path = output_dir / "qasper_qrels.json"
-    qasper_gt = _load_ground_truth(qasper_gt_path) if qasper_gt_path.exists() else {"queries": [], "qrels": {}}
+    qasper_gt = (
+        _load_ground_truth(qasper_gt_path)
+        if qasper_gt_path.exists()
+        else {"queries": [], "qrels": {}}
+    )
 
     # Combine
     technical_queries = [q for q in fs_gt.get("queries", []) if q.get("is_identifier_heavy", False)]
@@ -218,10 +261,18 @@ def main() -> None:
                 all_cells.append(completed_cells[cell_name])
                 continue
 
-            sampled = _sample_queries(technical_queries, semantic_queries, fraction, MIN_QUERIES, rng)
+            sampled = _sample_queries(
+                technical_queries, semantic_queries, fraction, MIN_QUERIES, rng
+            )
             print(f"\nRunning cell: {cell_name} ({len(sampled)} queries)", flush=True)
             cell_result = _run_cell(
-                cell_name, threshold, fraction, sampled, all_qrels, args.k_values, args.collection_name,
+                cell_name,
+                threshold,
+                fraction,
+                sampled,
+                all_qrels,
+                args.k_values,
+                args.collection_name,
             )
             all_cells.append(cell_result)
             completed_cells[cell_name] = cell_result

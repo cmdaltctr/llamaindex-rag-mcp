@@ -239,6 +239,25 @@ def build_reranker(settings: Settings | None = None) -> Any:
     return build_reranker_from_settings(settings)
 
 
+def _embedding_identity_from_settings(settings: Settings) -> Any:
+    """Derive the :class:`EmbeddingIdentity` stamped into collections.
+
+    The provider is the effective concrete backend (two-tier aliases
+    resolved); the model is that backend's model field.  Production has
+    no corpus identity, so ``index_identity`` stays ``None``.
+    """
+    from .core.vectordb.chroma import EmbeddingIdentity
+
+    provider = _resolve_effective_embed_provider(settings)
+    model_fields = {
+        "llamacpp": settings.llamacpp_embed_model,
+        "ollama": settings.embed_model,
+        "openrouter": settings.openrouter_embed_model,
+    }
+    model = model_fields.get(provider, settings.embed_model)
+    return EmbeddingIdentity(provider=provider, model=model, index_identity=None)
+
+
 def build_vector_store(settings: Settings | None = None) -> Any:
     """Construct the vector store from the ``VECTOR_STORE`` setting.
 
@@ -247,6 +266,11 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     Only ``chroma`` is registered today; the Settings validator rejects
     unknown values at construction time with a clear error.
 
+    The resolved Chroma deployment mode and connection values are
+    passed through to the factory as construction-time primitives.
+    Credentials never enter :class:`EffectiveSettings` or operation
+    objects — they stop at this boundary.
+
     Args:
         settings: Resolved settings (defaults to the singleton).
 
@@ -254,7 +278,8 @@ def build_vector_store(settings: Settings | None = None) -> Any:
         A :class:`rag_mcp.core.vectordb.base.VectorStore` instance.
 
     Raises:
-        ValueError: If ``VECTOR_STORE`` names an unregistered impl.
+        ValueError: Unregistered impl or incomplete cloud values.
+        RuntimeError: Cloud connection check failed (redacted).
     """
     if settings is None:
         settings = get_settings()
@@ -262,11 +287,37 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     if settings.vector_store == "chroma":
         from .core.vectordb.chroma import build_chroma_vector_store
 
-        return build_chroma_vector_store()
+        return build_chroma_vector_store(
+            mode=settings.chroma_mode,
+            persist_dir=settings.chroma_persist_dir,
+            cloud_api_key=settings.chroma_cloud_api_key or None,
+            cloud_tenant=settings.chroma_cloud_tenant or None,
+            cloud_database=settings.chroma_cloud_database or None,
+            embedding_identity=_embedding_identity_from_settings(settings),
+        )
 
     # Unreachable: the Settings model_validator raises on non-chroma
-    # vector_store at construction time (config/__init__.py line 198).
+    # vector_store at construction time (config/__init__.py).
     raise ValueError(f"VECTOR_STORE={settings.vector_store!r} is not registered. Available: chroma")
+
+
+def chroma_storage_summary(settings: Settings | None = None) -> str:
+    """Return a one-line Chroma storage description for startup logging.
+
+    Includes the deployment mode and, in cloud mode, the tenant and
+    database identifiers.  The API key is never included — not even a
+    prefix.
+    """
+    if settings is None:
+        settings = get_settings()
+    if settings.chroma_mode != "cloud":
+        return "chroma mode=local"
+    parts = ["chroma mode=cloud"]
+    if settings.chroma_cloud_tenant:
+        parts.append(f"tenant={settings.chroma_cloud_tenant}")
+    if settings.chroma_cloud_database:
+        parts.append(f"database={settings.chroma_cloud_database}")
+    return " ".join(parts)
 
 
 def build_profile_resolver(settings: Settings | None = None) -> Any:

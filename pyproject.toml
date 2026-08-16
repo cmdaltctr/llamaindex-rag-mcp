@@ -72,11 +72,11 @@ azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
 llamacpp = [
-    "llama-index-embeddings-openai>=0.5.0",
+    "llama-index-embeddings-openai-like>=0.3.0",
     "llama-index-llms-openai-like>=0.5.0",
 ]
 openrouter = [
-    "llama-index-embeddings-openai>=0.5.0",
+    "llama-index-embeddings-openai-like>=0.3.0",
     "llama-index-llms-openai-like>=0.5.0",
 ]
 # PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
@@ -114,6 +114,8 @@ allow-direct-references = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Root on sys.path so tests can import experiments._lib.* (add-chroma-cloud-backend).
+pythonpath = ["."]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
@@ -330,10 +332,14 @@ select = ["E", "F", "I", "UP", "B", "S"]
 "tests/*" = ["S101", "S108", "B017", "S603", "S607"]
 # Experiment scripts are not production code: they call system tools
 # (sysctl), spawn child processes, and use bare DataFrame display.
+# E501/S311: the calibration harnesses carry long historical lines and
+# seeded pseudo-random sampling; B007/B905: pre-existing build loops.
 "experiments/*/test_*.py" = ["S101", "S108", "B017", "S603", "S607"]
-"experiments/*/run_eval.py" = ["S110", "S603", "S607"]
+"experiments/*/run_eval.py" = ["S110", "S603", "S607", "E501", "S311"]
 "experiments/*/analysis.py" = ["B018"]
 "experiments/*/summarise_eval.py" = ["E501"]
+"experiments/*/build_indexes.py" = ["E501", "S311", "B007", "B905"]
+"experiments/*/build_corpus.py" = ["E501", "S311"]
 
 [dependency-groups]
 dev = [

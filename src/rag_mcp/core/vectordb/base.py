@@ -111,6 +111,38 @@ class VectorStore(ABC):
             collection_name: Target collection (created if absent).
         """
 
+    def upsert_precomputed(
+        self,
+        collection_name: str,
+        ids: list[str],
+        documents: list[str],
+        metadatas: list[dict],
+        embeddings: list[list[float]],
+    ) -> None:
+        """Upsert rows whose embeddings the caller already computed.
+
+        Added for the calibration harnesses (add-chroma-cloud-backend,
+        design decision 7): they embed corpora through batched clients
+        with custom timeouts and count-based resume, which the
+        LlamaIndex-mediated ``write_nodes`` path cannot express.
+        Stores that cannot support the operation raise
+        ``NotImplementedError``.
+
+        Args:
+            collection_name: Target collection (created when absent).
+            ids: Stable row identifiers.
+            documents: Row texts.
+            metadatas: Per-row metadata dicts.
+            embeddings: Caller-computed embedding vectors, one per row.
+
+        Raises:
+            NotImplementedError: When the store cannot upsert
+                precomputed embeddings.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support precomputed-embedding upserts"
+        )
+
     # ── Query ───────────────────────────────────────────────────────
 
     @abstractmethod

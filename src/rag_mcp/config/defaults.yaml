@@ -68,6 +68,11 @@ metadata:
 CHROMA_PERSIST_DIR: ./chroma_db
 COLLECTION_NAME: documents
 CHROMA_SCAN_PAGE_SIZE: 10000
+# Chroma deployment mode: "local" (embedded PersistentClient) or
+# "cloud" (hosted Chroma Cloud). Cloud mode requires an API key in
+# .env (see .env.example); tenant/database identifiers are optional
+# there and must be supplied together. No cloud secrets belong here.
+CHROMA_MODE: local
 
 # ── Provider selection (two-tier) ─────────────────────────────────────
 EMBED_PROVIDER: local

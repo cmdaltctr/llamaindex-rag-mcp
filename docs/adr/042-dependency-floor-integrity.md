@@ -258,3 +258,17 @@ is ours to move; revisit when the parent loosens.
 - Chroma migration log: <https://docs.trychroma.com/docs/overview/migration>
 - tree-sitter-language-pack CHANGELOG:
   <https://github.com/xberg-io/tree-sitter-language-pack/blob/main/CHANGELOG.md>
+
+---
+
+## Update (2026-08-15, add-chroma-cloud-backend)
+
+The floor-table row for `llama-index-embeddings-openai` (`>=0.2.0` →
+`>=0.5.0`) is superseded. The `openrouter` and `llamacpp` extras now
+declare `llama-index-embeddings-openai-like>=0.3.0` instead of
+`llama-index-embeddings-openai`; the latter remains only as a transitive
+dependency of the "Like" package. The `openai` row's dependent list gains
+`llama-index-embeddings-openai-like`. The floors matrix in
+`.github/workflows/ci.yml` already exercises the `llamacpp` and
+`openrouter` extras at their lower bounds, so the new floor is covered by
+the existing `floors` job with no new matrix entry.

@@ -147,6 +147,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 HF_TOKEN=...
 OPENROUTER_API_KEY=...
 AZURE_DOC_INTELLIGENCE_KEY=...
+CHROMA_CLOUD_API_KEY=...
 ```
 
 If you find yourself putting `RETRIEVAL__*` or `CHUNKING__*` in here, it
@@ -166,6 +167,61 @@ Defaults below are what ships in `defaults.yaml`.
 | `COLLECTION_NAME` | `documents` | Default collection |
 | `CHROMA_SCAN_PAGE_SIZE` | `10000` | Rows per page when scanning metadata |
 | `VECTOR_STORE` | `chroma` | Which store implementation |
+| `CHROMA_MODE` | `local` | `local` or `cloud`. Explicit selection; unrecognised values fail startup |
+| `CHROMA_CLOUD_API_KEY` | — | Required when `CHROMA_MODE=cloud`. `.env` only — never in YAML, logs, or results |
+| `CHROMA_CLOUD_TENANT` | — | Optional tenant. Supplied with `CHROMA_CLOUD_DATABASE`, or both omitted |
+| `CHROMA_CLOUD_DATABASE` | — | Optional database. Supplied with `CHROMA_CLOUD_TENANT`, or both omitted |
+
+### Chroma deployment mode
+
+`CHROMA_MODE` selects the vector-store deployment explicitly. The default is
+`local`, the embedded `PersistentClient`. Selecting `cloud` connects to hosted
+Chroma Cloud. API-key presence never switches storage: a missing shell
+variable cannot silently redirect a process to an empty local database.
+Unrecognised values fail settings validation.
+
+Embedding compute and vector storage are independent axes. `EMBED_PROVIDER`
+selects where embeddings run; `CHROMA_MODE` selects where vectors are stored.
+No third selector named `hybrid` exists. All four combinations are valid:
+
+| Mode | Embeddings | Vector store | Use |
+| --- | --- | --- | --- |
+| Full local | llama.cpp | local Chroma | Private/offline; strong local hardware |
+| Cloud compute, local store | OpenRouter/Fireworks | local Chroma | Fast embeddings, local single-machine index |
+| Full cloud | OpenRouter/Fireworks | Chroma Cloud | Shared indexes, parallel read cells, no SQLite lock |
+| Local compute, cloud store | llama.cpp | Chroma Cloud | Local model with a shared remote index |
+
+OpenRouter is the existing cloud-compute provider. Fireworks is a compatible
+future option that needs a separate provider registration — it is not a
+vector store.
+
+Cloud mode validates credentials at `Settings` construction:
+`CHROMA_MODE=cloud` without `CHROMA_CLOUD_API_KEY` fails startup. The
+connection is checked with a heartbeat during runtime setup, so
+authentication, network, and tenant/database mistakes surface before any
+work begins. A cloud-mode failure is actionable and never silently falls
+back to a local index. Select `CHROMA_MODE=local` deliberately if degraded
+operation is acceptable.
+
+`CHROMA_CLOUD_TENANT` and `CHROMA_CLOUD_DATABASE` are optional. Supply both
+or neither; omitting both lets the cloud client resolve them from the API
+key. The key stays in `.env` only — never in `defaults.yaml`, logs, or
+results.
+
+Collection metadata records the embedding provider, model, and index
+identity. Changing the embedding provider or model, the corpus or parser,
+the chunking configuration, or the vector dimension requires re-ingestion
+into a fresh collection. Same-dimension model swaps are rejected rather than
+silently mixing incompatible vector spaces.
+
+Run the opt-in smoke check before using cloud storage:
+
+```bash
+uv run python scripts/chroma_cloud_smoke.py
+```
+
+The script ingests and queries a disposable collection, then deletes it. It
+never runs in CI.
 
 ### Providers
 

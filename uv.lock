@@ -2387,6 +2387,18 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-embeddings-openai-like"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-embeddings-openai" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/df/79e4748196213b55931d5f8377141fff41135f5988d5501860824cc95390/llama_index_embeddings_openai_like-0.3.1.tar.gz", hash = "sha256:cef7af4bce284e8e6730532dbd0aa325e77398a5d5524edb2d2e3acb122fb5b6", size = 3854, upload-time = "2026-03-13T16:15:20.647Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/8e/b9ea889f88318f2faa20b615989e12a15a133c9273630f9266fcf69f35a6/llama_index_embeddings_openai_like-0.3.1-py3-none-any.whl", hash = "sha256:167c7e462cde7d53ea907ceaffbbf10a750676c7c9f7bcc9bc9686a41921387a", size = 3631, upload-time = "2026-03-13T16:15:19.58Z" },
+]
+
+[[package]]
 name = "llama-index-instrumentation"
 version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4611,11 +4623,11 @@ hybrid = [
     { name = "rank-bm25" },
 ]
 llamacpp = [
-    { name = "llama-index-embeddings-openai" },
+    { name = "llama-index-embeddings-openai-like" },
     { name = "llama-index-llms-openai-like" },
 ]
 openrouter = [
-    { name = "llama-index-embeddings-openai" },
+    { name = "llama-index-embeddings-openai-like" },
     { name = "llama-index-llms-openai-like" },
 ]
 pdf-pypdfium2 = [
@@ -4652,8 +4664,8 @@ requires-dist = [
     { name = "liteparse", specifier = ">=2.0.0" },
     { name = "llama-index", specifier = ">=0.14.5" },
     { name = "llama-index-embeddings-ollama", specifier = ">=0.7.0" },
-    { name = "llama-index-embeddings-openai", marker = "extra == 'llamacpp'", specifier = ">=0.5.0" },
-    { name = "llama-index-embeddings-openai", marker = "extra == 'openrouter'", specifier = ">=0.5.0" },
+    { name = "llama-index-embeddings-openai-like", marker = "extra == 'llamacpp'", specifier = ">=0.3.0" },
+    { name = "llama-index-embeddings-openai-like", marker = "extra == 'openrouter'", specifier = ">=0.3.0" },
     { name = "llama-index-llms-ollama", specifier = ">=0.9.0" },
     { name = "llama-index-llms-openai-like", marker = "extra == 'llamacpp'", specifier = ">=0.5.0" },
     { name = "llama-index-llms-openai-like", marker = "extra == 'openrouter'", specifier = ">=0.5.0" },

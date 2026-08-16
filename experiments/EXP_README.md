@@ -23,6 +23,68 @@ hypothesis about retrieval quality, performance, or configuration.
 | **Status**       | Mark each experiment: `PLANNED`, `PASS`, `FAIL`, or `INCONCLUSIVE`                        |
 | **Cleanup**      | Document how to remove experiment artefacts (temp ChromaDB, generated files)              |
 
+## Chroma Cloud execution
+
+Calibration harnesses can run against hosted Chroma Cloud instead of the
+embedded local store. Storage mode is independent of the embedding provider.
+
+### Prerequisites
+
+1. Set `CHROMA_MODE=cloud` and `CHROMA_CLOUD_API_KEY` in `.env`.
+2. Optionally set `CHROMA_CLOUD_TENANT` and `CHROMA_CLOUD_DATABASE`
+   together, or omit both.
+3. Run the opt-in smoke check first:
+
+   ```bash
+   uv run python scripts/chroma_cloud_smoke.py
+   ```
+
+   It ingests and queries a disposable collection, then deletes it. The API
+   key is never printed.
+
+### Storage helper
+
+The six active calibration harnesses (10b, 10.1, 12, 9a-rerun, 13, 14)
+obtain storage through `experiments/_lib/storage.py`, which resolves the
+mode from runtime settings and constructs the store via the production
+factory (`build_chroma_vector_store`). No harness imports `chromadb`
+directly.
+
+### Immutable-index reuse
+
+A collection identifies an immutable index: experiment ID, corpus/config
+identity, embedding provider and model, parser, and chunking configuration.
+The derived name is deterministic — for example
+`exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`. Cells and
+repetitions that only change retrieval settings reuse the same index
+read-only; their IDs live in checkpoint and result metadata, not the
+collection name.
+
+At most ONE process mutates a collection during a run. The BM25 invalidation
+counter is process-local, so evaluation workers read completed indexes
+read-only. Cross-process mutation of the same collection is unsupported.
+
+Cloud checkpoints store identifiers, provider, model, and mode — never the
+API key.
+
+### Cost and reproducibility notes
+
+Full cloud (OpenRouter embeddings + Chroma Cloud storage) avoids local
+SQLite write locks and shares indexes across machines, so parallel
+read-only evaluation cells do not contend. Local persist directories remain
+in use for local mode.
+
+OpenRouter supplies cloud embeddings; Chroma Cloud stores the vectors.
+Fireworks is a compatible FUTURE cloud-compute adapter that would require a
+new provider registration — it is not a vector store.
+
+Switching the embedding model, parser, or chunking configuration means a NEW
+collection: the index identity changes and the corpus must be re-embedded.
+Migrated runners call the v2 surface `rag_mcp.core.retrieval.search` with an
+injected store and per-call retrieval knobs. Legacy local output dirs with
+the collection `documents` need one rebuild, because experiment collections
+now use derived names by default.
+
 ## Scientific Flow (Lightweight)
 
 Every experiment follows this structure, even if some sections are brief:

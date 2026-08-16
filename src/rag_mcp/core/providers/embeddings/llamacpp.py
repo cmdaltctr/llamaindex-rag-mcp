@@ -1,8 +1,8 @@
 """llama.cpp embedding provider.
 
-Constructs ``OpenAIEmbedding`` pointed at a llama.cpp server's OpenAI-
-compatible ``/v1`` endpoint.  Requires the optional dependency
-``llama-index-embeddings-openai`` (``uv sync --extra llamacpp``).
+Constructs ``OpenAILikeEmbedding`` for a llama.cpp server's OpenAI-compatible
+``/v1`` endpoint. This accepts arbitrary local model identifiers and requires
+``llama-index-embeddings-openai-like``.
 """
 
 from __future__ import annotations
@@ -14,21 +14,21 @@ if TYPE_CHECKING:
 
 
 def build(settings: Settings) -> Any:
-    """Construct an ``OpenAIEmbedding`` for llama.cpp from *settings*.
+    """Construct an ``OpenAILikeEmbedding`` for llama.cpp from *settings*.
 
     Raises:
-        ImportError: If ``llama-index-embeddings-openai`` is not installed.
+        ImportError: If ``llama-index-embeddings-openai-like`` is absent.
     """
     try:
-        from llama_index.embeddings.openai import OpenAIEmbedding
+        from llama_index.embeddings.openai_like import OpenAILikeEmbedding
     except ImportError:
         raise ImportError(
-            "Provider 'llamacpp' requires llama-index-embeddings-openai. "
-            "Install it with:  uv sync --extra llamacpp"
+            "Provider 'llamacpp' requires llama-index-embeddings-openai-like. "
+            "Install it with: uv sync --extra llamacpp"
         ) from None
 
-    return OpenAIEmbedding(
-        model=settings.llamacpp_embed_model,
+    return OpenAILikeEmbedding(
+        model_name=settings.llamacpp_embed_model,
         api_base=settings.llamacpp_embed_url,
         api_key="no-key",
         embed_batch_size=settings.ingestion.embed_batch_size,

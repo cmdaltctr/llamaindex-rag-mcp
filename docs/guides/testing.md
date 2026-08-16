@@ -160,6 +160,25 @@ got removed. See [ADR-037](../adr/037-architecture-v2-conformance.md).
 
 ---
 
+## Cloud storage tests
+
+Three test files cover the cloud backend and experiment storage. All run in
+the fast suite.
+
+- `tests/test_chroma_cloud.py` — mode and credential validation, the
+  factory's constructor arguments, secret redaction, embedding-identity
+  enforcement, local/cloud parity, and the chromadb import boundary.
+- `tests/test_chroma_cloud_smoke.py` — fake cloud-operation failures that
+  verify the manual smoke script redacts secrets from operation and cleanup logs.
+- `tests/test_experiment_storage.py` — deterministic collection naming,
+  the experiment storage config, and a runner migration guard that scans
+  the six calibration harnesses for direct chromadb usage.
+
+All cloud tests use fakes. No test contacts Chroma Cloud. The opt-in smoke
+check (`scripts/chroma_cloud_smoke.py`) is manual-only and never runs in CI.
+
+---
+
 ## Writing a new test
 
 - Put it in `tests/`, named `test_*.py`.

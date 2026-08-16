@@ -162,7 +162,10 @@ def _initialise_runtime() -> None:
     """Initialise runtime dependencies for a command that will execute."""
     try:
         compose.ensure_runtime_setup()
-    except (ImportError, ValueError) as exc:
+    except (ImportError, ValueError, RuntimeError) as exc:
+        # RuntimeError carries the redacted Chroma Cloud connection
+        # failure — an explicit cloud selection never falls back to a
+        # local index, so the command must stop here.
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from None
     if not _runtime_details_enabled:
@@ -175,6 +178,8 @@ def _initialise_runtime() -> None:
         batch_size,
         concurrency,
     )
+    # Storage summary: mode plus cloud identifiers — never the API key.
+    logger.info("%s", compose.chroma_storage_summary())
     if logger.isEnabledFor(logging.DEBUG):
         _detect_gpu_acceleration(embed_model)
 

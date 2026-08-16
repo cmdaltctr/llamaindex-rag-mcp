@@ -279,10 +279,12 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
-        # community-leiden included so patch coverage exercises the optional
-        # Leiden strategy (its tests skipif-guard without the extra). The
-        # base-only absence assertion lives in the floors job instead.
-        run: uv sync --frozen --extra community-leiden
+        # community-leiden, llamacpp, and openrouter included so patch
+        # coverage exercises the optional Leiden strategies and the
+        # OpenAILikeEmbedding adapters (their tests skipif-guard without
+        # the extra). The base-only absence assertions live in the floors
+        # job instead.
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter
 
       - name: Run tests with coverage
         env:

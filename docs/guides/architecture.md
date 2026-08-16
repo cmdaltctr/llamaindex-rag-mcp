@@ -163,6 +163,43 @@ configurations at once.
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
 
+### `core/vectordb/` — the store boundary
+
+`core/vectordb/chroma.py` is the single module that imports `chromadb` and
+the single construction site for both deployments. Local mode builds a
+`PersistentClient` over the resolved persist directory; cloud mode builds
+and validates a `CloudClient`, with a heartbeat round trip so
+authentication, network, and tenant/database mistakes surface at startup.
+Following upstream LlamaIndex's client-construction/VectorStore split, the
+constructed client is injected into `ChromaVectorStore`, which stays
+deployment-agnostic.
+
+Collection metadata records the embedding configuration that owns the
+vector space: `rag_embed_provider`, `rag_embed_model`, and
+`rag_index_identity`. Vector dimensions alone cannot prove compatibility,
+so a same-dimension model swap is rejected before any write or query.
+Stamping is read-merge-write: Chroma's `modify(metadata=...)` replaces the
+complete map, so existing profile tags are read and merged first.
+
+Supporting modules keep `chroma.py` under the 500-line ceiling:
+
+- `core/vectordb/identity.py` — the `EmbeddingIdentity` type and the
+  `IdentityGuardMixin` (stamping plus write/query-path mismatch rejection)
+- `core/vectordb/paged.py` — the `PagedReadMixin` (bounded and bulk
+  collection reads, formerly `chroma_utils.py`)
+- `core/vectordb/naming.py` — deterministic experiment collection names
+  (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
+
+`compose.build_vector_store` passes construction-time primitives — mode,
+persist directory, API key, tenant, database — to the Chroma factory.
+Credentials never enter `EffectiveSettings`, profiles, YAML defaults, or
+operation-level objects.
+
+One writer per collection is an explicit boundary. The BM25 invalidation
+counters are process-local, so evaluation workers reuse completed immutable
+indexes read-only; mutating the same collection from several processes is
+unsupported.
+
 ### `transports/` — exposes it
 
 - `transports/mcp.py` — the MCP server, seven tools, over stdio

@@ -139,6 +139,15 @@ class Settings(BaseSettings):
     chroma_scan_page_size: int = 10000
     vector_store: str = "chroma"
 
+    # ── Chroma deployment mode ─────────────────────────────────────
+    # Local keeps the embedded PersistentClient (unchanged default).
+    # Cloud selects hosted Chroma Cloud; the API key never appears in
+    # YAML, profiles, logs, or result files — .env only.
+    chroma_mode: str = "local"
+    chroma_cloud_api_key: str = ""
+    chroma_cloud_tenant: str = ""
+    chroma_cloud_database: str = ""
+
     # ── Provider selection ────────────────────────────────────────
     embed_provider: str = "local"
     metadata_llm_provider: str = "local"
@@ -236,6 +245,9 @@ class Settings(BaseSettings):
             "RETRIEVAL__RERANK_BACKEND",
         )
         _validate_provider_value(self, "document_backend", ("local", "azure"), "DOCUMENT_BACKEND")
+        # Chroma deployment mode is an explicit selector: API-key presence
+        # must NEVER switch storage silently (design decision 1).
+        _validate_provider_value(self, "chroma_mode", ("local", "cloud"), "CHROMA_MODE")
 
         # Azure credential check — deliberate graceful degradation.
         # DOCUMENT_BACKEND=azure is a valid value, but without credentials
@@ -266,6 +278,41 @@ class Settings(BaseSettings):
             )
             object.__setattr__(self, "rag_profile", "documents")
 
+        return self
+
+    @model_validator(mode="after")
+    def _validate_chroma_cloud_settings(self) -> Settings:
+        """Validate explicit cloud selection: key required, tenant/database paired.
+
+        Fails at Settings construction so startup aborts before any
+        ingestion or retrieval begins (chroma-cloud-backend spec).  Unlike
+        the Azure document backend, cloud storage has no silent local
+        fallback: an explicit ``CHROMA_MODE=cloud`` without credentials is
+        an operator error, not a degradation opportunity (ADR-029 lesson).
+
+        Error messages name the missing variables but never echo the
+        submitted key material.
+        """
+        if self.chroma_mode != "cloud":
+            return self
+        if not self.chroma_cloud_api_key.strip():
+            raise ValueError(
+                "CHROMA_MODE=cloud requires CHROMA_CLOUD_API_KEY to be set. "
+                "Add it to your .env file (see .env.example); never commit the key."
+            )
+        # Store the stripped key so padded .env values authenticate cleanly.
+        object.__setattr__(self, "chroma_cloud_api_key", self.chroma_cloud_api_key.strip())
+        tenant = self.chroma_cloud_tenant.strip()
+        database = self.chroma_cloud_database.strip()
+        if bool(tenant) != bool(database):
+            raise ValueError(
+                "CHROMA_CLOUD_TENANT and CHROMA_CLOUD_DATABASE must be supplied "
+                "together, or both omitted so the cloud client resolves them "
+                "from the API key."
+            )
+        # Store stripped identifiers so padded .env values resolve cleanly.
+        object.__setattr__(self, "chroma_cloud_tenant", tenant)
+        object.__setattr__(self, "chroma_cloud_database", database)
         return self
 
     @model_validator(mode="after")
