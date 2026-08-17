@@ -103,9 +103,10 @@ def _clear_registry_caches() -> None:
     from rag_mcp.core.providers.embeddings import registry as _embed
     from rag_mcp.core.providers.llm import registry as _llm
     from rag_mcp.core.retrieval import registry as _retrieval
+    from rag_mcp.core.vectordb import registry as _vectordb
     from rag_mcp.integrations.pdf import registry as _pdf
 
-    for reg in (_chunking, _metadata, _retrieval, _embed, _llm, _community, _pdf):
+    for reg in (_chunking, _metadata, _retrieval, _embed, _llm, _community, _pdf, _vectordb):
         reg._cache.clear()
 
 

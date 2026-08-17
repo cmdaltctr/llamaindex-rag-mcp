@@ -16,6 +16,17 @@ dependencies = [
     # chromadb 1.x. See ADR-042.
     "llama-index>=0.14.5",
     "llama-index-vector-stores-chroma>=0.5.0",
+    # Second vector-store backend (ADR-046, add-lancedb-vectordb-backend).
+    # lancedb>=0.37 pins the lancedb.expr type-safe filter builder (PR
+    # #3150); the adapter's own floor (>=0.21.1) does not guarantee it.
+    # Resolved tree pulls lancedb/pylance/pyarrow/tantivy only — no
+    # PyTorch, so the ONNX-only boundary holds. pyarrow is declared
+    # directly (the store builds upsert rows with it) and floored at
+    # the locked major: its frequent major bumps carry no semantic
+    # signal, so floor == lock keeps the floors CI honest.
+    "llama-index-vector-stores-lancedb>=0.5.0",
+    "lancedb>=0.37",
+    "pyarrow>=25",
     "llama-index-readers-file>=0.5.0",
     # chromadb 1.0.0 reverts list_collections() to returning Collection
     # objects; 0.6.0–0.9.x returned bare strings, breaking
@@ -228,6 +239,20 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.chroma -> chromadb",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# F2 sibling (add-lancedb-vectordb-backend): lancedb is confined to the
+# vector store implementation — the only direct import sites are the
+# store itself and the filter translator.
+[[tool.importlinter.contracts]]
+name = "lancedb-confined-to-vectordb"
+type = "forbidden"
+source_modules = ["rag_mcp"]
+forbidden_modules = ["lancedb"]
+ignore_imports = [
+    "rag_mcp.core.vectordb.lancedb -> lancedb",
+    "rag_mcp.core.vectordb.lance_filter -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 

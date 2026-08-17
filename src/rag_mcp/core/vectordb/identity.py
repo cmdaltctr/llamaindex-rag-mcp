@@ -44,6 +44,38 @@ class EmbeddingIdentity:
     index_identity: str | None = None
 
 
+def embedding_identity_from_settings(settings: Any) -> EmbeddingIdentity:
+    """Derive the :class:`EmbeddingIdentity` stamped into collections.
+
+    Shared by the settings-driven factories registered in the
+    vector-store registry (``chroma`` and ``lancedb``).  The provider
+    is the effective concrete backend (two-tier aliases resolved); the
+    model is that backend's model field.  Production has no corpus
+    identity, so ``index_identity`` stays ``None``.
+
+    The config import is lazy and function-scoped, matching the
+    ``core/providers/common.py`` precedent: the settings object
+    arrives as a parameter, never as a singleton read.
+
+    Args:
+        settings: A resolved ``rag_mcp.config.Settings`` instance.
+
+    Returns:
+        The identity to stamp into and enforce on collections written
+        through the constructed store.
+    """
+    from ...config import _resolve_effective_embed_provider
+
+    provider = _resolve_effective_embed_provider(settings)
+    model_fields = {
+        "llamacpp": settings.llamacpp_embed_model,
+        "ollama": settings.embed_model,
+        "openrouter": settings.openrouter_embed_model,
+    }
+    model = model_fields.get(provider, settings.embed_model)
+    return EmbeddingIdentity(provider=provider, model=model, index_identity=None)
+
+
 def redact_secret(message: str, secret: str | None) -> str:
     """Redact a full secret and each prefix of six or more characters.
 

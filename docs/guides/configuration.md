@@ -49,7 +49,8 @@ metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
 ```
 
 Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
-`RAG_PROFILE`, `PDF_READER`, and every credential.
+`VECTOR_STORE`, `LANCEDB_URI`, `RAG_PROFILE`, `PDF_READER`, and every
+credential.
 
 In YAML the same thing looks like this:
 
@@ -136,8 +137,11 @@ Only these:
 
 ```bash
 # Where the vector database lives
+VECTOR_STORE=chroma
 CHROMA_PERSIST_DIR=./chroma_db
 COLLECTION_NAME=documents
+# LanceDB tables (VECTOR_STORE=lancedb only)
+LANCEDB_URI=./lancedb
 
 # Which embedding model, and where to reach it
 EMBED_MODEL=qwen3-embedding:0.6b
@@ -166,7 +170,8 @@ Defaults below are what ships in `defaults.yaml`.
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | Where the database is written |
 | `COLLECTION_NAME` | `documents` | Default collection |
 | `CHROMA_SCAN_PAGE_SIZE` | `10000` | Rows per page when scanning metadata |
-| `VECTOR_STORE` | `chroma` | Which store implementation |
+| `VECTOR_STORE` | `chroma` | Store implementation: `chroma` (default) or `lancedb` (opt-in). Unrecognised values fail startup listing the registered names |
+| `LANCEDB_URI` | `./lancedb` | Parent directory for LanceDB tables (`VECTOR_STORE=lancedb` only). Embedded/local only in v1 |
 | `CHROMA_MODE` | `local` | `local` or `cloud`. Explicit selection; unrecognised values fail startup |
 | `CHROMA_CLOUD_API_KEY` | — | Required when `CHROMA_MODE=cloud`. `.env` only — never in YAML, logs, or results |
 | `CHROMA_CLOUD_TENANT` | — | Optional tenant. Supplied with `CHROMA_CLOUD_DATABASE`, or both omitted |
@@ -222,6 +227,24 @@ uv run python scripts/chroma_cloud_smoke.py
 
 The script ingests and queries a disposable collection, then deletes it. It
 never runs in CI.
+
+### LanceDB backend
+
+`VECTOR_STORE=lancedb` selects the embedded LanceDB backend. Each RAG
+collection maps to one LanceDB table under `LANCEDB_URI`; tables are
+created lazily on first write, which locks the vector dimension. The store
+keeps its collection metadata (profile tags, embedding identity) in each
+table's durable schema metadata.
+
+The `lancedb` backend is embedded and local-first in v1; LanceDB Cloud is
+out of scope. Unknown `VECTOR_STORE` values fail startup with the
+registered names listed.
+
+Switching `VECTOR_STORE` re-ingests into the fresh store — no cross-backend
+migration is provided. The BM25 hybrid path is backend-agnostic: it reads
+rows through `iter_documents` and invalidates off the generation counter,
+so hybrid search behaves identically over ChromaDB and LanceDB. Native
+LanceDB full-text search is deferred (ADR-046).
 
 ### Providers
 

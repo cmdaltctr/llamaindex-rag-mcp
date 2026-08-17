@@ -138,6 +138,8 @@ class Settings(BaseSettings):
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
     vector_store: str = "chroma"
+    # Parent directory for LanceDB tables when VECTOR_STORE=lancedb.
+    lancedb_uri: str = "./lancedb"
 
     # ── Chroma deployment mode ─────────────────────────────────────
     # Local keeps the embedded PersistentClient (unchanged default).

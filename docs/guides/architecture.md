@@ -105,7 +105,8 @@ metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
 ```
 
 Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
-`RAG_PROFILE`, `PDF_READER`, and all credentials.
+`VECTOR_STORE`, `LANCEDB_URI`, `RAG_PROFILE`, `PDF_READER`, and all
+credentials.
 
 Use a pre-v2 name like `TOP_K` and the app refuses to start, telling you the
 replacement. It does not quietly ignore you. Full table in
@@ -152,7 +153,7 @@ configurations at once.
 | `core/retrieval/` | Search, rerank, fuse results |
 | `core/chunking/` | The chunking strategies: code, markdown, sentence, config |
 | `core/metadata/` | Work out a category and keywords for a document |
-| `core/vectordb/` | The database interface, and the ChromaDB implementation |
+| `core/vectordb/` | The database interface, and two store implementations (ChromaDB default, LanceDB opt-in) |
 | `core/profiles/` | Resolve which profile a collection uses |
 | `core/providers/` | Build embedding and LLM clients |
 | `core/codebase/` | Codebase map and code graph |
@@ -165,6 +166,9 @@ only settings.
 
 ### `core/vectordb/` — the store boundary
 
+Two stores sit behind the `VectorStore` ABC (ADR-034): `chroma`, the
+default, and `lancedb`, opt-in via `VECTOR_STORE` (ADR-046).
+
 `core/vectordb/chroma.py` is the single module that imports `chromadb` and
 the single construction site for both deployments. Local mode builds a
 `PersistentClient` over the resolved persist directory; cloud mode builds
@@ -174,14 +178,25 @@ Following upstream LlamaIndex's client-construction/VectorStore split, the
 constructed client is injected into `ChromaVectorStore`, which stays
 deployment-agnostic.
 
+`core/vectordb/lancedb.py` is the LanceDB implementation (ADR-046): one
+`lancedb.connect(uri)` connection backs the store, and each RAG collection
+maps to one LanceDB table. Table creation is lazy — the vector dimension
+locks on first write — and the LlamaIndex adapter is constructed with
+`mode="create"` so it can never overwrite a populated table (the adapter's
+default mode is `"overwrite"`). The adapter prints to stdout when it
+creates a table, so writes run with stdout redirected: stdout is the MCP
+protocol channel.
+
 Collection metadata records the embedding configuration that owns the
 vector space: `rag_embed_provider`, `rag_embed_model`, and
 `rag_index_identity`. Vector dimensions alone cannot prove compatibility,
 so a same-dimension model swap is rejected before any write or query.
 Stamping is read-merge-write: Chroma's `modify(metadata=...)` replaces the
-complete map, so existing profile tags are read and merged first.
+complete map, so existing profile tags are read and merged first. The
+LanceDB store keeps the same triple in each table's durable Arrow schema
+metadata, merged through pylance's `update_schema_metadata`.
 
-Supporting modules keep `chroma.py` under the 500-line ceiling:
+Supporting modules keep each store under the 500-line ceiling:
 
 - `core/vectordb/identity.py` — the `EmbeddingIdentity` type and the
   `IdentityGuardMixin` (stamping plus write/query-path mismatch rejection)
@@ -189,11 +204,22 @@ Supporting modules keep `chroma.py` under the 500-line ceiling:
   collection reads, formerly `chroma_utils.py`)
 - `core/vectordb/naming.py` — deterministic experiment collection names
   (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
+- `core/vectordb/lance_meta.py` — the LanceDB table-metadata seam and its
+  identity guard, reusing `identity.py`'s pure helpers
+- `core/vectordb/lance_filter.py` — ChromaDB `where` dict → LanceDB filter
+  translation through the `lancedb.expr` value serialiser
+- `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
+  pages plus `strip_internal_metadata`)
+- `core/vectordb/registry.py` — lazy vector-store registry mapping
+  `VECTOR_STORE` names to factories (`chroma`, `lancedb`)
 
-`compose.build_vector_store` passes construction-time primitives — mode,
-persist directory, API key, tenant, database — to the Chroma factory.
-Credentials never enter `EffectiveSettings`, profiles, YAML defaults, or
-operation-level objects.
+`compose.build_vector_store` resolves the configured name through the
+registry instead of branching over it. Each factory receives the resolved
+settings; the Chroma factory consumes mode, persist directory, API key,
+tenant, and database, and the LanceDB factory consumes the `LANCEDB_URI`
+parent directory. An unregistered `VECTOR_STORE` name fails startup
+listing the registered names. Credentials never enter `EffectiveSettings`,
+profiles, YAML defaults, or operation-level objects.
 
 One writer per collection is an explicit boundary. The BM25 invalidation
 counters are process-local, so evaluation workers reuse completed immutable
@@ -271,9 +297,13 @@ default seed of `0` keeps partitions deterministic run to run.
 
 ### A new vector database
 
-Implement `VectorStore` from `core/vectordb/base.py`, register it in
-`compose.py`. ChromaDB is confined to `core/vectordb/chroma.py` — a contract
-fails the build if `chromadb` is imported anywhere else.
+Implement `VectorStore` from `core/vectordb/base.py`, add one `register()`
+line to `core/vectordb/registry.py`, and let `compose.build_vector_store`
+resolve it by name — never a branch over the name (invariant #10).
+ChromaDB is confined to `core/vectordb/chroma.py`; LanceDB is confined to
+`core/vectordb/lancedb.py` and the filter translator
+`core/vectordb/lance_filter.py`. Contracts fail the build if either
+library is imported anywhere else.
 
 ### A new setting
 
@@ -335,6 +365,7 @@ The same rule applied to every name-dispatched family, inside and outside
 | LLM providers | `LOCAL_BACKEND` / `CLOUD_BACKEND` | `core/providers/llm/registry.py` | Already a registry | None |
 | Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/registry.py` (`bm25`) | `bm25` registered; `native` is currently a warning-to-BM25 placeholder | `openspec/changes/implement-native-sparse-backend-strategy/` |
 | Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
+| Vector store | `VECTOR_STORE` | `core/vectordb/registry.py` | `chroma` and `lancedb` registered | None |
 | Document backends | `DOCUMENT_BACKEND` | None; direct construction | `local` and `azure` do not yet form one registry contract, and fallback ownership changes with registration | `openspec/changes/register-document-backend-strategies/` |
 
 Live registry contents, kept in step with the code by contract tests:
@@ -367,6 +398,10 @@ Live registry contents, kept in step with the code by contract tests:
 `bm25` `dense` `fusion` `reranker_onnx` `reranker_torch`
 <!-- /registry-names:retrieval -->
 
+<!-- registry-names:vectordb -->
+`chroma` `lancedb`
+<!-- /registry-names:vectordb -->
+
 ### Audit conclusions
 
 - The concrete PDF readers were the one behaviour-preserving missing registry
@@ -392,6 +427,7 @@ These are not documentation. They fail the build.
 | Rule | Enforced by |
 |---|---|
 | ChromaDB only in `core/vectordb/chroma.py` | `chromadb-confined-to-vectordb` |
+| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb` |
 | `config/` never imports business logic | `config-is-leaf` |
 | `integrations/` never imports core or transports | `integrations-are-leaves` |
 | `core/` never imports transports or providers | `core-business-avoids-providers-transports` |
@@ -422,6 +458,11 @@ pipeline logic instead of plumbing.
 [ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)) — embedded, no
 server to run, persists to a folder. Behind an interface since ADR-034, so it
 can be swapped.
+
+**LanceDB** ([ADR-046](../adr/046-lancedb-vector-store-backend.md)) — embedded
+second backend behind the same interface. Each collection gets its own table
+and files with optimistic concurrency instead of ChromaDB's shared SQLite
+write lock. Opt-in via `VECTOR_STORE=lancedb`; ChromaDB stays the default.
 
 **MCP** ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md)) —
 one server works with any MCP client, rather than a bespoke integration each

@@ -1,8 +1,12 @@
 """Integration test exercising every VectorStore ABC method.
 
 Verifies the contract documented in ``core/vectordb/base.py`` against
-the ChromaDB implementation.  Uses the in-memory EphemeralClient
-monkeypatched by ``conftest._patch_chromadb`` so no disk I/O occurs.
+every shipped backend: the suite is parametrised over ``chroma`` (the
+in-memory EphemeralClient monkeypatched by ``conftest._patch_chromadb``,
+so no disk I/O occurs) and ``lancedb`` (an isolated on-disk database
+under ``tmp_path``).  Both backends must pass identical assertions —
+this file is the contract-parity evidence required by the
+``lancedb-vector-store`` spec.
 
 The test covers every operation enumerated in Phase 3 task 1.3:
 collection creation, document write (upsert), dense query with metadata
@@ -13,29 +17,49 @@ read/update, and generation bumping.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from rag_mcp.core.vectordb.base import VectorStore
 from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+
+# Backend name → concrete class, for the ABC-compliance checks that
+# inspect the class itself rather than a constructed instance.
+_STORE_CLASSES = {
+    "chroma": ChromaVectorStore,
+    "lancedb": LanceVectorStore,
+}
 
 
-@pytest.fixture
-def store() -> VectorStore:
-    """Return a fresh ChromaVectorStore for each test."""
-    return ChromaVectorStore()
+@pytest.fixture(params=["chroma", "lancedb"])
+def store(request: pytest.FixtureRequest, tmp_path: Path) -> VectorStore:
+    """Return a fresh store for each backend under test.
+
+    ``chroma`` relies on the in-memory EphemeralClient monkeypatched by
+    ``conftest._patch_chromadb`` so no disk I/O occurs.  ``lancedb``
+    points at an isolated database under ``tmp_path``, giving each test
+    a clean on-disk store; the embedded LanceDB writer is fast enough
+    to stay out of the ``slow`` mark.
+    """
+    if request.param == "chroma":
+        return ChromaVectorStore()
+    return LanceVectorStore(uri=str(tmp_path / "lancedb"))
 
 
 # ── ABC compliance ────────────────────────────────────────────────────
 
 
 class TestABCCompliance:
-    """The ChromaDB implementation must satisfy the ABC contract."""
+    """Every backend implementation must satisfy the ABC contract."""
 
-    def test_chroma_is_vector_store(self, store: VectorStore) -> None:
-        """ChromaVectorStore must be a VectorStore instance."""
+    def test_store_is_vector_store(self, store: VectorStore) -> None:
+        """The parametrised store must be a VectorStore instance."""
         assert isinstance(store, VectorStore)
 
-    def test_all_abstract_methods_implemented(self) -> None:
+    @pytest.mark.parametrize("backend", ["chroma", "lancedb"])
+    def test_all_abstract_methods_implemented(self, backend: str) -> None:
         """Every ABC method must have a concrete implementation."""
         abstract_methods = {
             "create_collection",
@@ -54,7 +78,7 @@ class TestABCCompliance:
             "bump_generation",
             "get_generation",
         }
-        implemented = set(ChromaVectorStore.__abstractmethods__)
+        implemented = set(_STORE_CLASSES[backend].__abstractmethods__)
         assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
         # Verify the ABC actually declares the expected surface.
         abc_methods = {name for name in dir(VectorStore) if callable(getattr(VectorStore, name))}

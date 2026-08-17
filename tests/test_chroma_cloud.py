@@ -996,9 +996,9 @@ class TestComposeEmbeddingIdentity:
     def test_identity_maps_each_provider_to_its_model_field(
         self, provider_kwargs: dict, expected_provider: str, expected_model: str
     ) -> None:
-        from rag_mcp.compose import _embedding_identity_from_settings
+        from rag_mcp.core.vectordb.identity import embedding_identity_from_settings
 
-        identity = _embedding_identity_from_settings(_settings(**provider_kwargs))
+        identity = embedding_identity_from_settings(_settings(**provider_kwargs))
         assert identity.provider == expected_provider
         assert identity.model == expected_model
         assert identity.index_identity is None

@@ -86,6 +86,15 @@ dimension when the table schema is created on first write, so dimension
 locking comes from the schema; embedding-identity enforcement comes from
 this config metadata.
 
+**Build-session outcome (verified against lancedb 0.37.1).** Neither
+`update_config` nor a Table-level `replace_schema_metadata` exists in
+the Python SDK — schema metadata is creation-time only through the
+public API. The durable post-creation bag is pylance's
+`LanceDataset.update_schema_metadata(values, replace=False)` (merge
+semantics, survives close/reopen and adapter writes), reached via
+`table.to_lance()` behind the `lance_meta.py` seam. This is the DD1
+fallback branch in effect; the spec text was corrected to match.
+
 ### DD2: Filter translation via the `lancedb.expr` builder
 
 **Decision.** `lance_filter.py` translates the ChromaDB `where` dict into a
@@ -118,6 +127,16 @@ this same seam, selected by connection type. Recorded, not built.
 **Pipeline reality.** The pipeline's own `where` clauses are simple
 equality (`{"file_path": ...}`), so the common path is trivial; the full
 operator set exists to honour the MCP tool's advertised contract.
+
+**Build-session outcome (verified against lancedb 0.37.1).**
+`lancedb.expr` (`col`, `lit`) exists but has no struct field access, and
+`count_rows(filter=)` accepts SQL strings only. The translator therefore
+serialises every VALUE through `lit(value).to_sql()` (the engine's own
+unparser — verified to escape single quotes), validates field names
+against a conservative identifier grammar, and composes with a fixed
+operator vocabulary. Behaviourally identical to the expression-tree
+construction for every scenario (the injection decoy test proves it);
+recorded in ADR-046.
 
 ### DD3: Registry-based store selection
 

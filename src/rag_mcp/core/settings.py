@@ -130,6 +130,7 @@ class EffectiveSettings(BaseModel):
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
     vector_store: str = "chroma"
+    lancedb_uri: str = "./lancedb"
 
     # ── Provider selection ────────────────────────────────────────
     embed_provider: str = "local"

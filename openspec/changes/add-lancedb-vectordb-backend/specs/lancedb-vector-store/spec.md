@@ -54,13 +54,18 @@ first write.
 ### Requirement: LanceDB SHALL enforce embedding identity through table config
 
 The store SHALL persist the embedding-identity triple (`provider`, `model`,
-`index_identity`) and profile tags in the LanceDB table's durable key-value
-config (`update_config`), read and merged before write. It SHALL apply the
-same legacy-stamp-then-reject rule as `identity.py`: a collection with no
-stored identity is stamped on first write, and a stored identity that does
-not match the active configuration is rejected before any write or query.
-When no embedding identity is attached (the pre-cloud direct-call path), the
-store SHALL neither stamp nor check.
+`index_identity`) and profile tags in the table's durable Arrow schema
+metadata, written read-merge-write through pylance's
+`update_schema_metadata` seam (`core/vectordb/lance_meta.py`). (The
+originally named mechanisms — table `update_config` and a table-level
+`replace_schema_metadata` — do not exist in the lancedb Python SDK as of
+0.37.1; schema metadata is the verified durable key-value bag, recorded in
+ADR-046.) The store SHALL apply the same legacy-stamp-then-reject rule as
+`identity.py`: a collection with no stored identity is stamped on first
+write, and a stored identity that does not match the active configuration
+is rejected before any write or query. When no embedding identity is
+attached (the pre-cloud direct-call path), the store SHALL neither stamp
+nor check.
 
 #### Scenario: Legacy collection stamped on first write
 
@@ -88,12 +93,17 @@ store SHALL neither stamp nor check.
 ### Requirement: LanceDB SHALL translate ChromaDB where clauses safely
 
 The store SHALL translate the ChromaDB-style `where` dict into LanceDB
-filters using the `lancedb.expr` type-safe expression builder (`col`,
-`lit`, boolean composition), in `core/vectordb/lance_filter.py`. It SHALL
-NOT build filters by interpolating values into SQL strings. The ChromaDB
-operators `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`,
-`$and`, and `$or` SHALL be supported. An unsupported operator SHALL raise a
-clear error naming it.
+filters in `core/vectordb/lance_filter.py`, with every VALUE serialised
+through the `lancedb.expr` type-safe literal builder (whose unparser
+performs the engine's own quoting), every field name validated against a
+conservative identifier grammar, and the operator vocabulary a fixed
+internal set. It SHALL NOT interpolate client-supplied values into SQL
+strings. (A full per-leaf expression tree is not possible: `lancedb.expr`
+(0.37.1) has no struct field access, and user metadata lives inside an
+Arrow `metadata` struct, so filters must reference `metadata.<field>`
+paths; recorded in ADR-046.) The ChromaDB operators `$eq`, `$ne`, `$gt`,
+`$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$and`, and `$or` SHALL be
+supported. An unsupported operator SHALL raise a clear error naming it.
 
 #### Scenario: Equality filter
 
