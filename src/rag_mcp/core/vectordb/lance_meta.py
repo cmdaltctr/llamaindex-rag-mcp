@@ -250,8 +250,10 @@ class LanceTableMetadataMixin:
         Args:
             collection_name: Table to evolve.
             new_fields: Field name → Arrow type for fields absent from
-                the current struct.  Fields already present are
-                skipped; an empty effective set is a no-op.
+                the current struct.  Fields already present with a
+                concrete type are skipped; a field locked null-only is
+                upgraded to the batch's type.  An empty effective set
+                is a no-op.
 
         Returns:
             ``True`` when the table was rewritten.
@@ -267,12 +269,6 @@ class LanceTableMetadataMixin:
         if table is None:
             # First write defines the struct from the batch itself.
             return False
-        existing = metadata_field_names(table)
-        missing = {
-            name: field_type for name, field_type in new_fields.items() if name not in existing
-        }
-        if not missing:
-            return False
         schema: pa.Schema = table.schema
         if _METADATA_COLUMN not in schema.names or not pa.types.is_struct(
             schema.field(_METADATA_COLUMN).type
@@ -282,14 +278,34 @@ class LanceTableMetadataMixin:
                 "metadata fields cannot be grown. Rebuild the collection with a "
                 "store write to attach one."
             )
+        existing_types = {field.name: field.type for field in schema.field(_METADATA_COLUMN).type}
+        # A field needs the rewrite when absent, or when it was locked
+        # null-only and this batch carries a concrete type for it.
+        missing = {
+            name: field_type
+            for name, field_type in new_fields.items()
+            if name not in existing_types
+            or (pa.types.is_null(existing_types[name]) and not pa.types.is_null(field_type))
+        }
+        if not missing:
+            return False
         # Fresh handle: handles pin a version, and the read must see
         # the latest schema metadata so the rewrite carries it over.
         table = self._get_connection().open_table(collection_name)
         arrow = table.to_arrow()
         old_struct: pa.StructType = arrow.schema.field(_METADATA_COLUMN).type
-        expanded = pa.struct(
-            list(old_struct) + [pa.field(name, missing[name]) for name in sorted(missing)]
-        )
+        # An upgraded null-only field is replaced in place; genuinely
+        # new fields are appended (a plain append of an upgrade would
+        # duplicate the field name and fail struct construction).
+        fields = [
+            pa.field(field.name, missing[field.name]) if field.name in missing else field
+            for field in old_struct
+        ]
+        existing_names = {field.name for field in old_struct}
+        fields += [
+            pa.field(name, missing[name]) for name in sorted(missing) if name not in existing_names
+        ]
+        expanded = pa.struct(fields)
         new_schema = pa.schema(
             [
                 (pa.field(_METADATA_COLUMN, expanded) if field.name == _METADATA_COLUMN else field)

@@ -132,15 +132,18 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def _open_table(self, name: str) -> Any:
         """Return the raw LanceDB table, or ``None`` if absent.
 
-        Opens directly: lancedb raises ``ValueError`` for a missing
-        table (verified against 0.37.1), so no name listing is needed
-        on this per-page hot path.
+        Opens directly: lancedb (>= 0.37) maps a missing table to a
+        ``ValueError`` carrying the standardised "was not found" phrase,
+        so no name listing is needed on this per-page hot path.  Any
+        other ``ValueError`` (corrupt or incomplete ``.lance`` data)
+        re-raises instead of silently reading as absent.
         """
         try:
             return self._get_connection().open_table(name)
-        except ValueError:
-            # Absent, or dropped between operations.
-            return None
+        except ValueError as exc:
+            if "was not found" in str(exc):
+                return None
+            raise
 
     def _default_page_size(self) -> int:
         """Return the composition root's default scan page size."""
@@ -326,6 +329,15 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         collection reads as empty, matching the ABC), and the identity
         guard runs only when the table exists — the reverse of
         ``write_nodes``, which guards identity before writing.
+
+        Args:
+            collection_name: Collection (table) to query.
+            query_embedding: The query vector.
+            n_results: Maximum rows to return.
+            where: Optional ChromaDB-style metadata filter.
+
+        Returns:
+            Result rows with ``id``/``distance``/``document``/``metadata``.
         """
         table = self._open_table(collection_name)
         if table is None:
@@ -380,11 +392,20 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def delete_where(self, collection_name: str, where: dict) -> None:
         """Delete rows matching the translated filter, then bump generation.
 
+        An absent collection is a no-op — the ChromaDB store returns the
+        same way before its filter reaches the engine — so filter
+        validation applies only when the collection exists.
+
+        Args:
+            collection_name: Collection (table) to delete from.
+            where: ChromaDB-style filter dict.
+
         Raises:
-            ValueError: When *where* translates to no filter — an empty
-                clause would otherwise delete every row.  ChromaDB
-                rejects the same call ("Expected where to have exactly
-                one operator"), so parity demands rejection here.
+            ValueError: When *where* translates to no filter and the
+                collection exists — an empty clause would otherwise
+                delete every row.  ChromaDB rejects the same call
+                ("Expected where to have exactly one operator"), so
+                parity demands rejection here.
         """
         table = self._open_table(collection_name)
         if table is None:

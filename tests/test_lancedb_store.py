@@ -319,6 +319,22 @@ class TestLifecycleEdges:
         finally:
             monkeypatch.setattr(connection, "open_table", original_open)
 
+    def test_open_table_reraises_unrelated_value_error(self, tmp_path: Path, monkeypatch) -> None:
+        """A ValueError without the missing-table phrase must surface.
+
+        Catching every ValueError would hide corrupt or incomplete
+        ``.lance`` data as an absent table.
+        """
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        connection = store._get_connection()
+
+        def _raise(_name):
+            raise ValueError("corrupt manifest")
+
+        monkeypatch.setattr(connection, "open_table", _raise)
+        with pytest.raises(ValueError, match="corrupt manifest"):
+            store._open_table("anything")
+
     def test_delete_where_empty_filter_raises(self, tmp_path: Path) -> None:
         """An empty where must be rejected, never treated as delete-all."""
         from llama_index.core.schema import TextNode
@@ -354,6 +370,33 @@ class TestUpsertAndMetadataEdges:
             "empty", ids=["a"], documents=["d"], metadatas=[{"k": "v"}], embeddings=[embedding]
         )
         assert store.count("empty") == 1
+
+    def test_null_only_metadata_field_upgrades_on_later_upsert(self, tmp_path: Path) -> None:
+        """A null-only first batch must not lock a ``pa.null()`` field.
+
+        Raw pyarrow inference would type ``category`` as null when the
+        first batch carries only ``None``; the shared inference rule
+        (all-null defaults to string) keeps the field writable.
+        """
+        from llama_index.core import Settings
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        embedding = list(Settings.embed_model.get_query_embedding("x"))
+        store.upsert_precomputed(
+            "nulls",
+            ids=["1"],
+            documents=["one"],
+            metadatas=[{"category": None}],
+            embeddings=[embedding],
+        )
+        store.upsert_precomputed(
+            "nulls",
+            ids=["2"],
+            documents=["two"],
+            metadatas=[{"category": "AI"}],
+            embeddings=[embedding],
+        )
+        assert store.count_where("nulls", {"category": "AI"}) == 1
 
     def test_upsert_into_written_collection(self, tmp_path: Path) -> None:
         """Upserting after a node write reuses the live table schema."""
@@ -442,6 +485,30 @@ class TestSchemaEvolution:
         store._get_connection().create_table("handmade", data=[{"id": "1", "text": "x"}])
         with pytest.raises(ValueError, match="no metadata struct column"):
             store.evolve_metadata_fields("handmade", {"k": pa.string()})
+
+    def test_evolve_upgrades_null_typed_field_in_place(self, tmp_path: Path) -> None:
+        """A pre-existing null-only metadata field upgrades to the batch's type.
+
+        Without the in-place replacement, appending the upgraded field
+        would duplicate its name in the struct; without the upgrade at
+        all, a later non-null write fails the cast.
+        """
+        import pyarrow as pa
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store._get_connection().create_table(
+            "nullfield",
+            schema=pa.schema(
+                [
+                    pa.field("id", pa.string()),
+                    pa.field("text", pa.string()),
+                    pa.field("metadata", pa.struct([pa.field("category", pa.null())])),
+                ]
+            ),
+        )
+        assert store.evolve_metadata_fields("nullfield", {"category": pa.string()})
+        struct = store._open_table("nullfield").schema.field("metadata").type
+        assert struct.field("category").type == pa.string()
 
     def test_upsert_precomputed_introduces_new_field(self, tmp_path: Path) -> None:
         """A precomputed upsert with a new key stores it (no silent drop)."""

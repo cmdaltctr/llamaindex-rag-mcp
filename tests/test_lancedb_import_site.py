@@ -85,7 +85,10 @@ def test_registry_and_filter_imports_stay_torch_free() -> None:
         capture_output=True,
         text=True,
     )
+    # A non-zero exit covers both an import failure and the torch
+    # assertion, so the message stays neutral and carries stderr.
     assert proc.returncode == 0, (
-        "Importing the vector-store registry or the LanceDB filter translator "
-        f"pulled torch into the process; the base path is ONNX-only. stderr: {proc.stderr}"
+        "Isolated import or torch-boundary check failed in a fresh interpreter "
+        "(the registry/lance_filter imports failed, or torch leaked onto the "
+        f"base path); the base path is ONNX-only. stderr: {proc.stderr}"
     )
