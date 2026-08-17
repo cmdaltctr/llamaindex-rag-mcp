@@ -2,7 +2,7 @@
 
 ## 1. Dependency and configuration
 
-- [x] 1.1 Add `llama-index-vector-stores-lancedb` via `uv add`; confirm the resolved tree pulls `lancedb` and `pyarrow` only and no `torch`
+- [x] 1.1 Add `llama-index-vector-stores-lancedb` via `uv add`; confirm the resolved tree pulls `lancedb`, `pylance` (`>=10`), and `pyarrow` only, and no `torch`
 - [x] 1.2 Add `LANCEDB_URI` (default `./lancedb`, the parent directory for LanceDB tables) to `config/__init__.py` and mirror it in `core/settings.py`; accept `VECTOR_STORE=lancedb`; document both in `.env.example`
 
 ## 2. Vector-store registry (DD3)
@@ -18,7 +18,7 @@
 
 ## 4. LanceDB paged reads (DD4)
 
-- [x] 4.1 Add `core/vectordb/lance_paged.py` mixin: `iter_metadatas`, `iter_documents` (bounded pages via the scanner `limit`/`offset`), `fetch_all` (full scan via `to_pandas`/scanner), returning the same store-neutral shapes the ABC docstrings specify
+- [x] 4.1 Add `core/vectordb/lance_paged.py` mixin: `iter_metadatas`, `iter_documents` (bounded, snapshot-consistent batches through one dataset scanner), `fetch_all` (full scan via `to_arrow`), returning the same store-neutral shapes the ABC docstrings specify
 
 ## 5. LanceDB store (DD1, DD4, DD5)
 

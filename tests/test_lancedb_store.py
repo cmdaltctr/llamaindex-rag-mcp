@@ -273,7 +273,9 @@ class TestBulkAndPagedReads:
         )
         rows = list(store.iter_documents("paged", page_size=2))
         assert len(rows) == 5
-        assert [r[2]["i"] for r in rows] == sorted(r[2]["i"] for r in rows)
+        # Exact set: a page boundary that duplicated or dropped a row
+        # must fail here, not hide behind a self-sorted comparison.
+        assert {r[2]["i"] for r in rows} == set(range(5))
 
     def test_default_page_size_used_when_omitted(self, tmp_path: Path) -> None:
         """page_size=None reads the composition-root default scan size."""
@@ -317,9 +319,41 @@ class TestLifecycleEdges:
         finally:
             monkeypatch.setattr(connection, "open_table", original_open)
 
+    def test_delete_where_empty_filter_raises(self, tmp_path: Path) -> None:
+        """An empty where must be rejected, never treated as delete-all."""
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes([TextNode(text="safe", metadata={"k": "v"})], "delempty")
+        with pytest.raises(ValueError, match="non-empty where filter"):
+            store.delete_where("delempty", {})
+        assert store.count("delempty") == 1
+
 
 class TestUpsertAndMetadataEdges:
     """Precomputed upserts into adapter tables and metadata decoding."""
+
+    def test_upsert_empty_batch_is_noop(self, tmp_path: Path) -> None:
+        """An empty batch must not create a zero-dimension-locked table.
+
+        Creating the table from an empty batch would lock the vector
+        column at dimension 0; every later write would then fail on the
+        cast, and only a drop would recover.
+        """
+        from llama_index.core import Settings
+
+        uri = str(tmp_path / "lancedb")
+        store = LanceVectorStore(uri=uri)
+        store.upsert_precomputed("empty", ids=[], documents=[], metadatas=[], embeddings=[])
+        store.upsert_precomputed("empty", ids=["a"], documents=["d"], metadatas=[{}], embeddings=[])
+        assert not store.collection_exists("empty")
+
+        # A later real write still creates the table with a usable dim.
+        embedding = list(Settings.embed_model.get_query_embedding("x"))
+        store.upsert_precomputed(
+            "empty", ids=["a"], documents=["d"], metadatas=[{"k": "v"}], embeddings=[embedding]
+        )
+        assert store.count("empty") == 1
 
     def test_upsert_into_written_collection(self, tmp_path: Path) -> None:
         """Upserting after a node write reuses the live table schema."""
@@ -394,6 +428,20 @@ class TestSchemaEvolution:
         assert store.count_where("evo", {"category": "AI"}) == 1
         metadatas = list(store.iter_metadatas("evo"))
         assert next(m for m in metadatas if m and m.get("k") == "w")["category"] == "AI"
+
+    def test_evolve_rejects_table_without_metadata_struct(self, tmp_path: Path) -> None:
+        """A hand-made table without the struct fails clearly, not with KeyError.
+
+        ``metadata_field_names`` documents that such tables can exist;
+        evolution must reject them with the remedy named rather than
+        crash on ``schema.field("metadata")``.
+        """
+        import pyarrow as pa
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store._get_connection().create_table("handmade", data=[{"id": "1", "text": "x"}])
+        with pytest.raises(ValueError, match="no metadata struct column"):
+            store.evolve_metadata_fields("handmade", {"k": pa.string()})
 
     def test_upsert_precomputed_introduces_new_field(self, tmp_path: Path) -> None:
         """A precomputed upsert with a new key stores it (no silent drop)."""

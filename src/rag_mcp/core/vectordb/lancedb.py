@@ -52,6 +52,7 @@ from .lance_paged import (
     LancePagedReadMixin,
     strip_internal_metadata,
 )
+from .lance_rows import rows_to_arrow, upsert_schema
 
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
@@ -129,13 +130,16 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         return names
 
     def _open_table(self, name: str) -> Any:
-        """Return the raw LanceDB table, or ``None`` if absent."""
-        if name not in self._list_table_names():
-            return None
+        """Return the raw LanceDB table, or ``None`` if absent.
+
+        Opens directly: lancedb raises ``ValueError`` for a missing
+        table (verified against 0.37.1), so no name listing is needed
+        on this per-page hot path.
+        """
         try:
             return self._get_connection().open_table(name)
         except ValueError:
-            # Dropped between the listing and the open.
+            # Absent, or dropped between operations.
             return None
 
     def _default_page_size(self) -> int:
@@ -263,13 +267,17 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         created with a schema derived from the first batch — after
         which the vector dimension is locked.  A batch introducing new
         metadata keys grows the struct first so no key is silently
-        dropped.
+        dropped.  An empty batch is a no-op: creating a table from it
+        would lock a zero-dimension vector column that no later write
+        could satisfy.
         """
         self._check_or_stamp_identity(collection_name)
+        if not ids or not embeddings:
+            return
         table = self._open_table(collection_name)
         if table is None:
-            dim = len(embeddings[0]) if embeddings else 0
-            schema = _upsert_schema(dim, metadatas)
+            dim = len(embeddings[0])
+            schema = upsert_schema(dim, metadatas)
             table = self._get_connection().create_table(
                 collection_name, schema=schema, mode="create"
             )
@@ -292,7 +300,7 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
                 f"Metadata fields {sorted(missing)} are absent from the table "
                 f"schema of {collection_name!r} and could not be added."
             )
-        source = _rows_to_arrow(table.schema, ids, documents, metadatas, embeddings)
+        source = rows_to_arrow(table.schema, ids, documents, metadatas, embeddings)
         (
             table.merge_insert("id")
             .when_matched_update_all()
@@ -312,7 +320,13 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         n_results: int,
         where: dict | None = None,
     ) -> list[dict]:
-        """Dense vector query returning store-neutral result rows."""
+        """Dense vector query returning store-neutral result rows.
+
+        Guard order: the absent-table check runs first (an absent
+        collection reads as empty, matching the ABC), and the identity
+        guard runs only when the table exists — the reverse of
+        ``write_nodes``, which guards identity before writing.
+        """
         table = self._open_table(collection_name)
         if table is None:
             return []
@@ -364,17 +378,27 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     # ── Delete ──────────────────────────────────────────────────────
 
     def delete_where(self, collection_name: str, where: dict) -> None:
-        """Delete rows matching the translated filter, then bump generation."""
+        """Delete rows matching the translated filter, then bump generation.
+
+        Raises:
+            ValueError: When *where* translates to no filter — an empty
+                clause would otherwise delete every row.  ChromaDB
+                rejects the same call ("Expected where to have exactly
+                one operator"), so parity demands rejection here.
+        """
         table = self._open_table(collection_name)
         if table is None:
             return
-        table.delete(
-            translate_where(
-                where,
-                metadata_column="metadata",
-                known_fields=metadata_field_names(table),
-            )
+        filter_sql = translate_where(
+            where,
+            metadata_column="metadata",
+            known_fields=metadata_field_names(table),
         )
+        if filter_sql is None:
+            raise ValueError(
+                f"delete_where on {collection_name!r} requires a non-empty where filter."
+            )
+        table.delete(filter_sql)
         self.bump_generation(collection_name)
 
     # ── Collection metadata (Phase 4 profile tags) ─────────────────
@@ -419,65 +443,6 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def get_generation(self, collection_name: str) -> int:
         """Return the current generation counter (0 if never written)."""
         return self._generations.get(collection_name, 0)
-
-
-# ── Row/schema helpers ────────────────────────────────────────────────
-
-
-def _upsert_schema(dim: int, metadatas: list[dict]) -> pa.Schema:
-    """Build the table schema for a first precomputed upsert.
-
-    Mirrors the adapter's column layout (``id``, ``doc_id``, ``vector``,
-    ``text``, ``metadata`` struct) with ``doc_id`` as a nullable string
-    so later adapter writes cast cleanly into it.
-    """
-    metadata_fields = dict.fromkeys(key for metadata in metadatas for key in metadata)
-    struct_fields = []
-    for key in metadata_fields:
-        inferred = pa.array([metadata.get(key) for metadata in metadatas])
-        struct_fields.append(pa.field(key, inferred.type))
-    return pa.schema(
-        [
-            pa.field("id", pa.string()),
-            pa.field("doc_id", pa.string()),
-            pa.field("vector", pa.list_(pa.float32(), dim)),
-            pa.field("text", pa.string()),
-            pa.field("metadata", pa.struct(struct_fields)),
-        ]
-    )
-
-
-def _rows_to_arrow(
-    schema: pa.Schema,
-    ids: list[str],
-    documents: list[str],
-    metadatas: list[dict],
-    embeddings: list[list[float]],
-) -> pa.Table:
-    """Build a pyarrow table aligned to *schema* from upsert rows.
-
-    Columns absent from the upsert inputs (adapter internals such as
-    ``doc_id``) are filled with nulls; null-typed columns are handled
-    explicitly because ``pa.array`` cannot infer them from values.
-    """
-    row_count = len(ids)
-    columns: dict[str, pa.Array] = {}
-    for field in schema:
-        if field.name == "id":
-            values: list[Any] = list(ids)
-        elif field.name == "text":
-            values = list(documents)
-        elif field.name == "metadata":
-            values = [dict(metadata) for metadata in metadatas]
-        elif field.name == "vector":
-            values = [list(embedding) for embedding in embeddings]
-        else:
-            values = [None] * row_count
-        if pa.types.is_null(field.type):
-            columns[field.name] = pa.nulls(row_count, type=pa.null())
-        else:
-            columns[field.name] = pa.array(values, type=field.type)
-    return pa.Table.from_pydict(columns, schema=schema)
 
 
 # ── Factory ───────────────────────────────────────────────────────────

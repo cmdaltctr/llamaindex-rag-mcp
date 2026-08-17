@@ -30,7 +30,8 @@ See `proposal.md` for motivation. The relevant shape of the current code:
 
 Prior art studied: LlamaIndex's `_to_lance_filter` (a filter translator
 that escapes list values but interpolates scalar strings raw, an injection
-gap this design avoids by using the expression builder), and LlamaIndex's
+gap this design avoids by routing every value through the engine's own
+literal builder), and LlamaIndex's
 `SimpleVectorStore.from_namespaced_persist_dir` (filesystem-as-registry,
 not relevant to LanceDB tables which are already isolated).
 
@@ -57,57 +58,55 @@ not relevant to LanceDB tables which are already isolated).
 
 ## Decisions
 
-### DD1: Collection metadata via table `update_config`
+### DD1: Collection metadata via pylance `update_schema_metadata`
 
-**Decision.** Store the embedding-identity triple (`provider`, `model`,
-`index_identity`) and profile tags in the LanceDB table's durable
-key-value config via `update_config` / `delete_config_keys`, read back
-through the table's config. Apply the read-merge-write pattern already used
-by `stamp_collection_identity` in `identity.py`.
+**Decision (landed).** Store the embedding-identity triple (`provider`,
+`model`, `index_identity`) and profile tags in the table's durable Arrow
+schema metadata, written read-merge-write through pylance's
+`LanceDataset.update_schema_metadata(values, replace=False)` and read
+back through `table.schema.metadata` — both behind the `lance_meta.py`
+seam, reusing the pure helpers of ChromaDB's `identity.py` so the
+legacy-stamp-then-reject rule stays identical across backends.
+Verified against lancedb 0.37.1 / pylance 10.0.0: merge semantics,
+survives close/reopen and adapter writes.
 
-**Evidence.** LanceDB exposes two durable, mutable, post-creation
-key-value stores on a table: `replace_schema_metadata` (Arrow schema
-metadata) and `update_config` (table config). Both persist to the dataset.
-The `Tags` system is git-style version references, not an application
-key-value bag, so it is rejected for this use.
-
-**Why `update_config` over schema metadata.** Schema metadata is coupled to
-the Arrow schema and rides along with schema evolution; `update_config` is a
-purpose-built config bag decoupled from schema changes. Either is durable
-and correct. The build session may substitute `replace_schema_metadata`
-(LlamaIndex's own embedding registry uses it) with no contract change; this
-is a soft preference, not a fork.
+**Rejected alternatives (proposal-time).** The proposal named
+`update_config` / `delete_config_keys` (a purpose-built table-config
+bag) and a Table-level `replace_schema_metadata`, preferring the config
+bag as "decoupled from schema changes". Neither API exists in the
+Python SDK (verified against 0.37.1), so schema metadata is the one
+durable post-creation key-value bag. The `Tags` system (git-style
+version references, not an application key-value bag) stays rejected
+for this use.
 
 **Consequence.** `IdentityGuardMixin` is written against a small
-store-supplied accessor pair (read config, merge-write config) rather than
-against a ChromaDB collection handle. The mismatch-rejection and
-legacy-stamping logic port unchanged. LanceDB fixes the vector column
-dimension when the table schema is created on first write, so dimension
-locking comes from the schema; embedding-identity enforcement comes from
-this config metadata.
+store-supplied accessor pair (read metadata, merge-write metadata)
+rather than against a ChromaDB collection handle. The
+mismatch-rejection and legacy-stamping logic port unchanged. LanceDB
+fixes the vector column dimension when the table schema is created on
+first write, so dimension locking comes from the schema;
+embedding-identity enforcement comes from this schema metadata.
 
-**Build-session outcome (verified against lancedb 0.37.1).** Neither
-`update_config` nor a Table-level `replace_schema_metadata` exists in
-the Python SDK — schema metadata is creation-time only through the
-public API. The durable post-creation bag is pylance's
-`LanceDataset.update_schema_metadata(values, replace=False)` (merge
-semantics, survives close/reopen and adapter writes), reached via
-`table.to_lance()` behind the `lance_meta.py` seam. This is the DD1
-fallback branch in effect; the spec text was corrected to match.
+### DD2: Filter translation to SQL through the `lancedb.expr` literal builder
 
-### DD2: Filter translation via the `lancedb.expr` builder
+**Decision (landed).** `lance_filter.py` translates the ChromaDB
+`where` dict into a DataFusion SQL filter string in which every VALUE
+is serialised by the engine's own literal builder — `lit(value).to_sql()`
+— field names are validated against a conservative identifier grammar
+and backtick-quoted, and composition uses a fixed operator vocabulary
+(`$eq $ne $gt $gte $lt $lte $in $nin $and $or`). Neither half of any
+comparison is built by interpolating client input; an unknown operator
+raises a clear `ValueError` naming it.
 
-**Decision.** `lance_filter.py` translates the ChromaDB `where` dict into a
-`lancedb.expr` expression tree, not a SQL string:
-
-- `{"field": value}` and `{"field": {"$eq": value}}` → `col("field") == lit(value)`
-- `$ne $gt $gte $lt $lte` → the matching comparison
-- `$in` / `$nin` → set membership / its negation
-- `$and` / `$or` → compose subexpressions with `&` / `|`
-- an unknown operator raises a clear `ValueError` naming the operator
-
-The expression builder handles value quoting and typing, so string values
-carry no injection risk and no manual escaping is written.
+**Rejected alternative: a full `lancedb.expr` expression tree
+(proposal-time).** The proposal sketched composing `col("field") ==
+lit(value)` trees. `lancedb.expr` (`col`, `lit`) exists but has no
+struct field access (verified against 0.37.1), and `count_rows(filter=)`
+accepts SQL strings only — the adapter stores user metadata inside an
+Arrow `metadata` struct, so tree composition cannot express the
+`metadata.<field>` paths filters need. The literal-builder-to-SQL shape
+is behaviourally identical for every scenario (the injection decoy
+test proves it); recorded in ADR-046.
 
 **Evidence.** LanceDB's `where` runs on DataFusion SQL and supports
 `=, !=, >, >=, <, <=, IN, AND, OR, NOT, LIKE, IS NULL`, so every ChromaDB
@@ -115,28 +114,18 @@ operator maps one-to-one. LanceDB has no parameterised `where` string
 (open issue #2652), and `metadata_filter` arrives from MCP clients, so a
 hand-built SQL string would be an injection surface. LlamaIndex's own
 `_to_lance_filter` demonstrates the trap: it escapes list values but
-interpolates scalar strings raw. The `lancedb.expr` builder (`col`, `lit`,
-`func`) is the vendor-recommended alternative to raw SQL and removes the
+interpolates scalar strings raw. Serialising values through the
+engine's literal builder is the vendor-recommended way to remove that
 surface by construction.
 
-**Scope note (remote).** The expression builder is documented as a
+**Scope note (remote).** The literal builder is documented as a
 local/embedded feature; remote LanceDB Cloud tables restrict it. v1 is
-embedded only. A future remote path adds an escaped-SQL-string fallback at
-this same seam, selected by connection type. Recorded, not built.
+embedded only. A future remote path adds an escaped-SQL-string fallback
+at this same seam, selected by connection type. Recorded, not built.
 
 **Pipeline reality.** The pipeline's own `where` clauses are simple
 equality (`{"file_path": ...}`), so the common path is trivial; the full
 operator set exists to honour the MCP tool's advertised contract.
-
-**Build-session outcome (verified against lancedb 0.37.1).**
-`lancedb.expr` (`col`, `lit`) exists but has no struct field access, and
-`count_rows(filter=)` accepts SQL strings only. The translator therefore
-serialises every VALUE through `lit(value).to_sql()` (the engine's own
-unparser — verified to escape single quotes), validates field names
-against a conservative identifier grammar, and composes with a fixed
-operator vocabulary. Behaviourally identical to the expression-tree
-construction for every scenario (the injection decoy test proves it);
-recorded in ADR-046.
 
 ### DD3: Registry-based store selection
 
@@ -193,21 +182,23 @@ deferred (see Deferred Work).
 ## Risks / Trade-offs
 
 - [Two backends drift in `where` semantics] → The translator is a single
-  module with its own test file mapping each ChromaDB operator to an
-  expression-builder assertion, plus a rejection test for unknown
+  module with its own test file mapping each ChromaDB operator to a
+  literal-builder assertion, plus a rejection test for unknown
   operators. Equality-only pipeline usage keeps the hot path small.
 - [LanceDB lazy table creation differs subtly from ChromaDB] → Contract
   tests assert create-then-write, write-without-explicit-create, and
   dimension-lock-on-first-write parity against the ABC, run for both
   backends.
-- [`update_config` durability or API shape differs from expectation] →
-  A focused integration test writes identity + profile config, reopens the
-  connection, and asserts the values survive. If `update_config` proves
-  unsuitable, `replace_schema_metadata` is the drop-in alternative (DD1).
-- [New dependency pulls PyTorch onto the base path] → Verified at
-  proposal time: `lancedb==0.37.x` resolves to `lancedb` + `pyarrow` only.
-  A dependency-floor / import test asserts no `torch` import on the base
-  retrieval path, consistent with the existing ONNX-only boundary.
+- [Schema-metadata durability differs from expectation] → A focused
+  integration test writes identity + profile metadata, reopens the
+  connection, and asserts the values survive — against the landed
+  pylance `update_schema_metadata` seam (DD1), not an assumed API.
+- [New dependency pulls PyTorch onto the base path] → The direct
+  additions resolve to `lancedb` + `pylance` + `pyarrow` only (pylance
+  pinned `>=10`; verified in the landed lock — the proposal-time claim
+  of "`lancedb` + `pyarrow` only" missed pylance). A dependency-floor /
+  import test asserts no `torch` import on the base retrieval path,
+  consistent with the existing ONNX-only boundary.
 - [Registry refactor touches the shared `compose.py`] → Scoped to the
   store-selection function; the change adds the registry and rewrites one
   branch, with no change to `ensure_runtime_setup` ordering.
@@ -228,6 +219,7 @@ deferred (see Deferred Work).
 
 ## Open Questions
 
-None blocking. DD1 (`update_config` vs schema metadata) and the eventual
-value of native hybrid (DD5 / Deferred 1) are the only soft points, both
-recorded above with a default and a fallback.
+None blocking. The proposal-time DD1 soft point (`update_config` vs
+schema metadata) resolved during the build (schema metadata via pylance
+is the landed seam), and the eventual value of native hybrid
+(DD5 / Deferred 1) is recorded with a default and a deferred experiment.

@@ -1,9 +1,9 @@
 """Paged and bulk collection reads for the LanceDB vector store.
 
 Mirrors :mod:`.paged` (the ChromaDB equivalent) over LanceDB's scanner:
-bounded pages for the iterators, one full scan for :meth:`fetch_all`.
-The BM25 sparse retriever builds its index through ``iter_documents``
-and never touches this module directly.
+bounded, snapshot-consistent batches for the iterators, one full scan
+for :meth:`fetch_all`. The BM25 sparse retriever builds its index
+through ``iter_documents`` and never touches this module directly.
 
 The concrete store supplies ``_open_table(name)`` returning the raw
 LanceDB table handle or ``None`` when absent, and resolves the default
@@ -76,83 +76,65 @@ class LancePagedReadMixin:
             raise ValueError("CHROMA_SCAN_PAGE_SIZE must be a positive integer")
         return page_size
 
-    def _scan_page(
+    def _iter_rows(
         self,
         collection_name: str,
         columns: list[str],
         page_size: int,
-        offset: int,
-    ) -> list[dict]:
-        """Read one bounded page of the given columns.
+    ) -> Iterator[dict]:
+        """Yield the table's rows of the given columns in bounded batches.
+
+        One dataset scanner backs every batch: table handles pin a
+        version, so paging through a single scanner cannot duplicate
+        or skip rows when a write lands mid-iteration (offset paging
+        through a fresh handle per page could, since each handle sees
+        the latest version).
 
         Args:
             collection_name: Table to scan.
             columns: Columns to project.
-            page_size: Row bound for this page.
-            offset: Row offset into the table.
+            page_size: Batch row bound (the memory bound).
 
-        Returns:
-            The page's rows as dicts; empty when the page is exhausted.
+        Yields:
+            The table's rows as dicts; yields nothing when the table
+            is absent or empty.
         """
         table = self._open_table(collection_name)
         if table is None:
-            return []
-        return table.search().select(columns).limit(page_size).offset(offset).to_list()
+            return
+        scanner = table.to_lance().scanner(columns=columns, batch_size=page_size)
+        for batch in scanner.to_batches():
+            yield from batch.to_pylist()
 
     def iter_metadatas(
         self,
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[dict | None]:
-        """Yield per-chunk user metadata using bounded scanner pages."""
+        """Yield per-chunk user metadata in bounded, consistent batches."""
         effective_page_size = self._resolve_page_size(page_size)
-        offset = 0
-        while True:
-            rows = self._scan_page(
-                collection_name,
-                ["metadata"],
-                effective_page_size,
-                offset,
-            )
-            if not rows:
-                break
-            for row in rows:
-                yield strip_internal_metadata(row.get("metadata"))
-            if len(rows) < effective_page_size:
-                break
-            offset += len(rows)
+        for row in self._iter_rows(collection_name, ["metadata"], effective_page_size):
+            yield strip_internal_metadata(row.get("metadata"))
 
     def iter_documents(
         self,
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[tuple[str, str, dict]]:
-        """Yield ``(id, text, metadata)`` tuples using bounded pages.
+        """Yield ``(id, text, metadata)`` tuples in bounded, consistent batches.
 
         The BM25 sparse retriever builds its in-memory index from these
         tuples; the shape matches the ChromaDB implementation exactly.
         """
         effective_page_size = self._resolve_page_size(page_size)
-        offset = 0
-        while True:
-            rows = self._scan_page(
-                collection_name,
-                ["id", "text", "metadata"],
-                effective_page_size,
-                offset,
+        columns = ["id", "text", "metadata"]
+        for row in self._iter_rows(collection_name, columns, effective_page_size):
+            text = row.get("text")
+            yield (
+                str(row.get("id")),
+                str(text) if text is not None else "",
+                strip_internal_metadata(row.get("metadata")),
             )
-            if not rows:
-                break
-            for row in rows:
-                text = row.get("text")
-                yield (
-                    str(row.get("id")),
-                    str(text) if text is not None else "",
-                    strip_internal_metadata(row.get("metadata")),
-                )
-            if len(rows) < effective_page_size:
-                break
-            offset += len(rows)
 
     def fetch_all(
         self,

@@ -259,9 +259,29 @@ class TestMissingFieldSemantics:
         )
 
     def test_unknown_field_without_schema_still_reaches_the_planner(self, table) -> None:
-        """Without ``known_fields`` an absent field is the engine's error."""
-        with pytest.raises(ValueError, match="field named nope"):
+        """Without ``known_fields`` an absent field is the engine's error.
+
+        The match is loosened to the field name only: the full planner
+        message ("field named nope") is DataFusion's wording and can
+        change across upgrades without any behaviour change here.
+        """
+        with pytest.raises(ValueError, match="nope"):
             table.count_rows(filter=translate_where({"nope": "x"}))
+
+    @pytest.mark.parametrize("boolean_op", ["$and", "$or"])
+    def test_empty_boolean_sub_clause_rejected(self, boolean_op: str) -> None:
+        """An empty sub-clause dict must fail before the recursive join.
+
+        Unrejected, ``translate_where({})`` inside ``$and``/``$or``
+        returns ``None`` and the join raises an unrelated
+        ``TypeError`` — or worse, folds to "no filter".
+        """
+        with pytest.raises(ValueError, match="non-empty where dict"):
+            translate_where({boolean_op: [{"tag": "x"}, {}]})
+
+    def test_boolean_op_with_only_empty_clauses_rejected(self) -> None:
+        with pytest.raises(ValueError, match="non-empty where dict"):
+            translate_where({"$or": [{}]})
 
 
 # ── Identifier quoting ────────────────────────────────────────────────

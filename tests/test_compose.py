@@ -397,12 +397,21 @@ def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
     from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
     uri = str(tmp_path / "lancedb")
-    store = build_vector_store(_settings(vector_store="lancedb", lancedb_uri=uri))
+    settings = _settings(
+        vector_store="lancedb",
+        lancedb_uri=uri,
+        embed_provider="ollama",
+        embed_model="nomic-embed-text",
+    )
+    store = build_vector_store(settings)
 
     assert isinstance(store, LanceVectorStore)
     assert store._uri == uri
     assert store._identity is not None
-    assert store._identity.provider  # resolved concrete backend, not empty
+    # Exact values: a non-empty check would pass even if the factory
+    # ignored the provider selection or read the wrong model field.
+    assert store._identity.provider == "ollama"
+    assert store._identity.model == "nomic-embed-text"
 
 
 # ── settings_to_effective(None) ─────────────────────────────────────────────

@@ -256,9 +256,12 @@ class TestCount:
         assert store.count_where("missingkeys", {"tag": {"$nin": ["x"]}}) == 1
 
         # A field no row carries: equality matches nothing, inequality
-        # everything.
+        # everything. All four operator shapes are pinned so a
+        # regression in schema-absent $in/$nin handling cannot pass.
         assert store.count_where("missingkeys", {"nope": "x"}) == 0
         assert store.count_where("missingkeys", {"nope": {"$ne": "x"}}) == 2
+        assert store.count_where("missingkeys", {"nope": {"$in": ["x"]}}) == 0
+        assert store.count_where("missingkeys", {"nope": {"$nin": ["x"]}}) == 2
 
 
 # ── Delete ────────────────────────────────────────────────────────────
@@ -278,6 +281,23 @@ class TestDelete:
         assert store.count("deltest") == 2
         store.delete_where("deltest", {"file_path": "drop.txt"})
         assert store.count("deltest") == 1
+
+    def test_delete_where_empty_filter_rejected(self, store: VectorStore) -> None:
+        """An empty where must be rejected, never treated as delete-all.
+
+        ChromaDB raises ValueError ("Expected where to have exactly one
+        operator"); LanceDB must reject the same call rather than
+        translate ``{}`` to "no filter" and delete every row.
+        """
+        from llama_index.core.schema import TextNode
+
+        store.write_nodes(
+            [TextNode(text="safe", metadata={"file_path": "a.txt"})],
+            "delempty",
+        )
+        with pytest.raises(ValueError):
+            store.delete_where("delempty", {})
+        assert store.count("delempty") == 1
 
 
 # ── Collection metadata (Phase 4 prep) ────────────────────────────────

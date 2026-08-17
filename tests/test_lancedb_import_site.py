@@ -17,7 +17,9 @@ Guards two ``lancedb-vector-store`` spec scenarios:
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 _SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
@@ -60,15 +62,30 @@ def test_regex_ignores_llama_index_adapter_import() -> None:
 
 
 def test_registry_and_filter_imports_stay_torch_free() -> None:
-    """Importing the registry and filter translator must not import torch."""
-    import importlib
+    """Importing the registry and filter translator must not import torch.
 
-    sys.modules.pop("torch", None)
+    Runs in a fresh interpreter: an in-process variant could be fooled
+    by ``sys.modules`` caching when another test imported the modules
+    first — the import would be a cache hit and never re-executed, so
+    a ``torch`` import added at module top level would go unnoticed.
+    """
+    program = textwrap.dedent(
+        """
+        import importlib
+        import sys
 
-    importlib.import_module("rag_mcp.core.vectordb.registry")
-    importlib.import_module("rag_mcp.core.vectordb.lance_filter")
+        importlib.import_module("rag_mcp.core.vectordb.registry")
+        importlib.import_module("rag_mcp.core.vectordb.lance_filter")
 
-    assert "torch" not in sys.modules, (
+        assert "torch" not in sys.modules, "torch leaked onto the base import path"
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, (
         "Importing the vector-store registry or the LanceDB filter translator "
-        "pulled torch into the process; the base path is ONNX-only."
+        f"pulled torch into the process; the base path is ONNX-only. stderr: {proc.stderr}"
     )

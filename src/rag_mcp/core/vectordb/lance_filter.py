@@ -266,11 +266,14 @@ def _require_clause_list(key: str, value: object) -> Iterable:
         The list of sub-clause dicts.
 
     Raises:
-        ValueError: When the operand is not a non-empty list of dicts.
+        ValueError: When the operand is not a non-empty list of
+            non-empty where dicts.  An empty sub-clause would translate
+            to ``None`` inside the recursive join and surface as a
+            confusing ``TypeError`` — or worse, as "no filter".
     """
     if not isinstance(value, list) or not value:
         raise ValueError(f"{key} requires a non-empty list of where clauses.")
     for clause in value:
-        if not isinstance(clause, dict):
-            raise ValueError(f"Every {key} sub-clause must be a where dict.")
+        if not isinstance(clause, dict) or not clause:
+            raise ValueError(f"Every {key} sub-clause must be a non-empty where dict.")
     return value

@@ -55,6 +55,21 @@ logger = logging.getLogger(__name__)
 _METADATA_COLUMN = "metadata"
 
 
+def decode_schema_metadata_entries(raw: dict) -> dict[str, str]:
+    """Return schema-metadata entries as plain strings.
+
+    Arrow returns bytes keys and values; some bindings return ``str``.
+    Both readers below use this one tolerant rule so a ``str``-returning
+    binding cannot break a metadata write with ``AttributeError``.
+    """
+    entries: dict[str, str] = {}
+    for key, value in raw.items():
+        name = key.decode() if isinstance(key, bytes) else key
+        text = value.decode() if isinstance(value, bytes) else value
+        entries[name] = text
+    return entries
+
+
 def read_table_metadata(table: Any) -> dict[str, Any]:
     """Return a table's schema-metadata bag with value types restored.
 
@@ -62,11 +77,8 @@ def read_table_metadata(table: Any) -> dict[str, Any]:
     (ints, floats, bools) round-trip like ChromaDB metadata; a value
     that fails to decode falls back to the raw string.
     """
-    raw = table.schema.metadata or {}
     decoded: dict[str, Any] = {}
-    for key, value in raw.items():
-        name = key.decode() if isinstance(key, bytes) else key
-        text = value.decode() if isinstance(value, bytes) else value
+    for name, text in decode_schema_metadata_entries(table.schema.metadata or {}).items():
         try:
             decoded[name] = json.loads(text)
         except (ValueError, TypeError):
@@ -140,9 +152,7 @@ class LanceTableMetadataMixin:
         a new manifest version per no-op write.
         """
         table = self._get_connection().open_table(name)
-        current = {
-            key.decode(): value.decode() for key, value in (table.schema.metadata or {}).items()
-        }
+        current = decode_schema_metadata_entries(table.schema.metadata or {})
         if all(current.get(key) == value for key, value in updates.items()):
             return
         table.to_lance().update_schema_metadata(updates, replace=False)
@@ -167,11 +177,12 @@ class LanceTableMetadataMixin:
             return
         raise build_identity_mismatch_error(collection_name, stored, identity)
 
-    def _check_or_stamp_identity(self, collection_name: str) -> None:
-        """Write-path rule: reject mismatches; stamping happens post-write.
+    def _reject_conflicting_identity(self, collection_name: str) -> None:
+        """Shared guard body: reject a conflicting stored identity.
 
-        Legacy tables without a stored identity are stamped after the
-        write creates/extends the table (see ``_flush_after_write``).
+        Both write and query paths apply the same rule — no active
+        identity, absent table, and legacy unstamped table pass; a
+        stored identity that conflicts with the active one raises.
         """
         if self._identity is None:
             return
@@ -181,6 +192,14 @@ class LanceTableMetadataMixin:
         stored = self._stored_identity(table)
         if stored[0] is not None:
             self._reject_identity_mismatch(collection_name, stored)
+
+    def _check_or_stamp_identity(self, collection_name: str) -> None:
+        """Write-path rule: reject mismatches; stamping happens post-write.
+
+        Legacy tables without a stored identity are stamped after the
+        write creates/extends the table (see ``_flush_after_write``).
+        """
+        self._reject_conflicting_identity(collection_name)
 
     def _guard_query_identity(self, collection_name: str) -> None:
         """Query-path rule: reject mismatches before the query is issued.
@@ -188,14 +207,7 @@ class LanceTableMetadataMixin:
         Legacy tables without a stored identity query normally;
         stamping never happens on the read path.
         """
-        if self._identity is None:
-            return
-        table = self._open_table(collection_name)
-        if table is None:
-            return
-        stored = self._stored_identity(table)
-        if stored[0] is not None:
-            self._reject_identity_mismatch(collection_name, stored)
+        self._reject_conflicting_identity(collection_name)
 
     def _flush_after_write(self, collection_name: str) -> None:
         """Stamp identity and flush pending profile tags after a write.
@@ -243,6 +255,13 @@ class LanceTableMetadataMixin:
 
         Returns:
             ``True`` when the table was rewritten.
+
+        Raises:
+            ValueError: When the table exists but carries no ``metadata``
+                struct column.  Neither the store nor the adapter creates
+                such tables; a hand-made one cannot have its user-metadata
+                struct grown, so the only remedy is to rebuild the
+                collection through a store write.
         """
         table = self._open_table(collection_name)
         if table is None:
@@ -254,6 +273,15 @@ class LanceTableMetadataMixin:
         }
         if not missing:
             return False
+        schema: pa.Schema = table.schema
+        if _METADATA_COLUMN not in schema.names or not pa.types.is_struct(
+            schema.field(_METADATA_COLUMN).type
+        ):
+            raise ValueError(
+                f"Table {collection_name!r} has no metadata struct column, so its "
+                "metadata fields cannot be grown. Rebuild the collection with a "
+                "store write to attach one."
+            )
         # Fresh handle: handles pin a version, and the read must see
         # the latest schema metadata so the rewrite carries it over.
         table = self._get_connection().open_table(collection_name)

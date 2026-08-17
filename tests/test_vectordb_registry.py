@@ -3,9 +3,9 @@
 Mirrors ``test_registry_contract.py``: registered names resolve lazily
 to their factories, unknown names fail with a KeyError listing the
 registered names, and importing the registry imports no concrete store
-module.  Additionally guards the compose dispatch boundary: no
-``if/elif`` branch over store names and no module-top-level import of
-a concrete store module in ``compose.py``.
+module.  Additionally guards the compose dispatch boundary: no branch
+over store names (equality, membership, or ``match``) and no
+module-top-level import of a concrete store module in ``compose.py``.
 
 Factory-construction tests are deliberately limited to import-string
 resolution: building a real store needs full Settings resolution,
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import ast
 import importlib
-import re
 import subprocess
 import sys
 import textwrap
@@ -125,23 +124,33 @@ def test_registry_is_lazy() -> None:
 
 # ── compose.py dispatch boundary ──────────────────────────────────────
 
+_STORE_NAMES = frozenset({"chroma", "lancedb"})
 
-def test_compose_does_not_branch_over_store_names() -> None:
-    """``compose.py`` must not compare the store name against literals.
 
-    The dispatch must be a registry lookup; an ``if/elif`` chain over
-    store names is the pattern architecture invariant #10 forbids.
+def _store_name_dispatch_offenders(source: str) -> list[str]:
+    """Return store names branched on inside *source*, AST-based.
+
+    A comparison or ``match`` pattern is a dispatch site when a store
+    name literal participates anywhere in it — this catches ``==`` /
+    ``!=``, membership tests (``in {"chroma", "lancedb"}``), and
+    ``match`` arms, none of which the previous equality regex covered.
     """
-    source = _COMPOSE_PY.read_text(encoding="utf-8")
-    offenders = re.findall(r"==\s*[\"'](chroma|lancedb)[\"']", source)
-    assert not offenders, (
-        f"compose.py branches over vector-store names ({sorted(set(offenders))}); "
-        "resolve the store through core/vectordb/registry.py instead."
-    )
+    offenders: set[str] = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, (ast.Compare, ast.Match)):
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Constant) and sub.value in _STORE_NAMES:
+                    offenders.add(sub.value)
+    return sorted(offenders)
 
 
-def test_compose_has_no_module_level_concrete_store_import() -> None:
-    """``compose.py`` must not import a concrete store module at top level."""
+def _module_level_concrete_imports(source: str) -> set[str]:
+    """Return concrete store modules imported at module level in *source*.
+
+    ``from X import Y`` aliases are expanded to their full module path,
+    so ``from rag_mcp.core.vectordb import chroma`` is caught even
+    though the ``from`` module alone names the parent package.
+    """
 
     def _resolve(module: str, level: int) -> str:
         # compose.py is ``rag_mcp.compose``: level 1 reaches ``rag_mcp``.
@@ -151,16 +160,91 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
             return f"rag_mcp.{module}" if module else "rag_mcp"
         return module  # No level-2+ package contains compose.py.
 
-    tree = ast.parse(_COMPOSE_PY.read_text(encoding="utf-8"), filename=str(_COMPOSE_PY))
-    imports: set[str] = set()
+    tree = ast.parse(source)
+    offenders: set[str] = set()
     for node in tree.body:
         if isinstance(node, ast.Import):
-            imports.update(alias.name for alias in node.names)
+            for alias in node.names:
+                if alias.name in _CONCRETE_STORE_MODULES:
+                    offenders.add(alias.name)
         elif isinstance(node, ast.ImportFrom):
-            imports.add(_resolve(node.module or "", node.level))
+            base = _resolve(node.module or "", node.level)
+            if base in _CONCRETE_STORE_MODULES:
+                offenders.add(base)
+            for alias in node.names:
+                full = f"{base}.{alias.name}" if base else alias.name
+                if full in _CONCRETE_STORE_MODULES:
+                    offenders.add(full)
+    return offenders
 
-    offenders = imports & _CONCRETE_STORE_MODULES
+
+def test_compose_does_not_branch_over_store_names() -> None:
+    """``compose.py`` must not branch on store-name literals.
+
+    The dispatch must be a registry lookup; an ``if/elif`` chain, a
+    membership test, or a ``match`` over store names is the pattern
+    architecture invariant #10 forbids.
+    """
+    source = _COMPOSE_PY.read_text(encoding="utf-8")
+    offenders = _store_name_dispatch_offenders(source)
+    assert not offenders, (
+        f"compose.py branches over vector-store names ({offenders}); "
+        "resolve the store through core/vectordb/registry.py instead."
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ('if settings.vector_store == "chroma":\n    pass', ["chroma"]),
+        ('if name != "lancedb":\n    pass', ["lancedb"]),
+        ('if settings.vector_store in {"chroma", "lancedb"}:\n    pass', ["chroma", "lancedb"]),
+        ('match settings.vector_store:\n    case "lancedb":\n        pass', ["lancedb"]),
+        ("factory = registry.get(settings.vector_store)", []),
+        ('if settings.chroma_mode != "cloud":\n    pass', []),
+    ],
+    ids=["equality", "inequality", "membership", "match-arm", "registry-lookup", "other-literal"],
+)
+def test_dispatch_detector_catches_every_branch_form(source: str, expected: list[str]) -> None:
+    """Negative controls: the detector sees membership and match forms too."""
+    assert _store_name_dispatch_offenders(source) == expected
+
+
+def test_compose_has_no_module_level_concrete_store_import() -> None:
+    """``compose.py`` must not import a concrete store module at top level."""
+    source = _COMPOSE_PY.read_text(encoding="utf-8")
+    offenders = _module_level_concrete_imports(source)
     assert not offenders, (
         f"compose.py imports concrete store modules at module level: {sorted(offenders)}. "
         "Concrete stores must be resolved lazily through the registry."
     )
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "from rag_mcp.core.vectordb import chroma",
+            {"rag_mcp.core.vectordb.chroma"},
+        ),
+        (
+            "from rag_mcp.core.vectordb.chroma import build_chroma_vector_store",
+            {"rag_mcp.core.vectordb.chroma"},
+        ),
+        ("from .core.vectordb import lancedb", {"rag_mcp.core.vectordb.lancedb"}),
+        ("from rag_mcp.core.vectordb import registry", set()),
+        ("import lancedb", set()),
+        ("import rag_mcp.core.vectordb.chroma", {"rag_mcp.core.vectordb.chroma"}),
+    ],
+    ids=[
+        "alias-import",
+        "from-concrete",
+        "relative-alias",
+        "registry-import",
+        "sdk-import",
+        "dotted-import",
+    ],
+)
+def test_import_detector_expands_aliases(source: str, expected: set[str]) -> None:
+    """Negative controls: alias imports of concrete modules are caught."""
+    assert _module_level_concrete_imports(source) == expected
