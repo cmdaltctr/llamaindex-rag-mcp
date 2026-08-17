@@ -146,6 +146,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         collection_name=settings.collection_name,
         chroma_scan_page_size=settings.chroma_scan_page_size,
         vector_store=settings.vector_store,
+        lancedb_uri=settings.lancedb_uri,
         embed_provider=settings.embed_provider,
         metadata_llm_provider=settings.metadata_llm_provider,
         local_backend=settings.local_backend,
@@ -239,37 +240,17 @@ def build_reranker(settings: Settings | None = None) -> Any:
     return build_reranker_from_settings(settings)
 
 
-def _embedding_identity_from_settings(settings: Settings) -> Any:
-    """Derive the :class:`EmbeddingIdentity` stamped into collections.
-
-    The provider is the effective concrete backend (two-tier aliases
-    resolved); the model is that backend's model field.  Production has
-    no corpus identity, so ``index_identity`` stays ``None``.
-    """
-    from .core.vectordb.chroma import EmbeddingIdentity
-
-    provider = _resolve_effective_embed_provider(settings)
-    model_fields = {
-        "llamacpp": settings.llamacpp_embed_model,
-        "ollama": settings.embed_model,
-        "openrouter": settings.openrouter_embed_model,
-    }
-    model = model_fields.get(provider, settings.embed_model)
-    return EmbeddingIdentity(provider=provider, model=model, index_identity=None)
-
-
 def build_vector_store(settings: Settings | None = None) -> Any:
     """Construct the vector store from the ``VECTOR_STORE`` setting.
 
-    Phase 3 (ADR-034): the store is constructed in the composition root
-    and injected into the ingestion writer and retrieval pipeline.
-    Only ``chroma`` is registered today; the Settings validator rejects
-    unknown values at construction time with a clear error.
-
-    The resolved Chroma deployment mode and connection values are
-    passed through to the factory as construction-time primitives.
-    Credentials never enter :class:`EffectiveSettings` or operation
-    objects — they stop at this boundary.
+    Phase 3 (ADR-034) constructed the store in the composition root and
+    injected it into the pipeline; this change resolves it through the
+    vector-store registry (``core/vectordb/registry.py``) instead of a
+    branch over the name (architecture invariant #10).  The registry
+    resolves the settings-driven factory registered under the
+    configured name; an unregistered name is translated to a
+    ``ValueError`` at this boundary listing the registered names,
+    which propagates through ``ensure_runtime_setup``.
 
     Args:
         settings: Resolved settings (defaults to the singleton).
@@ -278,27 +259,26 @@ def build_vector_store(settings: Settings | None = None) -> Any:
         A :class:`rag_mcp.core.vectordb.base.VectorStore` instance.
 
     Raises:
-        ValueError: Unregistered impl or incomplete cloud values.
+        ValueError: Unregistered ``VECTOR_STORE`` name (lists the
+            registered names) or incomplete cloud values.
         RuntimeError: Cloud connection check failed (redacted).
     """
     if settings is None:
         settings = get_settings()
 
-    if settings.vector_store == "chroma":
-        from .core.vectordb.chroma import build_chroma_vector_store
+    from .core.vectordb import registry as vectordb_registry
 
-        return build_chroma_vector_store(
-            mode=settings.chroma_mode,
-            persist_dir=settings.chroma_persist_dir,
-            cloud_api_key=settings.chroma_cloud_api_key or None,
-            cloud_tenant=settings.chroma_cloud_tenant or None,
-            cloud_database=settings.chroma_cloud_database or None,
-            embedding_identity=_embedding_identity_from_settings(settings),
-        )
-
-    # Unreachable: the Settings model_validator raises on non-chroma
-    # vector_store at construction time (config/__init__.py).
-    raise ValueError(f"VECTOR_STORE={settings.vector_store!r} is not registered. Available: chroma")
+    try:
+        factory = vectordb_registry.get(settings.vector_store)
+    except KeyError as exc:
+        # Startup selection errors are ValueError by house convention
+        # (see _validate_community_strategy); the registry itself keeps
+        # the KeyError pattern shared by every strategy registry.
+        raise ValueError(
+            f"VECTOR_STORE={settings.vector_store!r} is not a registered vector "
+            f"store. Available: {', '.join(vectordb_registry.available())}."
+        ) from exc
+    return factory(settings)
 
 
 def chroma_storage_summary(settings: Settings | None = None) -> str:

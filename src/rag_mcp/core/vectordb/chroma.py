@@ -29,13 +29,19 @@ from llama_index.vector_stores.chroma import (
 )
 
 from .base import VectorStore
-from .identity import EmbeddingIdentity, IdentityGuardMixin, redact_cloud_secrets
+from .identity import (
+    EmbeddingIdentity,
+    IdentityGuardMixin,
+    embedding_identity_from_settings,
+    redact_cloud_secrets,
+)
 from .paged import PagedReadMixin
 
 __all__ = [
     "ChromaVectorStore",
     "EmbeddingIdentity",
     "build_chroma_vector_store",
+    "build_vector_store_from_settings",
     "detect_native_sparse_capability",
 ]
 
@@ -466,3 +472,28 @@ def detect_native_sparse_capability() -> bool:
         return hasattr(chromadb.PersistentClient, "query_sparse")
     except Exception:
         return False
+
+
+def build_vector_store_from_settings(settings: Any) -> ChromaVectorStore:
+    """Construct a :class:`ChromaVectorStore` from resolved settings.
+
+    Registered in ``core/vectordb/registry.py`` under ``"chroma"``;
+    called by ``compose.build_vector_store`` through the registry
+    lookup (architecture invariant #10).  Connection values pass
+    through as construction-time primitives; credentials never enter
+    :class:`EffectiveSettings` or operation objects.
+
+    Args:
+        settings: A resolved ``rag_mcp.config.Settings`` instance.
+
+    Returns:
+        A :class:`ChromaVectorStore` bound to the selected client.
+    """
+    return build_chroma_vector_store(
+        mode=settings.chroma_mode,
+        persist_dir=settings.chroma_persist_dir,
+        cloud_api_key=settings.chroma_cloud_api_key or None,
+        cloud_tenant=settings.chroma_cloud_tenant or None,
+        cloud_database=settings.chroma_cloud_database or None,
+        embedding_identity=embedding_identity_from_settings(settings),
+    )

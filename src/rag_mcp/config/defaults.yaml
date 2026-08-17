@@ -73,6 +73,13 @@ CHROMA_SCAN_PAGE_SIZE: 10000
 # .env (see .env.example); tenant/database identifiers are optional
 # there and must be supplied together. No cloud secrets belong here.
 CHROMA_MODE: local
+# Vector-store backend: "chroma" (default) or "lancedb". Selection is
+# resolved through the vector-store registry at startup; an unknown
+# name fails with the registered names listed.
+VECTOR_STORE: chroma
+# Parent directory for LanceDB tables (VECTOR_STORE=lancedb only).
+# Each collection maps to one table under this directory.
+LANCEDB_URI: ./lancedb
 
 # ── Provider selection (two-tier) ─────────────────────────────────────
 EMBED_PROVIDER: local

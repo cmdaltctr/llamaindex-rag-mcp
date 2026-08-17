@@ -384,6 +384,36 @@ def test_build_vector_store_chroma_delegates_to_factory() -> None:
         mock_build.assert_called_once()
 
 
+def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
+    """build_vector_store with lancedb resolves through the registry.
+
+    The registry lookup must construct the LanceDB implementation with
+    the resolved ``LANCEDB_URI`` and an embedding identity derived from
+    the settings (registry path + factory wiring, not just the
+    registry's import-string resolution covered in
+    ``test_vectordb_registry.py``).
+    """
+    from rag_mcp.compose import build_vector_store
+    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+
+    uri = str(tmp_path / "lancedb")
+    settings = _settings(
+        vector_store="lancedb",
+        lancedb_uri=uri,
+        embed_provider="ollama",
+        embed_model="nomic-embed-text",
+    )
+    store = build_vector_store(settings)
+
+    assert isinstance(store, LanceVectorStore)
+    assert store._uri == uri
+    assert store._identity is not None
+    # Exact values: a non-empty check would pass even if the factory
+    # ignored the provider selection or read the wrong model field.
+    assert store._identity.provider == "ollama"
+    assert store._identity.model == "nomic-embed-text"
+
+
 # ── settings_to_effective(None) ─────────────────────────────────────────────
 
 

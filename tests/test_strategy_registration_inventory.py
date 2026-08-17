@@ -34,6 +34,7 @@ from rag_mcp.core.metadata import registry as metadata_registry
 from rag_mcp.core.providers.embeddings import registry as embed_registry
 from rag_mcp.core.providers.llm import registry as llm_registry
 from rag_mcp.core.retrieval import registry as retrieval_registry
+from rag_mcp.core.vectordb import registry as vectordb_registry
 from rag_mcp.integrations.pdf import registry as pdf_registry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +61,7 @@ REGISTRY_KINDS: dict[str, ModuleType] = {
     "embeddings": embed_registry,
     "llm": llm_registry,
     "retrieval": retrieval_registry,
+    "vectordb": vectordb_registry,
 }
 
 #: Behaviour-changing migrations the audit defers to follow-up changes.
