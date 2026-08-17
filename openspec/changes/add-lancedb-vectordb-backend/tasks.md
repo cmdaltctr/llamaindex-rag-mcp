@@ -13,7 +13,7 @@
 
 ## 3. LanceDB filter translation (DD2)
 
-- [x] 3.1 Add `core/vectordb/lance_filter.py`: translate the ChromaDB `where` dict to a `lancedb.expr` expression tree (`col`, `lit`, `&`, `|`); support `$eq $ne $gt $gte $lt $lte $in $nin $and $or`; raise a clear error on any other operator; build no SQL strings by interpolation
+- [x] 3.1 Add `core/vectordb/lance_filter.py`: translate the ChromaDB `where` dict to a LanceDB SQL filter, serialising every value through the `lancedb.expr` literal builder (`lit(value).to_sql()`), validating field names against a conservative identifier grammar (backtick-quoted in output), and composing with a fixed operator vocabulary (`$eq $ne $gt $gte $lt $lte $in $nin $and $or`); raise a clear error on any other operator; build no SQL by interpolating client input. Operators are null-aware (`$ne`/`$nin` match rows lacking the field) and schema-absent fields fold to the same ChromaDB constants — a full expression tree is impossible (`lancedb.expr` has no struct field access; verified against 0.37.1)
 - [x] 3.2 Support the bare-equality shorthand (`{"field": value}`) and the nested-operator form (`{"field": {"$gt": value}}`)
 
 ## 4. LanceDB paged reads (DD4)
@@ -25,7 +25,7 @@
 - [x] 5.1 Add `core/vectordb/lancedb.py` `LanceVectorStore(VectorStore)` holding one `lancedb.connect(uri)`; implement collection lifecycle (`create_collection` lazy, `collection_exists`, `delete_collection`, `list_collections`) mapping collection to table
 - [x] 5.2 Implement `write_nodes` via a per-table `LanceDBVectorStore(connection=conn, table_name=name)` fed to `VectorStoreIndex`; implement `upsert_precomputed` via `table.add()`/`merge_insert`
 - [x] 5.3 Implement `query_dense` (vector search + translated filter), `count`, `count_where`, `delete_where`
-- [x] 5.4 Implement embedding-identity and profile metadata via table `update_config` read-merge-write; port the legacy-stamp-then-reject rule from `identity.py` behind a small store-supplied accessor (do not depend on a ChromaDB collection handle). If `update_config` proves unsuitable, fall back to `replace_schema_metadata`
+- [x] 5.4 Implement embedding-identity and profile metadata in the table's durable Arrow schema metadata, read-merge-write through pylance's `update_schema_metadata` (the `lance_meta.py` seam); port the legacy-stamp-then-reject rule from `identity.py` behind a small store-supplied accessor (do not depend on a ChromaDB collection handle). The originally named `update_config` does not exist in the SDK (verified against 0.37.1); the `replace_schema_metadata` fallback was similarly unavailable, so schema metadata via pylance is the landed branch
 - [x] 5.5 Implement `bump_generation`/`get_generation` on the same process-local dict contract the ChromaDB store owns
 - [x] 5.6 Keep every new file under 500 lines (invariant #11); split further if needed
 

@@ -368,3 +368,162 @@ class TestUpsertAndMetadataEdges:
         meta = reopened.get_collection_metadata("indexed")
         assert meta is not None
         assert meta[IDENTITY_INDEX_KEY] == "corpus-hash-1"
+
+
+# ── Metadata struct evolution ────────────────────────────────────────
+
+
+class TestSchemaEvolution:
+    """Later writes introducing new metadata keys must not lose them.
+
+    LanceDB fixes the ``metadata`` struct on the first write; without
+    evolution a node write raises and a precomputed upsert silently
+    drops the new key (review finding: incremental ingestion breaks
+    whenever metadata keys vary between batches).
+    """
+
+    def test_write_nodes_introduces_new_field(self, tmp_path: Path) -> None:
+        """A second node write with a new key succeeds and stores it."""
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes([TextNode(text="one", metadata={"k": "v"})], "evo")
+        store.write_nodes([TextNode(text="two", metadata={"k": "w", "category": "AI"})], "evo")
+
+        assert store.count("evo") == 2
+        assert store.count_where("evo", {"category": "AI"}) == 1
+        metadatas = list(store.iter_metadatas("evo"))
+        assert next(m for m in metadatas if m and m.get("k") == "w")["category"] == "AI"
+
+    def test_upsert_precomputed_introduces_new_field(self, tmp_path: Path) -> None:
+        """A precomputed upsert with a new key stores it (no silent drop)."""
+        from llama_index.core import Settings
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        embedding = list(Settings.embed_model.get_query_embedding("x"))
+        store.upsert_precomputed(
+            "evo", ids=["1"], documents=["one"], metadatas=[{"k": "v"}], embeddings=[embedding]
+        )
+        store.upsert_precomputed(
+            "evo",
+            ids=["2"],
+            documents=["two"],
+            metadatas=[{"category": "AI"}],
+            embeddings=[embedding],
+        )
+
+        assert store.count_where("evo", {"category": "AI"}) == 1
+
+    def test_upsert_into_adapter_table_introduces_new_field(self, tmp_path: Path) -> None:
+        """Upserting after an adapter write grows the adapter-made struct."""
+        from llama_index.core import Settings
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes([TextNode(text="one", metadata={"k": "v"})], "mixed")
+        embedding = list(Settings.embed_model.get_query_embedding("x"))
+        store.upsert_precomputed(
+            "mixed",
+            ids=["row-1"],
+            documents=["two"],
+            metadatas=[{"new_key": "yes"}],
+            embeddings=[embedding],
+        )
+        assert store.count_where("mixed", {"new_key": "yes"}) == 1
+
+    def test_write_nodes_into_upsert_table_adds_internal_keys(self, tmp_path: Path) -> None:
+        """An adapter write into an upsert-created table must not fail.
+
+        The adapter writes its internal keys into the metadata struct;
+        an upsert-created struct lacks them, so evolution must add
+        them before the adapter write.
+        """
+        from llama_index.core import Settings
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        embedding = list(Settings.embed_model.get_query_embedding("x"))
+        store.upsert_precomputed(
+            "upsert_first",
+            ids=["1"],
+            documents=["one"],
+            metadatas=[{"k": "v"}],
+            embeddings=[embedding],
+        )
+        store.write_nodes([TextNode(text="two", metadata={"k": "w"})], "upsert_first")
+        assert store.count("upsert_first") == 2
+
+    def test_evolution_preserves_identity_and_profile(self, tmp_path: Path) -> None:
+        """The table rewrite carries the identity triple and profile tags."""
+        from llama_index.core.schema import TextNode
+
+        uri = str(tmp_path / "lancedb")
+        identity = EmbeddingIdentity(provider="local", model="nomic-embed-text")
+        store = LanceVectorStore(uri=uri, embedding_identity=identity)
+        store.write_nodes([TextNode(text="one", metadata={"k": "v"})], "keep")
+        store.update_collection_metadata("keep", {"profile": "documents"})
+
+        store.write_nodes([TextNode(text="two", metadata={"k": "w", "category": "AI"})], "keep")
+
+        meta = store.get_collection_metadata("keep")
+        assert meta is not None
+        assert meta.get("profile") == "documents"
+        assert meta.get(IDENTITY_MODEL_KEY) == "nomic-embed-text"
+
+    def test_non_string_evolved_field_type(self, tmp_path: Path) -> None:
+        """A new integer-valued field keeps its type through evolution."""
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes([TextNode(text="one", metadata={"k": "v"})], "typed")
+        store.write_nodes([TextNode(text="two", metadata={"rank": 7})], "typed")
+        assert store.count_where("typed", {"rank": {"$gt": 5}}) == 1
+
+
+# ── Collection-drop generation invalidation ──────────────────────────
+
+
+class TestDeleteCollectionGeneration:
+    """Dropping a collection must invalidate a cached BM25 index."""
+
+    def test_drop_advances_generation(self, tmp_path: Path) -> None:
+        """Direct store-level drop bumps the generation counter."""
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes([TextNode(text="x")], "dropme")
+        before = store.get_generation("dropme")
+        store.delete_collection("dropme")
+        assert store.get_generation("dropme") > before
+
+    def test_drop_intent_only_advances_generation(self, tmp_path: Path) -> None:
+        """Dropping a never-written collection also invalidates."""
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.create_collection("ghost")
+        assert store.get_generation("ghost") == 0
+        store.delete_collection("ghost")
+        assert store.get_generation("ghost") > 0
+
+    def test_drop_invalidates_cached_bm25_index(self, tmp_path: Path) -> None:
+        """A BM25 index built before the drop returns nothing after it.
+
+        Three documents: the rare term must rank before the drop and
+        vanish after it (single-document corpora clip IDF to zero, so
+        the corpus mirrors the sibling hybrid test's shape).
+        """
+        from llama_index.core.schema import TextNode
+
+        store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+        store.write_nodes(
+            [
+                TextNode(text="orphantoken content", metadata={"file_path": "gone.txt"}),
+                TextNode(text="filler alpha", metadata={"file_path": "fill1.txt"}),
+                TextNode(text="filler beta", metadata={"file_path": "fill2.txt"}),
+            ],
+            "bm25drop",
+        )
+        retriever = BM25SparseRetriever(collection_name="bm25drop", store=store)
+        assert retriever.query("orphantoken", top_n=5)
+
+        store.delete_collection("bm25drop")
+        assert retriever.query("orphantoken", top_n=5) == []

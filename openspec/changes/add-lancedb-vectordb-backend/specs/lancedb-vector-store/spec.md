@@ -96,14 +96,19 @@ The store SHALL translate the ChromaDB-style `where` dict into LanceDB
 filters in `core/vectordb/lance_filter.py`, with every VALUE serialised
 through the `lancedb.expr` type-safe literal builder (whose unparser
 performs the engine's own quoting), every field name validated against a
-conservative identifier grammar, and the operator vocabulary a fixed
-internal set. It SHALL NOT interpolate client-supplied values into SQL
-strings. (A full per-leaf expression tree is not possible: `lancedb.expr`
-(0.37.1) has no struct field access, and user metadata lives inside an
-Arrow `metadata` struct, so filters must reference `metadata.<field>`
-paths; recorded in ADR-046.) The ChromaDB operators `$eq`, `$ne`, `$gt`,
-`$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$and`, and `$or` SHALL be
-supported. An unsupported operator SHALL raise a clear error naming it.
+conservative identifier grammar and backtick-quoted in the emitted SQL,
+and the operator vocabulary a fixed internal set. It SHALL NOT
+interpolate client-supplied values into SQL strings. (A full per-leaf
+expression tree is not possible: `lancedb.expr` (0.37.1) has no struct
+field access, and user metadata lives inside an Arrow `metadata` struct,
+so filters must reference `metadata.<field>` paths; recorded in
+ADR-046.) The ChromaDB operators `$eq`, `$ne`, `$gt`, `$gte`, `$lt`,
+`$lte`, `$in`, `$nin`, `$and`, and `$or` SHALL be supported. An
+unsupported operator SHALL raise a clear error naming it. Translation
+SHALL preserve ChromaDB missing-field semantics: `$ne` and `$nin` match
+rows whose field is null or absent, every other operator does not, and a
+field absent from the table's schema SHALL fold to the same constants
+instead of reaching the SQL planner.
 
 #### Scenario: Equality filter
 
@@ -129,13 +134,49 @@ supported. An unsupported operator SHALL raise a clear error naming it.
 - **WHEN** a `where` uses an operator outside the supported set
 - **THEN** the translator MUST raise a clear error naming the operator
 
+#### Scenario: Missing-field semantics match ChromaDB
+
+- **WHEN** a `where` filters on a metadata field that some rows lack or
+  that no row carries (absent from the schema)
+- **THEN** `$ne` and `$nin` MUST match the rows lacking the field
+- **AND** `$eq`, `$in`, and the comparison operators MUST NOT
+- **AND** the filter MUST NOT fail with a planner error for a
+  schema-absent field
+
+### Requirement: LanceDB SHALL evolve the metadata struct on later writes
+
+LanceDB fixes the Arrow `metadata` struct on the first write, and pylance
+has no nested `add_columns`, so the store SHALL grow the struct itself in
+`core/vectordb/lance_meta.py` when a later write introduces metadata keys
+the struct lacks: existing rows gain nulls for the new fields (ChromaDB's
+key-absent state), the schema metadata bag (identity triple, profile
+tags) SHALL survive the growth, and no incoming metadata key SHALL be
+silently dropped.
+
+#### Scenario: A later write introduces a new metadata field
+
+- **WHEN** a collection already exists and a write introduces a metadata
+  key absent from its struct
+- **THEN** the store MUST extend the struct before writing
+- **AND** the new key MUST be retrievable through filters and paged reads
+- **AND** existing rows and the stored identity/profile metadata MUST be
+  preserved
+
+#### Scenario: Adapter-internal struct fields
+
+- **WHEN** the LlamaIndex adapter writes into a table created by
+  `upsert_precomputed` (whose struct lacks the adapter's internal keys)
+- **THEN** the store MUST add the internal keys to the struct before the
+  adapter write so the write succeeds
+
 ### Requirement: LanceDB reads SHALL use bounded scanner pages
 
 The store SHALL implement `iter_metadatas`, `iter_documents`, and
 `fetch_all` over LanceDB's scanner in `core/vectordb/lance_paged.py`, using
 bounded pages for the iterators. The BM25 sparse retriever SHALL read
 through `iter_documents` unchanged, and the process-local generation counter
-SHALL advance on every write and delete so the retriever rebuilds its index.
+SHALL advance on every write, row delete, and collection drop so the
+retriever rebuilds its index.
 
 #### Scenario: Paged iteration over a large collection
 
@@ -151,6 +192,13 @@ SHALL advance on every write and delete so the retriever rebuilds its index.
   `iter_documents`
 - **AND** a write or delete MUST advance the generation counter so the
   index is rebuilt
+
+#### Scenario: Dropping a collection invalidates the BM25 cache
+
+- **WHEN** a collection is dropped through the store (directly, without
+  the ingestion writer's external bump)
+- **THEN** the generation counter MUST advance so a cached BM25 index
+  built over the collection is invalidated
 
 ### Requirement: LanceDB SHALL stay local-first with no PyTorch on the base path
 

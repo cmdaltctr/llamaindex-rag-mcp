@@ -88,8 +88,35 @@ earlier guesses:
   and `count_rows(filter=)` accepts SQL strings only.** The translator
   serialises every value through `lit(value).to_sql()` — the engine's own
   unparser, verified to escape single quotes — validates field names
-  against `^[A-Za-z_][A-Za-z0-9_-]*$`, and composes with a fixed operator
-  vocabulary. Injection-safe by construction; a decoy test proves it.
+  against `^[A-Za-z_][A-Za-z0-9_-]*$`, backtick-quotes every emitted
+  identifier (unquoted, a hyphen-bearing name parses as subtraction),
+  and composes with a fixed operator vocabulary. Injection-safe by
+  construction; a decoy test proves it.
+- **SQL NULL semantics diverge from ChromaDB missing-key semantics, and
+  the planner rejects schema-absent struct fields.** ChromaDB treats a
+  key a row lacks as "not equal"; SQL comparisons against NULL are
+  unknown and silently drop such rows, and DataFusion raises
+  "Field ... not found in struct" for a field the schema lacks. The
+  translator is therefore null-aware — `$ne`/`$nin` emit an explicit
+  `OR ... IS NULL` — and the store passes the table's metadata field
+  names so schema-absent fields fold to the ChromaDB constants
+  (`false` for equality/membership/comparisons, `true` for
+  `$ne`/`$nin`) instead of reaching the planner. A cross-backend
+  contract test pins the parity.
+- **LanceDB fixes the Arrow `metadata` struct on the first write, and
+  pylance 10 has no nested `add_columns`** (dotted paths are rejected
+  by lance-core: "Top level field ... cannot contain `.`"). A later
+  write introducing new metadata keys therefore cannot grow the struct
+  in place: without help, a node write fails ("field does not exist in
+  table schema") and a precomputed upsert silently drops the key.
+  `lance_meta.evolve_metadata_fields` rebuilds the table — read every
+  row, cast to the expanded schema (old rows gain nulls), overwrite in
+  place — carrying the schema metadata bag across the rewrite. The
+  adapter's internal struct keys are added alongside user keys so
+  adapter writes into upsert-created tables succeed. Cost: one full
+  table rewrite per key-set expansion, and the table's Lance version
+  history restarts at the rewrite; both accepted for correctness over
+  incremental ingestion (found in review; fixed on this branch).
 - **The LlamaIndex adapter's `mode` defaults to `"overwrite"`.** The store
   passes `mode="create"` and redirects stdout during writes because the
   adapter prints a notice when it lazily creates a table — stdout is the
@@ -102,9 +129,11 @@ earlier guesses:
   and `lance-namespace` only.** No PyTorch reaches the base install; the
   ONNX-only boundary holds. `lancedb>=0.37` is pinned because it
   guarantees `lancedb.expr` (the adapter's own floor `>=0.21.1` does
-  not). `pyarrow>=25` is declared directly — the store builds upsert rows
-  with it — and floored at the locked major: its frequent major bumps
-  carry no semantic signal, so floor equals lock.
+  not). `pyarrow>=25` and `pylance>=10` are declared directly — the
+  store builds upsert rows with pyarrow and calls pylance's
+  `update_schema_metadata`, but the adapter pulls pylance with no
+  version constraint — and both are floored at the locked major: their
+  frequent major bumps carry no semantic signal, so floor equals lock.
 
 ### Deferred work (recorded, not built)
 

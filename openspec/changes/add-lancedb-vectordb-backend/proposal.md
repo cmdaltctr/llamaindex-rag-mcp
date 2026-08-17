@@ -30,19 +30,30 @@ convention rather than inventing one.
   client and drives many collections.
 - **Filter translation**: `core/vectordb/lance_filter.py` translates the
   ChromaDB-style `where` dict (the shape the MCP `search_documents` tool
-  advertises) into LanceDB filters using the `lancedb.expr` type-safe
-  expression builder (`col`, `lit`, `&`, `|`), not hand-built SQL strings.
-  The builder handles value quoting and typing, closing the SQL-injection
-  surface by construction (design decision DD2).
+  advertises) into LanceDB SQL filters. Every VALUE is serialised through
+  the `lancedb.expr` type-safe literal builder (`lit(value).to_sql()`,
+  whose unparser performs the engine's own quoting), field names are
+  validated against a conservative identifier grammar and backtick-quoted,
+  and the operator vocabulary is a fixed internal set — no client input is
+  interpolated into SQL (design decision DD2). A full expression tree is
+  not possible: `lancedb.expr` (0.37.1) has no struct field access
+  (verified in the build session; recorded in ADR-046). Operator
+  translation is null-aware so ChromaDB missing-field semantics hold:
+  `$ne`/`$nin` match rows lacking the field, other operators do not, and
+  a field absent from the schema folds to the same constants instead of
+  reaching the planner.
 - **Paged reads**: `core/vectordb/lance_paged.py` provides a mixin for
   `iter_metadatas`, `iter_documents`, and `fetch_all` over LanceDB's
   scanner (`table.search().limit().offset()`, `table.to_pandas()`,
   `table.count_rows(filter=...)`). `PagedReadMixin` is ChromaDB-shaped and
   is not reused.
 - **Collection metadata**: profile tags and embedding identity are stored
-  through LanceDB table `update_config` (durable key-value config on the
-  table), read-merge-write, mirroring the existing `identity.py` stamping
-  logic (design decision DD1).
+  in the table's durable Arrow schema metadata, written read-merge-write
+  through pylance's `update_schema_metadata` via the
+  `core/vectordb/lance_meta.py` seam, mirroring the existing
+  `identity.py` stamping logic (design decision DD1; the originally named
+  `update_config` does not exist in the lancedb Python SDK — verified
+  against 0.37.1 and corrected here).
 - **Registry dispatch**: `core/vectordb/registry.py` registers `chroma`
   and `lancedb` lazily under their configured names. `compose.py` resolves
   the store through the registry, replacing the `if/elif` branch and
@@ -50,9 +61,13 @@ convention rather than inventing one.
 - **Configuration**: `config/__init__.py` and `core/settings.py` accept
   `VECTOR_STORE=lancedb` and add `LANCEDB_URI` (parent directory for
   LanceDB tables, default `./lancedb`), documented in `.env.example`.
-- **Dependency**: add `llama-index-vector-stores-lancedb` via `uv add`.
-  Its resolved tree pulls `lancedb` and `pyarrow` only; no PyTorch reaches
-  the base install, so the ONNX-only hard boundary holds.
+- **Dependency**: add `llama-index-vector-stores-lancedb` via `uv add`,
+  plus `lancedb`, `pylance`, and `pyarrow` as direct dependencies — the
+  store calls `lancedb.expr`, pylance's `update_schema_metadata`, and
+  builds upsert rows with pyarrow, so each needs a pinned floor rather
+  than the adapter's unconstrained transitive ranges. The resolved tree
+  adds `lancedb`/`pylance`/`pyarrow`/`tantivy`/`lance-namespace` only; no
+  PyTorch reaches the base install, so the ONNX-only hard boundary holds.
 
 Not in scope, recorded as deferred future work:
 
@@ -103,8 +118,9 @@ Not in scope, recorded as deferred future work:
 - **Contracts**: MCP tool surface unchanged. The `metadata_filter`
   parameter keeps its "ChromaDB-compatible where clause" contract; the
   LanceDB backend honours it through translation.
-- **Dependencies**: one new direct dependency
-  (`llama-index-vector-stores-lancedb`), no PyTorch on the base path.
+- **Dependencies**: `llama-index-vector-stores-lancedb`, `lancedb`,
+  `pylance`, and `pyarrow` as new direct dependencies, no PyTorch on the
+  base path.
 - **On-disk data**: none for existing ChromaDB users. `VECTOR_STORE`
   stays `chroma` by default; `lancedb` is opt-in. Switching backends
   re-ingests into a fresh LanceDB store; no cross-backend migration is
@@ -115,9 +131,10 @@ Not in scope, recorded as deferred future work:
 
 ## Open Questions
 
-None blocking. Two soft choices are recorded in `design.md` for the build
-session: DD1 may use table schema metadata instead of `update_config`
-(both are durable; `update_config` is the recommended default here), and
-DD3 introduces the vector-store registry in this change rather than
-depending on any in-flight registry work (the two open registry changes
+None blocking. The two soft choices recorded in `design.md` were settled
+by the build session (verified against lancedb 0.37.1): DD1 landed on
+its fallback branch — Arrow schema metadata through pylance's
+`update_schema_metadata`, because the SDK has no `update_config` — and
+DD3 introduced the vector-store registry in this change with no
+dependency on the in-flight registry work (the two open registry changes
 cover document readers and sparse retrieval, not vector stores).

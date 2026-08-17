@@ -17,14 +17,16 @@ import logging
 from collections.abc import Callable, Iterator
 from typing import Any
 
-__all__ = ["LancePagedReadMixin", "strip_internal_metadata"]
+__all__ = ["INTERNAL_METADATA_KEYS", "LancePagedReadMixin", "strip_internal_metadata"]
 
 logger = logging.getLogger(__name__)
 
 # The LlamaIndex adapter writes user metadata into an Arrow struct
 # alongside these node-internal fields.  Reads surface only the user's
-# keys, matching what the ChromaDB adapter stores.
-_INTERNAL_METADATA_KEYS = frozenset(
+# keys, matching what the ChromaDB adapter stores.  The store's
+# schema-evolution path also uses this set: a later adapter write into
+# an upsert-created table needs these fields present in the struct.
+INTERNAL_METADATA_KEYS = frozenset(
     {
         "_node_content",
         "_node_type",
@@ -50,7 +52,7 @@ def strip_internal_metadata(metadata: dict | None) -> dict:
     return {
         key: value
         for key, value in metadata.items()
-        if key not in _INTERNAL_METADATA_KEYS and not key.startswith("_node")
+        if key not in INTERNAL_METADATA_KEYS and not key.startswith("_node")
     }
 
 

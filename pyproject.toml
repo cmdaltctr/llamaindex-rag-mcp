@@ -26,6 +26,12 @@ dependencies = [
     # signal, so floor == lock keeps the floors CI honest.
     "llama-index-vector-stores-lancedb>=0.5.0",
     "lancedb>=0.37",
+    # Declared directly (ADR-046): lance_meta.py calls pylance's
+    # update_schema_metadata for durable table metadata, but the
+    # adapter pulls pylance with no version constraint. Floor == lock:
+    # update_schema_metadata is the verified 10.x API surface and the
+    # floors job installs with --resolution lowest-direct.
+    "pylance>=10",
     "pyarrow>=25",
     "llama-index-readers-file>=0.5.0",
     # chromadb 1.0.0 reverts list_collections() to returning Collection

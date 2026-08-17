@@ -185,3 +185,104 @@ def test_empty_in_matches_nothing_and_empty_nin_matches_all(table) -> None:
     """Empty membership lists degrade to false/true, not broken SQL."""
     assert table.count_rows(filter=translate_where({"category": {"$in": []}})) == 0
     assert table.count_rows(filter=translate_where({"category": {"$nin": []}})) == len(_ROWS)
+
+
+# ── ChromaDB missing-field semantics ──────────────────────────────────
+
+_SCHEMA_FIELDS = frozenset({"id", "file_path", "category", "score", "vector"})
+
+
+class TestMissingFieldSemantics:
+    """Null-aware operators and absent-field folding must match ChromaDB.
+
+    ChromaDB treats a metadata key a row does not carry as "not equal":
+    ``$ne``/``$nin`` match such rows, every other operator does not.
+    LanceDB SQL drops NULL comparisons silently, and the planner
+    rejects struct fields that do not exist at all — both divergence
+    points are covered here.
+    """
+
+    @pytest.fixture
+    def nullable(self, tmp_path: Path):
+        """Table whose ``category`` is NULL on one row, absent nowhere."""
+        rows = [
+            {"id": "n1", "category": None, "score": 1, "vector": [0.1, 0.0]},
+            {"id": "n2", "category": "AI", "score": 2, "vector": [0.0, 0.1]},
+        ]
+        db = lancedb.connect(str(tmp_path / "lancedb"))
+        return db.create_table("nullable", rows, mode="overwrite")
+
+    def test_ne_matches_null_rows(self, nullable) -> None:
+        """``$ne`` must include rows where the field is NULL."""
+        count = nullable.count_rows(filter=translate_where({"category": {"$ne": "Biology"}}))
+        assert count == 2  # the NULL row and the differing row
+
+    def test_nin_matches_null_rows(self, nullable) -> None:
+        """``$nin`` must include rows where the field is NULL."""
+        count = nullable.count_rows(filter=translate_where({"category": {"$nin": ["Biology"]}}))
+        assert count == 2
+
+    def test_eq_and_comparisons_exclude_null_rows(self, nullable) -> None:
+        """``$eq``/``$gt`` must not match NULL rows (SQL unknown already does)."""
+        assert nullable.count_rows(filter=translate_where({"category": "AI"})) == 1
+        assert nullable.count_rows(filter=translate_where({"score": {"$gt": 0}})) == 2
+
+    def test_absent_from_schema_folds_to_chroma_constants(self, table) -> None:
+        """A field no row carries folds instead of failing planning."""
+        assert (
+            table.count_rows(filter=translate_where({"nope": "x"}, known_fields=_SCHEMA_FIELDS))
+            == 0
+        )
+        assert table.count_rows(
+            filter=translate_where({"nope": {"$ne": "x"}}, known_fields=_SCHEMA_FIELDS)
+        ) == len(_ROWS)
+        assert (
+            table.count_rows(
+                filter=translate_where({"nope": {"$in": ["x"]}}, known_fields=_SCHEMA_FIELDS)
+            )
+            == 0
+        )
+        assert table.count_rows(
+            filter=translate_where({"nope": {"$nin": ["x"]}}, known_fields=_SCHEMA_FIELDS)
+        ) == len(_ROWS)
+
+    def test_absent_field_folds_inside_boolean_composition(self, table) -> None:
+        """Folded constants must compose with present-field predicates."""
+        where = {
+            "$or": [
+                {"nope": {"$ne": "anything"}},
+                {"category": "Chemistry"},
+            ]
+        }
+        assert table.count_rows(filter=translate_where(where, known_fields=_SCHEMA_FIELDS)) == len(
+            _ROWS
+        )
+
+    def test_unknown_field_without_schema_still_reaches_the_planner(self, table) -> None:
+        """Without ``known_fields`` an absent field is the engine's error."""
+        with pytest.raises(ValueError, match="field named nope"):
+            table.count_rows(filter=translate_where({"nope": "x"}))
+
+
+# ── Identifier quoting ────────────────────────────────────────────────
+
+
+def test_hyphenated_field_name_is_quoted_and_matches(tmp_path: Path) -> None:
+    """Grammar-legal hyphenated names must filter correctly.
+
+    Unquoted, ``metadata.file-path`` parses as ``file`` minus ``path``;
+    backticks keep it one identifier.
+    """
+    rows = [
+        {"id": "h1", "file-path": "a.py", "vector": [0.1, 0.0]},
+        {"id": "h2", "file-path": "b.py", "vector": [0.0, 0.1]},
+    ]
+    db = lancedb.connect(str(tmp_path / "lancedb"))
+    table = db.create_table("hyphen", rows, mode="overwrite")
+    assert table.count_rows(filter=translate_where({"file-path": "a.py"})) == 1
+
+
+def test_field_references_are_backtick_quoted() -> None:
+    """Every emitted field reference is quoted (hyphens stay one identifier)."""
+    expr = translate_where({"file-path": "a.py"}, metadata_column="metadata")
+    assert expr == "`metadata`.`file-path` = 'a.py'"

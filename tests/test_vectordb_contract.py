@@ -230,6 +230,36 @@ class TestCount:
         assert store.count_where("countwhere", {"k": "v2"}) == 1
         assert store.count_where("countwhere", {"k": "missing"}) == 0
 
+    def test_missing_field_filter_semantics_match_chroma(self, store: VectorStore) -> None:
+        """Absent-key filtering must behave identically on both backends.
+
+        ChromaDB treats a metadata key a row lacks as "not equal":
+        ``$ne``/``$nin`` match such rows; equality/membership do not.
+        A field absent from every row (and the schema) follows the same
+        rule. Both backends must agree on all four shapes — this is
+        the parity the review found diverging under SQL NULL rules.
+        """
+        from llama_index.core.schema import TextNode
+
+        store.write_nodes(
+            [
+                TextNode(text="no tag", metadata={"file_path": "a.txt"}),
+                TextNode(text="tagged", metadata={"file_path": "b.txt", "tag": "x"}),
+            ],
+            "missingkeys",
+        )
+
+        # Rows lacking `tag`: only the second row carries it.
+        assert store.count_where("missingkeys", {"tag": "x"}) == 1
+        assert store.count_where("missingkeys", {"tag": {"$ne": "x"}}) == 1
+        assert store.count_where("missingkeys", {"tag": {"$in": ["x"]}}) == 1
+        assert store.count_where("missingkeys", {"tag": {"$nin": ["x"]}}) == 1
+
+        # A field no row carries: equality matches nothing, inequality
+        # everything.
+        assert store.count_where("missingkeys", {"nope": "x"}) == 0
+        assert store.count_where("missingkeys", {"nope": {"$ne": "x"}}) == 2
+
 
 # ── Delete ────────────────────────────────────────────────────────────
 

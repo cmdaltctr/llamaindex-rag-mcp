@@ -205,9 +205,13 @@ Supporting modules keep each store under the 500-line ceiling:
 - `core/vectordb/naming.py` — deterministic experiment collection names
   (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
 - `core/vectordb/lance_meta.py` — the LanceDB table-metadata seam and its
-  identity guard, reusing `identity.py`'s pure helpers
+  identity guard, reusing `identity.py`'s pure helpers, plus the metadata
+  struct evolution that grows a table's Arrow struct when later writes
+  introduce new metadata keys
 - `core/vectordb/lance_filter.py` — ChromaDB `where` dict → LanceDB filter
-  translation through the `lancedb.expr` value serialiser
+  translation through the `lancedb.expr` value serialiser; operators are
+  null-aware and schema-absent fields fold to constants, preserving
+  ChromaDB missing-field semantics across backends
 - `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
   pages plus `strip_internal_metadata`)
 - `core/vectordb/registry.py` — lazy vector-store registry mapping

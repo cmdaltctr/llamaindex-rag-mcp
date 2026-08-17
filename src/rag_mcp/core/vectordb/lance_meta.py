@@ -13,14 +13,27 @@ identical across backends.
 
 The concrete store supplies ``_identity``, ``_pending_metadata``,
 ``_open_table`` and ``_get_connection``; this module owns the
-read-merge-write and mismatch-rejection logic.
+read-merge-write and mismatch-rejection logic, plus the metadata
+struct evolution below.
+
+LanceDB fixes the Arrow ``metadata`` struct on the first write, and
+pylance 10 has no nested ``add_columns`` (dotted paths are rejected
+by lance-core), so a later write introducing new metadata keys cannot
+grow the struct in place.  :meth:`LanceTableMetadataMixin.evolve_metadata_fields`
+therefore rebuilds the table: read every row, cast to the expanded
+schema (old rows gain nulls — the same "key absent" state ChromaDB
+gives a row without the key), and overwrite in place, carrying the
+schema metadata (identity, profile tags) across the rewrite.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 from typing import Any
+
+import pyarrow as pa
 
 from .identity import (
     IDENTITY_INDEX_KEY,
@@ -30,7 +43,16 @@ from .identity import (
     identities_match,
 )
 
-__all__ = ["LanceTableMetadataMixin", "read_table_metadata"]
+__all__ = [
+    "LanceTableMetadataMixin",
+    "infer_arrow_type",
+    "read_table_metadata",
+]
+
+logger = logging.getLogger(__name__)
+
+# Column the LlamaIndex adapter uses for user metadata.
+_METADATA_COLUMN = "metadata"
 
 
 def read_table_metadata(table: Any) -> dict[str, Any]:
@@ -50,6 +72,44 @@ def read_table_metadata(table: Any) -> dict[str, Any]:
         except (ValueError, TypeError):
             decoded[name] = text
     return decoded
+
+
+def metadata_field_names(table: Any) -> set[str]:
+    """Return the field names inside the table's metadata struct.
+
+    Tables without a ``metadata`` struct column (none the store or the
+    adapter create, but a hand-made table could) yield an empty set, so
+    every filter field folds to its absent-field constant instead of
+    reaching the planner.
+    """
+    schema: pa.Schema = table.schema
+    if _METADATA_COLUMN not in schema.names:
+        return set()
+    struct_type = schema.field(_METADATA_COLUMN).type
+    if not pa.types.is_struct(struct_type):
+        return set()
+    return {field.name for field in struct_type}
+
+
+def infer_arrow_type(values: list[Any]) -> pa.DataType:
+    """Infer the Arrow type for a new metadata field from sample values.
+
+    Follows the adapter's own inference shape: homogeneous bool →
+    boolean, homogeneous int → int64, mixed int/float → float64,
+    everything else (strings, mixed) → string.  An all-null sample
+    defaults to string, matching how a null-typed field would be
+    unusable for later writes.
+    """
+    non_null = [value for value in values if value is not None]
+    if not non_null:
+        return pa.string()
+    if all(isinstance(value, bool) for value in non_null):
+        return pa.bool_()
+    if all(isinstance(value, int) and not isinstance(value, bool) for value in non_null):
+        return pa.int64()
+    if all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in non_null):
+        return pa.float64()
+    return pa.string()
 
 
 class LanceTableMetadataMixin:
@@ -156,3 +216,65 @@ class LanceTableMetadataMixin:
                 updates[IDENTITY_INDEX_KEY] = json.dumps(identity.index_identity)
         if updates:
             self._write_table_metadata(collection_name, updates)
+
+    # ── Metadata struct evolution ────────────────────────────────────
+
+    def evolve_metadata_fields(
+        self,
+        collection_name: str,
+        new_fields: dict[str, pa.DataType],
+    ) -> bool:
+        """Extend the table's metadata struct with *new_fields*.
+
+        LanceDB fixes the struct on the first write and pylance 10 has
+        no nested ``add_columns`` (dotted paths are rejected by
+        lance-core), so this rebuilds the table: every row is read,
+        cast to the expanded schema (old rows gain nulls — ChromaDB's
+        "key absent" state), and written back with
+        ``create_table(mode="overwrite")``.  The schema metadata bag
+        (identity triple, profile tags) is carried across the rewrite,
+        and the table's version history restarts at the new write.
+
+        Args:
+            collection_name: Table to evolve.
+            new_fields: Field name → Arrow type for fields absent from
+                the current struct.  Fields already present are
+                skipped; an empty effective set is a no-op.
+
+        Returns:
+            ``True`` when the table was rewritten.
+        """
+        table = self._open_table(collection_name)
+        if table is None:
+            # First write defines the struct from the batch itself.
+            return False
+        existing = metadata_field_names(table)
+        missing = {
+            name: field_type for name, field_type in new_fields.items() if name not in existing
+        }
+        if not missing:
+            return False
+        # Fresh handle: handles pin a version, and the read must see
+        # the latest schema metadata so the rewrite carries it over.
+        table = self._get_connection().open_table(collection_name)
+        arrow = table.to_arrow()
+        old_struct: pa.StructType = arrow.schema.field(_METADATA_COLUMN).type
+        expanded = pa.struct(
+            list(old_struct) + [pa.field(name, missing[name]) for name in sorted(missing)]
+        )
+        new_schema = pa.schema(
+            [
+                (pa.field(_METADATA_COLUMN, expanded) if field.name == _METADATA_COLUMN else field)
+                for field in arrow.schema
+            ],
+            metadata=arrow.schema.metadata,
+        )
+        self._get_connection().create_table(
+            collection_name, arrow.cast(new_schema), mode="overwrite"
+        )
+        logger.info(
+            "Evolved metadata struct of %r: added %s",
+            collection_name,
+            sorted(missing),
+        )
+        return True

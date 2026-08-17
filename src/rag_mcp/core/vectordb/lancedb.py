@@ -46,8 +46,12 @@ from llama_index.vector_stores.lancedb import (
 from .base import VectorStore
 from .identity import EmbeddingIdentity, embedding_identity_from_settings
 from .lance_filter import translate_where
-from .lance_meta import LanceTableMetadataMixin
-from .lance_paged import LancePagedReadMixin, strip_internal_metadata
+from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
+from .lance_paged import (
+    INTERNAL_METADATA_KEYS,
+    LancePagedReadMixin,
+    strip_internal_metadata,
+)
 
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
@@ -157,6 +161,12 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def delete_collection(self, name: str) -> None:
         """Drop the table and any recorded intent for *name*.
 
+        The generation counter advances on every successful drop —
+        including intent-only deletions — so a cached BM25 index built
+        over the collection is invalidated even when the store is
+        called directly, without the ingestion writer's bump
+        (the ``VectorStore`` contract's collection-drop rule).
+
         Raises:
             ValueError: If the collection does not exist.
         """
@@ -165,9 +175,11 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._pending_metadata.pop(name, None)
         if name in self._list_table_names():
             self._get_connection().drop_table(name)
+            self.bump_generation(name)
             return
         if not was_intent:
             raise ValueError(f"Collection {name!r} does not exist.")
+        self.bump_generation(name)
 
     def list_collections(self) -> list[str]:
         return sorted(set(self._list_table_names()) | self._intents)
@@ -182,8 +194,14 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         redirected because the adapter prints a notice to stdout when
         it lazily creates a table — stdout is the MCP protocol channel
         and must stay clean.
+
+        The ``metadata`` struct is fixed on the first write, so a batch
+        introducing new metadata keys grows the struct first (old rows
+        gain nulls); the adapter's internal keys are included because
+        the adapter writes them into the same struct.
         """
         self._check_or_stamp_identity(collection_name)
+        self._evolve_for_nodes(collection_name, nodes)
         connection = self._get_connection()
         with redirect_stdout(io.StringIO()):
             vector_store = _LlamaLanceVectorStore(
@@ -201,6 +219,33 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._flush_after_write(collection_name)
         self.bump_generation(collection_name)
 
+    def _evolve_for_nodes(self, collection_name: str, nodes: list[Any]) -> None:
+        """Grow the metadata struct to cover the batch's keys.
+
+        Collects every user metadata key across the batch plus the
+        adapter's internal keys, infers a type per key from the batch's
+        values, and evolves the table when the table already exists.
+        The first write needs no evolution: the adapter builds the
+        struct from that batch itself.
+        """
+        samples: dict[str, list[Any]] = {}
+        for node in nodes:
+            metadata = getattr(node, "metadata", None) or {}
+            for key, value in metadata.items():
+                samples.setdefault(key, []).append(value)
+        existing = self._open_table(collection_name)
+        if existing is None:
+            return
+        present = metadata_field_names(existing)
+        new_fields: dict[str, pa.DataType] = {
+            key: infer_arrow_type(values) for key, values in samples.items()
+        }
+        # The adapter writes its internal keys into the same struct; a
+        # table created by ``upsert_precomputed`` lacks them.
+        for key in INTERNAL_METADATA_KEYS - present - set(new_fields):
+            new_fields[key] = pa.string()
+        self.evolve_metadata_fields(collection_name, new_fields)
+
     def upsert_precomputed(
         self,
         collection_name: str,
@@ -216,7 +261,9 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         schema, so upserts into adapter-written tables match whatever
         the adapter wrote.  When the table does not exist yet, it is
         created with a schema derived from the first batch — after
-        which the vector dimension is locked.
+        which the vector dimension is locked.  A batch introducing new
+        metadata keys grows the struct first so no key is silently
+        dropped.
         """
         self._check_or_stamp_identity(collection_name)
         table = self._open_table(collection_name)
@@ -225,6 +272,25 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
             schema = _upsert_schema(dim, metadatas)
             table = self._get_connection().create_table(
                 collection_name, schema=schema, mode="create"
+            )
+        else:
+            new_fields = {
+                key: infer_arrow_type([m.get(key) for m in metadatas])
+                for key in {k for m in metadatas for k in m}
+            }
+            if self.evolve_metadata_fields(collection_name, new_fields):
+                # The rebuild pinned a new version; read through a
+                # fresh handle so the live schema includes the growth.
+                table = self._get_connection().open_table(collection_name)
+        missing = {
+            key for meta in metadatas for key in meta if key not in metadata_field_names(table)
+        }
+        if missing:
+            # Belt-and-braces: rows are built against the live schema,
+            # and an unknown key there would be silently discarded.
+            raise ValueError(
+                f"Metadata fields {sorted(missing)} are absent from the table "
+                f"schema of {collection_name!r} and could not be added."
             )
         source = _rows_to_arrow(table.schema, ids, documents, metadatas, embeddings)
         (
@@ -253,7 +319,13 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._guard_query_identity(collection_name)
         builder = table.search(query_embedding).limit(n_results)
         if where:
-            builder = builder.where(translate_where(where, metadata_column="metadata"))
+            builder = builder.where(
+                translate_where(
+                    where,
+                    metadata_column="metadata",
+                    known_fields=metadata_field_names(table),
+                )
+            )
         rows = builder.to_list()
         results: list[dict] = []
         for row in rows:
@@ -281,7 +353,13 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         table = self._open_table(collection_name)
         if table is None:
             return 0
-        return table.count_rows(translate_where(where, metadata_column="metadata"))
+        return table.count_rows(
+            translate_where(
+                where,
+                metadata_column="metadata",
+                known_fields=metadata_field_names(table),
+            )
+        )
 
     # ── Delete ──────────────────────────────────────────────────────
 
@@ -290,7 +368,13 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         table = self._open_table(collection_name)
         if table is None:
             return
-        table.delete(translate_where(where, metadata_column="metadata"))
+        table.delete(
+            translate_where(
+                where,
+                metadata_column="metadata",
+                known_fields=metadata_field_names(table),
+            )
+        )
         self.bump_generation(collection_name)
 
     # ── Collection metadata (Phase 4 profile tags) ─────────────────
