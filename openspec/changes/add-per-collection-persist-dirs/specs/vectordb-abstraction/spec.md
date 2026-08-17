@@ -70,6 +70,14 @@ default to decide where to place data.
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
 
+#### Scenario: LanceDB is selectable by configuration
+
+- **WHEN** `VECTOR_STORE=lancedb` is set
+- **THEN** `compose.py` MUST resolve and construct the LanceDB
+  implementation through the registry
+- **AND** every consumer MUST receive it by injection through the same
+  paths that receive the ChromaDB store
+
 #### Scenario: Persist directory arrives resolved
 
 - **WHEN** the composition root constructs the store for an operation on a
