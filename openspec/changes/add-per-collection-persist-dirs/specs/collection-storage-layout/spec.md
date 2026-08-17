@@ -100,3 +100,29 @@ sharing a ChromaDB SQLite file.
   unmapped collections under one `chroma_persist_dir`
 - **THEN** neither write MUST fail with a database-lock error
 - **AND** both collections MUST contain their expected records
+
+### Requirement: Per-collection isolation applies only to lock-contended backends
+
+The per-collection persist-directory mechanism SHALL apply only to vector
+stores whose storage model shares one write-locked database across
+collections, namely ChromaDB's embedded SQLite. A backend that already
+isolates its collections on disk SHALL NOT be subject to per-collection
+directory resolution; its collections SHALL resolve to the store's single
+configured location. LanceDB is such a backend: each collection is a
+separate Lance dataset under one connection URI, so a single writer lock is
+never shared across collections. This requirement keeps the ChromaDB-shaped
+isolation logic from being misapplied to a store that does not need it.
+
+#### Scenario: Chroma is subject to per-collection directories
+
+- **WHEN** `VECTOR_STORE=chroma` and no explicit mapping exists for a
+  collection
+- **THEN** the collection MUST resolve to its own persist directory under
+  the parent root
+
+#### Scenario: LanceDB is exempt from per-collection directories
+
+- **WHEN** `VECTOR_STORE=lancedb` (once the LanceDB backend is present)
+- **THEN** per-collection directory resolution MUST NOT be applied
+- **AND** all collections MUST resolve to the store's single configured
+  `LANCEDB_URI`, because LanceDB tables are already isolated on disk
