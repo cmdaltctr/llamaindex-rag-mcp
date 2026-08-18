@@ -29,6 +29,14 @@ from rag_mcp.compose import (
 from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
 
+
+def test_embedding_provider_scope_is_process_global() -> None:
+    """Profiles must not imply concurrent per-collection embed providers."""
+    import rag_mcp.compose as compose
+
+    assert compose.EMBEDDING_PROVIDER_SCOPE == "process"
+
+
 # Subpackage field -> the nested block that owns it (v2.0.0 schema).
 _BLOCK_OF = {
     "embed_batch_size": "ingestion",
