@@ -16,7 +16,6 @@ from llama_index.core.node_parser import CodeSplitter
 
 from rag_mcp.core.chunking.code import chunk_code_file_async
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -101,12 +100,8 @@ def test_bm25_cache_isolated_by_store_identity() -> None:
 
     BM25SparseRetriever._cache.clear()
     try:
-        first = BM25SparseRetriever(
-            "documents", store=FakeStore("store-a", "alpha unique token")
-        )
-        second = BM25SparseRetriever(
-            "documents", store=FakeStore("store-b", "beta unique token")
-        )
+        first = BM25SparseRetriever("documents", store=FakeStore("store-a", "alpha unique token"))
+        second = BM25SparseRetriever("documents", store=FakeStore("store-b", "beta unique token"))
 
         first_rows = first.query("alpha", 5)
         second_rows = second.query("beta", 5)
@@ -188,9 +183,7 @@ def test_orchestration_does_not_duplicate_store_generation_bumps() -> None:
 
 def test_experiment_10b_runner_contains_hybrid_and_dense_treatments() -> None:
     """10b must not claim a hybrid hypothesis while executing dense-only cells."""
-    source = _python_source(
-        "experiments/10b-reranker-pool-size-corrected-2026-06-29/run_eval.py"
-    )
+    source = _python_source("experiments/10b-reranker-pool-size-corrected-2026-06-29/run_eval.py")
     assert _search_call_literal_values(source, "hybrid") == {False, True}
     assert _search_call_literal_values(source, "rerank") == {False, True}
 
@@ -206,8 +199,6 @@ def test_experiment_13_threshold_cells_do_not_force_reranking() -> None:
 
 def test_experiment_14_build_path_reads_real_pdf_bytes() -> None:
     """The parser A/B must actually parse PDFs rather than Qasper Markdown."""
-    source = _python_source(
-        "experiments/14-liteparse-qasper-promotion-2026-06-29/build_indexes.py"
-    )
+    source = _python_source("experiments/14-liteparse-qasper-promotion-2026-06-29/build_indexes.py")
     assert 'glob("*.pdf")' in source or "glob('*.pdf')" in source
     assert "get_pdf_reader" in source or "read_and_chunk_file_async" in source

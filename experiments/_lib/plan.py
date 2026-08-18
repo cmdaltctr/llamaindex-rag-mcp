@@ -10,9 +10,10 @@ statistics code.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 
 def _freeze_mapping(mapping: Mapping[str, Any]) -> tuple[tuple[str, Any], ...]:
@@ -28,7 +29,7 @@ class ExperimentCell:
     factors: Mapping[str, Any]
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ExperimentCell":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ExperimentCell:
         cell_id = str(payload.get("id", "")).strip()
         if not cell_id:
             raise ValueError("Experiment cell requires a non-empty 'id'")
@@ -56,7 +57,7 @@ class ExperimentPlan:
     required_manifest_assertions: tuple[Mapping[str, Any], ...] = ()
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ExperimentPlan":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ExperimentPlan:
         required_strings = {
             name: str(payload.get(name, "")).strip()
             for name in (
@@ -114,7 +115,7 @@ class ExperimentPlan:
         return plan
 
     @classmethod
-    def from_json(cls, path: str | Path) -> "ExperimentPlan":
+    def from_json(cls, path: str | Path) -> ExperimentPlan:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         if not isinstance(payload, Mapping):
             raise ValueError("Experiment plan JSON root must be an object")
@@ -130,9 +131,7 @@ class ExperimentPlan:
         for cell in self.cells:
             unknown = set(cell.factors) - declared_names
             if unknown:
-                raise ValueError(
-                    f"Cell {cell.id!r} uses undeclared factor(s): {sorted(unknown)}"
-                )
+                raise ValueError(f"Cell {cell.id!r} uses undeclared factor(s): {sorted(unknown)}")
             for factor_name, level in cell.factors.items():
                 if level not in self.manipulated_factors[factor_name]:
                     raise ValueError(
