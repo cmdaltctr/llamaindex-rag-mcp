@@ -914,11 +914,12 @@ class TestScoreConsistency:
         for r in filtered_filt:
             assert r["score"] >= threshold
 
-    def test_distance_to_score_canonical_formula(self) -> None:
-        """``_distance_to_score`` follows ``1 / (1 + d)`` exactly."""
-        from rag_mcp.core.retrieval.dense import _distance_to_score
+    def test_l2_to_score_canonical_formula_lives_at_store_boundary(self) -> None:
+        """The adapter helper follows ``1 / (1 + d)`` and rejects omissions."""
+        from rag_mcp.core.vectordb.score import canonical_score_from_l2
 
-        assert _distance_to_score(0.0) == pytest.approx(1.0)
-        assert _distance_to_score(1.0) == pytest.approx(0.5)
-        assert _distance_to_score(3.0) == pytest.approx(0.25)
-        assert _distance_to_score(None) == 0.0
+        assert canonical_score_from_l2(0.0, backend="test") == pytest.approx(1.0)
+        assert canonical_score_from_l2(1.0, backend="test") == pytest.approx(0.5)
+        assert canonical_score_from_l2(3.0, backend="test") == pytest.approx(0.25)
+        with pytest.raises(ValueError, match="no L2 distance"):
+            canonical_score_from_l2(None, backend="test")

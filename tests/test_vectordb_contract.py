@@ -17,6 +17,7 @@ read/update, and generation bumping.
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import pytest
@@ -134,6 +135,35 @@ class TestWriteAndQuery:
         assert "document" in results[0]
         assert "metadata" in results[0]
         assert "id" in results[0]
+        assert results[0]["score_kind"] == "dense_similarity_v1"
+        assert 0.0 < results[0]["score"] <= 1.0
+        assert "distance" not in results[0]
+
+    def test_precomputed_vectors_have_cross_store_semantic_score_parity(
+        self, store: VectorStore
+    ) -> None:
+        """Both adapters expose the same ranking/range/kind invariants.
+
+        Exact numeric equality is intentionally not asserted: ChromaDB and
+        LanceDB may report differently scaled native L2 distances. The
+        canonical contract is bounded, higher-is-better, and monotonic.
+        """
+        store.upsert_precomputed(
+            "semantic_scores",
+            ids=["exact", "near", "far"],
+            documents=["exact", "near", "far"],
+            metadatas=[{"rank": 1}, {"rank": 2}, {"rank": 3}],
+            embeddings=[[1.0, 0.0], [0.8, 0.2], [0.0, 1.0]],
+        )
+
+        rows = store.query_dense("semantic_scores", [1.0, 0.0], n_results=3)
+
+        assert [row["id"] for row in rows] == ["exact", "near", "far"]
+        assert all(row["score_kind"] == "dense_similarity_v1" for row in rows)
+        scores = [row["score"] for row in rows]
+        assert scores[0] == pytest.approx(1.0)
+        assert all(0.0 < score <= 1.0 for score in scores)
+        assert scores == sorted(scores, reverse=True)
 
     def test_query_with_metadata_filter(self, store: VectorStore) -> None:
         """A metadata filter must restrict results to matching chunks."""
@@ -158,6 +188,30 @@ class TestWriteAndQuery:
         store.create_collection("empty")
         results = store.query_dense("empty", [0.0] * 384, n_results=5)
         assert results == []
+
+
+class TestNativeMetricAssumptions:
+    """Adapters must pin or reject metrics outside the canonical contract."""
+
+    def test_chroma_rejects_explicit_non_l2_collection(self) -> None:
+        store = ChromaVectorStore()
+        collection = store._get_client().get_or_create_collection(
+            "unsupported_cosine_metric",
+            metadata={"hnsw:space": "cosine"},
+        )
+        collection.add(
+            ids=["row"],
+            documents=["row"],
+            metadatas=[{"kind": "probe"}],
+            embeddings=[[1.0, 0.0]],
+        )
+
+        with pytest.raises(ValueError, match="requires hnsw:space='l2'"):
+            store.query_dense("unsupported_cosine_metric", [1.0, 0.0], 1)
+
+    def test_lance_query_pins_l2_instead_of_relying_on_default(self) -> None:
+        source = inspect.getsource(LanceVectorStore.query_dense)
+        assert '.distance_type("l2")' in source
 
 
 # ── Paged reads ───────────────────────────────────────────────────────
@@ -357,6 +411,48 @@ class TestGenerationCounter:
             embeddings=[[0.1, 0.2]],
         )
         assert store.get_generation("precomputed") == 1
+
+    def test_each_successful_mutation_advances_exactly_once(self, store: VectorStore) -> None:
+        """Direct store callers get the same invalidation ownership as pipelines."""
+        from llama_index.core.schema import TextNode
+
+        name = "exactly_once"
+        assert store.get_generation(name) == 0
+        store.write_nodes(
+            [TextNode(text="keep", metadata={"kind": "keep"})],
+            name,
+        )
+        assert store.get_generation(name) == 1
+
+        store.delete_where(name, {"kind": "keep"})
+        assert store.get_generation(name) == 2
+
+        store.delete_collection(name)
+        assert store.get_generation(name) == 3
+
+    @pytest.mark.asyncio
+    async def test_pipeline_mutations_do_not_add_caller_owned_bumps(
+        self, store: VectorStore
+    ) -> None:
+        """Writer orchestration observes one bump per store mutation."""
+        from llama_index.core.schema import TextNode
+
+        from rag_mcp.core.ingestion.writer import embed_and_write_async, remove_document
+
+        name = "pipeline_exactly_once"
+        written = await embed_and_write_async(
+            [TextNode(text="pipeline row", metadata={"file_path": "pipeline.txt"})],
+            collection_name=name,
+            store=store,
+            embed_concurrency=1,
+        )
+        assert written == 1
+        assert store.get_generation(name) == 1
+
+        result = remove_document("pipeline.txt", collection_name=name, store=store)
+        assert result["status"] == "ok"
+        assert result["chunks_removed"] == 1
+        assert store.get_generation(name) == 2
 
     def test_generations_are_per_collection(self, store: VectorStore) -> None:
         store.bump_generation("a")

@@ -93,10 +93,12 @@ def test_bm25_cache_isolated_by_store_identity() -> None:
             return 0
 
         def count(self, collection_name: str) -> int:
-            return 1
+            return 3
 
         def iter_documents(self, collection_name: str):
             yield self.doc_id, self.text, {"file_path": f"/{self.doc_id}.txt"}
+            yield f"{self.doc_id}-filler-1", "common filler gamma", {}
+            yield f"{self.doc_id}-filler-2", "common filler delta", {}
 
     BM25SparseRetriever._cache.clear()
     try:

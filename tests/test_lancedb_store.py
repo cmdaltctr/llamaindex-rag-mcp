@@ -5,9 +5,8 @@ Identity tests mirror the ChromaDB semantics documented in
 through public ``VectorStore`` ABC methods plus ``EmbeddingIdentity``
 only.  Hybrid tests mirror ``test_hybrid_retrieval.py``: the in-memory
 BM25 sparse retriever must build its index from ``iter_documents`` and
-rebuild whenever a write or delete advances the generation counter (an
-explicit LanceDB-spec difference from the Chroma pipeline, where the
-ingestion writer owns write-side bumping).
+rebuild whenever a store-owned write or delete advances the generation
+counter.
 
 All tests run offline against an isolated on-disk database under
 ``tmp_path`` using the conftest MockEmbedding (384 dims).
@@ -20,6 +19,7 @@ from pathlib import Path
 import pytest
 
 from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 from rag_mcp.core.vectordb.identity import (
     IDENTITY_INDEX_KEY,
     IDENTITY_MODEL_KEY,
@@ -27,6 +27,34 @@ from rag_mcp.core.vectordb.identity import (
     EmbeddingIdentity,
 )
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+
+
+def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
+    """Equal collection/generation values cannot cross backend instances."""
+    collection = "cross_backend_cache_isolation"
+    chroma = ChromaVectorStore()
+    lance = LanceVectorStore(uri=str(tmp_path / "cross_backend_lance"))
+    common_metadatas = [{"row": 1}, {"row": 2}, {"row": 3}]
+    common_embeddings = [[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]]
+    chroma.upsert_precomputed(
+        collection,
+        ["chroma", "chroma-f1", "chroma-f2"],
+        ["alpha unique", "filler gamma", "filler delta"],
+        common_metadatas,
+        common_embeddings,
+    )
+    lance.upsert_precomputed(
+        collection,
+        ["lance", "lance-f1", "lance-f2"],
+        ["beta unique", "filler gamma", "filler delta"],
+        common_metadatas,
+        common_embeddings,
+    )
+    assert chroma.get_generation(collection) == lance.get_generation(collection) == 1
+
+    assert BM25SparseRetriever(collection, store=chroma).query("alpha", 1)[0][1] == "chroma"
+    assert BM25SparseRetriever(collection, store=lance).query("beta", 1)[0][1] == "lance"
+
 
 # ── Embedding identity (task 6.3) ─────────────────────────────────────
 

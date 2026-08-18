@@ -468,6 +468,15 @@ second backend behind the same interface. Each collection gets its own table
 and files with optimistic concurrency instead of ChromaDB's shared SQLite
 write lock. Opt-in via `VECTOR_STORE=lancedb`; ChromaDB stays the default.
 
+Vector-store selection is runtime-swappable at the deployment boundary, but
+embedding-provider selection is **process/deployment scoped**, not
+per-collection. The composition root assigns one LlamaIndex
+`Settings.embed_model` for the process. Concurrent collections may use
+different retrieval profiles and stores, but they cannot safely select
+different embedding providers in the same server process. Run separate
+processes for different providers until an explicit per-operation embedding
+context replaces the LlamaIndex global.
+
 **MCP** ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md)) —
 one server works with any MCP client, rather than a bespoke integration each
 time.

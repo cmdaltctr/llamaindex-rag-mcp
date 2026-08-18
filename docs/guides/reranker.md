@@ -7,24 +7,24 @@ The server includes an optional **cross-encoder reranker** that re-scores vector
 Without the reranker:
 
 ```
-query → embed → cosine similarity → return top_k
+query → embed → canonical dense similarity → return top_k
 ```
 
 With the reranker:
 
 ```
-query → embed → cosine similarity (top_k × 2) → cross-encoder re-score → return top_k
+query → embed → dense candidates → cross-encoder re-score → return top_k
 ```
 
-The cross-encoder evaluates each (query, document) pair jointly, which is slower but much more accurate than cosine similarity alone. The vector search fetches `top_k × 2` candidates so the reranker has a meaningful pool to re-score.
+The cross-encoder evaluates each (query, document) pair jointly, which is slower but can be more precise than dense retrieval alone. The vector search fetches a wider candidate pool so the reranker has meaningful rows to re-score.
 
 ## Threshold auto-scaling
 
-Cross-encoder sigmoid scores occupy a much lower range than cosine similarity. Valid reranker results can score as low as 0.015, while cosine similarity rarely goes below 0.3 for relevant matches.
+Cross-encoder sigmoid scores occupy a different range from the canonical dense score. Valid reranker results can score as low as 0.015.
 
-When `rerank=True` **and reranking actually succeeds**, the `similarity_threshold` is **automatically scaled down by 30×** so that a user-supplied value of 0.3 becomes 0.01. You always supply a threshold in cosine-similarity terms; the system handles the conversion transparently.
+When `rerank=True` **and reranking actually succeeds**, the `similarity_threshold` is **automatically scaled down by 30×** so that a user-supplied value of 0.3 becomes 0.01. Supply the threshold in canonical dense-score terms; the system applies the calibrated reranker transform.
 
-The scaling follows the rerank *outcome*, not the request: if `rerank=True` but the reranker fails (see Fallback below), the returned scores are still raw cosine similarities, so the threshold is applied **unscaled**. Scaling an unscaled score range would make filtering roughly 30× too permissive on exactly the results that fell back to un-reranked.
+The scaling follows the rerank *outcome*, not the request. If reranking fails, dense-only search applies the unscaled threshold to `dense_similarity_v1`; hybrid search rebuilds the first-stage candidates with that dense threshold before RRF. RRF utilities are never compared directly with the dense threshold.
 
 Calibrated from experiment data in `experiments/reranker-threshold-calibration-2026-05-12/`:
 

@@ -900,7 +900,16 @@ class TestLocalCloudParity:
         cloud_obs = _exercise_store_cycle(cloud_store, "parity_cloud")
         assert local_obs == cloud_obs
         assert local_obs["query_row_keys"] == {
-            frozenset({"id", "distance", "document", "metadata"})
+            frozenset(
+                {
+                    "id",
+                    "document",
+                    "metadata",
+                    "score",
+                    "score_kind",
+                    "native_distance",
+                }
+            )
         }
         assert local_obs["count_after_write"] == 2
         assert local_obs["count_after_delete"] == 0

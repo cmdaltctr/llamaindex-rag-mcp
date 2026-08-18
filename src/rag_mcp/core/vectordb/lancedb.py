@@ -53,6 +53,7 @@ from .lance_paged import (
     strip_internal_metadata,
 )
 from .lance_rows import rows_to_arrow, upsert_schema
+from .score import DENSE_SCORE_KIND, canonical_score_from_l2
 
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
@@ -337,13 +338,17 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
             where: Optional ChromaDB-style metadata filter.
 
         Returns:
-            Result rows with ``id``/``distance``/``document``/``metadata``.
+            Result rows with canonical ``score``/``score_kind`` plus the
+            store-neutral content fields. LanceDB's default search metric is
+            L2; its native ``_distance`` is retained only as a diagnostic.
         """
         table = self._open_table(collection_name)
         if table is None:
             return []
         self._guard_query_identity(collection_name)
-        builder = table.search(query_embedding).limit(n_results)
+        # Pin L2 explicitly instead of relying on LanceDB's current default;
+        # the adapter's canonical transform is defined only for L2 distance.
+        builder = table.search(query_embedding).distance_type("l2").limit(n_results)
         if where:
             builder = builder.where(
                 translate_where(
@@ -359,9 +364,11 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
             results.append(
                 {
                     "id": str(row.get("id")),
-                    "distance": row.get("_distance"),
                     "document": text if text is not None else "",
                     "metadata": strip_internal_metadata(row.get("metadata")),
+                    "score": canonical_score_from_l2(row.get("_distance"), backend="LanceDB"),
+                    "score_kind": DENSE_SCORE_KIND,
+                    "native_distance": row.get("_distance"),
                 }
             )
         return results

@@ -190,9 +190,11 @@ async def search_documents(
         query: Natural language search query.
         top_k: Maximum number of chunks to return. When None, the
             selected collection profile supplies the default.
-        similarity_threshold: Minimum relevance score to include a
-            result. When None, the collection profile supplies the
-            default.
+        similarity_threshold: Minimum canonical dense similarity to include
+            without reranking. In hybrid/no-rerank mode it constrains dense
+            evidence before RRF; successful reranking uses the calibrated
+            reranker threshold transform. When None, the collection profile
+            supplies the default.
         rerank: Tri-state rerank control:
             - ``True``: force reranking (explicit opt-in)
             - ``False``: force no reranking (explicit opt-out)
@@ -201,7 +203,7 @@ async def search_documents(
             via Reciprocal Rank Fusion. When None, the collection profile
             supplies the default.
         collection: Name of the ChromaDB collection to search.
-        metadata_filter: Optional ChromaDB-compatible ``where`` clause.
+        metadata_filter: ChromaDB-compatible filter for dense and sparse candidates.
 
     Returns:
         On success, a list of result dicts. On failure, a single-element

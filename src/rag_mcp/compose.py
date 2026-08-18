@@ -21,6 +21,12 @@ from .core.providers.embeddings import registry as embed_registry
 
 logger = logging.getLogger(__name__)
 
+# LlamaIndex exposes one process-global embed model. Vector stores and
+# collection profiles are runtime-swappable, but embedding-provider selection
+# is deliberately deployment/process scoped until an explicit per-operation
+# embedding context replaces this global assignment.
+EMBEDDING_PROVIDER_SCOPE = "process"
+
 # ── Runtime setup state ─────────────────────────────────────────────
 
 _runtime_setup_done: bool = False

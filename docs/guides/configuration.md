@@ -219,6 +219,13 @@ the chunking configuration, or the vector dimension requires re-ingestion
 into a fresh collection. Same-dimension model swaps are rejected rather than
 silently mixing incompatible vector spaces.
 
+Embedding-provider selection applies to the whole server process. A single
+process assigns one LlamaIndex `Settings.embed_model`; per-collection profiles
+do not override it. If two collections require different embedding providers
+or models concurrently, run them in separate server processes. The current
+configuration must not be treated as concurrent per-collection provider
+swappability.
+
 Run the opt-in smoke check before using cloud storage:
 
 ```bash
