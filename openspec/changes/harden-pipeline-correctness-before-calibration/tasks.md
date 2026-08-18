@@ -139,8 +139,8 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 - [x] 2.G.1 Run the same retrieval/vector-store contract suite against ChromaDB and LanceDB. (`tests/test_vectordb_contract.py`, `tests/test_lancedb_store.py`, and direct/pipeline mutation parametrizations pass against both adapters.)
 - [x] 2.G.2 Run hybrid filter/cache/threshold regression suites. (`tests/test_hybrid_retrieval.py` and the five Stage 2 audit regressions pass.)
 - [x] 2.G.3 Review score semantics and diagnostics before committing. (Canonical dense, RRF, and reranker score kinds are explicit; diagnostics name the thresholded score kind.)
-- [ ] 2.G.4 Commit Stage 2 separately; no ingestion or experiment-runner edits in this commit.
-- [ ] 2.G.5 ADR gate: the Stage 2 ADR MUST exist in draft/proposed form before implementation is considered complete; after the deterministic contract suite passes, update its status/wording to reflect tested facts and link the Stage 2 commit.
+- [x] 2.G.4 Commit Stage 2 separately; no ingestion or experiment-runner edits in this commit. (Commit `6dffece`; the only ingestion-path change is the Stage 2 generation-ownership fix required by 2.5.3—no Stage 3 ingestion behaviour or experiment runner was changed.)
+- [x] 2.G.5 ADR gate: the Stage 2 ADR MUST exist in draft/proposed form before implementation is considered complete; after the deterministic contract suite passes, update its status/wording to reflect tested facts and link the Stage 2 commit. (ADR-047 was Proposed before implementation commit `6dffece`, is now Accepted with deterministic evidence, and links that commit; Experiments 2–4 remain explicitly unrun.)
 
 ---
 
