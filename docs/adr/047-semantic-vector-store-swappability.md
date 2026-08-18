@@ -1,7 +1,7 @@
 # ADR-047: Semantic Vector-Store Swappability
 
 **Date:** 2026-08-18
-**Status:** Proposed
+**Status:** Accepted
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -74,11 +74,22 @@ quality. Calibration must therefore wait for a deterministic semantic contract.
    process-global provider. Concurrent per-collection provider selection needs
    a future explicit design with per-operation embedding context.
 
-## Evidence Boundary
+## Acceptance Evidence
 
-The acceptance evidence for this ADR will be the deterministic cross-store
-contract suite in `tests/test_vectordb_contract.py`, the hybrid retrieval suite
-in `tests/test_hybrid_retrieval.py`, and the Stage 2 audit regressions in
+Stage 2 is implemented by commit
+[`6dffece`](https://github.com/cmdaltctr/llamaindex-rag-mcp/commit/6dffece298bec1507642cff15bbf03225f22af78).
+The deterministic acceptance run on 2026-08-19 produced:
+
+- 313 passed and 1 skipped across the vector-store, retrieval, ingestion,
+  hosted-Chroma, and composition contract suites;
+- 8 passed and 3 deferred Stage 4 cases deselected across the Stage 2 audit
+  regressions and file-size ceiling;
+- Ruff check and format clean, all 8 import-linter contracts kept, and all 38
+  OpenSpec items valid under strict validation.
+
+The cross-store contract evidence is in `tests/test_vectordb_contract.py` and
+`tests/test_lancedb_store.py`; hybrid filter, cache, and threshold evidence is
+in `tests/test_hybrid_retrieval.py`; the pinned Stage 2 audit regressions are in
 `tests/test_precalibration_audit_regressions.py`.
 
 Example Experiments 2–4 under `experiments/example/` remain future empirical

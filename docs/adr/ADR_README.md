@@ -53,7 +53,7 @@ development of the LlamaIndex RAG MCP Server.
 | [044](./044-pluggable-community-detection.md)                    | Pluggable Community Detection                                                                | 2026-08-14 | Accepted |
 | [045](./045-hosted-chroma-cloud-backend.md)                      | Hosted Chroma Cloud Backend for Experiment Storage                                           | 2026-08-15 | Accepted |
 | [046](./046-lancedb-vector-store-backend.md)                     | LanceDB as the Second Vector-Store Backend                                                   | 2026-08-17 | Accepted |
-| [047](./047-semantic-vector-store-swappability.md)               | Semantic Vector-Store Swappability                                                           | 2026-08-18 | Proposed |
+| [047](./047-semantic-vector-store-swappability.md)               | Semantic Vector-Store Swappability                                                           | 2026-08-18 | Accepted |
 
 ## Convention
 
