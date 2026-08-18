@@ -89,56 +89,56 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ### 2.1 Canonical dense score contract
 
-- [ ] 2.1.1 Change the VectorStore dense-query contract so adapters return a higher-is-better canonical `score` plus `score_kind`; core retrieval SHALL not convert generic `distance` itself.
-- [ ] 2.1.2 Implement Chroma conversion at the Chroma adapter boundary and pin its native metric assumptions in tests.
-- [ ] 2.1.3 Implement LanceDB conversion at the Lance adapter boundary and pin its native metric assumptions in tests.
-- [ ] 2.1.4 Add identical precomputed-vector fixtures across both stores; assert expected nearest-neighbour order, monotonic score behaviour, score range and score-kind identity.
-- [ ] 2.1.5 If exact cross-store score equality is not mathematically justified, assert the documented invariant rather than forcing equality; amend the score spec before continuing.
+- [x] 2.1.1 Change the VectorStore dense-query contract so adapters return a higher-is-better canonical `score` plus `score_kind`; core retrieval SHALL not convert generic `distance` itself.
+- [x] 2.1.2 Implement Chroma conversion at the Chroma adapter boundary and pin its native metric assumptions in tests.
+- [x] 2.1.3 Implement LanceDB conversion at the Lance adapter boundary and pin its native metric assumptions in tests.
+- [x] 2.1.4 Add identical precomputed-vector fixtures across both stores; assert expected nearest-neighbour order, monotonic score behaviour, score range and score-kind identity.
+- [x] 2.1.5 If exact cross-store score equality is not mathematically justified, assert the documented invariant rather than forcing equality; amend the score spec before continuing.
 
 ### 2.2 Threshold semantics
 
-- [ ] 2.2.1 Remove direct application of dense `similarity_threshold` to RRF `fused_score`.
-- [ ] 2.2.2 Pin dense/no-rerank threshold behaviour against canonical dense score.
-- [ ] 2.2.3 Pin hybrid/no-rerank behaviour: dense threshold is evaluated on dense evidence before fusion; sparse-only rows SHALL NOT claim to satisfy a positive minimum dense similarity.
-- [ ] 2.2.4 Pin hybrid+rerank behaviour: RRF chooses candidates; successful reranker score is the final thresholdable quantity.
-- [ ] 2.2.5 Pin reranker-failure behaviour so threshold semantics return to the correct pre-rerank score kind.
-- [ ] 2.2.6 Surface threshold score-kind in diagnostics/runtime manifest.
+- [x] 2.2.1 Remove direct application of dense `similarity_threshold` to RRF `fused_score`.
+- [x] 2.2.2 Pin dense/no-rerank threshold behaviour against canonical dense score.
+- [x] 2.2.3 Pin hybrid/no-rerank behaviour: dense threshold is evaluated on dense evidence before fusion; sparse-only rows SHALL NOT claim to satisfy a positive minimum dense similarity.
+- [x] 2.2.4 Pin hybrid+rerank behaviour: RRF chooses candidates; successful reranker score is the final thresholdable quantity.
+- [x] 2.2.5 Pin reranker-failure behaviour so threshold semantics return to the correct pre-rerank score kind.
+- [x] 2.2.6 Surface threshold score-kind in diagnostics/runtime manifest.
 
 ### 2.3 Hybrid filter symmetry
 
-- [ ] 2.3.1 Thread the caller metadata filter into the sparse branch through a store-neutral mechanism.
-- [ ] 2.3.2 Test dense-only and hybrid return no forbidden metadata rows for equivalent filters.
-- [ ] 2.3.3 Test nested/operator filter shapes already supported by both store backends.
-- [ ] 2.3.4 Document any unavoidable performance trade-off separately from correctness.
+- [x] 2.3.1 Thread the caller metadata filter into the sparse branch through a store-neutral mechanism.
+- [x] 2.3.2 Test dense-only and hybrid return no forbidden metadata rows for equivalent filters.
+- [x] 2.3.3 Test nested/operator filter shapes already supported by both store backends.
+- [x] 2.3.4 Document any unavoidable performance trade-off separately from correctness.
 
 ### 2.4 BM25 cache namespace
 
-- [ ] 2.4.1 Key BM25 cache by `(store identity token, collection_name)` rather than collection name alone.
-- [ ] 2.4.2 Clear/rebuild only the affected namespace on generation change.
-- [ ] 2.4.3 Add Chroma-vs-Lance and two-Chroma-instance collision tests.
+- [x] 2.4.1 Key BM25 cache by `(store identity token, collection_name)` rather than collection name alone.
+- [x] 2.4.2 Clear/rebuild only the affected namespace on generation change.
+- [x] 2.4.3 Add Chroma-vs-Lance and two-Chroma-instance collision tests.
 
 ### 2.5 Generation ownership
 
-- [ ] 2.5.1 Make every VectorStore mutation advance its own generation exactly once.
-- [ ] 2.5.2 Add missing Chroma bumps for store-owned mutation paths as required.
-- [ ] 2.5.3 Remove writer/orchestration duplicate bumps.
-- [ ] 2.5.4 Run direct-store and pipeline mutation contract tests against ChromaDB and LanceDB.
+- [x] 2.5.1 Make every VectorStore mutation advance its own generation exactly once.
+- [x] 2.5.2 Add missing Chroma bumps for store-owned mutation paths as required.
+- [x] 2.5.3 Remove writer/orchestration duplicate bumps.
+- [x] 2.5.4 Run direct-store and pipeline mutation contract tests against ChromaDB and LanceDB.
 
 ### 2.6 Swappability boundary documentation
 
-- [ ] 2.6.1 Document embedding provider selection as process/deployment-scoped because LlamaIndex embed model is still process-global.
-- [ ] 2.6.2 Add a guard/test preventing claims of concurrent per-collection embed-provider selection without a future explicit design.
+- [x] 2.6.1 Document embedding provider selection as process/deployment-scoped because LlamaIndex embed model is still process-global.
+- [x] 2.6.2 Add a guard/test preventing claims of concurrent per-collection embed-provider selection without a future explicit design.
 
 ### 2.7 Required architecture decision record
 
-- [ ] 2.7.1 Write or amend an ADR covering **semantic VectorStore swappability**: canonical higher-is-better score semantics, native-metric conversion at adapter boundaries, `score_kind`, dense/RRF/reranker threshold semantics, metadata-filter symmetry, store-scoped sparse-cache identity, exactly-once generation ownership, and the current deployment-scoped embedding-provider limitation.
-- [ ] 2.7.2 Reference the cross-store contract tests and Example Experiments 2–4 as evidence inputs; do not claim experiment PASS before Stage 5 actually runs them.
+- [x] 2.7.1 Write or amend an ADR covering **semantic VectorStore swappability**: canonical higher-is-better score semantics, native-metric conversion at adapter boundaries, `score_kind`, dense/RRF/reranker threshold semantics, metadata-filter symmetry, store-scoped sparse-cache identity, exactly-once generation ownership, and the current deployment-scoped embedding-provider limitation.
+- [x] 2.7.2 Reference the cross-store contract tests and Example Experiments 2–4 as evidence inputs; do not claim experiment PASS before Stage 5 actually runs them.
 
 ### PAUSE GATE 2 — retrieval-contract commit
 
-- [ ] 2.G.1 Run the same retrieval/vector-store contract suite against ChromaDB and LanceDB.
-- [ ] 2.G.2 Run hybrid filter/cache/threshold regression suites.
-- [ ] 2.G.3 Review score semantics and diagnostics before committing.
+- [x] 2.G.1 Run the same retrieval/vector-store contract suite against ChromaDB and LanceDB. (`tests/test_vectordb_contract.py`, `tests/test_lancedb_store.py`, and direct/pipeline mutation parametrizations pass against both adapters.)
+- [x] 2.G.2 Run hybrid filter/cache/threshold regression suites. (`tests/test_hybrid_retrieval.py` and the five Stage 2 audit regressions pass.)
+- [x] 2.G.3 Review score semantics and diagnostics before committing. (Canonical dense, RRF, and reranker score kinds are explicit; diagnostics name the thresholded score kind.)
 - [ ] 2.G.4 Commit Stage 2 separately; no ingestion or experiment-runner edits in this commit.
 - [ ] 2.G.5 ADR gate: the Stage 2 ADR MUST exist in draft/proposed form before implementation is considered complete; after the deterministic contract suite passes, update its status/wording to reflect tested facts and link the Stage 2 commit.
 
