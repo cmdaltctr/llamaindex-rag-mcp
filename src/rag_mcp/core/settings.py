@@ -24,9 +24,17 @@ class ChunkingBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
+    # Sentence/Markdown splitters consume tokenizer units.
     chunk_size: int = 512
     chunk_overlap: int = 100
     markdown_chunk_size: int = 1024
+
+    # LlamaIndex CodeSplitter consumes lines plus a character ceiling.
+    # These stay separate from the token-oriented document settings.
+    code_chunk_lines: int = 40
+    code_chunk_lines_overlap: int = 15
+    code_max_chars: int = 1500
+
     markdown_heading_prepend: bool = False
     markdown_min_chunk_fraction: float = 0.0
     strategy_fallback: str = "markdown"

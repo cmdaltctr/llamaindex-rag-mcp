@@ -17,9 +17,14 @@
 
 # ── Chunking ──────────────────────────────────────────────────────────
 chunking:
+  # Sentence/Markdown splitters use tokenizer units.
   chunk_size: 512
   chunk_overlap: 100
   markdown_chunk_size: 1024
+  # CodeSplitter uses lines plus an explicit character ceiling.
+  code_chunk_lines: 40
+  code_chunk_lines_overlap: 15
+  code_max_chars: 1500
   markdown_heading_prepend: false
   markdown_min_chunk_fraction: 0.0
   strategy_fallback: markdown
