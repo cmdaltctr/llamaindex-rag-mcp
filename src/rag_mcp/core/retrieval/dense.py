@@ -1,8 +1,7 @@
-"""Dense vector search over ChromaDB.
+"""Store-neutral dense vector search.
 
-Query embedding with LRU cache, distance-to-score conversion, and the
-dense query path.  Extracted from the original ``retrieval.py`` monolith
-as part of Phase 1.
+Query embedding with an LRU cache and adaptation of canonical vector-store
+rows into the retrieval result shape.
 """
 
 from __future__ import annotations
@@ -70,25 +69,6 @@ def _embed_query(query: str) -> list[float]:
     return list(_cached_query_embedding(query, model_name))
 
 
-def _distance_to_score(distance: float | None) -> float:
-    """Convert a ChromaDB L2 distance to a 0–1 similarity score.
-
-    The single canonical conversion shared by every non-reranked
-    retrieval path: ``score = 1.0 / (1.0 + distance)``.  Closer distance
-    yields higher score.  See ADR-015 / OpenSpec change
-    ``rag-reliability-correctness-fixes`` Decision 3.
-
-    Args:
-        distance: Raw L2 distance from ChromaDB (``None`` is treated as 0).
-
-    Returns:
-        Float in ``(0, 1]``.
-    """
-    if distance is None:
-        return 0.0
-    return 1.0 / (1.0 + distance)
-
-
 def _result_source(meta: dict) -> str:
     return meta.get("file_path") or meta.get("file_name") or "unknown"
 
@@ -126,7 +106,8 @@ def _dense_query_rows(
         rows.append(
             {
                 "id": row.get("id", ""),
-                "score": _distance_to_score(row.get("distance")),
+                "score": row["score"],
+                "score_kind": row["score_kind"],
                 "source": _result_source(meta),
                 "page_label": meta.get("page_label"),
                 "text": row.get("document", ""),
