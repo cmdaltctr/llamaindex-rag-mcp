@@ -327,7 +327,316 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     store.bump_generation("delete_rebuild")
 
     assert retriever.query("raredelete", top_n=5) == []
-    assert BM25SparseRetriever._cache["delete_rebuild"].generation == 1
+    assert BM25SparseRetriever._cache[(store, "delete_rebuild")].generation == 1
+
+
+def test_bm25_cache_namespaces_same_collection_by_store() -> None:
+    """Two stores with equal generations cannot contaminate each other."""
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+
+    store_a = FakeStore(
+        FakeCollection(
+            "shared",
+            [
+                {"id": "a", "text": "alpha unique token", "metadata": {}},
+                {"id": "a1", "text": "filler one", "metadata": {}},
+                {"id": "a2", "text": "filler two", "metadata": {}},
+            ],
+        )
+    )
+    store_b = FakeStore(
+        FakeCollection(
+            "shared",
+            [
+                {"id": "b", "text": "beta unique token", "metadata": {}},
+                {"id": "b1", "text": "filler one", "metadata": {}},
+                {"id": "b2", "text": "filler two", "metadata": {}},
+            ],
+        )
+    )
+
+    assert BM25SparseRetriever("shared", store=store_a).query("alpha", 1)[0][1] == "a"
+    assert BM25SparseRetriever("shared", store=store_b).query("beta", 1)[0][1] == "b"
+    assert (store_a, "shared") in BM25SparseRetriever._cache
+    assert (store_b, "shared") in BM25SparseRetriever._cache
+
+
+def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
+    """Two Chroma adapters with the same collection name stay isolated."""
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    client_a = FakePersistentClient(
+        {
+            "shared_chroma": FakeCollection(
+                "shared_chroma",
+                [
+                    {"id": "a", "text": "alpha unique", "metadata": {}},
+                    {"id": "a1", "text": "filler gamma", "metadata": {}},
+                    {"id": "a2", "text": "filler delta", "metadata": {}},
+                ],
+            )
+        }
+    )
+    client_b = FakePersistentClient(
+        {
+            "shared_chroma": FakeCollection(
+                "shared_chroma",
+                [
+                    {"id": "b", "text": "beta unique", "metadata": {}},
+                    {"id": "b1", "text": "filler gamma", "metadata": {}},
+                    {"id": "b2", "text": "filler delta", "metadata": {}},
+                ],
+            )
+        }
+    )
+    store_a = ChromaVectorStore(client=client_a)
+    store_b = ChromaVectorStore(client=client_b)
+
+    assert BM25SparseRetriever("shared_chroma", store=store_a).query("alpha", 1)[0][1] == "a"
+    assert BM25SparseRetriever("shared_chroma", store=store_b).query("beta", 1)[0][1] == "b"
+
+
+def test_bm25_metadata_filter_supports_nested_and_operator_shapes() -> None:
+    """Sparse eligibility matches the filter shapes shared by both stores."""
+    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+
+    store = FakeStore(
+        FakeCollection(
+            "filtered",
+            [
+                {
+                    "id": "allowed",
+                    "text": "needle allowed",
+                    "metadata": {"category": "allowed", "priority": 3},
+                },
+                {
+                    "id": "forbidden",
+                    "text": "needle needle forbidden",
+                    "metadata": {"category": "forbidden", "priority": 9},
+                },
+                {
+                    "id": "other",
+                    "text": "unrelated filler",
+                    "metadata": {"category": "allowed", "priority": 1},
+                },
+            ],
+        )
+    )
+    rows = BM25SparseRetriever("filtered", store=store).query(
+        "needle",
+        5,
+        metadata_filter={
+            "$and": [
+                {"category": {"$in": ["allowed"]}},
+                {"priority": {"$gte": 2}},
+            ]
+        },
+    )
+
+    assert [row[1] for row in rows] == ["allowed"]
+
+
+def test_hybrid_filter_cannot_reintroduce_forbidden_sparse_row(monkeypatch) -> None:
+    """RRF receives only sparse rows satisfying the caller constraint."""
+    import rag_mcp.core.retrieval.pipeline as pipeline
+    import rag_mcp.core.retrieval.registry as registry
+    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+
+    store = FakeStore(
+        FakeCollection(
+            "hybrid_filter",
+            [
+                {
+                    "id": "allowed",
+                    "text": "needle allowed",
+                    "metadata": {"category": "allowed"},
+                },
+                {
+                    "id": "forbidden",
+                    "text": "needle needle forbidden",
+                    "metadata": {"category": "forbidden"},
+                },
+                {"id": "filler", "text": "unrelated filler", "metadata": {}},
+            ],
+        )
+    )
+
+    def filtered_dense(*args, **kwargs):
+        assert args[-1] == {"category": "allowed"}
+        return [
+            {
+                "id": "allowed",
+                "text": "needle allowed",
+                "metadata": {"category": "allowed"},
+                "score": 0.9,
+                "score_kind": "dense_similarity_v1",
+                "reranked": False,
+            }
+        ]
+
+    monkeypatch.setitem(registry._cache, "dense", filtered_dense)
+    rows = pipeline._hybrid_query_rows(
+        store,
+        "hybrid_filter",
+        "needle",
+        3,
+        60,
+        EffectiveSettings(retrieval=RetrievalBlock(hybrid_sparse_backend="bm25")),
+        metadata_filter={"category": "allowed"},
+    )
+
+    assert [row["id"] for row in rows] == ["allowed"]
+
+
+def test_positive_dense_threshold_filters_before_nonreranked_fusion(monkeypatch) -> None:
+    """Sparse-only and low-dense rows cannot satisfy a dense minimum."""
+    import rag_mcp.core.retrieval.pipeline as pipeline
+    import rag_mcp.core.retrieval.registry as registry
+    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+
+    store = FakeStore(
+        FakeCollection(
+            "threshold",
+            [
+                {"id": "qualifies", "text": "needle qualifies", "metadata": {}},
+                {"id": "low", "text": "needle low", "metadata": {}},
+                {"id": "sparse", "text": "needle sparse only", "metadata": {}},
+            ],
+        )
+    )
+
+    def dense_rows(*args, **kwargs):
+        return [
+            {
+                "id": "qualifies",
+                "text": "needle qualifies",
+                "metadata": {},
+                "score": 0.9,
+                "score_kind": "dense_similarity_v1",
+                "reranked": False,
+            },
+            {
+                "id": "low",
+                "text": "needle low",
+                "metadata": {},
+                "score": 0.2,
+                "score_kind": "dense_similarity_v1",
+                "reranked": False,
+            },
+        ]
+
+    monkeypatch.setitem(registry._cache, "dense", dense_rows)
+    rows = pipeline._hybrid_query_rows(
+        store,
+        "threshold",
+        "needle",
+        3,
+        60,
+        EffectiveSettings(retrieval=RetrievalBlock(hybrid_sparse_backend="bm25")),
+        dense_threshold=0.3,
+    )
+
+    assert [row["id"] for row in rows] == ["qualifies"]
+
+
+def test_hybrid_rerank_success_thresholds_reranker_score(monkeypatch) -> None:
+    """Successful reranking switches threshold semantics from RRF to reranker."""
+    import rag_mcp.core.retrieval.pipeline as pipeline
+    from rag_mcp.core.settings import EffectiveSettings
+
+    monkeypatch.setattr(
+        pipeline,
+        "_hybrid_query_rows",
+        lambda *args, **kwargs: [
+            {
+                "id": "candidate",
+                "source": "candidate.txt",
+                "page_label": None,
+                "text": "candidate",
+                "metadata": {},
+                "score": 0.02,
+                "score_kind": "rrf_v1",
+                "reranked": False,
+            }
+        ],
+    )
+
+    class SuccessfulReranker:
+        def rerank(self, query, results, top_k):
+            results[0]["score"] = 0.02
+            results[0]["_reranked"] = True
+            return results
+
+    store = MagicMock()
+    store.count.return_value = 1
+    rows = pipeline.search(
+        "candidate",
+        top_k=1,
+        similarity_threshold=0.3,
+        rerank=True,
+        hybrid=True,
+        reranker=SuccessfulReranker(),
+        store=store,
+        effective_settings=EffectiveSettings(),
+        include_diagnostics=True,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["score_kind"] == "reranker_sigmoid_v1"
+    assert rows[0]["threshold_score_kind"] == "reranker_sigmoid_v1"
+
+
+def test_hybrid_rerank_failure_restores_dense_threshold_semantics(monkeypatch) -> None:
+    """A failed reranker rebuilds hybrid candidates under the dense rule."""
+    import rag_mcp.core.retrieval.pipeline as pipeline
+    from rag_mcp.core.settings import EffectiveSettings
+
+    thresholds: list[float] = []
+
+    def hybrid_rows(*args, **kwargs):
+        threshold = args[-1]
+        thresholds.append(threshold)
+        return [
+            {
+                "id": "candidate",
+                "source": "candidate.txt",
+                "page_label": None,
+                "text": "candidate",
+                "metadata": {},
+                "score": 0.03,
+                "score_kind": "rrf_v1",
+                "dense_score": 0.9,
+                "reranked": False,
+            }
+        ]
+
+    monkeypatch.setattr(pipeline, "_hybrid_query_rows", hybrid_rows)
+
+    class FailedReranker:
+        last_failure_reason = "inference failed"
+
+        def rerank(self, query, results, top_k):
+            results[0]["_reranked"] = False
+            return results
+
+    store = MagicMock()
+    store.count.return_value = 1
+    rows = pipeline.search(
+        "candidate",
+        top_k=1,
+        similarity_threshold=0.3,
+        rerank=True,
+        hybrid=True,
+        reranker=FailedReranker(),
+        store=store,
+        effective_settings=EffectiveSettings(),
+        include_diagnostics=True,
+    )
+
+    assert thresholds == [0.0, 0.3]
+    assert len(rows) == 1
+    assert rows[0]["threshold_score_kind"] == "dense_similarity_v1"
 
 
 def test_remove_collection_generation_invalidates_cache() -> None:
