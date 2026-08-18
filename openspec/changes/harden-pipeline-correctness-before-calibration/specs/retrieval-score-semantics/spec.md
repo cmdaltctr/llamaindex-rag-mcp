@@ -21,6 +21,8 @@ The store-neutral dense result SHALL expose at least `id`, `document`, `metadata
 
 The repository SHALL maintain deterministic cross-store fixtures with known vector geometry. Each registered production vector store SHALL be tested for expected neighbour ordering, monotonicity, documented range and threshold behaviour.
 
+The current `dense_similarity_v1` contract SHALL NOT require exact numeric equality between backends unless their native L2 distance scaling is independently proven identical. Cross-store parity is defined by the documented bounded range, higher-is-better direction, exact-match maximum, and monotonic ordering invariants.
+
 #### Scenario: Known nearest neighbour
 - **GIVEN** a fixture with one exact vector match and progressively more distant vectors
 - **WHEN** each registered vector-store backend is queried
