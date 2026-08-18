@@ -59,6 +59,16 @@ class VectorStore(ABC):
       :meth:`get_generation` to invalidate its cached index.
     """
 
+    @property
+    def cache_identity(self) -> object:
+        """Return a stable process-local identity token for derivative caches.
+
+        The store object itself is intentionally opaque, identity-hashable,
+        and retained by the cache key, preventing Python object-id reuse from
+        aliasing a later store instance.
+        """
+        return self
+
     # ── Collection lifecycle ────────────────────────────────────────
 
     @abstractmethod
@@ -163,9 +173,10 @@ class VectorStore(ABC):
                 metadata fields.  Only matching chunks are returned.
 
         Returns:
-            List of result dicts, each with keys ``id``, ``distance``,
-            ``document``, and ``metadata``.  The caller converts the
-            distance to a similarity score.
+            List of result dicts, each with keys ``id``, ``document``,
+            ``metadata``, ``score``, and ``score_kind``.  ``score`` is
+            higher-is-better and already conforms to the canonical dense
+            score contract; callers never interpret backend-native distance.
         """
 
     # ── Read (paged scans) ──────────────────────────────────────────
