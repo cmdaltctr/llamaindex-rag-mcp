@@ -36,6 +36,7 @@ from .identity import (
     redact_cloud_secrets,
 )
 from .paged import PagedReadMixin
+from .score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
 
 __all__ = [
     "ChromaVectorStore",
@@ -154,6 +155,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     def delete_collection(self, name: str) -> None:
         client = self._get_client()
         client.delete_collection(name)
+        self.bump_generation(name)
 
     def list_collections(self) -> list[str]:
         client = self._get_client()
@@ -179,6 +181,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             storage_context=storage_context,
             show_progress=False,
         )
+        self.bump_generation(collection_name)
 
     def upsert_precomputed(
         self,
@@ -211,9 +214,6 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             metadatas=metadatas,
             embeddings=embeddings,
         )
-        # Direct-use API: unlike pipeline writes (where the ingestion
-        # writer bumps the generation), no caller owns invalidation here,
-        # so the store keeps the BM25 cache contract itself.
         self.bump_generation(collection_name)
 
     # ── Query ───────────────────────────────────────────────────────
@@ -225,17 +225,17 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         n_results: int,
         where: dict | None = None,
     ) -> list[dict]:
-        """Dense vector query returning raw ChromaDB result rows.
-
-        Returns dicts with ``id``, ``distance``, ``document``, and
-        ``metadata`` so the caller (``dense._dense_query_rows``) can
-        convert the distance to a similarity score without knowing the
-        store type.
-        """
+        """Query L2 and convert it to canonical higher-is-better scores."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return []
         self._guard_query_identity(collection_name, collection)
+        metadata = dict(getattr(collection, "metadata", None) or {})
+        require_l2_metric(
+            metadata.get("hnsw:space"),
+            backend="ChromaDB collection",
+            setting="hnsw:space",
+        )
 
         query_kwargs: dict = {
             "query_embeddings": [query_embedding],
@@ -259,9 +259,11 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             rows.append(
                 {
                     "id": str(chunk_id),
-                    "distance": distance,
                     "document": text,
                     "metadata": dict(meta),
+                    "score": canonical_score_from_l2(distance, backend="ChromaDB"),
+                    "score_kind": DENSE_SCORE_KIND,
+                    "native_distance": distance,
                 }
             )
         return rows
@@ -293,6 +295,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         if collection is None:
             return
         collection.delete(where=where)
+        self.bump_generation(collection_name)
 
     # ── Collection metadata (Phase 4 profile tags) ─────────────────
 
@@ -478,16 +481,7 @@ def build_vector_store_from_settings(settings: Any) -> ChromaVectorStore:
     """Construct a :class:`ChromaVectorStore` from resolved settings.
 
     Registered in ``core/vectordb/registry.py`` under ``"chroma"``;
-    called by ``compose.build_vector_store`` through the registry
-    lookup (architecture invariant #10).  Connection values pass
-    through as construction-time primitives; credentials never enter
-    :class:`EffectiveSettings` or operation objects.
-
-    Args:
-        settings: A resolved ``rag_mcp.config.Settings`` instance.
-
-    Returns:
-        A :class:`ChromaVectorStore` bound to the selected client.
+    credentials pass only as construction-time primitives.
     """
     return build_chroma_vector_store(
         mode=settings.chroma_mode,
