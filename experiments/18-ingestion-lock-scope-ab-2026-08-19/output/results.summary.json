@@ -1,0 +1,163 @@
+{
+  "experiment_id": "18-ingestion-lock-scope-ab",
+  "boundedness": {
+    "25": {
+      "files_indexed": 25,
+      "chunks": 54,
+      "max_chunks_per_file": 3,
+      "unchanged_skipped": 25,
+      "unchanged_chunks_created": 0,
+      "unchanged_embedding_seconds": 0.0,
+      "peak_rss_bytes": 274710528
+    },
+    "100": {
+      "files_indexed": 100,
+      "chunks": 212,
+      "max_chunks_per_file": 3,
+      "unchanged_skipped": 100,
+      "unchanged_chunks_created": 0,
+      "unchanged_embedding_seconds": 0.0,
+      "peak_rss_bytes": 289144832
+    },
+    "400": {
+      "files_indexed": 400,
+      "chunks": 836,
+      "max_chunks_per_file": 3,
+      "unchanged_skipped": 400,
+      "unchanged_chunks_created": 0,
+      "unchanged_embedding_seconds": 0.0,
+      "peak_rss_bytes": 349896704
+    }
+  },
+  "modified_25": {
+    "files_indexed": 1,
+    "files_skipped": 24
+  },
+  "gates": {
+    "H1_bounded_units": true,
+    "H2_rss_scaling": true,
+    "H3_failure_safety": true,
+    "H4_swap": true,
+    "H5_unchanged_skip": true,
+    "fault_cells": {
+      "none": {
+        "old_version_survived": false,
+        "swap_completed": true
+      },
+      "parse": {
+        "old_version_survived": true,
+        "swap_completed": true
+      },
+      "embed": {
+        "old_version_survived": true,
+        "swap_completed": true
+      },
+      "store_write": {
+        "old_version_survived": true,
+        "swap_completed": true
+      }
+    }
+  },
+  "timing": {
+    "timing_fake_seq_100": {
+      "cell": "timing_fake_seq_100",
+      "status": "completed",
+      "wall_seconds": 3.398,
+      "files": 100,
+      "chunks": 212,
+      "docs_per_second": 29.43,
+      "lock_wait_seconds": 0.0,
+      "lock_wait_fraction_of_wall": 0.0,
+      "stage_seconds": {
+        "change_detection_seconds": 0.181,
+        "parse_chunk_seconds": 0.685,
+        "embedding_seconds": 0.024,
+        "store_write_seconds": 1.568,
+        "lock_wait_seconds": 0.0,
+        "cleanup_seconds": 0.735
+      },
+      "untimed_residual_seconds": 0.2,
+      "peak_rss_bytes": 289193984
+    },
+    "timing_fake_contended_100": {
+      "cell": "timing_fake_contended_100",
+      "status": "completed",
+      "wall_seconds": 2.994,
+      "files": 98,
+      "chunks": 208,
+      "docs_per_second": 32.73,
+      "lock_wait_seconds": 0.4903,
+      "lock_wait_fraction_of_wall": 0.1638,
+      "stage_seconds": {
+        "change_detection_seconds": 1.514,
+        "parse_chunk_seconds": 1.207,
+        "embedding_seconds": 0.037,
+        "store_write_seconds": 1.561,
+        "lock_wait_seconds": 0.49,
+        "cleanup_seconds": 0.665
+      },
+      "untimed_residual_seconds": 0.423,
+      "peak_rss_bytes": 290324480
+    },
+    "timing_real_seq_100": {
+      "cell": "timing_real_seq_100",
+      "status": "completed",
+      "wall_seconds": 18.994,
+      "files": 100,
+      "chunks": 212,
+      "docs_per_second": 5.26,
+      "lock_wait_seconds": 0.0001,
+      "lock_wait_fraction_of_wall": 0.0,
+      "stage_seconds": {
+        "change_detection_seconds": 0.137,
+        "parse_chunk_seconds": 0.177,
+        "embedding_seconds": 16.098,
+        "store_write_seconds": 1.695,
+        "lock_wait_seconds": 0.0,
+        "cleanup_seconds": 0.72
+      },
+      "untimed_residual_seconds": 0.165,
+      "peak_rss_bytes": 303104000
+    },
+    "timing_real_contended_100": {
+      "cell": "timing_real_contended_100",
+      "status": "completed",
+      "wall_seconds": 18.963,
+      "files": 100,
+      "chunks": 213,
+      "docs_per_second": 5.27,
+      "lock_wait_seconds": 18.1204,
+      "lock_wait_fraction_of_wall": 0.9556,
+      "stage_seconds": {
+        "change_detection_seconds": 0.323,
+        "parse_chunk_seconds": 0.225,
+        "embedding_seconds": 16.216,
+        "store_write_seconds": 1.831,
+        "lock_wait_seconds": 18.12,
+        "cleanup_seconds": 0.78
+      },
+      "untimed_residual_seconds": 0.237,
+      "peak_rss_bytes": 304627712
+    }
+  },
+  "decision_inputs": {
+    "single_stream_lock_wait_fraction": {
+      "fake": 0.0,
+      "real": 0.0
+    },
+    "contended_lock_wait_fraction": {
+      "fake": 0.1638,
+      "real": 0.9556
+    },
+    "contended_speedup_vs_sequential": {
+      "fake": 1.135,
+      "real": 1.002
+    },
+    "interpretation_rules": [
+      "lock scope is a demonstrated constraint only if the contended lock-wait fraction is material AND embedding dominates the lock-held critical section",
+      "single-stream sequential ingestion cannot contend by construction; a zero single-stream lock wait is expected, not evidence for widening",
+      "if contended speedup already approaches the parallel bound, the lock is not the limiting factor"
+    ]
+  },
+  "phase_b": "reserved \u2014 H6/H7 evaluated only if a Stage 3B treatment variant is implemented"
+}
