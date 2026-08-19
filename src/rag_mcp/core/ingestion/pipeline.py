@@ -262,6 +262,11 @@ async def ingest_path_async(
                 )
 
             file_metadata_degraded = getattr(nodes, "metadata_degraded", False)
+            # Count degradation on observation, not on replacement success:
+            # an embedding/store failure after degraded extraction must not
+            # hide that degradation from the caller.
+            if file_metadata_degraded:
+                metadata_degraded_count += 1
             outcome = await replace_source_nodes_async(
                 nodes,
                 file_path=str(file_path),
@@ -277,8 +282,6 @@ async def ingest_path_async(
             chunks_created_total += outcome.chunks_written
             chunks_removed_total += outcome.chunks_removed
             files_indexed += 1
-            if file_metadata_degraded:
-                metadata_degraded_count += 1
 
             detail = make_file_detail(
                 file_name=file_path.name,
@@ -312,6 +315,8 @@ async def ingest_path_async(
             detail["failure_stage"] = (
                 exc.stage if isinstance(exc, IngestionStageError) else failure_type
             )
+            if nodes is not None and getattr(nodes, "metadata_degraded", False):
+                detail["metadata_degraded"] = True
             detail["timings"] = unit_timings
             detail["peak_rss_bytes"] = sample_peak_rss_bytes()
             file_details.append(detail)
