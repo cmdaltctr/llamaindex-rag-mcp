@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyarrow as pa
 import pytest
 
 from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
@@ -670,3 +671,33 @@ class TestDeleteCollectionGeneration:
 
         store.delete_collection("bm25drop")
         assert retriever.query("orphantoken", top_n=5) == []
+
+
+def test_write_nodes_widens_null_typed_doc_id_column(tmp_path: Path) -> None:
+    """A Null-typed top-level doc_id column no longer blocks later writes.
+
+    The LlamaIndex adapter types ``doc_id`` as Arrow Null when the first
+    write carries no SOURCE relationship. The pipeline always sets that
+    relationship, so real tables never hit this, but the store rebuilds
+    the column as string before writing so a hand-shaped table cannot
+    wedge the store (TDR-012).
+    """
+    from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
+
+    store = LanceVectorStore(uri=str(tmp_path / "null-doc-id"))
+    store.write_nodes(
+        [TextNode(text="bare sentinel", metadata={"file_path": "bare.txt"})],
+        "null_doc_id",
+    )
+    schema_before = store._open_table("null_doc_id").schema
+    assert pa.types.is_null(schema_before.field("doc_id").type)
+
+    sourced = TextNode(text="with source relationship", metadata={"file_path": "bare.txt"})
+    sourced.relationships[NodeRelationship.SOURCE] = RelatedNodeInfo(
+        node_id="11111111-1111-1111-1111-111111111111"
+    )
+    store.write_nodes([sourced], "null_doc_id")
+
+    rows = list(store.iter_documents("null_doc_id"))
+    assert len(rows) == 2
+    assert any("with source relationship" in text for _, text, _ in rows)
