@@ -2,7 +2,7 @@
 
 **ID**: `14-liteparse-qasper-promotion-2026-06-29`  
 **Date planned**: 2026-06-29  
-**Status**: PLANNED  
+**Status**: REPAIRED build path (v2.0, Stage 4 task 4.3.6) — real immutable PDF bytes, parser-before-embeddings preflight, per-parser artefact/index identity
 **Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; validates ADR-020
 
 ---
@@ -137,3 +137,78 @@ uv run python experiments/14-liteparse-qasper-promotion-2026-06-29/summarise_eva
 - Exp 11: `experiments/11-liteparse-pdf-quality-2026-06-20/`
 - ADR-020: `docs/adr/020-pdf-reader-factory.md`
 - ADR-021: `docs/adr/021-reranker-fetch-reduction-and-speed-optimization.md`
+
+---
+
+## Build path repair (v2.0, 2026-08-19 — Stage 4 task 4.3.6, design D19)
+
+The v1 build path was defective: it globed `*.md` from `qasper_pdfs/`
+(prepare_qasper_pdfs.py exports Markdown, never PDFs), so the `--reader`
+flag only renamed the output directory and stamped metadata — the PDF
+reader factor never touched the indexed text and the parser A/B was
+fictional. The sections above are historical record; where they describe
+Markdown ingestion they are superseded by this section.
+
+### What changed
+
+- **Real PDF bytes**: `build_indexes.py` now globs
+  `sorted(corpus_dir.glob("*.pdf"))` and parses through the production
+  factory `get_pdf_reader(reader)` (ADR-020; no harness-side parser
+  imports). Corpus identity = sha256 over the concatenation of sorted
+  per-file hashes; corpus files are immutable inputs.
+- **Parse stage before embeddings**: every file records a chronological
+  `parse_start`/`parse_end` event pair (plus `parse_error` on failure —
+  a parse failure does not abort the build). Before the embed stage,
+  `experiments/_lib/preflight.py::assert_parser_invoked_before_embeddings`
+  runs on that event log and the build aborts on failure (PreflightError
+  propagates).
+- **Per-parser artefact identity**: the parsed texts are written to
+  `output/parsed_<reader>.json` (atomic `.tmp`→rename) whose
+  `artefact_sha256` is the sha256 of the JSON-serialised parsed
+  documents — distinct parsers producing different text MUST yield
+  distinct artefact identities.
+- **Timing decomposition (D19)**: `index_build_<reader>.json` records
+  `parse_time_s_total` and `embed_write_time_s` separately, so a faster
+  parser cannot hide behind the dominant embedding stage.
+  `ingestion_time_s` (their sum) is retained for the v1 summariser's H2
+  gate.
+- **Index identity**: each parser gets its own index via
+  `experiment_storage_config(experiment_id="exp14", corpus="qasper",
+  parser=<reader>, ...)`; stored metadata now includes `source_sha256`
+  per document.
+
+### New flags
+
+- `--corpus-dir <dir>` (default `qasper_pdfs/`): directory of immutable
+  PDF inputs. The agreement tests pass `fixtures/`.
+- `--skip-embed`: write the parsed artefact plus the preflight runtime
+  manifest only — no Ollama, no Chroma store. Used by agreement tests
+  and dry runs.
+
+### Immutable fixtures
+
+`fixtures/doc1_climate.pdf` and `fixtures/doc2_quantum.pdf` were copied
+byte-identical from `tests/fixtures/pdf_dir/` (identity = sha256; never
+mutated — see `fixtures/README.md`). The fast harness tests parse them
+with pypdf only (deterministic per AGENTS.md gotcha 6) and never touch
+Ollama.
+
+### Machine-readable plan (D15)
+
+`plan.json` is the machine truth for the cell matrix: two build cells
+(`build_pypdf`, `build_liteparse`) plus the four evaluation cells
+(`{pypdf,liteparse}_x_{off,on}`). Agreement tests compare
+`build_indexes.build_cell_matrix()` and `run_eval.build_eval_cell_matrix()`
+against it via `ExperimentPlan.assert_runner_cells`.
+
+### Reproduction (v2.0)
+
+```bash
+# Dry run (no Ollama, no store): parse artefact + preflight manifest
+uv run python experiments/14-liteparse-qasper-promotion-2026-06-29/build_indexes.py \
+  --reader pypdf --corpus-dir experiments/14-liteparse-qasper-promotion-2026-06-29/fixtures --skip-embed
+
+# Full builds (one per parser; real corpus)
+uv run python experiments/14-liteparse-qasper-promotion-2026-06-29/build_indexes.py --reader pypdf
+uv run python experiments/14-liteparse-qasper-promotion-2026-06-29/build_indexes.py --reader liteparse
+```

@@ -26,11 +26,28 @@ PROJECT_ROOT = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+
+def build_eval_cell_matrix() -> list[dict[str, Any]]:
+    """Return the four evaluation cells as plan-comparable dicts (D15).
+
+    Shape matches ``plan.json`` cells: ``{"id": ..., "factors": {...}}``.
+    ``plan.json`` is the machine truth for the cell matrix; the agreement
+    tests in ``tests/test_experiment_14_harness.py`` compare this pure
+    generator against the plan via ``ExperimentPlan.assert_runner_cells``.
+    """
+    return [
+        {"id": "pypdf_off", "factors": {"reader": "pypdf", "rerank": False}},
+        {"id": "pypdf_on", "factors": {"reader": "pypdf", "rerank": True}},
+        {"id": "liteparse_off", "factors": {"reader": "liteparse", "rerank": False}},
+        {"id": "liteparse_on", "factors": {"reader": "liteparse", "rerank": True}},
+    ]
+
+
+# Execution view derived from the pure generator above — same four cells,
+# same order and values as the v1 hard-coded list.
 CELLS = [
-    {"name": "pypdf_off", "reader": "pypdf", "rerank": False},
-    {"name": "pypdf_on", "reader": "pypdf", "rerank": True},
-    {"name": "liteparse_off", "reader": "liteparse", "rerank": False},
-    {"name": "liteparse_on", "reader": "liteparse", "rerank": True},
+    {"name": cell["id"], "reader": cell["factors"]["reader"], "rerank": cell["factors"]["rerank"]}
+    for cell in build_eval_cell_matrix()
 ]
 
 
