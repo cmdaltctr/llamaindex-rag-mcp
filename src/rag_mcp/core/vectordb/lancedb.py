@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import io
 import json
-import logging
 from contextlib import redirect_stdout
 from typing import Any
 
@@ -56,13 +55,7 @@ from .lance_paged import (
 from .lance_rows import rows_to_arrow, upsert_schema
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2
 
-logger = logging.getLogger(__name__)
-
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
-
-# The adapter's top-level scalar columns; every schema the adapter or
-# ``upsert_schema`` creates types them as string.
-_ADAPTER_STRING_COLUMNS = frozenset({"id", "doc_id", "text"})
 
 
 class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore):
@@ -234,52 +227,6 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._intents.discard(collection_name)
         self._flush_after_write(collection_name)
         self.bump_generation(collection_name)
-
-    def _widen_null_adapter_columns(self, collection_name: str) -> bool:
-        """Re-type null-typed top-level adapter columns to string (TDR-012).
-
-        The LlamaIndex adapter types a top-level column as Arrow Null when
-        the first write carries None for it — reachable only for nodes
-        without a SOURCE relationship, which the pipeline never produces.
-        A Null-typed column then rejects every later typed write
-        (``cannot cast field 'doc_id' from Utf8 to Null``), and LanceDB
-        0.37 offers no in-place repair: ``alter_columns`` refuses the
-        Null→Utf8 cast and the SDK has no ``add_column``. Following
-        :meth:`LanceTableMetadataMixin.evolve_metadata_fields`, the table
-        is rebuilt with the column re-typed as string. A Null-typed column
-        holds only nulls, so the re-type is lossless. The schema metadata
-        bag (identity triple, profile tags) is carried across the rewrite.
-        """
-        table = self._open_table(collection_name)
-        if table is None:
-            return False
-        widen = [
-            field.name
-            for field in table.schema
-            if field.name in _ADAPTER_STRING_COLUMNS and pa.types.is_null(field.type)
-        ]
-        if not widen:
-            return False
-        # Fresh handle: handles pin a version; the rebuild must read the
-        # latest schema so its metadata bag carries across the overwrite.
-        table = self._get_connection().open_table(collection_name)
-        arrow = table.to_arrow()
-        new_schema = pa.schema(
-            [
-                (pa.field(field.name, pa.string()) if field.name in widen else field)
-                for field in arrow.schema
-            ],
-            metadata=arrow.schema.metadata,
-        )
-        self._get_connection().create_table(
-            collection_name, arrow.cast(new_schema), mode="overwrite"
-        )
-        logger.warning(
-            "Widened null-typed column(s) %s in %r to string (TDR-012)",
-            sorted(widen),
-            collection_name,
-        )
-        return True
 
     def _evolve_for_nodes(self, collection_name: str, nodes: list[Any]) -> None:
         """Grow the metadata struct to cover the batch's keys.
