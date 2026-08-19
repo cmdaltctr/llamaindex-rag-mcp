@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -137,6 +138,14 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
+        from rag_mcp.core.ingestion.replacement import WriteTimings
+
+        outcome = SimpleNamespace(
+            chunks_written=1,
+            chunks_removed=0,
+            source_attempt="test-attempt",
+            timings=WriteTimings(),
+        )
         with (
             patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
             patch(
@@ -147,13 +156,9 @@ class TestBinarySkip:
                 return_value=([tmp_path / "app.py", tmp_path / "image.png"], []),
             ),
             patch(
-                "rag_mcp.core.ingestion.pipeline.remove_document",
-                return_value={"status": "ok", "chunks_removed": 0},
-            ),
-            patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
                 new_callable=AsyncMock,
-                return_value=1,
+                return_value=outcome,
             ),
         ):
             from rag_mcp.core.ingestion import ingest_path_async

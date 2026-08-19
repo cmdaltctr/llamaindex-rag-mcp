@@ -1105,15 +1105,15 @@ class TestIngestPathAllFilesFail:
         """ConnectionError from embedding returns error_type: "connection"."""
         from rag_mcp.core.ingestion import ingest_path_async
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_text("fake pdf content")
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("plain text content " * 10)
 
         with patch(
             "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
                 side_effect=ConnectionError("No route to host"),
             ):
                 result = await ingest_path_async(str(test_file))
@@ -1125,15 +1125,15 @@ class TestIngestPathAllFilesFail:
         """RuntimeError from embedding returns error_type: "embedding"."""
         from rag_mcp.core.ingestion import ingest_path_async
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_text("fake pdf content")
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("plain text content " * 10)
 
         with patch(
             "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
                 side_effect=RuntimeError("Model inference failed"),
             ):
                 result = await ingest_path_async(str(test_file))

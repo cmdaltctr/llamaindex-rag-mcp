@@ -44,7 +44,10 @@ class TestShutdownFlag:
         finally:
             _shutdown_requested.clear()
 
-        assert result["chunks_created"] == 0
+        # Stage 3A commits each source fully before advancing (ADR-048), so
+        # a shutdown signalled after the first source's completion cannot
+        # un-write that source; the flag stops the remaining sources instead.
+        assert result["files_indexed"] == 1
 
 
 class TestEmbedAndWriteShutdown:
