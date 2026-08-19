@@ -1,0 +1,234 @@
+{
+  "status": "complete",
+  "cell_id": "confirm_real_contended_100_rep2",
+  "factors": {
+    "corpus_size": 100,
+    "failure_point": "none",
+    "repeat_state": "first",
+    "ingest_topology": "concurrent_2_streams",
+    "embedding_block": "real_ollama",
+    "run_phase": "concurrency_ab"
+  },
+  "manifest": {
+    "repo_commit": "c475852cf195658ce6af8654e11e07dce4c39fec",
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "6-ingestion-boundedness-and-atomicity",
+    "protocol_version": "1.0",
+    "corpus_identity": "sha256:0659043659acc1ec89ed6eccc5b271e08b50f1e43fc405b5ffb4ddca7d3a5bfe",
+    "query_set_identity": null,
+    "qrels_identity": null,
+    "embedding": {
+      "requested_provider": "ollama",
+      "effective_provider": "ollama",
+      "model": "nomic-embed-text"
+    },
+    "vector_store": {
+      "backend": "chroma",
+      "mode": "persistent_local",
+      "index_identity": "d55c857c6003b5e2b5617b334ac8bbffb407d2383ec6412d14e60369ecf0fd92",
+      "score_kind": null
+    },
+    "sparse": {
+      "requested_backend": null,
+      "effective_backend": null,
+      "cache_namespace": null
+    },
+    "reranker": {
+      "requested_backend": null,
+      "effective_backend": null,
+      "model": null,
+      "device": null,
+      "execution_provider": null,
+      "variant_or_precision": null
+    },
+    "chunker": {
+      "requested": null,
+      "effective": null,
+      "fallback_reason": null
+    },
+    "document_backend": {
+      "requested": null,
+      "effective": null
+    },
+    "retrieval": {
+      "top_k": null,
+      "fetch_k": null,
+      "hybrid": null,
+      "rrf_k": null,
+      "threshold": null,
+      "threshold_score_kind": null,
+      "rerank_policy_reason": null
+    },
+    "timestamp_utc": "2026-08-19T20:46:54Z",
+    "git_dirty": true,
+    "null_reasons": {
+      "vector_store.score_kind": "'score_kind' missing from provided vector_store mapping",
+      "sparse.requested_backend": "sparse mapping not provided",
+      "sparse.effective_backend": "sparse mapping not provided",
+      "sparse.cache_namespace": "sparse mapping not provided",
+      "reranker.requested_backend": "reranker_requested_backend parameter not provided",
+      "reranker.effective_backend": "reranker object not provided",
+      "reranker.model": "reranker object not provided",
+      "reranker.device": "reranker object not provided",
+      "reranker.execution_provider": "reranker object not provided",
+      "reranker.variant_or_precision": "reranker object not provided",
+      "chunker.requested": "chunker mapping not provided",
+      "chunker.effective": "chunker mapping not provided",
+      "chunker.fallback_reason": "chunker mapping not provided",
+      "document_backend.requested": "document_backend mapping not provided",
+      "document_backend.effective": "document_backend mapping not provided",
+      "retrieval.top_k": "retrieval mapping not provided",
+      "retrieval.fetch_k": "retrieval mapping not provided",
+      "retrieval.hybrid": "retrieval mapping not provided",
+      "retrieval.rrf_k": "retrieval mapping not provided",
+      "retrieval.threshold": "retrieval mapping not provided",
+      "retrieval.threshold_score_kind": "retrieval mapping not provided",
+      "retrieval.rerank_policy_reason": "retrieval mapping not provided",
+      "query_set_identity": "query_set_path not provided",
+      "qrels_identity": "qrels_path not provided"
+    },
+    "cell_id": "confirm_real_contended_100_rep2",
+    "run_phase": "concurrency_ab",
+    "pipeline_variant": "stage3b_narrow_lock_current",
+    "phase_b_mode": "confirming_only",
+    "reference": "experiments/18-ingestion-lock-scope-ab-2026-08-19 stage3b arm"
+  },
+  "rows": [
+    {
+      "cell_id": "confirm_real_contended_100_rep2",
+      "query_id": "confirm_real_contended_100_rep2#warmup",
+      "phase": "warmup",
+      "latency_ms": 927.508,
+      "metrics": {
+        "status": "ok",
+        "files_indexed": 2,
+        "files_skipped_unchanged": 0,
+        "chunks_created": 6,
+        "chunks_removed": 0,
+        "max_chunks_per_file": 3,
+        "timings": {
+          "change_detection_seconds": 0.04264050000347197,
+          "parse_chunk_seconds": 0.45374808300402947,
+          "embedding_seconds": 0.39901437499793246,
+          "store_write_seconds": 0.020095125015359372,
+          "lock_wait_seconds": 9.580107871443033e-07,
+          "cleanup_seconds": 0.0020448329742066562,
+          "total_seconds": 0.9265252919867635
+        },
+        "peak_rss_bytes": 278396928
+      }
+    },
+    {
+      "cell_id": "confirm_real_contended_100_rep2",
+      "query_id": "confirm_real_contended_100_rep2#stream1",
+      "phase": "measured",
+      "latency_ms": 14731.424,
+      "metrics": {
+        "status": "ok",
+        "files_indexed": 50,
+        "files_skipped_unchanged": 0,
+        "chunks_created": 146,
+        "chunks_removed": 0,
+        "max_chunks_per_file": 3,
+        "timings": {
+          "change_detection_seconds": 0.07038870803080499,
+          "parse_chunk_seconds": 0.08784983798977919,
+          "embedding_seconds": 13.05478754194337,
+          "store_write_seconds": 0.9761307110020425,
+          "lock_wait_seconds": 2.241291804239154e-05,
+          "cleanup_seconds": 0.4586390418699011,
+          "total_seconds": 14.73067458398873
+        },
+        "peak_rss_bytes": 314195968
+      }
+    },
+    {
+      "cell_id": "confirm_real_contended_100_rep2",
+      "query_id": "confirm_real_contended_100_rep2#stream2",
+      "phase": "measured",
+      "latency_ms": 14731.424,
+      "metrics": {
+        "status": "ok",
+        "files_indexed": 50,
+        "files_skipped_unchanged": 0,
+        "chunks_created": 149,
+        "chunks_removed": 0,
+        "max_chunks_per_file": 3,
+        "timings": {
+          "change_detection_seconds": 0.07056441809982061,
+          "parse_chunk_seconds": 0.09295224901870824,
+          "embedding_seconds": 12.856343835941516,
+          "store_write_seconds": 1.0052317931258585,
+          "lock_wait_seconds": 2.1458981791511178e-05,
+          "cleanup_seconds": 0.46424190889229067,
+          "total_seconds": 14.578262916998938
+        },
+        "peak_rss_bytes": 313933824
+      }
+    }
+  ],
+  "streams": [
+    {
+      "status": "ok",
+      "files_indexed": 50,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 146,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.07038870803080499,
+        "parse_chunk_seconds": 0.08784983798977919,
+        "embedding_seconds": 13.05478754194337,
+        "store_write_seconds": 0.9761307110020425,
+        "lock_wait_seconds": 2.241291804239154e-05,
+        "cleanup_seconds": 0.4586390418699011,
+        "total_seconds": 14.73067458398873
+      },
+      "peak_rss_bytes": 314195968
+    },
+    {
+      "status": "ok",
+      "files_indexed": 50,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 149,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.07056441809982061,
+        "parse_chunk_seconds": 0.09295224901870824,
+        "embedding_seconds": 12.856343835941516,
+        "store_write_seconds": 1.0052317931258585,
+        "lock_wait_seconds": 2.1458981791511178e-05,
+        "cleanup_seconds": 0.46424190889229067,
+        "total_seconds": 14.578262916998938
+      },
+      "peak_rss_bytes": 313933824
+    }
+  ],
+  "combined": {
+    "files_total": 100,
+    "chunks_total": 295,
+    "wall_seconds": 14.731,
+    "docs_per_second": 6.7882,
+    "lock_wait_seconds_total": 0.0,
+    "lock_wait_fraction_of_wall": 0.0,
+    "stage_seconds_total": {
+      "change_detection_seconds": 0.141,
+      "parse_chunk_seconds": 0.1808,
+      "embedding_seconds": 25.9111,
+      "store_write_seconds": 1.9814,
+      "lock_wait_seconds": 0.0,
+      "cleanup_seconds": 0.9229
+    },
+    "embed_seam_calls": 100,
+    "store_write_calls": 100,
+    "probe": {
+      "live": 0,
+      "max_live": 2,
+      "max_nodes": 3,
+      "batches": 102
+    }
+  },
+  "process_peak_rss_bytes": 314228736,
+  "phase_b_mode": "confirming_only"
+}

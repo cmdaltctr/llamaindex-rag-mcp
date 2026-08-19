@@ -1,7 +1,7 @@
 # Experiment 6 — Ingestion boundedness, atomic replacement and concurrency
 
 **Template ID:** `example/experiment-6-ingestion-boundedness-and-atomicity`  
-**Status:** PLANNED  
+**Status:** EXECUTED — GREEN (2026-08-19; Phase A H1–H5 PASS, Phase B confirming-only, consistent with experiment 18 Stage 3B)  
 **Role:** systems/reliability gate after Stage 3A; evidence for optional Stage 3B
 
 ## 1. Research question
@@ -192,3 +192,19 @@ uv run python experiments/<promoted-dir>/run_eval.py --phase concurrency-ab
 ## 20. Cleanup
 
 Remove generated corpora/stores after hashes/results are retained. Keep generator and manifests.
+
+## Execution record (v1.0 — 2026-08-19)
+
+**Task:** OpenSpec change `harden-pipeline-correctness-before-calibration`, Stage 5 task 5.6.  
+**Code under test:** HEAD `c475852` — Stage 3B (narrow write lock) already implemented and RETAINED; the Stage 3A baseline arm no longer exists.  
+**Protocol version executed:** 1.0. Phase A ran as pre-registered (H1–H5). Phase B ran as CONFIRMING EVIDENCE ONLY per the retained-3B reality: current-code contended throughput was measured and compared descriptively against experiment 18's recorded Stage 3B arm (`experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.ab.json`, reference commit `b4b01b6`). This was not a re-run of the A/B.
+
+**Harness:** `corpus.py` (generator v1.0-exp6, seed 20260806, 6000 chars/file), `harness.py` (fake/real runtimes, `_lib` D13 manifests, embed/store-write counters, replacement-batch probe), `run_eval.py` (23-cell driver, subprocess per cell, `--resume`, `--rerun-proof`, `--remerge`), `summarise_eval.py`, `plan.json` (frozen cell matrix, H2 guard frozen before the measured run, `phase_b_mode: confirming_only`).
+
+**Verdicts:** H1 PASS, H2 PASS, H3 PASS, H4 PASS, H5 PASS; H6/H7 confirming = consistent with experiment 18 Stage 3B (real arm within the frozen 0.9x docs/s rule at 0.911x with lock-wait fraction 0.0; chunk-normalised throughput 1.13x fake / 1.26x real; the fake arm's raw docs/s ratio 0.808 is below the frozen 0.9 threshold because the exp-6 corpus yields 289 chunks per 100 files vs experiment 18's 208 — reported, not worked around). Fault-cell determinism: exact rerun, all deterministic evidence identical.
+
+**Artefacts:** `output/cells/*.json` (23 cells, all `complete`), `output/results.raw.json` (39 rows), `output/cell_records.json`, `output/results.summary.json`, `output/rerun_proof_verdict.json`, `corpus_manifests/corpus_{0,3,25,100,400}.json`. Full detail: `results.md`.
+
+**Embedding runtimes:** Phase A on the deterministic fake seam (`MockEmbedding`, `mock-deterministic-v1`) per §5; Phase B real arm on Ollama `nomic-embed-text` (daemon up, model present) pinned via env to match experiment 18.
+
+**Cleanup applied:** generated corpora, per-cell stores, and split halves removed after hashing; generator, committed corpus manifests, and all result artefacts retained.

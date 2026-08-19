@@ -1,0 +1,112 @@
+{
+  "experiment_id": "6-ingestion-boundedness-and-atomicity",
+  "protocol_version": "1.0",
+  "experimental_unit": "one generated-corpus ingestion run (isolated subprocess per cell)",
+  "primary_metric": "baseline_adjusted_peak_rss_bytes",
+  "executed": "2026-08-19",
+  "task_reference": "openspec/changes/harden-pipeline-correctness-before-calibration tasks.md 5.6",
+  "manipulated_factors": [
+    {
+      "name": "corpus_size",
+      "levels": [0, 3, 25, 100, 400]
+    },
+    {
+      "name": "failure_point",
+      "levels": ["none", "parse", "embed", "store_write"]
+    },
+    {
+      "name": "repeat_state",
+      "levels": ["noop_empty_dir", "first", "first_plus_unchanged_second", "one_file_modified"]
+    },
+    {
+      "name": "ingest_topology",
+      "levels": ["sequential_1_stream", "concurrent_2_streams"]
+    },
+    {
+      "name": "embedding_block",
+      "levels": ["fake_deterministic", "real_ollama"]
+    },
+    {
+      "name": "run_phase",
+      "levels": ["boundedness", "faults", "concurrency_ab"]
+    }
+  ],
+  "controlled_variables": {
+    "seed": 20260806,
+    "generator_version": "1.0-exp6",
+    "target_chars_per_file": 6000,
+    "chunk_size": 512,
+    "chunk_overlap": 100,
+    "metadata_extraction": "disabled",
+    "vector_store_backend": "chroma_local_persistent_isolated_per_cell",
+    "collection_name": "documents",
+    "dependency_lock": "uv.lock frozen at repo_commit",
+    "store_backend_block": "chroma only; lancedb is a separate block outside this run",
+    "embedding_block_note": "fake_deterministic block for Phase A; real Ollama nomic-embed-text only in the Phase B confirming block, matching experiment 18's runtime pins",
+    "retrieval_fields_note": "pure-ingestion experiment; TDR-014 retrieval-field mandatory list applies to retrieval experiments, retrieval/qrels sections are nulls-with-reasons here"
+  },
+  "h2_guard": {
+    "statement": "4x corpus files must not cause >2x baseline-adjusted peak RSS",
+    "frozen_before_measured_run": true,
+    "baseline_definition": "median peak RSS over rss_baseline_rep1..3 (fake runtime installed, empty-directory ingest)",
+    "adjusted_definition": "peak_rss_bytes(cell) - baseline_median",
+    "pairs_4x": [["boundedness_25", "boundedness_100"], ["boundedness_100", "boundedness_400"]],
+    "max_ratio_per_4x": 2.0,
+    "aggregation_per_size": "median over reps; all raw reps reported, outliers never removed"
+  },
+  "phase_b_mode": "confirming_only",
+  "phase_b_framing": "Stage 3B (narrow write lock) is already implemented and retained at HEAD; the Stage 3A baseline arm no longer exists. Phase B therefore measures CURRENT-code throughput only and compares it descriptively against experiment 18's recorded Stage 3B arm. This is not a re-run of the A/B.",
+  "phase_b_reference": {
+    "experiment": "experiments/18-ingestion-lock-scope-ab-2026-08-19",
+    "artefacts": ["output/results.ab.json", "output/results.summary.json"],
+    "arm": "stage3b",
+    "reference_commit_for_ab": "b4b01b6780d5a13b5e8dca15970313bc3b9c98c6",
+    "cells": ["timing_fake_contended_100", "timing_real_contended_100"],
+    "reference_docs_per_second_mean": {
+      "timing_fake_contended_100": 36.28,
+      "timing_real_contended_100": 7.40
+    },
+    "reference_lock_wait_fraction_mean": {
+      "timing_fake_contended_100": 0.1567,
+      "timing_real_contended_100": 0.0
+    }
+  },
+  "phase_b_verdict_rule": {
+    "consistent_if": "current-code docs/s mean >= 0.9 x reference Stage 3B mean AND real-arm lock_wait_fraction mean <= 0.10",
+    "caveat": "single-machine, different-day descriptive comparison; a regression verdict flags investigation, not automatic reversion"
+  },
+  "cells": [
+    { "id": "rss_baseline_rep1", "factors": { "corpus_size": 0, "failure_point": "none", "repeat_state": "noop_empty_dir", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "rss_baseline_rep2", "factors": { "corpus_size": 0, "failure_point": "none", "repeat_state": "noop_empty_dir", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "rss_baseline_rep3", "factors": { "corpus_size": 0, "failure_point": "none", "repeat_state": "noop_empty_dir", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_25_rep1", "factors": { "corpus_size": 25, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_25_rep2", "factors": { "corpus_size": 25, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_25_rep3", "factors": { "corpus_size": 25, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_100_rep1", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_100_rep2", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_100_rep3", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_400_rep1", "factors": { "corpus_size": 400, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_400_rep2", "factors": { "corpus_size": 400, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "boundedness_400_rep3", "factors": { "corpus_size": 400, "failure_point": "none", "repeat_state": "first_plus_unchanged_second", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "modified_100_rep1", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "one_file_modified", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "boundedness" } },
+    { "id": "fault_none", "factors": { "corpus_size": 3, "failure_point": "none", "repeat_state": "first", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "faults" } },
+    { "id": "fault_parse", "factors": { "corpus_size": 3, "failure_point": "parse", "repeat_state": "first", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "faults" } },
+    { "id": "fault_embed", "factors": { "corpus_size": 3, "failure_point": "embed", "repeat_state": "first", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "faults" } },
+    { "id": "fault_store_write", "factors": { "corpus_size": 3, "failure_point": "store_write", "repeat_state": "first", "ingest_topology": "sequential_1_stream", "embedding_block": "fake_deterministic", "run_phase": "faults" } },
+    { "id": "confirm_fake_contended_100_rep1", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "fake_deterministic", "run_phase": "concurrency_ab" } },
+    { "id": "confirm_fake_contended_100_rep2", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "fake_deterministic", "run_phase": "concurrency_ab" } },
+    { "id": "confirm_fake_contended_100_rep3", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "fake_deterministic", "run_phase": "concurrency_ab" } },
+    { "id": "confirm_real_contended_100_rep1", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "real_ollama", "run_phase": "concurrency_ab" } },
+    { "id": "confirm_real_contended_100_rep2", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "real_ollama", "run_phase": "concurrency_ab" } },
+    { "id": "confirm_real_contended_100_rep3", "factors": { "corpus_size": 100, "failure_point": "none", "repeat_state": "first", "ingest_topology": "concurrent_2_streams", "embedding_block": "real_ollama", "run_phase": "concurrency_ab" } }
+  ],
+  "preflight_assertions": [
+    { "manifest_field": "vector_store.backend", "operator": "eq", "expected": "chroma", "reason": "isolated local Chroma per cell" },
+    { "manifest_field": "vector_store.mode", "operator": "eq", "expected": "persistent_local", "reason": "persistent isolated store under experiment output" },
+    { "manifest_field": "embedding.effective_provider", "operator": "not_null", "reason": "embedding block must be observed, not assumed" },
+    { "manifest_field": "embedding.model", "operator": "not_null", "reason": "effective model name must be observed" },
+    { "manifest_field": "corpus_identity", "operator": "not_null", "reason": "generated-corpus manifest must be hashed into the manifest" },
+    { "manifest_field": "vector_store.index_identity", "operator": "not_null", "reason": "index-shaping identity underpins the unchanged-skip preflight" },
+    { "manifest_field": "pipeline_variant", "operator": "eq", "expected": "stage3b_narrow_lock_current", "reason": "current HEAD retains Stage 3B narrow lock" }
+  ]
+}
