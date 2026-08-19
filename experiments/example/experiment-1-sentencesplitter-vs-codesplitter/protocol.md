@@ -1,8 +1,10 @@
 # Experiment 1 — SentenceSplitter vs CodeSplitter execution and structural integrity
 
 **Template ID:** `example/experiment-1-sentencesplitter-vs-codesplitter`  
-**Status:** PLANNED  
-**Role:** correctness gate before code-retrieval calibration
+**Status:** PASS  
+**Role:** correctness gate before code-retrieval calibration  
+**Protocol version:** 1.0  
+**Executed:** 2026-08-19 (structural arm; optional H4 not run)
 
 ## 1. Research question
 
@@ -178,3 +180,36 @@ uv run python experiments/<promoted-dir>/run_eval.py --retrieval
 ## 20. Cleanup
 
 No large corpus is required. Delete only generated indexes/output caches; keep fixture labels and raw result JSON.
+
+## Execution record (v1.0 — 2026-08-19)
+
+**Status: PASS.** Executed as pre-registered, structural arm only, on branch
+`harden-pipeline-correctness-before-calibration` at commit `c475852cf195`
+(`uv.lock` sha256 `3a225230a6eb…`). No pre-registered section above was
+rewritten.
+
+- **H1 PASS** — 18/18 fixtures (12 Python, 4 JavaScript, 2 TypeScript) ran
+  `requested=code`, `effective=code`, zero fallbacks, through the production
+  `read_and_chunk_file_async` content-type dispatch.
+- **H2 PASS** — `structural_cut_rate(C)=0.2326` (10/43 boundaries) vs
+  `0.375` (15/40) for S; the code cell cut **zero** definitions that fit
+  under the 1500-char ceiling (S cut 6). All 10 C cuts sit inside the five
+  over-ceiling definitions (1544–2357 chars) split under the documented
+  upstream recursion semantics (§16). Paired bootstrap CI (C − S per-file
+  cut counts): −0.278, 95% CI [−0.556, 0.0].
+- **H3 PASS** — zero chunks exceeded `code_max_chars`; zero unexplained
+  violations.
+- **H4 NOT RUN** — optional retrieval arm; requires an embedding runtime;
+  H1–H3 are the correctness gates.
+
+Harness: `plan.json` (2-cell matrix, `ExperimentPlan.from_json`),
+`run_eval.py` (D13 manifests per cell, D14 preflight incl.
+`assert_no_fallback` and per-fixture byte-identity against frozen labels,
+atomic checkpoints, `--verify-rerun` byte-identity proof), and
+`summarise_eval.py` (verdicts + strata). Deterministic rerun recorded
+byte-identical cell JSON for both cells (`output/verify_rerun.json`).
+
+Artefacts: `fixtures/` (18 sources + frozen labels), `output/cells/{S,C}.json`,
+`output/manifests/{S,C}.manifest.json`, `output/summary.json`,
+`results.md`. Cleanup per §20: the `--verify-rerun` scratch directory was
+removed; no indexes or caches were produced (structural arm only).
