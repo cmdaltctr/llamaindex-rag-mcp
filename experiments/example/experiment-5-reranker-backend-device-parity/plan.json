@@ -1,0 +1,66 @@
+{
+  "experiment_id": "5-reranker-backend-device-parity",
+  "protocol_version": "1.0",
+  "experimental_unit": "one fixed query with its fixed ordered 50-candidate pool scored end-to-end by one reranker execution route (protocol section 3)",
+  "primary_metric": "torch_cpu_vs_torch_mps_max_abs_score_delta",
+  "manipulated_factors": [
+    {"name": "backend", "levels": ["onnx", "torch"]},
+    {"name": "device", "levels": ["cpu", "coreml", "mps"]},
+    {"name": "onnx_provider", "levels": ["cpu", "coreml"]}
+  ],
+  "controlled_variables": {
+    "model_id": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "tokenizer_max_length_env": 2048,
+    "sigmoid_normalisation": "shared production _sigmoid applied once (ONNX raw logits; torch Identity activation then _sigmoid)",
+    "batch_size": 32,
+    "top_k": 50,
+    "workload_identity": "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc",
+    "workload_bytes": 255081,
+    "workload_queries": 24,
+    "workload_candidates_per_query": 50,
+    "machine_policy": "same machine, power source and background-load policy (protocol section 5); no vector DB, embedding, BM25 or network access inside measured inference",
+    "repetitions": 3,
+    "measured_passes_per_repetition": 5,
+    "warmup_passes_per_repetition": 1
+  },
+  "cells": [
+    {"id": "onnx_cpu", "factors": {"backend": "onnx", "device": "cpu", "onnx_provider": "cpu"}},
+    {"id": "onnx_coreml", "factors": {"backend": "onnx", "device": "coreml", "onnx_provider": "coreml"}},
+    {"id": "torch_cpu", "factors": {"backend": "torch", "device": "cpu"}},
+    {"id": "torch_mps", "factors": {"backend": "torch", "device": "mps"}}
+  ],
+  "preflight_assertions": [
+    {"manifest_field": "reranker.requested_backend", "operator": "not_null"},
+    {"manifest_field": "reranker.effective_backend", "operator": "not_null"},
+    {"manifest_field": "reranker.model", "operator": "eq", "expected": "cross-encoder/ms-marco-MiniLM-L-6-v2"},
+    {"manifest_field": "retrieval.top_k", "operator": "eq", "expected": 50},
+    {"manifest_field": "workload_identity", "operator": "eq", "expected": "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc"}
+  ],
+  "per_cell_route_assertions": {
+    "onnx_cpu": {"check": "onnx_providers_first", "expected": "CPUExecutionProvider"},
+    "onnx_coreml": {"check": "onnx_providers_first", "expected": "CoreMLExecutionProvider"},
+    "torch_cpu": {"check": "torch_device_prefix", "expected": "cpu"},
+    "torch_mps": {"check": "torch_device_prefix", "expected": "mps"}
+  },
+  "abort_criteria": [
+    "requested execution route differs from the effective one observed on the production reranker (providers[0] mismatch, torch device prefix mismatch, or production graceful fallback with last_failure_reason set)",
+    "model or tokenizer differs between cells",
+    "model download occurs inside the measured region (children run with HF_HUB_OFFLINE=1)",
+    "thermal/power event or process failure prevents the declared repetitions from completing -> repetition/cell incomplete, not slow"
+  ],
+  "primary_contrasts": [
+    {"name": "H1_device_parity", "treatment": "torch_mps", "control": "torch_cpu", "practical_gate": "100% ranking equality and max abs per-candidate score delta <= 1e-4 across every query and measured pass"},
+    {"name": "H2_mps_speed", "treatment": "torch_mps", "control": "torch_cpu", "practical_gate": "median steady-state latency_mps <= 0.8 * median latency_torch_cpu"},
+    {"name": "H3_operational_bound", "treatment": "torch_mps", "control": "onnx_cpu", "practical_gate": "peak RSS <= 2x and cold start <= 3x"},
+    {"name": "H4_backend_attribution", "treatment": "onnx_cpu", "control": "torch_cpu", "practical_gate": "every ONNX-vs-Torch ranking disagreement is cross-checked against torch_cpu-vs-torch_mps before attribution"},
+    {"name": "H5_manifest_truth", "treatment": "all", "control": "all", "practical_gate": "every completed cell proves its effective device/provider before timing began"}
+  ],
+  "raw_artefacts": [
+    "workload.json",
+    "output/children/<cell>__rep<N>.json (per-child manifest + rows)",
+    "output/raw_rows.jsonl",
+    "output/eval_results.json",
+    "output/eval_results_checkpoint.json",
+    "output/eval_results.summary.json"
+  ]
+}
