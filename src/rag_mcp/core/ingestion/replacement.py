@@ -20,10 +20,10 @@ from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ._state import get_embed_semaphore, shutdown_requested, write_lock
 from .source_state import (
+    SOURCE_ATTEMPT_KEY,
     SOURCE_CHUNK_COUNT_KEY,
     new_source_attempt,
     source_attempt_where,
-    stale_attempts_where,
     stamp_source_attempt,
 )
 
@@ -100,6 +100,28 @@ def _embed_missing_nodes(nodes: list[BaseNode]) -> None:
         node.embedding = embedding
 
 
+def _stale_source_ids(
+    store: VectorStore,
+    collection_name: str,
+    *,
+    file_path: str,
+    source_attempt: str,
+) -> list[str]:
+    """Return stale row IDs for one source using a bounded store-neutral scan.
+
+    Missing ``source_attempt`` metadata is intentionally treated as stale so
+    rows written before Stage 3 can be replaced. Selection happens in Python
+    rather than a backend ``$ne`` filter because stores differ in whether a
+    missing metadata key satisfies inequality.
+    """
+    return [
+        row_id
+        for row_id, _, metadata in store.iter_documents(collection_name)
+        if metadata.get("file_path") == file_path
+        and metadata.get(SOURCE_ATTEMPT_KEY) != source_attempt
+    ]
+
+
 async def replace_source_nodes_async(
     nodes: list[BaseNode],
     *,
@@ -116,8 +138,9 @@ async def replace_source_nodes_async(
 
     Old rows are not deleted before the new attempt is durable. A unique
     attempt id makes old, new, and interrupted partial writes distinguishable.
-    Once the exact attempt row count is verified, rows for the same source
-    carrying a different (or legacy-missing) attempt id are stale.
+    Once the exact attempt row count is verified, a bounded store-neutral scan
+    selects stale IDs for the same source, including legacy rows that carry no
+    attempt metadata, and deletes only those IDs.
 
     Args:
         nodes: Parsed/chunked nodes for exactly one source file.
@@ -236,19 +259,21 @@ async def replace_source_nodes_async(
                 )
 
             cleanup_started = time.perf_counter()
-            stale_where = stale_attempts_where(file_path, source_attempt)
             try:
-                stale_count = resolved_store.count_where(
+                stale_ids = _stale_source_ids(
+                    resolved_store,
                     collection_name,
-                    stale_where,
+                    file_path=file_path,
+                    source_attempt=source_attempt,
                 )
-                if stale_count > 0:
-                    resolved_store.delete_where(collection_name, stale_where)
+                if stale_ids:
+                    resolved_store.delete_ids(collection_name, stale_ids)
             except Exception as exc:
                 raise IngestionStageError(
                     "stale_cleanup",
                     f"Stale-version cleanup failed for '{file_path}': {exc}",
                 ) from exc
+            stale_count = len(stale_ids)
             cleanup_seconds = time.perf_counter() - cleanup_started
 
             logger.info(
