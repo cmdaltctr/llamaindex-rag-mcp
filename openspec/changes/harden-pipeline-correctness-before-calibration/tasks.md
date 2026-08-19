@@ -148,44 +148,44 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ### 3.1 Bound memory lifetime
 
-- [ ] 3.1.1 Remove the directory-sized `all_nodes` accumulation.
-- [ ] 3.1.2 Process at most one source file (or another explicitly bounded batch) through parse/chunk/write before releasing its nodes.
-- [ ] 3.1.3 Add generated-corpus tests that record maximum simultaneously retained node count independently of total file count.
+- [x] 3.1.1 Remove the directory-sized `all_nodes` accumulation.
+- [x] 3.1.2 Process at most one source file (or another explicitly bounded batch) through parse/chunk/write before releasing its nodes.
+- [x] 3.1.3 Add generated-corpus tests that record maximum simultaneously retained node count independently of total file count.
 
 ### 3.2 Change detection / index identity
 
-- [ ] 3.2.1 Rebase the archived `add-ingestion-change-detection` intent onto current Chroma + Lance abstractions.
-- [ ] 3.2.2 Store `source_content_hash` plus an index-shaping identity covering embedding model/provider, parser and chunking settings that invalidate existing chunks/vectors.
-- [ ] 3.2.3 Skip unchanged files only when both content identity and index-shaping identity match.
-- [ ] 3.2.4 Test repeated ingest, content edit, embedding-model change, parser change and chunk-setting change.
+- [x] 3.2.1 Rebase the archived `add-ingestion-change-detection` intent onto current Chroma + Lance abstractions.
+- [x] 3.2.2 Store `source_content_hash` plus an index-shaping identity covering embedding model/provider, parser and chunking settings that invalidate existing chunks/vectors.
+- [x] 3.2.3 Skip unchanged files only when both content identity and index-shaping identity match.
+- [x] 3.2.4 Test repeated ingest, content edit, embedding-model change, parser change and chunk-setting change.
 
 ### 3.3 Failure-safe replacement
 
-- [ ] 3.3.1 Write the new source version before deleting stale versions.
-- [ ] 3.3.2 Verify new rows are durable before stale deletion.
-- [ ] 3.3.3 Delete only stale versions of the same source using store-neutral filtering/version metadata.
-- [ ] 3.3.4 Add injected parse failure: old version remains searchable.
-- [ ] 3.3.5 Add injected embedding failure: old version remains searchable.
-- [ ] 3.3.6 Add injected store-write failure: old version remains searchable.
-- [ ] 3.3.7 Add interrupted-run recovery test for a collection containing both old and new versions.
+- [x] 3.3.1 Write the new source version before deleting stale versions.
+- [x] 3.3.2 Verify new rows are durable before stale deletion.
+- [x] 3.3.3 Delete only stale versions of the same source using store-neutral filtering/version metadata.
+- [x] 3.3.4 Add injected parse failure: old version remains searchable.
+- [x] 3.3.5 Add injected embedding failure: old version remains searchable.
+- [x] 3.3.6 Add injected store-write failure: old version remains searchable.
+- [x] 3.3.7 Add interrupted-run recovery test for a collection containing both old and new versions.
 
 ### 3.4 Instrument before optimising concurrency
 
-- [ ] 3.4.1 Add timing counters for parse/chunk, embed, write, lock wait and total per bounded unit.
-- [ ] 3.4.2 Add peak-RSS sampling helper for the ingestion benchmark where supported.
-- [ ] 3.4.3 Do NOT widen concurrency in the same commit unless deterministic safety requires it.
+- [x] 3.4.1 Add timing counters for parse/chunk, embed, write, lock wait and total per bounded unit.
+- [x] 3.4.2 Add peak-RSS sampling helper for the ingestion benchmark where supported.
+- [x] 3.4.3 Do NOT widen concurrency in the same commit unless deterministic safety requires it.
 
 ### 3.5 Required architecture decision record
 
-- [ ] 3.5.1 Write or amend an ADR for **bounded, failure-safe source replacement** covering: bounded memory lifetime, content + index-shaping identity, write-new-before-delete-stale ordering, durability verification, stale-version cleanup/recovery, and the guarantee that a failed re-ingest leaves the last good searchable version intact.
-- [ ] 3.5.2 Cross-reference the rebased change-detection design rather than treating the archived unchecked task list as implemented history.
+- [x] 3.5.1 Write or amend an ADR for **bounded, failure-safe source replacement** covering: bounded memory lifetime, content + index-shaping identity, write-new-before-delete-stale ordering, durability verification, stale-version cleanup/recovery, and the guarantee that a failed re-ingest leaves the last good searchable version intact.
+- [x] 3.5.2 Cross-reference the rebased change-detection design rather than treating the archived unchecked task list as implemented history.
 
 ### PAUSE GATE 3A — bounded/safe ingestion commit
 
-- [ ] 3.GA.1 Run fault-injection and bounded-memory tests.
-- [ ] 3.GA.2 Run repeated-ingest/change-detection tests on both stores where supported.
-- [ ] 3.GA.3 Commit bounded/failure-safe ingestion.
-- [ ] 3.GA.4 ADR gate: update the Stage 3A ADR with the tested failure/recovery guarantees and Stage 3A commit SHA before proceeding to any concurrency optimisation.
+- [x] 3.GA.1 Run fault-injection and bounded-memory tests.
+- [x] 3.GA.2 Run repeated-ingest/change-detection tests on both stores where supported.
+- [x] 3.GA.3 Commit bounded/failure-safe ingestion.
+- [x] 3.GA.4 ADR gate: update the Stage 3A ADR with the tested failure/recovery guarantees and Stage 3A commit SHA before proceeding to any concurrency optimisation.
 
 ### 3.6 Optional Stage 3B — concurrency optimisation after measurement
 

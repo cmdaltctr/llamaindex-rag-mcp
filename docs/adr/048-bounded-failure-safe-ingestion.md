@@ -1,7 +1,7 @@
 # ADR-048: Bounded and Failure-Safe Ingestion
 
 **Date:** 2026-08-19
-**Status:** Proposed - pending Pause Gate 3A
+**Status:** Accepted (Pause Gate 3A closed 2026-08-19; see validation evidence)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -107,8 +107,8 @@ deletion remains a separate document-deletion operation.
 
 ## Validation Plan - Pause Gate 3A
 
-This ADR is intentionally **not Accepted yet**. Acceptance requires fresh local
-or CI execution of the Stage 3A gate, including:
+Acceptance required fresh local or CI execution of the Stage 3A gate,
+including:
 
 - generated-corpus bounded-node-lifetime tests;
 - parse, embedding, partial store-write, and stale-cleanup fault injection;
@@ -121,11 +121,10 @@ or CI execution of the Stage 3A gate, including:
 - Ruff check/format, import-linter contracts, the repository file-size ceiling,
   and strict OpenSpec validation.
 
-The current unvalidated Stage 3A implementation reaches commit
-`be18df8c107c7f1dc4cf8f996208d33479878c9a`. That SHA is implementation state,
-not gate evidence. A later gate update must record the tested implementation
-SHA and concrete command results before this ADR can become Accepted or Stage
-3B can begin.
+The Stage 3A implementation as originally delivered reached commit
+`be18df8c107c7f1dc4cf8f996208d33479878c9a`. That SHA was implementation
+state, not gate evidence; the validation-evidence subsections below record
+the tested SHAs and concrete command results that closed the gate.
 
 The repository CI workflow does not run automatically for pushes to this
 feature branch; it currently targets pushes and pull requests to `main` and
@@ -176,13 +175,53 @@ validation-session fixes:
   `"ok"`.
 - `tests/test_signal_handling.py::test_shutdown_flag_stops_sequential_early`:
   one file is processed where zero were expected after the shutdown flag.
-- `tests/unit/test_type_aware_ingestion.py::test_binary_file_skipped`: a
-  binary file produces one chunk where zero were expected — potentially a
-  genuine Stage 3A correctness defect.
+- `tests/unit/test_type_aware_ingestion.py::test_binary_file_skipped`: fails
+  during patch setup on `pipeline.remove_document` (also removed by Stage 3A);
+  the mixed pytest summary initially suggested a chunk-count mismatch.
 
 These 7 failures (plus the 3 deferred Stage 4 defects) must be resolved or
 explicitly dispositioned before this ADR can become Accepted and before
-Stage 3B begins. This ADR's status therefore remains **Proposed**.
+Stage 3B begins.
+
+#### Resolution (second validation round, same day)
+
+All 7 were triaged against the Stage 3A contracts; one was a genuine defect,
+six were stale tests:
+
+- **Genuine defect** (`8defc05`): the aggregate `metadata_degraded` count was
+  incremented only after a successful replacement, so a file whose extraction
+  degraded and whose replacement then failed dropped out of the count. The
+  increment now happens on observation, before `replace_source_nodes_async`,
+  and the failed file detail carries the flag. Pinned by the updated
+  `test_embedding_error_preserves_degradation_count`.
+- Stale fixtures (`8defc05`): the two remaining aggregation tests used empty
+  chunk lists, a trick that relied on the removed empty-list short-circuit;
+  Stage 3A deliberately treats an empty parse as a failed replacement. They
+  now feed one real node per file through a mocked replacement seam.
+- Stale patch targets (`5fd97e7`): the watcher error-classification pair and
+  the binary-skip test patched `pipeline.embed_and_write_async` /
+  `pipeline.remove_document`, which Stage 3A moved into
+  `core.ingestion.replacement` (AGENTS.md gotcha 8b). Retargeted at the new
+  seams; the binary-skip logic itself was verified unchanged.
+- Stale expectation (`5fd97e7`): the shutdown test asserted `chunks_created
+  == 0`, an artefact of the old deferred-embedding design. Stage 3A commits
+  each source fully before advancing, so a mid-run shutdown stops subsequent
+  sources but cannot un-write the current one; the test now asserts
+  `files_indexed == 1`.
+
+Final gate state at `5fd97e7` (macOS aarch64, Python 3.12.10, `uv sync
+--frozen`): Stage 3A group 41 passed; fast suite 1618 passed, 17 skipped,
+3 failed = exactly the deferred Stage 4 Experiment 10b/13/14 defects;
+`ruff check` and `ruff format --check` clean across 634 files;
+`lint-imports` 8 contracts kept; strict OpenSpec validation valid. The
+tested implementation SHA is `5fd97e7`; later commits on this branch are
+documentation and gate bookkeeping only.
+
+**Decision: accepted.** Every condition in the validation plan above is met
+by executable evidence at a recorded SHA, with the Stage 4 defects explicitly
+deferred rather than weakened. Pause Gate 3A is closed; Stage 3B (optional,
+measurement-gated) may proceed under its own gate (3.GB), and Stage 4 remains
+unstarted.
 
 ## Consequences
 
