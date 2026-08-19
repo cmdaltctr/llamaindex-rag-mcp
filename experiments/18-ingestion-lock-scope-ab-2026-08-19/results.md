@@ -1,7 +1,7 @@
-# Experiment 18 results — Stage 3B lock-scope baseline (Phase A)
+# Experiment 18 results — Stage 3B lock-scope baseline and A/B verdict
 
 **Date:** 2026-08-19 · **Operator:** Dr Muhammad Aizat Bin Md Hawari
-**Status:** Phase A complete — see verdict below; Phase B A/B conditional
+**Status:** PASS — Stage 3B retained (Phase A + Phase B)
 **Environment:** macOS aarch64, Python 3.12.10, `uv sync --frozen` (208 packages),
 ChromaDB local persistent (isolated per cell), real block = Ollama
 `nomic-embed-text` at `http://localhost:11434`. Runtime manifests with
@@ -67,9 +67,64 @@ Scope limits recorded before implementing:
   derived during stamping (`source_state.py`), so hoisting stamp+embed above
   the lock leaves vectors and IDs bit-identical.
 
-Phase B (task 3.6.4) runs the A/B with the minimal narrow-lock change and the
-H6 gate (≥20% contended docs/s) plus H7 (≤1.25× peak RSS, H1–H5 stay green);
-the change is retained only if both pass.
+Phase B (task 3.6.4) ran the A/B with the minimal narrow-lock change
+(commit `b4b01b6`) against the Stage 3A baseline (`25f130f`). Both gates
+passed; the change was retained — see the Phase B verdict below.
+
+## Phase B — A/B verdict (Stage 3B retained)
+
+A/B arms differ only in `src/rag_mcp/core/ingestion/replacement.py` — the
+baseline was flipped via explicit-path `git checkout` of commit `25f130f`,
+the treatment ran at `b4b01b6`, with an identical harness. Timing cells
+executed as 3 interleaved repetitions per arm, each in its own subprocess
+with a fresh isolated store.
+
+### Harness contamination note
+
+The first A/B attempt reused per-cell store directories across repetitions,
+so later rounds measured unchanged-skip paths instead of fresh ingests;
+those cells were discarded. The fix scopes each store under its cells
+directory (`chroma_{cells_dir().name}_{cell_id}`). All published numbers
+below come from the fixed harness.
+
+### Real-embed contended (100 files, 2 streams, Ollama nomic-embed-text)
+
+| Rep | Baseline docs/s (Stage 3A) | Treatment docs/s (Stage 3B) | Baseline lock-wait fraction | Treatment lock-wait fraction |
+| --- | --- | --- | --- | --- |
+| 1 | 5.48 | 7.40 | 0.9671 | 0.0000 |
+| 2 | 5.57 | 7.35 | 0.9663 | 0.0000 |
+| 3 | 5.42 | 7.44 | 0.9670 | 0.0000 |
+| Mean | 5.49 | 7.40 | 0.9668 | 0.0000 |
+
+- Contended throughput +34.7%; per-rep ranges do not overlap (5.42–5.57 vs
+  7.35–7.44).
+- Contender lock-wait fraction 96.7% → 0.0%.
+- Peak RSS ratio (treatment over baseline) 0.99.
+
+Fake-embed contended: 36.48 → 36.28 docs/s (-0.6%, noise — instant
+embeddings never had an embed bottleneck).
+
+### Gates
+
+| Gate | Criterion | Result |
+| --- | --- | --- |
+| H6 | contended docs/s ≥ 20% improvement | PASS (+34.7%) |
+| H7 | peak RSS ≤ 1.25× baseline, H1–H5 green on treatment | PASS (RSS ratio 0.99; correctness re-run green) |
+
+### Treatment correctness re-run
+
+bounded_25 / bounded_100 / bounded_400 all fully indexed (54 / 212 / 836
+chunks) with the unchanged second ingest skipping 100% of files and zero
+chunks created; fault cells parse / embed / store_write all survived
+(`old_version_survived: true`) and swapped on recovery
+(`swap_completed: true`); modified_25 re-indexed exactly 1 of 25 files.
+
+### Retention decision
+
+The narrow-lock change is retained: H6 and H7 both pass on the fixed
+harness, so the D12 condition for the follow-up change is met with data.
+Recorded as TDR-013 (commit `b4b01b6`). Raw data in `output/results.ab.json`
+and `output/cells_stage3{a,b}_rep*/`.
 
 ## Threats and attribution limits
 

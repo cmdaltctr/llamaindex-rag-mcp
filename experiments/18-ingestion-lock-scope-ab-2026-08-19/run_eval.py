@@ -200,7 +200,7 @@ def _summarise_ingest(result: dict) -> dict:
 def run_bounded_cell(cell_id: str, size: int, modified: bool) -> dict:
     """Execute one boundedness cell: first ingest, unchanged repeat, optional edit."""
     corpus_dir, identity = _generate_corpus(size, f"corpus_{size}")
-    store_dir = OUTPUT_DIR / f"chroma_{cell_id}"
+    store_dir = OUTPUT_DIR / f"chroma_{cells_dir().name}_{cell_id}"
     runtime = install_fake_runtime(store_dir)
     settings = build_fake_settings("documents", store_dir)
     manifest = build_runtime_manifest(
@@ -237,7 +237,7 @@ def run_bounded_cell(cell_id: str, size: int, modified: bool) -> dict:
 def run_fault_cell(cell_id: str, stage: str) -> dict:
     """Execute one fault-injection cell on a three-file corpus."""
     corpus_dir, identity = _generate_corpus(3, f"corpus_fault_{cell_id}")
-    store_dir = OUTPUT_DIR / f"chroma_{cell_id}"
+    store_dir = OUTPUT_DIR / f"chroma_{cells_dir().name}_{cell_id}"
     runtime = install_fake_runtime(store_dir)
     store = runtime["store"]
     settings = build_fake_settings("documents", store_dir)
@@ -396,7 +396,7 @@ def run_timing_cell(cell_id: str, block: str, topology: str) -> dict:
                 "skip_reason": "ollama or model unavailable",
             }
         corpus_dir, identity = _generate_corpus(100, "corpus_100")
-        store_dir = OUTPUT_DIR / f"chroma_{cell_id}"
+        store_dir = OUTPUT_DIR / f"chroma_{cells_dir().name}_{cell_id}"
         runtime = install_real_runtime(store_dir)
         settings = build_fake_settings("documents", store_dir)
         warmup_dir = OUTPUT_DIR / "corpus_warmup"
@@ -408,7 +408,7 @@ def run_timing_cell(cell_id: str, block: str, topology: str) -> dict:
         warmup_seconds = time.perf_counter() - warm_started
     else:
         corpus_dir, identity = _generate_corpus(100, "corpus_100")
-        store_dir = OUTPUT_DIR / f"chroma_{cell_id}"
+        store_dir = OUTPUT_DIR / f"chroma_{cells_dir().name}_{cell_id}"
         runtime = install_fake_runtime(store_dir)
         settings = build_fake_settings("documents", store_dir)
         warmup_seconds = None
@@ -529,7 +529,7 @@ def run_smoke() -> None:
         f"second pass skipped {second['files_skipped_unchanged']}",
         flush=True,
     )
-    shutil.rmtree(OUTPUT_DIR / "chroma_smoke_5", ignore_errors=True)
+    shutil.rmtree(OUTPUT_DIR / "chroma_cells_smoke_5", ignore_errors=True)
     shutil.rmtree(OUTPUT_DIR / "corpus_5", ignore_errors=True)
 
 

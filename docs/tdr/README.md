@@ -38,6 +38,7 @@ architecture), see the [ADR index](../adr/).
 | 010 | [Separate code chunking units and make metadata budget node-exact](010-separate-code-chunking-units-and-metadata-budget.md)        | Accepted | 2026-08-18 |
 | 011 | [Pre-calibration audit and executable experiment-plan validation](011-pre-calibration-audit-and-experiment-plan-validation.md)     | Accepted | 2026-08-18 |
 | 012 | [Widen Null-typed LanceDB adapter columns before write](012-widen-null-typed-lancedb-adapter-columns.md)                               | Accepted | 2026-08-19 |
+| 013 | [Narrow the ingestion write lock to the mutation section](013-narrow-ingestion-write-lock-to-mutation-section.md)                      | Accepted | 2026-08-19 |
 
 ## Status values
 

@@ -189,15 +189,15 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ### 3.6 Optional Stage 3B — concurrency optimisation after measurement
 
-- [ ] 3.6.1 Run Example Experiment 6 against Stage 3A.
-- [ ] 3.6.2 If lock scope demonstrably limits embedding throughput, design a narrow mutation lock with embedding outside the lock using precomputed embeddings.
-- [ ] 3.6.3 Preserve generation and replacement atomicity contracts.
-- [ ] 3.6.4 Re-run Experiment 6 A/B and only retain the change if throughput improves without worse correctness/memory gates.
+- [x] 3.6.1 Run Example Experiment 6 against Stage 3A. (Experiment 18 `experiments/18-ingestion-lock-scope-ab-2026-08-19/`, baseline commit `25f130f`: Phase A H1–H5 all PASS — bounded units, RSS ≤2× per 4× files, parse/embed/store-write failure safety, swap, unchanged skip. Timing: single-stream lock wait ≈0 (sequential by construction); two-stream contended with real Ollama embeddings fully serialised — lock wait 95.6% of wall, speedup 1.002.)
+- [x] 3.6.2 If lock scope demonstrably limits embedding throughput, design a narrow mutation lock with embedding outside the lock using precomputed embeddings. (Measurement met the D12 condition for *concurrent* ingest. Chose minimal D1a — hoist `_embed_missing_nodes` + `stamp_source_attempt` above the lock; `write_nodes`/verify/cleanup stay inside. `upsert_precomputed` was surveyed and rejected as the write path: it cannot reproduce `write_nodes` row identity (see experiment `design-notes.md`); nodes arrive pre-embedded so `write_nodes` reuses populated vectors, satisfying "precomputed embeddings" without a store-contract change. Implemented in commit `b4b01b6` with failing-first regression tests `tests/test_ingestion_stage3b_narrow_lock.py`.)
+- [x] 3.6.3 Preserve generation and replacement atomicity contracts. (Stamp keys are excluded from embed text and row IDs derive during stamping (`source_state.py`), so vectors/IDs are bit-identical; write → verify → stale-delete ordering unchanged inside the lock; each mutation still bumps generation exactly once. Test-contract map recorded 0 would-break-by-design contracts; full fast suite 1622 passed with only the 3 deferred Stage 4 audit reds.)
+- [x] 3.6.4 Re-run Experiment 6 A/B and only retain the change if throughput improves without worse correctness/memory gates. (3 interleaved repetitions per arm, arms differ only in `replacement.py`: real-embed contended docs/s 5.49 → 7.40 (+34.7%, per-rep ranges non-overlapping), contender lock-wait fraction 96.7% → 0.0%, peak RSS ratio 0.99; fake-embed contended −0.6% (noise). H6 ≥20% PASS; H7 ≤1.25× RSS + Phase A H1–H5 re-green on treatment PASS. **Retained.**)
 
 ### PAUSE GATE 3B — optional performance commit
 
-- [ ] 3.GB.1 Commit concurrency work separately or explicitly mark 3B “not warranted by evidence”.
-- [ ] 3.GB.2 If Stage 3B is implemented, write a TDR recording the measured bottleneck, candidate lock/concurrency designs considered, chosen lock scope/batching strategy, Experiment 6 evidence, and rollback conditions. If Stage 3B is not warranted, record `TDR not required — optimisation rejected by measurement` in the gate notes.
+- [x] 3.GB.1 Commit concurrency work separately or explicitly mark 3B "not warranted by evidence". (Three commits: `25f130f` experiment 18 baseline evidence; `b4b01b6` Stage 3B narrow-lock implementation + failing-first regression tests; final commit adds the A/B artefacts, TDR-013, and gate bookkeeping. No correctness work is mixed into the concurrency commit.)
+- [x] 3.GB.2 If Stage 3B is implemented, write a TDR recording the measured bottleneck, candidate lock/concurrency designs considered, chosen lock scope/batching strategy, Experiment 6 evidence, and rollback conditions. (`docs/tdr/013-narrow-ingestion-write-lock-to-mutation-section.md`, Accepted — records the 95.6% contended lock-wait bottleneck, designs D1a/D1b/D2/D3/D4 with rejection reasons, the D1a choice, the A/B evidence table, rollback (revert `b4b01b6`, no re-ingest), and scope limits: single-stream unchanged, Chroma local only.)
 
 ---
 

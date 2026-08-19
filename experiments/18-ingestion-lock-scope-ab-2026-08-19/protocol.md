@@ -1,7 +1,7 @@
 # Experiment 18 — Ingestion lock-scope baseline and conditional A/B
 
 **Template ID:** promoted from `example/experiment-6-ingestion-boundedness-and-atomicity`
-**Status:** PLANNED
+**Status:** PASS (Phase A + Phase B)
 **Role:** systems/reliability gate after Stage 3A; measurement evidence for optional Stage 3B (design constraint D12: measure before widening)
 **Operator:** Dr Muhammad Aizat Bin Md Hawari
 **Date:** 2026-08-19
@@ -129,7 +129,10 @@ residency is handled by warm-up (§11).
 Correctness cells: one execution each plus exact assertions (deterministic).
 Timing cells: one execution per cell in this baseline run; if timing noise
 proves material to the Stage 3B decision, the orchestrator re-runs the timing
-phase before deciding (repetition is recorded per cell in results). Real
+phase before deciding (repetition is recorded per cell in results). Phase B
+executed the timing cells as 3 interleaved per-arm rounds (arm A baseline,
+arm B treatment), one subprocess per round with a fresh isolated store; each
+round's cells are recorded under `output/cells_stage3{a,b}_rep{N}/`. Real
 block: one 2-file warm-up ingest into a separate `warmup` collection before
 measured cells; warm-up wall time is recorded and excluded.
 
