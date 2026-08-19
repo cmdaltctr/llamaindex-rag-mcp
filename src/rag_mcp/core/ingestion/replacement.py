@@ -1,8 +1,12 @@
 """Bounded, failure-safe replacement of one indexed source.
 
-Stage 3A keeps the existing global mutation lock around embedding and all
-store mutations, so this module instruments the serialized design without
-widening effective ingestion concurrency.
+Stage 3B (Experiment 18 evidence) narrows the global write lock to the
+mutation section only: embedding and attempt-stamping run before the lock is
+acquired, while the store write, durability verification, and stale cleanup
+stay inside it. Concurrent ingestion operations can therefore embed in
+parallel while store mutations remain serialised. The failure-safety
+ordering from ADR-048 is unchanged — a failure before or during the locked
+section still leaves the previous searchable version intact.
 """
 
 from __future__ import annotations
@@ -150,8 +154,10 @@ async def replace_source_nodes_async(
         progress_callback: Optional ``(phase, current, total)`` callback.
         collection_name: Target vector-store collection.
         store: Optional injected vector store.
-        embed_concurrency: Existing process semaphore width. The global
-            write lock still serializes the complete embed/write section.
+        embed_concurrency: Process semaphore width limiting concurrent
+            embedding. Since Stage 3B the semaphore (not the write lock)
+            is the only serialiser of the embed phase; the write lock
+            covers the store mutation section only.
 
     Returns:
         Counts plus stage timing diagnostics for this bounded source.
@@ -171,36 +177,47 @@ async def replace_source_nodes_async(
 
     resolved_store = _resolve_store(store)
 
-    def _replace_sync() -> ReplaceSourceOutcome:
+    def _prepare_sync() -> float:
+        """Embed and stamp the bounded node set outside the mutation lock.
+
+        Embedding dominates replacement wall time (Experiment 18), and the
+        node list is caller-private until the store write, so this phase
+        needs no mutual exclusion. ``stamp_source_attempt`` derives the
+        attempt-scoped row IDs and excludes every source key from embed
+        text, so vectors and row identity are identical to the Stage 3A
+        in-lock ordering.
+        """
+        embedding_started = time.perf_counter()
+        try:
+            with get_embed_semaphore(embed_concurrency):
+                logger.info(
+                    "Embedding %d chunks via %s...",
+                    len(nodes),
+                    _embed_model_name(),
+                )
+                _embed_missing_nodes(nodes)
+        except ConnectionError:
+            raise
+        except Exception as exc:
+            raise IngestionStageError(
+                "embedding",
+                f"Embedding failed for '{file_path}': {exc}",
+            ) from exc
+        stamp_source_attempt(
+            nodes,
+            file_path=file_path,
+            content_hash=content_hash,
+            index_identity=index_identity,
+            source_version=source_version,
+            source_attempt=source_attempt,
+        )
+        return time.perf_counter() - embedding_started
+
+    def _commit_sync(embedding_seconds: float) -> ReplaceSourceOutcome:
+        """Write, verify, and clean stale rows inside the mutation lock."""
         lock_started = time.perf_counter()
         with write_lock:
             lock_wait = time.perf_counter() - lock_started
-            if shutdown_requested.is_set():
-                return ReplaceSourceOutcome(
-                    0,
-                    0,
-                    source_attempt,
-                    WriteTimings(lock_wait_seconds=lock_wait),
-                )
-
-            embedding_started = time.perf_counter()
-            try:
-                with get_embed_semaphore(embed_concurrency):
-                    logger.info(
-                        "Embedding %d chunks via %s...",
-                        len(nodes),
-                        _embed_model_name(),
-                    )
-                    _embed_missing_nodes(nodes)
-            except ConnectionError:
-                raise
-            except Exception as exc:
-                raise IngestionStageError(
-                    "embedding",
-                    f"Embedding failed for '{file_path}': {exc}",
-                ) from exc
-            embedding_seconds = time.perf_counter() - embedding_started
-
             if shutdown_requested.is_set():
                 return ReplaceSourceOutcome(
                     0,
@@ -211,15 +228,6 @@ async def replace_source_nodes_async(
                         lock_wait_seconds=lock_wait,
                     ),
                 )
-
-            stamp_source_attempt(
-                nodes,
-                file_path=file_path,
-                content_hash=content_hash,
-                index_identity=index_identity,
-                source_version=source_version,
-                source_attempt=source_attempt,
-            )
 
             write_started = time.perf_counter()
             try:
@@ -293,7 +301,15 @@ async def replace_source_nodes_async(
                 ),
             )
 
-    outcome = await asyncio.to_thread(_replace_sync)
+    embedding_seconds = await asyncio.to_thread(_prepare_sync)
+    if shutdown_requested.is_set():
+        return ReplaceSourceOutcome(
+            0,
+            0,
+            source_attempt,
+            WriteTimings(embedding_seconds=embedding_seconds),
+        )
+    outcome = await asyncio.to_thread(_commit_sync, embedding_seconds)
     if progress_callback:
         progress_callback("embed", outcome.chunks_written, outcome.chunks_written)
     return outcome

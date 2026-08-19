@@ -2,12 +2,15 @@
 
 Loads ``output/cells/*.json``, evaluates hypotheses H1-H5 (Phase A
 correctness gates) plus the lock-scope timing evidence, and writes
-``output/results.summary.json``. Phase B gates H6/H7 stay reserved until
-a treatment variant exists.
+``output/results.summary.json``. With ``--ab`` it additionally compares the
+Stage 3A baseline repetitions against the Stage 3B treatment repetitions
+(``output/cells_stage3a_rep*/`` vs ``output/cells_stage3b_rep*/``) and
+evaluates the Phase B gates H6/H7.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -158,8 +161,107 @@ def _decision(timing_rows: dict) -> dict:
     }
 
 
+def _ab_comparison() -> dict:
+    """Compare baseline vs treatment timing repetitions (Phase B)."""
+    arms = {}
+    for arm in ("stage3a", "stage3b"):
+        rep_dirs = sorted((HERE / "output").glob(f"cells_{arm}_rep*"))
+        cells = {}
+        for rep_dir in rep_dirs:
+            for cell_id in ("timing_fake_contended_100", "timing_real_contended_100"):
+                path = rep_dir / f"{cell_id}.json"
+                if not path.exists():
+                    continue
+                cell = json.loads(path.read_text(encoding="utf-8"))
+                if cell.get("status") != "completed":
+                    continue
+                streams = cell.get("streams", [])
+                files = sum(s.get("files_indexed", 0) for s in streams)
+                wall = cell.get("wall_seconds") or 0.0
+                lock_wait = sum(s.get("timings", {}).get("lock_wait_seconds", 0.0) for s in streams)
+                cells.setdefault(cell_id, []).append(
+                    {
+                        "rep": rep_dir.name,
+                        "wall_seconds": round(wall, 3),
+                        "docs_per_second": round(files / wall, 2) if wall else None,
+                        "lock_wait_fraction": round(lock_wait / wall, 4) if wall else None,
+                        "peak_rss_bytes": cell.get("process_peak_rss_bytes"),
+                        "repo_commit": cell.get("manifest", {}).get("repo_commit"),
+                        "git_dirty": cell.get("manifest", {}).get("git_dirty"),
+                    }
+                )
+        arms[arm] = cells
+    verdict = {}
+    for cell_id in ("timing_fake_contended_100", "timing_real_contended_100"):
+        base = arms["stage3a"].get(cell_id, [])
+        treat = arms["stage3b"].get(cell_id, [])
+        if not base or not treat:
+            verdict[cell_id] = {"status": "missing repetitions"}
+            continue
+        base_rate = sum(r["docs_per_second"] for r in base) / len(base)
+        treat_rate = sum(r["docs_per_second"] for r in treat) / len(treat)
+        base_rss = max(r["peak_rss_bytes"] or 0 for r in base)
+        treat_rss = max(r["peak_rss_bytes"] or 0 for r in treat)
+        verdict[cell_id] = {
+            "baseline_docs_per_second_mean": round(base_rate, 2),
+            "treatment_docs_per_second_mean": round(treat_rate, 2),
+            "throughput_improvement_fraction": round((treat_rate - base_rate) / base_rate, 4)
+            if base_rate
+            else None,
+            "baseline_lock_wait_fraction_mean": round(
+                sum(r["lock_wait_fraction"] for r in base) / len(base), 4
+            ),
+            "treatment_lock_wait_fraction_mean": round(
+                sum(r["lock_wait_fraction"] for r in treat) / len(treat), 4
+            ),
+            "peak_rss_ratio_treatment_over_baseline": round(treat_rss / base_rss, 4)
+            if base_rss and treat_rss
+            else None,
+            "repetitions": {"stage3a": len(base), "stage3b": len(treat)},
+        }
+    real = verdict.get("timing_real_contended_100", {})
+    improvement = real.get("throughput_improvement_fraction")
+    rss_ratio = real.get("peak_rss_ratio_treatment_over_baseline")
+    correctness_dir = HERE / "output" / "cells_stage3b_correctness"
+    correctness_ok = None
+    if correctness_dir.exists():
+        correctness_cells = {
+            p.stem: json.loads(p.read_text(encoding="utf-8"))
+            for p in correctness_dir.glob("*.json")
+        }
+        bounded = {
+            size: correctness_cells.get(f"bounded_{size}")
+            for size in (25, 100, 400)
+            if correctness_cells.get(f"bounded_{size}")
+        }
+        faults_ok = all(
+            correctness_cells.get(f"fault_{stage}", {}).get("old_version_survived")
+            for stage in ("parse", "embed", "store_write")
+            if correctness_cells.get(f"fault_{stage}")
+        )
+        correctness_ok = bool(bounded) and faults_ok
+    h6 = bool(improvement is not None and improvement >= 0.20)
+    h7 = bool(rss_ratio is not None and rss_ratio <= 1.25 and correctness_ok is True)
+    return {
+        "cells": arms,
+        "verdict": verdict,
+        "gates": {
+            "H6_throughput_ge_20pct_real_contended": h6,
+            "H7_rss_le_1_25x_and_correctness_green": h7,
+            "treatment_correctness_dir_found": correctness_ok,
+        },
+    }
+
+
 def main() -> None:
     """Load cells, evaluate gates, write summary."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--ab",
+        action="store_true",
+        help="also evaluate the Phase B baseline-vs-treatment repetitions",
+    )
+    args = parser.parse_args()
     timing_rows = {
         cell_id: _timing_row(cell_id, cell)
         for cell_id in (
@@ -189,9 +291,6 @@ def main() -> None:
         "decision_inputs": _decision(timing_rows),
         "phase_b": "reserved — H6/H7 evaluated only if a Stage 3B treatment variant is implemented",
     }
-    out = HERE / "output" / "results.summary.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary["gates"], indent=2))
     for name, row in timing_rows.items():
         print(
@@ -199,6 +298,18 @@ def main() -> None:
             f"({row['lock_wait_fraction_of_wall']}) docs/s={row['docs_per_second']}",
             flush=True,
         )
+    if args.ab:
+        ab = _ab_comparison()
+        summary["phase_b_ab"] = ab
+        out_ab = HERE / "output" / "results.ab.json"
+        out_ab.write_text(json.dumps(ab, indent=2), encoding="utf-8")
+        print(json.dumps(ab["gates"], indent=2))
+        for cell_id, verdict in ab["verdict"].items():
+            print(f"{cell_id}: {verdict}", flush=True)
+        print(f"A/B summary written to {out_ab}", flush=True)
+    out = HERE / "output" / "results.summary.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"summary written to {out}", flush=True)
 
 
