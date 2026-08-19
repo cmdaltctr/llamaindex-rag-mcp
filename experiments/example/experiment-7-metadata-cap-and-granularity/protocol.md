@@ -1,8 +1,10 @@
 # Experiment 7 — Metadata extraction cap and persisted granularity
 
 **Template ID:** `example/experiment-7-metadata-cap-and-granularity`  
-**Status:** PLANNED  
-**Role:** correctness gate for metadata workload units and stored metadata semantics
+**Status:** PASS  
+**Role:** correctness gate for metadata workload units and stored metadata semantics  
+**Protocol version:** 1.0  
+**Executed:** 2026-08-19 (deterministic fake extractor; no real LLM)
 
 ## 1. Research question
 
@@ -138,3 +140,39 @@ PASS means unit/cap/granularity semantics are correct; it does not prove the sel
 ## 20. Cleanup
 
 No large index needed; remove transient output only.
+
+## Execution record (v1.0 — 2026-08-19)
+
+**Status: PASS.** Executed as pre-registered with the deterministic fake
+extractor on branch `harden-pipeline-correctness-before-calibration` at
+commit `c475852cf195` (`uv.lock` sha256 `3a225230a6eb…`). No
+pre-registered section above was rewritten.
+
+- **H1 PASS** — extractor input is exactly `min(N, total)` chunks in every
+  cell (1/3/10 against totals 24 and 16).
+- **H2 PASS** — observed selected-chunk sha256 sequences equal the first N
+  ground-truth hashes in all six cells (ground truth frozen in
+  `fixtures/expected_chunks.json` before treatments).
+- **H3 PASS** — per-chunk fake enrichments differ by construction
+  (marker-derived outputs); every final stored chunk carries the identical
+  pre-registered aggregated file-level metadata.
+- **H4 PASS** — `metadata_granularity=file_aggregate` declared in every
+  cell manifest; production lacks a runtime granularity attribute, so the
+  gap is reported in the summary artefact and satisfied via manifest +
+  docs.
+- **H5 PASS** — fake-LLM call counts equal the locked analytic
+  `2N + min(5, N) + 1` (4/10/26) and are identical across documents with
+  different tails at the same cap: cost scales with the cap, not the tail.
+
+Harness: `plan.json` (six cells), `fake_llm.py` (CountingMockLLM at the
+`providers.llm.registry.get` seam), `make_ground_truth.py` (splitter-only
+ground truth + pre-registration), `run_eval.py` (production ingestion
+path with an `IngestionPipeline.arun` observation wrapper; D13 manifests,
+D14 preflight, atomic checkpoints, `--verify-rerun` byte-identity proof),
+`summarise_eval.py` (verdicts). Deterministic rerun recorded
+byte-identical cell JSON for all six cells (`output/verify_rerun.json`).
+
+Artefacts: `fixtures/` (two documents, expected chunks, pre-registration),
+`output/cells/`, `output/manifests/`, `output/summary.json`, `results.md`.
+Cleanup per §20: the `--verify-rerun` scratch directory was removed; no
+indexes were built.

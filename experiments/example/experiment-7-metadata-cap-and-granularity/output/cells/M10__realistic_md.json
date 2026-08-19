@@ -1,0 +1,154 @@
+{
+  "cell_id": "M10__realistic_md",
+  "factors": {
+    "document": "realistic_md",
+    "max_chunks": 10
+  },
+  "fake_call_summary": {
+    "context_sha256_set": [
+      "01be852a94ac514b5479739f23325bbd14c92f31dcf2989339cdbb3f345921c1",
+      "039f1b96730cadd115c4e8ae3a3609d8b747d699b4e833feb11f78f94e6cef5f",
+      "0a3f8688757447593938dbc0d9d3f6286a96ac30d593da72f380111e920d044c",
+      "0fa75495ca13233fa005e209ddf6574e06b341064ba939e73eb9e17b2c8094e1",
+      "0fc6cd0eb963980627a98f0393e89324a9435787e09564ae6f87e129049f5d1d",
+      "19c17ef8a8640d43bbaad93aac848d53d5acc6cdc9be5a9df750e5f553ae6896",
+      "2485f579143fb7b7ac48044da1c8e0f85fcce3995d33c6a3e40818ec1687b657",
+      "31bb299bf07c5165506f61dc56f4b9046b47ec2ec3852ad05032647c8cfd219a",
+      "482cf74776d2c41c466ab6f00393861e4ff68f2034b591a761513026d6a52724",
+      "4b5ce8cfa6dde6d4039fa12474f3e2741e46aa6c914973a057c832613872f236",
+      "679042f46d522707783bfd16bb999410011ba5c5fa74f6ed1a568bf088505edc",
+      "78340011f14e52824113c476460c3be6033748ae71dbd7dd556ad5aa748286ef",
+      "813784789c4041599f6a6e962b15358566beee46a1f7ada23b54dd337d2c4e78",
+      "8842c304e6dade9fbb352e9b51199c420f0c1af6b7b1a8efea5d5459c33d2f23",
+      "9a199cabbf281c6e1ccca006ac049b5291daa3038a13492790bc1eba18d9a886",
+      "9d82839b1fbc86a4fb750ac3856c8a9fd89ea7e5b0ebb632ede193cbbc354d7c",
+      "b7dd3bfbe7f1241693ac462132002dec585b4c43516dec765ec894c7905028ce",
+      "c0912e5913ba6bf089fc6801008ef666dc24982209037d2dca1c3d17372ff9f4",
+      "c1e9e2c897539cf2615f0f840e3d4d7aca24c80ffc0d1873dcd97877e1a37842",
+      "c807f21e27a0083935505197f24318a56c683d99bdc795d0ebb61764c2c2f438",
+      "e19ad4276af1662825bc4d1b94552f65529c921c308ec8238066ce3c6e3ecfc5",
+      "e95eefc6fe53d35eb3680879cecea6e8eb93175937c7801c4253adb4a32d8926",
+      "ed6b48dc86a2df9d642b053c5b28516ac08e0393a07a5781ece411b748c30fe9",
+      "eeb0960bc26e009c3396ea78145b6c0f74c54bd91cf627fdb2891ee02b4b6bd3",
+      "f14284fd3493c60e657ef5799a5bb37cb07d1d7085b91e01028cc981819eaa39",
+      "f92eb705cba96f394f6b27d339470d3a639dc185c77ee50dfa03a78f2d825e3a"
+    ],
+    "kinds": {
+      "keyword": [
+        "1000",
+        "1005",
+        "1010",
+        "1014",
+        "1019",
+        "1023",
+        "1028",
+        "1032",
+        "1037",
+        "1041"
+      ],
+      "summary": [
+        "1000",
+        "1005",
+        "1010",
+        "1014",
+        "1019",
+        "1023",
+        "1028",
+        "1032",
+        "1037",
+        "1041"
+      ],
+      "title_combine": [
+        "1000"
+      ],
+      "title_node": [
+        "1000",
+        "1005",
+        "1010",
+        "1014",
+        "1019"
+      ]
+    },
+    "total_calls": 26
+  },
+  "final_chunk_sha256": [
+    "19eed5430d52bca10c1d71fd098ce5abc1fbe2fabbd24b7d948f625807bc0574",
+    "db7e6a9f22fcf7e7c73a6ef6d0c10b522713c1c8bb41d1ceb8a1257a8ba53858",
+    "0ab9556eaef8128caa21cd785e1ddd3f09bb55028242641ca2af9adaf4bbd40f",
+    "9044be166ff6bc50712523d929831dd002d4330ec3dd57fc4d6fdbfd97a2cc2b",
+    "4f27506bdd9f14280eabfbef7e0c6dc5e87c3c14320618e4beea5815f64e9788",
+    "1d64d15cb743b40fd626b87560139e069cefe9ecb4ad317f5ff0fd56c4ff87f9",
+    "14775d42c6563a1e3ab02f16ddf74af1360c1416a0da2f9f253b81b8054d779f",
+    "d1b7b67f5175cbba31b61886aaa5aeaace5698a060a239caed6b42f8c47f7bf9",
+    "c6561b252751d95be88f230da881eef78e06b31dea6373db8c3c80b480094a84",
+    "e866d11317bf7a129f7f19b085df6952a4f2e0149c3759b87f625f1e7ad062d1",
+    "bd5deafd870b9ad8e49772721423dcd1c7e04fa36f111c37cc6af8fc5935eaac",
+    "4ae780efedcebb08f980811bd87f11aae79470c8e9df5b20308821772fb03d61",
+    "17f08c8875f035d51dbc954da0b6c5f51455e151a2d4a416f77cd9ae06093210",
+    "6988a5389ff3f3086e864cdb7630337509d5cda383b90196f4c3781c5e842b65",
+    "951f1facbc21a86282a3edb65b793f5e4890a4e59a2c2bf1ed38fb4fff94e345",
+    "c6a4be89793c2a875d00edb235c752dce8430f1d5acd6eb1205cf1895f3af2dd",
+    "d3f3c8a0c4b6425cc967a4c8db2092642e3553b8e00309f4047b6de36d8b237b",
+    "56dc595957666b9f1da7e6cbb57e643b5633a9b5a21c90dfa11168a9b4fee71b",
+    "0878aebcbd99dca8b45f9f4451b60125f5dadb49a540ecc363a7fdec1c828760",
+    "d07ddcce89e85caa4291db0f054e4273397fb979595b1a30749593f6ae95564a",
+    "d1e8a0cef5a313af0be10cb62ad2d103f85ea45c343f877bad6e3bda715085bb",
+    "cd71015fbaa645bdd432d4f1c9fd14388009ecb870701119b8ff96606c28d1f0",
+    "28b26173939f4d7ad4efe12a14149a102dec27a0b134bcef97cb1544eb30d8fb",
+    "68e0526021d89eb45367a192a1c7d96a654cadbe4e2e95658159a75c1bf82727",
+    "c249b34b2525ca0c968bd57cf2f85dd21fceaa5f209bc5008979fb2b7053eefe",
+    "33e8d3b71ad86e28e8704d580a4fa85d5e3c3f25bdc6f3159c79c8dc2832c629"
+  ],
+  "manifest_path": "output/manifests/M10__realistic_md.manifest.json",
+  "rows": [
+    {
+      "cell_id": "M10__realistic_md",
+      "latency_ms": 0.0,
+      "metrics": {
+        "calls_match_analytic": true,
+        "cap": 10,
+        "document": "realistic_md",
+        "expected_llm_calls_analytic": 26,
+        "expected_selected_hashes": [
+          "b7dd3bfbe7f1241693ac462132002dec585b4c43516dec765ec894c7905028ce",
+          "0fa75495ca13233fa005e209ddf6574e06b341064ba939e73eb9e17b2c8094e1",
+          "0fc6cd0eb963980627a98f0393e89324a9435787e09564ae6f87e129049f5d1d",
+          "039f1b96730cadd115c4e8ae3a3609d8b747d699b4e833feb11f78f94e6cef5f",
+          "19c17ef8a8640d43bbaad93aac848d53d5acc6cdc9be5a9df750e5f553ae6896",
+          "eb5e98faf3ac2577d554867fc90be71faf642562b1bd53317177f9cd69425ce5",
+          "f9f9d01a08599766736e8e30d04ee40d6539455c616e433add3c7ea69fe77b0d",
+          "ca3cbf1e0613d6e15062d12bffa68eea61b12ffb21934e0081d24cc64a09898b",
+          "5f89282ce4e377fc8769c2d11da4d0c51199596f20aa329720f353809a677a70",
+          "742a3a099b7714a4ca15e3a0374992b6d94b350613dda253a3a5431c39373bdc"
+        ],
+        "expected_total_chunks": 16,
+        "fake_llm_total_calls": 26,
+        "final_chunk_count": 26,
+        "final_metadata": {
+          "category": "kw1000a",
+          "document_title": "Combined title 1000",
+          "keywords": "kw1000a, kw1000b",
+          "summary": "Summary for marker 1000 of the corpus section."
+        },
+        "final_metadata_uniform": true,
+        "metadata_degraded": false,
+        "observed_selected_chunks": 10,
+        "observed_selected_hashes": [
+          "b7dd3bfbe7f1241693ac462132002dec585b4c43516dec765ec894c7905028ce",
+          "0fa75495ca13233fa005e209ddf6574e06b341064ba939e73eb9e17b2c8094e1",
+          "0fc6cd0eb963980627a98f0393e89324a9435787e09564ae6f87e129049f5d1d",
+          "039f1b96730cadd115c4e8ae3a3609d8b747d699b4e833feb11f78f94e6cef5f",
+          "19c17ef8a8640d43bbaad93aac848d53d5acc6cdc9be5a9df750e5f553ae6896",
+          "eb5e98faf3ac2577d554867fc90be71faf642562b1bd53317177f9cd69425ce5",
+          "f9f9d01a08599766736e8e30d04ee40d6539455c616e433add3c7ea69fe77b0d",
+          "ca3cbf1e0613d6e15062d12bffa68eea61b12ffb21934e0081d24cc64a09898b",
+          "5f89282ce4e377fc8769c2d11da4d0c51199596f20aa329720f353809a677a70",
+          "742a3a099b7714a4ca15e3a0374992b6d94b350613dda253a3a5431c39373bdc"
+        ],
+        "selected_hashes_match_first_n": true
+      },
+      "phase": "measured",
+      "query_id": "realistic_md"
+    }
+  ]
+}
