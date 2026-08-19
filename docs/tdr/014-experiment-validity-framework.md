@@ -152,8 +152,48 @@ The frozen audit regressions are green again:
   warnings in 103.19s`. At Stage 3B head `a8133b1` it stood at 1622 passed,
   17 skipped, 3 failed (TDR-013); those three failures were the frozen audit
   reds, now green.
-- Status note: this TDR claims deterministic test evidence only. No Stage
-  5/6 calibration result exists yet; nothing here is an empirical claim.
+- At acceptance, this evidence covered deterministic tests only. The Stage 5
+  field evidence below was added after the component experiments completed.
+  Stage 6 calibration has not started.
+
+## Stage 5 field evidence
+
+Stage 5 supplied the framework's first field validation. Experiment 2 v1.0
+ran the declared ChromaDB and LanceDB cells with identical fixtures and found
+110 threshold-membership mismatches in 300 H3 checks. Both stores agreed with
+each other, so the failure identified a shared production contract defect
+rather than backend noise. The adapters were transforming native squared L2
+as though it were true L2.
+
+The failing v1.0 execution ran at commit `c475852` with uncommitted harness
+artefacts; the harness was committed at `98449c3`. Commit `7bf16b3` applied
+the square root inside both adapters. The unchanged harness (byte-identical
+to `98449c3`) then reused the same corpus, queries, and qrels. Experiment 2
+v1.1, committed as `4c29377`, passed all gates with 0/300 H3 mismatches. Its
+two canonical projections are byte-identical. Raw rows, per-cell manifests, summaries, and
+the deterministic proof are under
+`experiments/example/experiment-2-dense-cross-store-score-parity/output/`.
+This FAIL-to-fix-to-PASS lineage proves that the manifest, preflight, fixed
+ground truth, and raw-output rules can expose a real defect and verify its
+repair without changing the assertion.
+
+All seven Stage 5 experiments carried a machine-readable plan, runtime
+observations, preflight checks, raw evidence, and atomic checkpoint or
+per-cell records. The inference-only Experiment 5 records embedding,
+vector-store, sparse, and document-backend fields as permitted nulls with
+reasons because those components do not enter the measured path. Its route
+claims rest on the conditionally mandatory reranker fields and the observed
+ONNX provider or Torch device. No missing field was treated as positive
+evidence.
+
+Experiments 1, 3, 4, 6, and 7 need no new ADR or TDR; they add empirical
+evidence to existing decisions. Experiments 3 and 4 evidence ADR-047's
+filter, threshold, and cache-isolation decisions; Experiment 6 confirms
+ADR-048's bounded and failure-safe ingestion decisions on the Stage 3B code
+(see the ADR-048 Stage 5 section); Experiments 1 and 7 add chunking-unit and
+metadata-granularity evidence to the existing ingestion and metadata
+records. Experiment 2 selected a durable adapter repair, recorded separately
+in TDR-015.
 
 ## Consequences
 
@@ -216,4 +256,5 @@ are write-only provenance.
   (`last_loaded_variant`), `src/rag_mcp/core/retrieval/reranker_torch.py`
   (`last_loaded_device`).
 - TDR-011 (pre-calibration audit and plan validation); TDR-013 (Stage 3B
-  head suite state, 1622/17/3).
+  head suite state, 1622/17/3); TDR-015 (correct native squared L2 at the
+  vector-store boundaries, the Stage 5 defect this framework exposed).

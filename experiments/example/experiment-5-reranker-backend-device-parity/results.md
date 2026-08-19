@@ -52,7 +52,7 @@ latency: [−27.047, −23.979] ms (n = 360, seed 20260819) — interval
 entirely below zero.
 
 ### H3 — Operational bound: FAIL (measured, not inconclusive)
-- Peak RSS: `torch_mps` max 666.5 MiB vs `onnx_cpu` max 281.2 MiB →
+- Peak RSS: `torch_mps` max 635.6 MiB vs `onnx_cpu` max 268.2 MiB →
   ratio **2.370** > 2.0 gate.
 - Cold start: `torch_mps` mean 3.818 s vs `onnx_cpu` mean 0.276 s →
   ratio **13.826** > 3.0 gate. The torch stack imports

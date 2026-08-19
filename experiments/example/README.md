@@ -1,60 +1,44 @@
-# Example experiment protocols — pre-calibration hardening
+# Stage 5 component experiments — pre-calibration hardening
 
-These directories are **templates**, not completed experiments. They exist to make the scientific design reviewable before runners or expensive compute are used.
+Stage 5 executed the seven cheap component protocols in place on 2026-08-19. Each completed cell carries the TDR-014 runtime manifest, preflight evidence, raw rows, and atomic checkpoints required for decision evidence.
 
-Promote a template by copying it to a dated top-level experiment directory, freezing the corpus/query/qrel artefacts, completing the runtime manifest/preflight section, and adding the runner/analysis scripts. Do not edit a completed historical experiment to make it look as though the repaired design was what originally ran; mark old work superseded and create a new dated experiment instead.
+## Final status
 
-## Order
-
-| # | Template | Purpose | Expected cost | Blocks calibration? |
+| # | Experiment | Status | Gate evidence | Results and raw artefacts |
 |---|---|---|---|---|
-| 1 | `experiment-1-sentencesplitter-vs-codesplitter` | Prove AST code chunking really runs and improves structural integrity over the fallback | Tiny | Yes |
-| 2 | `experiment-2-dense-cross-store-score-parity` | Prove Chroma/Lance satisfy the same dense ranking/score contract | Tiny | Yes |
-| 3 | `experiment-3-hybrid-filter-and-threshold-semantics` | Prove hybrid filters cannot leak and thresholds are applied to compatible score kinds | Tiny | Yes |
-| 4 | `experiment-4-bm25-cache-isolation` | Prove sparse cache isolation across stores/collections | Tiny | Yes |
-| 5 | `experiment-5-reranker-backend-device-parity` | Separate ONNX/Torch backend precision from CPU/MPS/CoreML device effects | Small bounded inference | Yes for backend/device claims |
-| 6 | `experiment-6-ingestion-boundedness-and-atomicity` | Measure peak memory/failure safety; decide whether concurrency redesign is warranted | Small synthetic | Yes |
-| 7 | `experiment-7-metadata-cap-and-granularity` | Verify metadata chunk cap units and persisted granularity | Tiny/small LLM optional | Yes |
-| 8 | `experiment-8-reranker-retrieval-pool-factorial` | Replace overlapping 9a-rerun + 10b with one paired factorial run | Large | Stage 6 |
-| 9 | `experiment-9-technical-threshold-policy` | Calibrate technical routing only if Experiment 8 shows semantic reranker value worth preserving | Large/conditional | Stage 6 |
-| 10 | `experiment-10-real-pdf-parser-ab` | Replace invalid Markdown-based Exp 14 with a true real-PDF pypdf vs LiteParse A/B | Medium/large | Stage 6 |
+| 1 | `experiment-1-sentencesplitter-vs-codesplitter` | **PASS** | 18/18 code cells used `effective=code`; cut rate 0.233 versus 0.375; zero ceiling violations. Optional H4 arm was not run. | [`results.md`](experiment-1-sentencesplitter-vs-codesplitter/results.md); [`output/summary.json`](experiment-1-sentencesplitter-vs-codesplitter/output/summary.json); [`output/cells/`](experiment-1-sentencesplitter-vs-codesplitter/output/cells/) |
+| 2 | `experiment-2-dense-cross-store-score-parity` | **PASS** after a preserved v1.0 **FAIL** | v1.0 found 110/300 H3 threshold mismatches in both stores. Commit `7bf16b3` corrected the shared adapter contract. v1.1 reused the same fixtures and ground truth and recorded 0/300 mismatches. | [`results.md`](experiment-2-dense-cross-store-score-parity/results.md); [`results.summary.json`](experiment-2-dense-cross-store-score-parity/results.summary.json); [`output/v1.1_run1/`](experiment-2-dense-cross-store-score-parity/output/v1.1_run1/) |
+| 3 | `experiment-3-hybrid-filter-and-threshold-semantics` | **PASS** | Zero filter leaks; thresholds never used fused RRF scores; reranker success and failure paths preserved compatible score kinds. | [`results.md`](experiment-3-hybrid-filter-and-threshold-semantics/results.md); [`results.raw.json`](experiment-3-hybrid-filter-and-threshold-semantics/results.raw.json); [`output/cells/`](experiment-3-hybrid-filter-and-threshold-semantics/output/cells/) |
+| 4 | `experiment-4-bm25-cache-isolation` | **PASS** | Zero cache contamination for both stores in forward and reversed order; all 36 mutations advanced generation exactly once. | [`results.md`](experiment-4-bm25-cache-isolation/results.md); [`output/run1/results.raw.json`](experiment-4-bm25-cache-isolation/output/run1/results.raw.json) |
+| 5 | `experiment-5-reranker-backend-device-parity` | **FAIL** on performance H3; correctness gates passed | H1/H5 passed. MPS matched Torch CPU rankings and reached 0.677× median latency. H3 failed at 2.370× RSS and 13.826× cold start, so Torch and CoreML were not promoted. This performance failure does not block Stage 6 correctness work. | [`results.md`](experiment-5-reranker-backend-device-parity/results.md); [`output/eval_results.summary.json`](experiment-5-reranker-backend-device-parity/output/eval_results.summary.json); [`output/raw_rows.jsonl`](experiment-5-reranker-backend-device-parity/output/raw_rows.jsonl) |
+| 6 | `experiment-6-ingestion-boundedness-and-atomicity` | **PASS** | H1-H5 passed. Phase B (real Ollama arm) reached 0.911× Experiment 18 Stage 3B, within the frozen 0.9 gate, with zero lock wait and 1.039× RSS. | [`results.md`](experiment-6-ingestion-boundedness-and-atomicity/results.md); [`output/results.raw.json`](experiment-6-ingestion-boundedness-and-atomicity/output/results.raw.json); [`output/results.summary.json`](experiment-6-ingestion-boundedness-and-atomicity/output/results.summary.json) |
+| 7 | `experiment-7-metadata-cap-and-granularity` | **PASS** | The cap used exact chunk units; first-N hashes matched; file aggregates persisted on every chunk; call count was `2N+min(5,N)+1`. | [`results.md`](experiment-7-metadata-cap-and-granularity/results.md); [`output/summary.json`](experiment-7-metadata-cap-and-granularity/output/summary.json); [`output/cells/`](experiment-7-metadata-cap-and-granularity/output/cells/) |
+
+## Experiment 2 defect and repair lineage
+
+The v1.0 execution ran with repo HEAD `c475852` (worktree dirty at the time); its protocol record and raw artefacts are committed as `98449c3`. It failed H3 with 110 mismatches from 300 checks while both stores agreed with each other. The shared result exposed a production contract defect: both adapters passed native squared L2 into a transform documented for true L2.
+
+Commit `7bf16b3` applied the square root at the ChromaDB and LanceDB adapter boundaries. Rankings stayed unchanged. Score magnitudes and threshold membership changed. The v1.1 execution committed at `4c29377` used the unchanged harness and the same pre-registered ground truth. H3 then passed with 0/300 mismatches. See the v1.0 and v1.1 execution records in [`protocol.md`](experiment-2-dense-cross-store-score-parity/protocol.md).
+
+The divide-by-30 reranker threshold was fitted while production emitted the buggy squared-distance score distribution. TDR-015 records the Stage 6 obligation: the ÷30 operating point must be revalidated and numeric thresholds recalibrated before threshold evidence can change production policy.
+
+## Remaining Stage 6 protocols
+
+| # | Protocol | Status | Purpose |
+|---|---|---|---|
+| 8 | `experiment-8-reranker-retrieval-pool-factorial` | **PLANNED** | Paired reranker, retrieval-mode, and fetch-pool calibration. |
+| 9 | `experiment-9-technical-threshold-policy` | **PLANNED** | Conditional technical routing calibration. |
+| 10 | `experiment-10-real-pdf-parser-ab` | **PLANNED** | Real-PDF pypdf versus LiteParse comparison. |
+
+Stage 6 has not started.
 
 ## Common scientific rules
 
-1. **Pre-register before running.** Hypotheses, primary metric, manipulated variables, controls and decision thresholds are filled in before measured cells start.
-2. **Use a runtime manifest.** Requested settings are not evidence that the requested backend/device/parser actually ran.
-3. **Pair comparisons.** Reuse identical fixtures/query sets across cells unless the manipulated factor changes the index itself.
-4. **Block first, randomise second.** Technical/semantic or document-type blocks have fixed membership across treatments; execution order can be counterbalanced.
-5. **Separate correctness from performance.** A speed win never rescues a failed correctness gate.
-6. **No silent fallback in treatment cells.** Production may degrade gracefully; experiments manipulating that component abort instead.
-7. **Incomplete is not slow.** A hung/interrupted cell is `INCOMPLETE`, never an invented latency value.
-8. **Keep raw data.** Store per-query/per-repetition rows and environment manifests alongside summaries.
-9. **Immutable index identity.** Parser, chunker, embedding model/provider, corpus or other index-shaping changes create a different index identity.
-10. **Default changes happen later.** Experiments produce evidence; an ADR/OpenSpec makes the production decision.
-
-## Standard status vocabulary
-
-- `PLANNED` — protocol exists; no measured result.
-- `RUNNING` — measured work started; no conclusion yet.
-- `PASS` — all pre-registered correctness/decision gates passed.
-- `FAIL` — a pre-registered gate failed with valid completed evidence.
-- `INCONCLUSIVE` — valid run, uncertainty/effect gate prevents a decision.
-- `INCOMPLETE` — execution did not complete; never treat as evidence for/against the hypothesis.
-- `INVALID` — manipulated/control variables or protocol execution were violated; results must not drive decisions.
-
-## Minimum raw artefacts when promoted
-
-```text
-protocol.md
-plan.json                 # machine-readable factors/cells/assertions
-runtime_manifest.json     # or one per cell/repetition
-raw_results.json          # per experimental unit
-summary.json
-results.md
-run_eval.py
-summarise_eval.py
-output/checkpoint/
-output/run_eval.log
-```
-
-Large indexes/corpora may remain gitignored, but their identities/hashes and reproduction commands must be committed.
+1. Pre-register hypotheses and gates before measured work.
+2. Record requested and effective runtime facts in each manifest.
+3. Pair fixed workloads across comparable cells.
+4. Keep warm-up rows separate from measured rows.
+5. Abort manipulated cells on silent fallback.
+6. Store incomplete work as `INCOMPLETE`, without invented numbers.
+7. Commit raw rows and immutable content identities.
+8. Change production defaults only through a later ADR or OpenSpec.

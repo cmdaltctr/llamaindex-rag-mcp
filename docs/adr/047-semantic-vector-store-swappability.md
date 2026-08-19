@@ -93,9 +93,31 @@ The cross-store contract evidence is in `tests/test_vectordb_contract.py` and
 in `tests/test_hybrid_retrieval.py`; the pinned Stage 2 audit regressions are in
 `tests/test_precalibration_audit_regressions.py`.
 
-Example Experiments 2–4 under `experiments/example/` remain future empirical
-evidence inputs. They have not run at Stage 2, so this ADR makes no experimental
-PASS claim about exact score parity, filter performance, or cache performance.
+### Stage 5 empirical evidence (2026-08-19)
+
+Experiments 2–4 under `experiments/example/` tested this contract with fixed
+plans, runtime manifests, raw rows, and deterministic reruns.
+
+- Experiment 2 v1.0 preserved ranking parity across both stores but failed H3
+  with 110/300 threshold-membership mismatches. It exposed that both adapters
+  passed native squared L2 into the true-L2 transform. Commit `7bf16b3` applied
+  the square root at each adapter boundary. Rankings stayed unchanged, while
+  score magnitudes and threshold membership changed. The unchanged v1.1
+  harness reused the same ground truth and passed H1–H5 with 0/300 H3
+  mismatches. See `experiments/example/experiment-2-dense-cross-store-score-parity/`
+  (`results.md`, `results.summary.json`, and `output/v1.1_run1/`) and TDR-015.
+- Experiment 3 passed every filter and score-kind gate. No metadata-filter leak
+  entered hybrid results. Dense thresholds were never compared with fused
+  `rrf_v1` values. Reranker success and failure returned the declared score
+  kind and threshold rule.
+- Experiment 4 found zero BM25 cache contamination for ChromaDB and LanceDB in
+  forward and reversed execution order. Each of 36 tested mutations advanced
+  its store generation exactly once.
+
+These results validate the semantic direction, filter eligibility, and cache
+isolation claims. They also limit threshold continuity: existing numeric
+thresholds were observed under the pre-repair score distribution and require
+Stage 6 recalibration before policy changes.
 
 ## Consequences
 
@@ -152,8 +174,10 @@ PASS claim about exact score parity, filter performance, or cache performance.
 - Deterministic tests: `tests/test_vectordb_contract.py`,
   `tests/test_hybrid_retrieval.py`,
   `tests/test_precalibration_audit_regressions.py`
-- Future evidence inputs: `experiments/example/experiment-2-*`,
-  `experiments/example/experiment-3-*`, `experiments/example/experiment-4-*`
+- Stage 5 evidence: `experiments/example/experiment-2-dense-cross-store-score-parity/`,
+  `experiments/example/experiment-3-hybrid-filter-and-threshold-semantics/`,
+  `experiments/example/experiment-4-bm25-cache-isolation/`
 - Related decisions: ADR-015 (historical distance transform), ADR-017 (RRF),
   ADR-031 (reranker), ADR-034 (VectorStore ABC), ADR-045 (hosted Chroma),
-  ADR-046 (LanceDB)
+  ADR-046 (LanceDB), TDR-014 (experiment validity framework), TDR-015
+  (correct native squared L2 at the vector-store boundaries)

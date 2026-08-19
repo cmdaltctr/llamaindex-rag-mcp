@@ -253,21 +253,23 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ## 5. Stage 5 — Cheap component experiments
 
-- [ ] 5.1 Run `experiments/example/experiment-1-sentencesplitter-vs-codesplitter/` and record raw + summary artefacts.
-- [ ] 5.2 Run `experiment-2-dense-cross-store-score-parity`.
-- [ ] 5.3 Run `experiment-3-hybrid-filter-and-threshold-semantics`.
-- [ ] 5.4 Run `experiment-4-bm25-cache-isolation`.
-- [ ] 5.5 Run `experiment-5-reranker-backend-device-parity`; on Apple Silicon, distinguish ONNX CPU/CoreML and Torch CPU/MPS as separate effective execution cells.
-- [ ] 5.6 Run `experiment-6-ingestion-boundedness-and-atomicity` against Stage 3A; decide whether Stage 3B is warranted.
-- [ ] 5.7 Run `experiment-7-metadata-cap-and-granularity`.
-- [ ] 5.8 Update `experiments/example/README.md` with status and links to any promoted real experiment directories.
+- [x] 5.1 Run `experiments/example/experiment-1-sentencesplitter-vs-codesplitter/` and record raw + summary artefacts. (PASS: 18/18 effective code cells; `experiment-1-*/{results.md,output/summary.json,output/cells/}`.)
+- [x] 5.2 Run `experiment-2-dense-cross-store-score-parity`. (v1.0 FAIL found 110/300 H3 mismatches; adapter fix `7bf16b3`; unchanged v1.1 harness and ground truth PASS at 0/300; `experiment-2-*/{results.md,results.summary.json,output/v1.1_run1/}`.)
+- [x] 5.3 Run `experiment-3-hybrid-filter-and-threshold-semantics`. (PASS: zero filter leaks and compatible threshold score kinds; `experiment-3-*/{results.md,results.raw.json,output/cells/}`.)
+- [x] 5.4 Run `experiment-4-bm25-cache-isolation`. (PASS: zero contamination and exactly-once generation across both stores; `experiment-4-*/{results.md,output/run1/results.raw.json}`.)
+- [x] 5.5 Run `experiment-5-reranker-backend-device-parity`; on Apple Silicon, distinguish ONNX CPU/CoreML and Torch CPU/MPS as separate effective execution cells. (Correctness PASS: H1/H5; H2 speed PASS; H3 performance FAIL at 2.370× RSS and 13.826× cold start; no route promotion; `experiment-5-*/{results.md,output/eval_results.summary.json,output/raw_rows.jsonl}`.)
+- [x] 5.6 Run `experiment-6-ingestion-boundedness-and-atomicity` against Stage 3A; decide whether Stage 3B is warranted. (PASS: H1-H5; Phase B real Ollama arm 0.911× Experiment 18 Stage 3B within the frozen 0.9 gate, lock wait 0.0, RSS 1.039×; `experiment-6-*/{results.md,output/results.raw.json,output/results.summary.json}`.)
+- [x] 5.7 Run `experiment-7-metadata-cap-and-granularity`. (PASS: exact chunk-unit cap, first-N identity, file-level propagation, and call-count formula; `experiment-7-*/{results.md,output/summary.json,output/cells/}`.)
+- [x] 5.8 Update `experiments/example/README.md` with status and links to any promoted real experiment directories. (Final status table, raw links, Exp 2 repair lineage, and explicit Stage 6 not-started marker added.)
 
 ### PAUSE GATE 5 — component evidence commit
 
-- [ ] 5.G.1 Every correctness experiment MUST PASS; any FAIL blocks Stage 6.
-- [ ] 5.G.2 Performance-only experiments may be INCONCLUSIVE without blocking, provided correctness gates pass and the inconclusive reason is documented.
-- [ ] 5.G.3 Commit raw machine-readable results and human summary; exclude large generated indexes.
-- [ ] 5.G.4 Decision-record check: update the Stage 2/3 ADRs and Stage 4 TDR with Stage 5 evidence where it validates or limits their claims. Write an additional TDR only when a component experiment selects a durable implementation technique not already captured; otherwise record `no new ADR/TDR — evidence only`.
+- [x] 5.G.1 Every correctness experiment MUST PASS; any FAIL blocks Stage 6. (All correctness gates passed, including Exp 5 H1 device parity and H5 manifest truth. Exp 5 H3 is a resource-performance FAIL and does not invalidate its correctness evidence.)
+- [x] 5.G.2 Performance-only experiments may be INCONCLUSIVE without blocking, provided correctness gates pass and the inconclusive reason is documented. (Exp 5 H2 passed at 0.677× median latency. H3 produced a conclusive non-promotion result: 2.370× RSS and 13.826× cold start. This performance result does not block Stage 6 correctness work.)
+- [x] 5.G.3 Commit raw machine-readable results and human summary; exclude large generated indexes. (Raw rows, per-cell manifests, checkpoints, deterministic rerun proofs, and `results.md` committed in experiment commits `9b18652` through `1a12249`; no generated vector index committed.)
+- [x] 5.G.4 Decision-record check: update the Stage 2/3 ADRs and Stage 4 TDR with Stage 5 evidence where it validates or limits their claims. Write an additional TDR only when a component experiment selects a durable implementation technique not already captured; otherwise record `no new ADR/TDR — evidence only`. (TDR-014 and ADR-047 gained Stage 5 evidence sections and ADR-048 gained a Stage 5 Experiment 6 confirming-evidence section in this changeset; TDR-015, Accepted, records the squared-L2 adapter repair at commit `7bf16b3` and the Stage 6 recalibration obligation. Experiments 1, 3, 4, 6, and 7 require no new ADR/TDR — evidence only.)
+
+**Security review (2026-08-19):** the Stage 5 diff is APPROVED. The repository release remains BLOCKED by pre-existing ChromaDB advisory GHSA-f4j7-r4q5-qw2c (CVE-2026-45829), which affects the locked 1.5.9 release and has no patched version. Current embedded `PersistentClient` and trusted `CloudClient` adapter paths do not expose the vulnerable Python FastAPI server or execute remote collection configuration. Track the dependency in a separate security change and do not merge to `main` until the release gate clears.
 
 ---
 

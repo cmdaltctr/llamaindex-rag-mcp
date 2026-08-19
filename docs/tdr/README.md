@@ -39,6 +39,8 @@ architecture), see the [ADR index](../adr/).
 | 011 | [Pre-calibration audit and executable experiment-plan validation](011-pre-calibration-audit-and-experiment-plan-validation.md)     | Accepted | 2026-08-18 |
 | 012 | [Widen Null-typed LanceDB adapter columns before write](012-widen-null-typed-lancedb-adapter-columns.md)                               | Accepted | 2026-08-19 |
 | 013 | [Narrow the ingestion write lock to the mutation section](013-narrow-ingestion-write-lock-to-mutation-section.md)                      | Accepted | 2026-08-19 |
+| 014 | [Experiment-validity framework: runtime manifests, preflight aborts, and cell agreement](014-experiment-validity-framework.md)            | Accepted | 2026-08-19 |
+| 015 | [Correct native squared L2 at the vector-store boundaries](015-correct-native-squared-l2-at-vector-store-boundaries.md)                   | Accepted | 2026-08-19 |
 
 ## Status values
 

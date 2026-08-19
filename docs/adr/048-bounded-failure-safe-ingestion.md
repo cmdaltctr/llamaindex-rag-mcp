@@ -227,6 +227,40 @@ deferred rather than weakened. Pause Gate 3A is closed; Stage 3B (optional,
 measurement-gated) may proceed under its own gate (3.GB), and Stage 4 remains
 unstarted.
 
+### Stage 5 experiment 6 confirming evidence (2026-08-19)
+
+Stage 5 task 5.6 ran the ingestion boundedness and atomicity template
+against current code at commit `c475852` (git dirty; experiment files
+uncommitted; `pipeline_variant=stage3b_narrow_lock_current`). Phase A H1–H5
+all PASS, so every decision in this ADR holds on the Stage 3B code:
+
+| Gate | Result |
+| --- | --- |
+| H1 bounded node lifetime | PASS: max 1 live replacement batch at every corpus size (2 under 2-stream contention), max 3 nodes per batch, invariant across 25/100/400 files |
+| H2 memory scaling | PASS: frozen guard 4x files → ≤2x adjusted peak RSS: 1.154 (25→100), 1.475 (100→400); descriptive 16x ratio 1.703 ≤ 4.0 |
+| H3 failure safety | PASS: fault_parse, fault_embed, fault_store_write; version A rows intact after each failure; deterministic rerun identical |
+| H4 successful swap | PASS: F0–F3; after recovery `stale_rows == 0` and `final_version_rows == swap_chunks` |
+| H5 unchanged skip | PASS: `files_skipped_unchanged == size`, embedding seam calls 0, store write calls 0 |
+
+Phase B re-confirms the Stage 3B lock shape against Experiment 18's Stage 3B
+arm (`experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.ab.json`,
+A/B reference commit `b4b01b6`):
+
+- H6 throughput: real Ollama arm 6.744 docs/s vs Stage 3B reference 7.40 =
+  0.911x, within the frozen ≥0.9x gate; lock-wait fraction 0.0 ≤ 0.10
+  (Stage 3A measured 0.9668) and lock-wait wall time 0.000 s. The fake arm
+  measured 0.808x, below the gate, because the exp-6 generator yields 289
+  chunks per 100 files vs experiment 18's 208; chunk-normalised throughput
+  shows no regression (1.13x fake, 1.26x real). Reported as found; no
+  threshold was retro-fitted.
+- H7 no resource regression: current max peak RSS 315,637,760 B vs Stage 3B
+  reference 303,677,440 B = 1.039x ≤ 1.25.
+
+Stage breakdown (real arm): embedding 25.911 s dominates and runs outside
+the lock; lock-wait 0.000 s; store-write 1.981 s; cleanup 0.923 s. This is
+the Stage 3B shape promised by decision 8. No production defects were
+observed; no hotfix was needed.
+
 ## Consequences
 
 ### Positive
@@ -295,4 +329,8 @@ unstarted.
 - Deterministic Stage 3A tests:
   `tests/test_ingestion_stage3.py`, `tests/test_ingestion_stage3_legacy.py`,
   `tests/test_ingestion_parallel.py`, `tests/test_async_ingest_responsiveness.py`
+- Stage 3B A/B record: `experiments/18-ingestion-lock-scope-ab-2026-08-19/`
+  (commit `b4b01b6`); TDR-013 (narrow the ingestion write lock).
+- Stage 5 confirming evidence: `experiments/example/experiment-6-ingestion-boundedness-and-atomicity/`
+  (task 5.6, 2026-08-19).
 - Related decisions: ADR-010, ADR-014, ADR-034, ADR-046, ADR-047
