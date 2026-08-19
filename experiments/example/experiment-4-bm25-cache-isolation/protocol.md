@@ -1,7 +1,9 @@
 # Experiment 4 — BM25 cache isolation and invalidation
 
 **Template ID:** `example/experiment-4-bm25-cache-isolation`  
-**Status:** PLANNED  
+**Status:** PASS  
+**Protocol version:** 1.0  
+**Executed:** 2026-08-19  
 **Role:** deterministic sparse-state correctness gate
 
 ## 1. Research question
@@ -150,3 +152,91 @@ Any contamination or incorrect invalidation blocks hybrid calibration. A perform
 ## 20. Cleanup
 
 Clear BM25 cache and remove temporary store directories.
+
+## Execution record (v1.0 — 2026-08-19)
+
+Executed in worktree `harden-pipeline-correctness-before-calibration`
+at commit `c475852cf195658ce6af8654e11e07dce4c39fec` (chromadb 1.5.9,
+lancedb 0.37.1, rank_bm25 NOT installed — the deterministic internal
+`_SimpleBM25Okapi` mirror served the sparse path, recorded honestly in
+every manifest as `sparse.effective_backend:
+"bm25-internal-okapi"`). Harness: `run_eval.py` + `battery.py` (+
+`make_fixtures.py`, `plan.json`, `summarise_eval.py`) in this
+directory. Pre-registered sections above are unchanged.
+
+**Status: PASS** — all five hypotheses pass in every cell (4 cells:
+{chroma, lancedb} x {forward, reversed}), 60 query rows and 36
+recorded mutations total.
+
+### Actual cache keying mechanism (reported as-is)
+
+`BM25SparseRetriever._cache` is a CLASS-level dict at
+`src/rag_mcp/core/retrieval/sparse.py:183`, keyed by
+`(store.cache_identity, collection_name)` (`sparse.py:244-247`), where
+`cache_identity` defaults to the store object itself
+(`src/rag_mcp/core/vectordb/base.py:22-25`). Two runtime store
+instances with a collection literally named `documents` therefore hold
+two distinct cache entries; the battery records
+`documents_key_entries == 2` at the collision step (s3) in every cell.
+
+### Verdicts (from `output/run1/results.summary.json`)
+
+| Hypothesis | Verdict | Numbers |
+|---|---|---|
+| H1 store isolation | PASS | 0 cross-store contaminations across all 60 rows in 4 cells; two distinct `documents` cache entries observed at the equal-generation collision step in every cell |
+| H2 collection isolation | PASS | 0 cross-collection contaminations; every (namespace, token, phase) result matched the pre-registered expected ids exactly (0 mismatches) |
+| H3 stable reuse | PASS | 6 repeated unmutated queries per cell (s2/s3x/s6b/s7a/s7b/s8b; 24 across all 4 cells) — 0 caused an additional cache build |
+| H4 mutation invalidation | PASS | Every affected-namespace post-mutation query rebuilt exactly once (build delta 1); unaffected totals held: B/documents 1 build, A/other 3, A/documents 5 in all 4 cells |
+| H5 single generation owner | PASS | All 36 mutations advanced generation by exactly +1, including the production-orchestration path (`embed_and_write_async` with pre-embedded nodes: +1; `remove_document`: +1), matching the direct-store deltas (upsert +1, delete_where +1, drop +1, recreate +1) |
+
+### Step 9 orchestration choice (documented per protocol §8 step 9)
+
+The production orchestration path driven is the ingestion WRITER API:
+`embed_and_write_async` (writer.py:31) with pre-embedded `TextNode`s —
+no embedding model call occurs (nodes carry vectors; `MockEmbedding`
+stands in only for the writer's `model_name` log line) — plus
+`remove_document` (writer.py:157) for the orchestration delete. This
+is the minimal honest path below `ingest_path_async`: it exercises the
+real `write_nodes` mutation contract (generation ownership, lock,
+store dispatch) without dragging file parsing/chunking into a sparse
+cache experiment. The Factor C level-4 collection delete/recreate
+battery runs after the comparison (direct `delete_collection` +
+recreate via `upsert_precomputed`).
+
+### Preflight evidence (§12)
+
+Per cell: stores A/B are distinct runtime instances (identity check),
+both hold a collection literally named `documents`, contents verified
+different (id sets recorded), initial generations equal at the
+collision step (both 1 after setup upserts), and
+`BM25SparseRetriever._cache` cleared to empty before the sequence. All
+recorded in each manifest's `preflight` block and asserted by the
+plan's preflight assertions.
+
+### Determinism
+
+Two full executions (`output/run1`, `output/run2`) produce
+byte-identical canonical projections (latency/timestamp/cleanup-path
+fields removed, floats rounded to 9 dp):
+`sha256:ef3e15d179819e6b01a7dbe89a61277d51adc8de58225897778871a3432662c3`.
+Proof: `output/deterministic_rerun_proof.txt`.
+
+### Cleanup (§20)
+
+Temporary store directories (4 per run) deleted after raw results were
+saved (recorded in each raw file's `cleanup` list; 0 leftover);
+`BM25SparseRetriever._cache` cleared after every battery.
+
+### Artefacts
+
+`fixtures/{docs,queries,qrels}.json` (committed before runs),
+`plan.json`, `output/run1/` and `output/run2/` (`results.raw.json`,
+`results.summary.json`, `results.canonical.json`, `cells/`),
+`output/deterministic_rerun_proof.txt`, `results.md`.
+
+### Reproduction
+
+```bash
+uv run --no-sync python experiments/example/experiment-4-bm25-cache-isolation/run_eval.py --output-dir experiments/example/experiment-4-bm25-cache-isolation/output/run1
+uv run --no-sync python experiments/example/experiment-4-bm25-cache-isolation/summarise_eval.py experiments/example/experiment-4-bm25-cache-isolation/output/run1/results.raw.json
+```

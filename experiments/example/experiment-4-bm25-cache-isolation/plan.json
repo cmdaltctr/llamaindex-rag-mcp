@@ -1,0 +1,145 @@
+{
+  "experiment_id": "example-experiment-4-bm25-cache-isolation",
+  "protocol_version": "1.0",
+  "experimental_unit": "one (store instance, collection) sparse namespace",
+  "primary_metric": "namespace_isolation_violations",
+  "manipulated_factors": [
+    {
+      "name": "backend",
+      "levels": ["chroma", "lancedb"]
+    },
+    {
+      "name": "sequence_order",
+      "levels": ["forward", "reversed"]
+    }
+  ],
+  "controlled_variables": {
+    "collection_names": ["documents", "documents", "other"],
+    "bm25_implementation": "bm25-internal-okapi (rank_bm25 not installed)",
+    "top_n": 5,
+    "store_instances": 2,
+    "dense_retrieval": false,
+    "reranker": false,
+    "same_process": true
+  },
+  "cells": [
+    {
+      "id": "chroma_forward",
+      "factors": {
+        "backend": "chroma",
+        "sequence_order": "forward"
+      }
+    },
+    {
+      "id": "chroma_reversed",
+      "factors": {
+        "backend": "chroma",
+        "sequence_order": "reversed"
+      }
+    },
+    {
+      "id": "lancedb_forward",
+      "factors": {
+        "backend": "lancedb",
+        "sequence_order": "forward"
+      }
+    },
+    {
+      "id": "lancedb_reversed",
+      "factors": {
+        "backend": "lancedb",
+        "sequence_order": "reversed"
+      }
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "vector_store.backend",
+      "operator": "in",
+      "expected": ["chroma", "lancedb"]
+    },
+    {
+      "manifest_field": "vector_store.mode",
+      "operator": "eq",
+      "expected": "local"
+    },
+    {
+      "manifest_field": "vector_store.index_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "vector_store.score_kind",
+      "operator": "eq",
+      "expected": "dense_similarity_v1"
+    },
+    {
+      "manifest_field": "embedding.effective_provider",
+      "operator": "eq",
+      "expected": "precomputed"
+    },
+    {
+      "manifest_field": "embedding.model",
+      "operator": "eq",
+      "expected": "fixed-fixture-vectors"
+    },
+    {
+      "manifest_field": "retrieval.hybrid",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "retrieval.top_k",
+      "operator": "eq",
+      "expected": 5
+    },
+    {
+      "manifest_field": "sparse.effective_backend",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "corpus_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "query_set_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "qrels_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "repo_commit",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "dependency_lock_hash",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "preflight.stores_distinct_instances",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "preflight.both_have_documents_collection",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "preflight.contents_differ",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "preflight.collision_generations_equal",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "preflight.cache_starts_empty",
+      "operator": "eq",
+      "expected": true
+    }
+  ]
+}

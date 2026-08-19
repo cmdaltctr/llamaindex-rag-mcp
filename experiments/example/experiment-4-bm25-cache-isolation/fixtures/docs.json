@@ -1,0 +1,200 @@
+{
+  "dimension": 4,
+  "mutation_docs": {
+    "direct_upsert": {
+      "delete_where": {
+        "exp4_role": {
+          "$eq": "temp_delta"
+        }
+      },
+      "id": "a_d_delta",
+      "metadata": {
+        "exp4_role": "temp_delta",
+        "file_path": "exp4://A/documents/delta",
+        "namespace": "A/documents"
+      },
+      "namespace": "A/documents",
+      "text": "delta_only mutation passage added by the direct store upsert.",
+      "token": "delta_only",
+      "vector": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "orchestration_node": {
+      "id": "orch_eps_1",
+      "metadata": {
+        "exp4_role": "orch_temp",
+        "file_path": "exp4://orch/epsilon",
+        "namespace": "A/documents"
+      },
+      "namespace": "A/documents",
+      "remove_document_file_path": "exp4://orch/epsilon",
+      "text": "epsilon_only orchestration passage added via the ingestion writer.",
+      "token": "epsilon_only",
+      "vector": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "namespaces": {
+    "A/documents": {
+      "collection": "documents",
+      "documents": [
+        {
+          "embedding": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "id": "a_d_alpha",
+          "metadata": {
+            "exp4_role": "stable_token",
+            "file_path": "exp4://A/documents/a_d_alpha",
+            "namespace": "A/documents"
+          },
+          "text": "alpha_only calibration record for the A documents namespace."
+        },
+        {
+          "embedding": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "id": "a_d_f1",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://A/documents/a_d_f1",
+            "namespace": "A/documents"
+          },
+          "text": "background context filler passage one."
+        },
+        {
+          "embedding": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "id": "a_d_f2",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://A/documents/a_d_f2",
+            "namespace": "A/documents"
+          },
+          "text": "background context filler passage two."
+        }
+      ],
+      "store": "A"
+    },
+    "A/other": {
+      "collection": "other",
+      "documents": [
+        {
+          "embedding": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "id": "a_o_f1",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://A/other/a_o_f1",
+            "namespace": "A/other"
+          },
+          "text": "quiet marginal filler passage five."
+        },
+        {
+          "embedding": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "id": "a_o_f2",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://A/other/a_o_f2",
+            "namespace": "A/other"
+          },
+          "text": "quiet marginal filler passage six."
+        },
+        {
+          "embedding": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "id": "a_o_gamma",
+          "metadata": {
+            "exp4_role": "stable_token",
+            "file_path": "exp4://A/other/a_o_gamma",
+            "namespace": "A/other"
+          },
+          "text": "gamma_only calibration record for the A other namespace."
+        }
+      ],
+      "store": "A"
+    },
+    "B/documents": {
+      "collection": "documents",
+      "documents": [
+        {
+          "embedding": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "id": "b_d_beta",
+          "metadata": {
+            "exp4_role": "stable_token",
+            "file_path": "exp4://B/documents/b_d_beta",
+            "namespace": "B/documents"
+          },
+          "text": "beta_only calibration record for the B documents namespace."
+        },
+        {
+          "embedding": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "id": "b_d_f1",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://B/documents/b_d_f1",
+            "namespace": "B/documents"
+          },
+          "text": "unrelated neutral filler passage three."
+        },
+        {
+          "embedding": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "id": "b_d_f2",
+          "metadata": {
+            "exp4_role": "filler",
+            "file_path": "exp4://B/documents/b_d_f2",
+            "namespace": "B/documents"
+          },
+          "text": "unrelated neutral filler passage four."
+        }
+      ],
+      "store": "B"
+    }
+  }
+}
