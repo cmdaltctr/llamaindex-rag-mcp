@@ -6,6 +6,7 @@ local ephemeral vector stores. They do not run calibration experiments.
 
 from __future__ import annotations
 
+import asyncio
 import gc
 import weakref
 from pathlib import Path
@@ -296,14 +297,12 @@ async def test_cleanup_failure_with_old_and_new_versions_recovers(
     assert first["status"] == "ok"
 
     source.write_text("new cleanup sentinel " * 110, encoding="utf-8")
-    original_delete = store.delete_where
+    original_delete = store.delete_ids
 
-    def fail_stale_cleanup(collection_name, where):
-        if "source_attempt" in str(where) and "$ne" in str(where):
-            raise RuntimeError("injected stale cleanup failure")
-        return original_delete(collection_name, where)
+    def fail_stale_cleanup(collection_name, ids):
+        raise RuntimeError("injected stale cleanup failure")
 
-    monkeypatch.setattr(store, "delete_where", fail_stale_cleanup)
+    monkeypatch.setattr(store, "delete_ids", fail_stale_cleanup)
     failed = await ingest_path_async(str(source), collection_name=_COLLECTION)
 
     assert failed["status"] == "error"
@@ -311,7 +310,7 @@ async def test_cleanup_failure_with_old_and_new_versions_recovers(
     assert any("old cleanup sentinel" in text for text in mixed_texts)
     assert any("new cleanup sentinel" in text for text in mixed_texts)
 
-    monkeypatch.setattr(store, "delete_where", original_delete)
+    monkeypatch.setattr(store, "delete_ids", original_delete)
     recovered = await ingest_path_async(str(source), collection_name=_COLLECTION)
 
     assert recovered["status"] == "ok"
@@ -372,7 +371,7 @@ async def test_generated_corpus_retains_only_one_source_node_set(
             }
 
     async def fake_replace(nodes, **kwargs):
-        await __import__("asyncio").sleep(0)
+        await asyncio.sleep(0)
         return SimpleNamespace(
             chunks_written=len(nodes),
             chunks_removed=0,
