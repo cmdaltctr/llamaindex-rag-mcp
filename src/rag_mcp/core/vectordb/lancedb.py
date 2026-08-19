@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import io
 import json
+import math
 from contextlib import redirect_stdout
 from typing import Any
 
@@ -341,7 +342,8 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         Returns:
             Result rows with canonical ``score``/``score_kind`` plus the
             store-neutral content fields. LanceDB's default search metric is
-            L2; its native ``_distance`` is retained only as a diagnostic.
+            L2, reported natively as *squared* L2; its ``_distance`` is
+            retained only as a diagnostic.
         """
         table = self._open_table(collection_name)
         if table is None:
@@ -362,14 +364,20 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         results: list[dict] = []
         for row in rows:
             text = row.get("text")
+            native_distance = row.get("_distance")
             results.append(
                 {
                     "id": str(row.get("id")),
                     "document": text if text is not None else "",
                     "metadata": strip_internal_metadata(row.get("metadata")),
-                    "score": canonical_score_from_l2(row.get("_distance"), backend="LanceDB"),
+                    # LanceDB's l2 metric reports *squared* L2; the canonical
+                    # contract consumes the true distance, so root it here.
+                    "score": canonical_score_from_l2(
+                        None if native_distance is None else math.sqrt(native_distance),
+                        backend="LanceDB",
+                    ),
                     "score_kind": DENSE_SCORE_KIND,
-                    "native_distance": row.get("_distance"),
+                    "native_distance": native_distance,
                 }
             )
         return results

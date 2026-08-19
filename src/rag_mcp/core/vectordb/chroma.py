@@ -20,6 +20,7 @@ Embedding-identity stamping and enforcement live in :mod:`.identity`.
 from __future__ import annotations
 
 import logging
+import math
 from typing import Any
 
 import chromadb
@@ -261,7 +262,12 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
                     "id": str(chunk_id),
                     "document": text,
                     "metadata": dict(meta),
-                    "score": canonical_score_from_l2(distance, backend="ChromaDB"),
+                    # ChromaDB's l2 space reports *squared* L2; the canonical
+                    # contract consumes the true distance, so root it here.
+                    "score": canonical_score_from_l2(
+                        None if distance is None else math.sqrt(distance),
+                        backend="ChromaDB",
+                    ),
                     "score_kind": DENSE_SCORE_KIND,
                     "native_distance": distance,
                 }

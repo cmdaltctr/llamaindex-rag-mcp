@@ -34,7 +34,8 @@ quality. Calibration must therefore wait for a deterministic semantic contract.
    distance.
 
 2. **`dense_similarity_v1` is a bounded monotonic L2 transform.** ChromaDB and
-   LanceDB pin L2 at their adapter boundaries and convert native distance with
+   LanceDB pin L2 at their adapter boundaries and convert their native
+   *squared*-L2 value by taking its square root and applying
    `1 / (1 + distance)`. The contract guarantees values in `(0, 1]`, nearest-
    neighbour ordering, and compatible threshold direction. It does **not**
    claim cosine similarity or exact cross-store numeric equality, because the

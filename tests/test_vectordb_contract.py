@@ -165,6 +165,31 @@ class TestWriteAndQuery:
         assert all(0.0 < score <= 1.0 for score in scores)
         assert scores == sorted(scores, reverse=True)
 
+    def test_native_squared_l2_is_rooted_before_canonical_score(self, store: VectorStore) -> None:
+        """A native squared distance of 4 must score 1/(1+sqrt(4)) = 1/3.
+
+        ChromaDB and LanceDB report *squared* L2 for their l2 metric.
+        The canonical ``dense_similarity_v1`` contract consumes the true
+        distance, so each adapter roots the native value before the
+        ``1 / (1 + d)`` transform while ``native_distance`` keeps the
+        raw squared value for diagnostics.
+        """
+        store.upsert_precomputed(
+            "squared_l2_probe",
+            ids=["two_away"],
+            documents=["two units away"],
+            metadatas=[{"rank": 1}],
+            embeddings=[[2.0, 0.0]],
+        )
+
+        rows = store.query_dense("squared_l2_probe", [0.0, 0.0], n_results=1)
+
+        assert len(rows) == 1
+        # Native field stays the raw squared distance: (2-0)**2 = 4.
+        assert rows[0]["native_distance"] == pytest.approx(4.0)
+        # Canonical score uses the rooted distance: 1/(1+sqrt(4)) = 1/3.
+        assert rows[0]["score"] == pytest.approx(1.0 / 3.0)
+
     def test_query_with_metadata_filter(self, store: VectorStore) -> None:
         """A metadata filter must restrict results to matching chunks."""
         from llama_index.core.schema import TextNode
