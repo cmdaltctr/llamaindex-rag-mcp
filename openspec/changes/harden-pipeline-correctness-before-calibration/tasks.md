@@ -205,49 +205,49 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ### 4.1 Shared runtime manifest
 
-- [ ] 4.1.1 Add a JSON-safe runtime manifest helper under `experiments/_lib/` with the fields listed in `design.md` D13.
-- [ ] 4.1.2 Ensure secrets are never included; reuse production redaction where appropriate.
-- [ ] 4.1.3 Add backend-specific observation hooks for ONNX execution provider/variant and Torch device.
-- [ ] 4.1.4 Add effective chunker/document-reader/fallback observation hooks.
-- [ ] 4.1.5 Include repo SHA, lock hash, corpus/query/qrel hashes and immutable index identity.
+- [x] 4.1.1 Add a JSON-safe runtime manifest helper under `experiments/_lib/` with the fields listed in `design.md` D13. (`experiments/_lib/manifest.py::build_runtime_manifest`, commit `53ba31b`; all 33 D13 leaves populate, unavailable inputs become explicit nulls with dotted-path `null_reasons`.)
+- [x] 4.1.2 Ensure secrets are never included; reuse production redaction where appropriate. (`scrub_secrets` applies `core/vectordb/identity.redact_secret` recursively as defence in depth; builder never receives secrets; test proves a planted key string cannot survive `json.dumps`.)
+- [x] 4.1.3 Add backend-specific observation hooks for ONNX execution provider/variant and Torch device. (`observe_onnx_providers` reads the live session's `get_providers()`; `CrossEncoderReranker.last_loaded_variant` records the downloaded ONNX variant (production attribute, +7 lines); `SentenceTransformerReranker.last_loaded_device` + `observe_torch_device` cover the Torch device.)
+- [x] 4.1.4 Add effective chunker/document-reader/fallback observation hooks. (`observe_chunking` reads `CodeChunkResult` requested/effective/fallback_reason; `observe_document_reader` resolves `auto` through the production factory's preference order.)
+- [x] 4.1.5 Include repo SHA, lock hash, corpus/query/qrel hashes and immutable index identity. (`git_commit`/`lock_hash` (sha256 of uv.lock)/`sha256_file` produce `sha256:<hex>` identities; `index_identity` parameter carries the immutable collection name and overrides any mapping key.)
 
 ### 4.2 Machine-readable plans and preflight
 
-- [ ] 4.2.1 Represent factor levels/cell matrices in machine-readable form next to each protocol.
-- [ ] 4.2.2 Add a shared preflight that compares requested/effective manipulated variables and aborts on mismatch/fallback.
-- [ ] 4.2.3 Assert controlled variables are constant across cells.
-- [ ] 4.2.4 Assert distinct intended `fetch_k` values remain distinct after resolution.
-- [ ] 4.2.5 Assert parser experiments actually invoke distinct parser backends before embedding starts.
-- [ ] 4.2.6 Assert threshold-policy experiments use `rerank=None`, not a force override.
+- [x] 4.2.1 Represent factor levels/cell matrices in machine-readable form next to each protocol. (`plan.json` companions in experiments 10b/13/14 loadable via `ExperimentPlan.from_json`; `plan.cell_dicts()` added; repairs per D15.)
+- [x] 4.2.2 Add a shared preflight that compares requested/effective manipulated variables and aborts on mismatch/fallback. (`experiments/_lib/preflight.py::evaluate_assertions`/`assert_manifest` with operators eq/ne/in/not_in/not_null/is_null/contains; `assert_no_fallback` aborts on reranker/document-backend/embedding mismatch or chunker fallback.)
+- [x] 4.2.3 Assert controlled variables are constant across cells. (`assert_controlled_constant` — one non-None value per dotted field across all cell manifests; a None cell is unobserved, not controlled.)
+- [x] 4.2.4 Assert distinct intended `fetch_k` values remain distinct after resolution. (`assert_distinct_values`; the 10b runner keys the map by declared pool level so collapsed pools abort — exactly the original 10b confound.)
+- [x] 4.2.5 Assert parser experiments actually invoke distinct parser backends before embedding starts. (`assert_parser_invoked_before_embeddings` over chronological parse event logs; exp 14 `preflight_check` runs it before the embed stage.)
+- [x] 4.2.6 Assert threshold-policy experiments use `rerank=None`, not a force override. (`assert_policy_rerank_mode` requires `retrieval.rerank_requested is None`; exp 13 policy cells call `search(..., rerank=None)` at a real literal call site — frozen audit test green.)
 
 ### 4.3 Repair/supersede active harnesses
 
-- [ ] 4.3.1 Mark the current Experiment 10b runner as pre-hardening invalid/superseded; do not delete historical code without preserving provenance.
-- [ ] 4.3.2 Implement the combined 9a-rerun + 10b factorial runner described in D17.
-- [ ] 4.3.3 Use one fixed query set for every applicable cell and counterbalance cell order.
-- [ ] 4.3.4 Add reranker-off shared controls and fetch pools `{50, 100, 150, 200, 500}` for reranker-on arms.
-- [ ] 4.3.5 Repair Experiment 13 per D18: policy mode, fixed blocked samples, reranker-off/on references.
-- [ ] 4.3.6 Rebuild Experiment 14 per D19 using real immutable PDF bytes; parser output identities must differ by parser when parsing differs.
-- [ ] 4.3.7 Add protocol/runner agreement tests for every repaired experiment.
+- [x] 4.3.1 Mark the current Experiment 10b runner as pre-hardening invalid/superseded; do not delete historical code without preserving provenance. (`run_eval_v1_pre_hardening.py` retained with an INVALID provenance header; `protocol.md` status block marks the v1 design superseded; commit `181a726`.)
+- [x] 4.3.2 Implement the combined 9a-rerun + 10b factorial runner described in D17. (`run_eval.py` rewritten: 12-cell matrix = 2 shared reranker-off controls + 10 on-cells (dense/hybrid_bm25 × fetch_k {50,100,150,200,500}); four literal `search()` dispatch arms; running at scale remains Stage 6.)
+- [x] 4.3.3 Use one fixed query set for every applicable cell and counterbalance cell order. (One ground-truth query list per cell; `counterbalanced_order(cells, iteration)` is a seeded pure shuffle; warm-up rows tagged separately.)
+- [x] 4.3.4 Add reranker-off shared controls and fetch pools `{50, 100, 150, 200, 500}` for reranker-on arms. (Off cells `dense_off`/`hybrid_off` carry no fetch_k and are never duplicated per pool; agreement test pins exactly 12 cells.)
+- [x] 4.3.5 Repair Experiment 13 per D18: policy mode, fixed blocked samples, reranker-off/on references. (Commit `b92f152`: policy cells `search(rerank=None)` with per-threshold EffectiveSettings; `build_fixed_blocks` draws one fixed block per fraction reused across thresholds; reranker-off/forced-on reference arms per fraction; 42-cell plan.json.)
+- [x] 4.3.6 Rebuild Experiment 14 per D19 using real immutable PDF bytes; parser output identities must differ by parser when parsing differs. (Commit `205ec0e`: `sorted(corpus_dir.glob("*.pdf"))` through production `get_pdf_reader`; per-parser parsed-text artefact with `artefact_identity` sha256; parse event log + preflight before embeddings; parse vs embed/write timing split; two immutable fixture PDFs under `fixtures/` with recorded sha256.)
+- [x] 4.3.7 Add protocol/runner agreement tests for every repaired experiment. (`tests/test_experiment_10b_harness.py` (7), `tests/test_experiment_13_harness.py` (6), `tests/test_experiment_14_harness.py` (8) — all load plan.json and call `assert_runner_cells`; tiny fixtures/mocks only.)
 
 ### 4.4 Statistical output contract
 
-- [ ] 4.4.1 Store per-query raw metrics and per-repetition latency, not aggregates only.
-- [ ] 4.4.2 Add paired bootstrap CI calculation for primary quality deltas.
-- [ ] 4.4.3 Record warm-up separately from measured repetitions.
-- [ ] 4.4.4 Record incomplete/interrupted cells as invalid/incomplete, never as numeric failures.
+- [x] 4.4.1 Store per-query raw metrics and per-repetition latency, not aggregates only. (`stats.validate_per_query_rows` requires cell_id/query_id/phase/latency_ms/metrics on every row; repaired runners persist raw rows per cell.)
+- [x] 4.4.2 Add paired bootstrap CI calculation for primary quality deltas. (`stats.paired_bootstrap_ci` — joint pair resampling, seeded `random.Random`, percentile CI; summarisers compute the D17/D18 contrasts with it.)
+- [x] 4.4.3 Record warm-up separately from measured repetitions. (`stats.split_warmup` by phase; warm-up rows excluded from every aggregate.)
+- [x] 4.4.4 Record incomplete/interrupted cells as invalid/incomplete, never as numeric failures. (`stats.cell_record`/`finalise_cells` — statuses complete/incomplete/invalid, reason mandatory for the latter two.)
 
 ### 4.5 Required technical decision record
 
-- [ ] 4.5.1 Write a TDR for the **experiment-validity framework** covering the runtime manifest, requested-vs-effective assertions, protocol/runner cell agreement, controlled-variable pinning, fallback abort policy, paired raw-output requirements, checkpoint semantics, and incomplete-run handling.
-- [ ] 4.5.2 The TDR SHALL define which manifest fields are mandatory for an experiment to be considered admissible evidence for an ADR.
+- [x] 4.5.1 Write a TDR for the **experiment-validity framework** covering the runtime manifest, requested-vs-effective assertions, protocol/runner cell agreement, controlled-variable pinning, fallback abort policy, paired raw-output requirements, checkpoint semantics, and incomplete-run handling. (`docs/tdr/014-experiment-validity-framework.md`, Accepted — eight decision rules with mechanism citations.)
+- [x] 4.5.2 The TDR SHALL define which manifest fields are mandatory for an experiment to be considered admissible evidence for an ADR. (TDR-014 §"Mandatory manifest fields for admissible ADR evidence": 18 always-mandatory non-null fields plus conditional reranker/sparse/document-backend requirements, permitted-null list, and the inadmissibility rule for aggregate-only or interrupted evidence.)
 
 ### PAUSE GATE 4 — harness-only commit
 
-- [ ] 4.G.1 Run all harness unit/preflight tests with tiny fixtures/mocks.
-- [ ] 4.G.2 Do not run FreshStack/Qasper-scale cells yet.
-- [ ] 4.G.3 Commit experiment infrastructure/harness repair independently.
-- [ ] 4.G.4 TDR gate: link the Stage 4 commit and preflight tests from the experiment-validity TDR before any Stage 5/6 results are accepted as decision evidence.
+- [x] 4.G.1 Run all harness unit/preflight tests with tiny fixtures/mocks. (2026-08-19: manifest 14 + preflight/stats/plan-contract 43 + harness 21 = 78 passed; audit regressions 10 passed; full fast suite `1698 passed, 17 skipped, 14 deselected` — zero failures, no model/network/corpus used by any new test.)
+- [x] 4.G.2 Do not run FreshStack/Qasper-scale cells yet. (No campaign cell executed; the D17/D18/D19 runners were built with contract tests only — exp 14 verification used two ~640-byte fixture PDFs; exp 18 remains the only measured Stage 3B system experiment.)
+- [x] 4.G.3 Commit experiment infrastructure/harness repair independently. (Four commits: `53ba31b` _lib manifest+preflight+stats + observation attributes; `181a726` 10b supersession + D17 factorial; `b92f152` exp 13 repair; `205ec0e` exp 14 rebuild; TDR committed separately after.)
+- [x] 4.G.4 TDR gate: link the Stage 4 commit and preflight tests from the experiment-validity TDR before any Stage 5/6 results are accepted as decision evidence. (TDR-014 Evidence section links all four commits, the 78-test preflight/agreement bundle, and the audit-green fast-suite state; its admissibility contract binds Stage 5/6 evidence.)
 
 ---
 
