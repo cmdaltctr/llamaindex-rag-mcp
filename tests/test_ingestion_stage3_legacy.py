@@ -5,7 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from llama_index.core.schema import TextNode
+from llama_index.core.schema import (
+    NodeRelationship,
+    RelatedNodeInfo,
+    TextNode,
+)
 
 from rag_mcp.core.ingestion import ingest_path_async
 from rag_mcp.core.vectordb import get_default_store, set_default_store
@@ -27,9 +31,7 @@ def legacy_store(request: pytest.FixtureRequest, tmp_path: Path):
 def _source_rows(store, source: Path) -> list[tuple[str, str, dict]]:
     """Return all rows whose user metadata points at *source*."""
     return [
-        row
-        for row in store.iter_documents(_COLLECTION)
-        if row[2].get("file_path") == str(source)
+        row for row in store.iter_documents(_COLLECTION) if row[2].get("file_path") == str(source)
     ]
 
 
@@ -47,13 +49,19 @@ async def test_legacy_row_without_attempt_is_replaced_by_id_once(
     source = tmp_path / "legacy.txt"
     source.write_text("current source content " * 80, encoding="utf-8")
 
+    # Real pre-Stage-3 rows were written by the pipeline, which always sets
+    # the SOURCE relationship. Without it the LanceDB adapter types the
+    # top-level doc_id column as Null, and no later pipeline write can cast
+    # its Utf8 doc_id into that column.
+    legacy_node = TextNode(
+        text="legacy searchable sentinel",
+        metadata={"file_path": str(source)},
+        relationships={
+            NodeRelationship.SOURCE: RelatedNodeInfo(node_id="00000000-0000-0000-0000-000000000000")
+        },
+    )
     legacy_store.write_nodes(
-        [
-            TextNode(
-                text="legacy searchable sentinel",
-                metadata={"file_path": str(source)},
-            )
-        ],
+        [legacy_node],
         _COLLECTION,
     )
     generation_before = legacy_store.get_generation(_COLLECTION)
