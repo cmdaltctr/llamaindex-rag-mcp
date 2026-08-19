@@ -108,8 +108,11 @@ correct list type cannot be inferred from nulls.
 ## References
 
 - Commit `87023bc` — realistic legacy fixture (SOURCE relationship).
-- Store guard: `src/rag_mcp/core/vectordb/lancedb.py`
-  (`_widen_null_adapter_columns`, `_ADAPTER_STRING_COLUMNS`).
+- Store guard: `src/rag_mcp/core/vectordb/lance_meta.py`
+  (`LanceTableMetadataMixin._widen_null_adapter_columns`,
+  `_ADAPTER_STRING_COLUMNS`); called from `write_nodes` in
+  `src/rag_mcp/core/vectordb/lancedb.py`. Extracted from `lancedb.py` in
+  `65695da` after the guard tripped the 500-line file ceiling.
 - Regression test: `tests/test_lancedb_store.py::test_write_nodes_widens_null_typed_doc_id_column`.
 - Related: ADR-048 (bounded failure-safe ingestion), TDR-011 (pre-calibration
   audit validation), `evolve_metadata_fields` in

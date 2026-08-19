@@ -131,6 +131,59 @@ The repository CI workflow does not run automatically for pushes to this
 feature branch; it currently targets pushes and pull requests to `main` and
 `v3`. Therefore branch commits alone are not evidence that this gate ran.
 
+### Pause Gate 3A validation evidence (2026-08-19)
+
+Executed on the operator's Mac (macOS aarch64, Python 3.12.10, `uv sync
+--frozen`, 208 packages, lockfile unchanged). Tested implementation SHA:
+`65695dad6f9fdb27b0620694e11b948cfa2fd9ff` (commits after this SHA are
+documentation-only).
+
+| Command | Result |
+| --- | --- |
+| Stage 3A group: `pytest tests/test_ingestion_stage3_runtime_identity.py tests/test_ingestion_stage3.py tests/test_ingestion_stage3_legacy.py tests/test_ingestion_parallel.py tests/test_async_ingest_responsiveness.py -q` | 41 passed |
+| `pytest tests/test_precalibration_audit_regressions.py -q` | 7 passed, 3 failed — exactly the deferred Stage 4 Experiment 10b/13/14 defects |
+| `pytest -m "not slow" -q` (full fast suite) | 1611 passed, 17 skipped, 10 failed (see below) |
+| `ruff check .` | All checks passed |
+| `ruff format --check .` | 634 files already formatted |
+| `lint-imports` | 8 contracts kept, 0 broken |
+| `openspec validate harden-pipeline-correctness-before-calibration --strict` | valid |
+
+Executable validation found and fixed three defects in the delivered
+implementation, none of which weakened a contract:
+
+- The Stage 3 legacy-row fixture seeded a bare `TextNode` with no SOURCE
+  relationship, so the LanceDB adapter typed the `doc_id` column as Null and
+  blocked the candidate write. Fixed in `87023bc` (realistic fixture) plus a
+  defensive store guard widening null-typed adapter columns (`25ae9c3`,
+  TDR-012, extracted to `LanceTableMetadataMixin` in `65695da` after the
+  guard tripped the 500-line file ceiling).
+- Lint debt from hook-bypassing commits: unused import and formatting drift
+  (`8d0bb1d`).
+
+**Pause Gate 3A remains OPEN.** The full fast suite — required by this ADR's
+validation plan ("existing Stage 0-2 regressions") — shows 7 failures beyond
+the 3 deferred Stage 4 defects. All 7 were verified to fail identically at
+`9dd4514`, the remote head before this validation session, so they are
+pre-existing Stage 3A implementation breakage, not regressions from the
+validation-session fixes:
+
+- `tests/test_watcher.py::TestIngestPathAllFilesFail` (2 tests) and one
+  `tests/test_metadata_degradation.py` aggregation test patch
+  `pipeline.embed_and_write_async`, which the Stage 3A rewrite moved out of
+  `core.ingestion.pipeline` (patch-target drift, AGENTS.md gotcha 8b).
+- `tests/test_metadata_degradation.py::TestPipelineDegradationAggregation`
+  (2 tests): ingestion returns `status: "error"` where the tests expect
+  `"ok"`.
+- `tests/test_signal_handling.py::test_shutdown_flag_stops_sequential_early`:
+  one file is processed where zero were expected after the shutdown flag.
+- `tests/unit/test_type_aware_ingestion.py::test_binary_file_skipped`: a
+  binary file produces one chunk where zero were expected — potentially a
+  genuine Stage 3A correctness defect.
+
+These 7 failures (plus the 3 deferred Stage 4 defects) must be resolved or
+explicitly dispositioned before this ADR can become Accepted and before
+Stage 3B begins. This ADR's status therefore remains **Proposed**.
+
 ## Consequences
 
 ### Positive
