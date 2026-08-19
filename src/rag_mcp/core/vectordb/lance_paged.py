@@ -1,14 +1,8 @@
-"""Paged and bulk collection reads for the LanceDB vector store.
+"""Paged reads and stable-ID deletion for the LanceDB vector store.
 
-Mirrors :mod:`.paged` (the ChromaDB equivalent) over LanceDB's scanner:
-bounded, snapshot-consistent batches for the iterators, one full scan
-for :meth:`fetch_all`. The BM25 sparse retriever builds its index
-through ``iter_documents`` and never touches this module directly.
-
-The concrete store supplies ``_open_table(name)`` returning the raw
-LanceDB table handle or ``None`` when absent, and resolves the default
-page size through ``_default_page_size()`` (the shared
-``CHROMA_SCAN_PAGE_SIZE`` setting).
+Mirrors :mod:`.paged` over LanceDB's scanner: bounded, snapshot-consistent
+batches for iterators and one full scan for :meth:`fetch_all`. The concrete
+store supplies ``_open_table`` and the shared default page size.
 """
 
 from __future__ import annotations
@@ -17,15 +11,12 @@ import logging
 from collections.abc import Callable, Iterator
 from typing import Any
 
+from .lance_filter import translate_where
+
 __all__ = ["INTERNAL_METADATA_KEYS", "LancePagedReadMixin", "strip_internal_metadata"]
 
 logger = logging.getLogger(__name__)
 
-# The LlamaIndex adapter writes user metadata into an Arrow struct
-# alongside these node-internal fields.  Reads surface only the user's
-# keys, matching what the ChromaDB adapter stores.  The store's
-# schema-evolution path also uses this set: a later adapter write into
-# an upsert-created table needs these fields present in the struct.
 INTERNAL_METADATA_KEYS = frozenset(
     {
         "_node_content",
@@ -38,15 +29,7 @@ INTERNAL_METADATA_KEYS = frozenset(
 
 
 def strip_internal_metadata(metadata: dict | None) -> dict:
-    """Drop adapter-internal keys from a metadata struct row.
-
-    Args:
-        metadata: The raw ``metadata`` struct value of one row (or
-            ``None``).
-
-    Returns:
-        A plain dict holding only the user's metadata keys.
-    """
+    """Drop LlamaIndex adapter-internal keys from one metadata struct row."""
     if not metadata:
         return {}
     return {
@@ -57,16 +40,12 @@ def strip_internal_metadata(metadata: dict | None) -> dict:
 
 
 class LancePagedReadMixin:
-    """Bounded-page and full-collection reads over LanceDB tables.
-
-    The concrete store supplies ``_open_table(name)`` and
-    ``_default_page_size()``; this module owns the pagination loop and
-    the row shapes the ``VectorStore`` ABC docstrings specify.
-    """
+    """Bounded-page reads plus stable-ID deletion over LanceDB tables."""
 
     # Supplied by the concrete store.
     _open_table: Callable[[str], Any]
     _default_page_size: Callable[[], int]
+    bump_generation: Callable[[str], None]
 
     def _resolve_page_size(self, page_size: int | None) -> int:
         """Resolve the effective page size, validating it is positive."""
@@ -82,23 +61,7 @@ class LancePagedReadMixin:
         columns: list[str],
         page_size: int,
     ) -> Iterator[dict]:
-        """Yield the table's rows of the given columns in bounded batches.
-
-        One dataset scanner backs every batch: table handles pin a
-        version, so paging through a single scanner cannot duplicate
-        or skip rows when a write lands mid-iteration (offset paging
-        through a fresh handle per page could, since each handle sees
-        the latest version).
-
-        Args:
-            collection_name: Table to scan.
-            columns: Columns to project.
-            page_size: Batch row bound (the memory bound).
-
-        Yields:
-            The table's rows as dicts; yields nothing when the table
-            is absent or empty.
-        """
+        """Yield projected rows in bounded, snapshot-consistent batches."""
         table = self._open_table(collection_name)
         if table is None:
             return
@@ -111,7 +74,7 @@ class LancePagedReadMixin:
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[dict | None]:
-        """Yield per-chunk user metadata in bounded, consistent batches."""
+        """Yield per-chunk user metadata in bounded batches."""
         effective_page_size = self._resolve_page_size(page_size)
         for row in self._iter_rows(collection_name, ["metadata"], effective_page_size):
             yield strip_internal_metadata(row.get("metadata"))
@@ -121,11 +84,7 @@ class LancePagedReadMixin:
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[tuple[str, str, dict]]:
-        """Yield ``(id, text, metadata)`` tuples in bounded, consistent batches.
-
-        The BM25 sparse retriever builds its in-memory index from these
-        tuples; the shape matches the ChromaDB implementation exactly.
-        """
+        """Yield ``(id, text, metadata)`` tuples in bounded batches."""
         effective_page_size = self._resolve_page_size(page_size)
         columns = ["id", "text", "metadata"]
         for row in self._iter_rows(collection_name, columns, effective_page_size):
@@ -141,11 +100,7 @@ class LancePagedReadMixin:
         collection_name: str,
         include: list[str],
     ) -> dict[str, list] | None:
-        """Return every chunk's requested fields in one store-neutral payload.
-
-        ``None`` when the collection does not exist or is empty, so
-        callers (the document-similarity graph) degrade gracefully.
-        """
+        """Return every requested field in one store-neutral payload."""
         try:
             table = self._open_table(collection_name)
         except Exception as exc:
@@ -171,3 +126,25 @@ class LancePagedReadMixin:
         if "embeddings" in include:
             payload["embeddings"] = arrow.column("vector").to_pylist()
         return payload
+
+    def delete_ids(self, collection_name: str, ids: list[str]) -> None:
+        """Delete stable row IDs and advance generation exactly once.
+
+        Values are serialized by the existing LanceDB literal builder through
+        :func:`translate_where`; no caller-controlled ID is interpolated into
+        SQL directly.
+        """
+        if not ids:
+            return
+        table = self._open_table(collection_name)
+        if table is None:
+            return
+        filter_sql = translate_where(
+            {"id": {"$in": ids}},
+            metadata_column=None,
+            known_fields={"id"},
+        )
+        if filter_sql is None:
+            raise RuntimeError("Non-empty row-ID deletion produced no LanceDB filter")
+        table.delete(filter_sql)
+        self.bump_generation(collection_name)
