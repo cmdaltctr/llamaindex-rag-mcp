@@ -232,3 +232,88 @@ run, recorded in each raw file's `cleanup` list; 0 leftover).
 uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/run_eval.py --output-dir experiments/example/experiment-2-dense-cross-store-score-parity/output/run1
 uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/summarise_eval.py experiments/example/experiment-2-dense-cross-store-score-parity/output/run1/results.raw.json
 ```
+
+## Execution record (v1.1, 2026-08-19)
+
+Re-execution after the production fix for finding `exp2-f1-squared-l2-canonical-score`:
+commit `7bf16b3eb2d994e7a3bdecaf75861a92013b5749`
+"fix(vectordb): apply sqrt to native L2 before canonical score
+transform" — each adapter now roots the engine's squared-L2 value
+before `canonical_score_from_l2`; `native_distance` keeps the raw
+squared value. The v1.0 FAIL record above is preserved unchanged;
+nothing in this re-execution altered the pre-registered sections,
+fixtures, qrels, or harness scripts.
+
+**Harness:** `run_eval.py` and `summarise_eval.py` re-run UNCHANGED
+(byte-identical to commit `98449c3`), against the SAME pre-registered
+v1.0 fixtures/ground truth (`fixtures/{manifest,queries,qrels}.json`;
+corpus identity `sha256:39919461e937…`, queries `sha256:fad16f2b…`,
+qrels `sha256:c972fefe…` — all identical to the v1.0 runs).
+`plan.json` protocol_version bumped to 1.1 as the version marker for
+this execution record only; the cell matrix, controlled variables,
+thresholds, and preflight assertions are unchanged from v1.0.
+
+**Status: PASS** — H3 moves from 110/300 mismatches (v1.0) to **0/300**.
+All five hypotheses pass in both backends. The experiment no longer
+blocks the Stage 5→6 gate on this contract.
+
+### Verdicts (from `output/v1.1_run1/results.summary.json`; run2 identical)
+
+| Hypothesis | Verdict | Numbers |
+|---|---|---|
+| H1 ranking parity | PASS | 50 measured repetitions, zero ordering violations; ties permuted only within labelled tie sets |
+| H2 canonical score monotonicity | PASS | 190 monotonicity comparisons, zero violations; every score now reproduces the documented `1/(1+d)` over TRUE distance — zero formula deviations (v1.0: systematic deviations) |
+| H3 threshold parity | PASS | 300 membership checks (5 fixtures × 5 reps × 6 thresholds × 2 backends): **0 mismatches** vs the pre-registered analytic expectation (v1.0: 110); 0 cross-store membership differences |
+| H4 metadata-filter parity | PASS | 50 filter checks, all match |
+| H5 backend opacity | PASS | AST scan unchanged (0 backend literals, 0 `native_distance` accesses in `dense.py`); core-path rows identical to adapter rows in every repetition |
+
+`production_findings`: **empty** — `exp2-f1-squared-l2-canonical-score`
+is resolved by 7bf16b3; the H2 formula check that generated it now
+records zero deviations. Score evidence (identical in both backends):
+doc `[0,1,0,0]` vs query `[1,0,0,0]` → native `2.0` (raw squared,
+retained as diagnostic), canonical score `0.414214 = 1/(1+√2)`;
+`[-2,0,0,0]` → native `9.0`, score `0.25 = 1/(1+3)`.
+
+### Manifest identities (per cell, both cells agree)
+
+`repo_commit` `7bf16b3eb2d994e7a3bdecaf75861a92013b5749`,
+`dependency_lock_hash` `3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d`
+(sha256 of `uv.lock`, unchanged from v1.0), `git_dirty: true` — the
+shared worktree carries uncommitted sibling experiment-5 setup files;
+this experiment's harness and fixtures were byte-identical to commit
+`98449c3` at execution time. `index_identity`
+`exp2-fixtures::{backend}::39919461e937`. Manifest
+`protocol_version` reads `1.0`: the unchanged runner carries a
+hardcoded `PROTOCOL_VERSION = "1.0"` constant, and per the re-run
+instruction the scripts were not edited; the authoritative version
+marker for this execution is this record plus `plan.json` 1.1.
+
+### Determinism
+
+Two full executions (`output/v1.1_run1`, `output/v1.1_run2`) produce
+byte-identical canonical projections (same projection as v1.0:
+latency/timestamp/cleanup fields removed, floats rounded to 9 dp):
+`sha256:6a19b4bf4456184678034fdcb3173def191475b6760647eda91b97f4fe32bfaa`.
+Proof: `output/v1.1_deterministic_rerun_proof.txt`.
+
+### Cleanup (§20)
+
+2 temporary fixture databases per run deleted after raw results were
+saved (recorded in each raw file's `cleanup` list; 0 leftover).
+
+### Artefacts
+
+`output/v1.1_run1/` and `output/v1.1_run2/` (`results.raw.json`,
+`results.summary.json`, `results.canonical.json`, `cells/`),
+`output/v1.1_deterministic_rerun_proof.txt`, root
+`results.summary.json` (combined v1.0+v1.1 view, machine-assembled
+from the per-run script outputs), updated `results.md`. The v1.0
+artefacts under `output/run1/`, `output/run2/`, and
+`output/deterministic_rerun_proof.txt` are retained untouched.
+
+### Reproduction
+
+```bash
+uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/run_eval.py --output-dir experiments/example/experiment-2-dense-cross-store-score-parity/output/v1.1_run1
+uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/summarise_eval.py experiments/example/experiment-2-dense-cross-store-score-parity/output/v1.1_run1/results.raw.json
+```

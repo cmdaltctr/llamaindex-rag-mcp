@@ -1,6 +1,6 @@
 {
   "experiment_id": "example-experiment-2-dense-cross-store-score-parity",
-  "protocol_version": "1.0",
+  "protocol_version": "1.1",
   "experimental_unit": "one analytic query vector evaluated against one frozen precomputed vector fixture",
   "primary_metric": "per_fixture_parity_checks_passed",
   "manipulated_factors": [

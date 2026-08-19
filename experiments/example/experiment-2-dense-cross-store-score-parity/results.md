@@ -1,6 +1,6 @@
 # Experiment 2 results — dense cross-store score parity
 
-**Status: FAIL** (correctness blocker; see the production finding)
+**Status: FAIL at v1.0** (correctness blocker; see the production finding) — **re-executed at v1.1: PASS** after fix commit `7bf16b3` (see the v1.1 section below; the v1.0 record is preserved unchanged)
 **Executed:** 2026-08-19, worktree `harden-pipeline-correctness-before-calibration`
 **Commit:** `c475852cf195658ce6af8654e11e07dce4c39fec` (dirty: experiment artefacts uncommitted)
 **Runtime:** Python 3.12.10, chromadb 1.5.9, lancedb 0.37.1, pyarrow 25.0.1, llama-index 0.14.23
@@ -132,3 +132,88 @@ recorded in each raw file's `cleanup` list; 0 leftover on disk at close.
    per group, protocol §10) rather than running cells strictly
    sequentially; checkpoints are written after every group (finer than
    per-cell) and per-cell artefacts after each cell completes.
+
+---
+
+# v1.1 re-execution (2026-08-19) — PASS after fix `7bf16b3`
+
+Re-run of the UNCHANGED harness (`run_eval.py`, `summarise_eval.py`,
+byte-identical to commit `98449c3`) at commit
+`7bf16b3eb2d994e7a3bdecaf75861a92013b5749`
+"fix(vectordb): apply sqrt to native L2 before canonical score
+transform", against the SAME pre-registered v1.0 fixtures/ground truth
+(corpus `sha256:39919461e937…`, queries `sha256:fad16f2b…`, qrels
+`sha256:c972fefe…` — identical to v1.0). No assertion, ground-truth, or
+script edits. Execution record: `protocol.md` §Execution record (v1.1).
+
+## Hypothesis verdicts (v1.1, from `output/v1.1_run1/results.summary.json`; run2 identical)
+
+| Hypothesis | Verdict | Numbers |
+|---|---|---|
+| H1 ranking parity | **PASS** | 50 measured repetitions; 0 ordering violations; ties permuted only inside pre-labelled tie sets |
+| H2 canonical score monotonicity | **PASS** | 190 monotonicity comparisons; 0 violations; every score reproduces the documented `1/(1+d)` over TRUE distance — **0 formula deviations** (v1.0 recorded systematic deviations) |
+| H3 threshold parity | **PASS** | 300 membership checks; **0 mismatches** vs the pre-registered analytic expectation (v1.0: 110); 0 cross-store membership differences |
+| H4 metadata-filter parity | **PASS** | 50 checks; query-id sets and `count_where` all match |
+| H5 backend opacity | **PASS** | AST scan unchanged (0 backend literals, 0 `native_distance` accesses in `dense.py`, 1 abstract call site); core-path rows identical to adapter rows |
+
+Overall: **PASS** — all five §14 gates green; the H3 blocker that
+gated Stage 5→6 is cleared. `production_findings` is empty:
+`exp2-f1-squared-l2-canonical-score` is resolved by `7bf16b3`. Score
+evidence (both backends): native `[0,1,0,0]` vs `[1,0,0,0]` → raw
+squared diagnostic `2.0`, canonical score `0.414214 = 1/(1+√2)`;
+native `9.0` → score `0.25 = 1/(1+3)`.
+
+## Manifest identities (v1.1, per cell)
+
+`repo_commit` `7bf16b3eb2d994e7a3bdecaf75861a92013b5749`,
+`dependency_lock_hash` `3a225230a6ebe0f7…` (sha256 of `uv.lock`,
+unchanged from v1.0), `index_identity`
+`exp2-fixtures::{backend}::39919461e937`, corpus/queries/qrels
+identities identical to v1.0. `git_dirty: true` — uncommitted sibling
+experiment-5 setup files in the shared worktree; this experiment's
+harness and fixtures were byte-identical to commit `98449c3` at
+execution time. Manifest `protocol_version` reads `1.0` because the
+unchanged runner carries a hardcoded constant; the authoritative v1.1
+markers are `plan.json` (protocol_version 1.1) and the appended
+protocol execution record.
+
+## Determinism proof (v1.1)
+
+Two full executions (`output/v1.1_run1`, `output/v1.1_run2`) →
+canonical projections byte-identical:
+`sha256:6a19b4bf4456184678034fdcb3173def191475b6760647eda91b97f4fe32bfaa`
+(both files; same projection rules as v1.0). Proof:
+`output/v1.1_deterministic_rerun_proof.txt`.
+
+## Artefacts (v1.1)
+
+- `output/v1.1_run1/`, `output/v1.1_run2/` — `results.raw.json` (60
+  D16 rows + manifests + static check), `results.summary.json`,
+  `results.canonical.json`, `cells/<cell>.json`
+- `output/v1.1_deterministic_rerun_proof.txt`
+- root `results.summary.json` — combined machine-assembled view of the
+  v1.0 and v1.1 script outputs (v1.0 verdict content preserved
+  verbatim; assembly command in the protocol v1.1 record lineage)
+- `plan.json` — protocol_version bumped to 1.1; cells/variables
+  unchanged
+- v1.0 artefacts (`output/run1/`, `output/run2/`,
+  `output/deterministic_rerun_proof.txt`) retained untouched
+
+## Reproduction (v1.1)
+
+```bash
+uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/run_eval.py \
+  --output-dir experiments/example/experiment-2-dense-cross-store-score-parity/output/v1.1_run1
+uv run --no-sync python experiments/example/experiment-2-dense-cross-store-score-parity/summarise_eval.py \
+  experiments/example/experiment-2-dense-cross-store-score-parity/output/v1.1_run1/results.raw.json
+```
+
+## Judgement call (v1.1)
+
+1. **Runner version-string wrinkle, recorded not patched:** the
+   re-run instruction required unchanged scripts, and `run_eval.py`
+   embeds `PROTOCOL_VERSION = "1.0"`, so raw/manifest
+   `protocol_version` fields still read `1.0`. The v1.1 identity is
+   carried by `plan.json` 1.1, the appended protocol execution record,
+   and `repo_commit` `7bf16b3` in every manifest — an unambiguous
+   discriminator against the v1.0 artefacts (which record `c475852`).
