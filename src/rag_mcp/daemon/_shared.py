@@ -7,6 +7,6 @@ historical private name remains exported for watcher/runner compatibility.
 
 from __future__ import annotations
 
-from ..core.ingestion.hashing import MAX_FILE_SIZE, sha256_file
+from ..core.ingestion.hashing import sha256_file
 
 _sha256_file = sha256_file

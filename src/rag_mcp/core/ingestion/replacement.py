@@ -93,8 +93,7 @@ def _embed_missing_nodes(nodes: list[BaseNode]) -> None:
     embeddings = embed_model.get_text_embedding_batch(texts, show_progress=False)
     if len(embeddings) != len(missing):
         raise RuntimeError(
-            "Embedding provider returned "
-            f"{len(embeddings)} vectors for {len(missing)} nodes."
+            f"Embedding provider returned {len(embeddings)} vectors for {len(missing)} nodes."
         )
     for node, embedding in zip(missing, embeddings, strict=True):
         node.embedding = embedding

@@ -247,9 +247,7 @@ def stamp_source_attempt(
         node.excluded_embed_metadata_keys = sorted(
             set(node.excluded_embed_metadata_keys) | excluded
         )
-        node.excluded_llm_metadata_keys = sorted(
-            set(node.excluded_llm_metadata_keys) | excluded
-        )
+        node.excluded_llm_metadata_keys = sorted(set(node.excluded_llm_metadata_keys) | excluded)
         node.id_ = hashlib.sha256(
             f"{file_path}\0{source_attempt}\0{index}\0{original_id}".encode()
         ).hexdigest()

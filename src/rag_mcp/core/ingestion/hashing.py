@@ -34,8 +34,7 @@ def sha256_file(path: Path) -> str:
         file_size = os.fstat(handle.fileno()).st_size
         if file_size > MAX_FILE_SIZE:
             raise OSError(
-                f"File exceeds maximum size of {MAX_FILE_SIZE} bytes "
-                f"(got {file_size} bytes)"
+                f"File exceeds maximum size of {MAX_FILE_SIZE} bytes (got {file_size} bytes)"
             )
         for chunk in iter(lambda: handle.read(8192), b""):
             total_bytes += len(chunk)

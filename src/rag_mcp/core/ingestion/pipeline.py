@@ -132,9 +132,7 @@ async def ingest_path_async(
         chunk_size if chunk_size is not None else resolved_settings.chunking.chunk_size
     )
     effective_chunk_overlap = (
-        chunk_overlap
-        if chunk_overlap is not None
-        else resolved_settings.chunking.chunk_overlap
+        chunk_overlap if chunk_overlap is not None else resolved_settings.chunking.chunk_overlap
     )
 
     files_to_index, skipped_details = gather_supported_files(path_obj)
@@ -228,9 +226,7 @@ async def ingest_path_async(
                 index_identity=index_identity,
                 source_version=source_version,
             )
-            unit_timings["change_detection_seconds"] = (
-                time.perf_counter() - detection_started
-            )
+            unit_timings["change_detection_seconds"] = time.perf_counter() - detection_started
 
             if unchanged:
                 files_skipped_unchanged += 1
