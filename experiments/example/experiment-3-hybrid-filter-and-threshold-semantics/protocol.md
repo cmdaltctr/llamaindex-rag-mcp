@@ -1,7 +1,9 @@
 # Experiment 3 — Hybrid metadata-filter and threshold semantics
 
 **Template ID:** `example/experiment-3-hybrid-filter-and-threshold-semantics`  
-**Status:** PLANNED  
+**Status:** PASS  
+**Protocol version:** 1.0  
+**Executed:** 2026-08-19  
 **Role:** deterministic hybrid-retrieval correctness gate
 
 ## 1. Research question
@@ -166,3 +168,57 @@ PASS establishes hybrid contract correctness for BM25 on the fixture; it does no
 ## 20. Cleanup
 
 Delete temporary fixture store after results are committed.
+
+## Execution record (v1.0 — 2026-08-19)
+
+**Status: PASS.** All five §14 success gates met on repo commit
+`c475852cf195658ce6af8654e11e07dce4c39fec`; all 10 cells (the six
+§8 matrix cells plus four operator-filter extras over cells 1–2:
+`{"category": {"$eq": "allowed"}}` and `{"category": {"$in": ["allowed"]}}`,
+dense and hybrid) completed with `exact_match=1.0` against the
+pre-registered ground truth in `fixtures/`.
+
+- **Fixture:** five rows A–E per §3 with precomputed 4-d vectors; dense
+  ordering `[E, A, C, B, D]` (L2 distances 0.5/1.0/1.2/3.0/4.0); BM25
+  ordering `[B, C, E, D]` (independent BM25Okapi arithmetic, k1=1.5,
+  b=0.75; A scores 0); positive threshold 0.3 chosen from the geometry
+  (qualifying {E, A, C} under both L2 reporting conventions; the run
+  observed `squared_l2`).
+- **H1 PASS:** 0 forbidden finals in all six filtered hybrid cells;
+  unfiltered control returns `row_C`.
+- **H2 PASS:** 0 sparse-branch filter violations; `row_C` absent from
+  every filtered sparse trace.
+- **H3 PASS:** `row_D` returns in the unfiltered threshold-0 hybrid cell
+  (fused 129/4160 via dense rank 5 + sparse rank 4).
+- **H4 PASS:** threshold-0.3 filtered hybrid returns exactly `[E, A]`;
+  sparse-only `row_B` (strongest BM25) and `row_D` excluded. Static
+  check (`output/static_check/threshold_application_sites.json`): the
+  only threshold-vs-score comparisons are `pipeline.py:169`
+  (pre-fusion dense rows) and `pipeline.py:409` (guarded by
+  `rerank_succeeded or not hybrid`); zero comparisons against
+  `fused_score`.
+- **H5 PASS:** fake-success double → `[E, A, B]`, scores
+  `[0.95, 0.5, 0.02]`, `threshold_score_kind=reranker_sigmoid_v1`
+  (B 0.02 ≥ 0.3/30 survives; D 0.001 dropped); fake-failure double →
+  `[E, A]`, identical to the pre-rerank rule, `threshold_score_kind`
+  back to `dense_similarity_v1`, rerank reason equal to the double's
+  `last_failure_reason` verbatim.
+- **Validity:** per-cell D13 runtime manifests + D14 preflight
+  (plan assertions, no-fallback, cell-type fake/backend asserts),
+  plan↔runner cell agreement before measured work, controlled constants
+  pinned (`rrf_k=60`, `top_k=5`, `fetch_k=5`), per-query raw rows
+  validated, atomic per-cell checkpoints with `--resume`. Determinism
+  proof (§11): two independent runs byte-identical after removing
+  wall-clock/latency fields — canonical sha256
+  `fee8e0a347c7990a9eb2030c38b6089ffb1ee18b1c02379a2d7d0bf8c9a095c2`.
+- **Cleanup (§20):** the store is an in-memory `EphemeralClient`
+  rebuilt per run; no on-disk fixture store exists to delete.
+- **Interpretation (§19):** PASS establishes the hybrid BM25 contract on
+  this fixture only; it does not justify enabling hybrid by default.
+
+Evidence: `results.md`, `results.raw.json`, `results.canonical.json`,
+`checkpoint.json`, `output/cells/*.json`, `fixtures/`,
+`output/static_check/threshold_application_sites.json`,
+`plan.json`, and the harness (`build_fixture.py`, `run_eval.py`,
+`harness.py`, `static_check_threshold.py`). No production file was
+modified.

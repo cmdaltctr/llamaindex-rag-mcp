@@ -1,0 +1,510 @@
+{
+  "collection_name": "exp3_hybrid_filter_threshold_fixture",
+  "constants": {
+    "fetch_k": 5,
+    "positive_threshold": 0.3,
+    "rerank_threshold_scale": 30.0,
+    "rrf_k": 60,
+    "top_k": 5
+  },
+  "expectations": {
+    "allowed_rows": [
+      "row_A",
+      "row_B",
+      "row_D",
+      "row_E"
+    ],
+    "bm25": {
+      "avgdl": 8.0,
+      "b": 0.75,
+      "doc_lengths": {
+        "row_A": 8,
+        "row_B": 6,
+        "row_C": 8,
+        "row_D": 8,
+        "row_E": 10
+      },
+      "document_frequency": {
+        "beacon": 2,
+        "harbour": 2
+      },
+      "expected_ordering": [
+        "row_B",
+        "row_C",
+        "row_E",
+        "row_D"
+      ],
+      "idf": {
+        "beacon": 0.33647223662121295,
+        "harbour": 0.33647223662121295
+      },
+      "k1": 1.5,
+      "scores": {
+        "row_A": 0.0,
+        "row_B": 0.5226753190232434,
+        "row_C": 0.4806746237445899,
+        "row_D": 0.33647223662121295,
+        "row_E": 0.4449219657801163
+      },
+      "zero_score_rows": [
+        "row_A"
+      ]
+    },
+    "cells": {
+      "cell_01_dense_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_A",
+          "row_B",
+          "row_D"
+        ],
+        "fused_scores": null,
+        "scenario": "dense_allowed",
+        "score_kind": "dense_similarity_v1"
+      },
+      "cell_02_hybrid_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_B",
+          "row_D",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_B": 0.032266458495966696,
+          "row_D": 0.03149801587301587,
+          "row_E": 0.03252247488101533
+        },
+        "scenario": "allowed_filter",
+        "score_kind": "rrf_v1"
+      },
+      "cell_03_hybrid_none_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_B",
+          "row_C",
+          "row_D",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_B": 0.03201844262295082,
+          "row_C": 0.03200204813108039,
+          "row_D": 0.031009615384615385,
+          "row_E": 0.032266458495966696
+        },
+        "scenario": "no_filter",
+        "score_kind": "rrf_v1"
+      },
+      "cell_04_hybrid_allowed_thr_pos": {
+        "final_ids": [
+          "row_E",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_E": 0.03278688524590164
+        },
+        "scenario": "allowed_filter_positive_threshold",
+        "score_kind": "rrf_v1"
+      },
+      "cell_05_hybrid_allowed_thr_pos_fake_success": {
+        "effective_threshold": 0.01,
+        "final_ids": [
+          "row_E",
+          "row_A",
+          "row_B"
+        ],
+        "reranker_scores": {
+          "row_A": 0.5,
+          "row_B": 0.02,
+          "row_D": 0.001,
+          "row_E": 0.95
+        },
+        "scenario": "allowed_filter_rerank_success",
+        "score_kind": "reranker_sigmoid_v1"
+      },
+      "cell_06_hybrid_allowed_thr_pos_fake_failure": {
+        "final_ids": [
+          "row_E",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_E": 0.03278688524590164
+        },
+        "scenario": "allowed_filter_positive_threshold",
+        "score_kind": "rrf_v1"
+      },
+      "cell_07_dense_eq_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_A",
+          "row_B",
+          "row_D"
+        ],
+        "fused_scores": null,
+        "scenario": "dense_allowed",
+        "score_kind": "dense_similarity_v1"
+      },
+      "cell_08_hybrid_eq_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_B",
+          "row_D",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_B": 0.032266458495966696,
+          "row_D": 0.03149801587301587,
+          "row_E": 0.03252247488101533
+        },
+        "scenario": "allowed_filter",
+        "score_kind": "rrf_v1"
+      },
+      "cell_09_dense_in_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_A",
+          "row_B",
+          "row_D"
+        ],
+        "fused_scores": null,
+        "scenario": "dense_allowed",
+        "score_kind": "dense_similarity_v1"
+      },
+      "cell_10_hybrid_in_allowed_thr0": {
+        "final_ids": [
+          "row_E",
+          "row_B",
+          "row_D",
+          "row_A"
+        ],
+        "fused_scores": {
+          "row_A": 0.016129032258064516,
+          "row_B": 0.032266458495966696,
+          "row_D": 0.03149801587301587,
+          "row_E": 0.03252247488101533
+        },
+        "scenario": "allowed_filter",
+        "score_kind": "rrf_v1"
+      }
+    },
+    "dense_bands": {
+      "row_A": {
+        "band_max": 0.5,
+        "band_min": 0.5,
+        "band_squared_convention": 0.5,
+        "band_unsquared_convention": 0.5,
+        "l2_distance": 1.0,
+        "l2_distance_squared": 1.0
+      },
+      "row_B": {
+        "band_max": 0.25,
+        "band_min": 0.1,
+        "band_squared_convention": 0.1,
+        "band_unsquared_convention": 0.25,
+        "l2_distance": 3.0,
+        "l2_distance_squared": 9.0
+      },
+      "row_C": {
+        "band_max": 0.45454545454545453,
+        "band_min": 0.4098360655737705,
+        "band_squared_convention": 0.4098360655737705,
+        "band_unsquared_convention": 0.45454545454545453,
+        "l2_distance": 1.2,
+        "l2_distance_squared": 1.44
+      },
+      "row_D": {
+        "band_max": 0.2,
+        "band_min": 0.058823529411764705,
+        "band_squared_convention": 0.058823529411764705,
+        "band_unsquared_convention": 0.2,
+        "l2_distance": 4.0,
+        "l2_distance_squared": 16.0
+      },
+      "row_E": {
+        "band_max": 0.8,
+        "band_min": 0.6666666666666666,
+        "band_squared_convention": 0.8,
+        "band_unsquared_convention": 0.6666666666666666,
+        "l2_distance": 0.5,
+        "l2_distance_squared": 0.25
+      }
+    },
+    "dense_order": [
+      "row_E",
+      "row_A",
+      "row_C",
+      "row_B",
+      "row_D"
+    ],
+    "dense_threshold_membership": {
+      "non_qualifying": [
+        "row_B",
+        "row_D"
+      ],
+      "qualifying": [
+        "row_A",
+        "row_C",
+        "row_E"
+      ],
+      "threshold": 0.3
+    },
+    "forbidden_rows": [
+      "row_C"
+    ],
+    "scenarios": {
+      "allowed_filter": {
+        "dense_order": [
+          "row_E",
+          "row_A",
+          "row_B",
+          "row_D"
+        ],
+        "expected_order": [
+          "row_E",
+          "row_B",
+          "row_D",
+          "row_A"
+        ],
+        "rrf": {
+          "row_A": {
+            "dense_rank": 2,
+            "exact": "1/62",
+            "fused_score": 0.016129032258064516,
+            "sparse_rank": null
+          },
+          "row_B": {
+            "dense_rank": 3,
+            "exact": "124/3843",
+            "fused_score": 0.032266458495966696,
+            "sparse_rank": 1
+          },
+          "row_D": {
+            "dense_rank": 4,
+            "exact": "127/4032",
+            "fused_score": 0.03149801587301587,
+            "sparse_rank": 3
+          },
+          "row_E": {
+            "dense_rank": 1,
+            "exact": "123/3782",
+            "fused_score": 0.03252247488101533,
+            "sparse_rank": 2
+          }
+        },
+        "sparse_order": [
+          "row_B",
+          "row_E",
+          "row_D"
+        ]
+      },
+      "allowed_filter_positive_threshold": {
+        "dense_order": [
+          "row_E",
+          "row_A"
+        ],
+        "expected_order": [
+          "row_E",
+          "row_A"
+        ],
+        "rrf": {
+          "row_A": {
+            "dense_rank": 2,
+            "exact": "1/62",
+            "fused_score": 0.016129032258064516,
+            "sparse_rank": null
+          },
+          "row_E": {
+            "dense_rank": 1,
+            "exact": "2/61",
+            "fused_score": 0.03278688524590164,
+            "sparse_rank": 1
+          }
+        },
+        "sparse_order": [
+          "row_E"
+        ]
+      },
+      "no_filter": {
+        "dense_order": [
+          "row_E",
+          "row_A",
+          "row_C",
+          "row_B",
+          "row_D"
+        ],
+        "expected_order": [
+          "row_E",
+          "row_B",
+          "row_C",
+          "row_D",
+          "row_A"
+        ],
+        "rrf": {
+          "row_A": {
+            "dense_rank": 2,
+            "exact": "1/62",
+            "fused_score": 0.016129032258064516,
+            "sparse_rank": null
+          },
+          "row_B": {
+            "dense_rank": 4,
+            "exact": "125/3904",
+            "fused_score": 0.03201844262295082,
+            "sparse_rank": 1
+          },
+          "row_C": {
+            "dense_rank": 3,
+            "exact": "125/3906",
+            "fused_score": 0.03200204813108039,
+            "sparse_rank": 2
+          },
+          "row_D": {
+            "dense_rank": 5,
+            "exact": "129/4160",
+            "fused_score": 0.031009615384615385,
+            "sparse_rank": 4
+          },
+          "row_E": {
+            "dense_rank": 1,
+            "exact": "124/3843",
+            "fused_score": 0.032266458495966696,
+            "sparse_rank": 3
+          }
+        },
+        "sparse_order": [
+          "row_B",
+          "row_C",
+          "row_E",
+          "row_D"
+        ]
+      }
+    }
+  },
+  "fake_reranker_scores": {
+    "row_A": 0.5,
+    "row_B": 0.02,
+    "row_C": 0.44,
+    "row_D": 0.001,
+    "row_E": 0.95
+  },
+  "filters": {
+    "category_allowed": {
+      "category": "allowed"
+    },
+    "category_eq_allowed": {
+      "category": {
+        "$eq": "allowed"
+      }
+    },
+    "category_in_allowed": {
+      "category": {
+        "$in": [
+          "allowed"
+        ]
+      }
+    },
+    "none": null
+  },
+  "query": {
+    "id": "q1",
+    "text": "beacon harbour",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "rows": [
+    {
+      "category": "allowed",
+      "id": "row_E",
+      "label": "E",
+      "metadata": {
+        "category": "allowed",
+        "file_path": "fixture://exp3/E",
+        "row_label": "E"
+      },
+      "text": "harbour harbour opal cascade driftwood kestrel amber slate vellum juniper",
+      "vector": [
+        1.0,
+        0.5,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "category": "allowed",
+      "id": "row_A",
+      "label": "A",
+      "metadata": {
+        "category": "allowed",
+        "file_path": "fixture://exp3/A",
+        "row_label": "A"
+      },
+      "text": "silver orchard lantern velvet compass marble timber pasture",
+      "vector": [
+        1.0,
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "category": "forbidden",
+      "id": "row_C",
+      "label": "C",
+      "metadata": {
+        "category": "forbidden",
+        "file_path": "fixture://exp3/C",
+        "row_label": "C"
+      },
+      "text": "beacon beacon granite terrace quiver sombre ledger orchard",
+      "vector": [
+        1.0,
+        0.0,
+        0.0,
+        1.2
+      ]
+    },
+    {
+      "category": "allowed",
+      "id": "row_B",
+      "label": "B",
+      "metadata": {
+        "category": "allowed",
+        "file_path": "fixture://exp3/B",
+        "row_label": "B"
+      },
+      "text": "beacon beacon copper signal ferrite lantern",
+      "vector": [
+        1.0,
+        0.0,
+        3.0,
+        0.0
+      ]
+    },
+    {
+      "category": "allowed",
+      "id": "row_D",
+      "label": "D",
+      "metadata": {
+        "category": "allowed",
+        "file_path": "fixture://exp3/D",
+        "row_label": "D"
+      },
+      "text": "harbour meadow cipher bramble falcon garnet thistle ridge",
+      "vector": [
+        1.0,
+        0.0,
+        0.0,
+        4.0
+      ]
+    }
+  ],
+  "template_id": "example/experiment-3-hybrid-filter-and-threshold-semantics"
+}
