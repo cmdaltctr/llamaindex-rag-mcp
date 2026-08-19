@@ -1,1 +1,2 @@
-# Shared experiment helpers (add-chroma-cloud-backend); storage.py lands with the implementation.
+# Shared experiment helpers: storage.py, plan.py, manifest.py (D13),
+# preflight.py (D14), stats.py (D16).

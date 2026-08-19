@@ -164,3 +164,13 @@ class ExperimentPlan:
                 "Runner cell matrix does not match experiment plan: "
                 f"missing={missing}, extra={extra}, changed={changed}"
             )
+
+    def cell_dicts(self) -> list[dict[str, Any]]:
+        """Return cells as runner-comparable ``{"id": ..., "factors": {...}}`` dicts.
+
+        The dicts use the same shape as the plan's input payload, so a runner
+        (or a mock-based unit test, per D15) can compare generated cells
+        against the protocol via ``assert_runner_cells(plan.cell_dicts())``
+        without re-reading the plan JSON.
+        """
+        return [{"id": cell.id, "factors": dict(cell.factors)} for cell in self.cells]

@@ -76,3 +76,10 @@ def test_plan_requires_explicit_controls_mapping() -> None:
 
     with pytest.raises(ValueError, match="controlled_variables"):
         ExperimentPlan.from_dict(payload)
+
+
+def test_plan_cell_dicts_roundtrip() -> None:
+    payload = _payload()
+    plan = ExperimentPlan.from_dict(payload)
+
+    assert plan.cell_dicts() == payload["cells"]
