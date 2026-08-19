@@ -1,0 +1,139 @@
+{
+  "experiment_id": "10b-reranker-retrieval-pool-factorial-combined",
+  "protocol_version": "2.0",
+  "experimental_unit": "one fixed labelled FreshStack query evaluated in every applicable cell",
+  "primary_metric": "coverage_at_20",
+  "manipulated_factors": [
+    {
+      "name": "retrieval",
+      "levels": ["dense", "hybrid_bm25"]
+    },
+    {
+      "name": "rerank",
+      "levels": [false, true]
+    },
+    {
+      "name": "fetch_k",
+      "levels": [50, 100, 150, 200, 500]
+    }
+  ],
+  "controlled_variables": {
+    "top_k": 50,
+    "similarity_threshold": 0.0,
+    "corpus": "freshstack-langchain-seed-20260530",
+    "embedding_provider": "ollama",
+    "sparse_backend": "bm25",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  },
+  "cells": [
+    {
+      "id": "dense_off",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": false
+      }
+    },
+    {
+      "id": "hybrid_off",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": false
+      }
+    },
+    {
+      "id": "dense_on_50",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": true,
+        "fetch_k": 50
+      }
+    },
+    {
+      "id": "dense_on_100",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": true,
+        "fetch_k": 100
+      }
+    },
+    {
+      "id": "dense_on_150",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": true,
+        "fetch_k": 150
+      }
+    },
+    {
+      "id": "dense_on_200",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": true,
+        "fetch_k": 200
+      }
+    },
+    {
+      "id": "dense_on_500",
+      "factors": {
+        "retrieval": "dense",
+        "rerank": true,
+        "fetch_k": 500
+      }
+    },
+    {
+      "id": "hybrid_on_50",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": true,
+        "fetch_k": 50
+      }
+    },
+    {
+      "id": "hybrid_on_100",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": true,
+        "fetch_k": 100
+      }
+    },
+    {
+      "id": "hybrid_on_150",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": true,
+        "fetch_k": 150
+      }
+    },
+    {
+      "id": "hybrid_on_200",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": true,
+        "fetch_k": 200
+      }
+    },
+    {
+      "id": "hybrid_on_500",
+      "factors": {
+        "retrieval": "hybrid_bm25",
+        "rerank": true,
+        "fetch_k": 500
+      }
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "retrieval.threshold",
+      "operator": "eq",
+      "expected": 0.0
+    },
+    {
+      "manifest_field": "vector_store.index_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "embedding.model",
+      "operator": "not_null"
+    }
+  ]
+}
