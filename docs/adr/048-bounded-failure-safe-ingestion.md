@@ -84,6 +84,10 @@ write lock still serializes embedding and mutation.
    write lock. Stage 3A instruments the serialized design; it does not widen
    effective ingestion concurrency. Lock narrowing or parallel embedding is a
    Stage 3B question only after Pause Gate 3A evidence exists.
+   *Stage 3B follow-up (2026-08-19): answered by measurement — embedding and
+   attempt-stamping now run before the lock; the mutation section (write →
+   verify → stale-delete) remains inside it. See TDR-013 and Experiment 18
+   (`experiments/18-ingestion-lock-scope-ab-2026-08-19/`, commit `b4b01b6`).*
 
 9. **Expose attribution before optimization.** Ingestion results add timings
    for change detection, parse/chunk, embedding, store write, lock wait,
