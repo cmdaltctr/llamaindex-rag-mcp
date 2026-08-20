@@ -1,67 +1,239 @@
 ## Context
 
-The architecture is already positioned for this flip: registry dispatch (`core/vectordb/registry.py`, `compose.build_vector_store`), dual-store contract tests, and Stage 5 evidenced semantic parity (Experiments 2–4: ranking parity, filter semantics, score-kind discipline, BM25 cache isolation). Three sites currently default to `chroma`: `config/__init__.py:140`, `config/defaults.yaml:84`, `.env.example:77`. Two code paths import Chroma unconditionally outside the registry: `core/vectordb/__init__.py::get_default_store` (hard-coded Chroma fallback) and `core/retrieval/sparse.py` (native-capability probe importing `vectordb.chroma`). Base `pyproject.toml` carries `chromadb>=1.0.0` (line 41) and `llama-index-vector-stores-chroma>=0.5.0` (line 18). `tests/conftest.py` imports chromadb at module level and applies an autouse `_patch_chromadb` fixture to every test. Existing extras (`torch`, `community-leiden`, `azure`) plus their dedicated CI jobs provide the packaging precedent.
+The repository already has a `VectorStore` ABC, lazy registry and ChromaDB and
+LanceDB adapters. The current default appears in at least four executable
+surfaces, not three: `config/__init__.py`, `config/defaults.yaml`,
+`.env.example`, and `EffectiveSettings.vector_store` in
+`core/settings.py`. The canonical `vectordb-abstraction` specification also
+states that Chroma is the default.
+
+`core/vectordb/__init__.py::get_default_store` currently contains a concrete
+Chroma fallback. Replacing that with another constructor would still violate
+the canonical composition-root rule: `compose.py` owns object construction and
+core consumers receive injected dependencies. `core/retrieval/sparse.py` also
+probes Chroma capability by import rather than asking the selected store.
+
+Stage 5 evidence establishes useful adapter-level parity, but not complete
+production qualification. Experiment 2 used synthetic precomputed vectors;
+Experiment 3 was Chroma-only and used the old squared-L2 regime; Experiment 4
+covered limited cache/generation behaviour; Experiment 6 used Chroma; TDR-013
+records the narrowed-lock LanceDB ingestion block as untested.
+
+ChromaDB remains affected by CVE-2026-45829 with no accepted patch. This
+project's local `PersistentClient` and optional `CloudClient` do not start the
+vulnerable server, but optionalisation does not automatically satisfy a policy
+that scans the universal lock or all declared extras.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Remove ChromaDB from the base install and the default runtime path.
-- Make every default/lazy path resolve LanceDB without importing ChromaDB.
-- Give operators who select Chroma actionable startup errors, and existing Chroma users a visible migration path.
-- Write ADR-049 recording the decision, the security rationale, and the reconsideration trigger.
+- Qualify the existing LanceDB production lifecycle before promotion.
+- Remove Chroma packages from the built base wheel and clean base environment.
+- Establish one canonical LanceDB default without adding a second composition
+  root.
+- Keep optional backend and capability handling registry/store driven.
+- Fail clearly before users accidentally abandon access to legacy Chroma data.
+- Obtain an auditable release-policy disposition for residual lock/extra risk.
+- Calibrate Stage 6 against the qualified final store baseline.
 
 **Non-Goals:**
 
-- No data migration tool from `./chroma_db/` to LanceDB (documented re-ingest or keep-and-pin only).
-- No removal of Chroma support: the adapter, its contract tests, and Chroma Cloud remain available through the extra.
-- No changes to `dense_similarity_v1` semantics or any retrieval behaviour.
+- No automatic Chroma-to-LanceDB migration.
+- No deletion or rewriting of historical Chroma evidence or data.
+- No claim that moving a vulnerable package to an extra makes the package safe.
+- No neutral rename of `CHROMA_SCAN_PAGE_SIZE` in this change.
 
 ## Decisions
 
-### D1: `chroma` optional extra, not deletion
+### D1: LanceDB qualification is a promotion pause gate
 
-Move `chromadb>=1.0.0` and `llama-index-vector-stores-chroma>=0.5.0` into `[project.optional-dependencies].chroma`. Deletion would break `tests/test_dependency_floors.py` (which walks optional groups and fails on missing declared packages); the extra keeps the floor contract intact, including the existing `_DRIFT_EXEMPT["chromadb"]` entry. Alternative (delete entirely) rejected: loses the tested Chroma path and the documented reconsideration route.
+Before changing the executable default, run a TDR-014-admissible LanceDB
+qualification at the final pre-flip commit and lock. It must cover real
+document parse/chunk/embed/write, process restart/reopen, dense query, BM25
+hybrid query, metadata filters, unchanged re-ingest, replacement, document and
+collection deletion, identity stamping, generation invalidation, partial-write
+recovery and the narrowed-lock path.
 
-### D2: Default flip in exactly three declaration sites plus two code paths
+The qualification records requested/effective backend, URI/index identity,
+score kind, embedding identity, lock hash, raw operation rows and atomic
+completion. A failed, incomplete or not-evaluable gate blocks the default flip.
+Synthetic adapter parity remains supporting evidence, not a substitute.
 
-`config/__init__.py`, `config/defaults.yaml`, `.env.example` flip to `lancedb`. `get_default_store` rewrites its fallback from `from .chroma import build_chroma_vector_store` to a registry-based lazy construction of the configured (now LanceDB) store — the only way to honour invariant #10 (no concrete-store import in dispatch) in that seam. The sparse native-capability probe gains a guarded import: absent Chroma → warning + BM25 fallback (matching the existing `detect_native_sparse_capability` conservative semantics). Alternative (leave the Chroma fallback, flip only the default value) rejected: a base install without the extra would crash on the lazy path.
+### D2: Chroma remains a supported but quarantined optional extra
 
-### D3: Startup errors distinguish "extra absent" from "install broken"
+Move `chromadb` and `llama-index-vector-stores-chroma` into
+`[project.optional-dependencies].chroma`, retaining supported floors because
+the project deliberately continues Chroma compatibility. The dependency-floor
+test does not itself require keeping a deleted dependency; continued support is
+the reason for the extra.
 
-Before factory dispatch, `importlib.util.find_spec("chromadb")` decides which error to raise: absent extra → `ValueError` naming `VECTOR_STORE`, the `uv sync --extra chroma` instruction, and the LanceDB alternative (house convention: startup selection errors are `ValueError`; message shape follows the community-leiden `verify_available` precedent); present-but-broken → `ImportError` chaining the original exception. `registry.get`'s ImportError path gains the same install hint for future backends. Settings validation adds the cross-check: `CHROMA_MODE=cloud` (or any `CHROMA_CLOUD_*` credential) with `VECTOR_STORE=lancedb` fails at resolution — today `chroma_mode` is silently ignored by the LanceDB factory, which would strand cloud users.
+The base wheel must not declare either package as unconditional `Requires-Dist`.
+A fresh installation of that wheel without extras must contain neither
+distribution. `uv.lock` retains them because it locks all extras; it is not
+manually edited.
 
-### D4: Legacy-data warning, not hard fail
+### D3: One settings default and one composition root
 
-When `VECTOR_STORE` is unset (user did not choose) AND the configured Chroma persist directory exists non-empty, emit one startup warning naming the directory and both options (install extra + select chroma, or re-ingest into LanceDB). Hard-fail rejected: a leftover directory would block fresh installs that never used Chroma. Docs-only rejected: silent empty-store-on-upgrade is the worst outcome.
+All executable/default documentation surfaces change together, including
+`EffectiveSettings.vector_store`. Tests assert agreement between the typed
+resolver, YAML defaults, effective-settings model and environment example.
 
-### D5: Test infrastructure goes store-neutral; Chroma tests move behind the extra
+`compose.py` remains the only constructor. `get_default_store()` returns an
+already installed process-wide store and raises a controlled `RuntimeError` if
+composition has not installed one. It does not import settings, compose or a
+concrete store and does not build a fallback.
 
-`conftest.py`: `_patch_chromadb` becomes conditional (no-op when chromadb is absent), the autouse default effective-settings fixture points at a `tmp_path` LanceDB URI, and Chroma-specific tests gain skip markers that activate without the extra. CI: the main test job runs the base (now chromadb-free) suite and adds the "default install is chromadb-free" tripwire (import `rag_mcp`, run a default-setup search, assert `chromadb` not in `sys.modules` — mirroring the existing torch tripwire); a new `chroma-extra` job (patterned on `torch-extra`) syncs `--extra chroma` and runs the Chroma halves of the contract/legacy/hybrid/cloud suites; the `floors` matrix adds the `chroma` group; `lint-imports` jobs sync with the extra if the import-linter graph needs chromadb present (verify at implementation; the `chromadb-confined-to-vectordb` contract itself is unchanged).
+This removes, rather than relocates, the second composition root. Callers and
+tests that relied on lazy construction must compose or inject explicitly.
 
-### D6: ADR-049 and the advisory disposition
+### D4: Registry-owned optional-backend metadata
 
-ADR-049 records: decision (LanceDB default; Chroma behind extra; experiments-on-LanceDB policy; reconsider only after an official patched release, as a fresh decision); evidence (ADR-046/047 + Stage 5 Experiments 2–4); consequences (re-ingest-or-pin for existing users; conftest/CI restructure). Residual fact to document: `uv.lock` still contains chromadb (uv locks all extras), so lockfile scanners will keep flagging CVE-2026-45829 — the change records the accept/ignore rationale (optional group, vulnerable server component never started, no patched release exists) and keeps the advisory tracked. Alternative (suppress the finding silently) rejected.
+Each lazy registry entry may declare required import modules/distributions,
+optional-extra name and installation guidance. Registry resolution generically
+distinguishes:
 
-### D7: Documentation sweep in the same change
+1. unknown backend;
+2. required package(s) absent;
+3. partial optional installation;
+4. registered factory import failure/broken installation.
 
-Per the AGENTS.md drift procedure: `.env.example`, `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/guides/{architecture,configuration,mcp-tools,cli-reference,ingestion,mcp-client-setup,providers}.md` — every "ChromaDB is the default" statement and `CHROMA_PERSIST_DIR` guidance, plus a migration note for existing Chroma users. `CHROMA_SCAN_PAGE_SIZE` stays shared (LanceDB reads it as its page size) with a documenting comment; the neutral rename is explicitly deferred as future work.
+The dispatch path contains no `if vector_store == "chroma"` branch. Errors name
+the selected backend and backend-specific guidance, retain the original cause
+for broken installs and never expose credentials. Both Chroma packages are
+checked independently.
+
+The user guidance covers the supported source-tree command and packaged-extra
+form rather than assuming every user runs `uv sync` in a checkout.
+
+### D5: Capabilities belong to the selected store
+
+Sparse/native capability is obtained from the selected store instance or its
+registry metadata. Installing Chroma while selecting LanceDB cannot change
+LanceDB's sparse route. LanceDB uses the existing BM25 path unless LanceDB
+itself advertises another supported capability.
+
+### D6: Explicit-selection provenance and fail-closed legacy handling
+
+Settings resolution records whether `VECTOR_STORE` came from explicit user
+input (constructor/CLI, environment or `.env`) or from shipped defaults. This
+provenance is internal configuration data, not another backend selector.
+
+If a recognised legacy Chroma layout is present and the backend was not
+explicitly selected, startup fails before ingestion or retrieval. Recognition
+requires Chroma markers such as `chroma.sqlite3` or the documented segment
+layout; a merely non-empty unrecognised directory emits a warning instead.
+
+The error names the untouched directory and requires one explicit choice:
+
+- install the `chroma` extra and set `VECTOR_STORE=chroma`; or
+- set `VECTOR_STORE=lancedb`, acknowledging that re-ingestion is required.
+
+Explicit LanceDB selection is acknowledgement. The software never deletes,
+moves or writes the legacy directory as part of this decision.
+
+### D7: Validation ordering for Chroma settings
+
+Backend/settings compatibility is validated before Chroma credential
+completeness. `VECTOR_STORE=lancedb` plus `CHROMA_MODE=cloud` or any non-empty
+trimmed `CHROMA_CLOUD_*` value always yields the backend-mismatch error, even if
+the API key is absent. Credential values never appear in errors.
+
+### D8: Base and extra tests are explicit, not skip-driven by accident
+
+Chroma imports move inside Chroma-only fixtures/modules. Shared contract tests
+retain their LanceDB cases in a Chroma-free environment; module-level
+`importorskip` may not skip those cases. The base job has an exact allowed-skip
+list and expected collected/executed counts. Every Chroma-skipped case is run
+in the extra job.
+
+The base tripwire proves both distributions are absent with import metadata and
+installed-distribution inspection, then imports and exercises the default
+runtime and proves no Chroma module loaded. Built-wheel metadata is inspected.
+Base lint/import contracts must pass without installing Chroma; the lint job is
+not permitted to hide a base import dependency by adding the extra.
+
+### D9: Security release clearance is an external pause gate
+
+ADR-049 records risk, but does not self-clear the release gate. The change
+must produce:
+
+- built-base-wheel dependency metadata;
+- a fresh base-wheel installation inventory;
+- a base-artifact/SBOM scan distinct from the universal-lock scan;
+- a source/entry-point check that project production paths do not launch
+  Chroma's Python FastAPI server;
+- the residual universal-lock and extra scan result.
+
+The release-policy owner must be named in the evidence and approve or reject a
+dated exception with scope, rationale, expiry/review date and patch/advisory
+triggers. Until that approval exists, the release remains blocked. If policy
+cannot accept the residual universal-lock finding, the fallback is a separately
+locked/distributed plugin or temporary removal of Chroma support.
+
+### D10: Patch reconsideration requires converging authority
+
+A future Chroma version permits a new reassessment only when all of the
+following hold:
+
+- it is an official maintainer PyPI release;
+- a fixing commit or release note is linked;
+- the project's named authoritative advisory source excludes the version;
+- a renewed review, preferably with an isolated regression/PoC check, accepts it.
+
+If authoritative sources disagree, quarantine continues. Reassessment requires
+a separate OpenSpec and never automatically changes the default or base group.
+
+### D11: Experiment policy applies by first measured run
+
+Every experiment whose first admissible measured row occurs after ADR-049 uses
+LanceDB unless store backend is a declared manipulated factor. This includes
+already-created Stage 6 plans and runners. Before measurement, inventory
+Experiments 10b, 12, 13 and 14 and any other pending calibration harness;
+rebuild/port their immutable index to LanceDB or document a controlled store
+factor and limitation.
+
+Completed raw evidence remains immutable. Historical Stage 5 security notes
+receive dated append-only addenda; their original verdicts are not rewritten.
+
+### D12: Documentation and rollback are data-aware
+
+The drift sweep covers executable defaults, `EffectiveSettings`, source
+docstrings, README/guides, test documentation, changelog/release material,
+ADR-003 status, ADR index and pending Stage 6 plans. Historical ADR-003 text is
+not rewritten; ADR-049 marks it superseded for the default decision.
+
+Rollback after LanceDB ingestion is: explicitly pin and verify
+`VECTOR_STORE=lancedb`, then revert software. Reverting to a Chroma-default
+version without the pin can make newly written LanceDB data appear missing.
 
 ## Risks / Trade-offs
 
-- [Existing users' data becomes invisible on upgrade] → D4 warning + migration note; keep-and-pin path (`--extra chroma` + `VECTOR_STORE=chroma`) preserves their data unchanged.
-- [Base CI discovers hidden Chroma assumptions] → the flip lands with the conftest rework in the same commit; the chromadb-free tripwire runs in the base job, so any surviving assumption fails the build, not production.
-- [LanceDB single-writer habits differ (upsert metadata-struct locking)] → already documented in ADR-046; the migration note repeats it for converting users.
-- [Lockfile scanners keep failing the release gate on the optional group] → D6 records the disposition; if policy still blocks, a follow-up change can pin an ignore with expiry tied to a patched release.
-- [Import-linter graph without chromadb] → verified during implementation; mitigation (sync lint job with the extra) is one line per job.
+- Fail-closed legacy handling is stricter than a warning, but it prevents a
+  hidden desktop-client stderr stream from becoming an accidental data/cost
+  decision.
+- The full qualification and split CI matrix delay the default flip. That cost
+  is preferable to calibrating or releasing against an unqualified default.
+- A formal risk exception may be refused. Optionalisation improves base
+  exposure but does not override the repository's security policy.
 
 ## Migration Plan
 
-1. Implementation order: packaging (D1) → defaults + code paths (D2/D3) → tests (D5) → CI → docs + ADR-049 (D6/D7). Each step keeps the fast suite green.
-2. Rollback: single revert of the change commit restores `chroma` to base and the old default; no data or lockfile surgery (the lockfile never lost the packages).
-3. Users: the D4 warning plus the README migration section is the entire user-facing procedure.
+1. Run and accept the LanceDB qualification pause gate.
+2. Move dependencies and establish clean-base/extra CI.
+3. Remove lazy construction and add generic registry/capability metadata.
+4. Add explicit-selection provenance and fail-closed legacy detection.
+5. Flip all default/spec surfaces together.
+6. Port or constrain pending Stage 6 experiments and freeze their LanceDB index.
+7. Produce security artefacts and obtain release-policy disposition.
+8. Write ADR-049, migration, rollback and supersession documentation.
+9. Run Stage 6 calibration only on the qualified final baseline.
+
+Rollback pins and verifies LanceDB before reverting software. No automatic data
+surgery is performed in either direction.
 
 ## Open Questions
 
-- Whether the Aikido/OSV finding needs a dated ignore entry or a documented-acceptance note only — resolved when the security feed is observed post-change; does not affect code shape.
-- Neutral `SCAN_PAGE_SIZE` rename timing — deferred by D7; revisit in a housekeeping change.
+None may be deferred as “if required” implementation tasks. The security owner,
+scanner outputs, expected test counts and lint environment are evidence fields
+that must be resolved before the corresponding gate can pass.

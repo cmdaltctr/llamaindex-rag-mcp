@@ -1,34 +1,74 @@
 ## ADDED Requirements
 
-### Requirement: Settings SHALL resolve a LanceDB default and validate Chroma selection
+### Requirement: Settings SHALL resolve one LanceDB default with source provenance
 
-The resolved default for the vector-store selector SHALL be `lancedb`. Settings validation SHALL cross-validate Chroma-specific configuration against the selected backend so misconfiguration fails at startup instead of being ignored.
+After the qualification pause gate passes, every executable default surface
+SHALL agree on `lancedb`, including the typed settings resolver, YAML defaults
+and `EffectiveSettings`. Resolution SHALL retain whether the backend came from
+explicit user input or shipped defaults.
 
 #### Scenario: Default resolution
 
-- **GIVEN** no `VECTOR_STORE` value is provided by the user or environment
+- **GIVEN** no backend is supplied by constructor/CLI, environment or `.env`
 - **WHEN** settings are resolved
-- **THEN** the effective vector-store selector MUST be `lancedb`
-- **AND** the resolved value MUST remain overridable by explicit user configuration
+- **THEN** the effective selector MUST be `lancedb`
+- **AND** its provenance MUST be recorded as a shipped default
 
-#### Scenario: Explicit Chroma selection is preserved
+#### Scenario: Explicit selection is preserved
 
-- **GIVEN** the `chroma` optional extra is installed
-- **AND** `VECTOR_STORE=chroma` is explicitly set
+- **GIVEN** the user explicitly supplies a supported backend
 - **WHEN** settings are resolved
-- **THEN** the effective selector MUST be `chroma`
-- **AND** runtime setup MUST construct the Chroma store through the registry
+- **THEN** the effective selector MUST equal that backend
+- **AND** its provenance MUST be explicit
 
-#### Scenario: Chroma cloud credentials without Chroma selection
+#### Scenario: Default surfaces agree
 
-- **GIVEN** `CHROMA_MODE=cloud` or any `CHROMA_CLOUD_*` credential is set
-- **AND** `VECTOR_STORE` resolves to `lancedb`
+- **WHEN** the typed settings model, YAML defaults, effective-settings model and environment example are inspected by the drift test
+- **THEN** all MUST identify LanceDB as the default
+
+### Requirement: compose.py SHALL remain the sole vector-store constructor
+
+Only `compose.py` SHALL resolve the selected registry entry and instantiate a
+vector store. Core accessors and consumers SHALL receive or return injected
+instances and SHALL not construct fallback stores.
+
+#### Scenario: Uncomposed process-wide access
+
+- **GIVEN** composition has not installed a process-wide store
+- **WHEN** an accessor is called
+- **THEN** it MUST fail clearly
+- **AND** it MUST NOT import settings, compose or a concrete backend
+
+### Requirement: Chroma compatibility SHALL be validated before credentials
+
+Chroma settings SHALL be cross-validated against the selected backend before
+credential completeness. Credential values SHALL never appear in errors.
+
+#### Scenario: Cloud mode and LanceDB with missing API key
+
+- **GIVEN** `VECTOR_STORE=lancedb`
+- **AND** `CHROMA_MODE=cloud`
+- **AND** no Chroma API key is supplied
 - **WHEN** settings are validated
-- **THEN** validation MUST fail with an actionable error naming both settings
-- **AND** the error MUST NOT echo any credential value
+- **THEN** the error MUST state that Chroma settings require `VECTOR_STORE=chroma`
+- **AND** it MUST NOT report the missing-key error first
 
-#### Scenario: Configuration documentation reflects the default
+#### Scenario: Partial or whitespace credentials with LanceDB
 
-- **WHEN** the environment example, defaults file, and configuration guides are inspected
-- **THEN** they MUST state `lancedb` as the default vector store
-- **AND** Chroma usage MUST document the optional-extra installation step
+- **GIVEN** LanceDB is selected
+- **AND** any Chroma credential remains non-empty after trimming
+- **WHEN** settings are validated
+- **THEN** backend mismatch MUST be reported without exposing the value
+
+### Requirement: Configuration documentation SHALL reflect installation and rollback
+
+Current documentation SHALL state LanceDB as the qualified default, Chroma as
+an optional explicit backend, recognised-legacy fail-closed behaviour, and the
+data-aware rollback procedure.
+
+#### Scenario: Operator documentation is inspected
+
+- **WHEN** active configuration, migration and rollback guidance is read
+- **THEN** it MUST provide source-checkout and packaged-extra Chroma installation forms
+- **AND** rollback MUST require pinning and verifying LanceDB before reverting software
+- **AND** historical ADRs MUST be marked superseded by link rather than rewritten

@@ -2,44 +2,57 @@
 
 ### Requirement: Chroma modes SHALL require explicit backend selection and the optional extra
 
-Local and cloud Chroma operation SHALL be available only when `VECTOR_STORE=chroma` and the `chroma` optional extra is installed. Chroma-specific settings SHALL NOT change the LanceDB runtime path.
+Local and cloud Chroma operation SHALL be available only when
+`VECTOR_STORE=chroma` is explicitly selected and both optional packages are
+installed. Chroma settings SHALL never alter an unselected LanceDB route.
 
 #### Scenario: Chroma Cloud selected correctly
 
-- **GIVEN** `VECTOR_STORE=chroma`
+- **GIVEN** explicit `VECTOR_STORE=chroma`
 - **AND** `CHROMA_MODE=cloud`
-- **AND** the `chroma` extra and valid cloud credentials are present
+- **AND** both Chroma optional packages and valid credentials are present
 - **WHEN** runtime setup completes
 - **THEN** the Chroma Cloud client MUST serve every collection operation
 
-#### Scenario: Cloud mode with LanceDB selected
+#### Scenario: Chroma settings with LanceDB selected
 
 - **GIVEN** `VECTOR_STORE=lancedb`
-- **AND** `CHROMA_MODE=cloud` or any Chroma cloud credential is explicitly set
+- **AND** `CHROMA_MODE=cloud` or any non-empty Chroma cloud credential is explicitly set
 - **WHEN** settings are validated
-- **THEN** startup MUST fail with an error explaining that Chroma settings require `VECTOR_STORE=chroma`
-- **AND** no cloud credential value MUST appear in the error
+- **THEN** backend mismatch MUST be reported before credential completeness
+- **AND** the error MUST name the incompatible setting names without exposing values
 
-#### Scenario: Chroma backend without the extra
+#### Scenario: Chroma backend without the complete extra
 
-- **GIVEN** `VECTOR_STORE=chroma`
-- **AND** the optional `chroma` extra is absent
-- **WHEN** runtime setup begins
-- **THEN** startup MUST fail with the documented installation instruction
-- **AND** it MUST NOT fall back to LanceDB silently
+- **GIVEN** explicit `VECTOR_STORE=chroma`
+- **AND** either optional Chroma package is absent
+- **WHEN** composition begins
+- **THEN** startup MUST fail with backend-specific installation guidance
+- **AND** it MUST NOT fall back to LanceDB
 
-### Requirement: Chroma SHALL remain quarantined until a patched release exists
+### Requirement: Chroma SHALL remain quarantined until authoritative patch evidence converges
 
-The base installation SHALL exclude ChromaDB while CVE-2026-45829 has no official patched release. Reintroducing ChromaDB into base dependencies SHALL require a separate decision based on an official patched version and renewed security review.
+Chroma packages SHALL remain optional and LanceDB SHALL remain the base default
+until a separately reviewed official release has accepted fix and advisory
+evidence. Upstream assertion alone SHALL not end quarantine.
 
-#### Scenario: No patched release exists
+#### Scenario: No accepted patched release exists
 
 - **WHEN** dependency policy is evaluated
 - **THEN** Chroma packages MUST remain confined to the optional extra
 - **AND** LanceDB MUST remain the base default
 
-#### Scenario: Patched release becomes available
+#### Scenario: Candidate patched release appears
 
-- **WHEN** an official release is outside the advisory's affected range
-- **THEN** the project MAY open a separate OpenSpec change to reassess Chroma
-- **AND** no automatic default reversal MUST occur
+- **GIVEN** an official maintainer PyPI release exists
+- **AND** a fixing commit or release note is linked
+- **AND** the project's named authoritative advisory excludes that version
+- **AND** renewed security review accepts the candidate, preferably with an isolated regression test
+- **WHEN** all evidence agrees
+- **THEN** the project MAY open a separate OpenSpec reassessment
+- **AND** no automatic base-dependency or default reversal may occur
+
+#### Scenario: Authorities disagree
+
+- **WHEN** upstream, the authoritative advisory or renewed review disagree about the candidate
+- **THEN** quarantine MUST remain in force

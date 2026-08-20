@@ -1,43 +1,69 @@
 ## ADDED Requirements
 
-### Requirement: Default store construction SHALL use registry dispatch
+### Requirement: Process-wide store access SHALL require prior composition
 
-Every construction path, including the process-wide lazy fallback, SHALL resolve the configured vector store through the registry. No fallback path SHALL import a concrete store unconditionally.
+The process-wide accessor SHALL return only a store installed by the
+composition root. It SHALL NOT import settings, composition or concrete store
+modules and SHALL NOT construct a fallback.
 
-#### Scenario: Lazy default without prior composition
+#### Scenario: Access before composition
 
-- **GIVEN** no process-wide store has been registered
-- **WHEN** a core caller requests the default store
-- **THEN** the configured store MUST be constructed through registry lookup
-- **AND** the base default MUST resolve to LanceDB
+- **GIVEN** no process-wide store has been installed
+- **WHEN** a core caller requests it
+- **THEN** the accessor MUST raise a controlled error instructing the caller to compose or inject a store
+- **AND** no backend module MUST be imported or constructed
 
-### Requirement: Missing optional backends SHALL fail with installation guidance
+#### Scenario: Access after composition
 
-A registered backend whose optional package is absent SHALL produce an actionable startup error. The error SHALL name the selected backend, required extra, and supported default without exposing credentials.
+- **GIVEN** `compose.py` installed a resolved store
+- **WHEN** a legacy process-wide caller requests it
+- **THEN** the exact installed instance MUST be returned
 
-#### Scenario: Chroma selected without optional extra
+### Requirement: Optional backend availability SHALL be registry metadata
 
-- **GIVEN** `VECTOR_STORE=chroma`
-- **AND** the `chroma` extra is not installed
-- **WHEN** runtime setup resolves the registry entry
-- **THEN** startup MUST fail before ingestion or retrieval
-- **AND** the error MUST instruct the operator to install the `chroma` extra or select LanceDB
+A lazy registry entry MAY declare its required modules/distributions, optional
+extra and installation guidance. Resolution SHALL generically distinguish
+unknown, absent, partial and broken backends without branching over store names.
 
-#### Scenario: Broken optional backend installation
+#### Scenario: Optional backend is absent
 
-- **GIVEN** an optional backend package is present but its registered factory cannot import
-- **WHEN** registry resolution occurs
-- **THEN** the error MUST distinguish a broken installation from an absent extra
-- **AND** it MUST retain the original exception as diagnostic context
+- **GIVEN** a selected registry entry has one or more absent required packages
+- **WHEN** composition resolves it
+- **THEN** startup MUST fail naming the selected backend, missing packages, required extra and supported default
+- **AND** the dispatch path MUST contain no backend-name branch
 
-### Requirement: Missing Chroma SHALL not break LanceDB capabilities
+#### Scenario: Optional backend is partially installed
 
-A base installation SHALL support LanceDB ingestion, retrieval, hybrid BM25, profiles, deletion, and runtime summaries without importing Chroma-specific capability probes.
+- **GIVEN** only some packages declared by an optional backend are installed
+- **WHEN** composition resolves it
+- **THEN** startup MUST identify a partial/broken optional installation
+- **AND** it MUST name the backend-specific repair guidance
 
-#### Scenario: Native sparse requested without Chroma
+#### Scenario: Factory import fails
 
-- **GIVEN** the base LanceDB installation has no Chroma extra
-- **AND** a Chroma-only native sparse mode is requested
+- **GIVEN** all declared packages are present
+- **AND** the registered factory cannot import
+- **WHEN** resolution occurs
+- **THEN** the error MUST identify a broken installation
+- **AND** retain the original exception as diagnostic context
+
+### Requirement: Sparse capability SHALL follow the selected store
+
+Sparse/native capability SHALL be resolved from the selected store instance or
+its registry metadata. Installed but unselected backends SHALL not affect it.
+
+#### Scenario: LanceDB selected while Chroma extra is installed
+
+- **GIVEN** `VECTOR_STORE=lancedb`
+- **AND** the Chroma extra is installed
 - **WHEN** sparse capability is resolved
-- **THEN** the system MUST fall back to BM25 with an actionable warning
-- **AND** it MUST NOT fail from a missing Chroma import
+- **THEN** the effective capability MUST be identical to a Chroma-free LanceDB installation
+- **AND** the BM25 path MUST be used unless LanceDB itself advertises another supported capability
+
+#### Scenario: Chroma-only native mode is requested for LanceDB
+
+- **GIVEN** LanceDB is selected
+- **AND** a Chroma-only native sparse mode is requested
+- **WHEN** capability is validated
+- **THEN** the system MUST use the documented BM25 fallback or reject the incompatible request according to the existing policy
+- **AND** it MUST NOT probe Chroma by import
