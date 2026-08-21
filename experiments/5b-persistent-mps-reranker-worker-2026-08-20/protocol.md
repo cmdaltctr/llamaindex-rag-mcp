@@ -462,6 +462,10 @@ cd experiments/5b-persistent-mps-reranker-worker-2026-08-20
 PYTHONPATH=../.. uv run --no-sync python -c \
   'from experiments._lib.plan import ExperimentPlan; ExperimentPlan.from_json("plan.json")'
 
+# Pre-run gate enumeration and rejection of ONNX-versus-Torch parity gates (task 1.4).
+uv run --no-sync python validate_plan.py
+PYTHONPATH=../.. uv run --no-sync pytest tests/test_validate_plan.py -q
+
 # Untimed route and lifecycle preflight only.
 HF_HUB_OFFLINE=1 uv run --no-sync python run_eval.py --dry-run
 

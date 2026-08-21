@@ -3,7 +3,7 @@
 - [x] 1.1 Create `experiments/5b-persistent-mps-reranker-worker-2026-08-20/` and commit `protocol.md` before any measured run. It MUST contain W1–W5, G1–G9, all deadlines, restart limits, memory windows/estimators, workload strata and invalidation rules from the design/spec without placeholders.
 - [x] 1.2 Record SHA-256 identities for the reused Experiment 5 workload and the heterogeneous longevity schedule; do not modify the Experiment 5 directory or verdict.
 - [x] 1.3 Write `plan.json` with five cells, controlled variables, lifetime order, request counts, backend/device/model assertions and every numeric gate; load it through `ExperimentPlan.from_json`.
-- [ ] 1.4 Add a pre-run plan validator that enumerates each gate's exact cells, backend, precision, model revision, row population, estimator and threshold; it MUST reject ONNX-versus-Torch equality gates.
+- [x] 1.4 Add a pre-run plan validator that enumerates each gate's exact cells, backend, precision, model revision, row population, estimator and threshold; it MUST reject ONNX-versus-Torch equality gates.
 
 ## 2. Protocol and worker prototype
 
