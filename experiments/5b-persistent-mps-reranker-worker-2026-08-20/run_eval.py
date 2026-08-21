@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -393,6 +394,53 @@ def run_worker_unit(
 # ── checkpoint plumbing ───────────────────────────────────────────────
 
 
+def campaign_context(
+    block: int,
+    *,
+    phase: str,
+    operator_declaration: str,
+) -> dict[str, Any]:
+    """Per-block power/thermal/interference evidence (protocol section 15).
+
+    ``pmset`` readings are macOS-specific and degrade to explicit None when
+    unavailable; the foreground-interference declaration comes verbatim
+    from the operator at campaign start.
+    """
+    import platform
+
+    def _pmset(flag: str) -> str | None:
+        try:
+            result = subprocess.run(
+                ["pmset", "-g", flag],  # noqa: S603 — fixed argv
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return result.stdout.strip()[:500] if result.returncode == 0 else None
+        except Exception:  # noqa: BLE001 — diagnostic evidence only
+            return None
+
+    memory_percent = None
+    try:
+        import psutil
+
+        memory_percent = psutil.virtual_memory().percent
+    except Exception:  # noqa: BLE001 — diagnostic evidence only
+        pass
+    return {
+        "block": block,
+        "phase": phase,  # "start" or "end"
+        "t_monotonic": time.monotonic(),
+        "power_source": _pmset("ps"),
+        "thermal_state": _pmset("therm"),
+        "memory_pressure_percent": memory_percent,
+        "operator_interference_declaration": operator_declaration,
+        "cell_order": list(harness.COUNTERBALANCE_TABLE.get(block, ())),
+        "macos_version": platform.mac_ver()[0] or None,
+    }
+
+
 def pending_units(
     blocks: int,
     table: dict[int, tuple[str, ...]],
@@ -527,6 +575,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--measured-requests", type=int, default=DEFAULT_MEASURED_REQUESTS)
     parser.add_argument("--blocks", type=int, default=DEFAULT_BLOCKS)
     parser.add_argument("--no-longevity", action="store_true")
+    parser.add_argument(
+        "--operator-declaration",
+        default="",
+        help="verbatim foreground-interference declaration recorded per block",
+    )
     for probe in PROBE_FLAGS:
         parser.add_argument(f"--probe-{probe.replace('_', '-')}", action="store_true")
     args = parser.parse_args(argv)
@@ -577,6 +630,10 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     for block in range(1, args.blocks + 1):
+        art.append_jsonl(
+            output_dir / "campaign_context.jsonl",
+            campaign_context(block, phase="start", operator_declaration=args.operator_declaration),
+        )
         for cell_id in harness.COUNTERBALANCE_TABLE[block]:
             key = art.checkpoint_key(cell_id, block)
             if key in checkpoint["completed"]:
@@ -615,6 +672,10 @@ def main(argv: list[str] | None = None) -> int:
                 attempt += 1
             art.write_json_atomic(checkpoint_path, checkpoint)
             print(f"unit {key} complete")
+        art.append_jsonl(
+            output_dir / "campaign_context.jsonl",
+            campaign_context(block, phase="end", operator_declaration=args.operator_declaration),
+        )
     print("campaign complete")
     return 0
 
