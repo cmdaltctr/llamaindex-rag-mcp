@@ -1,8 +1,8 @@
 ## 0. LanceDB promotion qualification
 
-- [ ] 0.1 Freeze a TDR-014 plan at the final pre-flip commit and lock for real LanceDB lifecycle qualification; record requested/effective backend, URI/index identity, score kind, embedding identity, corpus/config identity and raw operation schema.
-- [ ] 0.2 Run real parse/chunk/embed/write, restart/reopen, dense retrieval, BM25 hybrid retrieval, metadata filters, unchanged re-ingest, replacement, document deletion, collection deletion, identity stamping, generation invalidation, interrupted-write recovery and the narrowed-lock ingestion path.
-- [ ] 0.3 Commit raw rows, manifests, atomic checkpoints and a per-gate verdict. Any failed, incomplete or not-evaluable gate blocks tasks 2.1–2.3 and the public default flip.
+- [x] 0.1 Freeze a TDR-014 plan at the final pre-flip commit and lock for real LanceDB lifecycle qualification; record requested/effective backend, URI/index identity, score kind, embedding identity, corpus/config identity and raw operation schema. (PASS — plan.json + protocol.md frozen; manifest at experiments/19-lancedb-lifecycle-qualification-2026-08-21/output/run2/manifest.json, commit a57abf3, lock 3a225230a6eb)
+- [x] 0.2 Run real parse/chunk/embed/write, restart/reopen, dense retrieval, BM25 hybrid retrieval, metadata filters, unchanged re-ingest, replacement, document deletion, collection deletion, identity stamping, generation invalidation, interrupted-write recovery and the narrowed-lock ingestion path. (PASS 14/14 gates — output/run2/raw_rows.jsonl + verdicts.json; run1 FAIL lineage kept on disk)
+- [x] 0.3 Commit raw rows, manifests, atomic checkpoints and a per-gate verdict. Any failed, incomplete or not-evaluable gate blocks tasks 2.1–2.3 and the public default flip. (PASS — results.md verdict table; gate-0 pause condition met; blocks lifted for 2.1–2.3)
 
 ## 1. Packaging and objective security evidence
 
