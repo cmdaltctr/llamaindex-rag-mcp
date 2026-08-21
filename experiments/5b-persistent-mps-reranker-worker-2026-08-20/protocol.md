@@ -295,7 +295,7 @@ Abort the cell immediately and retain a non-numeric status/reason when:
 
 - requested and effective backend/device/provider differ;
 - the model identity, tokenizer policy, workload hash or fixed order differs;
-- any admitted response is unrereanked, wrong-cardinality, wrong-generation,
+- any admitted response is unreranked, wrong-cardinality, wrong-generation,
   malformed or late;
 - Torch-stack modules appear in the parent;
 - model download or network access occurs;

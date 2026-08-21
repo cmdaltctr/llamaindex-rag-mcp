@@ -278,7 +278,7 @@
     "model identity, tokenizer policy, workload identity or fixed request order differs",
     "PYTORCH_ENABLE_MPS_FALLBACK was not 0 before Torch import",
     "a Torch-stack module is imported in the parent",
-    "any measured response is unrereanked, wrong-cardinality, wrong-generation, malformed or late",
+    "any measured response is unreranked, wrong-cardinality, wrong-generation, malformed or late",
     "model download or network activity contaminates preflight or measured work",
     "current RSS sampling is unavailable -> G5/G6 NOT_EVALUABLE and promotion blocked",
     "thermal, power or foreground-interference policy is breached -> complete lifetime invalid",
