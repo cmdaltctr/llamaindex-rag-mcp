@@ -1,6 +1,6 @@
 {
   "experiment_id": "5b-persistent-mps-reranker-worker",
-  "protocol_version": "1.0-draft",
+  "protocol_version": "1.0",
   "experimental_unit": "one fixed query with its fixed ordered 50-candidate pool served through one declared reranker route; persistent resource replication is one complete fresh worker lifetime",
   "primary_metric": "persistent_mps_parent_observed_median_latency_ms",
   "manipulated_factors": [
@@ -27,7 +27,8 @@
   ],
   "controlled_variables": {
     "model_id": "cross-encoder/ms-marco-MiniLM-L-6-v2",
-    "model_revision_and_file_hashes": "TODO-LOCAL",
+    "model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "model_revision_and_file_hashes": "revision 233902d25c440f23af6f7d6e94d2946bac0bee0a; full file SHA-256 digest list recorded in protocol.md section 7",
     "tokenizer_max_length_env": 2048,
     "sigmoid_normalisation": "shared production sigmoid contract; production SentenceTransformerReranker used unmodified for Torch cells",
     "batch_size": 32,
@@ -36,7 +37,8 @@
     "workload_identity": "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc",
     "workload_queries": 24,
     "workload_candidates_per_query": 50,
-    "heterogeneous_longevity_schedule_identity": "TODO-LOCAL",
+    "heterogeneous_longevity_schedule_path": "experiments/5b-persistent-mps-reranker-worker-2026-08-20/longevity_schedule.json",
+    "heterogeneous_longevity_schedule_identity": "sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55",
     "hf_hub_offline": true,
     "pytorch_enable_mps_fallback": "0 set before every Torch-capable import",
     "target_host": "Apple Silicon macOS with at least 16 GiB physical memory",
@@ -55,23 +57,24 @@
     "memory_growth_request_start": 201,
     "memory_growth_request_end": 1000,
     "memory_growth_estimator": "Theil-Sen slope in MiB per 1,000 requests with seeded block-bootstrap one-sided 95% upper confidence bound",
-    "bootstrap_seed": "TODO-LOCAL",
-    "bootstrap_block_length": "TODO-LOCAL",
-    "whole_lifetime_counterbalance_schedule": "TODO-LOCAL",
-    "request_deadline_seconds": "TODO-LOCAL",
-    "idle_expiry_seconds": "TODO-LOCAL",
-    "drain_deadline_seconds": "TODO-LOCAL",
-    "term_grace_seconds": "TODO-LOCAL",
-    "kill_grace_seconds": "TODO-LOCAL",
-    "orphan_observation_seconds": "TODO-LOCAL",
-    "restart_backoff_seconds": "TODO-LOCAL",
-    "maximum_restart_attempts": "TODO-LOCAL",
-    "maximum_json_frame_bytes": "TODO-LOCAL",
-    "maximum_candidate_count": "TODO-LOCAL",
-    "maximum_token_budget": "TODO-LOCAL",
-    "maximum_queue_depth": "TODO-LOCAL",
-    "stderr_pressure_bytes": "TODO-LOCAL",
-    "thermal_and_interference_abort_policy": "TODO-LOCAL"
+    "bootstrap_seed": 20260821,
+    "bootstrap_block_length": 40,
+    "growth_window_sampling": "after every completed request inside requests 201-1000 (at least 800 ordered samples per lifetime)",
+    "whole_lifetime_counterbalance_schedule": "seed 20260821; three blocks, each a rotation by +2 of the seeded shuffle [W5, W3, W2, W4, W1]; exact table in protocol.md section 15",
+    "request_deadline_seconds": 5.0,
+    "idle_expiry_seconds": 60,
+    "drain_deadline_seconds": 2,
+    "term_grace_seconds": 5,
+    "kill_grace_seconds": 5,
+    "orphan_observation_seconds": 10,
+    "restart_backoff_seconds": [1, 2, 4],
+    "maximum_restart_attempts": 3,
+    "maximum_json_frame_bytes": 8388608,
+    "maximum_candidate_count": 200,
+    "maximum_token_budget": 65536,
+    "maximum_queue_depth": 16,
+    "stderr_pressure_bytes": 4194304,
+    "thermal_and_interference_abort_policy": "mains power required; complete lifetime invalid when host thermal pressure exceeds nominal or a declared foreground interference occurs; invalidation repeats the complete lifetime"
   },
   "cells": [
     {
@@ -239,7 +242,7 @@
       "name": "deadline_bounded_failure_fallback",
       "treatment": "worker_death_worker_hang_pipe_pressure",
       "control": "registered_deadlines",
-      "request_deadline_seconds": "TODO-LOCAL",
+      "request_deadline_seconds": 5.0,
       "required_outcome": "ONNX CPU or existing un-reranked fallback completes loudly; no late response admitted"
     },
     {
@@ -248,7 +251,7 @@
       "treatment": "shutdown_eof_idle_expiry_parent_death",
       "control": "registered_lifecycle_bounds",
       "remaining_worker_or_descendant_processes_max": 0,
-      "drain_term_kill_idle_orphan_bounds": "TODO-LOCAL"
+      "drain_term_kill_idle_orphan_bounds": "drain 2 s; TERM grace 5 s; KILL grace 5 s; idle expiry 60 s; orphan observation 10 s"
     },
     {
       "id": "G9",
@@ -289,7 +292,7 @@
     "protocol.md",
     "plan.json and plan hash",
     "reference to the immutable Experiment 5 workload and SHA-256",
-    "heterogeneous longevity schedule and SHA-256 (TODO-LOCAL before harness code)",
+    "heterogeneous longevity schedule (longevity_schedule.json) and SHA-256",
     "output/manifests/<cell>__lifetime<N>.json",
     "output/preflight/<cell>__lifetime<N>.json",
     "output/raw_rows.jsonl",

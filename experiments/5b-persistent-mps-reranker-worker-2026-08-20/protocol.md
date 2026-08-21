@@ -1,15 +1,15 @@
 # Experiment 5b — Persistent MPS reranker worker
 
 **Experiment ID:** `5b-persistent-mps-reranker-worker`  
-**Protocol version:** `1.0-draft`  
-**Status:** PLANNED — drafted before harness code; no measured result is claimed  
+**Protocol version:** `1.0` (`1.0-draft` prepared against `b4788ff`; operational values resolved 2026-08-21 against `b013ae6`)  
+**Status:** PLANNED — finalised before harness code; no measured result is claimed  
 **Prepared against repository commit:** `b4788ff2fb6f548d11091edbeb1f9df622574a98`  
 **Role:** experiment-only evaluation of a persistent optional Torch MPS worker
 
-> `TODO-LOCAL` marks an operational value that the cited proposal and prior
-> experiment do not fix. Every `TODO-LOCAL` item MUST be resolved by a
-> protocol-version amendment before harness code or measured execution. It
-> MUST NOT be filled from results observed after measurement begins.
+> Version 1.0 resolves every operational value that the proposal and prior
+> experiments left open; no `TODO-LOCAL` marker remains. The amendment rule
+> survives for future versions: any value changed after the first measured
+> row invalidates the campaign and requires a new protocol version.
 
 ## 1. Research question
 
@@ -84,8 +84,21 @@ modification:
 
 The workload is used for paired correctness, speed and primary break-even. The
 amended design also requires a heterogeneous longevity schedule varying
-candidate count and token length. Its exact immutable content and SHA-256 are
-`TODO-LOCAL`; they MUST be committed and inserted here before harness code.
+candidate count and token length. It is committed as
+`longevity_schedule.json` with the deterministic generator
+`generate_longevity_schedule.py` (seed `20260821`):
+
+- identity: `sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55`;
+- shape: 228 requests over 19 strata — candidate counts
+  {10, 25, 50, 100, 200} × approximate per-candidate token lengths
+  {32, 128, 256, 512}, subject to the 65,536-token-per-request budget, with
+  12 replicates per stratum;
+- bursts: 8 groups of 16 consecutive requests (window starts 0, 30, 61, 91,
+  121, 151, 182, 212) exercise queue/backpressure behaviour;
+- materialisation: the harness synthesises query and candidate text from a
+  fixed 512-word vocabulary using each request's recorded
+  `text_materialisation_seed`, so text is a pure function of the committed
+  schedule.
 
 ## 6. Manipulated variables and five-cell matrix
 
@@ -107,7 +120,25 @@ device effect in fresh children.
 ## 7. Controlled variables
 
 - identical model ID and exact cached model revision/file identity across all
-  Torch routes; exact revision/file hashes are `TODO-LOCAL` until inspected;
+  Torch routes: revision `233902d25c440f23af6f7d6e94d2946bac0bee0a`
+  (`refs/main` in the local HF cache) with file SHA-256 digests
+  `380e02c93f431831be65d99a4e7e5f67c133985bf2e77d9d4eba46847190bacc`
+  (`config.json`),
+  `821d1aa69520101d6e0737f78a042ae25b19e5cb9160701909d10434f4aeb0ae`
+  (`model.safetensors`),
+  `d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66`
+  (`tokenizer.json`),
+  `a5c2e5a7b1a29a0702cd28c08a399b5ecc110c263009d17f7e3b415f25905fd8`
+  (`tokenizer_config.json`),
+  `07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3`
+  (`vocab.txt`) and
+  `3c3507f36dff57bce437223db3b3081d1e2b52ec3e56ee55438193ecb2c94dd6`
+  (`special_tokens_map.json`); W1 additionally uses the cached ONNX exports
+  `5d3e70fd0c9ff14b9b5169a51e957b7a9c74897afd0a35ce4bd318150c1d4d4a`
+  (`onnx/model.onnx`) and
+  `3573b6b9593cb2f75987a31815d409ca3dd8808629118fd20451bb1a5d90cec7`
+  (`onnx/model_qint8_arm64.onnx`); any handshake revision/digest mismatch
+  aborts the cell;
 - tokenizer/max-length policy identical across cells; the carried-forward
   tokenizer maximum-length environment value is 2048;
 - batch size 32 and `top_k=50`, matching the Experiment 5 plan;
@@ -139,7 +170,9 @@ device effect in fresh children.
 - the plateau window is requests 801–1000;
 - the growth window is requests 201–1000;
 - current RSS is sampled at least once per second and every 10 completed
-  requests.
+  requests, and after every completed request inside the growth window
+  (requests 201–1000), yielding at least 800 ordered growth samples per
+  lifetime.
 
 An interrupted lifetime is never resumed under a new PID. Its partial rows are
 retained with an invalid/incomplete status and reason, and the replacement
@@ -170,9 +203,9 @@ the same ordered workload. `N*_l` is the first `n` where persistent time is no
 greater than W1 and remains no greater through the registered horizon.
 
 Report every `N*_l`, their median and a seeded block-bootstrap one-sided 95%
-upper confidence bound. The seed and block length are `TODO-LOCAL` and MUST be
-fixed before harness code. Report break-even by candidate-count/token-length
-stratum and normalised candidate-token work as secondary estimands.
+upper confidence bound. The seed is `20260821` and the block length is 40
+samples. Report break-even by candidate-count/token-length stratum and
+normalised candidate-token work as secondary estimands.
 
 ### 9.3 Memory
 
@@ -194,7 +227,7 @@ plateau, growth or reclamation.
 Use ordered current-RSS samples from requests 201–1000. Estimate Theil-Sen
 slope, convert it to MiB per 1,000 requests, and calculate a seeded block-
 bootstrap one-sided 95% upper confidence bound for every lifetime and the
-pooled samples. Seed and block length are `TODO-LOCAL` before harness code.
+pooled samples. The seed is `20260821` and the block length is 40 samples.
 
 ## 10. Pre-registered gates
 
@@ -208,8 +241,8 @@ pooled samples. Seed and block length are `TODO-LOCAL` before harness code.
 | G4 | The cumulative break-even one-sided 95% upper confidence bound is ≤ 150 requests on the frozen primary workload. |
 | G5 | Every W3 lifetime independently: worker plateau RSS ≤ 750 MiB; fallback-ready parent plus worker process-tree plateau RSS ≤ 1,250 MiB; process-tree peak RSS ≤ 1,500 MiB. |
 | G6 | Every lifetime and the pooled post-burn-in growth one-sided 95% upper confidence bound are < 20 MiB per 1,000 requests. |
-| G7 | Worker death, worker hang and pipe-pressure probes complete through ONNX CPU or the existing un-reranked fallback within the registered request deadline, with loud diagnostics and no late response admitted. Deadline: `TODO-LOCAL`. |
-| G8 | Requested shutdown, stdin EOF, idle expiry and externally induced parent death leave zero worker/descendant processes after bounded TERM/KILL and reaping. Drain, TERM, KILL, idle and orphan-observation deadlines: `TODO-LOCAL`. |
+| G7 | Worker death, worker hang and pipe-pressure probes complete through ONNX CPU or the existing un-reranked fallback within the registered request deadline, with loud diagnostics and no late response admitted. Deadline: 5.0 s. |
+| G8 | Requested shutdown, stdin EOF, idle expiry and externally induced parent death leave zero worker/descendant processes after bounded TERM/KILL and reaping. Drain 2 s; TERM grace 5 s; KILL grace 5 s; idle expiry 60 s; orphan observation 10 s. |
 | G9 | TDR-014 plan agreement, manifest, preflight, no-fallback, raw-row, checkpoint, completion-status and deterministic-projection requirements all pass. |
 
 ONNX/Torch ranking, score and threshold divergence remains raw descriptive
@@ -233,8 +266,8 @@ The experiment worker communicates over stdin/stdout JSON lines:
    within the registered bounds and exits.
 
 Stdout is protocol-only. Stderr is drained concurrently. Maximum JSON frame
-bytes, candidate count, token budget, queue depth and malformed-frame policy
-are `TODO-LOCAL` and MUST be fixed before harness code. Duplicate, unknown,
+size is 8 MiB, maximum candidate count is 200, maximum token budget is
+65,536 tokens per request and maximum queue depth is 16. Duplicate, unknown,
 oversized, wrong-generation and late frames are rejected and retained as
 failure evidence.
 
@@ -251,16 +284,16 @@ deadline result and final process existence/reaping evidence.
 | parent death while idle | External supervisor kills the parent; stdin/descriptor closure or supervisor cleanup removes worker and descendants. |
 | parent death in-flight | External supervisor kills the parent during inference; no worker or descendant remains after the orphan-observation bound. |
 | stdout backpressure | Stop parent reads until the registered pressure condition; no unbounded hang, and termination remains bounded. |
-| stderr flooding | Worker emits the registered diagnostic volume; concurrent drain prevents deadlock. Volume: `TODO-LOCAL`. |
-| malformed/oversized frame | Worker or parent rejects the frame loudly without admitting it to measured evidence. Limits: `TODO-LOCAL`. |
-| request deadline | A late response is rejected by request ID/generation and the request completes through the registered fallback. Deadline: `TODO-LOCAL`. |
-| idle expiry and restart | Idle worker exits; next request creates a new generation after registered backoff and re-runs route preflight. Idle/backoff/restart limits: `TODO-LOCAL`. |
-| orderly shutdown | In-flight work drains or aborts, stdin closes, TERM/KILL bounds are honoured and the process is reaped. Bounds: `TODO-LOCAL`. |
+| stderr flooding | Worker emits the registered diagnostic volume; concurrent drain prevents deadlock. Volume: 4 MiB sustained. |
+| malformed/oversized frame | Worker or parent rejects the frame loudly without admitting it to measured evidence. Limits: section 11 bounds (8 MiB frame, 200 candidates, 65,536 tokens). |
+| request deadline | A late response is rejected by request ID/generation and the request completes through the registered fallback. Deadline: 5.0 s. |
+| idle expiry and restart | Idle worker exits; next request creates a new generation after registered backoff and re-runs route preflight. Idle expiry 60 s; backoff 1 s, 2 s, 4 s capped; maximum 3 restart attempts. |
+| orderly shutdown | In-flight work drains or aborts, stdin closes, TERM/KILL bounds are honoured and the process is reaped. Bounds: drain 2 s, TERM grace 5 s, KILL grace 5 s. |
 | EOF-on-stdin | Worker exits after parent channel closure; EOF is evidence but not the sole orphan guarantee. |
-| orphan/reaping check | External supervisor proves zero live worker/descendant processes and no zombie after each applicable probe. Observation bound: `TODO-LOCAL`. |
+| orphan/reaping check | External supervisor proves zero live worker/descendant processes and no zombie after each applicable probe. Observation bound: 10 s. |
 
-Maximum restart attempts and restart backoff sequence are `TODO-LOCAL` before
-harness code. A restarted worker always has a new generation and preflight.
+Maximum restart attempts are 3, with a 1 s, 2 s, 4 s capped backoff sequence.
+A restarted worker always has a new generation and preflight.
 
 ## 13. Preflight assertions
 
@@ -270,8 +303,9 @@ Before any measured row:
 - the runner matrix exactly equals W1–W5 via `assert_runner_cells`;
 - workload identity equals
   `sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc`;
-- model equals `cross-encoder/ms-marco-MiniLM-L-6-v2` and exact cached revision/
-  file hashes are recorded;
+- model equals `cross-encoder/ms-marco-MiniLM-L-6-v2` at cached revision
+  `233902d25c440f23af6f7d6e94d2946bac0bee0a` with the section 7 file
+  digests;
 - `reranker.requested_backend` and `reranker.effective_backend` are non-null
   and equal for the manipulated route;
 - W1 reports `CPUExecutionProvider` first;
@@ -301,7 +335,8 @@ Abort the cell immediately and retain a non-numeric status/reason when:
 - model download or network access occurs;
 - a sampler needed by a gate is unavailable;
 - a thermal, power or foreground-interference condition breaches its
-  pre-registered local bound (`TODO-LOCAL`);
+  pre-registered local bound (mains power required; host thermal pressure
+  above nominal; declared foreground interference);
 - the process or supervisor cannot complete the declared repetition/lifetime;
 - a checkpoint is partial, a lifetime crosses PIDs, or plan/runner agreement
   fails.
@@ -317,8 +352,22 @@ consistently favour one route. Record host identity, macOS, Python and package
 versions, power source, memory pressure, available thermal evidence,
 foreground-interference declaration, cell order and start/end times.
 
-The counterbalancing schedule and any thermal/interference invalidation
-threshold are `TODO-LOCAL` and MUST be fixed before harness code.
+The counterbalancing schedule is fixed (seed `20260821`). Each repetition
+block runs all five cells once, in an order produced by seeding
+`random.Random(20260821)`, shuffling the cell list and rotating it by two
+positions per block:
+
+| Block | Execution order |
+| --- | --- |
+| 1 | W5, W3, W2, W4, W1 |
+| 2 | W2, W4, W1, W5, W3 |
+| 3 | W1, W5, W3, W2, W4 |
+
+Every cell occupies a different position in each block. The registered
+thermal/interference rule: measurement runs only on mains power; a complete
+lifetime is invalid when host thermal pressure exceeds nominal or when
+operator-declared foreground interference occurs, and an invalid lifetime is
+repeated in full — never edited at the request-row level.
 
 ## 16. Analysis plan
 
@@ -344,7 +393,8 @@ Required committed artefacts after implementation/execution:
   execution record;
 - `plan.json` plus recorded plan hash and green runner agreement;
 - reused workload path and SHA-256, never a regenerated copy;
-- heterogeneous longevity schedule and SHA-256 (`TODO-LOCAL` before harness);
+- heterogeneous longevity schedule (`longevity_schedule.json`, generator
+  `generate_longevity_schedule.py`) and SHA-256;
 - per-cell/per-lifetime runtime manifests with repo, lock, workload, model,
   Python/dependency and requested/effective route identity;
 - preflight assertion output and no-fallback result;
@@ -397,8 +447,13 @@ limits. They do not rehabilitate Experiment 5 H3.
 ## 21. Planned reproduction commands
 
 These commands describe the intended house-style interface. The harness files
-do not exist at protocol-draft time; exact probe flags are `TODO-LOCAL` before
-harness code.
+do not exist at protocol time. The registered probe flags are the section 12
+probe names in kebab-case: `--probe-worker-death`, `--probe-worker-hang`,
+`--probe-parent-death-idle`, `--probe-parent-death-inflight`,
+`--probe-stdout-backpressure`, `--probe-stderr-flooding`,
+`--probe-malformed-frame`, `--probe-request-deadline`,
+`--probe-idle-expiry-restart`, `--probe-orderly-shutdown`, `--probe-eof-stdin`
+and `--probe-orphan-reaping`.
 
 ```bash
 cd experiments/5b-persistent-mps-reranker-worker-2026-08-20
@@ -410,7 +465,7 @@ PYTHONPATH=../.. uv run --no-sync python -c \
 # Untimed route and lifecycle preflight only.
 HF_HUB_OFFLINE=1 uv run --no-sync python run_eval.py --dry-run
 
-# Measured campaign, only after every TODO-LOCAL is resolved and preflight passes.
+# Measured campaign, only after preflight passes.
 HF_HUB_OFFLINE=1 uv run --no-sync python run_eval.py --output-dir output
 uv run --no-sync python summarise_eval.py --output-dir output
 ```
@@ -420,3 +475,9 @@ uv run --no-sync python summarise_eval.py --output-dir output
 **PLANNED.** No harness code, local preflight, worker lifetime, lifecycle probe,
 latency row, memory sample, gate verdict or promotion recommendation is claimed
 by this protocol draft.
+
+**Version 1.0, 2026-08-21:** all operational values registered — longevity
+schedule identity, model revision/file digests, bootstrap seed and block
+length, request/drain/TERM/KILL/idle/orphan deadlines, restart limits, frame
+bounds, counterbalancing table and thermal/interference rule. No `TODO-LOCAL`
+marker remains.

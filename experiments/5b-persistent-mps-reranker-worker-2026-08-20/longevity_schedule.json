@@ -1,0 +1,1695 @@
+{
+  "schedule_seed": 20260821,
+  "total_requests": 228,
+  "strata": [
+    {
+      "candidate_count": 10,
+      "approx_tokens_per_candidate": 32
+    },
+    {
+      "candidate_count": 10,
+      "approx_tokens_per_candidate": 128
+    },
+    {
+      "candidate_count": 10,
+      "approx_tokens_per_candidate": 256
+    },
+    {
+      "candidate_count": 10,
+      "approx_tokens_per_candidate": 512
+    },
+    {
+      "candidate_count": 25,
+      "approx_tokens_per_candidate": 32
+    },
+    {
+      "candidate_count": 25,
+      "approx_tokens_per_candidate": 128
+    },
+    {
+      "candidate_count": 25,
+      "approx_tokens_per_candidate": 256
+    },
+    {
+      "candidate_count": 25,
+      "approx_tokens_per_candidate": 512
+    },
+    {
+      "candidate_count": 50,
+      "approx_tokens_per_candidate": 32
+    },
+    {
+      "candidate_count": 50,
+      "approx_tokens_per_candidate": 128
+    },
+    {
+      "candidate_count": 50,
+      "approx_tokens_per_candidate": 256
+    },
+    {
+      "candidate_count": 50,
+      "approx_tokens_per_candidate": 512
+    },
+    {
+      "candidate_count": 100,
+      "approx_tokens_per_candidate": 32
+    },
+    {
+      "candidate_count": 100,
+      "approx_tokens_per_candidate": 128
+    },
+    {
+      "candidate_count": 100,
+      "approx_tokens_per_candidate": 256
+    },
+    {
+      "candidate_count": 100,
+      "approx_tokens_per_candidate": 512
+    },
+    {
+      "candidate_count": 200,
+      "approx_tokens_per_candidate": 32
+    },
+    {
+      "candidate_count": 200,
+      "approx_tokens_per_candidate": 128
+    },
+    {
+      "candidate_count": 200,
+      "approx_tokens_per_candidate": 256
+    }
+  ],
+  "replicates_per_stratum": 12,
+  "max_tokens_per_request": 65536,
+  "burst_groups": 8,
+  "burst_depth": 16,
+  "burst_window_starts": [
+    0,
+    30,
+    61,
+    91,
+    121,
+    151,
+    182,
+    212
+  ],
+  "materialisation_rule": "harness synthesises query and candidate text from a fixed 512-word vocabulary using random.Random(text_materialisation_seed); word counts equal the stratum approximate token length (1 word ~= 1 token)",
+  "requests": [
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 0,
+      "text_materialisation_seed": 20260821,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 1,
+      "text_materialisation_seed": 20260822,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 2,
+      "text_materialisation_seed": 20260823,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 3,
+      "text_materialisation_seed": 20260824,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 4,
+      "text_materialisation_seed": 20260825,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 5,
+      "text_materialisation_seed": 20260826,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 6,
+      "text_materialisation_seed": 20260827,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 7,
+      "text_materialisation_seed": 20260828,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 8,
+      "text_materialisation_seed": 20260829,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 9,
+      "text_materialisation_seed": 20260830,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 10,
+      "text_materialisation_seed": 20260831,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 11,
+      "text_materialisation_seed": 20260832,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 12,
+      "text_materialisation_seed": 20260833,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 13,
+      "text_materialisation_seed": 20260834,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 14,
+      "text_materialisation_seed": 20260835,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 15,
+      "text_materialisation_seed": 20260836,
+      "burst_id": 0
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 16,
+      "text_materialisation_seed": 20260837,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 17,
+      "text_materialisation_seed": 20260838,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 18,
+      "text_materialisation_seed": 20260839,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 19,
+      "text_materialisation_seed": 20260840,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 20,
+      "text_materialisation_seed": 20260841,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 21,
+      "text_materialisation_seed": 20260842,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 22,
+      "text_materialisation_seed": 20260843,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 23,
+      "text_materialisation_seed": 20260844,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 24,
+      "text_materialisation_seed": 20260845,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 25,
+      "text_materialisation_seed": 20260846,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 26,
+      "text_materialisation_seed": 20260847,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 27,
+      "text_materialisation_seed": 20260848,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 28,
+      "text_materialisation_seed": 20260849,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 29,
+      "text_materialisation_seed": 20260850,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 30,
+      "text_materialisation_seed": 20260851,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 31,
+      "text_materialisation_seed": 20260852,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 32,
+      "text_materialisation_seed": 20260853,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 33,
+      "text_materialisation_seed": 20260854,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 34,
+      "text_materialisation_seed": 20260855,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 35,
+      "text_materialisation_seed": 20260856,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 36,
+      "text_materialisation_seed": 20260857,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 37,
+      "text_materialisation_seed": 20260858,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 38,
+      "text_materialisation_seed": 20260859,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 39,
+      "text_materialisation_seed": 20260860,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 40,
+      "text_materialisation_seed": 20260861,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 41,
+      "text_materialisation_seed": 20260862,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 42,
+      "text_materialisation_seed": 20260863,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 43,
+      "text_materialisation_seed": 20260864,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 44,
+      "text_materialisation_seed": 20260865,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 45,
+      "text_materialisation_seed": 20260866,
+      "burst_id": 1
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 46,
+      "text_materialisation_seed": 20260867,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 47,
+      "text_materialisation_seed": 20260868,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 48,
+      "text_materialisation_seed": 20260869,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 49,
+      "text_materialisation_seed": 20260870,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 50,
+      "text_materialisation_seed": 20260871,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 51,
+      "text_materialisation_seed": 20260872,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 52,
+      "text_materialisation_seed": 20260873,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 53,
+      "text_materialisation_seed": 20260874,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 54,
+      "text_materialisation_seed": 20260875,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 55,
+      "text_materialisation_seed": 20260876,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 56,
+      "text_materialisation_seed": 20260877,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 57,
+      "text_materialisation_seed": 20260878,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 58,
+      "text_materialisation_seed": 20260879,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 59,
+      "text_materialisation_seed": 20260880,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 60,
+      "text_materialisation_seed": 20260881,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 61,
+      "text_materialisation_seed": 20260882,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 62,
+      "text_materialisation_seed": 20260883,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 63,
+      "text_materialisation_seed": 20260884,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 64,
+      "text_materialisation_seed": 20260885,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 65,
+      "text_materialisation_seed": 20260886,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 66,
+      "text_materialisation_seed": 20260887,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 67,
+      "text_materialisation_seed": 20260888,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 68,
+      "text_materialisation_seed": 20260889,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 69,
+      "text_materialisation_seed": 20260890,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 70,
+      "text_materialisation_seed": 20260891,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 71,
+      "text_materialisation_seed": 20260892,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 72,
+      "text_materialisation_seed": 20260893,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 73,
+      "text_materialisation_seed": 20260894,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 74,
+      "text_materialisation_seed": 20260895,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 75,
+      "text_materialisation_seed": 20260896,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 76,
+      "text_materialisation_seed": 20260897,
+      "burst_id": 2
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 77,
+      "text_materialisation_seed": 20260898,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 78,
+      "text_materialisation_seed": 20260899,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 79,
+      "text_materialisation_seed": 20260900,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 80,
+      "text_materialisation_seed": 20260901,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 81,
+      "text_materialisation_seed": 20260902,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 82,
+      "text_materialisation_seed": 20260903,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 83,
+      "text_materialisation_seed": 20260904,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 84,
+      "text_materialisation_seed": 20260905,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 85,
+      "text_materialisation_seed": 20260906,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 86,
+      "text_materialisation_seed": 20260907,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 87,
+      "text_materialisation_seed": 20260908,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 88,
+      "text_materialisation_seed": 20260909,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 89,
+      "text_materialisation_seed": 20260910,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 90,
+      "text_materialisation_seed": 20260911,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 91,
+      "text_materialisation_seed": 20260912,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 92,
+      "text_materialisation_seed": 20260913,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 93,
+      "text_materialisation_seed": 20260914,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 94,
+      "text_materialisation_seed": 20260915,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 95,
+      "text_materialisation_seed": 20260916,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 96,
+      "text_materialisation_seed": 20260917,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 97,
+      "text_materialisation_seed": 20260918,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 98,
+      "text_materialisation_seed": 20260919,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 99,
+      "text_materialisation_seed": 20260920,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 100,
+      "text_materialisation_seed": 20260921,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 101,
+      "text_materialisation_seed": 20260922,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 102,
+      "text_materialisation_seed": 20260923,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 103,
+      "text_materialisation_seed": 20260924,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 104,
+      "text_materialisation_seed": 20260925,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 105,
+      "text_materialisation_seed": 20260926,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 106,
+      "text_materialisation_seed": 20260927,
+      "burst_id": 3
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 107,
+      "text_materialisation_seed": 20260928,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 108,
+      "text_materialisation_seed": 20260929,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 109,
+      "text_materialisation_seed": 20260930,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 110,
+      "text_materialisation_seed": 20260931,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 111,
+      "text_materialisation_seed": 20260932,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 112,
+      "text_materialisation_seed": 20260933,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 113,
+      "text_materialisation_seed": 20260934,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 114,
+      "text_materialisation_seed": 20260935,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 115,
+      "text_materialisation_seed": 20260936,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 116,
+      "text_materialisation_seed": 20260937,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 117,
+      "text_materialisation_seed": 20260938,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 118,
+      "text_materialisation_seed": 20260939,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 119,
+      "text_materialisation_seed": 20260940,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 120,
+      "text_materialisation_seed": 20260941,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 121,
+      "text_materialisation_seed": 20260942,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 122,
+      "text_materialisation_seed": 20260943,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 123,
+      "text_materialisation_seed": 20260944,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 124,
+      "text_materialisation_seed": 20260945,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 125,
+      "text_materialisation_seed": 20260946,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 126,
+      "text_materialisation_seed": 20260947,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 127,
+      "text_materialisation_seed": 20260948,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 128,
+      "text_materialisation_seed": 20260949,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 129,
+      "text_materialisation_seed": 20260950,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 130,
+      "text_materialisation_seed": 20260951,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 131,
+      "text_materialisation_seed": 20260952,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 132,
+      "text_materialisation_seed": 20260953,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 133,
+      "text_materialisation_seed": 20260954,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 134,
+      "text_materialisation_seed": 20260955,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 135,
+      "text_materialisation_seed": 20260956,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 136,
+      "text_materialisation_seed": 20260957,
+      "burst_id": 4
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 137,
+      "text_materialisation_seed": 20260958,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 138,
+      "text_materialisation_seed": 20260959,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 139,
+      "text_materialisation_seed": 20260960,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 140,
+      "text_materialisation_seed": 20260961,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 141,
+      "text_materialisation_seed": 20260962,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 142,
+      "text_materialisation_seed": 20260963,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 143,
+      "text_materialisation_seed": 20260964,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 144,
+      "text_materialisation_seed": 20260965,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 145,
+      "text_materialisation_seed": 20260966,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 146,
+      "text_materialisation_seed": 20260967,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 147,
+      "text_materialisation_seed": 20260968,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 148,
+      "text_materialisation_seed": 20260969,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 149,
+      "text_materialisation_seed": 20260970,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 150,
+      "text_materialisation_seed": 20260971,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 151,
+      "text_materialisation_seed": 20260972,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 152,
+      "text_materialisation_seed": 20260973,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 153,
+      "text_materialisation_seed": 20260974,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 154,
+      "text_materialisation_seed": 20260975,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 155,
+      "text_materialisation_seed": 20260976,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 156,
+      "text_materialisation_seed": 20260977,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 157,
+      "text_materialisation_seed": 20260978,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 158,
+      "text_materialisation_seed": 20260979,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 159,
+      "text_materialisation_seed": 20260980,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 160,
+      "text_materialisation_seed": 20260981,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 161,
+      "text_materialisation_seed": 20260982,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 162,
+      "text_materialisation_seed": 20260983,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 163,
+      "text_materialisation_seed": 20260984,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 164,
+      "text_materialisation_seed": 20260985,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 165,
+      "text_materialisation_seed": 20260986,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 166,
+      "text_materialisation_seed": 20260987,
+      "burst_id": 5
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 167,
+      "text_materialisation_seed": 20260988,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 168,
+      "text_materialisation_seed": 20260989,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 169,
+      "text_materialisation_seed": 20260990,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 170,
+      "text_materialisation_seed": 20260991,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 171,
+      "text_materialisation_seed": 20260992,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 172,
+      "text_materialisation_seed": 20260993,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 173,
+      "text_materialisation_seed": 20260994,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 174,
+      "text_materialisation_seed": 20260995,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 175,
+      "text_materialisation_seed": 20260996,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 176,
+      "text_materialisation_seed": 20260997,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 177,
+      "text_materialisation_seed": 20260998,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 178,
+      "text_materialisation_seed": 20260999,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 179,
+      "text_materialisation_seed": 20261000,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 180,
+      "text_materialisation_seed": 20261001,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 181,
+      "text_materialisation_seed": 20261002,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 182,
+      "text_materialisation_seed": 20261003,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 183,
+      "text_materialisation_seed": 20261004,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 184,
+      "text_materialisation_seed": 20261005,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 185,
+      "text_materialisation_seed": 20261006,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 186,
+      "text_materialisation_seed": 20261007,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 187,
+      "text_materialisation_seed": 20261008,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 188,
+      "text_materialisation_seed": 20261009,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 189,
+      "text_materialisation_seed": 20261010,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 190,
+      "text_materialisation_seed": 20261011,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 191,
+      "text_materialisation_seed": 20261012,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 192,
+      "text_materialisation_seed": 20261013,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 193,
+      "text_materialisation_seed": 20261014,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 194,
+      "text_materialisation_seed": 20261015,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 195,
+      "text_materialisation_seed": 20261016,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 196,
+      "text_materialisation_seed": 20261017,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 197,
+      "text_materialisation_seed": 20261018,
+      "burst_id": 6
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 198,
+      "text_materialisation_seed": 20261019,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 199,
+      "text_materialisation_seed": 20261020,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 200,
+      "text_materialisation_seed": 20261021,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 201,
+      "text_materialisation_seed": 20261022,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 202,
+      "text_materialisation_seed": 20261023,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 203,
+      "text_materialisation_seed": 20261024,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 204,
+      "text_materialisation_seed": 20261025,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 205,
+      "text_materialisation_seed": 20261026,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 206,
+      "text_materialisation_seed": 20261027,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 207,
+      "text_materialisation_seed": 20261028,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 208,
+      "text_materialisation_seed": 20261029,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 209,
+      "text_materialisation_seed": 20261030,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 210,
+      "text_materialisation_seed": 20261031,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 211,
+      "text_materialisation_seed": 20261032,
+      "burst_id": null
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 212,
+      "text_materialisation_seed": 20261033,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 213,
+      "text_materialisation_seed": 20261034,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 214,
+      "text_materialisation_seed": 20261035,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 215,
+      "text_materialisation_seed": 20261036,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 32,
+      "request_index": 216,
+      "text_materialisation_seed": 20261037,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 217,
+      "text_materialisation_seed": 20261038,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 218,
+      "text_materialisation_seed": 20261039,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 219,
+      "text_materialisation_seed": 20261040,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 100,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 220,
+      "text_materialisation_seed": 20261041,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 221,
+      "text_materialisation_seed": 20261042,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 222,
+      "text_materialisation_seed": 20261043,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 512,
+      "request_index": 223,
+      "text_materialisation_seed": 20261044,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 200,
+      "stratum_approx_tokens_per_candidate": 256,
+      "request_index": 224,
+      "text_materialisation_seed": 20261045,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 25,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 225,
+      "text_materialisation_seed": 20261046,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 50,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 226,
+      "text_materialisation_seed": 20261047,
+      "burst_id": 7
+    },
+    {
+      "stratum_candidate_count": 10,
+      "stratum_approx_tokens_per_candidate": 128,
+      "request_index": 227,
+      "text_materialisation_seed": 20261048,
+      "burst_id": 7
+    }
+  ]
+}
