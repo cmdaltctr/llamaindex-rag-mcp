@@ -52,10 +52,11 @@ collection by the composition root according to the
 implementation SHALL NOT independently read a flat global persist-directory
 default to decide where to place data.
 
-#### Scenario: Default is chroma
+#### Scenario: Default store is resolved from configuration
 
 - **WHEN** `VECTOR_STORE` is not set
-- **THEN** `compose.py` MUST construct the ChromaDB implementation
+- **THEN** `compose.py` MUST construct the configured default vector-store
+  implementation through the registry
 
 #### Scenario: Unknown store value
 
@@ -70,13 +71,14 @@ default to decide where to place data.
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
 
-#### Scenario: LanceDB is selectable by configuration
+#### Scenario: Alternate store is selectable by configuration
 
-- **WHEN** `VECTOR_STORE=lancedb` is set
-- **THEN** `compose.py` MUST resolve and construct the LanceDB
-  implementation through the registry
+- **WHEN** `VECTOR_STORE` names a registered non-default implementation,
+  for example `lancedb`
+- **THEN** `compose.py` MUST resolve and construct that implementation
+  through the registry
 - **AND** every consumer MUST receive it by injection through the same
-  paths that receive the ChromaDB store
+  paths that receive the default store
 
 #### Scenario: Persist directory arrives resolved
 

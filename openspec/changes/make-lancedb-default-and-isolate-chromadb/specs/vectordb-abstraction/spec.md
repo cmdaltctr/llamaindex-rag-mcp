@@ -10,7 +10,7 @@ SHALL be a registry lookup, not a branch over store names. The constructed
 store SHALL be passed to every consumer by injection, including the codebase
 map subsystem.
 
-#### Scenario: Default is LanceDB
+#### Scenario: Default store is resolved from configuration
 
 - **GIVEN** the LanceDB qualification gate passed
 - **AND** `VECTOR_STORE` is not explicitly set
@@ -29,7 +29,7 @@ map subsystem.
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
 
-#### Scenario: Chroma is selectable explicitly
+#### Scenario: Alternate store is selectable by configuration
 
 - **GIVEN** the complete `chroma` optional extra is installed
 - **AND** `VECTOR_STORE=chroma` is explicitly set
