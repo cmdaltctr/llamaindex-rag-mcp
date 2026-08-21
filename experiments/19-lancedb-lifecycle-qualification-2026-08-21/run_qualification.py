@@ -584,6 +584,7 @@ GATES: list[dict[str, Any]] = [
 
 async def main(run_label: str, resume: bool) -> int:
     run_dir = CAMPAIGN_DIR / "output" / run_label
+    run_dir.mkdir(parents=True, exist_ok=True)
     _export_env(run_dir)
     admissibility = _check_admissible(run_dir)
     print(f"admissible: {admissibility}", flush=True)
