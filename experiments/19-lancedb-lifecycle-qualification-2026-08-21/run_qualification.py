@@ -54,7 +54,7 @@ def _export_env(run_dir: Path) -> None:
             "OLLAMA_BASE_URL": os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
             "METADATA__EXTRACTION_MODE": "disabled",
             "PDF_READER": "pypdf",
-            "HYBRID_SPARSE_BACKEND": "bm25",
+            "RETRIEVAL__HYBRID_SPARSE_BACKEND": "bm25",
             "RETRIEVAL__HYBRID_ENABLED": "false",
         }
     )
