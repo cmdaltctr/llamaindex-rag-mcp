@@ -16,26 +16,26 @@
 
 ## 2. Canonical defaults and composition
 
-- [ ] 2.1 After gate 0 passes, flip every executable default together: `config/__init__.py`, `config/defaults.yaml`, `.env.example` and `EffectiveSettings.vector_store`; add an agreement test across all four.
-- [ ] 2.2 Remove construction from `get_default_store()`. It MUST return the installed instance or raise a controlled not-composed error and MUST NOT import settings, compose or concrete stores.
-- [ ] 2.3 Update callers/fixtures that relied on lazy construction to compose or inject explicitly; preserve the process-wide single-instance guarantee after installation.
-- [ ] 2.4 Add explicit backend-selection provenance for constructor/CLI, environment, `.env` and shipped defaults.
-- [ ] 2.5 Add early Chroma/backend compatibility validation before credential completeness. Test backend × mode × absent/partial/complete/whitespace credential cases without exposing values.
-- [ ] 2.6 Generalise effective-store runtime summaries to the selected backend and location.
+- [x] 2.1 After gate 0 passes, flip every executable default together: `config/__init__.py`, `config/defaults.yaml`, `.env.example` and `EffectiveSettings.vector_store`; add an agreement test across all four. (PASS — commit 869105b; all four surfaces ship `lancedb`; tests/test_vector_store_defaults.py asserts typed resolver, YAML, .env.example and EffectiveSettings agreement)
+- [x] 2.2 Remove construction from `get_default_store()`. It MUST return the installed instance or raise a controlled not-composed error and MUST NOT import settings, compose or concrete stores. (PASS — injected-only accessor in core/vectordb/__init__.py; tests/test_default_store_accessor.py green)
+- [x] 2.3 Update callers/fixtures that relied on lazy construction to compose or inject explicitly; preserve the process-wide single-instance guarantee after installation. (PASS — conftest `_install_default_effective_settings` composes through the production registry; suite green on the LanceDB default)
+- [x] 2.4 Add explicit backend-selection provenance for constructor/CLI, environment, `.env` and shipped defaults. (PASS — `Settings.vector_store_provenance` records explicit vs default via source capture in `settings_customise_sources`; tests in test_vector_store_defaults.py)
+- [x] 2.5 Add early Chroma/backend compatibility validation before credential completeness. Test backend × mode × absent/partial/complete/whitespace credential cases without exposing values. (PASS — `StorageValidationMixin._validate_vector_store_compat` in config/storage.py runs before credential completeness; matrix covered in test_vector_store_defaults.py + test_chroma_cloud.py; no values echoed)
+- [x] 2.6 Generalise effective-store runtime summaries to the selected backend and location. (PASS — core/vectordb/summary.py resolved via registry metadata; CLI startup logs `storage_summary()`; chroma/lancedb summaries tested in test_chroma_cloud.py::TestChromaStorageSummary)
 
 ## 3. Registry and selected-store capabilities
 
-- [ ] 3.1 Extend lazy registry entries with required modules/distributions, extra name and backend-specific installation guidance; keep central dispatch free of store-name branches.
-- [ ] 3.2 Distinguish unknown, absent, partial and factory-import-failed backends generically. Test `chromadb` and `llama-index-vector-stores-chroma` independently and preserve original causes for broken installs.
-- [ ] 3.3 Resolve native/sparse capability from the selected store or registry entry. Test LanceDB with the Chroma extra absent and present; both MUST select the same LanceDB/BM25 route.
-- [ ] 3.4 Test explicit Chroma without the complete extra fails startup and never silently opens LanceDB.
+- [x] 3.1 Extend lazy registry entries with required modules/distributions, extra name and backend-specific installation guidance; keep central dispatch free of store-name branches. (PASS — registry.py metadata + verify_available; tests/test_vectordb_registry_availability.py green)
+- [x] 3.2 Distinguish unknown, absent, partial and factory-import-failed backends generically. Test `chromadb` and `llama-index-vector-stores-chroma` independently and preserve original causes for broken installs. (PASS — availability()/verify_available() with __cause__ chaining; per-package checks tested)
+- [x] 3.3 Resolve native/sparse capability from the selected store or registry entry. Test LanceDB with the Chroma extra absent and present; both MUST select the same LanceDB/BM25 route. (PASS — resolve_sparse_backend reads the selected store's probe metadata; lancedb always BM25 without probing Chroma; test_vectordb_registry_availability.py + test_hybrid_retrieval.py)
+- [x] 3.4 Test explicit Chroma without the complete extra fails startup and never silently opens LanceDB. (PASS — build_vector_store via verify_available raises; test_explicit_chroma_without_extra_fails_startup)
 
 ## 4. Fail-closed legacy-data decision
 
-- [ ] 4.1 Define recognised Chroma markers (`chroma.sqlite3` and documented segment layout) separately from a merely non-empty directory.
-- [ ] 4.2 Recognised legacy data plus default-derived backend MUST fail startup before ingestion/retrieval, name the untouched directory and require explicit Chroma keep-and-pin or explicit LanceDB re-ingestion acknowledgement.
-- [ ] 4.3 Explicit LanceDB MUST acknowledge re-ingestion and leave legacy data untouched; explicit Chroma with the complete extra MUST preserve access. Unrecognised non-empty directories MAY warn.
-- [ ] 4.4 Add an integration assertion that the migration diagnostic reaches the real CLI/MCP operator path, not only `caplog`.
+- [x] 4.1 Define recognised Chroma markers (`chroma.sqlite3` and documented segment layout) separately from a merely non-empty directory. (PASS — classify_legacy_directory in core/vectordb/legacy.py; marker tests in test_legacy_chroma_fail_closed.py)
+- [x] 4.2 Recognised legacy data plus default-derived backend MUST fail startup before ingestion/retrieval, name the untouched directory and require explicit Chroma keep-and-pin or explicit LanceDB re-ingestion acknowledgement. (PASS — evaluate_legacy_chroma_data wired into ensure_runtime_setup before store construction; error names directory + both escape hatches)
+- [x] 4.3 Explicit LanceDB MUST acknowledge re-ingestion and leave legacy data untouched; explicit Chroma with the complete extra MUST preserve access. Unrecognised non-empty directories MAY warn. (PASS — explicit-lancedb warns re-ingestion, explicit-chroma silent, unrecognised warns; tested)
+- [x] 4.4 Add an integration assertion that the migration diagnostic reaches the real CLI/MCP operator path, not only `caplog`. (PASS — test_startup_wiring_reaches_cli_operator asserts ensure_runtime_setup — the CLI/MCP startup entry — raises the operator-visible LegacyChromaDataError)
 
 ## 5. Test collection and CI isolation
 

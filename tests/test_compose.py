@@ -14,6 +14,10 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
+
+# Chroma-path delegation tests (task 5.1): skipped in the base install,
+# run in the chroma-extra CI job.
+from importlib.util import find_spec as _find_spec
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -28,6 +32,11 @@ from rag_mcp.compose import (
 )
 from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
+
+requires_chroma = pytest.mark.skipif(
+    _find_spec("chromadb") is None,
+    reason="chroma extra not installed (uv sync --extra chroma); runs in the chroma-extra CI job",
+)
 
 
 def test_embedding_provider_scope_is_process_global() -> None:
@@ -386,6 +395,7 @@ class TestResolvePdfReader:
 # ── build_vector_store (chroma path) ────────────────────────────────────────
 
 
+@requires_chroma
 def test_build_vector_store_chroma_delegates_to_factory() -> None:
     """build_vector_store with chroma delegates to build_chroma_vector_store."""
     from rag_mcp.compose import build_vector_store
@@ -759,6 +769,7 @@ def test_build_embed_model_none_delegates_to_get_settings() -> None:
     mock_gs.assert_called_once()
 
 
+@requires_chroma
 def test_build_vector_store_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings for vector store construction."""
     from rag_mcp.compose import build_vector_store

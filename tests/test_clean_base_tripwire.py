@@ -9,8 +9,12 @@ extra IS installed — the chroma-extra CI job runs the complement suite.
 
 from __future__ import annotations
 
+import re
+import subprocess
+import sys
 from importlib import import_module, metadata
 from importlib.util import find_spec
+from pathlib import Path
 
 import pytest
 
@@ -22,6 +26,30 @@ pytestmark = pytest.mark.skipif(
 )
 
 _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
+
+# ── Base-skip manifest (task 5.2) ─────────────────────────────────────
+# The only sanctioned base skips are the named Chroma-gated files. These
+# pinned counts come from a clean base install at
+# make-lancedb-default-and-isolate-chromadb (commits 869105b..86b0e7a);
+# bump them only when the suite legitimately changes. The executed and
+# skipped counts come from the self-ignored ``-rs`` run; collection is
+# not pinned separately because a module-level ``importorskip`` makes
+# ``--collect-only`` overcount.
+_BASE_EXECUTED = 1551  # self-ignored run: passed
+_BASE_SKIPPED = 83  # self-ignored run: skipped
+_BASE_DESELECTED = 14  # -m "not slow" deselection
+_BASE_CHROMA_SKIPS = 57  # skip reasons naming the chroma extra
+_CHROMA_GATED_FILES = frozenset(
+    {
+        "test_chroma_cloud.py",
+        "test_compose.py",
+        "test_experiment_storage.py",
+        "test_hybrid_retrieval.py",
+        "test_lancedb_store.py",
+        "test_metadata_extractor.py",
+        "test_vectordb_contract.py",
+    }
+)
 
 
 def _scrub_chroma_modules() -> list[str]:
@@ -92,3 +120,76 @@ def test_base_default_search_runs_without_chroma() -> None:
 
     leaked = [name for name in sys.modules if name == "chromadb" or name.startswith("chromadb.")]
     assert not leaked, f"search imported chroma modules: {leaked}"
+
+
+def _base_suite_run() -> subprocess.CompletedProcess[str]:
+    """Run the fast base suite in this environment, ignoring this module.
+
+    The subprocess reuses the running interpreter so the assertion holds
+    for the exact environment under test. This module is ignored to avoid
+    recursing into itself.
+    """
+    root = Path(__file__).resolve().parent.parent
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-m",
+            "not slow",
+            "-q",
+            "-rs",
+            "--ignore=tests/test_clean_base_tripwire.py",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=1800,
+    )
+
+
+def test_base_skip_manifest_is_exact() -> None:
+    """The clean-base suite pins its collected/executed/skipped counts.
+
+    Task 5.2: every Chroma-skipped base case is named (the allowed file
+    set below) and must run in the chroma-extra CI job, which fails if
+    anything skips with the ``chroma extra not installed`` reason. Any
+    drift in the counts or a skip outside the named files fails here.
+    """
+    proc = _base_suite_run()
+    assert proc.returncode == 0, f"base suite failed:\n{proc.stdout}\n{proc.stderr}"
+    output = proc.stdout
+
+    summary = re.search(r"(\d+) passed, (\d+) skipped, (\d+) deselected", output)
+    assert summary, f"unparseable base suite summary:\n{output[-500:]}"
+    passed, skipped, deselected = (int(v) for v in summary.groups())
+
+    assert passed == _BASE_EXECUTED, f"base executed count drifted: {passed}"
+    assert skipped == _BASE_SKIPPED, f"base skipped count drifted: {skipped}"
+    assert deselected == _BASE_DESELECTED, f"base deselected count drifted: {deselected}"
+
+    skip_lines = re.findall(r"SKIPPED \[\d+\] (tests/[^:]+):\d+: (.*)", output)
+    chroma_skips = [
+        (path, reason) for path, reason in skip_lines if "chroma extra not installed" in reason
+    ]
+    assert len(chroma_skips) == _BASE_CHROMA_SKIPS, (
+        f"chroma-gated skip count drifted: {len(chroma_skips)} != {_BASE_CHROMA_SKIPS}"
+    )
+
+    gated = {Path(path).name for path, _ in chroma_skips}
+    unexpected = gated - _CHROMA_GATED_FILES
+    assert not unexpected, f"chroma-gated skips outside the allowed files: {sorted(unexpected)}"
+    missing = _CHROMA_GATED_FILES - gated
+    assert not missing, (
+        f"declared chroma-gated files produced no chroma skips (guards removed?): {sorted(missing)}"
+    )
+
+    # A skip reason mentioning chroma outside the sanctioned set would
+    # hide a mis-scoped guard. The suite's deselected count stays pinned
+    # as the collection manifest.
+    stray = [
+        (path, reason)
+        for path, reason in skip_lines
+        if "chroma" in reason.lower() and "chroma extra not installed" not in reason
+    ]
+    assert not stray, f"unexpected chroma-related skip reasons: {stray}"
