@@ -60,7 +60,14 @@ _CHROMA_ENV_VARS = (
 
 
 def _settings(**overrides) -> Settings:
-    """Build a fresh Settings without ``.env`` and deterministic provider defaults."""
+    """Build a fresh Settings without ``.env`` and deterministic provider defaults.
+
+    ``vector_store`` defaults to ``chroma``: this is the Chroma-only suite
+    (extra-gated), and the conftest ``_isolate_env`` fixture pins
+    ``VECTOR_STORE=lancedb`` for every test — leaving the env default would
+    trip the backend-compat validator (task 2.5).
+    """
+    overrides.setdefault("vector_store", "chroma")
     overrides.setdefault("embed_provider", "local")
     overrides.setdefault("local_backend", "ollama")
     overrides.setdefault("embed_model", "nomic-embed-text")
@@ -239,6 +246,7 @@ class TestSettingsChromaMode:
     def test_explicit_cloud_via_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """CHROMA_MODE=cloud flows from the environment into the model."""
         _clear_chroma_env(monkeypatch)
+        monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", _CLOUD_KEY)
         assert Settings(_env_file=None).chroma_mode == "cloud"
@@ -282,6 +290,7 @@ class TestSettingsChromaMode:
     def test_cloud_env_key_is_read_into_the_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """CHROMA_CLOUD_API_KEY flows from the environment into the field."""
         _clear_chroma_env(monkeypatch)
+        monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", _CLOUD_KEY)
         assert Settings(_env_file=None).chroma_cloud_api_key == _CLOUD_KEY
@@ -628,7 +637,7 @@ class TestChromaStorageSummary:
     """chroma_storage_summary exposes identifiers, never key material."""
 
     def test_local_summary(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from rag_mcp.compose import chroma_storage_summary
+        from rag_mcp.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         assert chroma_storage_summary(_settings()) == "chroma mode=local"
@@ -636,7 +645,7 @@ class TestChromaStorageSummary:
     def test_cloud_summary_includes_identifiers_not_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from rag_mcp.compose import chroma_storage_summary
+        from rag_mcp.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         settings = _cloud_settings(chroma_cloud_tenant="tenant-9", chroma_cloud_database="db-9")
@@ -647,7 +656,7 @@ class TestChromaStorageSummary:
     def test_cloud_summary_without_tenant_carries_no_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from rag_mcp.compose import chroma_storage_summary
+        from rag_mcp.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         summary = chroma_storage_summary(_cloud_settings())
