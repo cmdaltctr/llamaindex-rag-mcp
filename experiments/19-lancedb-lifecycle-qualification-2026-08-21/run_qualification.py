@@ -185,7 +185,7 @@ def _build_manifest() -> dict[str, Any]:
             "cache_namespace": COLLECTION,
         },
         document_backend=observe_document_reader(os.environ["PDF_READER"]),
-        corpus_path=CAMPAIGN_DIR / "fixtures" / "corpus",
+        corpus_path=CAMPAIGN_DIR / "fixtures" / "corpus_manifest.txt",
         index_identity=COLLECTION,
         project_root=REPO_ROOT,
         extra={
