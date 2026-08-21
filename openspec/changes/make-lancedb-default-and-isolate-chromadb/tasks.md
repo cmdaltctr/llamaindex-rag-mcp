@@ -6,13 +6,13 @@
 
 ## 1. Packaging and objective security evidence
 
-- [ ] 1.1 Move `chromadb` and `llama-index-vector-stores-chroma` from base dependencies into `[project.optional-dependencies].chroma`, retaining supported floors because Chroma compatibility remains supported.
-- [ ] 1.2 Regenerate `uv.lock`; do not edit optional Chroma entries out manually.
-- [ ] 1.3 Build the base wheel and inspect metadata: neither Chroma package is an unconditional `Requires-Dist`; record the wheel hash and metadata output.
-- [ ] 1.4 Install the base wheel in a fresh environment and prove both distributions absent using import metadata and installed-package inventory; run the base default path.
-- [ ] 1.5 Generate and scan a base-wheel/base-install SBOM separately from the universal lock. Record scanner name/version, artefact identity and complete results.
-- [ ] 1.6 Record the residual universal-lock/all-extras advisory result. Obtain a named policy-owner decision with date, scope, rationale, expiry/review date and patch/advisory triggers. Do not claim release clearance without approval.
-- [ ] 1.7 If policy refuses the residual finding, stop this release path and open a separate decision to move Chroma into a separately locked/distributed plugin or remove support temporarily.
+- [x] 1.1 Move `chromadb` and `llama-index-vector-stores-chroma` from base dependencies into `[project.optional-dependencies].chroma`, retaining supported floors because Chroma compatibility remains supported. (PASS — pyproject.toml lines 67-77: `chroma = ["chromadb>=1.0.0", "llama-index-vector-stores-chroma>=0.5.0"]`; floors exemption retained in tests/test_dependency_floors.py)
+- [x] 1.2 Regenerate `uv.lock`; do not edit optional Chroma entries out manually. (PASS — uv.lock regenerated in e5af622; chroma entries remain under the extra, not manually edited)
+- [x] 1.3 Build the base wheel and inspect metadata: neither Chroma package is an unconditional `Requires-Dist`; record the wheel hash and metadata output. (PASS — evidence/01-wheel-metadata.md: rag_mcp-2.2.0 wheel sha256 32a00c7f...; both packages only behind `extra == 'chroma'`)
+- [x] 1.4 Install the base wheel in a fresh environment and prove both distributions absent using import metadata and installed-package inventory; run the base default path. (PASS — evidence/02-fresh-install.md: fresh venv, wheel-only install, find_spec + distribution inventory both absent; base default runtime + search run)
+- [x] 1.5 Generate and scan a base-wheel/base-install SBOM separately from the universal lock. Record scanner name/version, artefact identity and complete results. (PASS — evidence/03-base-sbom.json + 03-base-sbom-summary.md: pip-audit 2.10.1, two isolated `--path` scans of the built wheel, byte-identical JSON, no findings)
+- [x] 1.6 Record the residual universal-lock/all-extras advisory result. Obtain a named policy-owner decision with date, scope, rationale, expiry/review date and patch/advisory triggers. Do not claim release clearance without approval. (PARTIAL — evidence/04-residual-lock-finding.md records PYSEC-2026-311/CVE-2026-45829 in chromadb==1.5.9 with no fix versions, exposure controls, and a dated disposition template. The named policy owner is TBD — release clearance NOT claimed; gate stays blocked per design D9)
+- [x] 1.7 If policy refuses the residual finding, stop this release path and open a separate decision to move Chroma into a separately locked/distributed plugin or remove support temporarily. (N/A — policy disposition is pending, not refused; no action required yet)
 
 ## 2. Canonical defaults and composition
 
@@ -64,8 +64,8 @@
 
 ## 8. Final gates
 
-- [ ] 8.1 In fresh environments, run base-wheel install plus the complete base suite, then `uv sync --frozen --extra chroma` plus the exact Chroma suite; record collected/executed/skipped counts.
-- [ ] 8.2 Run `ruff check .`, `ruff format --check .`, base `lint-imports` with all existing contracts, dependency-floor tests and `openspec validate make-lancedb-default-and-isolate-chromadb --strict`.
-- [ ] 8.3 Run the normative-default drift check across canonical specs and executable surfaces; zero current-tense Chroma-default contradictions are allowed outside excluded historical evidence.
-- [ ] 8.4 Inspect the complete diff and prove no automatic legacy-data migration/deletion and no historical raw-evidence rewrite occurred.
-- [ ] 8.5 Mark the release gate clear only if qualification, base artefact evidence and the named policy-owner decision all pass. Otherwise record the exact blocker and stop.
+- [x] 8.1 In fresh environments, run base-wheel install plus the complete base suite, then `uv sync --frozen --extra chroma` plus the exact Chroma suite; record collected/executed/skipped counts. (PASS — fresh base wheel install (evidence/02): base suite 1555 passed / 83 skipped / 14 deselected / 0 failures (57 chroma-gated skips named in the 5.2 manifest); chroma-present suite: 1736 passed / 22 skipped / 14 deselected with zero 'chroma extra not installed' skips)
+- [x] 8.2 Run `ruff check .`, `ruff format --check .`, base `lint-imports` with all existing contracts, dependency-floor tests and `openspec validate make-lancedb-default-and-isolate-chromadb --strict`. (PASS — ruff check 0 errors; ruff format 678 files clean; lint-imports 8/8 contracts kept (incl. base run); test_dependency_floors 1 passed; openspec validate --strict valid + --all 40/40)
+- [x] 8.3 Run the normative-default drift check across canonical specs and executable surfaces; zero current-tense Chroma-default contradictions are allowed outside excluded historical evidence. (PASS — grep across openspec/specs/ + defaults.yaml + .env.example + settings models found only a conditional 'VECTOR_STORE=chroma or lancedb' spec line; all four executable surfaces resolve lancedb)
+- [x] 8.4 Inspect the complete diff and prove no automatic legacy-data migration/deletion and no historical raw-evidence rewrite occurred. (PASS — legacy.py contains no fs-mutation code (messages only); experiment-19 raw rows unchanged (branch diff shows only the campaign's original additions); my experiment edits are dated plan/runner addenda, never raw rows)
+- [ ] 8.5 Mark the release gate clear only if qualification, base artefact evidence and the named policy-owner decision all pass. Otherwise record the exact blocker and stop. (BLOCKED — qualification PASS, base artefacts PASS, but the named policy-owner disposition for the residual PYSEC-2026-311/CVE-2026-45829 universal-lock finding is missing (TBD in evidence/04-residual-lock-finding.md). Release clearance NOT granted; the gate stays blocked until a named owner signs the dated disposition or task 1.7 is executed. This is the exact blocker recorded per the task)
