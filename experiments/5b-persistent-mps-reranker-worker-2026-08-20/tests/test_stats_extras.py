@@ -97,8 +97,21 @@ def test_slope_bootstrap_deterministic_under_seed() -> None:
     assert first["confidence"] == 0.95
     assert first["upper_bound"] >= first["slope"]
 
-    other_seed = se.block_bootstrap_slope_upper_bound(x, y, seed=1)
-    assert other_seed["upper_bound"] != first["upper_bound"]
+    # Perfectly linear data is seed-invariant by construction (every resample
+    # has slope exactly 0.5), so seed sensitivity is asserted on stepped data
+    # (blocks with different slopes) at a quantile where composition matters.
+    # Theil-Sen's median robustness can collapse seed differences at the
+    # median itself; 0.75 separates them on this fixed fixture.
+    split = 40
+    stepped = [0.5 * xi + 2.0 for xi in x[:split]] + [
+        0.7 * xi + 2.0 - 0.2 * split for xi in x[split:]
+    ]
+    stepped_first = se.block_bootstrap_slope_upper_bound(x, stepped, seed=20260821, confidence=0.75)
+    stepped_other = se.block_bootstrap_slope_upper_bound(x, stepped, seed=1, confidence=0.75)
+    assert stepped_first == se.block_bootstrap_slope_upper_bound(
+        x, stepped, seed=20260821, confidence=0.75
+    )
+    assert stepped_first["upper_bound"] != stepped_other["upper_bound"]
 
 
 def test_slope_bootstrap_flat_series_bound_is_small() -> None:

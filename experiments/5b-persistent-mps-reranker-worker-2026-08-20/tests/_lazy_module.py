@@ -28,3 +28,17 @@ class LazyModule:
         if self._module is None:
             self._module = importlib.import_module(self._name)
         return getattr(self._module, attr)
+
+    def __setattr__(self, attr: str, value: Any) -> None:
+        """Forward writes to the real module so monkeypatch reaches it."""
+        if attr in ("_name", "_module"):
+            object.__setattr__(self, attr, value)
+            return
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        setattr(self._module, attr, value)
+
+    def __delattr__(self, attr: str) -> None:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        delattr(self._module, attr)

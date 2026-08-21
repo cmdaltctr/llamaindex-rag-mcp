@@ -148,6 +148,8 @@ def test_fresh_inference_comparison_uses_tolerance_not_bytes(tmp_path) -> None:
         "ranking": list(reversed(flipped[0]["metrics"]["ranking"])),
     }
     projection_c = sm.correctness_projection(flipped)
-    first_a = next(iter(projection_a["pairs"].values()))
-    first_c = next(iter(projection_c["pairs"].values()))
+    # flipped[0] is the (block 1, request 1, W3) row; fetch that exact pair
+    # rather than the first sorted key, which is the unflipped W2 row.
+    first_a = projection_a["pairs"]["1:1:torch_mps_persistent"]
+    first_c = projection_c["pairs"]["1:1:torch_mps_persistent"]
     assert not se.rankings_equal(first_a["ranking"], first_c["ranking"])
