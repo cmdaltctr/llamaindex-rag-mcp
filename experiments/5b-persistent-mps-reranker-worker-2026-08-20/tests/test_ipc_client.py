@@ -289,8 +289,12 @@ def test_worker_serves_many_sequential_requests() -> None:
 
 def test_start_failure_kills_and_reaps_child() -> None:
     """A worker that dies before hello leaves no live process behind."""
+    import shutil
+
+    false_exe = shutil.which("false")
+    assert false_exe is not None, "platform lacks a failing executable"
     started = time.monotonic()
-    sup = _supervisor(python_exe="/bin/false")
+    sup = _supervisor(python_exe=false_exe)
     try:
         try:
             sup.start()
