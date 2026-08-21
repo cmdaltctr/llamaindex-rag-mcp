@@ -193,8 +193,11 @@ class TestCapabilityProbes:
         from rag_mcp.config import Settings
         from rag_mcp.core.retrieval.settings import RetrievalSettings
 
+        # The probe path applies to the Chroma backend, which advertises
+        # native sparse (task 3.3): capability follows the SELECTED store.
         return Settings(
             _env_file=None,
+            vector_store="chroma",
             retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
         )
 

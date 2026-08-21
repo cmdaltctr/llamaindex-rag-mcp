@@ -1595,14 +1595,18 @@ class TestBenchmarkCLI:
         Settings.embed_model = _FailingMockEmbedding(embed_dim=384)
 
         try:
-            result = runner.invoke(
-                app,
-                [
-                    "benchmark",
-                    "--text",
-                    "Warmup failure test text.",
-                ],
-            )
+            # The CLI callback runs ensure_runtime_setup, which would
+            # overwrite the failing mock with a real embed model. Patch it
+            # so the warmup failure under test is the one that surfaces.
+            with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"):
+                result = runner.invoke(
+                    app,
+                    [
+                        "benchmark",
+                        "--text",
+                        "Warmup failure test text.",
+                    ],
+                )
         finally:
             # Restore the original mock from conftest.
             Settings.embed_model = _MockEmb(embed_dim=384)

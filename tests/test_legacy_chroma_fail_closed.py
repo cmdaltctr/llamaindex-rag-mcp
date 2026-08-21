@@ -16,13 +16,13 @@ import logging
 from pathlib import Path
 
 import pytest
+
+from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
 from rag_mcp.core.vectordb.legacy import (
     LegacyChromaDataError,
     classify_legacy_directory,
     evaluate_legacy_chroma_data,
 )
-
-from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
 
 
 def _make_sqlite_marker_dir(tmp_path: Path) -> Path:
