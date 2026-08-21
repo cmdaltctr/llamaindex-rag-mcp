@@ -250,7 +250,11 @@ def run_worker_unit(
 
     supervisor = ipc_client.WorkerSupervisor(device=factors["device"])
     spawn_started = time.perf_counter()
-    supervisor.start()
+    try:
+        supervisor.start()
+    except Exception:
+        supervisor.shutdown()
+        raise
     startup_s = time.perf_counter() - spawn_started
     try:
         _validate_ready_evidence(cell_id, supervisor.ready_evidence)

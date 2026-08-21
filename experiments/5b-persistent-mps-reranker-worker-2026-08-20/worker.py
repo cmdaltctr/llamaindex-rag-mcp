@@ -31,6 +31,7 @@ import selectors  # noqa: E402
 import signal  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
+from collections import deque  # noqa: E402
 from pathlib import Path  # noqa: E402
 from typing import Any  # noqa: E402
 
@@ -40,6 +41,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent.parent))
 
 import protocol_frames as pf  # noqa: E402
 
+OVERSIZED_SENTINEL = b"\x00OVERSIZED"
 REGISTERED_MODEL_FILES = (
     "config.json",
     "model.safetensors",
@@ -218,7 +220,7 @@ def serve_rerank(
     model_revision: str,
     device: str,
     generation: int,
-    seen_request_ids: set[int],
+    seen_request_ids: deque[int],
     stub_behaviour: str | None,
     stub_slow_seconds: float,
     stub_stderr_bytes: int,
@@ -255,10 +257,6 @@ def serve_rerank(
     if not isinstance(request_id, int) or isinstance(request_id, bool):
         return pf.encode_frame(
             pf.error_frame(None, "malformed_frame", "request_id must be an integer")
-        )
-    if len(seen_request_ids) >= pf.MAX_QUEUE_DEPTH:
-        return pf.encode_frame(
-            pf.error_frame(request_id, "bound_violation", "queue depth bound exceeded")
         )
 
     if stub_behaviour == "exit-on-request":
@@ -297,7 +295,7 @@ def serve_rerank(
     started = time.perf_counter()
     ranked = reranker.rerank(frame["query"], candidates, top_k=frame["top_k"])
     inference_ms = (time.perf_counter() - started) * 1000.0
-    seen_request_ids.add(request_id)
+    seen_request_ids.append(request_id)
     result = build_result_frame(
         frame={**frame, "_ranked": ranked},
         reranker=reranker,
@@ -317,6 +315,7 @@ def read_frames(stdin_fd: int, idle_seconds: float):
     selector = selectors.DefaultSelector()
     selector.register(stdin_fd, selectors.EVENT_READ)
     buffer = b""
+    oversized = False
     deadline = time.monotonic() + idle_seconds
     try:
         while True:
@@ -330,6 +329,16 @@ def read_frames(stdin_fd: int, idle_seconds: float):
             if not chunk:
                 return
             buffer += chunk
+            if oversized or len(buffer) > pf.MAX_FRAME_BYTES:
+                oversized = True
+                if b"\n" in chunk:
+                    buffer = b""  # oversized frame fully drained
+                    oversized = False
+                    deadline = time.monotonic() + idle_seconds
+                    yield OVERSIZED_SENTINEL
+                else:
+                    buffer = b""
+                continue
             while b"\n" in buffer:
                 line, buffer = buffer.split(b"\n", 1)
                 deadline = time.monotonic() + idle_seconds
@@ -392,6 +401,10 @@ def main(argv: list[str] | None = None) -> int:
             "pytorch_enable_mps_fallback": os.environ["PYTORCH_ENABLE_MPS_FALLBACK"],
         }
     )
+    if identity.get("snapshot_path"):
+        home = str(Path.home())
+        if identity["snapshot_path"].startswith(home):
+            identity["snapshot_path"] = "~" + identity["snapshot_path"][len(home) :]
     sys.stdout.buffer.write(ready)
     sys.stdout.buffer.flush()
 
@@ -400,10 +413,20 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.buffer.flush()
         _log("stub behaviour: emitted malformed frame after ready")
 
-    seen_request_ids: set[int] = set()
+    # Bounded recent-request memory for duplicate detection.  The worker
+    # serves synchronously, so in-flight requests never exceed one and the
+    # queue-depth bound is a parent-side admission rule, not a worker count.
+    recent_request_ids: deque[int] = deque(maxlen=1024)
     exit_code = 0
     try:
         for line in read_frames(sys.stdin.fileno(), args.idle_seconds):
+            if line == OVERSIZED_SENTINEL:
+                response = pf.error_frame(
+                    None, "oversized_frame", "inbound frame exceeded the size bound"
+                )
+                sys.stdout.buffer.write(pf.encode_frame(response))
+                sys.stdout.buffer.flush()
+                continue
             try:
                 frame = pf.decode_frame(line)
             except pf.FrameError as exc:
@@ -421,7 +444,7 @@ def main(argv: list[str] | None = None) -> int:
                 model_revision=identity["model_revision"],
                 device=args.device,
                 generation=args.generation,
-                seen_request_ids=seen_request_ids,
+                seen_request_ids=recent_request_ids,
                 stub_behaviour=args.stub_behaviour,
                 stub_slow_seconds=args.stub_slow_seconds,
                 stub_stderr_bytes=args.stub_stderr_bytes,

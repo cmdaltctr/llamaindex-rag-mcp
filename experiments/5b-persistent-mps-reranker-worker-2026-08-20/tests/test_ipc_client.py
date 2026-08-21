@@ -266,3 +266,38 @@ def test_memory_sampler_dead_pid_not_evaluable() -> None:
         assert sampler.sample_now(cell_id="c", block=1, lifetime=1, request_index=1) is None
     finally:
         sampler.stop()
+
+
+def test_worker_serves_many_sequential_requests() -> None:
+    """Queue depth must not count history: 30 sequential requests all serve.
+
+    Regression: the worker once rejected request 17 because its duplicate
+    set was (incorrectly) compared against MAX_QUEUE_DEPTH.
+    """
+    started = time.monotonic()
+    sup = _supervisor()
+    try:
+        sup.start()
+        for expected_id in range(1, 31):
+            outcome = sup.request("q", CANDIDATES, top_k=2)
+            assert outcome.admitted, f"request {expected_id} rejected"
+            assert outcome.frame["request_id"] == expected_id
+    finally:
+        sup.shutdown()
+    _assert_bounded(started, 20.0, "sequential requests test")
+
+
+def test_start_failure_kills_and_reaps_child() -> None:
+    """A worker that dies before hello leaves no live process behind."""
+    started = time.monotonic()
+    sup = _supervisor(python_exe="/bin/false")
+    try:
+        try:
+            sup.start()
+            raise AssertionError("handshake against a dying child must fail")
+        except RuntimeError:
+            pass
+        assert not sup.alive()
+    finally:
+        sup.shutdown()
+    _assert_bounded(started, 10.0, "start failure cleanup test")

@@ -300,9 +300,20 @@ def error_frame(
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
-    """Read a JSON-lines artefact file for analysis (raw evidence helper)."""
+    """Read a JSON-lines artefact file for analysis (raw evidence helper).
+
+    Raises:
+        ValueError: Naming the artefact and line number when a line exceeds
+            the bounded-frame guard, so a corrupt artefact fails loudly.
+    """
     rows: list[dict[str, Any]] = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            rows.append(json.loads(line))
+    for number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        if len(line) > MAX_FRAME_BYTES:
+            raise ValueError(
+                f"{path}: line {number} is {len(line)} bytes "
+                f"(bound {MAX_FRAME_BYTES}); artefact is not a bounded JSONL file"
+            )
+        rows.append(json.loads(line))
     return rows

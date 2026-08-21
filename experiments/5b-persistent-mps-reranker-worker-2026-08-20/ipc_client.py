@@ -67,7 +67,8 @@ class _ReaderState:
         self.changed = threading.Condition(self.lock)
         self.completed: dict[int, dict[str, Any]] = {}
         self.deadline_by_rid: dict[int, float] = {}
-        self.late_responses: list[dict[str, Any]] = []
+        self.late_responses: deque[dict[str, Any]] = deque(maxlen=64)
+        self.unsolicited: deque[dict[str, Any]] = deque(maxlen=64)
         self.error_events: deque[dict[str, Any]] = deque(maxlen=64)
         self.violation: str | None = None  # oversized-frame / protocol breach
         self.eof = False
@@ -111,7 +112,7 @@ class WorkerSupervisor:
         self.env_extra = dict(env_extra or {})
         self.python_exe = python_exe
         self.ready_evidence: dict[str, Any] = {}
-        self.late_responses: list[dict[str, Any]] = []
+        self._late_responses: deque[dict[str, Any]] = deque(maxlen=64)
         self._proc: subprocess.Popen[bytes] | None = None
         self._reader: _ReaderState | None = None
         self._reader_thread: threading.Thread | None = None
@@ -184,6 +185,14 @@ class WorkerSupervisor:
                 )
 
     _stderr_lock = threading.Lock()
+
+    @property
+    def late_responses(self) -> list[dict[str, Any]]:
+        """Late response frames retained as evidence, never admitted."""
+        state = self._reader
+        if state is None:
+            return list(self._late_responses)
+        return list(state.late_responses)
 
     @property
     def stderr_tail(self) -> list[str]:
@@ -287,7 +296,7 @@ class WorkerSupervisor:
         self.ready_evidence = ready
 
         self._reader = _ReaderState()
-        self.late_responses = self._reader.late_responses
+        self._late_responses = self._reader.late_responses
         self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
         self._reader_thread.start()
 
@@ -356,7 +365,10 @@ class WorkerSupervisor:
             return
         with state.changed:
             deadline = state.deadline_by_rid.get(rid)
-            if deadline is not None and time.monotonic() > deadline:
+            if deadline is None:
+                # Unsolicited frame (no registered request): evidence only.
+                state.unsolicited.append(frame)
+            elif time.monotonic() > deadline:
                 state.late_responses.append(frame)
                 state.deadline_by_rid.pop(rid, None)
             else:
@@ -406,13 +418,15 @@ class WorkerSupervisor:
                 return RequestOutcome(False, error_code="queue_depth", detail="bound exceeded")
             state.deadline_by_rid[rid] = now + deadline_s
         started = time.perf_counter()
-        try:
-            self._proc.stdin.write(pf.encode_frame(frame))
-            self._proc.stdin.flush()
-        except (BrokenPipeError, OSError) as exc:
+        written = self._write_frame_with_deadline(pf.encode_frame(frame), deadline_s)
+        if not written:
             with state.changed:
                 state.deadline_by_rid.pop(rid, None)
-            return RequestOutcome(False, error_code="worker_exit", detail=str(exc))
+            return RequestOutcome(
+                False,
+                error_code="write_timeout",
+                detail=f"stdin write did not complete within {deadline_s}s",
+            )
         deadline = time.monotonic() + deadline_s
         with state.changed:
             while True:
@@ -450,6 +464,47 @@ class WorkerSupervisor:
                         detail=f"no response within {deadline_s}s",
                     )
                 state.changed.wait(timeout=remaining)
+
+    def _write_frame_with_deadline(self, data: bytes, timeout_s: float) -> bool:
+        """Non-blocking pipe write bounded by a monotonic deadline.
+
+        A stopped or wedged child cannot hold the caller past its deadline:
+        the write aborts and the caller records a write timeout instead of
+        blocking forever on a full pipe.
+        """
+        if self._proc is None or self._proc.stdin is None:
+            return False
+        fd = self._proc.stdin.fileno()
+        originally_blocking = os.get_blocking(fd)
+        view = memoryview(data)
+        deadline = time.monotonic() + timeout_s
+        try:
+            os.set_blocking(fd, False)
+            while view:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                selector = selectors.DefaultSelector()
+                selector.register(fd, selectors.EVENT_WRITE)
+                try:
+                    events = selector.select(timeout=remaining)
+                finally:
+                    selector.close()
+                if not events:
+                    return False
+                try:
+                    written = os.write(fd, view)
+                    view = view[written:]
+                except BlockingIOError:
+                    continue
+            return True
+        except (BrokenPipeError, OSError):
+            return False
+        finally:
+            try:
+                os.set_blocking(fd, originally_blocking)
+            except OSError:
+                pass
 
     def _validate_response(
         self,
@@ -512,11 +567,7 @@ class WorkerSupervisor:
                 "duration_s": 0.0,
             }
         if self.alive() and self._proc.stdin is not None:
-            try:
-                self._proc.stdin.write(pf.encode_frame({"type": "shutdown"}))
-                self._proc.stdin.flush()
-            except (BrokenPipeError, OSError):
-                pass
+            self._write_frame_with_deadline(pf.encode_frame({"type": "shutdown"}), DRAIN_DEADLINE_S)
         try:
             self._proc.wait(timeout=DRAIN_DEADLINE_S)
         except subprocess.TimeoutExpired:
