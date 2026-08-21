@@ -178,8 +178,8 @@ def _initialise_runtime() -> None:
         batch_size,
         concurrency,
     )
-    # Storage summary: mode plus cloud identifiers — never the API key.
-    logger.info("%s", compose.chroma_storage_summary())
+    # Storage summary: selected backend plus location — never the API key.
+    logger.info("%s", compose.storage_summary())
     if logger.isEnabledFor(logging.DEBUG):
         _detect_gpu_acceleration(embed_model)
 
