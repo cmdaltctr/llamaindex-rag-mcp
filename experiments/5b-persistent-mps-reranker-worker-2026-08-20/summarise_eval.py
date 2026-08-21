@@ -614,26 +614,57 @@ def correctness_projection(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 # ── artefact loading and the G9 admissibility gate ────────────────────
+def _read_unit_files(directory: Path, kind: str) -> list[dict[str, Any]]:
+    """Merge per-unit artefact files (raw rows / memory samples).
+
+    The runner writes one file per complete lifetime unit under
+    ``<kind>/<cell>__block<N>.jsonl`` so an interrupted unit restarts from
+    request zero without polluting other units' evidence.
+    """
+    rows: list[dict[str, Any]] = []
+    unit_dir = directory / kind
+    if unit_dir.is_dir():
+        for path in sorted(unit_dir.glob("*.jsonl")):
+            rows.extend(pf.read_jsonl(path))
+    return rows
+
+
+def _unit_of_row(row: dict[str, Any]) -> str:
+    """Checkpoint unit key for a row (cell + block)."""
+    return f"{row['cell_id']}__block{row['block']}"
 
 
 def load_rows(output_dir: str | Path) -> dict[str, Any]:
-    """Load the four frozen artefacts; missing files degrade explicitly."""
+    """Load the frozen artefacts; missing files degrade explicitly.
+
+    Prefers the runner's per-unit files; a legacy single ``raw_rows.jsonl``
+    is still honoured.  Rows are filtered to checkpoint-complete units so
+    partial lifetimes remain evidence without entering aggregates (D16).
+    """
     directory = Path(output_dir)
-
-    def _read(name: str) -> list[dict[str, Any]]:
-        path = directory / name
-        if not path.exists():
-            return []
-        return pf.read_jsonl(path)
-
     checkpoint_path = directory / "eval_results_checkpoint.json"
     checkpoint = (
         json.loads(checkpoint_path.read_text(encoding="utf-8")) if checkpoint_path.exists() else {}
     )
+    completed = set(checkpoint.get("completed", []))
+    legacy_rows = (
+        pf.read_jsonl(directory / "raw_rows.jsonl")
+        if (directory / "raw_rows.jsonl").exists()
+        else []
+    )
+    raw_rows = _read_unit_files(directory, "raw_rows") or legacy_rows
+    memory_samples = _read_unit_files(directory, "memory_samples")
+    if (directory / "memory_samples.jsonl").exists() and not memory_samples:
+        memory_samples = pf.read_jsonl(directory / "memory_samples.jsonl")
+    if completed:
+        raw_rows = [row for row in raw_rows if _unit_of_row(row) in completed]
+        memory_samples = [sample for sample in memory_samples if _unit_of_row(sample) in completed]
+    probe_path = directory / "lifecycle_probes.jsonl"
+    probe_rows = pf.read_jsonl(probe_path) if probe_path.exists() else []
     return {
-        "raw_rows": _read("raw_rows.jsonl"),
-        "memory_samples": _read("memory_samples.jsonl"),
-        "probe_rows": _read("lifecycle_probes.jsonl"),
+        "raw_rows": raw_rows,
+        "memory_samples": memory_samples,
+        "probe_rows": probe_rows,
         "checkpoint": checkpoint,
     }
 

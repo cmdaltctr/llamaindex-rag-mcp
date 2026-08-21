@@ -7,31 +7,31 @@
 
 ## 2. Protocol and worker prototype
 
-- [ ] 2.1 Implement the experiment-owned versioned JSON-lines worker with stdout reserved for bounded protocol frames, concurrently drained stderr, request-ID correlation, maximum frame/candidate/token sizes, malformed-frame errors and monotonic deadlines.
-- [ ] 2.2 Set `PYTORCH_ENABLE_MPS_FALLBACK=0` before any Torch-capable import. Handshake MUST report exact model revision/file hashes, stack versions, requested/effective device and fallback state.
-- [ ] 2.3 Construct the production `SentenceTransformerReranker` unmodified. Every response MUST report route, model identity, cardinality and reranked status; the first unrereanked/wrong-route/wrong-generation response aborts the cell and is never admitted to aggregates.
-- [ ] 2.4 Prove the parent has not imported `torch`, `transformers` or `sentence_transformers` after the worker and fallback probes.
+- [x] 2.1 Implement the experiment-owned versioned JSON-lines worker with stdout reserved for bounded protocol frames, concurrently drained stderr, request-ID correlation, maximum frame/candidate/token sizes, malformed-frame errors and monotonic deadlines.
+- [x] 2.2 Set `PYTORCH_ENABLE_MPS_FALLBACK=0` before any Torch-capable import. Handshake MUST report exact model revision/file hashes, stack versions, requested/effective device and fallback state.
+- [x] 2.3 Construct the production `SentenceTransformerReranker` unmodified. Every response MUST report route, model identity, cardinality and reranked status; the first unrereanked/wrong-route/wrong-generation response aborts the cell and is never admitted to aggregates.
+- [x] 2.4 Prove the parent has not imported `torch`, `transformers` or `sentence_transformers` after the worker and fallback probes.
 
 ## 3. Parent harness and lifecycle supervision
 
-- [ ] 3.1 Implement W1–W5 with whole-lifetime counterbalancing and one declared W1 parent state. Record parent-observed latency around serialisation, queueing, IPC, inference and response validation.
-- [ ] 3.2 Implement current-RSS sampling at least every second and every ten requests. If the sampler is unavailable, emit `NOT_EVALUABLE` for plateau/growth and block promotion; never substitute peak RSS.
-- [ ] 3.3 Implement D5 exactly: 200-request burn-in, request-801–1000 RSS p95 plateau, Theil-Sen slope over requests 201–1000, seeded block-bootstrap one-sided 95% bound, and separate worker/parent/tree/MPS-current/MPS-driver fields.
-- [ ] 3.4 Implement complete-lifetime atomic checkpoints. `--resume` MAY reuse complete lifetimes only; every incomplete lifetime restarts from request zero and no statistic crosses PIDs.
-- [ ] 3.5 Add external-supervisor probes for worker SIGKILL, worker SIGSTOP/hang, parent SIGKILL idle and in-flight, stdout backpressure, stderr flooding, malformed frames, EOF, idle expiry and orderly shutdown. Assert bounded TERM/KILL, reaping and absence of descendants.
-- [ ] 3.6 Register and test idle expiry, worker generation, restart backoff, maximum restart attempts and rejection of late responses.
+- [x] 3.1 Implement W1–W5 with whole-lifetime counterbalancing and one declared W1 parent state. Record parent-observed latency around serialisation, queueing, IPC, inference and response validation.
+- [x] 3.2 Implement current-RSS sampling at least every second and every ten requests. If the sampler is unavailable, emit `NOT_EVALUABLE` for plateau/growth and block promotion; never substitute peak RSS.
+- [x] 3.3 Implement D5 exactly: 200-request burn-in, request-801–1000 RSS p95 plateau, Theil-Sen slope over requests 201–1000, seeded block-bootstrap one-sided 95% bound, and separate worker/parent/tree/MPS-current/MPS-driver fields.
+- [x] 3.4 Implement complete-lifetime atomic checkpoints. `--resume` MAY reuse complete lifetimes only; every incomplete lifetime restarts from request zero and no statistic crosses PIDs.
+- [x] 3.5 Add external-supervisor probes for worker SIGKILL, worker SIGSTOP/hang, parent SIGKILL idle and in-flight, stdout backpressure, stderr flooding, malformed frames, EOF, idle expiry and orderly shutdown. Assert bounded TERM/KILL, reaping and absence of descendants.
+- [x] 3.6 Register and test idle expiry, worker generation, restart backoff, maximum restart attempts and rejection of late responses.
 
 ## 4. Fast harness validation
 
-- [ ] 4.1 Add no-model/no-network tests for plan/runner/gate agreement, handshake identity, per-response route admission, malformed/oversized frames, deadline fallback, pipe draining, complete-lifetime resume and warm-up exclusion.
-- [ ] 4.2 Place tests under the configured pytest collection tree or invoke their exact path in CI; record the collection command and expected test count.
-- [ ] 4.3 Generate the canonical correctness projection twice from one frozen raw fixture and assert byte identity; separately test tolerance-based inference comparison semantics.
+- [x] 4.1 Add no-model/no-network tests for plan/runner/gate agreement, handshake identity, per-response route admission, malformed/oversized frames, deadline fallback, pipe draining, complete-lifetime resume and warm-up exclusion.
+- [x] 4.2 Place tests under the configured pytest collection tree or invoke their exact path in CI; record the collection command and expected test count.
+- [x] 4.3 Generate the canonical correctness projection twice from one frozen raw fixture and assert byte identity; separately test tolerance-based inference comparison semantics.
 
 ## 5. Untimed preflight
 
-- [ ] 5.1 Install the existing `torch` extra without changing `pyproject.toml` or `uv.lock`; prove MPS availability and record exact host, macOS, Python, lock and model-file identities.
-- [ ] 5.2 Run every W1–W5 route untimed. Abort before measurement on requested/effective mismatch, fallback-policy mismatch, missing model identity, unrereanked output or parent Torch-stack import.
-- [ ] 5.3 Run all lifecycle probes with a stub worker and then one untimed real-model request; do not begin measured work until every bounded-failure assertion passes.
+- [x] 5.1 Install the existing `torch` extra without changing `pyproject.toml` or `uv.lock`; prove MPS availability and record exact host, macOS, Python, lock and model-file identities.
+- [x] 5.2 Run every W1–W5 route untimed. Abort before measurement on requested/effective mismatch, fallback-policy mismatch, missing model identity, unrereanked output or parent Torch-stack import.
+- [x] 5.3 Run all lifecycle probes with a stub worker and then one untimed real-model request; do not begin measured work until every bounded-failure assertion passes.
 
 ## 6. Measured campaign
 

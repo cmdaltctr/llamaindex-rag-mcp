@@ -413,6 +413,35 @@ def test_load_rows_reads_all_four_artefacts(tmp_path) -> None:
     assert loaded["checkpoint"]["completed"] == checkpoint["completed"]
 
 
+def test_load_rows_merges_per_unit_files_and_filters_incomplete(tmp_path) -> None:
+    """Runner layout: per-unit files; only checkpoint-complete units load."""
+    complete_rows = [raw_row(W3, 1, 1, 10.0, ["a"], {"a": 0.5})]
+    partial_rows = [raw_row(W3, 2, 1, 10.0, ["a"], {"a": 0.5})]
+    complete_samples = [mem_row(1, 801, 600.0, 300.0, 1000.0)]
+    (tmp_path / "raw_rows").mkdir()
+    (tmp_path / "memory_samples").mkdir()
+    art.append_jsonl(tmp_path / "raw_rows" / f"{W3}__block1.jsonl", complete_rows)
+    art.append_jsonl(tmp_path / "raw_rows" / f"{W3}__block2.jsonl", partial_rows)
+    art.append_jsonl(tmp_path / "memory_samples" / f"{W3}__block1.jsonl", complete_samples)
+    checkpoint = art.build_checkpoint(
+        experiment_id="5b-persistent-mps-reranker-worker",
+        plan_sha256="00" * 32,
+        completed=[art.checkpoint_key(W3, 1)],
+        records={
+            art.checkpoint_key(W3, 1): {"status": "complete"},
+            art.checkpoint_key(W3, 2): {
+                "status": "incomplete",
+                "reason": "interrupted mid-lifetime",
+            },
+        },
+    )
+    art.write_json_atomic(tmp_path / "eval_results_checkpoint.json", checkpoint)
+
+    loaded = sm.load_rows(tmp_path)
+    assert loaded["raw_rows"] == complete_rows  # block 2 excluded from aggregates
+    assert loaded["memory_samples"] == complete_samples
+
+
 # ── canonical correctness projection ──────────────────────────────────
 
 
