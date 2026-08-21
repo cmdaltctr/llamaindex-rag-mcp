@@ -35,7 +35,7 @@ CONC_COLLECTION = "qual_concurrency"
 
 Q_QUARTZ = "quartz crystal oscillator piezoelectric resonant frequency"
 Q_HARBOUR_V1 = "harbour tugboat azimuth thruster bollard pull"
-Q_HARBOUR_V1_ONLY = "towline made fast forward of the bridge berthing"
+Q_HARBOUR_V1_ONLY = "breakwater pilot boarding inbound vessel escort"
 Q_HARBOUR_V2 = "battery-hybrid escort dynamic positioning charging"
 Q_LIGHTHOUSE = "fresnel lens mercury bath bearing rotation period"
 Q_DELTA = "pilot station rope ladder listening watch"
@@ -372,7 +372,9 @@ async def gate_g7(ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         "ingest_result": _jsonable(result),
         "v1_only_query_top_files": [_file_of(r) for r in v1_rows[:3]],
         "v2_query_top_files": [_file_of(r) for r in v2_rows[:3]],
-        "v1_texts_still_present": any("towline" in (r.get("text") or "") for r in v1_rows),
+        "v1_texts_still_present": any(
+            "breakwater" in (r.get("text") or "").lower() for r in v1_rows
+        ),
         "v2_texts_present": any(
             "dynamic positioning" in (r.get("text") or "").lower() for r in v2_rows
         ),

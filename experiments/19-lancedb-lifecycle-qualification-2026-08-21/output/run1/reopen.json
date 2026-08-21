@@ -1,0 +1,12 @@
+{
+ "count": 5,
+ "env": {
+  "LANCEDB_URI": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-lancedb-default/experiments/19-lancedb-lifecycle-qualification-2026-08-21/output/run1/lancedb_store",
+  "VECTOR_STORE": "lancedb"
+ },
+ "expect_count": 5,
+ "expect_file": "alpha_quartz.md",
+ "ok": false,
+ "rows": 0,
+ "top_file": ""
+}

@@ -44,7 +44,7 @@ def main() -> int:
 
         store = get_default_store()
         count = store.count("qual_documents")
-        rows = search(args.query, top_k=3, hybrid=False)
+        rows = search(args.query, top_k=3, hybrid=False, collection_name="qual_documents")
         top_meta = (rows[0].get("metadata") or {}) if rows else {}
         top_file = str(top_meta.get("file_path") or top_meta.get("file_name") or "")
         payload.update(
