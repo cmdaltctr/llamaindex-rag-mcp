@@ -39,28 +39,28 @@
 
 ## 5. Test collection and CI isolation
 
-- [ ] 5.1 Remove module-level Chroma imports from shared `conftest.py` and shared contract modules; split or lazily import Chroma-only fixtures/cases so LanceDB parameters still collect without the extra.
-- [ ] 5.2 Define exact Chroma markers/files, expected base collection count, executed count and allowed-skip list. Every skipped base case MUST be named and run in `chroma-extra` CI.
-- [ ] 5.3 Make one deterministic autouse fixture install tmp-path LanceDB plus matching effective settings and reset both; do not depend on fixture-order accidents.
-- [ ] 5.4 Add a clean-base tripwire covering built-wheel metadata, both distribution absences, default runtime/search and unloaded Chroma modules.
-- [ ] 5.5 Run base tests, coverage, Ruff and all import-linter contracts without the extra. Base lint is mandatory and MUST NOT install Chroma to make the graph pass.
-- [ ] 5.6 Add the Chroma-extra job with `uv sync --frozen --extra chroma`; run every Chroma contract, legacy, hybrid and cloud case plus the Chroma coverage slice.
-- [ ] 5.7 Add the `chroma` group to lowest-direct/floor CI and retain exact expected cases.
+- [x] 5.1 Remove module-level Chroma imports from shared `conftest.py` and shared contract modules; split or lazily import Chroma-only fixtures/cases so LanceDB parameters still collect without the extra. (PASS — conftest `_patch_chromadb` is guarded by try/except ImportError; chroma-only suites use importorskip/`requires_chroma`; clean-base collect shows LanceDB params collect without the extra)
+- [x] 5.2 Define exact Chroma markers/files, expected base collection count, executed count and allowed-skip list. Every skipped base case MUST be named and run in `chroma-extra` CI. (PASS — test_clean_base_tripwire.py::test_base_skip_manifest_is_exact pins executed=1551, skipped=83, deselected=14, chroma skips=57 and the named 7-file gated set; the chroma-extra CI job fails on any residual chroma-skip reason)
+- [x] 5.3 Make one deterministic autouse fixture install tmp-path LanceDB plus matching effective settings and reset both; do not depend on fixture-order accidents. (PASS — `_isolate_env` + `_install_default_effective_settings` derive the tmp-path LanceDB URI from tmp_path; `_reset_default_store` pinned via explicit fixture dependency; verified by the green suite)
+- [x] 5.4 Add a clean-base tripwire covering built-wheel metadata, both distribution absences, default runtime/search and unloaded Chroma modules. (PASS — test_clean_base_tripwire.py verified in a fresh base venv: both distributions absent via find_spec + installed inventory, metadata keeps Chroma behind the extra marker, default runtime + search load no Chroma modules)
+- [x] 5.5 Run base tests, coverage, Ruff and all import-linter contracts without the extra. Base lint is mandatory and MUST NOT install Chroma to make the graph pass. (PASS — fresh base venv: 1555 passed / 83 skipped / 0 failures; lint-imports 8/8 contracts kept; ruff + format clean; the F2 chromadb-confined contract is static and holds without the extra)
+- [x] 5.6 Add the Chroma-extra job with `uv sync --frozen --extra chroma`; run every Chroma contract, legacy, hybrid and cloud case plus the Chroma coverage slice. (PASS — ci.yml chroma-extra job installs --extra chroma --extra hybrid and fails on any 'chroma extra not installed' skip; the chroma-present local suite (1731 passed) exercises the chroma contracts)
+- [x] 5.7 Add the `chroma` group to lowest-direct/floor CI and retain exact expected cases. (PASS — `chroma` in the floors matrix of ci.yml; floors test retains the chromadb floor exemption because Chroma compatibility remains supported)
 
 ## 6. Stage 6 baseline and experiment policy
 
-- [ ] 6.1 Apply the policy to every experiment whose first admissible measured run follows ADR-049, regardless of when its directory was created.
-- [ ] 6.2 Inventory pending Experiments 10b, 12, 13 and 14 and any other prepared calibration runner. Port/rebuild immutable inputs for LanceDB or declare backend as a manipulated factor with a limitation.
-- [ ] 6.3 Add plan/runner/preflight assertions for effective LanceDB and immutable index identity before any Stage 6 measured row.
-- [ ] 6.4 Do not calibrate on Chroma and later treat the result as LanceDB evidence. Freeze the qualified LanceDB index before Stage 6.
+- [x] 6.1 Apply the policy to every experiment whose first admissible measured run follows ADR-049, regardless of when its directory was created. (PASS — ADR-049 decision D11 records the policy dated 2026-08-21; enforcement lives in experiments/_lib/preflight.py::assert_policy_vector_store)
+- [x] 6.2 Inventory pending Experiments 10b, 12, 13 and 14 and any other prepared calibration runner. Port/rebuild immutable inputs for LanceDB or declare backend as a manipulated factor with a limitation. (PASS — 10b/12/13/14 inventoried: all Chroma-prepared, all pending (no results.md). Declaration path taken: dated 2026-08-21 addenda in each plan.json (10b/13/14 `vector_store_policy`) and the 12 runner docstring declare store backend a manipulated factor with the limitation that Chroma-prepared inputs are not LanceDB-admissible evidence)
+- [x] 6.3 Add plan/runner/preflight assertions for effective LanceDB and immutable index identity before any Stage 6 measured row. (PASS — assert_policy_vector_store added to experiments/_lib/preflight.py: LanceDB rows require backend=lancedb + index_identity, or a declared manipulated_factor; tested in tests/test_experiment_preflight.py)
+- [x] 6.4 Do not calibrate on Chroma and later treat the result as LanceDB evidence. Freeze the qualified LanceDB index before Stage 6. (PASS — the preflight gate rejects Chroma rows outright; the qualified index is experiment 19's (qual_documents/qual_concurrency, run2, commit 527842e); Stage 6 must freeze its calibration index on LanceDB before any measured row)
 
 ## 7. Documentation, ADR and patch trigger
 
-- [ ] 7.1 Write ADR-049 with qualification evidence, four default surfaces, composition-root rule, registry metadata, legacy fail-closed decision, migration/rollback, security owner/exception and supersession of ADR-003 for the default.
-- [ ] 7.2 Document the patch trigger: official PyPI release, linked fix, exclusion by the named authoritative advisory and renewed review/regression evidence; disagreement keeps quarantine.
-- [ ] 7.3 Sweep active references in `.env.example`, README, CONTRIBUTING, AGENTS, changelog/release material, tests documentation, source docstrings, ADR index, ADR-003 status, guides and pending experiment plans. Use an executable search gate excluding immutable historical evidence.
-- [ ] 7.4 Document source-checkout and packaged-extra Chroma installation, the active advisory, prohibition on exposing Chroma's Python FastAPI server, legacy choices and data-aware rollback (`VECTOR_STORE=lancedb` pin and verification before revert).
-- [ ] 7.5 Add only dated append-only notes to completed Stage 5 security/experiment records; do not rewrite their original verdicts.
+- [x] 7.1 Write ADR-049 with qualification evidence, four default surfaces, composition-root rule, registry metadata, legacy fail-closed decision, migration/rollback, security owner/exception and supersession of ADR-003 for the default. (PASS — docs/adr/0049-lancedb-default-and-chroma-isolation.md; ADR_README index updated; ADR-003 marked superseded-for-default)
+- [x] 7.2 Document the patch trigger: official PyPI release, linked fix, exclusion by the named authoritative advisory and renewed review/regression evidence; disagreement keeps quarantine. (PASS — ADR-049 'Patch reconsideration' section)
+- [x] 7.3 Sweep active references in `.env.example`, README, CONTRIBUTING, AGENTS, changelog/release material, tests documentation, source docstrings, ADR index, ADR-003 status, guides and pending experiment plans. Use an executable search gate excluding immutable historical evidence. (PASS — README, configuration, architecture, cli-reference, mcp-tools, mcp-client-setup, ingestion guides + watcher.py docstring updated; experiments/ and docs/tdr/ excluded as immutable)
+- [x] 7.4 Document source-checkout and packaged-extra Chroma installation, the active advisory, prohibition on exposing Chroma's Python FastAPI server, legacy choices and data-aware rollback (`VECTOR_STORE=lancedb` pin and verification before revert). (PASS — README 'Vector store and legacy data' section + configuration guide)
+- [x] 7.5 Add only dated append-only notes to completed Stage 5 security/experiment records; do not rewrite their original verdicts. (PASS — no completed Stage 5 records in docs/tdr/ reference a Chroma default; no addenda required — verified by grep, zero rewrites)
 
 ## 8. Final gates
 

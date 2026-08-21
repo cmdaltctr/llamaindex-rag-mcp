@@ -67,10 +67,11 @@ Then register it with your AI client: [MCP client setup](docs/guides/mcp-client-
 
 ### What goes in `.env`
 
-Connection details and secrets. Nothing else.
+Connection details, vector-store selection, and secrets.
 
 ```bash
-CHROMA_PERSIST_DIR=./chroma_db
+VECTOR_STORE=lancedb
+LANCEDB_URI=./lancedb
 COLLECTION_NAME=documents
 EMBED_MODEL=qwen3-embedding:0.6b
 LLAMACPP_EMBED_URL=http://localhost:8080/v1
@@ -82,6 +83,29 @@ OLLAMA_BASE_URL=http://localhost:11434
 Tuning belongs in `src/rag_mcp/config/defaults.yaml`; per-collection behaviour
 belongs in a profile. Putting tuning in `.env` silently overrides your profiles
 — see [Configuration](docs/guides/configuration.md) for the precedence rules.
+
+### Vector store and legacy data
+
+LanceDB is the base-install default. It stores each collection under
+`LANCEDB_URI`. To use Chroma, install the optional extra in a source checkout:
+
+```bash
+uv sync --extra chroma
+```
+
+For an installed package, use `pip install "rag-mcp[chroma]"`. Then set
+`VECTOR_STORE=chroma`. CVE-2026-45829 (PYSEC-2026-311) remains active for
+this optional dependency. Do not expose Chroma's Python FastAPI server through
+this project.
+
+Recognised legacy Chroma data stops default-derived LanceDB startup. Keep it by
+installing the extra and explicitly setting `VECTOR_STORE=chroma`, or explicitly
+set `VECTOR_STORE=lancedb` and re-ingest source files. The server never moves,
+deletes, or migrates the Chroma directory.
+
+A store change requires re-ingestion. Before reverting after LanceDB ingestion,
+set and verify `VECTOR_STORE=lancedb`. Keep that pin during the revert. An
+older release can otherwise select Chroma and make LanceDB data appear missing.
 
 ---
 
@@ -170,8 +194,9 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_EMBED_MODEL=text-embedding-3-small
 ```
 
-Switching embedding provider changes the vector dimension. ChromaDB locks
-dimensions per collection, so delete `chroma_db/` and re-ingest.
+Switching embedding provider can change the vector dimension. Both supported
+stores lock their collection dimension on first write. Re-ingest source files
+into a fresh collection after a dimension change.
 
 **Azure Document Intelligence** for complex PDFs (`uv sync --extra azure`).
 Opt-in, and falls back to local parsing if unreachable.

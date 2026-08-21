@@ -6,11 +6,17 @@
   "manipulated_factors": [
     {
       "name": "reader",
-      "levels": ["pypdf", "liteparse"]
+      "levels": [
+        "pypdf",
+        "liteparse"
+      ]
     },
     {
       "name": "rerank",
-      "levels": [false, true]
+      "levels": [
+        false,
+        true
+      ]
     }
   ],
   "controlled_variables": {
@@ -65,7 +71,10 @@
     {
       "manifest_field": "document_backend.effective",
       "operator": "in",
-      "expected": ["pypdf", "liteparse"],
+      "expected": [
+        "pypdf",
+        "liteparse"
+      ],
       "reason": "the requested parser must be the parser that ran (no fallback)"
     },
     {
@@ -73,5 +82,13 @@
       "operator": "not_null",
       "reason": "the build must record the immutable PDF corpus identity"
     }
-  ]
+  ],
+  "vector_store_policy": {
+    "addendum": "2026-08-21",
+    "source": "ADR-049 decision D11 (make-lancedb-default-and-isolate-chromadb)",
+    "policy": "first admissible measured run follows ADR-049 -> must run on the qualified LanceDB default unless the vector-store backend is a declared manipulated factor",
+    "declaration": "vector-store backend declared a manipulated factor",
+    "limitation": "prepared-on-Chroma inputs produce Chroma-specific results; not LanceDB-admissible evidence. Re-base immutable inputs on LanceDB, or keep this declaration, before any measured row.",
+    "preflight": "assert_policy_vector_store in experiments/_lib/preflight.py (task 6.3)"
+  }
 }

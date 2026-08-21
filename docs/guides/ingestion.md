@@ -24,7 +24,8 @@ Source file (PDF, DOCX, TXT, ...)
       |                     Produces a fixed-dimension vector (768, 1024, etc.)
       |
       v
-[4] Store in ChromaDB
+[4] Store in the selected vector store
+      |  LanceDB is the base-install default
       |  collection = "documents" (or --collection value)
       |  Each record: vector + text + metadata + file_path
       v
@@ -105,14 +106,11 @@ ollama pull mxbai-embed-large
 # 2. Update .env
 EMBED_MODEL=mxbai-embed-large
 
-# 3. Delete the old vector store (dimensions differ between models)
-rm -rf chroma_db
-
-# 4. Re-index your documents
+# 3. Re-index your documents into a fresh collection
 rag-mcp ingest /path/to/docs/
 ```
 
-> **Why delete chroma_db?** ChromaDB locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires starting fresh.
+> **Why re-index?** The selected vector store locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires a fresh collection.
 
 ## Chunk size guide
 

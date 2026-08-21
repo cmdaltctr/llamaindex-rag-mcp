@@ -9,7 +9,7 @@ development of the LlamaIndex RAG MCP Server.
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ---------- | -------- |
 | [001](./001-use-uv-as-package-manager.md)                          | Use uv as Package Manager                                                                    | 2026-05-11 | Accepted |
 | [002](./002-adopt-llamaindex-for-rag-pipeline.md)                  | Adopt LlamaIndex for RAG Pipeline                                                            | 2026-05-11 | Accepted |
-| [003](./003-use-chromadb-as-vector-store.md)                       | Use ChromaDB as Vector Store                                                                 | 2026-05-11 | Accepted |
+| [003](./003-use-chromadb-as-vector-store.md)                       | Use ChromaDB as Vector Store                                                                 | 2026-05-11 | Superseded for default by ADR-049 |
 | [004](./004-adopt-mcp-protocol-for-server-interface.md)            | Adopt MCP Protocol for Server Interface                                                      | 2026-05-11 | Accepted |
 | [005](./005-cross-encoder-reranker-with-onnx-runtime.md)           | Cross-Encoder Reranker with ONNX Runtime                                                     | 2026-05-11 | Accepted |
 | [006](./006-config-as-single-source-of-truth.md)                   | Config as Single Source of Truth                                                             | 2026-05-12 | Accepted |
@@ -55,6 +55,7 @@ development of the LlamaIndex RAG MCP Server.
 | [046](./046-lancedb-vector-store-backend.md)                     | LanceDB as the Second Vector-Store Backend                                                   | 2026-08-17 | Accepted |
 | [047](./047-semantic-vector-store-swappability.md)               | Semantic Vector-Store Swappability                                                           | 2026-08-18 | Accepted |
 | [048](./048-bounded-failure-safe-ingestion.md)                   | Bounded and Failure-Safe Ingestion                                                           | 2026-08-19 | Accepted |
+| [049](./0049-lancedb-default-and-chroma-isolation.md)           | LanceDB Default and Chroma Isolation                                                         | 2026-08-21 | Accepted (release clearance pending security disposition) |
 
 ## Convention
 
