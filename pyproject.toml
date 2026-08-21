@@ -367,6 +367,8 @@ select = ["E", "F", "I", "UP", "B", "S"]
 # seeded pseudo-random sampling; B007/B905: pre-existing build loops.
 "experiments/*/test_*.py" = ["S101", "S108", "B017", "S603", "S607"]
 "experiments/*/run_eval.py" = ["S110", "S603", "S607", "E501", "S311"]
+"experiments/*/run_qualification.py" = ["S110", "S310", "S603", "S607"]
+"experiments/*/verify_reopen.py" = ["S603", "S607"]
 "experiments/*/analysis.py" = ["B018"]
 "experiments/*/summarise_eval.py" = ["E501"]
 "experiments/*/build_indexes.py" = ["E501", "S311", "B007", "B905"]
