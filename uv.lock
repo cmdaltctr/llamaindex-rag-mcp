@@ -4726,7 +4726,6 @@ name = "rag-mcp"
 version = "2.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "chromadb" },
     { name = "docx2txt" },
     { name = "httpx" },
     { name = "huggingface-hub" },
@@ -4736,7 +4735,6 @@ dependencies = [
     { name = "llama-index-embeddings-ollama" },
     { name = "llama-index-llms-ollama" },
     { name = "llama-index-readers-file" },
-    { name = "llama-index-vector-stores-chroma" },
     { name = "llama-index-vector-stores-lancedb" },
     { name = "mcp", extra = ["cli"] },
     { name = "networkx" },
@@ -4756,6 +4754,10 @@ dependencies = [
 [package.optional-dependencies]
 azure = [
     { name = "azure-ai-documentintelligence" },
+]
+chroma = [
+    { name = "chromadb" },
+    { name = "llama-index-vector-stores-chroma" },
 ]
 community-leiden = [
     { name = "igraph" },
@@ -4797,7 +4799,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "azure-ai-documentintelligence", marker = "extra == 'azure'", specifier = ">=1.0.0" },
-    { name = "chromadb", specifier = ">=1.0.0" },
+    { name = "chromadb", marker = "extra == 'chroma'", specifier = ">=1.0.0" },
     { name = "docx2txt", specifier = ">=0.9" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "huggingface-hub", specifier = ">=1.0.0" },
@@ -4813,7 +4815,7 @@ requires-dist = [
     { name = "llama-index-llms-openai-like", marker = "extra == 'llamacpp'", specifier = ">=0.5.0" },
     { name = "llama-index-llms-openai-like", marker = "extra == 'openrouter'", specifier = ">=0.5.0" },
     { name = "llama-index-readers-file", specifier = ">=0.5.0" },
-    { name = "llama-index-vector-stores-chroma", specifier = ">=0.5.0" },
+    { name = "llama-index-vector-stores-chroma", marker = "extra == 'chroma'", specifier = ">=0.5.0" },
     { name = "llama-index-vector-stores-lancedb", specifier = ">=0.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=2.0.0" },
     { name = "networkx", specifier = ">=3.2" },
@@ -4833,7 +4835,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.25.1" },
     { name = "watchdog", specifier = ">=5.0.0" },
 ]
-provides-extras = ["hybrid", "pdf-pypdfium2", "community-leiden", "azure", "llamacpp", "openrouter", "torch"]
+provides-extras = ["chroma", "hybrid", "pdf-pypdfium2", "community-leiden", "azure", "llamacpp", "openrouter", "torch"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -32,6 +32,21 @@ runner = CliRunner()
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
+@pytest.fixture(autouse=True)
+def _reset_runtime_details_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reset the CLI runtime-details logging flag per test.
+
+    Task 5.3 companion: the composition root now re-runs per test, so a
+    test that enables runtime-details logging would otherwise leak INFO
+    lines into every later command's captured output and break the
+    --json parsers. In production the CLI is a one-shot process, so the
+    module-level flag never survives a command boundary.
+    """
+    import rag_mcp.transports.cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_runtime_details_enabled", False)
+
+
 def _strip_ansi(text: str) -> str:
     """Remove ANSI escape codes from rich help output."""
     return _ANSI_RE.sub("", text)

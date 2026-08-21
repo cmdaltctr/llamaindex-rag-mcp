@@ -9,9 +9,22 @@ from __future__ import annotations
 
 import inspect
 import logging
+
+# ── Optional-chroma guard (task 5.1) ────────────────────────────────────
+# These pipeline tests drive the hybrid paths through the ChromaDB adapter
+# (EphemeralClient + fake collections). They skip by design in the base
+# install and run in the chroma-extra CI job; the BM25 core tests above and
+# below run against the tmp-path LanceDB default store in both installs.
+from importlib.util import find_spec as _find_spec
 from unittest.mock import MagicMock
 
 import pytest
+
+_CHROMA_EXTRA = _find_spec("chromadb") is not None
+requires_chroma = pytest.mark.skipif(
+    not _CHROMA_EXTRA,
+    reason="chroma extra not installed (uv sync --extra chroma); runs in the chroma-extra CI job",
+)
 
 
 class FakeCollection:
@@ -361,6 +374,7 @@ def test_bm25_cache_namespaces_same_collection_by_store() -> None:
     assert (store_b, "shared") in BM25SparseRetriever._cache
 
 
+@requires_chroma
 def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
     """Two Chroma adapters with the same collection name stay isolated."""
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
@@ -666,6 +680,7 @@ def test_remove_collection_generation_invalidates_cache() -> None:
     assert [row[1] for row in retriever.query("replacement", top_n=5)] == ["new"]
 
 
+@requires_chroma
 def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     """The dense-only default must remain byte-for-byte compatible."""
     import chromadb
@@ -695,6 +710,7 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     assert explicit == implicit
 
 
+@requires_chroma
 def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     """Hybrid + rerank must feed the reranker the fused dense+sparse pool."""
     import chromadb
@@ -748,6 +764,7 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     assert len(captured["results"]) == 2
 
 
+@requires_chroma
 def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     """MCP/CLI public result shape should not leak internal fusion fields."""
     import chromadb
@@ -797,6 +814,7 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
         assert "fused_rank" not in result
 
 
+@requires_chroma
 def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     """Experiment 9 can opt into fusion rank diagnostics explicitly."""
     import chromadb
@@ -842,6 +860,7 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     assert results[0]["fused_rank"] == 1
 
 
+@requires_chroma
 def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     """Native sparse mixed coverage should warn once with remediation text."""
     import chromadb
@@ -892,6 +911,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     assert "re-ingest" in warnings[0].lower() or "reingest" in warnings[0].lower()
 
 
+@requires_chroma
 def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) -> None:
     """Native coverage checks must respect CHROMA_SCAN_PAGE_SIZE paging."""
     import chromadb
@@ -936,6 +956,7 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     assert any("1/3 chunks" in record.message for record in caplog.records)
 
 
+@requires_chroma
 def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch, caplog) -> None:
     """Selected native without real query support must use BM25 sparse results."""
     import chromadb
@@ -1000,6 +1021,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     )
 
 
+@requires_chroma
 def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> None:
     """BM25 indexes all chunks it sees and must not warn about sparse coverage."""
     import chromadb
@@ -1094,6 +1116,7 @@ def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) 
     assert any("Falling back to bm25" in record.message for record in caplog.records)
 
 
+@requires_chroma
 def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     """Dense top_k can miss the exact Colosseum chunk; hybrid recovers it."""
     import chromadb
@@ -1153,6 +1176,7 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     assert any(row["source"] == "sample.md" for row in hybrid)
 
 
+@requires_chroma
 def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     """When no reranker is injected, search() resolves one from the registry.
 

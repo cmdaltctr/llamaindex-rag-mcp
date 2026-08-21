@@ -101,6 +101,7 @@ def test_torch_absent_after_full_search_subprocess() -> None:
         os.environ["RETRIEVAL__RERANK_BACKEND"] = "onnx"
 
         # ── Env vars (match conftest _isolate_env) ────────────────────
+        os.environ["VECTOR_STORE"] = "lancedb"
         os.environ.setdefault("EMBED_PROVIDER", "local")
         os.environ.setdefault("LOCAL_BACKEND", "ollama")
         os.environ.setdefault("EMBED_MODEL", "nomic-embed-text")
@@ -109,14 +110,6 @@ def test_torch_absent_after_full_search_subprocess() -> None:
         os.environ.setdefault("METADATA__EXTRACTION_MODE", "disabled")
         os.environ.setdefault("METADATA__KEYWORD_RULES", "")
         os.environ.setdefault("PDF_READER", "pypdf")
-
-        # ── Mock ChromaDB (EphemeralClient, no disk) ──────────────────
-        import chromadb
-        _client = chromadb.EphemeralClient()
-        for c in _client.list_collections():
-            _client.delete_collection(c.name)
-        chromadb.PersistentClient = lambda **kw: _client
-        chromadb.EphemeralClient = lambda **kw: _client
 
         # ── Mock embedding model (no Ollama) ──────────────────────────
         from llama_index.core import Settings
@@ -134,13 +127,16 @@ def test_torch_absent_after_full_search_subprocess() -> None:
             set_default_effective_settings,
         )
 
-        with tempfile.TemporaryDirectory(prefix="torch_tripwire_") as persist_dir:
+        with tempfile.TemporaryDirectory(prefix="torch_tripwire_") as work_dir:
+            lancedb_uri = os.path.join(work_dir, "lancedb")
+            os.environ["LANCEDB_URI"] = lancedb_uri
             set_default_effective_settings(
                 EffectiveSettings(
                     metadata=MetadataBlock(extraction_mode="disabled"),
                     pdf_reader="pypdf",
                     collection_name="torch_tripwire",
-                    chroma_persist_dir=persist_dir,
+                    vector_store="lancedb",
+                    lancedb_uri=lancedb_uri,
                 )
             )
 
@@ -151,7 +147,7 @@ def test_torch_absent_after_full_search_subprocess() -> None:
 
             test_file = tempfile.NamedTemporaryFile(
                 mode="w", suffix=".md", delete=False, prefix="torch_tripwire_",
-                dir=persist_dir,
+                dir=work_dir,
             )
             try:
                 test_file.write(

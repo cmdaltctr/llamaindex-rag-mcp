@@ -176,8 +176,11 @@ class TestDefaultStoreHolder:
         assert get_default_store() is sentinel
 
         reset_default_store()
-        # After reset the holder must rebuild rather than hand back the old one.
-        assert get_default_store() is not sentinel
+        # Task 2.2: the holder is injected-only — after reset the accessor
+        # must refuse rather than rebuild (compose.py is the sole
+        # constructor).
+        with pytest.raises(RuntimeError, match="ensure_runtime_setup"):
+            get_default_store()
 
 
 # ── compose.py: the capability probes ───────────────────────────────────
@@ -282,20 +285,24 @@ class TestVectordbLazyReexport:
             _ = vdb.Nope
 
     def test_get_default_store_lazy_build_caches(self) -> None:
-        """get_default_store lazily builds and caches the store on first access."""
-        from rag_mcp.core.vectordb import get_default_store, reset_default_store
+        """Task 2.2 replaced lazy construction with injected-only access.
+
+        The accessor must raise a controlled RuntimeError naming the
+        composition root when nothing is installed, and hand back the
+        installed instance unchanged once composed.
+        """
+        from rag_mcp.core.vectordb import (
+            get_default_store,
+            reset_default_store,
+            set_default_store,
+        )
 
         reset_default_store()
+        with pytest.raises(RuntimeError, match="ensure_runtime_setup"):
+            get_default_store()
+
         sentinel = MagicMock()
-        with patch(
-            "rag_mcp.core.vectordb.chroma.build_chroma_vector_store",
-            return_value=sentinel,
-        ) as mock_build:
-            result1 = get_default_store()
-            assert result1 is sentinel
-            assert mock_build.call_count == 1
-            # Second call must return the cached store without rebuilding.
-            result2 = get_default_store()
-            assert result2 is sentinel
-            assert mock_build.call_count == 1
+        set_default_store(sentinel)
+        assert get_default_store() is sentinel
+        assert get_default_store() is sentinel
         reset_default_store()

@@ -576,8 +576,22 @@ class TestHybridCategoryTaxonomy:
         monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: mock_client)
 
     def _seed_category(self, category: str) -> None:
-        """Pre-populate a single category in ephemeral ChromaDB."""
+        """Pre-populate a single category in ephemeral ChromaDB.
+
+        Task 5.1: the chroma extra is optional, and the default test store
+        is tmp-path LanceDB. Seeding writes to the (patched) ephemeral
+        Chroma client and installs a Chroma store as the process default
+        so ``_gather_existing_categories()`` reads the seeded rows. The
+        importorskip guards every caller in the base install.
+        """
+        pytest.importorskip(
+            "chromadb",
+            reason="chroma extra not installed; runs in the chroma-extra CI job",
+        )
         import chromadb
+
+        from rag_mcp.core.vectordb import set_default_store
+        from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 
         client = chromadb.PersistentClient(path="ignored")
         coll = client.get_or_create_collection("test_taxonomy")
@@ -593,6 +607,7 @@ class TestHybridCategoryTaxonomy:
             metadatas=[{"category": category}],
             embeddings=[[0.1] * 384],
         )
+        set_default_store(ChromaVectorStore())
 
     @staticmethod
     def _get_prompt_sent(monkeypatch) -> str:
@@ -1226,6 +1241,10 @@ class TestCoverageGaps:
         monkeypatch,
     ) -> None:
         """Categories beyond the first metadata scan page must be discovered."""
+        pytest.importorskip(
+            "chromadb",
+            reason="chroma extra not installed; runs in the chroma-extra CI job",
+        )
         import chromadb
 
         import rag_mcp.config as _config
