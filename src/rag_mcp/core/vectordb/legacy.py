@@ -21,6 +21,14 @@ _EMPTY = "empty"
 _RECOGNISED = "recognised"
 _UNRECOGNISED_NONEMPTY = "unrecognised_nonempty"
 
+# A persisted Chroma vector segment is a UUID-named subdirectory containing
+# HNSW files. ``header.bin`` plus ``data_level0.bin`` are sufficiently
+# distinctive to recognise a segment even when the directory is incomplete;
+# healthy layouts normally also contain ``length.bin``, ``link_lists.bin`` and
+# ``index_metadata.pickle``. A generic file named ``segment*`` is not a Chroma
+# persistence marker.
+_HNSW_SEGMENT_MARKERS = frozenset({"header.bin", "data_level0.bin"})
+
 
 class LegacyChromaDataError(RuntimeError):
     """Raised when recognised legacy Chroma data needs an explicit choice."""
@@ -30,10 +38,10 @@ def classify_legacy_directory(directory: str | Path) -> str:
     """Classify *directory* against the recognised Chroma markers.
 
     A directory is ``recognised`` when it carries ``chroma.sqlite3`` or
-    the documented nested segment layout (a subdirectory holding files
-    whose name starts with ``segment``). A missing path is ``absent``,
-    an empty directory is ``empty``, and anything else non-empty is
-    ``unrecognised_nonempty``.
+    the documented HNSW vector-segment layout (a nested directory holding
+    both ``header.bin`` and ``data_level0.bin``). A missing path is
+    ``absent``, an empty directory is ``empty``, and anything else
+    non-empty is ``unrecognised_nonempty``.
 
     Args:
         directory: The persisted Chroma data directory.
@@ -56,14 +64,15 @@ def classify_legacy_directory(directory: str | Path) -> str:
         return _EMPTY
     if (path / "chroma.sqlite3").exists():
         return _RECOGNISED
-    for child in path.iterdir():
+    for child in entries:
         if not child.is_dir():
             continue
         try:
-            if any(item.name.startswith("segment") for item in child.iterdir()):
-                return _RECOGNISED
+            filenames = {item.name for item in child.iterdir() if item.is_file()}
         except OSError:
             continue
+        if _HNSW_SEGMENT_MARKERS.issubset(filenames):
+            return _RECOGNISED
     return _UNRECOGNISED_NONEMPTY
 
 
@@ -124,7 +133,7 @@ def evaluate_legacy_chroma_data(
     if status == _UNRECOGNISED_NONEMPTY:
         logger.warning(
             "Directory %s is non-empty but does not carry a recognised "
-            "Chroma layout (no chroma.sqlite3 or segment layout). It is "
+            "Chroma layout (no chroma.sqlite3 or HNSW segment layout). It is "
             "left untouched.",
             path,
         )

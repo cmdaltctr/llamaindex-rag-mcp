@@ -1,4 +1,4 @@
-"""TDD RED tests: registry availability metadata and sparse capability.
+"""Regression tests for registry availability metadata and sparse capability.
 
 Spec source: openspec/changes/make-lancedb-default-and-isolate-chromadb
 
@@ -8,10 +8,6 @@ Spec source: openspec/changes/make-lancedb-default-and-isolate-chromadb
 - specs/chroma-cloud-backend/spec.md — Chroma requires the optional extra;
   composition must never fall back to LanceDB when Chroma is selected but
   uninstalled.
-
-Written test-first: the registry currently exposes only
-``register/get/available`` with no availability metadata, so most tests
-here FAIL (RED) on the missing API until the change lands.
 """
 
 from __future__ import annotations
@@ -42,6 +38,7 @@ def _purge_throwaway_registrations():
         for name in [n for n in registry._registry if n.startswith("_test_")]:
             del registry._registry[name]
             registry._cache.pop(name, None)
+            registry._metadata.pop(name, None)
     except AttributeError:
         # Best-effort hygiene: never mask a real test failure.
         pass
@@ -89,24 +86,26 @@ def test_absent_backend_error_names_extra_and_packages() -> None:
         "fakepkg_absent_xyz_mod:build",
         requires={"fakepkg_absent_xyz": "fakepkg-absent-xyz"},
         extra="fake",
-        install_hint="install with rag-mcp[fake]",
+        install_hint="Supported default: lancedb. Install with rag-mcp[fake].",
     )
     assert registry.availability("_test_absent") == "absent"
     with pytest.raises(ImportError) as excinfo:
         registry.verify_available("_test_absent")
     message = str(excinfo.value)
     assert "_test_absent" in message
+    assert "Missing packages" in message
     assert "fakepkg_absent_xyz" in message
     assert "fakepkg-absent-xyz" in message
     assert "fake" in message
     assert "rag-mcp[fake]" in message
+    assert "lancedb" in message
 
 
 def test_partial_backend_detected() -> None:
     """Some declared packages present and some absent reports 'partial'.
 
     Spec: vector-store-registry, scenario 'Optional backend is partially
-    installed' — the error names the partial installation.
+    installed' — the error names the partial installation and repair path.
     """
     registry.register(
         "_test_partial",
@@ -116,11 +115,17 @@ def test_partial_backend_detected() -> None:
             "fakepkg_absent_xyz": "fakepkg-absent-xyz",
         },
         extra="fake",
+        install_hint="Repair with rag-mcp[fake].",
     )
     assert registry.availability("_test_partial") == "partial"
     with pytest.raises(ImportError) as excinfo:
         registry.verify_available("_test_partial")
-    assert "partial" in str(excinfo.value).lower()
+    message = str(excinfo.value)
+    assert "partial" in message.lower()
+    assert "Missing packages" in message
+    assert "fakepkg_absent_xyz" in message
+    assert "fakepkg-absent-xyz" in message
+    assert "Repair with rag-mcp[fake]" in message
 
 
 def test_broken_backend_preserves_cause(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -181,13 +186,17 @@ def test_explicit_chroma_without_extra_fails_startup(
     Spec: chroma-cloud-backend, scenario 'Chroma backend without the
     complete extra'. ``sys.modules['chromadb'] = None`` makes any import
     of chromadb raise ImportError, simulating the absent extra without
-    patching registry internals.
+    patching registry internals. The diagnostic may name LanceDB as the
+    supported default, but the raised exception proves no fallback occurred.
     """
     _scrub_chroma_from_sys_modules(monkeypatch)
     monkeypatch.setitem(sys.modules, "chromadb", None)
     with pytest.raises((ImportError, ModuleNotFoundError, RuntimeError, ValueError)) as excinfo:
         build_vector_store(Settings(vector_store="chroma"))
-    assert "lancedb" not in str(excinfo.value).lower()
+    message = str(excinfo.value).lower()
+    assert "chroma" in message
+    assert "supported default" in message
+    assert "lancedb" in message
 
 
 def test_sparse_capability_follows_selected_store(

@@ -1,4 +1,4 @@
-"""TDD RED tests: vector-store default, provenance, and Chroma validation order.
+"""Regression tests for vector-store default, provenance, and validation order.
 
 Spec source: openspec/changes/make-lancedb-default-and-isolate-chromadb
 
@@ -8,10 +8,6 @@ Spec source: openspec/changes/make-lancedb-default-and-isolate-chromadb
 - specs/chroma-cloud-backend/spec.md — Chroma settings must never alter an
   unselected LanceDB route; credential completeness still enforced when the
   backend matches.
-
-Written test-first against unimplemented behaviour: every test here is
-expected to FAIL (RED) until the change lands. Do not weaken the
-assertions to make them pass against the current ``chroma`` default.
 """
 
 from __future__ import annotations
@@ -65,15 +61,25 @@ def test_default_resolution_is_lancedb(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.vector_store_provenance == "default"
 
 
-def test_explicit_env_selection_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Explicit env VECTOR_STORE=chroma keeps 'chroma' and records 'explicit'.
+def test_explicit_env_and_dotenv_selection_provenance(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Environment and .env selections both record explicit provenance.
 
-    Spec: config-composition-root, scenario 'Explicit selection is preserved'.
+    Spec task 2.4 names environment and ``.env`` as separate operator
+    sources, so both must be covered by the regression test.
     """
     monkeypatch.setenv("VECTOR_STORE", "chroma")
     settings = _fresh_get_settings(monkeypatch)
     assert settings.vector_store == "chroma"
     assert settings.vector_store_provenance == "explicit"
+
+    _clear_backend_env(monkeypatch)
+    dotenv = tmp_path / ".env"
+    dotenv.write_text("VECTOR_STORE=chroma\n", encoding="utf-8")
+    dotenv_settings = Settings(_env_file=dotenv)
+    assert dotenv_settings.vector_store == "chroma"
+    assert dotenv_settings.vector_store_provenance == "explicit"
 
 
 def test_explicit_constructor_selection() -> None:

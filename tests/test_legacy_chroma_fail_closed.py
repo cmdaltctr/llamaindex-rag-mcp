@@ -1,13 +1,8 @@
-"""TDD RED tests: recognised legacy Chroma data requires an explicit decision.
+"""Regression tests: recognised legacy Chroma data requires an explicit decision.
 
 Spec source: openspec/changes/make-lancedb-default-and-isolate-chromadb
 specs/lancedb-vector-store/spec.md — 'Recognised legacy Chroma data SHALL
 require an explicit decision'.
-
-The ``rag_mcp.core.vectordb.legacy`` module does not exist yet, so this
-file is expected to FAIL (RED) at collection with ImportError until the
-change lands. Do not create the module to make the collection pass — the
-import error IS the red signal.
 """
 
 from __future__ import annotations
@@ -16,13 +11,15 @@ import logging
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
-from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
+from rag_mcp.compose import reset_runtime_setup
 from rag_mcp.core.vectordb.legacy import (
     LegacyChromaDataError,
     classify_legacy_directory,
     evaluate_legacy_chroma_data,
 )
+from rag_mcp.transports.cli import app
 
 
 def _make_sqlite_marker_dir(tmp_path: Path) -> Path:
@@ -34,10 +31,18 @@ def _make_sqlite_marker_dir(tmp_path: Path) -> Path:
 
 
 def _make_segment_layout_dir(tmp_path: Path) -> Path:
-    """Return a directory with the documented nested segment layout."""
+    """Return a directory with Chroma's documented nested HNSW segment layout."""
     directory = tmp_path / "legacy_chroma_segments"
-    (directory / "collection_a").mkdir(parents=True)
-    (directory / "collection_a" / "segment.bin").write_bytes(b"\x00\x01")
+    segment = directory / "00000000-0000-4000-8000-000000000000"
+    segment.mkdir(parents=True)
+    for filename in (
+        "header.bin",
+        "data_level0.bin",
+        "length.bin",
+        "link_lists.bin",
+        "index_metadata.pickle",
+    ):
+        (segment / filename).write_bytes(b"\x00\x01")
     return directory
 
 
@@ -46,6 +51,9 @@ def _make_unrecognised_dir(tmp_path: Path) -> Path:
     directory = tmp_path / "junk_dir"
     directory.mkdir()
     (directory / "random.txt").write_text("not chroma")
+    lookalike = directory / "collection_a"
+    lookalike.mkdir()
+    (lookalike / "segment.bin").write_bytes(b"\x00\x01")
     return directory
 
 
@@ -55,7 +63,7 @@ def test_recognised_markers_sqlite(tmp_path: Path) -> None:
 
 
 def test_recognised_markers_segment_layout(tmp_path: Path) -> None:
-    """The nested segment layout classifies the directory as recognised."""
+    """The nested HNSW segment layout classifies the directory as recognised."""
     layout = _make_segment_layout_dir(tmp_path)
     assert classify_legacy_directory(layout) == "recognised"
 
@@ -142,19 +150,19 @@ def test_unrecognised_nonempty_warns_not_fails(
         (_make_segment_layout_dir, "segment-layout"),
     ],
 )
-def test_startup_wiring_reaches_cli_operator(
+def test_startup_wiring_reaches_cli_mcp_operator_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     make_directory,
     case_id: str,
 ) -> None:
-    """ensure_runtime_setup raises the operator-visible diagnostic, default only.
+    """The real CLI/MCP startup path renders the fail-closed diagnostic.
 
-    Spec: lancedb-vector-store, scenario 'Recognised legacy layout and no
-    explicit backend' — the fail-closed gate is wired into startup, so the
-    exception text IS the operator-visible diagnostic surface. Only
-    default provenance fails closed; explicit selections are covered by
-    the evaluate_legacy_chroma_data tests above.
+    Spec task 4.4 requires an operator-path assertion, not only a direct
+    composition call or caplog check. Invoking the Typer app with no
+    subcommand follows the actual MCP startup route: CLI callback ->
+    ``_initialise_runtime`` -> composition. The diagnostic must be printed
+    and the MCP server must not start.
     """
     legacy_dir = make_directory(tmp_path)
     monkeypatch.delenv("VECTOR_STORE", raising=False)
@@ -162,8 +170,12 @@ def test_startup_wiring_reaches_cli_operator(
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
     reset_runtime_setup()
     try:
-        with pytest.raises(LegacyChromaDataError) as excinfo:
-            ensure_runtime_setup()
-        assert str(legacy_dir) in str(excinfo.value)
+        result = CliRunner().invoke(app, [])
+        assert result.exit_code == 1
+        assert str(legacy_dir) in result.output
+        assert "VECTOR_STORE=chroma" in result.output
+        assert "VECTOR_STORE=lancedb" in result.output
+        assert "re-ingest" in result.output.lower() or "re-ingestion" in result.output.lower()
+        assert "Traceback" not in result.output
     finally:
         reset_runtime_setup()

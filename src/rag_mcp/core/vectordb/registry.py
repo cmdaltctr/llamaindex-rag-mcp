@@ -136,17 +136,30 @@ def verify_available(name: str) -> Callable[..., Any]:
         return get(name)
     meta = _metadata.get(name, {})
     requires = meta.get("requires", {})
+    missing = {
+        module: dist for module, dist in requires.items() if not _spec_present(module)
+    }
+    diagnostic_packages = missing or requires
+    package_label = "Missing packages" if missing else "Required packages"
     details = (
-        ", ".join(f"{module} ({dist})" for module, dist in requires.items())
+        ", ".join(
+            f"{module} ({dist})" for module, dist in diagnostic_packages.items()
+        )
         or "no declared required packages"
     )
     extra = meta.get("extra")
     hint = meta.get("install_hint")
     extra_note = f" via the {extra!r} extra" if extra else ""
-    hint_note = f" {hint}" if hint else ""
+    if hint:
+        guidance = hint
+    elif extra:
+        guidance = f"Install the {extra!r} extra."
+    else:
+        guidance = ""
+    guidance_note = f" {guidance}" if guidance else ""
     raise ImportError(
         f"Vector store {name!r} is unavailable: {status} installation."
-        f"{extra_note} Required packages: {details}.{hint_note}"
+        f"{extra_note} {package_label}: {details}.{guidance_note}"
     ) from cause
 
 
@@ -164,7 +177,8 @@ register(
     },
     extra="chroma",
     install_hint=(
-        'uv sync --extra chroma (source checkout) or pip install "rag-mcp[chroma]" (packaged)'
+        "Supported default: lancedb. Install Chroma with "
+        'uv sync --extra chroma (source checkout) or pip install "rag-mcp[chroma]" (packaged).'
     ),
     native_sparse_probe=True,
     summary="rag_mcp.core.vectordb.summary:chroma_storage_summary",
