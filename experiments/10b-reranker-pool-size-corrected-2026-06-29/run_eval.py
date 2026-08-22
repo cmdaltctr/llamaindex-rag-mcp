@@ -33,7 +33,7 @@ Key contracts:
 - Warm-up rows carry phase "warmup" and are excluded from aggregates.
 
 Running at corpus scale is Stage 6 work.  This module is the repaired
-harness; it reuses Exp 9a's immutable ChromaDB index (same collection
+harness; it reuses the D17 campaign's immutable LanceDB index (same collection
 identity) and ground truth.
 """
 
@@ -313,7 +313,7 @@ def _cell_manifest(
             "model": ctx["embed_model"],
         },
         vector_store={
-            "backend": "chroma",
+            "backend": "lancedb",
             "mode": ctx["storage_mode"],
             "score_kind": "dense_similarity_v1",
         },
@@ -475,8 +475,8 @@ def evaluate_cell(
         return stats.cell_record(status="invalid", reason=str(exc), cell_id=cell_id)
 
 
-def _resolve_runtime(chroma_dir: Path) -> tuple[Any, str, str, Any]:
-    """Resolve the immutable 9a index store once for the whole run.
+def _resolve_runtime(store_dir: Path) -> tuple[Any, str, str, Any]:
+    """Resolve the immutable LanceDB index store once for the whole run.
 
     Returns ``(store, collection_name, storage_mode, effective_settings)``.
     The query embedder is pinned to the index identity so ambient
@@ -489,11 +489,12 @@ def _resolve_runtime(chroma_dir: Path) -> tuple[Any, str, str, Any]:
     if not model:
         raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
     storage = experiment_storage_config(
-        experiment_id="exp9a",
-        corpus="freshstack",
+        experiment_id="exp10b",
+        corpus="freshstack-langchain-seed-20260530",
         provider="ollama",
         model=model,
-        persist_dir=str(chroma_dir),
+        persist_dir=str(store_dir),
+        backend="lancedb",
     )
     store = storage.build_store()
 
@@ -553,10 +554,10 @@ def main() -> None:
     top_k = max(args.k_values)
     print(f"Loaded {len(queries)} queries; {len(cells)} cells; top_k={top_k}", flush=True)
 
-    chroma_dir = output_dir / "chroma_dense"
-    if not chroma_dir.exists():
-        raise SystemExit(f"Missing Chroma index: {chroma_dir}")
-    store, collection_name, storage_mode, effective_settings = _resolve_runtime(chroma_dir)
+    store_dir = output_dir / "lancedb_dense"
+    if not store_dir.exists():
+        raise SystemExit(f"Missing LanceDB index: {store_dir}")
+    store, collection_name, storage_mode, effective_settings = _resolve_runtime(store_dir)
     embed_model = os.getenv("EMBED_MODEL")
 
     manifest_ctx = {

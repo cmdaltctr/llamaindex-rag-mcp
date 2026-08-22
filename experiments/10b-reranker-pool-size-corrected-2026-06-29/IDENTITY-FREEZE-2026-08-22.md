@@ -24,16 +24,21 @@ rebuilt indexes therefore differ from the lost originals by at most this
 distractor, and the manifest hash above is the binding corpus identity for
 Stage 6.
 
-## Index identities — build in flight
+## Index identities — LanceDB re-base, build in flight
+
+**Re-base decision (2026-08-22, user-ratified):** the D17 campaign re-based
+its immutable inputs on the qualified LanceDB default (ADR-049 D11). A
+Chroma build started first was killed at batch 10/101 and discarded; the
+2026-08-21 chroma manipulated-factor declaration in `plan.json` is withdrawn.
 
 | Index | Status |
 | --- | --- |
-| `output/chroma_dense` | Building since 2026-08-22 21:13 (PID 84625, log `output/build-run-2026-08-22.log`); `EMBED_MODEL=qwen3-embedding:0.6b` (1024-dim, matches original index identity), batch 100, 101 batches |
-| `output/chroma_hybrid_bm25` | Will be copied from dense on completion (BM25 builds at query time) |
+| `output/lancedb_dense` | Building since 2026-08-22 21:29 (PID 9000, log `output/build-run-2026-08-22-lancedb.log`); collection `exp10b-freshstack-langchain-seed-20260530-ollama-qwen3-embedding-0-6b`; `EMBED_MODEL=qwen3-embedding:0.6b` (1024-dim), batch 100, 101 batches |
+| Hybrid BM25 | None required — BM25 builds in-process at query time over the dense collection |
 
-Original build reference: 10,025 chunks in 19,371 s. Expected completion:
-early hours 2026-08-23. When `output/index_build.json` lands, record chunk
-count + collection identity here and close task 6.1.2.
+Original Chroma build reference: 10,025 chunks in 19,371 s. Expected
+completion: early hours 2026-08-23. When `output/index_build.json` lands,
+record chunk count here and close task 6.1.2.
 
 ## Rule
 
