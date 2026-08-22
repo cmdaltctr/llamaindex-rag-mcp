@@ -271,6 +271,8 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 **Security review (2026-08-19):** the Stage 5 diff is APPROVED. The repository release remains BLOCKED by pre-existing ChromaDB advisory GHSA-f4j7-r4q5-qw2c (CVE-2026-45829), which affects the locked 1.5.9 release and has no patched version. Current embedded `PersistentClient` and trusted `CloudClient` adapter paths do not expose the vulnerable Python FastAPI server or execute remote collection configuration. Track the dependency in a separate security change and do not merge to `main` until the release gate clears.
 
+**Security re-adjudication (2026-08-22):** the release gate for base installs is now CLEARED by the merged `make-lancedb-default-and-isolate-chromadb` change (PR #61, merge `e0fa536`; ADR-049): chromadb left the base dependency closure, the fresh-install SBOM shows 133 base dependencies with zero known vulnerabilities and no Chroma distribution, no server entrypoint exists, and the import-linter contract `chromadb-confined-to-vectordb` plus the fail-closed legacy guard confine the advisory to the opt-in `chroma` extra. That change and its evidence trail constitute the "separate security change" the 2026-08-19 note required. The residual advisory on the opt-in extra is accepted-risk and re-audited on every chromadb release. Full record: [`security-readjudication-2026-08-22.md`](security-readjudication-2026-08-22.md).
+
 ---
 
 ## 6. Stage 6 — Repaired calibration campaign
@@ -321,8 +323,8 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 - [ ] 7.1 Run `uv run pytest -m "not slow" --cov=rag_mcp` at repository coverage floors.
 - [ ] 7.2 Run optional-backend contract jobs required by touched code (LanceDB real store, Torch backend as applicable).
 - [ ] 7.3 Run `ruff check`, `ruff format --check`, Pyright if configured, and `uv run lint-imports`.
-- [ ] 7.4 Run `openspec validate harden-pipeline-correctness-before-calibration --strict` and `openspec validate --all --strict`.
-- [ ] 7.5 Update experiment index with supersession links for old 10b/13/14 planned harnesses.
+- [x] 7.4 Run `openspec validate harden-pipeline-correctness-before-calibration --strict` and `openspec validate --all --strict`. (2026-08-22: change valid; all-strict 40 passed, 0 failed.)
+- [x] 7.5 Update experiment index with supersession links for old 10b/13/14 planned harnesses. (2026-08-22: `experiments/EXP_README.md` rows for 10b/13/14 changed PLANNED → REBUILT — Stage 6 pending, each naming its superseding Stage 4 commit — `181a726`/`b92f152`/`205ec0e` — and linking the supersession section of the respective `protocol.md`; row 13 also binds the TDR-015 ÷30 revalidation obligation.)
 - [ ] 7.6 Audit the decision-record trail: every PAUSE GATE MUST have either a linked ADR/TDR action or an explicit `ADR/TDR not required` rationale; verify records distinguish planned design, deterministic test evidence, and empirical experiment evidence.
 - [ ] 7.7 Verify required records survived the evidence: Stage 2 semantic-swappability ADR, Stage 3A failure-safe-ingestion ADR, Stage 4 experiment-validity TDR, optional Stage 3B optimisation TDR, and any Stage 6 production-policy ADR amendments/successors.
-- [ ] 7.8 Re-evaluate the remaining open OpenSpecs (`add-per-collection-persist-dirs`, document backend registry, native sparse backend, login watcher) against the hardened pipeline before resuming them.
+- [x] 7.8 Re-evaluate the remaining open OpenSpecs (`add-per-collection-persist-dirs`, document backend registry, native sparse backend, login watcher) against the hardened pipeline before resuming them. (2026-08-22: recorded in [`open-openspec-reevaluation-2026-08-22.md`](open-openspec-reevaluation-2026-08-22.md) — persist-dirs needs re-scope (Chroma-centric problem largely dissolved by the LanceDB default, ADR-049), native-sparse needs re-target (Chroma runtime quarantined), document-backend registry and login-watcher unchanged and safe to resume.)

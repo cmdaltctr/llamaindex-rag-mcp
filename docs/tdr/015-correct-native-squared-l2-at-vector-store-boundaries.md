@@ -108,6 +108,13 @@ mismatches. Canonical projections of two full runs are byte-identical
   `1 / (1 + d)`. Stage 6 must revalidate the ÷30 operating point and
   recalibrate numeric thresholds before policy changes.
 
+  Obligation tracking (2026-08-22): this revalidation is bound to Stage 6.2
+  of the `harden-pipeline-correctness-before-calibration` change — pause
+  gate 6.GB.2 MUST record an explicit ÷30 disposition (revalidated,
+  recalibrated, or retained-with-rationale) before it closes, and the
+  `experiments/EXP_README.md` row for Experiment 13 points back to this
+  obligation.
+
 ## Alternatives Considered
 
 | Option | Rejected Because |
