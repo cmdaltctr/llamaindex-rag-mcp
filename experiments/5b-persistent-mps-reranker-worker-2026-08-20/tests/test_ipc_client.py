@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import time
 
+import pytest
 from _lazy_module import LazyModule
 
 ic = LazyModule("ipc_client")  # RED (ModuleNotFoundError) until implemented
@@ -266,6 +267,38 @@ def test_memory_sampler_dead_pid_not_evaluable() -> None:
         assert sampler.sample_now(cell_id="c", block=1, lifetime=1, request_index=1) is None
     finally:
         sampler.stop()
+
+
+def test_memory_sampler_survives_contextless_background_ticks() -> None:
+    """A background tick before the first on-demand sample must not retire the sampler.
+
+    Regression for the 2026-08-22 campaign: the runner performs 24 untimed
+    warm-up requests before its first ``sample_now`` call, so the >=1 Hz
+    background thread fired with an empty ``_last_context`` and incorrectly
+    declared the sampler unavailable, silently voiding every memory sample
+    (G5/G6 NOT_EVALUABLE).  A context-less tick must be skipped, not treated
+    as sampler loss.
+    """
+    try:
+        import psutil  # noqa: F401
+    except ImportError:
+        pytest.skip("psutil unavailable; sampler cannot be exercised")
+    started = time.monotonic()
+    sampler = ic.MemorySampler(os.getpid(), interval_s=0.2, parent_pid=os.getpid())
+    sampler.start()
+    try:
+        assert sampler.available is True
+        # Hold the sampler context-less across several background ticks.
+        time.sleep(0.7)
+        assert sampler.available is True, "context-less tick retired the sampler"
+        row = sampler.sample_now(cell_id="c", block=1, lifetime=1, request_index=1)
+        assert row is not None, "sample_now failed after context-less ticks"
+        time.sleep(0.5)
+        assert sampler.available is True
+        assert sampler.samples, "no background samples recorded after context established"
+    finally:
+        sampler.stop()
+    _assert_bounded(started, 15.0, "context-less tick regression test")
 
 
 def test_worker_serves_many_sequential_requests() -> None:

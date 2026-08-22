@@ -691,7 +691,15 @@ class MemorySampler:
 
     def _loop(self) -> None:
         while not self._stop.wait(self.interval_s):
-            row = self._sample(**self._last_context) if self._last_context else None
+            if not self._last_context:
+                # No on-demand sample has established a context yet (e.g. the
+                # runner is still inside untimed warm-up).  A context-less tick
+                # is not a sampler failure; skip it instead of retiring the
+                # sampler (protocol section 9.3: unavailable sampling makes
+                # G5/G6 NOT_EVALUABLE, so availability must never be lost to
+                # this race).
+                continue
+            row = self._sample(**self._last_context)
             if row is not None:
                 with self._lock:
                     self.samples.append(row)

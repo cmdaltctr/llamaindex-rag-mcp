@@ -564,6 +564,34 @@ def preflight(output_dir: Path) -> dict[str, Any]:
     return summary
 
 
+def merge_prior_preflight_green(summary: dict[str, Any], output_dir: Path) -> dict[str, Any]:
+    """Preserve dry-run preflight-green evidence across the measured run.
+
+    The intended workflow (protocol section 21) runs ``--dry-run`` and the
+    measured campaign against the same ``--output-dir``.  The measured run
+    re-runs the route preflight and rewrites ``preflight/_summary.json``
+    without the probe battery, which previously destroyed the dry-run's
+    ``probes_green``/``all_green`` flags and made G9 report "preflight not
+    green" even though every probe passed before the first measured row.
+    Restore those flags from the prior summary when it was green.
+    """
+    prior_path = output_dir / "preflight" / "_summary.json"
+    if not prior_path.exists():
+        return summary
+    try:
+        prior = json.loads(prior_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — malformed prior summary is not fatal
+        return summary
+    if prior.get("all_green"):
+        summary["probes_green"] = True
+        summary["all_green"] = bool(
+            summary.get("plan_agreement")
+            and summary.get("routes_green")
+            and summary.get("parent_torch_free")
+        )
+    return summary
+
+
 # ── CLI ───────────────────────────────────────────────────────────────
 
 
@@ -595,6 +623,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     summary = preflight(output_dir)
+    if not args.dry_run:
+        summary = merge_prior_preflight_green(summary, output_dir)
     if args.dry_run:
         import probes
 

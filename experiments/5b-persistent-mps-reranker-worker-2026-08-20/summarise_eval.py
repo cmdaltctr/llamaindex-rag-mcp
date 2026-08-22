@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import artefacts as art
+import harness
 import protocol_frames as pf
 import stats_extras as se
 
@@ -747,7 +748,9 @@ def summarise(output_dir: str | Path) -> dict[str, Any]:
     )
     return {
         "experiment_id": "5b-persistent-mps-reranker-worker",
-        "protocol_version": "1.0",
+        # Report the live protocol version (harness constant) rather than a
+        # stale literal; v1.0 output mislabelled the v1.1 campaign evidence.
+        "protocol_version": harness.PROTOCOL_VERSION,
         "gates": gates,
         "overall_verdict": overall,
         "promotion_note": (
