@@ -1,9 +1,7 @@
 ## Purpose
 
 Lets operators choose which inference engine re-scores search results, so a heavyweight PyTorch reranker can be opted into for quality work without that weight ever reaching the default install. Guarantees every backend produces scores on the same scale, so the calibrated similarity threshold stays valid whichever engine runs.
-
 ## Requirements
-
 ### Requirement: reranker backend is selectable
 
 The system SHALL support more than one reranker inference backend and SHALL
@@ -67,17 +65,16 @@ lazily during retrieval, so the two paths cannot diverge.
 ### Requirement: all backends share one score range and public contract
 
 Every reranker backend SHALL expose the same public behaviour: re-score
-query-document pairs, return results sorted by descending relevance,
-truncate to `top_k`, and set the reranked provenance flag. Every backend
-SHALL normalise raw model outputs to the `(0, 1)` range via the registered
-transform.
+query-document pairs, return results sorted by descending relevance, truncate
+to `top_k`, and set the reranked provenance flag. Every backend SHALL normalise
+raw model outputs to the `(0, 1)` range via the registered transform.
 
 Sharing a public range does not make different inference backends,
-quantisations or model artefacts numerically or rank equivalent. Device
-routes using the same backend, precision and model revision SHALL meet their
-declared device-parity tolerance. ONNX-int8 and Torch-fp32 scores, rankings
-and threshold decisions SHALL be treated as backend-specific until
-admissible calibration evidence proves interchangeability.
+quantisations or model artefacts numerically or rank equivalent. Device routes
+using the same backend, precision and model revision SHALL meet their declared
+device-parity tolerance. ONNX-int8 and Torch-fp32 scores, rankings and threshold
+decisions SHALL be treated as backend-specific until admissible calibration
+evidence proves interchangeability.
 
 #### Scenario: Every backend returns normalised scores
 
@@ -165,3 +162,4 @@ distinguishable from reranking being switched off.
 - **GIVEN** the selected backend has failed to load on every attempt
 - **WHEN** the failure count passes the escalation threshold
 - **THEN** the system SHALL log at error severity rather than warning severity
+
