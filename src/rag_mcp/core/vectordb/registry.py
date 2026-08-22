@@ -136,15 +136,11 @@ def verify_available(name: str) -> Callable[..., Any]:
         return get(name)
     meta = _metadata.get(name, {})
     requires = meta.get("requires", {})
-    missing = {
-        module: dist for module, dist in requires.items() if not _spec_present(module)
-    }
+    missing = {module: dist for module, dist in requires.items() if not _spec_present(module)}
     diagnostic_packages = missing or requires
     package_label = "Missing packages" if missing else "Required packages"
     details = (
-        ", ".join(
-            f"{module} ({dist})" for module, dist in diagnostic_packages.items()
-        )
+        ", ".join(f"{module} ({dist})" for module, dist in diagnostic_packages.items())
         or "no declared required packages"
     )
     extra = meta.get("extra")
