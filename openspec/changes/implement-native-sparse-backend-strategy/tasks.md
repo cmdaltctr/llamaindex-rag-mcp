@@ -4,11 +4,12 @@
 - [ ] 1.2 Define the vector-store native sparse query capability and unsupported response.
 - [ ] 1.3 Pin current BM25, RRF, mixed-coverage warning, and public result shapes.
 
-## 2. Native Sparse Implementation
+## 2. Native Sparse Implementation (LanceDB FTS)
 
-- [ ] 2.1 Implement native sparse writes and queries in the ChromaDB adapter.
-- [ ] 2.2 Preserve existing collections without sparse vectors and mixed-coverage diagnostics.
+- [ ] 2.1 Implement native sparse writes/queries in the LanceDB adapter over a Tantivy FTS index on the documents column, with additive, explicitly triggered index creation.
+- [ ] 2.2 Preserve existing collections without FTS indexes and mixed-coverage diagnostics.
 - [ ] 2.3 Add native sparse result normalisation to the shared query contract.
+- [ ] 2.4 FTS index maintenance follows the same invalidation counter as the BM25 cache on every ingest write.
 
 ## 3. Registry and Resolution
 
