@@ -74,9 +74,9 @@ def test_torch_absent_after_backend_module_import() -> None:
 def test_torch_absent_after_full_search_subprocess() -> None:
     """A full search with rerank=True SHALL NOT load torch (issue #40).
 
-    Runs a search in a clean subprocess with mocked ChromaDB and
-    embeddings, then asserts ``torch`` is absent from ``sys.modules``.
-    The subprocess is necessary because in-process checks are
+    Runs a search in a clean subprocess with an explicitly composed LanceDB
+    store and mock embeddings, then asserts ``torch`` is absent from
+    ``sys.modules``. The subprocess is necessary because in-process checks are
     unfalsifiable once other tests have imported modules.
 
     The child pins ``RETRIEVAL__RERANK_BACKEND=onnx`` unconditionally
@@ -112,12 +112,12 @@ def test_torch_absent_after_full_search_subprocess() -> None:
         os.environ.setdefault("PDF_READER", "pypdf")
 
         # ── Mock embedding model (no Ollama) ──────────────────────────
-        from llama_index.core import Settings
+        from llama_index.core import Settings as LlamaIndexSettings
         from llama_index.core.embeddings import MockEmbedding
-        Settings.embed_model = MockEmbedding(embed_dim=384)
+        LlamaIndexSettings.embed_model = MockEmbedding(embed_dim=384)
 
         # ── Reset vector store singleton ──────────────────────────────
-        from rag_mcp.core.vectordb import reset_default_store
+        from rag_mcp.core.vectordb import reset_default_store, set_default_store
         reset_default_store()
 
         # ── Install default EffectiveSettings (match conftest) ────────
@@ -137,6 +137,18 @@ def test_torch_absent_after_full_search_subprocess() -> None:
                     collection_name="torch_tripwire",
                     vector_store="lancedb",
                     lancedb_uri=lancedb_uri,
+                )
+            )
+
+            # Task 2.3: get_default_store() is injected-only. Compose the
+            # store explicitly through the production composition root rather
+            # than relying on the pre-change accessor fallback.
+            from rag_mcp.compose import build_vector_store
+            from rag_mcp.config import Settings as AppSettings
+
+            set_default_store(
+                build_vector_store(
+                    AppSettings(vector_store="lancedb", lancedb_uri=lancedb_uri)
                 )
             )
 

@@ -56,7 +56,7 @@ _TEST_COLLECTION = "test_documents"
 def _reset_default_store() -> None:
     """Reset the process-wide default store before each test.
 
-    Every test must compose or lazily install its own store; a leaked
+    Every test must compose or explicitly install its own store; a leaked
     instance from a previous test would share generation counters and
     cached tables across test boundaries. The composition-root setup
     flag is reset with it so a CLI/server entry point that calls
@@ -271,16 +271,31 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
 
 
 @pytest.fixture(autouse=True)
-def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Replace OllamaEmbedding with MockEmbedding globally.
+def _patch_embed_model(
+    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> None:
+    """Replace OllamaEmbedding with MockEmbedding for tests that use runtime setup.
 
-    Tests should run without a running Ollama server. MockEmbedding
-    produces deterministic embeddings based on text hashing.
-
-    Runtime setup is explicit, so test imports do not replace this mock.
+    The shared LlamaIndex global remains mocked for the whole suite. CLI
+    tests additionally exercise the real composition-root startup path, so
+    their selected ``ollama`` registry factory is redirected to this mock.
+    Provider/settings validation still runs unchanged; only the networked
+    concrete embedding construction is replaced.
     """
     _patch_embed_model._mock = MockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
+
+    if request.node.path.name == "test_cli.py":
+        from rag_mcp.core.providers.embeddings import registry as embed_registry
+
+        real_get = embed_registry.get
+
+        def _get_for_test(name: str):
+            if name == "ollama":
+                return lambda _settings: _patch_embed_model._mock
+            return real_get(name)
+
+        monkeypatch.setattr(embed_registry, "get", _get_for_test)
 
 
 @pytest.fixture(autouse=True)

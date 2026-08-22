@@ -172,7 +172,8 @@ def test_startup_wiring_reaches_cli_mcp_operator_path(
     try:
         result = CliRunner().invoke(app, [])
         assert result.exit_code == 1
-        assert str(legacy_dir) in result.output
+        compact_output = "".join(result.output.split())
+        assert "".join(str(legacy_dir).split()) in compact_output
         assert "VECTOR_STORE=chroma" in result.output
         assert "VECTOR_STORE=lancedb" in result.output
         assert "re-ingest" in result.output.lower() or "re-ingestion" in result.output.lower()
