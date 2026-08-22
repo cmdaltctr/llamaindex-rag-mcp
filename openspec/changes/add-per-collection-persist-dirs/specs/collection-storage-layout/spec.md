@@ -1,128 +1,69 @@
 ## ADDED Requirements
 
-### Requirement: Collections use isolated storage by default
+### Requirement: Collection names are safe path components
 
-The system SHALL resolve each unmapped collection to
-`{chroma_persist_dir}/{collection_name}/` before constructing its vector
-store. Operations for different resolved directories SHALL use different
-store instances.
-
-#### Scenario: Two unmapped collections are isolated
-
-- **WHEN** operations select stores for two different unmapped collections
-- **THEN** their resolved persist directories MUST differ
-- **AND** their selected store instances MUST differ
-
-### Requirement: Explicit mappings opt into shared storage
-
-The system SHALL resolve a mapped collection to
-`{chroma_persist_dir}/{group_name}/`. Collections mapped to the same group
-SHALL reuse one store instance and one SQLite database.
-
-#### Scenario: Two collections share an explicit group
-
-- **WHEN** two collection names map to the same group name
-- **THEN** their resolved persist directories MUST be equal
-- **AND** their selected store instance MUST be shared
-
-### Requirement: Storage path components are safe
-
-Collection and group names SHALL be validated before path construction. Each
-name MUST be a non-empty, single path component. Absolute paths, separators,
-`.` and `..` MUST be rejected.
+Collection and group names SHALL be validated before any filesystem path
+is constructed. Each name MUST be a non-empty, single path component.
+Absolute paths, separators, `.` and `..` MUST be rejected on every
+backend.
 
 #### Scenario: Unsafe collection or group name is rejected
 
 - **WHEN** a collection or group name is empty, absolute, contains `/` or
   `\\`, or equals `.` or `..`
-- **THEN** persist-directory resolution MUST fail with a clear error
+- **THEN** path resolution MUST fail with a clear error
 - **AND** no filesystem path MUST be created
 
-### Requirement: Flat-layout migration preserves stored records
+### Requirement: LanceDB collections are isolated by native layout
 
-The system SHALL migrate each collection from the configured flat
-`chroma_persist_dir` through the ChromaDB API. It SHALL copy IDs, embeddings,
-documents and metadata without invoking the embedding provider.
+The system SHALL store each LanceDB collection as its own table directory
+at `{lancedb_uri}/{collection_name}.lance`. Operations on different
+collections SHALL NOT share a table directory or a per-collection write
+lock.
 
-#### Scenario: Migration preserves collection data
+#### Scenario: Two LanceDB collections resolve to distinct storage
 
-- **WHEN** a flat-layout collection is migrated to its resolved directory
-- **THEN** its IDs, embeddings, documents and metadata MUST match the source
-- **AND** the embedding provider MUST NOT be called
+- **WHEN** two collections are created in one LanceDB store
+- **THEN** each MUST occupy a distinct `.lance` directory under the URI
+- **AND** concurrent writes to the two collections MUST NOT serialise on
+  a shared collection-level file lock
 
-#### Scenario: Configured source root is honoured
+### Requirement: Chroma local collections are isolated by default
 
-- **WHEN** `chroma_persist_dir` or `--root` selects a non-default source root
-- **THEN** migration MUST read that root instead of hard-coded `./chroma_db`
+When the Chroma backend runs in local mode, the system SHALL resolve each
+unmapped collection to `{chroma_persist_dir}/{collection_name}/`, giving
+each collection its own SQLite file. Operations for different resolved
+directories SHALL use different store instances.
 
-### Requirement: Migration is resumable and reversible
+#### Scenario: Two unmapped Chroma collections are isolated
 
-The migration SHALL back up the source and existing destinations before
-writes. It SHALL stage and verify imports before swapping destinations. Exact
-prior imports SHALL be skipped, while conflicting data SHALL stop migration
-without overwriting either copy.
+- **WHEN** operations select stores for two different unmapped collections
+- **THEN** their resolved persist directories MUST differ
+- **AND** their selected store instances MUST differ
 
-#### Scenario: Exact migration re-run is idempotent
+### Requirement: Explicit mappings opt into shared Chroma storage
 
-- **WHEN** migration runs again after an exact prior import
-- **THEN** matching IDs, embeddings, documents and metadata MUST be skipped
-- **AND** no duplicate records MUST be created
+The system SHALL resolve a mapped collection to
+`{chroma_persist_dir}/{group_name}/`. Collections mapped to the same group
+SHALL reuse one store instance and one SQLite database.
 
-#### Scenario: Partial failure can resume or roll back
+#### Scenario: Two Chroma collections share an explicit group
 
-- **WHEN** an import fails after at least one collection completes
-- **THEN** source data and retained destination backups MUST remain intact
-- **AND** a re-run MUST complete remaining collections without duplication
-- **AND** rollback MUST restore the pre-migration layout
+- **WHEN** two collection names map to the same group name
+- **THEN** their resolved persist directories MUST be equal
+- **AND** their selected store instance MUST be shared
 
-### Requirement: Mapping changes require explicit data movement
+### Requirement: Flat-layout Chroma migration preserves stored records
 
-The system SHALL NOT move data when `collection_group_map` changes. After a
-collection's first write, own-to-group, group-to-own and group-to-group changes
-SHALL require migration or re-ingestion before the new mapping is used.
+The system SHALL migrate each collection from a legacy flat
+`chroma_persist_dir` through the ChromaDB API. It SHALL copy IDs,
+embeddings, documents and metadata without invoking the embedding
+provider. The migration SHALL operate only when the Chroma backend is
+selected and SHALL NOT touch LanceDB stores.
 
-#### Scenario: Existing collection mapping changes
+#### Scenario: Migration preserves Chroma collection data
 
-- **WHEN** an existing collection resolves to a different directory
-- **THEN** the system MUST NOT move existing data automatically
-- **AND** the operator MUST run the documented storage migration or re-ingest
-  the collection
-
-### Requirement: Separate directories isolate process writes
-
-The system SHALL allow different operating-system processes to write
-concurrently to different unmapped collections under one parent root without
-sharing a ChromaDB SQLite file.
-
-#### Scenario: Concurrent writes use separate databases
-
-- **WHEN** two operating-system processes start overlapping writes to two
-  unmapped collections under one `chroma_persist_dir`
-- **THEN** neither write MUST fail with a database-lock error
-- **AND** both collections MUST contain their expected records
-
-### Requirement: Per-collection isolation applies only to lock-contended backends
-
-The per-collection persist-directory mechanism SHALL apply only to vector
-stores whose storage model shares one write-locked database across
-collections, namely ChromaDB's embedded SQLite. A backend that already
-isolates its collections on disk SHALL NOT be subject to per-collection
-directory resolution; its collections SHALL resolve to the store's single
-configured location. LanceDB is such a backend: each collection is a
-separate Lance dataset under one connection URI, so a single writer lock is
-never shared across collections. This requirement keeps the ChromaDB-shaped
-isolation logic from being misapplied to a store that does not need it.
-
-#### Scenario: Chroma is subject to per-collection directories
-
-- **WHEN** `VECTOR_STORE=chroma` and no explicit mapping exists for a
-  collection
-- **THEN** the collection MUST resolve to its own persist directory under
-  the parent root
-
-#### Scenario: LanceDB is exempt from per-collection directories
-
-- **WHEN** `VECTOR_STORE=lancedb` (once the LanceDB backend is present)
-- **THEN** per-collection directory resolution MUST NOT be applied
-- **AND** all collections MUST resolve to the store's single configured
-  `LANCEDB_URI`, because LanceDB tables are already isolated on disk
+- **WHEN** a flat-layout Chroma collection is migrated to its resolved
+  directory
+- **THEN** its IDs, embeddings, documents and metadata MUST match the
+  source

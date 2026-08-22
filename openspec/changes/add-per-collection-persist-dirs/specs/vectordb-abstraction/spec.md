@@ -1,84 +1,44 @@
 ## MODIFIED Requirements
 
-### Requirement: ChromaDB as first implementation
-
-The system SHALL provide `core/vectordb/chroma.py` implementing the
-`VectorStore` ABC, absorbing all logic from `chroma_utils.py` and the
-ChromaDB-specific collection management formerly in the ingestion writer.
-`chroma_utils.py` SHALL cease to exist as a top-level module.
-`core/vectordb/chroma.py` SHALL be the **only** module in the package that
-imports `chromadb` or constructs a ChromaDB client; every other consumer,
-including the codebase map, SHALL go through the `VectorStore` interface.
-
-#### Scenario: Single chromadb import site
-
-- **WHEN** `src/rag_mcp/` is searched for `import chromadb` or
-  `chromadb.PersistentClient`
-- **THEN** the only match MUST be in `core/vectordb/chroma.py`
-
-#### Scenario: Codebase map goes through the interface
-
-- **WHEN** the codebase map needs indexed-document information
-- **THEN** it MUST call `VectorStore` methods on an injected store
-- **AND** it MUST NOT create its own ChromaDB client or persist directory
-  handle
-
-#### Scenario: Existing collections keep working
-
-- **WHEN** the server starts against an existing flat `chroma_persist_dir`
-  (default `./chroma_db`) containing collections in the pre-change layout
-- **THEN** all previously indexed collections MUST be readable and queryable
-  after the documented storage-layout migration defined by the
-  `collection-storage-layout` capability, which MUST preserve stored
-  embeddings, or after an equivalent re-ingest, which recomputes them
-
-#### Scenario: Existing tests pass against the implementation
-
-- **WHEN** `uv run pytest -m "not slow" --cov=rag_mcp` runs
-- **THEN** all pre-existing tests MUST pass against the ChromaDB-backed
-  implementation with no assertion changes beyond injected-settings plumbing
-
----
-
 ### Requirement: Store selection via configuration
 
-The system SHALL select the vector store implementation via a
-`VECTOR_STORE` environment variable defaulting to `chroma`, read from
-`config/` and constructed in `compose.py`. The constructed store SHALL be
-passed to consumers by injection, including to the codebase map subsystem
-under `core/codebase/`. The store's persist directory SHALL be resolved per
-collection by the composition root according to the
-`collection-storage-layout` capability before construction; the store
-implementation SHALL NOT independently read a flat global persist-directory
-default to decide where to place data.
+The system SHALL select the vector-store implementation through the
+`VECTOR_STORE` setting, defaulting to `lancedb` after the registered LanceDB
+qualification gate passes. Settings SHALL be resolved in `config/` and object
+construction SHALL occur only in `compose.py` through the registry. Selection
+SHALL be a registry lookup, not a branch over store names. The constructed
+store SHALL be passed to every consumer by injection, including the codebase
+map subsystem. The persist location for an operation SHALL be resolved per
+collection at the composition root according to the backend rules of the
+`collection-storage-layout` capability; a store SHALL NOT read a flat global
+persist-directory default for itself.
 
 #### Scenario: Default store is resolved from configuration
 
-- **WHEN** `VECTOR_STORE` is not set
-- **THEN** `compose.py` MUST construct the configured default vector-store
-  implementation through the registry
+- **GIVEN** the LanceDB qualification gate passed
+- **AND** `VECTOR_STORE` is not explicitly set
+- **AND** no recognised legacy Chroma data requires acknowledgement
+- **WHEN** runtime composition occurs
+- **THEN** `compose.py` MUST construct embedded LanceDB through the registry
 
 #### Scenario: Unknown store value
 
-- **WHEN** `VECTOR_STORE` names an implementation with no registered
-  implementation
-- **THEN** the system MUST fail at startup with a clear error listing
-  available implementations
+- **WHEN** `VECTOR_STORE` names an unregistered implementation
+- **THEN** startup MUST fail with a clear error listing registered names
 
 #### Scenario: Store is injected into every consumer
 
-- **WHEN** an operation or subsystem needs vector store access
+- **WHEN** an operation or subsystem needs vector-store access
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
 
 #### Scenario: Alternate store is selectable by configuration
 
-- **WHEN** `VECTOR_STORE` names a registered non-default implementation,
-  for example `lancedb`
-- **THEN** `compose.py` MUST resolve and construct that implementation
-  through the registry
-- **AND** every consumer MUST receive it by injection through the same
-  paths that receive the default store
+- **GIVEN** the complete `chroma` optional extra is installed
+- **AND** `VECTOR_STORE=chroma` is explicitly set
+- **WHEN** runtime composition occurs
+- **THEN** `compose.py` MUST resolve Chroma through the registry
+- **AND** every consumer MUST receive it through the same injection paths
 
 #### Scenario: Access before composition
 
@@ -86,11 +46,12 @@ default to decide where to place data.
 - **WHEN** a core consumer requests process-wide store access
 - **THEN** the accessor MUST fail clearly rather than construct a default
 
-#### Scenario: Persist directory arrives resolved
+#### Scenario: Persist location is resolved per collection
 
-- **WHEN** the composition root constructs the store for an operation on a
-  collection
-- **THEN** the persist directory SHALL already be resolved from the
-  collection-storage-layout rules
-- **AND** the store SHALL reject a missing injected directory and MUST NOT
-  consult a global flat default during any production client access
+- **WHEN** an operation targets a collection on the Chroma backend in local
+  mode
+- **THEN** the operation's persist directory MUST be resolved through the
+  composition root per the `collection-storage-layout` rules before store
+  construction
+- **AND** the store instance MUST NOT read a flat global persist-directory
+  default itself
