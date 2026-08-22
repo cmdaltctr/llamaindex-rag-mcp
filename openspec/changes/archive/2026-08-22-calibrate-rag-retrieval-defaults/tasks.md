@@ -1,3 +1,20 @@
+> **ARCHIVED 2026-08-22 — superseded by `harden-pipeline-correctness-before-calibration` Stage 6.**
+> The June 2026 harness audit found the 10b/12/9a-rerun/13/14 runners
+> experiment-invalid (fetch_k collapse, shared-control defects, missing
+> manifests). That change's Stage 4 rebuilt the harnesses (commits
+> `181a726`/`b92f152`/`205ec0e`) and its Stage 6 re-owns every open
+> campaign item below: 10b+12+9a-rerun are subsumed by the D17 factorial
+> (dense/hybrid × rerank × pool), 13 by D18 (task 6.2), 14 by D19 (task 6.3).
+> The 17 open items map as follows — 2.7→6.1.3–6.1.6, 2.8→6.1.6,
+> 2.9 done 2026-08-22 (EXP_README REBUILT row), 2.10→6.GA.2,
+> 4.6/5.6→6.1.4–6.1.6 (paired deltas + CIs), 4.7/5.7 done 2026-08-22
+> (EXP_README supersession rows), 4.8/5.8→6.GA.2, 6.7→6.2.3, 6.8 done
+> 2026-08-22, 6.9→6.GB.2, 7.6→6.3.5, 7.7 carried with D19 results
+> (cross-reference Exp 11's TODO sections when they land), 7.8 done
+> 2026-08-22, 7.9→6.GC.2. Executed evidence for the completed sections
+> (10.1) lives in `experiments/`; the `calibration-experiments` spec delta
+> is historical and intentionally not merged into `openspec/specs/`.
+
 ## 1. Shared infrastructure — fetch_k override
 
 - [x] 1.1 `fetch_k` override on `_resolve_fetch_k()` and `search()` in `retrieval.py` — already implemented per TDR-005 (`docs/tdr/005-fetch-k-override-for-experiment-pool-sweeps.md`). The reranker (`reranker.py`) does not need modification; it processes whatever candidates it receives. The pool size is controlled upstream by `_resolve_fetch_k()`.
