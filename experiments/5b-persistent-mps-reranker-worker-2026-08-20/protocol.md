@@ -1,7 +1,7 @@
 # Experiment 5b — Persistent MPS reranker worker
 
 **Experiment ID:** `5b-persistent-mps-reranker-worker`  
-**Protocol version:** `1.0` (`1.0-draft` prepared against `b4788ff`; operational values resolved 2026-08-21 against `b013ae6`)  
+**Protocol version:** `1.1` (`1.0-draft` prepared against `b4788ff`; operational values resolved 2026-08-21 against `b013ae6`; `1.1` amended 2026-08-22 — longevity-schedule budget filter, see section 22)  
 **Status:** PLANNED — finalised before harness code; no measured result is claimed  
 **Prepared against repository commit:** `b4788ff2fb6f548d11091edbeb1f9df622574a98`  
 **Role:** experiment-only evaluation of a persistent optional Torch MPS worker
@@ -88,17 +88,19 @@ candidate count and token length. It is committed as
 `longevity_schedule.json` with the deterministic generator
 `generate_longevity_schedule.py` (seed `20260821`):
 
-- identity: `sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55`;
-- shape: 228 requests over 19 strata — candidate counts
+- identity: `sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7`;
+- shape: 204 requests over 17 strata — candidate counts
   {10, 25, 50, 100, 200} × approximate per-candidate token lengths
-  {32, 128, 256, 512}, subject to the 65,536-token-per-request budget, with
-  12 replicates per stratum;
-- bursts: 8 groups of 16 consecutive requests (window starts 0, 30, 61, 91,
-  121, 151, 182, 212) exercise queue/backpressure behaviour;
+  {32, 128, 256, 512}, subject to the 65,536-token-per-request budget
+  evaluated with the section 11 estimator (UTF-8 bytes ÷ 4) on materialised
+  text, with 12 replicates per stratum;
+- bursts: 8 groups of 16 consecutive requests (window starts 0, 27, 54, 81,
+  107, 134, 161, 188) exercise queue/backpressure behaviour;
 - materialisation: the harness synthesises query and candidate text from a
   fixed 512-word vocabulary using each request's recorded
   `text_materialisation_seed`, so text is a pure function of the committed
-  schedule.
+  schedule; seeds travel with each (stratum, replicate) pair so every
+  emitted request is the exact request whose budget was verified.
 
 ## 6. Manipulated variables and five-cell matrix
 
@@ -485,3 +487,45 @@ schedule identity, model revision/file digests, bootstrap seed and block
 length, request/drain/TERM/KILL/idle/orphan deadlines, restart limits, frame
 bounds, counterbalancing table and thermal/interference rule. No `TODO-LOCAL`
 marker remains.
+
+**Version 1.1, 2026-08-22:** longevity-schedule budget-filter amendment. The
+v1.0 generator filtered strata by the nominal product `count × tokens` on the
+assumption 1 word ≈ 1 token, while the section 11 frame guard estimates
+tokens as `ceil(utf-8 bytes / 4)`. The synthesised vocabulary averages
+≈ 2.04 estimated tokens per word (≈ 3.05 real tokenizer tokens per word), so
+strata 100×512 and 200×256 materialise to ≈ 104,200–104,300 estimated tokens
+and can never satisfy the 65,536 budget — 24 of the 228 v1.0 requests were
+unsendable and the first measured campaign (started 2026-08-22, protocol v1.0,
+repo `e5397a7e92ab12ba3f9cfecb4221a66e377f2c66`) aborted deterministically at
+W3 block 1, longevity request 3, with `invalid_request`. Amendment:
+`generate_longevity_schedule.py` now filters strata by the section 11
+estimator applied to every replicate's materialised text; the schedule is
+regenerated with the same seed (204 requests over 17 strata; dropped strata
+100×512, 200×256 and 200×512) with identity
+`sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7`.
+Per the amendment rule the v1.0 measured campaign is invalidated; its
+partial evidence is preserved under `output_invalidated_protocol_v1.0_2026-08-22/`
+and never enters aggregates. No gate, threshold, primary estimator, workload,
+model revision, request count, deadline, restart policy, counterbalancing or
+invalidation value changed.
+
+**Execution record, 2026-08-22 (protocol v1.1, repo `a04e8ee`):** measured
+campaign completed on the local Apple Silicon host (arm64, macOS 26.5.1,
+Python 3.12.10, Torch 2.13.0, MPS available; every W2/W3 handshake reported
+effective device `mps:0`, W4/W5 `cpu`, W1 `CPUExecutionProvider` first,
+`PYTORCH_ENABLE_MPS_FALLBACK=0`). Three counterbalanced blocks, 15/15 units
+complete, all on AC power with nominal thermal state and a per-block
+no-foreground-interference declaration. One earlier v1.1 attempt was
+repeated in full after a harness race (`MemorySampler._loop` retired the
+sampler on its first context-less tick during warm-up, voiding all memory
+samples); that attempt's evidence is preserved under
+`output_sampler_race_invalidated_2026-08-22/` and contributes nothing to the
+aggregates. Final gate verdicts: G1a/G1b/G1c PASS, G2 PASS, G3 PASS,
+G4 FAIL (median N* 156 > 150; block upper bounds 233/∞/233), G5 PASS,
+G6 PASS, G7 PASS, G8 PASS, G9 FAIL ("preflight not green" caused by the
+measured run clobbering the dry-run `all_green` flag — a bookkeeping defect
+since fixed in `run_eval.merge_prior_preflight_green`; every substantive G9
+requirement was individually green and evidenced). Overall verdict: **FAIL —
+promotion rejected, ONNX CPU retained as the production default.** Full
+numbers, memory absolutes/ratios, break-even and stratum secondary
+estimands: `results.md`. Experiment 5 H3 remains FAIL and is untouched.
