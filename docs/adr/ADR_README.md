@@ -55,7 +55,7 @@ development of the LlamaIndex RAG MCP Server.
 | [046](./046-lancedb-vector-store-backend.md)                     | LanceDB as the Second Vector-Store Backend                                                   | 2026-08-17 | Accepted |
 | [047](./047-semantic-vector-store-swappability.md)               | Semantic Vector-Store Swappability                                                           | 2026-08-18 | Accepted |
 | [048](./048-bounded-failure-safe-ingestion.md)                   | Bounded and Failure-Safe Ingestion                                                           | 2026-08-19 | Accepted |
-| [049](./0049-lancedb-default-and-chroma-isolation.md)           | LanceDB Default and Chroma Isolation                                                         | 2026-08-21 | Accepted (release clearance pending security disposition) |
+| [049](./0049-lancedb-default-and-chroma-isolation.md)           | LanceDB Default and Chroma Isolation                                                         | 2026-08-21 | Accepted |
 
 ## Convention
 
