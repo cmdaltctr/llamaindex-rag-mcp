@@ -20,7 +20,6 @@ import pyarrow as pa
 import pytest
 
 from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
-from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 from rag_mcp.core.vectordb.identity import (
     IDENTITY_INDEX_KEY,
     IDENTITY_MODEL_KEY,
@@ -32,6 +31,14 @@ from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
 def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
     """Equal collection/generation values cannot cross backend instances."""
+    # Task 5.1: the Chroma half of this cross-backend test needs the
+    # optional chroma extra; it skips by design in the base install and
+    # runs in the chroma-extra CI job.
+    pytest.importorskip(
+        "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
+    )
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
     collection = "cross_backend_cache_isolation"
     chroma = ChromaVectorStore()
     lance = LanceVectorStore(uri=str(tmp_path / "cross_backend_lance"))

@@ -15,7 +15,6 @@ dependencies = [
     # so the whole set moves together to stay self-consistent under
     # chromadb 1.x. See ADR-042.
     "llama-index>=0.14.5",
-    "llama-index-vector-stores-chroma>=0.5.0",
     # Second vector-store backend (ADR-046, add-lancedb-vectordb-backend).
     # lancedb>=0.37 pins the lancedb.expr type-safe filter builder (PR
     # #3150); the adapter's own floor (>=0.21.1) does not guarantee it.
@@ -34,11 +33,6 @@ dependencies = [
     "pylance>=10",
     "pyarrow>=25",
     "llama-index-readers-file>=0.5.0",
-    # chromadb 1.0.0 reverts list_collections() to returning Collection
-    # objects; 0.6.0–0.9.x returned bare strings, breaking
-    # ChromaVectorStoreAdapter.list_collections. See ADR-042.
-    # https://docs.trychroma.com/docs/overview/migration
-    "chromadb>=1.0.0",
     "llama-index-embeddings-ollama>=0.7.0",
     "python-dotenv>=1.0.0",
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
@@ -70,6 +64,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Quarantined Chroma backend (ADR-049, make-lancedb-default-and-isolate-chromadb).
+# chromadb 1.5.x is affected by CVE-2026-45829 with no accepted patched
+# release, so both Chroma packages moved out of the base install into this
+# opt-in extra. Floors are retained because Chroma compatibility remains
+# supported: chromadb>=1.0.0 reverts list_collections() to returning
+# Collection objects (0.6.0–0.9.x returned bare strings, breaking
+# ChromaVectorStoreAdapter.list_collections — see ADR-042).
+# Install: uv sync --extra chroma (source) / pip install "rag-mcp[chroma]".
+chroma = [
+    "chromadb>=1.0.0",
+    "llama-index-vector-stores-chroma>=0.5.0",
+]
 hybrid = [
     "rank-bm25>=0.2.2",
 ]
@@ -135,6 +141,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "chroma: requires the optional chroma extra (uv sync --extra chroma); skipped by design in the base install",
 ]
 
 # ─── Import-linter contracts (Phase 2: config/compose/DI layering) ─────
@@ -367,6 +374,8 @@ select = ["E", "F", "I", "UP", "B", "S"]
 # seeded pseudo-random sampling; B007/B905: pre-existing build loops.
 "experiments/*/test_*.py" = ["S101", "S108", "B017", "S603", "S607"]
 "experiments/*/run_eval.py" = ["S110", "S603", "S607", "E501", "S311"]
+"experiments/*/run_qualification.py" = ["S110", "S310", "S603", "S607"]
+"experiments/*/verify_reopen.py" = ["S603", "S607"]
 "experiments/*/analysis.py" = ["B018"]
 "experiments/*/summarise_eval.py" = ["E501"]
 "experiments/*/build_indexes.py" = ["E501", "S311", "B007", "B905"]

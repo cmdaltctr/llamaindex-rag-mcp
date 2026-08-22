@@ -80,6 +80,12 @@ default to decide where to place data.
 - **AND** every consumer MUST receive it by injection through the same
   paths that receive the default store
 
+#### Scenario: Access before composition
+
+- **GIVEN** no vector store has been composed or injected
+- **WHEN** a core consumer requests process-wide store access
+- **THEN** the accessor MUST fail clearly rather than construct a default
+
 #### Scenario: Persist directory arrives resolved
 
 - **WHEN** the composition root constructs the store for an operation on a

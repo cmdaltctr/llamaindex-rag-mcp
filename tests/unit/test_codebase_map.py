@@ -348,15 +348,27 @@ class TestBuildCodebaseMap:
             mock_store.fetch_all.assert_called_with("documents", ["metadatas"])
 
     def test_no_collection_graceful_degradation(self, tmp_path: Path) -> None:
-        """When ChromaDB collection is unavailable, code graph still works."""
+        """When the vector-store collection is unavailable, code graph still works.
+
+        Task 5.1 rewrite: patches the process-wide store accessor with a
+        failing stub instead of ``chromadb.PersistentClient`` so the
+        degradation contract is store-agnostic and runs in the base
+        install without the chroma extra.
+        """
+
+        class _NoCollectionStore:
+            def get_collection(self, name: str) -> object:
+                raise Exception("no collection")
+
         (tmp_path / "app.py").write_text("x = 1\n")
 
         with (
             patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
-            patch("chromadb.PersistentClient") as mock_client,
+            patch(
+                "rag_mcp.core.vectordb.get_default_store",
+                return_value=_NoCollectionStore(),
+            ),
         ):
-            mock_client.return_value.get_collection.side_effect = Exception("no collection")
-
             result = build_codebase_map(str(tmp_path))
 
             assert result.inventory is not None

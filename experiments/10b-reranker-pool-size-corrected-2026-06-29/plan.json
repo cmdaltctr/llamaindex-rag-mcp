@@ -6,15 +6,27 @@
   "manipulated_factors": [
     {
       "name": "retrieval",
-      "levels": ["dense", "hybrid_bm25"]
+      "levels": [
+        "dense",
+        "hybrid_bm25"
+      ]
     },
     {
       "name": "rerank",
-      "levels": [false, true]
+      "levels": [
+        false,
+        true
+      ]
     },
     {
       "name": "fetch_k",
-      "levels": [50, 100, 150, 200, 500]
+      "levels": [
+        50,
+        100,
+        150,
+        200,
+        500
+      ]
     }
   ],
   "controlled_variables": {
@@ -135,5 +147,13 @@
       "manifest_field": "embedding.model",
       "operator": "not_null"
     }
-  ]
+  ],
+  "vector_store_policy": {
+    "addendum": "2026-08-21",
+    "source": "ADR-049 decision D11 (make-lancedb-default-and-isolate-chromadb)",
+    "policy": "first admissible measured run follows ADR-049 -> must run on the qualified LanceDB default unless the vector-store backend is a declared manipulated factor",
+    "declaration": "vector-store backend declared a manipulated factor",
+    "limitation": "prepared-on-Chroma inputs produce Chroma-specific results; not LanceDB-admissible evidence. Re-base immutable inputs on LanceDB, or keep this declaration, before any measured row.",
+    "preflight": "assert_policy_vector_store in experiments/_lib/preflight.py (task 6.3)"
+  }
 }

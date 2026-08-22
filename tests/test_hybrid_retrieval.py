@@ -9,9 +9,22 @@ from __future__ import annotations
 
 import inspect
 import logging
+
+# ── Optional-chroma guard (task 5.1) ────────────────────────────────────
+# These pipeline tests drive the hybrid paths through the ChromaDB adapter
+# (EphemeralClient + fake collections). They skip by design in the base
+# install and run in the chroma-extra CI job; the BM25 core tests above and
+# below run against the tmp-path LanceDB default store in both installs.
+from importlib.util import find_spec as _find_spec
 from unittest.mock import MagicMock
 
 import pytest
+
+_CHROMA_EXTRA = _find_spec("chromadb") is not None
+requires_chroma = pytest.mark.skipif(
+    not _CHROMA_EXTRA,
+    reason="chroma extra not installed (uv sync --extra chroma); runs in the chroma-extra CI job",
+)
 
 
 class FakeCollection:
@@ -361,6 +374,7 @@ def test_bm25_cache_namespaces_same_collection_by_store() -> None:
     assert (store_b, "shared") in BM25SparseRetriever._cache
 
 
+@requires_chroma
 def test_two_chroma_store_instances_do_not_share_bm25_rows() -> None:
     """Two Chroma adapters with the same collection name stay isolated."""
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
@@ -666,6 +680,7 @@ def test_remove_collection_generation_invalidates_cache() -> None:
     assert [row[1] for row in retriever.query("replacement", top_n=5)] == ["new"]
 
 
+@requires_chroma
 def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     """The dense-only default must remain byte-for-byte compatible."""
     import chromadb
@@ -684,17 +699,20 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
             }
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
-    )
+    client = FakePersistentClient({"documents": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
 
-    implicit = retrieval.search("query", top_k=1, rerank=False)
-    explicit = retrieval.search("query", top_k=1, rerank=False, hybrid=False)
+    implicit = retrieval.search("query", top_k=1, rerank=False, store=chroma_store)
+    explicit = retrieval.search("query", top_k=1, rerank=False, hybrid=False, store=chroma_store)
 
     assert explicit == implicit
 
 
+@requires_chroma
 def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     """Hybrid + rerank must feed the reranker the fused dense+sparse pool."""
     import chromadb
@@ -717,9 +735,11 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
         },
     ]
     collection = FakeCollection("documents", dense_rows)
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
-    )
+    client = FakePersistentClient({"documents": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -741,13 +761,21 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
             return results[:top_k]
 
     # Inject the capturing reranker directly via the DI parameter.
-    retrieval.search("ZXQ-77", top_k=1, rerank=True, hybrid=True, reranker=CapturingReranker())
+    retrieval.search(
+        "ZXQ-77",
+        top_k=1,
+        rerank=True,
+        hybrid=True,
+        reranker=CapturingReranker(),
+        store=chroma_store,
+    )
 
     assert "results" in captured
     assert any(row["source"] == "sparse.txt" for row in captured["results"])
     assert len(captured["results"]) == 2
 
 
+@requires_chroma
 def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     """MCP/CLI public result shape should not leak internal fusion fields."""
     import chromadb
@@ -772,9 +800,11 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
             },
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
-    )
+    client = FakePersistentClient({"documents": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -786,7 +816,9 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
         EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
     )
 
-    public_results = retrieval.search("Colosseum", top_k=2, rerank=False, hybrid=True)
+    public_results = retrieval.search(
+        "Colosseum", top_k=2, rerank=False, hybrid=True, store=chroma_store
+    )
 
     assert public_results
     for result in public_results:
@@ -797,6 +829,7 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
         assert "fused_rank" not in result
 
 
+@requires_chroma
 def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     """Experiment 9 can opt into fusion rank diagnostics explicitly."""
     import chromadb
@@ -815,9 +848,11 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
             }
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
-    )
+    client = FakePersistentClient({"documents": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -835,6 +870,7 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
         rerank=False,
         hybrid=True,
         include_diagnostics=True,
+        store=chroma_store,
     )
 
     assert results[0]["id"] == "target"
@@ -842,6 +878,7 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     assert results[0]["fused_rank"] == 1
 
 
+@requires_chroma
 def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     """Native sparse mixed coverage should warn once with remediation text."""
     import chromadb
@@ -860,9 +897,11 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
             {"id": "without_sparse", "text": "missing sparse", "metadata": {"file_path": "b.txt"}},
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"mixed_native": collection})
-    )
+    client = FakePersistentClient({"mixed_native": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -880,8 +919,12 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
         retrieval._warned_native_fallback_collections.clear()
 
     with caplog.at_level(logging.WARNING):
-        retrieval.search("query", collection_name="mixed_native", rerank=False, hybrid=True)
-        retrieval.search("query", collection_name="mixed_native", rerank=False, hybrid=True)
+        retrieval.search(
+            "query", collection_name="mixed_native", rerank=False, hybrid=True, store=chroma_store
+        )
+        retrieval.search(
+            "query", collection_name="mixed_native", rerank=False, hybrid=True, store=chroma_store
+        )
 
     warnings = [
         r.message
@@ -892,6 +935,7 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     assert "re-ingest" in warnings[0].lower() or "reingest" in warnings[0].lower()
 
 
+@requires_chroma
 def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) -> None:
     """Native coverage checks must respect CHROMA_SCAN_PAGE_SIZE paging."""
     import chromadb
@@ -921,21 +965,26 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     )
 
     set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=1))
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"paged_native": collection})
-    )
+    client = FakePersistentClient({"paged_native": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_collections.clear()
     retrieval._warned_native_fallback_collections.clear()
 
     with caplog.at_level(logging.WARNING):
-        retrieval.search("query", collection_name="paged_native", rerank=False, hybrid=True)
+        retrieval.search(
+            "query", collection_name="paged_native", rerank=False, hybrid=True, store=chroma_store
+        )
 
     assert collection.get_calls >= 3
     assert any("1/3 chunks" in record.message for record in caplog.records)
 
 
+@requires_chroma
 def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch, caplog) -> None:
     """Selected native without real query support must use BM25 sparse results."""
     import chromadb
@@ -975,11 +1024,11 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     set_default_effective_settings(
         EffectiveSettings(retrieval=RetrievalBlock(rerank_max_fetch=2, rerank_fetch_multiplier=2))
     )
-    monkeypatch.setattr(
-        chromadb,
-        "PersistentClient",
-        lambda **_: FakePersistentClient({"native_fallback": collection}),
-    )
+    client = FakePersistentClient({"native_fallback": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_native_fallback_collections.clear()
@@ -992,6 +1041,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
             rerank=False,
             hybrid=True,
             include_diagnostics=True,
+            store=chroma_store,
         )
 
     assert any(row["source"] == "bm25.txt" and row["sparse_rank"] == 1 for row in results)
@@ -1000,6 +1050,7 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     )
 
 
+@requires_chroma
 def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> None:
     """BM25 indexes all chunks it sees and must not warn about sparse coverage."""
     import chromadb
@@ -1018,14 +1069,18 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
             },
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"bm25_no_warn": collection})
-    )
+    client = FakePersistentClient({"bm25_no_warn": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "bm25")
 
     with caplog.at_level(logging.WARNING):
-        retrieval.search("rare", collection_name="bm25_no_warn", rerank=False, hybrid=True)
+        retrieval.search(
+            "rare", collection_name="bm25_no_warn", rerank=False, hybrid=True, store=chroma_store
+        )
 
     assert not [r.message for r in caplog.records if "bm25_no_warn" in r.message]
 
@@ -1045,9 +1100,12 @@ def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) ->
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
     # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data.
+    # the runtime a question is construction work, not settings data. The
+    # probe path applies to the Chroma backend (task 3.3) — capability
+    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
+        vector_store="chroma",
         retrieval=RetrievalSettings(hybrid_sparse_backend="auto"),
     )
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
@@ -1063,9 +1121,12 @@ def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
     # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data.
+    # the runtime a question is construction work, not settings data. The
+    # probe path applies to the Chroma backend (task 3.3) — capability
+    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
+        vector_store="chroma",
         retrieval=RetrievalSettings(hybrid_sparse_backend="auto"),
     )
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
@@ -1081,9 +1142,12 @@ def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) 
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
     # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data.
+    # the runtime a question is construction work, not settings data. The
+    # probe path applies to the Chroma backend (task 3.3) — capability
+    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
+        vector_store="chroma",
         retrieval=RetrievalSettings(hybrid_sparse_backend="native"),
     )
     monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
@@ -1094,6 +1158,7 @@ def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) 
     assert any("Falling back to bm25" in record.message for record in caplog.records)
 
 
+@requires_chroma
 def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     """Dense top_k can miss the exact Colosseum chunk; hybrid recovers it."""
     import chromadb
@@ -1118,11 +1183,11 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
             },
         ],
     )
-    monkeypatch.setattr(
-        chromadb,
-        "PersistentClient",
-        lambda **_: FakePersistentClient({"colosseum_regression": collection}),
-    )
+    client = FakePersistentClient({"colosseum_regression": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -1140,6 +1205,7 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
         top_k=1,
         rerank=False,
         hybrid=False,
+        store=chroma_store,
     )
     hybrid = retrieval.search(
         "Where was the Colosseum built?",
@@ -1147,12 +1213,14 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
         top_k=2,
         rerank=False,
         hybrid=True,
+        store=chroma_store,
     )
 
     assert all(row["source"] != "sample.md" for row in dense_only)
     assert any(row["source"] == "sample.md" for row in hybrid)
 
 
+@requires_chroma
 def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     """When no reranker is injected, search() resolves one from the registry.
 
@@ -1184,9 +1252,11 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
             },
         ],
     )
-    monkeypatch.setattr(
-        chromadb, "PersistentClient", lambda **_: FakePersistentClient({"documents": collection})
-    )
+    client = FakePersistentClient({"documents": collection})
+    monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    chroma_store = ChromaVectorStore(client=client)
     monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
 
     constructed: list[str] = []
@@ -1206,7 +1276,7 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     # retired (design decision 4).
     monkeypatch.setitem(retrieval_registry._cache, "reranker_onnx", RecordingReranker)
 
-    results = retrieval.search("ZXQ-77", top_k=1, rerank=True, reranker=None)
+    results = retrieval.search("ZXQ-77", top_k=1, rerank=True, reranker=None, store=chroma_store)
 
     assert constructed == ["built"], (
         "search() did not construct the default reranker through the registry"

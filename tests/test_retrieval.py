@@ -749,33 +749,36 @@ class TestListCollections:
             assert "document_count" in c
             assert "chunk_count" in c
 
-    def test_list_collections_scans_multiple_metadata_pages(self, monkeypatch):
-        """Collection document counts must include all metadata pages."""
-        import chromadb
+    def test_list_collections_scans_multiple_metadata_pages(self, tmp_path):
+        """Collection document counts must include all metadata pages.
 
-        from rag_mcp.config import get_settings as _gs
+        Task 5.1 rewrite: seeds through the real ingestion path
+        (store-agnostic) instead of a direct ChromaDB client, so the
+        pagination contract runs against the default tmp-path LanceDB
+        store in the base install and on Chroma in the chroma-extra job.
+        """
+        from asyncio import run as asyncio_run
+
+        from rag_mcp.core.ingestion import ingest_path_async
         from rag_mcp.core.retrieval import list_collections
         from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_or_create_collection("paged_collection_stats")
-        collection.add(
-            ids=["1", "2", "3", "4", "5"],
-            documents=["one", "two", "three", "four", "five"],
-            embeddings=[[float(i)] * 384 for i in range(5)],
-            metadatas=[
-                {"file_path": "a.txt"},
-                {"file_path": "a.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "c.txt"},
-                {"file_path": "c.txt"},
-            ],
-        )
+        total_chunks = 0
+        for name in ("a.txt", "b.txt", "c.txt"):
+            doc = tmp_path / name
+            doc.write_text(f"Collection stats document {name} sentence. " * 12)
+            result = asyncio_run(
+                ingest_path_async(str(doc), collection_name="paged_collection_stats")
+            )
+            assert result["status"] == "ok"
+            total_chunks += result["chunks_created"]
+        # Force more than one scan page at page size 2.
+        assert total_chunks > 2
 
         stats = {c["name"]: c for c in list_collections()}["paged_collection_stats"]
-        assert stats["chunk_count"] == 5
+        assert stats["chunk_count"] == total_chunks
         assert stats["document_count"] == 3
 
 

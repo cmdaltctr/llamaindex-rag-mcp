@@ -4,9 +4,35 @@
   "experimental_unit": "one fixed labelled query within a fraction block, evaluated under every threshold and arm",
   "primary_metric": "coverage_at_20",
   "manipulated_factors": [
-    {"name": "threshold", "levels": [0.1, 0.2, 0.3, 0.5, 0.7]},
-    {"name": "fraction", "levels": [1.0, 0.9, 0.75, 0.5, 0.25, 0.0]},
-    {"name": "arm", "levels": ["policy", "reranker_off", "reranker_on"]}
+    {
+      "name": "threshold",
+      "levels": [
+        0.1,
+        0.2,
+        0.3,
+        0.5,
+        0.7
+      ]
+    },
+    {
+      "name": "fraction",
+      "levels": [
+        1.0,
+        0.9,
+        0.75,
+        0.5,
+        0.25,
+        0.0
+      ]
+    },
+    {
+      "name": "arm",
+      "levels": [
+        "policy",
+        "reranker_off",
+        "reranker_on"
+      ]
+    }
   ],
   "controlled_variables": {
     "top_k": 50,
@@ -17,52 +43,352 @@
     "corpus": "freshstack-qasper-mixed"
   },
   "cells": [
-    {"id": "thr_0.1_frac_1.0__policy", "factors": {"threshold": 0.1, "fraction": 1.0, "arm": "policy"}},
-    {"id": "thr_0.1_frac_0.9__policy", "factors": {"threshold": 0.1, "fraction": 0.9, "arm": "policy"}},
-    {"id": "thr_0.1_frac_0.75__policy", "factors": {"threshold": 0.1, "fraction": 0.75, "arm": "policy"}},
-    {"id": "thr_0.1_frac_0.5__policy", "factors": {"threshold": 0.1, "fraction": 0.5, "arm": "policy"}},
-    {"id": "thr_0.1_frac_0.25__policy", "factors": {"threshold": 0.1, "fraction": 0.25, "arm": "policy"}},
-    {"id": "thr_0.1_frac_0.0__policy", "factors": {"threshold": 0.1, "fraction": 0.0, "arm": "policy"}},
-    {"id": "thr_0.2_frac_1.0__policy", "factors": {"threshold": 0.2, "fraction": 1.0, "arm": "policy"}},
-    {"id": "thr_0.2_frac_0.9__policy", "factors": {"threshold": 0.2, "fraction": 0.9, "arm": "policy"}},
-    {"id": "thr_0.2_frac_0.75__policy", "factors": {"threshold": 0.2, "fraction": 0.75, "arm": "policy"}},
-    {"id": "thr_0.2_frac_0.5__policy", "factors": {"threshold": 0.2, "fraction": 0.5, "arm": "policy"}},
-    {"id": "thr_0.2_frac_0.25__policy", "factors": {"threshold": 0.2, "fraction": 0.25, "arm": "policy"}},
-    {"id": "thr_0.2_frac_0.0__policy", "factors": {"threshold": 0.2, "fraction": 0.0, "arm": "policy"}},
-    {"id": "thr_0.3_frac_1.0__policy", "factors": {"threshold": 0.3, "fraction": 1.0, "arm": "policy"}},
-    {"id": "thr_0.3_frac_0.9__policy", "factors": {"threshold": 0.3, "fraction": 0.9, "arm": "policy"}},
-    {"id": "thr_0.3_frac_0.75__policy", "factors": {"threshold": 0.3, "fraction": 0.75, "arm": "policy"}},
-    {"id": "thr_0.3_frac_0.5__policy", "factors": {"threshold": 0.3, "fraction": 0.5, "arm": "policy"}},
-    {"id": "thr_0.3_frac_0.25__policy", "factors": {"threshold": 0.3, "fraction": 0.25, "arm": "policy"}},
-    {"id": "thr_0.3_frac_0.0__policy", "factors": {"threshold": 0.3, "fraction": 0.0, "arm": "policy"}},
-    {"id": "thr_0.5_frac_1.0__policy", "factors": {"threshold": 0.5, "fraction": 1.0, "arm": "policy"}},
-    {"id": "thr_0.5_frac_0.9__policy", "factors": {"threshold": 0.5, "fraction": 0.9, "arm": "policy"}},
-    {"id": "thr_0.5_frac_0.75__policy", "factors": {"threshold": 0.5, "fraction": 0.75, "arm": "policy"}},
-    {"id": "thr_0.5_frac_0.5__policy", "factors": {"threshold": 0.5, "fraction": 0.5, "arm": "policy"}},
-    {"id": "thr_0.5_frac_0.25__policy", "factors": {"threshold": 0.5, "fraction": 0.25, "arm": "policy"}},
-    {"id": "thr_0.5_frac_0.0__policy", "factors": {"threshold": 0.5, "fraction": 0.0, "arm": "policy"}},
-    {"id": "thr_0.7_frac_1.0__policy", "factors": {"threshold": 0.7, "fraction": 1.0, "arm": "policy"}},
-    {"id": "thr_0.7_frac_0.9__policy", "factors": {"threshold": 0.7, "fraction": 0.9, "arm": "policy"}},
-    {"id": "thr_0.7_frac_0.75__policy", "factors": {"threshold": 0.7, "fraction": 0.75, "arm": "policy"}},
-    {"id": "thr_0.7_frac_0.5__policy", "factors": {"threshold": 0.7, "fraction": 0.5, "arm": "policy"}},
-    {"id": "thr_0.7_frac_0.25__policy", "factors": {"threshold": 0.7, "fraction": 0.25, "arm": "policy"}},
-    {"id": "thr_0.7_frac_0.0__policy", "factors": {"threshold": 0.7, "fraction": 0.0, "arm": "policy"}},
-    {"id": "thr_ref_frac_1.0__off", "factors": {"fraction": 1.0, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_1.0__on", "factors": {"fraction": 1.0, "arm": "reranker_on"}},
-    {"id": "thr_ref_frac_0.9__off", "factors": {"fraction": 0.9, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_0.9__on", "factors": {"fraction": 0.9, "arm": "reranker_on"}},
-    {"id": "thr_ref_frac_0.75__off", "factors": {"fraction": 0.75, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_0.75__on", "factors": {"fraction": 0.75, "arm": "reranker_on"}},
-    {"id": "thr_ref_frac_0.5__off", "factors": {"fraction": 0.5, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_0.5__on", "factors": {"fraction": 0.5, "arm": "reranker_on"}},
-    {"id": "thr_ref_frac_0.25__off", "factors": {"fraction": 0.25, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_0.25__on", "factors": {"fraction": 0.25, "arm": "reranker_on"}},
-    {"id": "thr_ref_frac_0.0__off", "factors": {"fraction": 0.0, "arm": "reranker_off"}},
-    {"id": "thr_ref_frac_0.0__on", "factors": {"fraction": 0.0, "arm": "reranker_on"}}
+    {
+      "id": "thr_0.1_frac_1.0__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 1.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.1_frac_0.9__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 0.9,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.1_frac_0.75__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 0.75,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.1_frac_0.5__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 0.5,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.1_frac_0.25__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 0.25,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.1_frac_0.0__policy",
+      "factors": {
+        "threshold": 0.1,
+        "fraction": 0.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_1.0__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 1.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_0.9__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 0.9,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_0.75__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 0.75,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_0.5__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 0.5,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_0.25__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 0.25,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.2_frac_0.0__policy",
+      "factors": {
+        "threshold": 0.2,
+        "fraction": 0.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_1.0__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 1.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_0.9__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 0.9,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_0.75__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 0.75,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_0.5__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 0.5,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_0.25__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 0.25,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.3_frac_0.0__policy",
+      "factors": {
+        "threshold": 0.3,
+        "fraction": 0.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_1.0__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 1.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_0.9__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 0.9,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_0.75__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 0.75,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_0.5__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 0.5,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_0.25__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 0.25,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.5_frac_0.0__policy",
+      "factors": {
+        "threshold": 0.5,
+        "fraction": 0.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_1.0__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 1.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_0.9__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 0.9,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_0.75__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 0.75,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_0.5__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 0.5,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_0.25__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 0.25,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_0.7_frac_0.0__policy",
+      "factors": {
+        "threshold": 0.7,
+        "fraction": 0.0,
+        "arm": "policy"
+      }
+    },
+    {
+      "id": "thr_ref_frac_1.0__off",
+      "factors": {
+        "fraction": 1.0,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_1.0__on",
+      "factors": {
+        "fraction": 1.0,
+        "arm": "reranker_on"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.9__off",
+      "factors": {
+        "fraction": 0.9,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.9__on",
+      "factors": {
+        "fraction": 0.9,
+        "arm": "reranker_on"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.75__off",
+      "factors": {
+        "fraction": 0.75,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.75__on",
+      "factors": {
+        "fraction": 0.75,
+        "arm": "reranker_on"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.5__off",
+      "factors": {
+        "fraction": 0.5,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.5__on",
+      "factors": {
+        "fraction": 0.5,
+        "arm": "reranker_on"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.25__off",
+      "factors": {
+        "fraction": 0.25,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.25__on",
+      "factors": {
+        "fraction": 0.25,
+        "arm": "reranker_on"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.0__off",
+      "factors": {
+        "fraction": 0.0,
+        "arm": "reranker_off"
+      }
+    },
+    {
+      "id": "thr_ref_frac_0.0__on",
+      "factors": {
+        "fraction": 0.0,
+        "arm": "reranker_on"
+      }
+    }
   ],
   "preflight_assertions": [
-    {"manifest_field": "retrieval.top_k", "operator": "eq", "expected": 50},
-    {"manifest_field": "embedding.model", "operator": "not_null"},
-    {"manifest_field": "vector_store.index_identity", "operator": "not_null"}
-  ]
+    {
+      "manifest_field": "retrieval.top_k",
+      "operator": "eq",
+      "expected": 50
+    },
+    {
+      "manifest_field": "embedding.model",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "vector_store.index_identity",
+      "operator": "not_null"
+    }
+  ],
+  "vector_store_policy": {
+    "addendum": "2026-08-21",
+    "source": "ADR-049 decision D11 (make-lancedb-default-and-isolate-chromadb)",
+    "policy": "first admissible measured run follows ADR-049 -> must run on the qualified LanceDB default unless the vector-store backend is a declared manipulated factor",
+    "declaration": "vector-store backend declared a manipulated factor",
+    "limitation": "prepared-on-Chroma inputs produce Chroma-specific results; not LanceDB-admissible evidence. Re-base immutable inputs on LanceDB, or keep this declaration, before any measured row.",
+    "preflight": "assert_policy_vector_store in experiments/_lib/preflight.py (task 6.3)"
+  }
 }

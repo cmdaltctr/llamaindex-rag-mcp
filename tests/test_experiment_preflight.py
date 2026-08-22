@@ -11,6 +11,7 @@ from experiments._lib.preflight import (
     assert_no_fallback,
     assert_parser_invoked_before_embeddings,
     assert_policy_rerank_mode,
+    assert_policy_vector_store,
     evaluate_assertions,
     manifest_field,
 )
@@ -283,3 +284,29 @@ def test_assert_policy_rerank_mode_rejects_absent_key() -> None:
 
     with pytest.raises(PreflightError, match="absent"):
         assert_policy_rerank_mode({})
+
+
+def test_assert_policy_vector_store_accepts_lancedb_with_identity() -> None:
+    """A qualified LanceDB row with an index identity passes (task 6.3)."""
+    assert_policy_vector_store(
+        {"vector_store": {"backend": "lancedb", "index_identity": "qual-doc-v1"}}
+    )
+
+
+def test_assert_policy_vector_store_accepts_declared_manipulated_factor() -> None:
+    """A declared manipulated-factor row passes without an index identity."""
+    assert_policy_vector_store({"vector_store": {"manipulated_factor": True}})
+
+
+@pytest.mark.parametrize(
+    ("manifest", "match"),
+    [
+        ({"vector_store": {"backend": "chroma", "index_identity": "x"}}, "LanceDB"),
+        ({"vector_store": {"backend": "lancedb"}}, "index_identity"),
+        ({}, "vector_store"),
+    ],
+)
+def test_assert_policy_vector_store_rejects_unqualified_rows(manifest: dict, match: str) -> None:
+    """Chroma, identity-less LanceDB, and absent records all fail closed."""
+    with pytest.raises(PreflightError, match=match):
+        assert_policy_vector_store(manifest)

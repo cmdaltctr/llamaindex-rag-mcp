@@ -18,20 +18,28 @@ read/update, and generation bumping.
 from __future__ import annotations
 
 import inspect
+from importlib.util import find_spec
 from pathlib import Path
 
 import pytest
 
 from rag_mcp.core.vectordb.base import VectorStore
-from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
-# Backend name → concrete class, for the ABC-compliance checks that
-# inspect the class itself rather than a constructed instance.
-_STORE_CLASSES = {
-    "chroma": ChromaVectorStore,
-    "lancedb": LanceVectorStore,
-}
+# Task 5.1: the ChromaDB adapter import is lazy so this shared contract
+# module collects (and runs every LanceDB parameter) in the base install
+# without the optional chroma extra. The chroma parameters skip by design
+# with a named reason and run in the chroma-extra CI job.
+_CHROMA_EXTRA = find_spec("chromadb") is not None
+
+
+def _store_class(backend: str) -> type[VectorStore]:
+    """Resolve the concrete class lazily (chromadb may be absent)."""
+    if backend == "lancedb":
+        return LanceVectorStore
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    return ChromaVectorStore
 
 
 @pytest.fixture(params=["chroma", "lancedb"])
@@ -39,13 +47,18 @@ def store(request: pytest.FixtureRequest, tmp_path: Path) -> VectorStore:
     """Return a fresh store for each backend under test.
 
     ``chroma`` relies on the in-memory EphemeralClient monkeypatched by
-    ``conftest._patch_chromadb`` so no disk I/O occurs.  ``lancedb``
+    ``conftest._patch_chromadb`` so no disk I/O occurs; it skips when the
+    optional chroma extra is absent (task 5.1). ``lancedb``
     points at an isolated database under ``tmp_path``, giving each test
     a clean on-disk store; the embedded LanceDB writer is fast enough
     to stay out of the ``slow`` mark.
     """
     if request.param == "chroma":
-        return ChromaVectorStore()
+        pytest.importorskip(
+            "chromadb",
+            reason="chroma extra not installed; runs in the chroma-extra CI job",
+        )
+        return _store_class("chroma")()
     return LanceVectorStore(uri=str(tmp_path / "lancedb"))
 
 
@@ -62,6 +75,11 @@ class TestABCCompliance:
     @pytest.mark.parametrize("backend", ["chroma", "lancedb"])
     def test_all_abstract_methods_implemented(self, backend: str) -> None:
         """Every ABC method must have a concrete implementation."""
+        if backend == "chroma" and not _CHROMA_EXTRA:
+            pytest.skip(
+                "chroma extra not installed (uv sync --extra chroma); "
+                "runs in the chroma-extra CI job"
+            )
         abstract_methods = {
             "create_collection",
             "collection_exists",
@@ -79,7 +97,7 @@ class TestABCCompliance:
             "bump_generation",
             "get_generation",
         }
-        implemented = set(_STORE_CLASSES[backend].__abstractmethods__)
+        implemented = set(_store_class(backend).__abstractmethods__)
         assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
         # Verify the ABC actually declares the expected surface.
         abc_methods = {name for name in dir(VectorStore) if callable(getattr(VectorStore, name))}
@@ -219,7 +237,9 @@ class TestNativeMetricAssumptions:
     """Adapters must pin or reject metrics outside the canonical contract."""
 
     def test_chroma_rejects_explicit_non_l2_collection(self) -> None:
-        store = ChromaVectorStore()
+        if not _CHROMA_EXTRA:
+            pytest.skip("chroma extra not installed; runs in the chroma-extra CI job")
+        store = _store_class("chroma")()
         collection = store._get_client().get_or_create_collection(
             "unsupported_cosine_metric",
             metadata={"hnsw:space": "cosine"},

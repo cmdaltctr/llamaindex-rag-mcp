@@ -45,7 +45,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
     Attributes:
         debounce_seconds: Quiet period before triggering ingestion.
-        _collection_name: ChromaDB collection to route into (default "documents").
+        _collection_name: Vector-store collection to route into (default "documents").
         _timers: Per-file debounce timers.
         _hash_cache: Per-file SHA-256 content hashes.
         _ingest_semaphore: Limits concurrent ingest_path() calls.

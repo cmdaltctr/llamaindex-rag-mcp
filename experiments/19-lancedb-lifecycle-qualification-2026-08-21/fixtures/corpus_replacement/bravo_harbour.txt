@@ -1,0 +1,19 @@
+Harbour tugboat fleet renewal
+
+The harbour authority retired the last single-screw tug and ordered two
+battery-hybrid escorts with diesel backup generators. The new tugs
+hold their station using dynamic positioning instead of a towline made
+fast to the ship's rail.
+
+Charging windows
+
+Each escort charges between towage assignments at the quay-side
+bunker barge. A full charge covers two escort movements, and the
+battery management system derates bollard pull below fifteen percent
+state of charge.
+
+Crew training
+
+Crews requalify on the joystick console, the winch remote, and the
+emergency towline guitar release. The training pool logs simulator
+hours against the renewal cycle agreed with the maritime regulator.

@@ -137,7 +137,9 @@ class EffectiveSettings(BaseModel):
     chroma_persist_dir: str = "./chroma_db"
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
-    vector_store: str = "chroma"
+    # Canonical default (make-lancedb-default-and-isolate-chromadb, task
+    # 2.1): LanceDB is the qualified base-install backend (ADR-049).
+    vector_store: str = "lancedb"
     lancedb_uri: str = "./lancedb"
 
     # ── Provider selection ────────────────────────────────────────

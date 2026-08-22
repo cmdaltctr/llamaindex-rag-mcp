@@ -153,7 +153,7 @@ configurations at once.
 | `core/retrieval/` | Search, rerank, fuse results |
 | `core/chunking/` | The chunking strategies: code, markdown, sentence, config |
 | `core/metadata/` | Work out a category and keywords for a document |
-| `core/vectordb/` | The database interface, and two store implementations (ChromaDB default, LanceDB opt-in) |
+| `core/vectordb/` | The database interface, LanceDB default implementation, and optional Chroma implementation |
 | `core/profiles/` | Resolve which profile a collection uses |
 | `core/providers/` | Build embedding and LLM clients |
 | `core/codebase/` | Codebase map and code graph |
@@ -166,8 +166,9 @@ only settings.
 
 ### `core/vectordb/` — the store boundary
 
-Two stores sit behind the `VectorStore` ABC (ADR-034): `chroma`, the
-default, and `lancedb`, opt-in via `VECTOR_STORE` (ADR-046).
+Two stores sit behind the `VectorStore` ABC (ADR-034): `lancedb`, the
+base-install default, and `chroma`, an explicit optional extra selected with
+`VECTOR_STORE` (ADR-049).
 
 `core/vectordb/chroma.py` is the single module that imports `chromadb` and
 the single construction site for both deployments. Local mode builds a
@@ -221,9 +222,15 @@ Supporting modules keep each store under the 500-line ceiling:
 registry instead of branching over it. Each factory receives the resolved
 settings; the Chroma factory consumes mode, persist directory, API key,
 tenant, and database, and the LanceDB factory consumes the `LANCEDB_URI`
-parent directory. An unregistered `VECTOR_STORE` name fails startup
-listing the registered names. Credentials never enter `EffectiveSettings`,
-profiles, YAML defaults, or operation-level objects.
+parent directory. Each registry entry declares its availability metadata:
+required packages, optional extra, installation guidance, sparse capability,
+and storage-summary resolver. An unregistered `VECTOR_STORE` name fails
+startup listing the registered names. Credentials never enter
+`EffectiveSettings`, profiles, YAML defaults, or operation-level objects.
+
+`get_default_store()` returns only the instance installed by
+`compose.ensure_runtime_setup`. Before composition it raises a controlled
+error. It never imports settings or constructs a fallback store.
 
 One writer per collection is an explicit boundary. The BM25 invalidation
 counters are process-local, so evaluation workers reuse completed immutable
@@ -458,15 +465,14 @@ Short version. Each links to the full reasoning.
 document loaders, chunkers and vector store adapters already exist, so we write
 pipeline logic instead of plumbing.
 
-**ChromaDB** ([ADR-003](../adr/003-use-chromadb-as-vector-store.md),
-[ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)) — embedded, no
-server to run, persists to a folder. Behind an interface since ADR-034, so it
-can be swapped.
+**LanceDB** ([ADR-046](../adr/046-lancedb-vector-store-backend.md),
+[ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — the embedded
+base-install default. Each collection gets its own table and files with
+optimistic concurrency instead of ChromaDB's shared SQLite write lock.
 
-**LanceDB** ([ADR-046](../adr/046-lancedb-vector-store-backend.md)) — embedded
-second backend behind the same interface. Each collection gets its own table
-and files with optimistic concurrency instead of ChromaDB's shared SQLite
-write lock. Opt-in via `VECTOR_STORE=lancedb`; ChromaDB stays the default.
+**ChromaDB** ([ADR-003](../adr/003-use-chromadb-as-vector-store.md),
+[ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — an explicit
+optional backend. Install the `chroma` extra before setting `VECTOR_STORE=chroma`.
 
 Vector-store selection is runtime-swappable at the deployment boundary, but
 embedding-provider selection is **process/deployment scoped**, not

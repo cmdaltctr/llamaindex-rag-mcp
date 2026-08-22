@@ -137,11 +137,12 @@ Only these:
 
 ```bash
 # Where the vector database lives
-VECTOR_STORE=chroma
-CHROMA_PERSIST_DIR=./chroma_db
-COLLECTION_NAME=documents
-# LanceDB tables (VECTOR_STORE=lancedb only)
+VECTOR_STORE=lancedb
 LANCEDB_URI=./lancedb
+COLLECTION_NAME=documents
+# Chroma only: install the `chroma` extra, set VECTOR_STORE=chroma,
+# then keep CHROMA_PERSIST_DIR pointed at its existing directory.
+CHROMA_PERSIST_DIR=./chroma_db
 
 # Which embedding model, and where to reach it
 EMBED_MODEL=qwen3-embedding:0.6b
@@ -170,7 +171,7 @@ Defaults below are what ships in `defaults.yaml`.
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | Where the database is written |
 | `COLLECTION_NAME` | `documents` | Default collection |
 | `CHROMA_SCAN_PAGE_SIZE` | `10000` | Rows per page when scanning metadata |
-| `VECTOR_STORE` | `chroma` | Store implementation: `chroma` (default) or `lancedb` (opt-in). Unrecognised values fail startup listing the registered names |
+| `VECTOR_STORE` | `lancedb` | Store implementation: `lancedb` (base-install default) or `chroma` (optional extra). Unrecognised values fail startup listing the registered names |
 | `LANCEDB_URI` | `./lancedb` | Parent directory for LanceDB tables (`VECTOR_STORE=lancedb` only). Embedded/local only in v1 |
 | `CHROMA_MODE` | `local` | `local` or `cloud`. Explicit selection; unrecognised values fail startup |
 | `CHROMA_CLOUD_API_KEY` | — | Required when `CHROMA_MODE=cloud`. `.env` only — never in YAML, logs, or results |
@@ -179,7 +180,13 @@ Defaults below are what ships in `defaults.yaml`.
 
 ### Chroma deployment mode
 
-`CHROMA_MODE` selects the vector-store deployment explicitly. The default is
+Chroma is an explicit optional backend. Install it with `uv sync --extra chroma`
+in a source checkout, or `pip install "rag-mcp[chroma]"` from a package. Set
+`VECTOR_STORE=chroma` before using its local or cloud modes. CVE-2026-45829
+(PYSEC-2026-311) is active for this optional dependency. Do not expose Chroma's
+Python FastAPI server through this project.
+
+`CHROMA_MODE` selects the Chroma deployment explicitly. The default mode is
 `local`, the embedded `PersistentClient`. Selecting `cloud` connects to hosted
 Chroma Cloud. API-key presence never switches storage: a missing shell
 variable cannot silently redirect a process to an empty local database.
@@ -237,21 +244,28 @@ never runs in CI.
 
 ### LanceDB backend
 
-`VECTOR_STORE=lancedb` selects the embedded LanceDB backend. Each RAG
-collection maps to one LanceDB table under `LANCEDB_URI`; tables are
-created lazily on first write, which locks the vector dimension. The store
-keeps its collection metadata (profile tags, embedding identity) in each
-table's durable schema metadata.
+LanceDB is the embedded, local-first base-install default. Each RAG collection
+maps to one LanceDB table under `LANCEDB_URI`. Tables are created lazily on
+first write, which locks the vector dimension. The store keeps collection
+metadata, including profile tags and embedding identity, in durable schema
+metadata.
 
-The `lancedb` backend is embedded and local-first in v1; LanceDB Cloud is
-out of scope. Unknown `VECTOR_STORE` values fail startup with the
-registered names listed.
+LanceDB Cloud is out of scope. Unknown `VECTOR_STORE` values fail startup with
+the registered names listed. The BM25 hybrid path is backend-agnostic: it reads
+rows through `iter_documents` and invalidates off the generation counter.
+Native LanceDB full-text search is deferred (ADR-046).
 
-Switching `VECTOR_STORE` re-ingests into the fresh store — no cross-backend
-migration is provided. The BM25 hybrid path is backend-agnostic: it reads
-rows through `iter_documents` and invalidates off the generation counter,
-so hybrid search behaves identically over ChromaDB and LanceDB. Native
-LanceDB full-text search is deferred (ADR-046).
+### Legacy Chroma data and rollback
+
+When the default would select LanceDB and recognised data exists in
+`CHROMA_PERSIST_DIR`, startup stops. Choose one path: install the Chroma extra
+and explicitly set `VECTOR_STORE=chroma` to keep the data, or explicitly set
+`VECTOR_STORE=lancedb` and re-ingest source files. The server never migrates,
+deletes, moves, or rewrites the Chroma directory.
+
+Switching stores requires re-ingestion. Before reverting after LanceDB
+ingestion, set and verify `VECTOR_STORE=lancedb`. Keep the pin while reverting
+so an older release cannot select Chroma and make LanceDB data appear missing.
 
 ### Providers
 

@@ -23,6 +23,7 @@ __all__ = [
     "assert_no_fallback",
     "assert_parser_invoked_before_embeddings",
     "assert_policy_rerank_mode",
+    "assert_policy_vector_store",
     "evaluate_assertions",
     "manifest_field",
 ]
@@ -368,4 +369,47 @@ def assert_policy_rerank_mode(manifest: Mapping[str, Any]) -> None:
             "threshold-policy experiment must exercise the policy resolver: "
             f"retrieval.rerank_requested={requested!r}; the runner must record "
             "rerank_requested=None for policy cells, not a force override"
+        )
+
+
+def assert_policy_vector_store(manifest: Mapping[str, Any]) -> None:
+    """Enforce ADR-049 D11: post-ADR-049 measured rows use LanceDB.
+
+    Every experiment whose first admissible measured row follows ADR-049
+    (2026-08-21) runs on the qualified LanceDB default unless the
+    vector-store backend is a *declared* manipulated factor. The manifest
+    must record ``vector_store.backend`` as ``lancedb`` with an
+    ``index_identity`` (immutability tracking), or must declare
+    ``vector_store.manipulated_factor`` — in which case the result is
+    explicitly not LanceDB-admissible evidence (task 6.3, design D11).
+
+    Args:
+        manifest: Runtime manifest dictionary.
+
+    Raises:
+        PreflightError: When neither the LanceDB path nor the declared
+            manipulated-factor path is recorded.
+    """
+    store = manifest.get("vector_store")
+    if not isinstance(store, Mapping):
+        raise PreflightError(
+            "post-ADR-049 measured rows must record vector_store in the "
+            "manifest (backend + index_identity, or a declared "
+            "manipulated_factor)"
+        )
+    if store.get("manipulated_factor"):
+        return
+    backend = store.get("backend")
+    if backend != "lancedb":
+        raise PreflightError(
+            "post-ADR-049 measured rows must run on the qualified LanceDB "
+            f"default; manifest records vector_store.backend={backend!r}. "
+            "Either re-base the immutable inputs on LanceDB or declare the "
+            "vector-store backend a manipulated factor (with a limitation) "
+            "in the plan."
+        )
+    if not store.get("index_identity"):
+        raise PreflightError(
+            "LanceDB measured rows must record vector_store.index_identity "
+            "for immutable-index tracking (task 6.4)"
         )

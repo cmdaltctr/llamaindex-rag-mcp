@@ -1,33 +1,28 @@
 """ChromaDB implementation of the :class:`VectorStore` ABC.
 
-Absorbs all logic from the former ``chroma_utils.py`` (paged metadata
-scans — now :mod:`.paged`) and the ChromaDB-specific collection
-management formerly in the ingestion writer (collection creation,
-dimension locking via ChromaDB's first-write inference, generation
-bumping, metadata filter translation).
+Absorbs the former ``chroma_utils.py`` (paged metadata scans — now
+:mod:`.paged`) and the ChromaDB-specific collection management formerly
+in the ingestion writer (collection creation, dimension locking via
+ChromaDB's first-write inference, generation bumping, metadata filter
+translation). This is the only module outside the test suite that
+touches ``chromadb`` directly — the single construction site for both
+the local ``PersistentClient`` and the cloud ``CloudClient``. All
+pipeline code goes through the ABC; construction lives in the
+composition root (``compose.build_vector_store``), and
+embedding-identity stamping and enforcement live in :mod:`.identity`.
 
-This is the only module outside the test suite that imports
-``chromadb`` directly, and therefore the single construction site for
-both the local ``PersistentClient`` and the cloud ``CloudClient``.
-All pipeline code goes through the ABC.
-
-Construction lives in the composition root (``compose.build_vector_store``);
-the ``build_chroma_vector_store`` factory is the lazy fallback used by
-``vectordb.get_default_store`` when no store has been registered yet.
-Embedding-identity stamping and enforcement live in :mod:`.identity`.
+Task 5.1: both Chroma imports are lazy so the module stays importable
+in the chroma-free base install (source-inspection contracts and the
+registry depend on that).
 """
 
 from __future__ import annotations
 
 import logging
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import chromadb
 from llama_index.core import StorageContext, VectorStoreIndex
-from llama_index.vector_stores.chroma import (
-    ChromaVectorStore as _LlamaChromaVectorStore,
-)
 
 from .base import VectorStore
 from .identity import (
@@ -38,6 +33,9 @@ from .identity import (
 )
 from .paged import PagedReadMixin
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
+
+if TYPE_CHECKING:
+    import chromadb
 
 __all__ = [
     "ChromaVectorStore",
@@ -51,20 +49,19 @@ logger = logging.getLogger(__name__)
 
 
 class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
-    """ChromaDB-backed vector store (the default and only implementation).
+    """ChromaDB-backed vector store (optional ``chroma`` extra backend).
 
     Wraps an injected :class:`chromadb.api.ClientAPI` — a local
     ``PersistentClient``, a cloud ``CloudClient``, or the
-    ``EphemeralClient`` injected by tests via ``conftest._patch_chromadb``.
-    Owns the process-local generation counter dict that the BM25 sparse
-    retriever reads for cache invalidation.
+    ``EphemeralClient`` injected by tests.  Owns the process-local
+    generation counter dict that the BM25 sparse retriever reads for
+    cache invalidation.
 
     The vector dimension is locked by ChromaDB on the first write to a
     collection (ADR-003); a mismatched subsequent write raises
-    ChromaDB's native dimension-mismatch error.  When an
-    :class:`EmbeddingIdentity` is attached, embedding-space identity is
-    additionally enforced: a same-dimension model swap is rejected
-    before any query or write (see :mod:`.identity`).
+    ChromaDB's native dimension-mismatch error.  An attached
+    :class:`EmbeddingIdentity` additionally rejects a same-dimension
+    model swap before any query or write (see :mod:`.identity`).
     """
 
     def __init__(
@@ -76,10 +73,8 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         """Initialise the store with an optional injected client.
 
         Args:
-            persist_dir: Override for the ChromaDB persist directory.
-                Used only by the local lazy fallback when ``client`` is
-                omitted; when omitted too, the composition root's
-                default is read at call time.
+            persist_dir: Override for the ChromaDB persist directory
+                (local lazy fallback only).
             client: Pre-constructed Chroma client (local persistent,
                 cloud, or test double).  When supplied, it serves every
                 collection operation and no client is constructed
@@ -113,6 +108,8 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
                 persist_dir = get_default_effective_settings().chroma_persist_dir
             else:
                 persist_dir = self._persist_dir
+            import chromadb
+
             self._client = chromadb.PersistentClient(path=persist_dir)
         return self._client
 
@@ -175,6 +172,10 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         client = self._get_client()
         collection = client.get_or_create_collection(collection_name)
         self._check_or_stamp_identity(collection)
+        from llama_index.vector_stores.chroma import (
+            ChromaVectorStore as _LlamaChromaVectorStore,
+        )
+
         vector_store = _LlamaChromaVectorStore(chroma_collection=collection)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         VectorStoreIndex(
@@ -397,6 +398,8 @@ def _construct_cloud_client(
         kwargs["tenant"] = tenant
         kwargs["database"] = database
     try:
+        import chromadb
+
         client = chromadb.CloudClient(**kwargs)
         client.heartbeat()
     except Exception as exc:
@@ -457,27 +460,24 @@ def build_chroma_vector_store(
         return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
     if mode != "local":
         raise ValueError(f"CHROMA_MODE={mode!r} is not recognised. Accepted values: local, cloud.")
+    import chromadb
+
     client = chromadb.PersistentClient(path=_resolve_local_persist_dir(persist_dir))
     return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
 
 
 def detect_native_sparse_capability() -> bool:
-    """Return whether the active ChromaDB runtime can serve native sparse queries.
+    """Return whether the ChromaDB runtime can serve native sparse queries.
 
-    Conservative: this project uses ChromaDB ``PersistentClient`` where native
-    sparse retrieval is not available for the local embedded path.  Returning
-    ``False`` keeps the v1 default on BM25 and makes ``native`` fall back with
-    a warning.
-
-    The check is runtime-dynamic (not a hardcoded ``False``) so it will
-    automatically return ``True`` when a future ChromaDB release adds
-    native sparse query support to ``PersistentClient``.
-
-    This is a capability probe (``hasattr`` on the class), not a client
-    instantiation or API call — the only ``chromadb`` import outside
-    ``_get_client`` in this module.
+    Conservative: this project uses ``PersistentClient``, where native
+    sparse retrieval is unavailable, so ``False`` keeps the default on
+    BM25. Dynamic (``hasattr`` on the class) so a future ChromaDB
+    release with ``query_sparse`` on ``PersistentClient`` flips it;
+    imports ``chromadb`` lazily so a Chroma-free process gets ``False``.
     """
     try:
+        import chromadb
+
         return hasattr(chromadb.PersistentClient, "query_sparse")
     except Exception:
         return False
