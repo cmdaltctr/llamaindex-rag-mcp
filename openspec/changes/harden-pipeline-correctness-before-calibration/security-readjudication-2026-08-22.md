@@ -49,6 +49,13 @@ install the opt-in `chroma` extra. Exposure is limited to the
 server is never launched by this project. This is an accepted-risk posture
 documented in ADR-049 and the `pyproject.toml` quarantine comment.
 
+**Ratified 2026-08-22 by Dr Muhammad Aizat Bin Md Hawari (policy owner):**
+accepted-risk. Rationale: the extra is opt-in and retained deliberately for
+experiment use; the quarantine note in `pyproject.toml` warns anyone who
+enables it; downstream forks that choose to install the extra assume that
+risk themselves. This signature also discharges the unsigned D9 disposition
+flagged by the archived ADR-049 security verdict.
+
 ## Review triggers
 
 - Re-audit on every `chromadb` release; lift the quarantine only when a
