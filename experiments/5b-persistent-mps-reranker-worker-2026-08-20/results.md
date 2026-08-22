@@ -162,18 +162,32 @@ system memory pressure (80 % at block-3 boundaries).
    fixed (context-less ticks are skipped, not fatal; regression test added)
    and the full campaign repeated per the protocol's repeat-the-lifetime
    rule. No statistic from the invalid campaign enters any aggregate here.
-3. **G9 "preflight not green" (this campaign) — harness flag-clobber
-   defect.** The measured run rewrote `preflight/_summary.json` without the
-   dry-run's `probes_green`/`all_green` flags, so the summariser reported
-   preflight not green. The underlying G9 requirements are individually
-   green and evidenced: plan agreement green, frozen identities verified,
-   all five routes green with correct devices, parent Torch-free, 12/12
-   lifecycle probes passing before the first measured row
-   (`output/lifecycle_probes.jsonl`), checkpoint 15/15 complete, raw rows
-   contract-valid, correctness projection byte-identical across two runs.
-   The verdict stands as FAIL per the no-relaxation rule; the defect is
-   fixed for future campaigns (`merge_prior_preflight_green`, regression
-   test added) and noted here rather than patched into the evidence.
+3. **G9 "preflight not green" (this campaign) — filing-layer defect
+   only; no measured evidence was affected.** The measured run rewrote
+   `preflight/_summary.json` without the dry-run's
+   `probes_green`/`all_green` flags, so the summariser reported preflight
+   not green. The defect lost a summary flag and nothing else: it did not
+   produce, alter or discard any timing row, memory sample, lifecycle
+   probe result or checkpoint record — none of that evidence passed
+   through the defective code path. The analogy is losing the sticky
+   note that says "inspection passed" while the full inspection report
+   remains intact in the drawer. The underlying G9 requirements are
+   individually green and evidenced on disk: plan agreement green,
+   frozen identities verified, all five routes green with correct
+   devices, parent Torch-free, 12/12 lifecycle probes passing before the
+   first measured row (`output/lifecycle_probes.jsonl`), checkpoint
+   15/15 complete, raw rows contract-valid, correctness projection
+   byte-identical across two runs. G7 and G8 read that same underlying
+   probe evidence directly — not through the lost flag — and passed from
+   it. As an independent cross-check, this campaign's latency medians
+   are consistent with Experiment 5's independently measured values
+   (W1 66.5 ms vs 68.5; W4 62.8 vs 58.7; W3/W2 46.2/44.1 vs 39.7), which
+   a measurement-corrupting defect would not produce. G4 — the gate
+   that decided the outcome — consumes timing rows and startup times
+   only and was untouched by this defect. The verdict stands as FAIL per
+   the no-relaxation rule; the defect is fixed for future campaigns
+   (`merge_prior_preflight_green`, regression test added) and noted here
+   rather than patched into the evidence.
 4. No measured lifetime in this campaign was invalid: all 15 units
    completed with zero route/rerank violations and mains-power/thermal
    evidence at every block boundary.
@@ -190,7 +204,10 @@ impact at the production threshold.
 
 **FAIL.** G4 (cumulative break-even ≤ 150 requests at 95 % one-sided
 confidence) failed genuinely: median N* = 156, upper bounds 233–∞. G9
-failed on a bookkeeping defect whose substantive requirements were all met.
+failed on a filing-layer bookkeeping defect that lost a summary flag and
+affected no measured evidence (section 8.3); its substantive requirements
+were all met. The G4 failure alone decides the outcome independently of
+the G9 defect.
 Per protocol section 19, any FAIL gate rejects promotion: **ONNX CPU
 remains the production default; no production-worker OpenSpec/ADR is
 recommended from this experiment.** Experiment 5's H3 verdict remains FAIL
