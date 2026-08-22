@@ -185,3 +185,42 @@ def test_valid_lancedb_settings_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CHROMA_CLOUD_TENANT", raising=False)
     monkeypatch.delenv("CHROMA_CLOUD_DATABASE", raising=False)
     assert Settings().vector_store == "lancedb"
+
+
+def test_chroma_cloud_tenant_database_must_be_paired(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cloud mode with only one of tenant/database fails Settings construction.
+
+    Spec: chroma-cloud-backend — tenant and database are supplied together
+    or both omitted so the cloud client resolves them from the API key.
+    """
+    monkeypatch.setenv("VECTOR_STORE", "chroma")
+    monkeypatch.setenv("CHROMA_MODE", "cloud")
+    monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "dummy-key-for-validation")
+    monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-a")
+    monkeypatch.delenv("CHROMA_CLOUD_DATABASE", raising=False)
+    with pytest.raises(ValidationError) as excinfo:
+        Settings()
+    assert "supplied together" in str(excinfo.value)
+
+    monkeypatch.delenv("CHROMA_CLOUD_TENANT", raising=False)
+    monkeypatch.setenv("CHROMA_CLOUD_DATABASE", "database-a")
+    with pytest.raises(ValidationError) as mirrored:
+        Settings()
+    assert "supplied together" in str(mirrored.value)
+
+
+def test_source_keys_tolerates_raising_and_none_sources() -> None:
+    """A broken or empty settings source contributes no provenance keys."""
+    from rag_mcp.config import source_keys
+
+    def unreadable_source():
+        raise OSError("unreadable environment")
+
+    assert source_keys(unreadable_source) == set()
+    assert source_keys(lambda: None) == set()
+    assert source_keys(lambda: {"vector_store": "lancedb", "other": 1}) == {
+        "vector_store",
+        "other",
+    }

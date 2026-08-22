@@ -287,9 +287,12 @@ jobs:
         # community-leiden, llamacpp, and openrouter included so patch
         # coverage exercises the optional Leiden strategies and the
         # OpenAILikeEmbedding adapters (their tests skipif-guard without
-        # the extra). The base-only absence assertions live in the floors
-        # job instead.
-        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter
+        # the extra). chroma and hybrid join for the same reason: this is
+        # the sole coverage upload, and the chroma adapter plus the
+        # chroma-gated suites must count towards patch coverage of
+        # vector-store diffs. The base-only absence assertions live in
+        # the floors job instead.
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid
 
       - name: Run tests with coverage
         env:

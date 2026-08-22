@@ -34,7 +34,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 1556  # self-ignored run: passed
+_BASE_EXECUTED = 1567  # self-ignored run: passed (1556 + 11 codecov-patch gap tests)
 _BASE_SKIPPED = 83  # self-ignored run: skipped
 _BASE_DESELECTED = 14  # -m "not slow" deselection
 _CHROMA_GATED_FILES = frozenset(

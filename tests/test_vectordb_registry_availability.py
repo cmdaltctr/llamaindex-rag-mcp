@@ -236,3 +236,61 @@ def test_sparse_capability_follows_selected_store(
         retrieval={"hybrid_sparse_backend": "bm25"},
     )
     assert resolve_sparse_backend(bm25_settings) == "bm25"
+
+
+def test_describe_unknown_backend_raises_keyerror() -> None:
+    """describe() names the unknown backend and the registered choices."""
+    with pytest.raises(KeyError) as excinfo:
+        registry.describe("nope")
+    diagnosed = str(excinfo.value)
+    assert "nope" in diagnosed
+    assert "lancedb" in diagnosed
+
+
+def test_spec_present_tolerates_halted_imports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A find_spec that raises is reported as absent, not propagated."""
+
+    def halted(name: str):
+        raise ValueError(f"cannot locate {name}")
+
+    monkeypatch.setattr(registry, "find_spec", halted)
+    assert registry._spec_present("anything") is False
+
+
+def test_broken_requirement_import_reports_broken(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A requirement module that raises on import reports 'broken' with cause.
+
+    Spec: vector-store-registry, scenario 'Optional backend import fails' —
+    the failure is diagnosed at the requirement-import stage, before the
+    project factory is resolved.
+    """
+    (tmp_path / "broken_requirement_mod.py").write_text("raise RuntimeError('req-boom')\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    registry.register(
+        "_test_brokenreq",
+        "json:dumps",
+        requires={"broken_requirement_mod": "broken-requirement-mod"},
+    )
+    assert registry.availability("_test_brokenreq") == "broken"
+    with pytest.raises(ImportError) as excinfo:
+        registry.verify_available("_test_brokenreq")
+    cause = excinfo.value.__cause__
+    diagnosed = str(excinfo.value) + (f" {cause}" if cause is not None else "")
+    assert "req-boom" in diagnosed
+
+
+def test_absent_backend_generic_guidance_names_extra() -> None:
+    """Without a custom hint the guidance names the extra to install."""
+    registry.register(
+        "_test_generic",
+        "fakepkg_missing_qq:build",
+        requires={"fakepkg_missing_qq": "fakepkg-missing-qq"},
+        extra="demo",
+    )
+    with pytest.raises(ImportError) as excinfo:
+        registry.verify_available("_test_generic")
+    message = str(excinfo.value)
+    assert "Install the 'demo' extra." in message
+    assert "uv sync" not in message

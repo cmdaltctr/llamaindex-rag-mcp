@@ -180,3 +180,38 @@ def test_startup_wiring_reaches_cli_mcp_operator_path(
         assert "Traceback" not in result.output
     finally:
         reset_runtime_setup()
+
+
+def test_file_at_configured_path_is_unrecognised(tmp_path: Path) -> None:
+    """A plain file at the configured path is not a Chroma layout."""
+    victim = tmp_path / "not_a_directory"
+    victim.write_text("i am a file, not a directory")
+    assert classify_legacy_directory(victim) == "unrecognised_nonempty"
+
+
+def test_unreadable_directory_is_unrecognised(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OSError while listing the directory degrades to unrecognised."""
+
+    def denied(self: Path):
+        raise PermissionError("permission denied")
+
+    monkeypatch.setattr(Path, "iterdir", denied)
+    assert classify_legacy_directory(tmp_path) == "unrecognised_nonempty"
+
+
+def test_unreadable_child_directory_is_not_recognised(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A full HNSW layout behind an unreadable child never claims recognised."""
+
+    def selective(self: Path):
+        if self == layout:
+            return list(real_iterdir(self))
+        raise PermissionError("permission denied")
+
+    layout = _make_segment_layout_dir(tmp_path)
+    real_iterdir = Path.iterdir
+    monkeypatch.setattr(Path, "iterdir", selective)
+    assert classify_legacy_directory(layout) == "unrecognised_nonempty"
