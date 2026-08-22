@@ -137,7 +137,10 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q
+        # The exact skip/count manifest is a clean-base assertion. Optional
+        # extras intentionally activate additional tests, so those matrix
+        # entries exercise the suite without the base-only tripwire module.
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '' }}
 
       - name: Verify base install stays Leiden-free
         if: matrix.extra == ''
