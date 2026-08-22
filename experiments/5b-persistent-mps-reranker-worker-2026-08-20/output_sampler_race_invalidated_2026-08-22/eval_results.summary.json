@@ -1,0 +1,196 @@
+{
+  "experiment_id": "5b-persistent-mps-reranker-worker",
+  "gates": [
+    {
+      "id": "G1a",
+      "numbers": {
+        "max_abs_score_delta": 0.0,
+        "pairs": 3000,
+        "ranking_equality_fraction": 1.0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "G1b",
+      "numbers": {
+        "max_abs_score_delta": 4.0224109842945666e-07,
+        "pairs": 3000,
+        "ranking_equality_fraction": 1.0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "G1c",
+      "numbers": {
+        "violations": 0,
+        "warmup_violations": 0
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "G2",
+      "numbers": {
+        "median_ratio": 0.6916255137110431,
+        "per_block_ratios": {
+          "1": 0.6916255137110431,
+          "2": 0.7034796636166339,
+          "3": 0.6787595479406686
+        },
+        "threshold": 0.8
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "G3",
+      "numbers": {
+        "interpretation": "deployment comparison only; not a cross-backend correctness gate or Experiment 5 H2 replication",
+        "median_ratio": 0.6344734146971466,
+        "per_block_ratios": {
+          "1": 0.6255146453115431,
+          "2": 0.6344734146971466,
+          "3": 0.656190081117762
+        },
+        "threshold": 0.8
+      },
+      "verdict": "PASS"
+    },
+    {
+      "id": "G4",
+      "numbers": {
+        "horizon": 1000,
+        "median_n_star": 141.0,
+        "per_block": {
+          "1": {
+            "bootstrap_upper_bound": 146.0,
+            "n_star": 141.0,
+            "never_crossed": false
+          },
+          "2": {
+            "bootstrap_upper_bound": 149.0,
+            "n_star": 141.0,
+            "never_crossed": false
+          },
+          "3": {
+            "bootstrap_upper_bound": 166.0,
+            "n_star": 160.0,
+            "never_crossed": false
+          }
+        },
+        "requests_max": 150,
+        "upper_bound": 166.0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "id": "G5",
+      "numbers": {
+        "ceilings": {},
+        "lifetimes": {}
+      },
+      "verdict": "NOT_EVALUABLE"
+    },
+    {
+      "id": "G6",
+      "numbers": {
+        "lifetimes": {},
+        "pooled": null
+      },
+      "verdict": "NOT_EVALUABLE"
+    },
+    {
+      "id": "G7",
+      "numbers": {
+        "failing": [],
+        "missing_pass": [
+          "worker-death",
+          "worker-hang",
+          "request-deadline",
+          "stdout-backpressure"
+        ],
+        "observed": {},
+        "required": [
+          "worker-death",
+          "worker-hang",
+          "request-deadline",
+          "stdout-backpressure"
+        ]
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "id": "G8",
+      "numbers": {
+        "failing": [],
+        "missing_pass": [
+          "orderly-shutdown",
+          "eof-stdin",
+          "idle-expiry-restart",
+          "parent-death-idle",
+          "parent-death-inflight"
+        ],
+        "observed": {},
+        "orphan_leaks_on_passing_rows": [],
+        "required": [
+          "orderly-shutdown",
+          "eof-stdin",
+          "idle-expiry-restart",
+          "parent-death-idle",
+          "parent-death-inflight"
+        ]
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "id": "G9",
+      "numbers": {
+        "reasons": [
+          "preflight not green"
+        ]
+      },
+      "verdict": "FAIL"
+    }
+  ],
+  "overall_verdict": "NOT_EVALUABLE",
+  "projection_sha256": "820ff5f159e47e28c4bd31b4061ffd90fc71881062f465d5d2b5d8f31748de51",
+  "promotion_note": "any NOT_EVALUABLE or FAIL gate rejects promotion; ONNX CPU stays the production default",
+  "protocol_version": "1.0",
+  "views": {
+    "latency": {
+      "onnx_cpu_in_process": {
+        "median_ms": 63.68962497799657,
+        "n": 3000,
+        "p95_ms": 129.5109625265468
+      },
+      "torch_cpu_fresh": {
+        "median_ms": 58.730750024551526,
+        "n": 3000,
+        "p95_ms": 113.98810863902327
+      },
+      "torch_cpu_persistent": {
+        "median_ms": 58.83141650701873,
+        "n": 3000,
+        "p95_ms": 112.67468063451813
+      },
+      "torch_mps_fresh": {
+        "median_ms": 40.47870798967779,
+        "n": 3000,
+        "p95_ms": 63.078551439684816
+      },
+      "torch_mps_persistent": {
+        "median_ms": 40.590312506537884,
+        "n": 3000,
+        "p95_ms": 62.90792085928842
+      }
+    },
+    "memory_ratio": {
+      "w1_parent_plateau_rss_mib": null
+    },
+    "onnx_torch_divergence": {
+      "classification": "descriptive backend/quantisation divergence; excluded from G1",
+      "max_abs_score_delta": 0.050790298686515536,
+      "pairs": 3000,
+      "ranking_equality_fraction": 0.0,
+      "threshold_decision_flips_at_0p5": 0
+    }
+  }
+}

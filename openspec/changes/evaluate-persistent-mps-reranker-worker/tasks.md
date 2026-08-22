@@ -35,14 +35,14 @@
 
 ## 6. Measured campaign
 
-- [ ] 6.1 Run at least three complete fresh lifetimes for W3 and W4, each with at least 1,000 measured primary-workload requests plus the registered heterogeneous longevity schedule. Run on mains power and retain thermal/interference evidence.
-- [ ] 6.2 Pair W2/W3, W3/W4, W4/W5 and W3/W1 rows exactly as the plan declares. Preserve ONNX/Torch divergence as descriptive raw evidence, not G1 input.
-- [ ] 6.3 Calculate cumulative break-even including startup/load/warm-up, every lifetime N*, median and one-sided 95% upper bound; also report candidate-count/token-length strata and normalised candidate-token work.
-- [ ] 6.4 Calculate and adjudicate all G1–G9 gates. Every lifetime must meet memory ceilings; do not average a failing lifetime into a pass.
+- [x] 6.1 Run at least three complete fresh lifetimes for W3 and W4, each with at least 1,000 measured primary-workload requests plus the registered heterogeneous longevity schedule. Run on mains power and retain thermal/interference evidence.
+- [x] 6.2 Pair W2/W3, W3/W4, W4/W5 and W3/W1 rows exactly as the plan declares. Preserve ONNX/Torch divergence as descriptive raw evidence, not G1 input.
+- [x] 6.3 Calculate cumulative break-even including startup/load/warm-up, every lifetime N*, median and one-sided 95% upper bound; also report candidate-count/token-length strata and normalised candidate-token work.
+- [x] 6.4 Calculate and adjudicate all G1–G9 gates. Every lifetime must meet memory ceilings; do not average a failing lifetime into a pass.
 
 ## 7. Evidence and decision boundary
 
-- [ ] 7.1 Write `results.md` with per-gate verdicts, absolute and ratio memory views, every invalid/not-evaluable cell, and an honest overall verdict; append the execution record to `protocol.md` and commit raw TDR-014 artefacts.
-- [ ] 7.2 Record Experiment 5b in `experiments/example/README.md` without editing the Experiment 5 record or claiming H3 was rehabilitated.
-- [ ] 7.3 A full pass MAY recommend a production-worker OpenSpec and ADR. Any failed or not-evaluable gate retains ONNX CPU and rejects promotion.
-- [ ] 7.4 Run scoped Ruff checks/format, the explicitly collected harness tests, the full fast suite, and `openspec validate evaluate-persistent-mps-reranker-worker --strict`; record exact commands and counts.
+- [x] 7.1 Write `results.md` with per-gate verdicts, absolute and ratio memory views, every invalid/not-evaluable cell, and an honest overall verdict; append the execution record to `protocol.md` and commit raw TDR-014 artefacts.
+- [x] 7.2 Record Experiment 5b in `experiments/example/README.md` without editing the Experiment 5 record or claiming H3 was rehabilitated.
+- [x] 7.3 A full pass MAY recommend a production-worker OpenSpec and ADR. Any failed or not-evaluable gate retains ONNX CPU and rejects promotion.
+- [x] 7.4 Run scoped Ruff checks/format, the explicitly collected harness tests, the full fast suite, and `openspec validate evaluate-persistent-mps-reranker-worker --strict`; record exact commands and counts.

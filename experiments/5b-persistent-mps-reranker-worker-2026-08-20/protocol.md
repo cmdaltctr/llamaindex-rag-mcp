@@ -508,3 +508,24 @@ partial evidence is preserved under `output_invalidated_protocol_v1.0_2026-08-22
 and never enters aggregates. No gate, threshold, primary estimator, workload,
 model revision, request count, deadline, restart policy, counterbalancing or
 invalidation value changed.
+
+**Execution record, 2026-08-22 (protocol v1.1, repo `a04e8ee`):** measured
+campaign completed on the local Apple Silicon host (arm64, macOS 26.5.1,
+Python 3.12.10, Torch 2.13.0, MPS available; every W2/W3 handshake reported
+effective device `mps:0`, W4/W5 `cpu`, W1 `CPUExecutionProvider` first,
+`PYTORCH_ENABLE_MPS_FALLBACK=0`). Three counterbalanced blocks, 15/15 units
+complete, all on AC power with nominal thermal state and a per-block
+no-foreground-interference declaration. One earlier v1.1 attempt was
+repeated in full after a harness race (`MemorySampler._loop` retired the
+sampler on its first context-less tick during warm-up, voiding all memory
+samples); that attempt's evidence is preserved under
+`output_sampler_race_invalidated_2026-08-22/` and contributes nothing to the
+aggregates. Final gate verdicts: G1a/G1b/G1c PASS, G2 PASS, G3 PASS,
+G4 FAIL (median N* 156 > 150; block upper bounds 233/∞/233), G5 PASS,
+G6 PASS, G7 PASS, G8 PASS, G9 FAIL ("preflight not green" caused by the
+measured run clobbering the dry-run `all_green` flag — a bookkeeping defect
+since fixed in `run_eval.merge_prior_preflight_green`; every substantive G9
+requirement was individually green and evidenced). Overall verdict: **FAIL —
+promotion rejected, ONNX CPU retained as the production default.** Full
+numbers, memory absolutes/ratios, break-even and stratum secondary
+estimands: `results.md`. Experiment 5 H3 remains FAIL and is untouched.
