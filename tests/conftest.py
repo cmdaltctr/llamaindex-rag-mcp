@@ -271,9 +271,7 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
 
 
 @pytest.fixture(autouse=True)
-def _patch_embed_model(
-    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
-) -> None:
+def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
     """Replace OllamaEmbedding with MockEmbedding for tests that use runtime setup.
 
     The shared LlamaIndex global remains mocked for the whole suite. CLI
