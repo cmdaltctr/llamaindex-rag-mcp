@@ -24,7 +24,7 @@ if str(REPO_ROOT) not in sys.path:
 import artefacts  # noqa: E402
 
 EXPERIMENT_ID = "5b-persistent-mps-reranker-worker"
-PROTOCOL_VERSION = "1.0"
+PROTOCOL_VERSION = "1.1"
 MODEL_ID = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 TOP_K = 50
 
@@ -38,7 +38,7 @@ WORKLOAD_PATH = (
 )
 LONGEVITY_PATH = SCRIPT_DIR / "longevity_schedule.json"
 WORKLOAD_IDENTITY = "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc"
-LONGEVITY_IDENTITY = "sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55"
+LONGEVITY_IDENTITY = "sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7"
 MODEL_REVISION = "233902d25c440f23af6f7d6e94d2946bac0bee0a"
 # Registered file SHA-256 digests (protocol section 7).  Stored as pairs and
 # materialised into a mapping so the literal never resembles credential

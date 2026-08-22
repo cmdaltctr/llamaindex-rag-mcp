@@ -1,6 +1,6 @@
 {
   "experiment_id": "5b-persistent-mps-reranker-worker",
-  "protocol_version": "1.0",
+  "protocol_version": "1.1",
   "experimental_unit": "one fixed query with its fixed ordered 50-candidate pool served through one declared reranker route; persistent resource replication is one complete fresh worker lifetime",
   "primary_metric": "persistent_mps_parent_observed_median_latency_ms",
   "manipulated_factors": [
@@ -38,7 +38,7 @@
     "workload_queries": 24,
     "workload_candidates_per_query": 50,
     "heterogeneous_longevity_schedule_path": "experiments/5b-persistent-mps-reranker-worker-2026-08-20/longevity_schedule.json",
-    "heterogeneous_longevity_schedule_identity": "sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55",
+    "heterogeneous_longevity_schedule_identity": "sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7",
     "hf_hub_offline": true,
     "pytorch_enable_mps_fallback": "0 set before every Torch-capable import",
     "target_host": "Apple Silicon macOS with at least 16 GiB physical memory",

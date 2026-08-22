@@ -61,12 +61,12 @@ TORCH_CELL_IDS = ALL_CELL_IDS - {"onnx_cpu_in_process"}
 
 def test_module_constants() -> None:
     assert harness.EXPERIMENT_ID == "5b-persistent-mps-reranker-worker"
-    assert harness.PROTOCOL_VERSION == "1.0"
+    assert harness.PROTOCOL_VERSION == "1.1"
     assert harness.WORKLOAD_IDENTITY == (
         "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc"
     )
     assert harness.LONGEVITY_IDENTITY == (
-        "sha256:d59452150f92e235fc262ad4efdf7863a4d52a231bb8b2a08dd8f195b9b09d55"
+        "sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7"
     )
     assert isinstance(harness.PLAN_PATH, Path) and harness.PLAN_PATH.exists()
     assert isinstance(harness.WORKLOAD_PATH, Path) and harness.WORKLOAD_PATH.exists()
