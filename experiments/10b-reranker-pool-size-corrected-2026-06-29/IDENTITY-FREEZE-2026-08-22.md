@@ -24,21 +24,26 @@ rebuilt indexes therefore differ from the lost originals by at most this
 distractor, and the manifest hash above is the binding corpus identity for
 Stage 6.
 
-## Index identities — LanceDB re-base, build in flight
+## Index identities — frozen (build complete 2026-08-22)
 
 **Re-base decision (2026-08-22, user-ratified):** the D17 campaign re-based
 its immutable inputs on the qualified LanceDB default (ADR-049 D11). A
 Chroma build started first was killed at batch 10/101 and discarded; the
 2026-08-21 chroma manipulated-factor declaration in `plan.json` is withdrawn.
 
-| Index | Status |
+| Item | Identity |
 | --- | --- |
-| `output/lancedb_dense` | Building since 2026-08-22 21:29 (PID 9000, log `output/build-run-2026-08-22-lancedb.log`); collection `exp10b-freshstack-langchain-seed-20260530-ollama-qwen3-embedding-0-6b`; `EMBED_MODEL=qwen3-embedding:0.6b` (1024-dim), batch 100, 101 batches |
-| Hybrid BM25 | None required — BM25 builds in-process at query time over the dense collection |
+| Store directory | `output/lancedb_dense` (gitignored) |
+| Collection | `exp10b-freshstack-langchain-seed-20260530-ollama-qwen3-embedding-0-6b` |
+| Chunks | 10,024 (= corpus parent docs, 1 chunk per parent doc) |
+| Embedding | `qwen3-embedding:0.6b` via Ollama, 1024-dim |
+| Build time | 6,251 s (vs 19,371 s for the original Chroma build) |
+| Build log | `output/build-run-2026-08-22-lancedb.log`; summary `output/index_build.json` |
+| Hybrid BM25 | In-process at query time over the dense collection; no second index |
+| Query smoke | Verified post-build: count 10,024; live dense probe returned scored FreshStack hits (0.6198 top) |
 
-Original Chroma build reference: 10,025 chunks in 19,371 s. Expected
-completion: early hours 2026-08-23. When `output/index_build.json` lands,
-record chunk count here and close task 6.1.2.
+**Task 6.1.2 is CLOSED.** Corpus, query/qrel, and index identities are all
+frozen above. The D17 campaign may start measured cells.
 
 ## Rule
 
