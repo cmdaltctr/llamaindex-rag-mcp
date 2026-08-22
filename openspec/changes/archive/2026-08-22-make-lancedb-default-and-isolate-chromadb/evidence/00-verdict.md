@@ -69,3 +69,15 @@ The audit created evidence files only. Other working-tree changes appeared concu
 ## Verdict justification
 
 **BLOCKED.** Tasks 1.3, 1.4, 1.5, and the D9 source-entry check pass. Task 1.6 cannot clear until a real named policy owner supplies a dated decision and signature. This audit does not accept the residual risk.
+
+---
+
+## Addendum 2026-08-22 (dated, append-only)
+
+The D9 blocker recorded above was resolved the next day: the named policy
+owner (Dr Muhammad Aizat Bin Md Hawari) signed an APPROVE-with-quarantine
+disposition dated 2026-08-22 with expiry 2026-11-22 or earlier on the first
+ADR-049 D10 trigger. See `04-residual-lock-finding.md` (Signed policy-owner
+disposition). The audit's original BLOCKED verdict stands as recorded at
+2026-08-21; this addendum records the subsequent approval without rewriting
+it.

@@ -1,7 +1,7 @@
 # ADR-049: LanceDB Default and Chroma Isolation
 
 **Date:** 2026-08-21
-**Status:** Accepted (release clearance remains blocked pending the security disposition below)
+**Status:** Accepted (release clearance granted 2026-08-22 under the signed policy-owner disposition — see Security Ownership and Release Gate)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Supersedes:** ADR-003 for the configured vector-store default only
 
@@ -86,13 +86,13 @@ manifest, append-only raw rows, verdicts, and result table are retained in
 
 | Field | Required disposition |
 | --- | --- |
-| Owner | **TBD: name the security-policy owner before release.** |
+| Owner | **Dr Muhammad Aizat Bin Md Hawari (named 2026-08-22)** |
 | Record date | 2026-08-21 |
-| Decision date | **TBD: record with the owner's decision before release.** |
+| Decision date | **2026-08-22 (APPROVE with quarantine)** |
 | Scope | CVE-2026-45829 (PYSEC-2026-311) in the universal lock and `chroma` extra; the base wheel and fresh base installation are separate evidence. |
-| Rationale | The base path uses LanceDB. The optional extra can remain visible to universal-lock or all-extra scans. |
-| Expiry or review date | **TBD: set a dated expiry or review date before release.** |
-| Release state | Blocked until the named owner accepts or rejects this dated disposition. |
+| Rationale | The base path uses LanceDB. The optional extra can remain visible to universal-lock or all-extra scans. Exposure is opt-in only: the vulnerable package never enters a base install and the project never starts Chroma's FastAPI server. |
+| Expiry or review date | **2026-11-22 (90 days), or earlier on the first D10 trigger** |
+| Release state | Cleared 2026-08-22 under the signed disposition in `openspec/changes/archive/2026-08-22-make-lancedb-default-and-isolate-chromadb/evidence/04-residual-lock-finding.md` |
 
 The owner must record the scanner evidence, scope, rationale, expiry or review
 date, and the triggers below. ADR-049 does not clear the release gate.
@@ -129,8 +129,10 @@ a separate OpenSpec change and a new decision review.
 - Existing Chroma users must make an explicit selection and install an extra.
 - A backend change requires source-file re-ingestion into a fresh store.
 - A universal-lock or all-extra scan can still report the active Chroma advisory.
-- Release clearance remains unavailable until the security owner is named and
-  records the required dated disposition.
+- Release clearance was granted on 2026-08-22 under the signed disposition
+  (owner Dr Muhammad Aizat Bin Md Hawari, APPROVE with quarantine, expiry
+  2026-11-22 or earlier on the first D10 trigger). A universal-lock or
+  all-extra scan can still report the advisory until a patched release;
 
 ### Neutral
 
