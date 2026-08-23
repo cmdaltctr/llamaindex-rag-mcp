@@ -1,45 +1,34 @@
-# Experiment 10b Results: Corrected Reranker Pool-Size Sweep
+# Experiment 10b v2 Results: combined D17 factorial
 
-**Recommendation:** Larger fetch_k pools DEGRADE quality (fetch_k=50 best at cov20=0.6141, fetch_k=500 worst at cov20=0.4655). Reranker dilution effect confirmed. Smaller pool sizes are better. ADR-019 (RERANK_ENABLED=false) validated — reranker hurts regardless of pool size. No config change.
+All contrasts are paired by query_id on Coverage@20 with a 95%
+bootstrap CI (10,000 resamples, seed 20260819). Warm-up rows are
+excluded from every aggregate.
 
-## Corpus and setup
+## Contrasts
 
-- Parent documents: None
-- Embedding model: qwen3-embedding:0.6b
-- RRF k: None
-- Reranker model: cross-encoder/ms-marco-MiniLM-L-6-v2 (ONNX)
-- Fetch_k sizes tested: None
-- Post-ADR-021 config: MULTIPLIER=None, MAX_FETCH=None
+| Hypothesis | A | B | Delta | CI low | CI high | n |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| H1a | dense_on_150 | dense_off | -0.0996 | -0.1483 | -0.0507 | 223 |
+| H1b | hybrid_on_150 | hybrid_off | -0.1346 | -0.1865 | -0.0821 | 223 |
+| H2_dense_best_vs_off (post-hoc pool) | dense_on_50 | dense_off | -0.0327 | -0.0714 | 0.0069 | 223 |
+| H2_hybrid_best_vs_off (post-hoc pool) | hybrid_on_50 | hybrid_off | -0.0783 | -0.1142 | -0.0436 | 223 |
+| H3 | hybrid_on_500 | hybrid_on_50 | -0.1380 | -0.1836 | -0.0924 | 223 |
+| H4 | hybrid_on_500 | hybrid_on_200 | -0.0551 | -0.0858 | -0.0263 | 223 |
+| H5 | hybrid_off | dense_off | 0.0457 | 0.0107 | 0.0811 | 223 |
 
-## Cell metrics (all queries)
+## Per-cell aggregates (measured rows only)
 
-| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | P95 ms |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| dense_only__fetch_k_50__rerank_true | 0.614 | 0.519 | 0.273 | 0.659 | 0.359 | 12114.5 |
-| dense_only__fetch_k_100__rerank_true | 0.576 | 0.399 | 0.240 | 0.614 | 0.315 | 21125.0 |
-| dense_only__fetch_k_200__rerank_true | 0.524 | 0.333 | 0.215 | 0.570 | 0.299 | 37230.3 |
-| dense_only__fetch_k_500__rerank_true | 0.465 | 0.283 | 0.197 | 0.538 | 0.282 | 113655.2 |
-
-## Pool-size comparison (dense-only, all queries)
-
-| fetch_k | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@5 | Hit@10 | MRR@10 | P95 ms |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 50 | 0.614 | 0.519 | 0.273 | 0.520 | 0.659 | 0.359 | 12114.5 |
-| 100 | 0.576 | 0.399 | 0.240 | 0.466 | 0.614 | 0.315 | 21125.0 |
-| 200 | 0.524 | 0.333 | 0.215 | 0.439 | 0.570 | 0.299 | 37230.3 |
-| 500 | 0.465 | 0.283 | 0.197 | 0.381 | 0.538 | 0.282 | 113655.2 |
-
-## Pass gates
-
-- **corpus_validity**: `{"value": 0, "pass": false}`
-- **pool_sizes_distinct**: `{"value": [50, 100, 200, 500], "pass": true}`
-- **pool_size_lift**: `{"value": -0.148601, "max_k_cov20": 0.4655, "min_k_cov20": 0.6141, "pass": false}`
-- **diminishing_returns**: `{"value": -0.058221, "pass": true}`
-- **best_fetch_k**: `{"fetch_k": 50, "coverage_at_20": 0.6141, "larger_pool_degrades": true}`
-- **latency_guardrail**: `{"p95_min_ms": 12114.54, "p95_max_ms": 113655.22, "ratio": 9.3817, "pass": false}`
-
-## Notes
-
-This experiment uses the `fetch_k=` parameter on `search()` (TDR-005) to bypass
-the `max(RERANK_MAX_FETCH, top_k × RERANK_FETCH_MULTIPLIER)` formula, producing
-genuinely distinct pool sizes — the confound that voided Exp 10.
+| Cell | Coverage@20 | Recall@50 | α-nDCG@10 | Hit@10 | MRR@10 | Mean ms | P95 ms | n |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dense_off | 0.6931 | 0.5178 | 0.3871 | 0.7758 | 0.5101 | 288.4 | 602.0 | 223 |
+| dense_on_100 | 0.6215 | 0.4412 | 0.2918 | 0.6592 | 0.3875 | 3016.7 | 3814.8 | 223 |
+| dense_on_150 | 0.5935 | 0.4157 | 0.2779 | 0.6323 | 0.3686 | 5297.4 | 7961.2 | 223 |
+| dense_on_200 | 0.5794 | 0.3927 | 0.2805 | 0.6368 | 0.3769 | 5957.6 | 7921.1 | 223 |
+| dense_on_50 | 0.6604 | 0.5178 | 0.3085 | 0.6996 | 0.4096 | 1692.4 | 2371.8 | 223 |
+| dense_on_500 | 0.5127 | 0.3528 | 0.2593 | 0.5874 | 0.3493 | 12432.6 | 14269.8 | 223 |
+| hybrid_off | 0.7388 | 0.5495 | 0.4268 | 0.8117 | 0.5742 | 318.6 | 644.0 | 223 |
+| hybrid_on_100 | 0.6354 | 0.4677 | 0.2943 | 0.6726 | 0.3903 | 2768.7 | 3345.3 | 223 |
+| hybrid_on_150 | 0.6042 | 0.4304 | 0.2804 | 0.6592 | 0.3667 | 4885.1 | 6882.5 | 223 |
+| hybrid_on_200 | 0.5775 | 0.4011 | 0.2735 | 0.6323 | 0.3578 | 6664.6 | 10061.5 | 223 |
+| hybrid_on_50 | 0.6605 | 0.5495 | 0.3189 | 0.7085 | 0.4253 | 1570.8 | 1949.1 | 223 |
+| hybrid_on_500 | 0.5224 | 0.3538 | 0.2506 | 0.5740 | 0.3342 | 13276.9 | 15514.7 | 223 |
