@@ -285,23 +285,23 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 - [x] 6.1.4 Run reranker-on pools 50/100/150/200/500 for both retrieval modes. (2026-08-23: all 10 cells complete, 223 measured queries each, zero invalid.)
 - [x] 6.1.5 Checkpoint at least per cell and preferably per query batch. (2026-08-23: per-cell `--resume` checkpoints used; run completed in one process, ~3.5 h wall clock.)
 - [x] 6.1.6 Report paired deltas + CIs for current policy (150), best observed pool, and reranker-off ceiling. (2026-08-23: `output/results.md` — H1a/H1b reranker harms at policy pool 150; H2 best pool (50) still below off-ceiling on hybrid and statistically inconclusive on dense; H3/H4 larger pools monotonically worse; H5 hybrid beats dense off-reranker. Ambient-load deviation: `output/DEVIATION-2026-08-23-ambient-load.md` — latency columns invalid, quality valid.)
-- [ ] 6.1.7 Decide whether ADR-019 remains valid; do not amend it inside this experiment commit.
+- [x] 6.1.7 Decide whether ADR-019 remains valid; do not amend it inside this experiment commit. (2026-08-23: ADR-019 REMAINS VALID — D17 confirms the technical-workload disable with corrected methodology. Evidence update appended to ADR-019 post-result-commit, per gate ordering. User-ratified option 3: policy unchanged, documents-profile setting flagged as lacking post-correction supporting evidence, task 6.3 designated as its first real test.)
 
 ### PAUSE GATE 6A — reranker campaign result
 
 - [x] 6.GA.1 Commit result artefacts and interpretation before deciding whether threshold calibration is worth running. (2026-08-23: results.md + deviation note committed, 873e6d3 harness fix precedes.)
-- [ ] 6.GA.2 **After** the result commit, amend ADR-019 or write a successor ADR if the evidence changes/strengthens the production reranker policy. If the existing policy remains unchanged, add an evidence update to ADR-019 (or a TDR if repository convention prefers keeping the ADR immutable) that links the new experiment and explains why no policy change was made.
+- [x] 6.GA.2 **After** the result commit, amend ADR-019 or write a successor ADR if the evidence changes/strengthens the production reranker policy. If the existing policy remains unchanged, add an evidence update to ADR-019 (or a TDR if repository convention prefers keeping the ADR immutable) that links the new experiment and explains why no policy change was made. (2026-08-23: evidence update appended to ADR-019 §Evidence — policy unchanged; D17 result commit d49be1e precedes this decision commit, gate ordering honoured.)
 
 ### 6.2 Conditional threshold experiment
 
-- [ ] 6.2.1 If semantic reranker benefit is practically meaningful, promote `experiment-9-technical-threshold-policy` template.
-- [ ] 6.2.2 If benefit is absent/uniformly harmful, record “not warranted” and skip the threshold-policy campaign.
-- [ ] 6.2.3 If run, reuse fixed workload blocks across thresholds and include forced-off/forced-on reference arms.
+- [x] 6.2.1 If semantic reranker benefit is practically meaningful, promote `experiment-9-technical-threshold-policy` template. (2026-08-23: condition NOT met — D17 found no reranker benefit at any pool size on the technical corpus; item closed as not applicable.)
+- [x] 6.2.2 If benefit is absent/uniformly harmful, record “not warranted” and skip the threshold-policy campaign. (2026-08-23: NOT WARRANTED — reranker harm is uniform across pools 50–500 and both retrieval modes, with paired CIs excluding zero on hybrid at every pool and on dense at pools ≥100. No operating point exists on this workload that threshold calibration could improve. Recorded in `10b/output/results.md` §Interpretation and in the ADR-019 evidence update.)
+- [x] 6.2.3 If run, reuse fixed workload blocks across thresholds and include forced-off/forced-on reference arms. (2026-08-23: not run — campaign skipped per 6.2.2.)
 
 ### PAUSE GATE 6B — threshold result
 
-- [ ] 6.GB.1 Commit result or skip rationale separately.
-- [ ] 6.GB.2 If the experiment changes `HARD_TECHNICAL_THRESHOLD`, semantic-rerank enablement, or another production routing policy, amend/write the relevant ADR only after the result commit. If no production policy changes, record the retained-policy rationale in the experiment results or a TDR rather than manufacturing a new ADR.
+- [x] 6.GB.1 Commit result or skip rationale separately. (2026-08-23: skip rationale committed with the 6.2.2 close-out and the ADR-019 evidence update, separate from the D17 result commit d49be1e.)
+- [x] 6.GB.2 If the experiment changes `HARD_TECHNICAL_THRESHOLD`, semantic-rerank enablement, or another production routing policy, amend/write the relevant ADR only after the result commit. If no production policy changes, record the retained-policy rationale in the experiment results or a TDR rather than manufacturing a new ADR. (2026-08-23: no production policy changed. **÷30 disposition (TDR-015 obligation): RETAINED WITH RATIONALE.** The `similarity_threshold / 30` rule in `core/retrieval/policy.py` is unchanged. Rationale: D17 ran rerank-on cells under the ÷30 rule and found harm at every pool size on the technical corpus — there is no beneficial rerank operating point on this workload for which a recalibrated threshold could matter. D17 did not isolate threshold effects (it was not designed to), so the rule is neither revalidated nor recalibrated. Semantic-workload revalidation transfers to task 6.3 (Qasper PDF A/B), the designated first real test of the documents-profile reranker path; if 6.3 ever changes that policy, threshold revalidation reopens there. TDR-015 obligation discharged: recorded explicitly as retained-with-rationale, per its own taxonomy.)
 
 ### 6.3 Real PDF parser experiment
 

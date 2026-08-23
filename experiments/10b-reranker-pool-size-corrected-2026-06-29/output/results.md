@@ -32,3 +32,27 @@ excluded from every aggregate.
 | hybrid_on_200 | 0.5775 | 0.4011 | 0.2735 | 0.6323 | 0.3578 | 6664.6 | 10061.5 | 223 |
 | hybrid_on_50 | 0.6605 | 0.5495 | 0.3189 | 0.7085 | 0.4253 | 1570.8 | 1949.1 | 223 |
 | hybrid_on_500 | 0.5224 | 0.3538 | 0.2506 | 0.5740 | 0.3342 | 13276.9 | 15514.7 | 223 |
+
+## Interpretation (plain English)
+
+1. **The reranker makes results worse in every configuration tested.** At the
+   production pool size (150) it costs about 10–13 coverage points on both
+   retrieval modes. Shrinking the pool to 50 softens but does not remove the
+   harm on hybrid, and larger pools make it worse, monotonically.
+2. **There is no pool size worth calibrating a threshold for on this
+   workload.** Task 6.2 (threshold campaign) is therefore skipped as not
+   warranted; see the 6.2 disposition in the OpenSpec tasks file and the ÷30
+   record under gate 6.GB.2.
+3. **Hybrid BM25 beats dense with the reranker off** (H5). This is a new,
+   separately-scoped observation — a candidate for a future defaults
+   discussion, not adjudicated here.
+4. **What this does NOT settle:** whether the reranker helps *semantic*
+   workloads (the `documents` profile). This corpus is technical. Task 6.3
+   (Qasper PDF A/B) is designated as that setting's first real test; until
+   then the documents-profile reranker setting is provisional. See the
+   evidence update in ADR-019.
+5. **Latency columns are invalid** for the protocol guardrail — the machine
+   ran under ambient load (27–43 on 8 cores at launch, easing later). Full
+   record: `DEVIATION-2026-08-23-ambient-load.md`. Quality metrics are
+   unaffected: rankings are deterministic for a frozen index, fixed query
+   set, and ONNX reranker.

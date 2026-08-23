@@ -115,6 +115,14 @@ mismatches. Canonical projections of two full runs are byte-identical
   `experiments/EXP_README.md` row for Experiment 13 points back to this
   obligation.
 
+  Discharge (2026-08-23): gate 6.GB.2 records **retained-with-rationale** —
+  Experiment 10b/D17 found uniform reranker harm across pools 50–500 on the
+  technical corpus, leaving no operating point for which recalibration could
+  matter; D17 was not designed to isolate threshold effects. Semantic
+  revalidation transfers to task 6.3 (Qasper PDF A/B); if that gate changes
+  the documents-profile reranker policy, the ÷30 obligation reopens there.
+  Record: `openspec/changes/harden-pipeline-correctness-before-calibration/tasks.md` §6B.
+
 ## Alternatives Considered
 
 | Option | Rejected Because |
