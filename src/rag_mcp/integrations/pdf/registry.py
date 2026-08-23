@@ -65,3 +65,4 @@ def available() -> list[str]:
 register("pypdf", "rag_mcp.integrations.pdf.pypdf:PyPDFReader")
 register("pypdfium2", "rag_mcp.integrations.pdf.pypdfium:PyPDFium2Reader")
 register("liteparse", "rag_mcp.integrations.pdf.liteparse:LiteParseReader")
+register("pdf_inspector", "rag_mcp.integrations.pdf.pdf_inspector:PdfInspectorReader")

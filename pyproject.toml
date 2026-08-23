@@ -82,6 +82,13 @@ hybrid = [
 pdf-pypdfium2 = [
     "pypdfium2>=4.0.0",
 ]
+# Optional pdf-inspector reader (Experiment 14 third arm, 2026-08-23).
+# Firecrawl's Rust PDF classifier + markdown extractor (MIT, PyO3
+# bindings, ~4 MB wheel). No OCR/ML models; strong multi-column reading
+# order. Install: uv sync --extra pdf-inspector.
+pdf-inspector = [
+    "pdf-inspector>=1.17.0",
+]
 # Optional Leiden community detection (COMMUNITY_ALGORITHM=leiden).
 # Floors pair on the igraph 1.x boundary: leidenalg 0.11+ declares
 # igraph<2.0,>=1.0.0, both ship abi3 wheels for macOS (arm64/x86_64),
