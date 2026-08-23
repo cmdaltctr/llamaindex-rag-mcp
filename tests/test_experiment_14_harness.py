@@ -120,7 +120,7 @@ def test_preflight_check_passes_for_pypdf() -> None:
     assert manifest["document_backend"]["effective"] == "pypdf"
     assert manifest["embedding"]["model"] == "nomic-embed-text"
     assert manifest["experiment_id"] == "14-liteparse-qasper-promotion"
-    assert manifest["protocol_version"] == "2.0"
+    assert manifest["protocol_version"] == "2.1"
     assert manifest["corpus_identity"] == parse_result["corpus_identity"]["corpus_sha256"]
     # The directory-level corpus identity was supplied via ``extra``; the
     # stale single-path null reason must not survive.
@@ -142,7 +142,7 @@ def test_plan_agrees_with_build_cells() -> None:
     plan = ExperimentPlan.from_json(PLAN_PATH)
 
     build_cells = exp14.build_cell_matrix()
-    assert len(build_cells) == 2
+    assert len(build_cells) == 3
     # A plan restricted to the generator's cells must accept exactly those
     # cells (this also validates factor names/levels against the declared
     # manipulated factors).
@@ -150,7 +150,7 @@ def test_plan_agrees_with_build_cells() -> None:
     build_only.assert_runner_cells(build_cells)
 
     eval_cells = run_eval.build_eval_cell_matrix()
-    assert len(eval_cells) == 4
+    assert len(eval_cells) == 6
     eval_only = ExperimentPlan.from_dict({**payload, "cells": eval_cells})
     eval_only.assert_runner_cells(eval_cells)
 
@@ -161,10 +161,13 @@ def test_plan_agrees_with_build_cells() -> None:
     assert set(plan_by_id) == {
         "build_pypdf",
         "build_liteparse",
+        "build_pdf_inspector",
         "pypdf_off",
         "pypdf_on",
         "liteparse_off",
         "liteparse_on",
+        "pdf_inspector_off",
+        "pdf_inspector_on",
     }
     # The rerank factor levels are the plan's booleans, not strings.
     assert plan.manipulated_factors["rerank"] == (False, True)

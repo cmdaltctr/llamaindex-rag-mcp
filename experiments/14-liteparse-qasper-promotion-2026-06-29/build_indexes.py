@@ -38,18 +38,20 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 PLAN_PATH = SCRIPT_DIR / "plan.json"
 OUTPUT_DIR = SCRIPT_DIR / "output"
 EXPERIMENT_ID = "14-liteparse-qasper-promotion"
-PROTOCOL_VERSION = "2.0"
+PROTOCOL_VERSION = "2.1"
 
 
 def build_cell_matrix() -> list[dict[str, Any]]:
-    """Return the two build cells as plan-comparable dicts (D15 generator).
+    """Return the three build cells as plan-comparable dicts (D15 generator).
 
     Agreement tests compare these against the ``build_*`` cells declared in
     ``plan.json`` via ``ExperimentPlan.assert_runner_cells``.
+    Protocol v2.1 (2026-08-23): pdf_inspector joins as the third reader.
     """
     return [
         {"id": "build_pypdf", "factors": {"reader": "pypdf"}},
         {"id": "build_liteparse", "factors": {"reader": "liteparse"}},
+        {"id": "build_pdf_inspector", "factors": {"reader": "pdf_inspector"}},
     ]
 
 
@@ -304,7 +306,7 @@ def preflight_check(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build Experiment 14 indexes (D19 v2.0)")
-    parser.add_argument("--reader", choices=["pypdf", "liteparse"], required=True)
+    parser.add_argument("--reader", choices=["pypdf", "liteparse", "pdf_inspector"], required=True)
     parser.add_argument(
         "--corpus-dir",
         type=Path,
