@@ -386,7 +386,7 @@ Live registry contents, kept in step with the code by contract tests:
 <!-- /registry-names:community -->
 
 <!-- registry-names:pdf -->
-`liteparse` `pypdf` `pypdfium2`
+`liteparse` `pdf_inspector` `pypdf` `pypdfium2`
 <!-- /registry-names:pdf -->
 
 <!-- registry-names:chunking -->

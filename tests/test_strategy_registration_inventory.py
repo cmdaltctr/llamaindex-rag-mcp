@@ -76,7 +76,7 @@ STRICT_VALID_FOLLOW_UPS = (
 # owned by compose/factory, deliberately unregistered. Config literals
 # in Settings and the configuration guide are covered by separate
 # tests; these pins compare the live registries with the audited sets.
-AUDITED_PDF_CONCRETE_NAMES = frozenset({"liteparse", "pypdfium2", "pypdf"})
+AUDITED_PDF_CONCRETE_NAMES = frozenset({"liteparse", "pdf_inspector", "pypdfium2", "pypdf"})
 AUDITED_COMMUNITY_NAMES = frozenset({"louvain", "leiden"})
 
 _INVENTORY_BLOCK_RE = re.compile(
