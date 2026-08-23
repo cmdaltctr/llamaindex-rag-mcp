@@ -500,12 +500,20 @@ def _resolve_runtime(store_dir: Path) -> tuple[Any, str, str, Any]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.settings import resolve_effective_settings
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.config import get_settings
+    from rag_mcp.core.settings import set_default_effective_settings
     from rag_mcp.core.vectordb import set_default_store
 
     LlamaIndexSettings.embed_model = identity_embed_model(model)
     set_default_store(store)
-    effective_settings = resolve_effective_settings(None)
+    # No entry point ran the composition root, so no default
+    # EffectiveSettings exists to resolve. Build one from resolved Settings
+    # and install it. Deliberately NOT ensure_runtime_setup(): that would
+    # build the ambient .env store and embed model, overriding the pinned
+    # experiment store and identity embedder set above.
+    effective_settings = settings_to_effective(get_settings())
+    set_default_effective_settings(effective_settings)
 
     try:
         from rag_mcp.core.retrieval.dense import _cached_query_embedding
