@@ -305,9 +305,11 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 ### 6.3 Real PDF parser experiment
 
-- [ ] 6.3.1 Promote `experiment-10-real-pdf-parser-ab` template.
-- [ ] 6.3.2 Freeze PDF bytes and question/qrel set.
-- [ ] 6.3.3 Parse each PDF with both readers; record parser invocation, parse failures, page/text/token counts and parse time before embeddings.
+> **Design amendment (2026-08-23, user-ratified):** pdf-inspector (Firecrawl's Rust PDF classification and markdown-extraction library; PyPI `pdf-inspector`, Python module `pdf_inspector`) joins pypdf and LiteParse as a third reader arm. The A/B becomes an A/B/C: `{pypdf, liteparse, pdf_inspector} × {rerank off, on}` in `experiments/14-liteparse-qasper-promotion-2026-06-29/plan.json` (three build cells plus six evaluation cells). Per the 6.1.7 note, this experiment is also designated the first real test of the documents-profile reranker setting (ADR-019 evidence update). The reader adapter and corpus-download script land as separate code changes. Gate 6C ordering is unchanged: no ADR-020 amendment before the result commit.
+
+- [x] 6.3.1 Promote `experiment-10-real-pdf-parser-ab` template. (2026-08-23: harness live at `experiments/14-liteparse-qasper-promotion-2026-06-29/` since Stage 4; today amended to protocol v2.1 — three readers (pypdf, liteparse, pdf-inspector) × rerank off/on, 6 cells; plan/runner agreement tests green.)
+- [x] 6.3.2 Freeze PDF bytes and question/qrel set. (2026-08-23: 35 Qasper-dev arXiv PDFs (25 MB) downloaded deterministically — first 35 articles by sorted arXiv ID, zero skips; 112 queries, 107 with qrels; both protocol minimums met. Freeze record with per-file sha256 and corpus identity `sha256:466b21f0…`: `14/output/qasper_corpus_freeze.json`. Parquet provenance sha256 recorded; PDF bytes and qrels stay gitignored, digests are the frozen truth.)
+- [ ] 6.3.3 Parse each PDF with all three readers; record parser invocation, parse failures, page/text/token counts and parse time before embeddings.
 - [ ] 6.3.4 Build separate immutable indexes from parser outputs using identical embedding/chunking configuration.
 - [ ] 6.3.5 Evaluate paired quality and decompose parse vs embed/write vs query timing.
 

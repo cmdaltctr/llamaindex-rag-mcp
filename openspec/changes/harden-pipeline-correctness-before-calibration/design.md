@@ -352,6 +352,8 @@ The pypdf/LiteParse experiment SHALL use immutable real PDF bytes. Each parser p
 
 Quality comparison is paired by document/question. Ingestion speed MUST be decomposed into parse time and embedding/write time so “faster parser” is not hidden by a dominant embedding stage.
 
+*(Amended 2026-08-23, user-ratified: pdf-inspector joins as a third reader arm — plan level `pdf_inspector`; see the "Three-parser extension (v2.1)" section of the Experiment 14 protocol. Every D19 mechanism above is reader-agnostic and unchanged.)*
+
 **PAUSE GATE 6:** each calibration result is reviewed and committed independently before any default/ADR change. A PASS result does not automatically change production defaults; the decision lands in a separate reviewed change/ADR.
 
 ---
