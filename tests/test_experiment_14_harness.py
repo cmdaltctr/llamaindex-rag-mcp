@@ -187,3 +187,34 @@ def test_write_parsed_artefact_atomic(tmp_path: Path) -> None:
         "doc2_quantum.pdf",
     ]
     assert loaded["artefact_sha256"] == result["artefact_sha256"]
+
+
+def test_run_cell_requests_diagnostics_and_persists_retrieval_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Require diagnostic IDs for Qrels scoring in the evaluation harness."""
+    from rag_mcp.core import retrieval
+
+    calls: list[dict[str, object]] = []
+
+    def fake_search(**kwargs: object) -> list[dict[str, object]]:
+        calls.append(kwargs)
+        return [{"id": "qasper-doc-1", "score": 0.9}]
+
+    monkeypatch.setattr(retrieval, "search", fake_search)
+    monkeypatch.setattr(
+        run_eval,
+        "_resolve_cell_runtime",
+        lambda reader, rerank: (object(), "qasper-test"),
+    )
+
+    result = run_eval._run_cell(
+        {"name": "pypdf_off", "reader": "pypdf", "rerank": False},
+        [{"id": "query-1", "text": "What is the finding?"}],
+        {"query-1": {"qasper-doc-1": 1}},
+        [1],
+    )
+
+    assert calls[0]["include_diagnostics"] is True
+    assert result["per_query"][0]["retrieved"] == [{"id": "qasper-doc-1", "score": 0.9}]
+    assert result["metrics"]["hit@1"] == 1.0

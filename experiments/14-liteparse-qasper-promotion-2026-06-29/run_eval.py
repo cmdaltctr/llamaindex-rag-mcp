@@ -160,6 +160,7 @@ def _run_cell(
             hybrid=False,
             collection_name=collection_name,
             store=store,
+            include_diagnostics=True,
         )
         latency_ms = (time.perf_counter() - t0) * 1000
         results.append(
