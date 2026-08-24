@@ -1,15 +1,21 @@
 # Experiment 14 Results: LiteParse Promotion on Qasper
 
-**Recommendation:** Quality gates pass. H2 timing is provisional because the campaign ran under ambient machine load. Do not promote a PDF reader until a quiet-machine timing rerun completes. See [the deviation record](DEVIATION-2026-08-24-ambient-load.md).
+**Recommendation:** The approved timing rerun and quality results nominate `pdf_inspector` as the candidate default. The parser-only recording rerun completes task 6.3.3. Keep production settings unchanged until the result artefacts are committed and a follow-up ADR/OpenSpec accepts the policy. The earlier ambient-load result remains documented in [the deviation record](DEVIATION-2026-08-24-ambient-load.md).
 
 ## Gate summary
 
 | Gate | Result | Detail |
 | --- | :--: | --- |
 | H1: Corpus validity | ✅ | Dense Hit@5=0.5446 |
-| H2: Speed | ⚠️ Provisional | pypdf=384.1s, liteparse=371.0s, pdf_inspector=352.6s; ambient-load timing requires a quiet-machine rerun |
-| H3: Reranker benefit | ✅ | pypdf lift=-0.0179, liteparse lift=-0.0089 |
+| H2: Timing rerun | ✅ | pypdf=379.4s, liteparse=356.3s, pdf_inspector=346.7s |
+| H3: Reranker effect measured | pypdf −0.0179, liteparse −0.0089, pdf_inspector +0.0804 | Reranked Hit@5 lift |
 | Non-regression | ✅ | pypdf Cov@20=0.8125, liteparse Cov@20=0.8036 |
+
+**Gate 6C ordering:** Commit the Experiment 14 result artefacts separately. Only then amend ADR-020 or write its successor in a follow-up ADR/OpenSpec. Until then, `pdf_inspector` remains a candidate and the production default is unchanged.
+
+## Parser evidence
+
+All readers had 35 parse-start and 35 parse-end events, with zero parse-error events. The parser-only rerun did not embed or write indexes. Each frozen source PDF has 359 pages in total, measured independently with pypdf. Emitted-document totals are 359 for pypdf, 358 for LiteParse, and 35 for pdf-inspector. LlamaIndex-default `TokenCounter` totals are 339,825, 331,664, and 324,503 respectively. These token counts are corpus-size proxies, not qwen3-embedding tokenisation. `pdf_inspector` had the highest reranked Hit@5 (0.6250) and the shortest approved-rerun ingestion time (346.7s). Parser-only timings are excluded from the timing evidence.
 
 ## Cell metrics
 

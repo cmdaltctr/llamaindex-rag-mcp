@@ -121,6 +121,20 @@ def artefact_identity(parsed_documents: list[dict[str, Any]]) -> str:
     return f"sha256:{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"
 
 
+def _source_page_count(pdf_path: Path) -> int:
+    """Return the number of physical pages in a source PDF."""
+    from pypdf import PdfReader
+
+    return len(PdfReader(pdf_path).pages)
+
+
+def _token_count(text: str) -> int:
+    """Return the LlamaIndex-default token count for parsed text."""
+    from llama_index.core.utilities.token_counting import TokenCounter
+
+    return TokenCounter().get_string_tokens(text)
+
+
 def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
     """Parse every PDF through the production reader factory (D19 parse stage).
 
@@ -137,8 +151,9 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
     Returns:
         A dict with ``reader``, ``corpus_identity``, ``events``,
         ``parsed_documents`` (one record per file: file, source_sha256,
-        text, char_count, page_count, parse_time_s, error),
-        ``parsed_text_sha256_by_file`` and ``artefact_sha256``.
+        text, char_count, source_page_count, emitted_document_count,
+        token_count, parse_time_s, error), ``parsed_text_sha256_by_file``
+        and ``artefact_sha256``.
     """
     from rag_mcp.integrations.pdf.factory import get_pdf_reader
 
@@ -159,13 +174,14 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
             }
         )
         text = ""
-        page_count: int | None = None
+        source_page_count: int | None = None
+        emitted_document_count: int | None = None
+        token_count: int | None = None
         error: str | None = None
         start = time.perf_counter()
         try:
             documents = adapter.load_data(pdf_path)
             text = "\n".join(document.text for document in documents)
-            page_count = len(documents)
         except Exception as exc:  # a parse failure is recorded data, not a crash
             error = str(exc)
             events.append(
@@ -178,6 +194,10 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
                 }
             )
         parse_time_s = time.perf_counter() - start
+        token_count = _token_count(text)
+        if error is None:
+            source_page_count = _source_page_count(pdf_path)
+            emitted_document_count = len(documents)
         events.append(
             {
                 "event": "parse_end",
@@ -192,7 +212,9 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
                 "source_sha256": source_sha256,
                 "text": text,
                 "char_count": len(text),
-                "page_count": page_count,
+                "source_page_count": source_page_count,
+                "emitted_document_count": emitted_document_count,
+                "token_count": token_count,
                 "parse_time_s": parse_time_s,
                 "error": error,
             }

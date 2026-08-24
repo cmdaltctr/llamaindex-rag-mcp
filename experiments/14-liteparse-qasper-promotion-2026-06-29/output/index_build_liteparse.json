@@ -1,5 +1,5 @@
 {
-  "built_at_unix": 1787563539.6006699,
+  "built_at_unix": 1787571561.0572631,
   "reader": "liteparse",
   "embed_model": "qwen3-embedding:0.6b",
   "total_docs": 35,
@@ -80,13 +80,13 @@
     },
     "corpus_sha256": "sha256:466b21f0059e4b970f0a9a74fd8954c1cc84d0483f9afcf7c0c2153a45397f97"
   },
-  "artefact_identity": "sha256:473a74f8ab29c38fcb1fc0ee43e33c8d553bbd4020f94586c970401c20bdd4b1",
-  "parse_time_s_total": 1.45,
-  "embed_write_time_s": 369.56,
-  "ingestion_time_s": 371.01,
+  "artefact_identity": "sha256:7c347fe677f6af089396323762afe249b7b484d6c164377f74e628e7a9b487c3",
+  "parse_time_s_total": 1.59,
+  "embed_write_time_s": 354.73,
+  "ingestion_time_s": 356.32,
   "chroma_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/14-liteparse-qasper-promotion-2026-06-29/output/chroma_liteparse",
   "preflight_manifest": {
-    "repo_commit": "86e414959a34080b7c7431efe14be11d3422acd1",
+    "repo_commit": "9cf1cf883e6d9bff8cc5ee4937fb62d31a05b838",
     "dependency_lock_hash": "341f37d0bac15ae039a56a5ade585305d8d379dc452c66656f9addbb1761e6bd",
     "experiment_id": "14-liteparse-qasper-promotion",
     "protocol_version": "2.1",
@@ -135,7 +135,7 @@
       "threshold_score_kind": null,
       "rerank_policy_reason": null
     },
-    "timestamp_utc": "2026-08-24T09:19:30Z",
+    "timestamp_utc": "2026-08-24T11:33:26Z",
     "git_dirty": true,
     "null_reasons": {
       "vector_store.backend": "'backend' missing from provided vector_store mapping",
@@ -163,6 +163,6 @@
       "query_set_identity": "query_set_path not provided",
       "qrels_identity": "qrels_path not provided"
     },
-    "artefact_identity": "sha256:473a74f8ab29c38fcb1fc0ee43e33c8d553bbd4020f94586c970401c20bdd4b1"
+    "artefact_identity": "sha256:7c347fe677f6af089396323762afe249b7b484d6c164377f74e628e7a9b487c3"
   }
 }

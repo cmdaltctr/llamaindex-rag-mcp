@@ -13,7 +13,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 from experiments._lib.plan import ExperimentPlan
@@ -73,7 +73,9 @@ def test_parse_corpus_real_pdf_bytes() -> None:
         assert doc["char_count"] == len(doc["text"]) > 0
         assert doc["parse_time_s"] >= 0
         assert doc["error"] is None
-        assert doc["page_count"] is None or isinstance(doc["page_count"], int)
+        assert doc["source_page_count"] > 0
+        assert doc["emitted_document_count"] > 0
+        assert doc["token_count"] > 0
         assert (
             doc["source_sha256"]
             == hashlib.sha256((FIXTURES_DIR / doc["file"]).read_bytes()).hexdigest()
@@ -218,3 +220,142 @@ def test_run_cell_requests_diagnostics_and_persists_retrieval_ids(
     assert calls[0]["include_diagnostics"] is True
     assert result["per_query"][0]["retrieved"] == [{"id": "qasper-doc-1", "score": 0.9}]
     assert result["metrics"]["hit@1"] == 1.0
+
+
+# ---------------------------------------------------------------------------
+# Task 6.3.3 parse-stage artefact metrics: every parsed record must expose
+# a source-PDF page count and a token count, each distinct from the
+# emitted-document count, including the zero-token contract for failed
+# parses (empty text has a computable token count of zero).
+# ---------------------------------------------------------------------------
+
+
+class _StubAdapter:
+    """Deterministic stand-in for a production PDF reader adapter.
+
+    Both fixtures are single-page and pypdf emits one document per page,
+    so a real parse cannot separate "source-PDF pages" from "emitted
+    documents".  A stub with a controlled emitted-document list can.
+    """
+
+    def __init__(self, texts: list[str]) -> None:
+        self._texts = texts
+
+    def load_data(self, pdf_path: Path) -> list[SimpleNamespace]:
+        return [SimpleNamespace(text=text) for text in self._texts]
+
+
+class _RaisingAdapter:
+    """Adapter whose load_data always fails (failure-path contract)."""
+
+    def load_data(self, pdf_path: Path) -> list[SimpleNamespace]:
+        raise RuntimeError("stub parse failure")
+
+
+def _true_source_page_count(pdf_path: Path) -> int:
+    """Measure the source-PDF page count independently of the harness."""
+    from pypdf import PdfReader
+
+    return len(PdfReader(str(pdf_path)).pages)
+
+
+def test_parsed_records_expose_source_page_count() -> None:
+    """Each record's page_count equals the source-PDF page count.
+
+    Measured independently with pypdf over the frozen fixture PDFs.
+    """
+    result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+    for doc in result["parsed_documents"]:
+        assert doc["error"] is None
+        expected = _true_source_page_count(FIXTURES_DIR / doc["file"])
+        assert isinstance(doc["source_page_count"], int)
+        assert doc["source_page_count"] == expected
+
+
+def test_source_page_count_distinct_from_emitted_document_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """source_page_count must measure the source PDF, not len(documents).
+
+    A stub emitting two documents for the single-page fixture must not
+    change the recorded page count away from the true source page count,
+    and the emission itself must be recorded in its own field.
+    """
+    from rag_mcp.integrations.pdf import factory as pdf_factory
+
+    real = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+    stub = _StubAdapter([real["parsed_documents"][0]["text"], ""])
+
+    monkeypatch.setattr(pdf_factory, "get_pdf_reader", lambda reader: stub)
+    result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+
+    doc1 = result["parsed_documents"][0]
+    assert doc1["file"] == "doc1_climate.pdf"
+    assert doc1["error"] is None
+    # doc1_climate.pdf has exactly one source page; the stub emitted two
+    # documents.  The record must report the page count, not the emission.
+    assert _true_source_page_count(FIXTURES_DIR / doc1["file"]) == 1
+    assert doc1["source_page_count"] == 1
+    assert doc1["emitted_document_count"] == 2
+
+
+def test_parsed_records_expose_token_count() -> None:
+    """Each record exposes a token count derived from its text.
+
+    The bound 0 < token_count < char_count holds for any sane
+    tokenisation of the fixture texts (118/110 chars, 16/12 words) and
+    rules out copies of char_count or zero-filled placeholders.
+    """
+    result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+    for doc in result["parsed_documents"]:
+        assert doc["error"] is None
+        assert isinstance(doc["token_count"], int)
+        assert 0 < doc["token_count"] < doc["char_count"]
+
+
+def test_token_count_is_not_emitted_document_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """token_count must track the text, not the emitted-document count.
+
+    Under a stub emitting two documents (one non-empty, one empty) the
+    token count must remain a positive text-derived number distinct
+    from the emitted-document count of two.
+    """
+    from rag_mcp.integrations.pdf import factory as pdf_factory
+
+    real = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+    stub = _StubAdapter([real["parsed_documents"][0]["text"], ""])
+
+    monkeypatch.setattr(pdf_factory, "get_pdf_reader", lambda reader: stub)
+    result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+
+    doc1 = result["parsed_documents"][0]
+    assert doc1["error"] is None
+    assert doc1["emitted_document_count"] == 2
+    assert doc1["token_count"] != doc1["emitted_document_count"]
+    assert doc1["token_count"] > 0
+
+
+def test_parse_failure_records_zero_tokens_and_unknown_pages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Failed parses record the metrics they can know.
+
+    A parse failure has empty text, so its token count is zero; the
+    source page count is unknowable without parsing, so it stays None.
+    """
+    from rag_mcp.integrations.pdf import factory as pdf_factory
+
+    monkeypatch.setattr(pdf_factory, "get_pdf_reader", lambda reader: _RaisingAdapter())
+    result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
+
+    for doc in result["parsed_documents"]:
+        assert doc["error"] is not None
+        assert doc["text"] == ""
+        assert doc["char_count"] == 0
+        # Empty text has a computable token count: zero, not None
+        # (mirroring char_count, which is recorded as 0, not None).
+        assert doc["token_count"] == 0
+        # The source page count is unknowable without a successful parse.
+        assert doc["source_page_count"] is None

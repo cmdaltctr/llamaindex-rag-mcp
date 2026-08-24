@@ -309,9 +309,9 @@ Every PAUSE GATE MUST include an explicit decision-record check. The goal is not
 
 - [x] 6.3.1 Promote `experiment-10-real-pdf-parser-ab` template. (2026-08-23: harness live at `experiments/14-liteparse-qasper-promotion-2026-06-29/` since Stage 4; today amended to protocol v2.1 — three readers (pypdf, liteparse, pdf-inspector) × rerank off/on, 6 cells; plan/runner agreement tests green.)
 - [x] 6.3.2 Freeze PDF bytes and question/qrel set. (2026-08-23: 35 Qasper-dev arXiv PDFs (25 MB) downloaded deterministically — first 35 articles by sorted arXiv ID, zero skips; 112 queries, 107 with qrels; both protocol minimums met. Freeze record with per-file sha256 and corpus identity `sha256:466b21f0…`: `14/output/qasper_corpus_freeze.json`. Parquet provenance sha256 recorded; PDF bytes and qrels stay gitignored, digests are the frozen truth.)
-- [ ] 6.3.3 Parse each PDF with all three readers; record parser invocation, parse failures, page/text/token counts and parse time before embeddings.
-- [ ] 6.3.4 Build separate immutable indexes from parser outputs using identical embedding/chunking configuration.
-- [ ] 6.3.5 Evaluate paired quality and decompose parse vs embed/write vs query timing.
+- [x] 6.3.3 Parse each PDF with all three readers; record parser invocation, parse failures, page/text/token counts and parse time before embeddings. (2026-08-24: each reader recorded 35 parse-start/parse-end events and zero parse errors. The parser-only rerun records 359 source-PDF pages for every reader, emitted-document totals of 359/358/35, and LlamaIndex-default token totals of 339,825/331,664/324,503 for pypdf/LiteParse/pdf-inspector. It ran before embedding and did not write indexes; timing evidence remains the approved quiet rerun.)
+- [x] 6.3.4 Build separate immutable indexes from parser outputs using identical embedding/chunking configuration. (2026-08-24: three distinct artefact identities and immutable Chroma collection identities built from the frozen 35-PDF corpus with `qwen3-embedding:0.6b`.)
+- [x] 6.3.5 Evaluate paired quality and decompose parse vs embed/write vs query timing. (2026-08-24: all six 112-query cells complete. Rerun ingestion times: pypdf 379.4s, LiteParse 356.3s, pdf-inspector 346.7s; see `14/output/results.md` and the deviation record.)
 
 ### PAUSE GATE 6C — PDF result
 
