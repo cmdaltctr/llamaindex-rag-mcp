@@ -207,7 +207,9 @@ def main() -> None:
     output_dir = SCRIPT_DIR / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    gt_path = output_dir / "qasper_qrels.json"
+    # The frozen qrels live at the experiment root (written there by
+    # prepare_qasper_pdfs.py and gitignored); output/ holds only artefacts.
+    gt_path = SCRIPT_DIR / "qasper_qrels.json"
     gt = _load_ground_truth(gt_path)
     queries = gt.get("queries", [])
     qrels = gt.get("qrels", {})
@@ -235,7 +237,8 @@ def main() -> None:
 
     # Load ingestion times from index build metadata
     ingestion_times: dict[str, float] = {}
-    for reader in ["pypdf", "liteparse"]:
+    # Protocol v2.1: three readers — pdf_inspector timing is H2 evidence too.
+    for reader in ["pypdf", "liteparse", "pdf_inspector"]:
         build_info_path = output_dir / f"index_build_{reader}.json"
         if build_info_path.exists():
             build_info = json.loads(build_info_path.read_text(encoding="utf-8"))
