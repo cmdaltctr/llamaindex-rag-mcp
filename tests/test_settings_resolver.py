@@ -183,6 +183,17 @@ def _fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     return Settings(_env_file=None)
 
 
+@pytest.mark.parametrize("reader", ["liteparse", "pdf_inspector"])
+def test_explicit_pdf_reader_is_preserved(
+    reader: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Configured concrete PDF readers must not silently fall back to auto."""
+    monkeypatch.setenv("PDF_READER", reader)
+
+    assert _fresh_settings(monkeypatch).pdf_reader == reader
+
+
 # ── Default resolution ──────────────────────────────────────────────────
 
 

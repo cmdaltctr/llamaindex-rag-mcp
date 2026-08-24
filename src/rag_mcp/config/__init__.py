@@ -273,7 +273,7 @@ class Settings(StorageValidationMixin, BaseSettings):
 
         # PDF reader — governed by the pdf-reader capability spec, which
         # has its own warn-and-fallback contract.  Unchanged here.
-        if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
+        if self.pdf_reader not in ("auto", "liteparse", "pdf_inspector", "pypdfium2", "pypdf"):
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
             object.__setattr__(self, "pdf_reader", "auto")
 
