@@ -12,6 +12,23 @@ uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest --cov=rag_mcp      # Coverage
 ```
 
+## WHEN YOU WRITE
+
+### Explaining problems and errors
+
+**MUST ADHERE**
+When you hit a bug, error, or design problem, structure the response as:
+1. What's wrong — one or two plain English sentences. No jargon without a plain translation in the same sentence.
+2. What to do — a numbered list of concrete actions. Not a bullet mentioning the problem exists; an instruction I can follow.
+3. Never describe a problem without action points attached. Never make me ask "what's next" — give it upfront. If there's more than one valid fix, list the options as numbered choices, not a single buried recommendation.
+4. Assume I'm not going to ask for a plain English version. Write it that way the first time.
+5. Use British English in all except code: documentation, comments, commit messages, agent outputs, proposals, papers, and user-facing text.
+
+### IMPORTANT: TECHNICAL WRITING (STE Rules)
+
+Write technical documentation in ASD-STE100 Simplified Technical English where practical: use clear active voice, one action per instruction, short sentences (maximum 20 words for procedures), unambiguous terms, and avoid idiom, filler, and unexplained abbreviations; use the official ASD-STE100 approved dictionary when available.
+
+
 ## Architecture Invariants
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
