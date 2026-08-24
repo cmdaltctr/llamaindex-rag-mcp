@@ -204,6 +204,17 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
+
+    # Retrieval resolves the composition-root default EffectiveSettings
+    # (ADR-037); no entry point imported compose.  Install it explicitly
+    # (mirrors 873e6d3 in the 10b harness) so search() can resolve a
+    # default without raising.
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.config import get_settings
+    from rag_mcp.core.settings import set_default_effective_settings
+
+    set_default_effective_settings(settings_to_effective(get_settings()))
+
     output_dir = SCRIPT_DIR / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
 

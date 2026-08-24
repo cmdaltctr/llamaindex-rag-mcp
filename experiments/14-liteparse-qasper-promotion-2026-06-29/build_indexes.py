@@ -323,6 +323,18 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
+
+    # The liteparse reader resolves the composition-root default
+    # EffectiveSettings (ADR-037); no entry point imported compose, so
+    # install it explicitly.  Deliberately NOT ensure_runtime_setup():
+    # that would build the ambient .env store and embed model, overriding
+    # the per-parser experiment store built below.
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.config import get_settings
+    from rag_mcp.core.settings import set_default_effective_settings
+
+    set_default_effective_settings(settings_to_effective(get_settings()))
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     corpus_dir = args.corpus_dir
