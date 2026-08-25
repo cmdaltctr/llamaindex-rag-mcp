@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Reranker diagnostics report the backend and execution path that actually ran
 
