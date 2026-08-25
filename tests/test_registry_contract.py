@@ -334,3 +334,27 @@ def test_reranker_onnx_and_torch_registered() -> None:
     names = retrieval_registry.available()
     assert "reranker_onnx" in names, "reranker_onnx not registered"
     assert "reranker_torch" in names, "reranker_torch not registered"
+
+
+# ── PDF reader: config accepted values track the registry ─────────────────
+
+
+def test_config_accepts_every_registered_pdf_reader() -> None:
+    """Every registered PDF reader survives Settings construction unchanged.
+
+    Spec pdf-reader: adding a reader touches exactly two places — the
+    accepted values in ``config/`` and one ``register()`` call. If the
+    config tuple is forgotten, the validator silently coerces the new
+    reader to ``auto`` and the registry check never fires. This pin
+    turns that drift into a build failure.
+    """
+    from rag_mcp.config import Settings
+    from rag_mcp.integrations.pdf import registry as pdf_registry
+
+    for name in pdf_registry.available():
+        settings = Settings(_env_file=None, pdf_reader=name)
+        assert settings.pdf_reader == name, (
+            f"config validator coerced registered reader {name!r} to "
+            f"{settings.pdf_reader!r}; add it to the accepted values in "
+            f"src/rag_mcp/config/__init__.py"
+        )

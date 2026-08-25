@@ -90,14 +90,14 @@ def resolve_pdf_reader(settings: Settings) -> str:
         from .integrations.pdf import registry as pdf_registry
 
         if reader not in pdf_registry.available():
-            logger.error("PDF_READER=%s is unregistered; falling back to pypdf.", reader)
+            logger.error("PDF_READER=%r is unregistered; falling back to pypdf.", reader)
             return "pypdf"
         try:
             pdf_registry.probe(reader)
             return reader
         except ImportError:
             logger.error(
-                "PDF_READER=%s was requested but the package is not "
+                "PDF_READER=%r was requested but the package is not "
                 "installed. Falling back to pypdf.",
                 reader,
             )

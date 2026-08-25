@@ -518,6 +518,33 @@ class TestResolvePdfReader:
             assert compose.resolve_pdf_reader(settings) == "pypdf"
         assert any("fastparser" in r.message and "registered" in r.message for r in caplog.records)
 
+    def test_unregistered_reader_log_repr_escapes_value(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """The unregistered-reader error repr-escapes the settings value.
+
+        The value reaches this branch only when Settings bypass the
+        config validator (direct construction). A newline-bearing value
+        rendered with ``%s`` could forge additional log lines; ``%r``
+        escapes it. The rendered message must contain the ``repr`` form
+        and must not contain a literal newline inside the value.
+        """
+        import logging
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        hostile = "evil\nreader"
+        settings = Settings(_env_file=None)
+        object.__setattr__(settings, "pdf_reader", hostile)
+
+        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+            assert compose.resolve_pdf_reader(settings) == "pypdf"
+        record = next(r for r in caplog.records if "unregistered" in r.message)
+        assert repr(hostile) in record.message
+        assert "evil\nreader" not in record.message
+
     @pytest.fixture()
     def pdf_registry_sandbox(self):
         """Snapshot and restore the PDF reader registry around a test.

@@ -70,4 +70,4 @@ hard-coded `auto` preference sequence.
 - Dependency lock: `uv.lock` (`pdf-inspector` 1.17.0)
 - ADR-020: `docs/adr/020-use-liteparse-as-pdf-reader.md`
 - PDF-reader contract: `openspec/specs/pdf-reader/spec.md`
-- OpenSpec change: `openspec/changes/promote-pdf-inspector-default-reader/`
+- OpenSpec change: `openspec/changes/archive/2026-08-24-promote-pdf-inspector-default-reader/`

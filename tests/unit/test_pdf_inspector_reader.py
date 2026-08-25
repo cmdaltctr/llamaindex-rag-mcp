@@ -79,7 +79,7 @@ def test_load_data_passthroughs_mock_markdown(monkeypatch, tmp_path):
 
 
 def test_missing_package_raises_actionable_importerror(monkeypatch, tmp_path):
-    """Without pdf_inspector installed, load_data raises an ImportError naming the extra."""
+    """Without pdf_inspector installed, load_data raises an ImportError naming the fix."""
     monkeypatch.setitem(sys.modules, "pdf_inspector", None)
 
     from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
@@ -91,5 +91,6 @@ def test_missing_package_raises_actionable_importerror(monkeypatch, tmp_path):
         PdfInspectorReader().load_data(file=fake_pdf)
 
     message = str(excinfo.value)
-    assert "pdf-inspector" in message
+    assert "pdf_inspector" in message
     assert "install" in message.lower()
+    assert "uv sync" in message

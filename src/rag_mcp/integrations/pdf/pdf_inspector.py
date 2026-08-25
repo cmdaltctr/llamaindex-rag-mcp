@@ -7,9 +7,9 @@ headings, lists, and tables — without OCR or ML models. Strong on the
 two-column academic layouts the Qasper corpus (Experiment 14) is built
 from.
 
-Optional dependency behind the ``pdf-inspector`` extra; the import is
-lazy inside ``load_data`` per the ADR-024 pattern shared by every
-optional integration.
+Base dependency and the configured default reader (ADR-050); the
+import stays lazy inside ``load_data`` per the ADR-024 pattern shared
+by the integrations.
 """
 
 from __future__ import annotations
@@ -47,9 +47,7 @@ class PdfInspectorReader:
         try:
             import pdf_inspector
         except ImportError as exc:
-            raise ImportError(
-                "pdf_inspector is not installed. Install with: uv sync --extra pdf-inspector"
-            ) from exc
+            raise ImportError("pdf_inspector is not installed. Install with: uv sync") from exc
 
         from llama_index.core import Document
 
