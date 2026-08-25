@@ -94,7 +94,8 @@ LOCAL_BACKEND: llamacpp
 CLOUD_BACKEND: openrouter
 
 # ── PDF reader ────────────────────────────────────────────────────────
-PDF_READER: auto
+# Change this selector, not runtime code, to choose another reader.
+PDF_READER: pdf_inspector
 LITEPARSE_OCR_ENABLED: false
 
 # ── Codebase map ──────────────────────────────────────────────────────

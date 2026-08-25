@@ -361,12 +361,15 @@ degradation from the configured mode is reported in the ingestion result.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `PDF_READER` | `auto` | `auto`, `pypdf`, `pypdfium2`, `liteparse`, or `pdf_inspector` |
+| `PDF_READER` | `pdf_inspector` | `auto`, `pypdf`, `pypdfium2`, `liteparse`, or `pdf_inspector` |
 | `LITEPARSE_OCR_ENABLED` | `false` | OCR for scanned PDFs |
 | `LITEPARSE_NUM_WORKERS` | — | Parallel workers |
 
-`auto` uses LiteParse if installed, otherwise pypdf. Tests pin `pypdf` for
-determinism.
+The packaged default `pdf_inspector` is a base dependency
+([ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)).
+`auto` keeps the LiteParse → pypdfium2 → pypdf probe order. A configured
+reader that is not importable logs an error and falls back to pypdf. Tests
+pin `pypdf` for determinism.
 
 ### Document backend
 

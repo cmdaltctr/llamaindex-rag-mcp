@@ -177,7 +177,7 @@ class Settings(StorageValidationMixin, BaseSettings):
     embed_model: str = ""
 
     # ── PDF reader ────────────────────────────────────────────────
-    pdf_reader: str = "auto"
+    pdf_reader: str = "pdf_inspector"
     liteparse_num_workers: int | None = None
     liteparse_ocr_enabled: LegacyBool = False
 

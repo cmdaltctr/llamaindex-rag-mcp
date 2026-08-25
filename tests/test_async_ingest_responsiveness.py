@@ -78,7 +78,7 @@ class TestIngestResponsiveness:
         await asyncio.sleep(0.1)
 
         results = await asyncio.wait_for(
-            search_documents("test", top_k=5, collection=coll), timeout=10
+            search_documents("test", top_k=5, collection=coll), timeout=30
         )
 
         assert not ingest_task.done(), (

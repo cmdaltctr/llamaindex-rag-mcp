@@ -47,9 +47,10 @@ dependencies = [
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
     "llama-index-llms-ollama>=0.9.0",
     "docx2txt>=0.9",
-    # PDF parser (Rust + PDFium, Apache-2.0). Default reader when installed.
-    # See ADR-020. Prebuilt wheels for macOS, Linux, Windows.
+    # PDF parser fallback (Rust + PDFium, Apache-2.0). See ADR-020.
     "liteparse>=2.0.0",
+    # PDF parser default (Rust markdown extraction, MIT). See ADR-050.
+    "pdf-inspector>=1.17.0",
     # Code graph: AST extraction and community detection.
     # tree-sitter-language-pack 1.12.3 fixes a silent-failure mode where
     # get_parser() returned a vendored parser class that produced unusable
@@ -82,10 +83,8 @@ hybrid = [
 pdf-pypdfium2 = [
     "pypdfium2>=4.0.0",
 ]
-# Optional pdf-inspector reader (Experiment 14 third arm, 2026-08-23).
-# Firecrawl's Rust PDF classifier + markdown extractor (MIT, PyO3
-# bindings, ~4 MB wheel). No OCR/ML models; strong multi-column reading
-# order. Install: uv sync --extra pdf-inspector.
+# Compatibility extra for existing `uv sync --extra pdf-inspector` commands.
+# pdf-inspector is a base dependency and the configured default (ADR-050).
 pdf-inspector = [
     "pdf-inspector>=1.17.0",
 ]

@@ -346,7 +346,7 @@ peers stays an integration.
 Every Python module under `src/rag_mcp/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
-<!-- integration-inventory:start count=10 -->
+<!-- integration-inventory:start count=11 -->
 | Module | Availability | Selector | Shared contract | Fallback owner | Disposition |
 |---|---|---|---|---|---|
 | `rag_mcp.integrations` | Native | None | Package facade | None | Facade; exports stable integration APIs only |
@@ -357,6 +357,7 @@ test fails when a module is missing from this table.
 | `rag_mcp.integrations.pdf.factory` | Native | `PDF_READER=auto` | Reader instance with `load_data` | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers) | Registry-backed factory; `auto` stays ordered capability resolution |
 | `rag_mcp.integrations.pdf.registry` | Native | `PDF_READER` concrete values | Reader class with `load_data` | None; unknown names raise | Lazy registry for concrete PDF readers |
 | `rag_mcp.integrations.pdf.liteparse` | Base dependency (despite the stale docstring naming an extra) | `PDF_READER=liteparse` | `load_data` | `compose.resolve_pdf_reader` `auto` probe | Registered reader strategy |
+| `rag_mcp.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050) | `load_data` | `compose.resolve_pdf_reader` missing-backend error → pypdf | Registered reader strategy; configuration-owned default |
 | `rag_mcp.integrations.pdf.pypdf` | Base, via `llama-index-readers-file` | `PDF_READER=pypdf` | `load_data` | Terminal `auto` tier | Registered reader strategy |
 | `rag_mcp.integrations.pdf.pypdfium` | Optional `pdf-pypdfium2` extra | `PDF_READER=pypdfium2` | `load_data` | None | Registered reader strategy |
 <!-- integration-inventory:end -->

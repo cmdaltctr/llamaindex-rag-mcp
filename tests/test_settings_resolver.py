@@ -63,7 +63,7 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("RETRIEVAL__HYBRID_RRF_K", "retrieval.hybrid_rrf_k", 60),
     ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25"),
     # PDF reader.
-    ("PDF_READER", "pdf_reader", "auto"),
+    ("PDF_READER", "pdf_reader", "pdf_inspector"),
     ("LITEPARSE_NUM_WORKERS", "liteparse_num_workers", None),
     ("LITEPARSE_OCR_ENABLED", "liteparse_ocr_enabled", False),
     # Metadata.

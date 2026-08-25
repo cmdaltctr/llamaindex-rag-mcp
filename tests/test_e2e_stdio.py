@@ -58,6 +58,8 @@ def test_stdio_server_lists_tools() -> None:
             "list_indexed_documents",
             "list_collections",
             "delete_documents",
+            "get_codebase_map",
+            "change_collection_profile",
         }
     finally:
         proc.terminate()

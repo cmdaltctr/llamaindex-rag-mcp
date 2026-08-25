@@ -4,6 +4,7 @@
 **Status:** Accepted
 **Update:** Cloud constraint superseded by ADR-024 — local-first, cloud allowed as opt-in.
 **Amended:** 2026-08-04 — Phase 5 relocated the reader factory from `src/rag_mcp/readers/` to `src/rag_mcp/integrations/pdf/`. Factory dispatch behaviour and the `auto` fallback are unchanged. The old `readers/` path resolves via a deprecated re-export shim (removal in v2.0.0). See ADR-036 (Transport Separation).
+**Amended:** 2026-08-24 — Packaged-default selection now governed by ADR-050 (`pdf_inspector`, set in configuration). Clauses below that set or imply the packaged default — including the interim `pypdf` implicit default and LiteParse as default-when-installed — are superseded by ADR-050; the historical narrative stands as written. This ADR's factory architecture, accepted values, and `auto` fallback policy remain in force.
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context

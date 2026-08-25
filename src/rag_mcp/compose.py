@@ -82,16 +82,18 @@ def resolve_sparse_backend(settings: Settings) -> str:
 def resolve_pdf_reader(settings: Settings) -> str:
     """Resolve the configured PDF reader to a concrete backend name.
 
-    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
-    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
+    Explicit values probe their registered dependency metadata. ``auto``
+    keeps the established LiteParse → pypdfium2 → pypdf capability policy.
     """
     reader = settings.pdf_reader
-    if reader == "pypdf":
-        return "pypdf"
+    if reader != "auto":
+        from .integrations.pdf import registry as pdf_registry
 
-    if reader in ("liteparse", "pypdfium2"):
+        if reader not in pdf_registry.available():
+            logger.error("PDF_READER=%s is unregistered; falling back to pypdf.", reader)
+            return "pypdf"
         try:
-            __import__(reader)
+            pdf_registry.probe(reader)
             return reader
         except ImportError:
             logger.error(
@@ -101,7 +103,7 @@ def resolve_pdf_reader(settings: Settings) -> str:
             )
             return "pypdf"
 
-    # auto resolution: probe in preference order.
+    # auto resolution: probe the established capability preference order.
     for backend in ("liteparse", "pypdfium2"):
         try:
             __import__(backend)

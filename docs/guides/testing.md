@@ -99,9 +99,10 @@ re-exports it does nothing at all.
 `reset_model_cache()` in setup and teardown. The model is cached process-wide,
 so a leftover instance leaks into the next test.
 
-**Pin the PDF reader.** Tests need `pdf_reader="pypdf"`. The default is `auto`,
-which probes for LiteParse and behaves differently depending on what is
-installed. The conftest default already sets this.
+**Pin the PDF reader.** Tests need `pdf_reader="pypdf"`. The packaged default
+is `pdf_inspector`, and `auto` probes for LiteParse. Each reader emits
+different document boundaries, so only `pypdf` keeps tests deterministic. The
+conftest default already sets this.
 
 **Metadata extraction is off in tests.** The conftest default sets
 `extraction_mode="disabled"`. The real default is `llamaindex`, which would make
