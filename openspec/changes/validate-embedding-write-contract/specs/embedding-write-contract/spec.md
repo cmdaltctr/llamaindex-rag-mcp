@@ -11,25 +11,44 @@ write.
 
 The system SHALL use one production-core validator before every
 `VectorStore.write_nodes` or `VectorStore.upsert_precomputed` mutation. The
-validator SHALL inspect the complete batch before either vector-store adapter
-receives a write request. The validator SHALL receive the collection name,
-embedding provider/model diagnostic, and stable node or row identifiers.
+validator SHALL inspect the complete batch, and validation SHALL complete
+before **any backend SDK or persistent-store mutation** — collection
+creation, schema derivation, row conversion, and the SDK write itself
+included. Adapter code SHALL invoke the shared validation immediately
+before its backend SDK mutation as the enforcement point. The validator
+SHALL receive the collection name, embedding provider/model diagnostic,
+and stable node or row identifiers. Both `write_nodes`-produced
+embeddings and valid precomputed vectors SHALL pass through the same
+rule.
 
 #### Scenario: Valid batch reaches a vector store
 
-- **GIVEN** every vector is non-empty, numeric, and has one shared dimension
+- **GIVEN** every vector is non-empty, numeric, finite, and has one shared dimension
 - **AND** the collection is absent or has that dimension
 - **WHEN** a production write path submits the batch
 - **THEN** the validator MUST permit the write
 - **AND** the selected adapter MAY persist the complete batch
 
-#### Scenario: Rejected batch does not reach an adapter
+#### Scenario: Rejected batch does not reach a backend SDK mutation
 
 - **GIVEN** a batch has at least one structural vector error
 - **WHEN** any production write path submits the batch
-- **THEN** the validator MUST reject the complete batch before an adapter write
+- **THEN** the validator MUST reject the complete batch before any backend SDK or persistent-store mutation
 - **AND** no row from that batch MUST persist
 - **AND** the collection generation MUST NOT advance because of that batch
+
+#### Scenario: Empty embedding batch is rejected
+
+- **GIVEN** a write path prepares a batch with no embeddings or no nodes
+- **WHEN** the batch is submitted
+- **THEN** the write MUST fail with the shared diagnostic before any mutation
+
+#### Scenario: Missing embeddings are rejected
+
+- **GIVEN** the embedding count is smaller than the node or row count
+- **WHEN** the batch is submitted
+- **THEN** the write MUST fail with the shared diagnostic naming the shortfall
+- **AND** no partial write MUST occur
 
 ### Requirement: Empty vectors are rejected
 
@@ -57,6 +76,20 @@ collection, and the embedding provider/model diagnostic.
 - **WHEN** a write path validates the batch
 - **THEN** the write MUST fail before any adapter mutation
 - **AND** the error MUST identify the affected identifier
+
+### Requirement: Non-finite vector values are rejected
+
+The validator SHALL reject a batch containing a vector element that is not
+finite (NaN or infinity). The error SHALL identify the affected node or row
+identifiers, the collection, and the embedding provider/model diagnostic.
+
+#### Scenario: NaN or infinity in a candidate vector
+
+- **GIVEN** a candidate vector contains NaN or an infinite value
+- **WHEN** a write path validates the batch
+- **THEN** the write MUST fail before any adapter mutation
+- **AND** the error MUST identify the affected identifier and the non-finite
+  element position or index of the vector within the batch
 
 ### Requirement: A batch has one dimension
 
@@ -106,7 +139,8 @@ SHALL NOT create a collection vector schema or advance collection generation.
 ### Requirement: Experiment 14 reuses production validation
 
 The Experiment 14 index builder SHALL call the shared production validator
-before its precomputed vector-store write. It SHALL NOT own an independent
+before its precomputed vector-store write and **before deleting or
+recreating an existing collection**. It SHALL NOT own an independent
 structural-vector validation rule.
 
 #### Scenario: Experiment 14 receives malformed embeddings
@@ -115,6 +149,13 @@ structural-vector validation rule.
 - **WHEN** the builder prepares its precomputed upsert
 - **THEN** the shared validator MUST stop the write with its standard diagnostic
 - **AND** the builder MUST NOT call `upsert_precomputed`
+
+#### Scenario: Experiment 14 validates before destructive rebuild
+
+- **GIVEN** an existing collection is present and the embedder output is malformed
+- **WHEN** the builder runs
+- **THEN** the shared validation MUST fail before `delete_collection` or `create_collection` executes
+- **AND** the existing collection and its contents MUST remain intact
 
 ### Requirement: Backend coverage proves the same contract
 

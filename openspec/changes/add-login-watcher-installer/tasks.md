@@ -4,7 +4,7 @@
 - [ ] 1.2 Implement watch directory validation with `~` expansion, absolute resolution, directory checks, and clear error messages.
 - [ ] 1.3 Implement deterministic LaunchAgent label generation with a `com.rag-mcp.watch.` prefix and safe slug/hash handling.
 - [ ] 1.4 Implement log path calculation under `~/Library/Logs/rag-mcp/` and plist path calculation under `~/Library/LaunchAgents/`.
-- [ ] 1.5 Implement absolute command resolution for generated `ProgramArguments`, including a safe default and an explicit override option.
+- [ ] 1.5 Implement absolute command resolution for generated `ProgramArguments`: resolve the installed `rag-mcp` console executable (never `sys.executable -m rag_mcp.cli` — deleted v1 module) and support an explicit `--command-path` override.
 
 ## 2. Plist Write and launchctl Operations
 
@@ -24,7 +24,7 @@
 
 ## 4. Initial Catch-up Ingestion
 
-- [ ] 4.1 Wire optional initial catch-up ingestion to existing `ingest_path_async(path, collection_name=collection)`.
+- [ ] 4.1 Wire optional initial catch-up ingestion to the existing `rag-mcp ingest` flow: resolve the collection profile once via the composition root, then call `ingest_path_async(path, collection_name=collection, effective_settings=...)` with the resolved settings.
 - [ ] 4.2 Ensure initial ingest runs before LaunchAgent load/start and reports success/error counts to the user.
 - [ ] 4.3 Prevent load/start after initial ingest failure unless the user explicitly confirms continuing or the documented continue/force option is provided.
 
@@ -33,6 +33,6 @@
 - [ ] 5.1 Add unit tests for label generation, path validation, plist rendering, dry-run behaviour, and overwrite protection.
 - [ ] 5.2 Add CLI tests for `--help`, non-interactive success, non-interactive missing path failure, wizard prompts, invalid folder re-prompt, and force overwrite.
 - [ ] 5.3 Add mocked subprocess tests for launchctl command construction, success reporting, and failure reporting.
-- [ ] 5.4 Add tests proving initial ingest receives the selected collection and runs before load/start.
+- [ ] 5.4 Add tests proving initial ingest receives the selected collection and injected effective settings, and runs before load/start.
 - [ ] 5.5 Add documentation or README usage examples for guided install, scriptable install, dry-run preview, updating an existing watcher, log locations, and macOS-only limitations.
 - [ ] 5.6 Run targeted tests for the new module and CLI, then run the relevant existing watcher/CLI test suite.

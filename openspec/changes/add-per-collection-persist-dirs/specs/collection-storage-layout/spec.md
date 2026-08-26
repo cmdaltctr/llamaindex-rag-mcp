@@ -17,53 +17,40 @@ backend.
 ### Requirement: LanceDB collections are isolated by native layout
 
 The system SHALL store each LanceDB collection as its own table directory
-at `{lancedb_uri}/{collection_name}.lance`. Operations on different
-collections SHALL NOT share a table directory or a per-collection write
-lock.
+at `{lancedb_uri}/{collection_name}.lance`. This requirement pins the
+on-disk layout only. It makes no claim about write concurrency: within
+one process, mutations serialise on the process-global ingestion mutation
+lock regardless of collection, and concurrent writes from separate
+processes are unverified.
 
 #### Scenario: Two LanceDB collections resolve to distinct storage
 
 - **WHEN** two collections are created in one LanceDB store
 - **THEN** each MUST occupy a distinct `.lance` directory under the URI
-- **AND** concurrent writes to the two collections MUST NOT serialise on
-  a shared collection-level file lock
 
-### Requirement: Chroma local collections are isolated by default
+#### Scenario: Layout regression is pinned against a real store
 
-When the Chroma backend runs in local mode, the system SHALL resolve each
-unmapped collection to `{chroma_persist_dir}/{collection_name}/`, giving
-each collection its own SQLite file. Operations for different resolved
-directories SHALL use different store instances.
+- **WHEN** the regression test creates two collections in a real
+  temporary LanceDB store
+- **THEN** the observed table paths MUST remain
+  `{lancedb_uri}/{collection_name}.lance` for each collection
+- **AND** a future adapter change that co-locates collections MUST fail
+  the test
 
-#### Scenario: Two unmapped Chroma collections are isolated
+### Requirement: Storage layout documentation states concurrency honestly
 
-- **WHEN** operations select stores for two different unmapped collections
-- **THEN** their resolved persist directories MUST differ
-- **AND** their selected store instances MUST differ
+The documented storage-layout contract SHALL distinguish the
+process-level ingestion mutation lock (process-global, serialises
+mutations across collections within one process), the backend's physical
+table/directory layout, and cross-process write safety. The documentation
+SHALL state that concurrent writes from separate processes are unverified
+for both backends.
 
-### Requirement: Explicit mappings opt into shared Chroma storage
+#### Scenario: Documentation separates the three layers
 
-The system SHALL resolve a mapped collection to
-`{chroma_persist_dir}/{group_name}/`. Collections mapped to the same group
-SHALL reuse one store instance and one SQLite database.
-
-#### Scenario: Two Chroma collections share an explicit group
-
-- **WHEN** two collection names map to the same group name
-- **THEN** their resolved persist directories MUST be equal
-- **AND** their selected store instance MUST be shared
-
-### Requirement: Flat-layout Chroma migration preserves stored records
-
-The system SHALL migrate each collection from a legacy flat
-`chroma_persist_dir` through the ChromaDB API. It SHALL copy IDs,
-embeddings, documents and metadata without invoking the embedding
-provider. The migration SHALL operate only when the Chroma backend is
-selected and SHALL NOT touch LanceDB stores.
-
-#### Scenario: Migration preserves Chroma collection data
-
-- **WHEN** a flat-layout Chroma collection is migrated to its resolved
-  directory
-- **THEN** its IDs, embeddings, documents and metadata MUST match the
-  source
+- **WHEN** a reader consults the storage-layout documentation
+- **THEN** it MUST find the process-global mutation lock, the per-backend
+  on-disk layout, and cross-process write safety described as distinct
+  concerns
+- **AND** it MUST NOT find any claim that cross-collection writes are
+  contention-free

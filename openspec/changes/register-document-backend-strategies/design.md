@@ -35,11 +35,16 @@ Missing credentials resolve to local at startup. Runtime Azure failures retry, t
 
 Azure imports its SDK only while building a client. Integration adapters receive plain settings data and do not import ingestion business logic.
 
+### 5. Validate backend names at the composition boundary
+
+The registry owns the accepted backend names. `config/` continues to declare `document_backend` as a plain string and must not import the runtime registry (leaf invariant). Startup validation moves to the composition boundary in `compose.py`, following the existing `community_algorithm` precedent, and replaces the hard-coded `("local", "azure")` tuple currently enforced in the settings validator. The Azure credential check stays in settings because it is graceful degradation under the cloud-opt-in boundary, not name validation.
+
 ## Risks / Trade-offs
 
 - Metadata parity can drift between readers. Contract fixtures compare required fields.
 - Moving fallback ownership can double-read documents. Tests assert one retry budget and one local fallback.
 - A registry adds indirection to one branch. Startup validation and contract tests make failures earlier and clearer.
+- `compose.py` sits at the 498-line ceiling. Implementation must land startup validation through a small helper extraction or a separate focused module, and must not bundle a broad refactor.
 
 ## Migration Plan
 

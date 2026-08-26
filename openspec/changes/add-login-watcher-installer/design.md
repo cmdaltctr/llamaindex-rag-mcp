@@ -29,16 +29,18 @@ macOS supports this without a GUI dependency through per-user LaunchAgents in `~
    - Rationale: The command is discoverable through `rag-mcp --help`, can have rich option help, and mirrors the user's desired `rag-mcp install-login-watcher --help` experience.
    - Alternative considered: A separate script. Rejected because package entry-point discovery and testing are simpler when it is part of the existing CLI.
 3. **Represent installation logic in a small dedicated module.**
-   - Rationale: `cli.py` should own prompts/output while a `login_watcher.py`-style module owns plist rendering, label sanitisation, path calculation, atomic writes, and launchctl command construction.
-   - Alternative considered: Inline all code in `cli.py`. Rejected to keep unit tests focused and avoid further enlarging CLI implementation.
+   - Rationale: The CLI command module (a new file under `src/rag_mcp/transports/cli/`, registered on the shared command-group import line) should own prompts/output while a dedicated installer module owns plist rendering, label sanitisation, path calculation, atomic writes, and launchctl command construction.
+   - Alternative considered: Inline all code in the command module. Rejected to keep unit tests focused and avoid enlarging CLI modules.
 
-4. **Resolve the command executable using `sys.executable -m rag_mcp.cli` or a discovered `rag-mcp` path.**
+4. **Resolve and persist the absolute installed `rag-mcp` console executable, with an explicit override.**
    - Rationale: LaunchAgents run in a sparse environment, so relying on the user's interactive shell PATH is fragile. The plist should use an absolute executable path and explicit arguments.
-   - Preferred approach: default to the current Python interpreter module invocation when reliable, with an override option `--command-path` for packaged/brew/uv-installed environments.
+   - Preferred approach: resolve the absolute path of the installed `rag-mcp` console executable (the `project.scripts` entry point `rag_mcp.transports.cli:run_cli`) at install time and persist it as `ProgramArguments[0]`. Do not use `sys.executable -m rag_mcp.cli` — `rag_mcp.cli` is a deleted v1 module and that invocation fails on v2+ layouts.
+   - Provide `--command-path` as an explicit override for environments where executable resolution is ambiguous (multiple installs, managed Python, packaged distributions).
    - Alternative considered: `ProgramArguments = ["rag-mcp", ...]`. Rejected as default because launchd may not inherit PATH entries such as `~/.local/bin` or Homebrew paths.
 
-5. **Optional catch-up ingest runs before loading the agent.**
-   - Rationale: The watcher only sees events after it starts. A guided prompt can run `ingest_path_async(folder, collection_name=collection)` once to avoid a cold-start gap.
+5. **Optional catch-up ingest runs before loading the agent, mirroring the ingest CLI.**
+   - Rationale: The watcher only sees events after it starts. A guided prompt can run one catch-up ingest to avoid a cold-start gap.
+   - The catch-up must follow the current `rag-mcp ingest` flow: resolve the collection's profile once via the composition root's profile resolver, obtain the resulting `EffectiveSettings`, and inject them into `ingest_path_async(path, collection_name=collection, effective_settings=...)`. Do not read global settings repeatedly inside the catch-up loop.
    - Alternative considered: Make the LaunchAgent run `ingest` then `watch` every login. Rejected because repeated full-folder ingestion at each login is slower and makes the long-running command more complex.
 6. **Use explicit generated labels and log paths.**
    - Rationale: A deterministic label such as `com.rag-mcp.watch.<slug>` lets users update/remove a watcher safely. Logs in `~/Library/Logs/rag-mcp/` make troubleshooting possible after login.
@@ -50,7 +52,8 @@ macOS supports this without a GUI dependency through per-user LaunchAgents in `~
 ## Risks / Trade-offs
 
 - **LaunchAgent environment lacks user shell variables** → Use absolute paths in `ProgramArguments`, avoid shell wrappers by default, and document `OLLAMA_HOST`/environment limitations if needed.
-- **Duplicate watchers can contend for the same ChromaDB collection** → Detect an existing generated plist label and require overwrite/update confirmation unless `--force` is provided.
+- **Duplicate watchers can contend for the same vector-store collection** → Detect an existing generated plist label and require overwrite/update confirmation unless `--force` is provided. Any contention warning the installer displays SHALL be conditional on the selected vector-store adapter: cross-process write isolation differs between the Chroma and LanceDB adapters, so the installer must not emit an unconditional ChromaDB-specific warning.
 - **User chooses a folder that does not exist or is not a directory** → Validate before writing and fail early in non-interactive mode; re-prompt in interactive mode.
 - **User changes Python environments after installation** → Show the exact command embedded in the plist and provide an update/overwrite path.
 - **Non-macOS usage** → Fail with a clear message unless `--dry-run` is used for preview/testing.
+- **Shared CLI registration files** → This change and the migration CLI contemplated by `add-per-collection-persist-dirs` both modify the command-group registration import in `src/rag_mcp/transports/cli/__init__.py`. The two implementations must not modify that file concurrently; land them on sequenced branches.

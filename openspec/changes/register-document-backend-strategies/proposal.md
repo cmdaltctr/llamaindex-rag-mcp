@@ -6,6 +6,7 @@
 
 - Define one async document-backend contract shared by local and Azure implementations.
 - Register `local` and `azure` lazily under their configured names.
+- Move accepted backend-name validation from the hard-coded `("local", "azure")` tuple in `config/` to registry-owned validation at the composition boundary, so `config/` stays a leaf and never imports runtime registries.
 - Move dispatch out of the ingestion chunker without changing supported file types or emitted document metadata.
 - Preserve cloud opt-in: missing credentials, missing Azure SDK dependencies, and Azure runtime failures degrade to the local backend with visible diagnostics naming the reason.
 - Add contract tests for retry, fallback, optional SDK imports, metadata parity, and no event-loop blocking.
@@ -22,7 +23,7 @@
 
 ## Impact
 
-- Code: `core/ingestion/chunker.py`, a new document-backend registry and local adapter, `integrations/azure.py`, and `compose.py`.
+- Code: `core/ingestion/chunker.py`, a new document-backend registry and local adapter, `integrations/azure.py`, and `compose.py`. `compose.py` sits at the 498-line ceiling, so implementation must land its additions through a small helper extraction or a separate focused module rather than inline growth.
 - Configuration: `DOCUMENT_BACKEND` keeps `local|azure`; no default changes.
 - Dependencies: Azure remains optional behind the existing `azure` extra.
 - Behaviour: fallback outcomes stay local-first, but ownership and diagnostics become explicit and testable.

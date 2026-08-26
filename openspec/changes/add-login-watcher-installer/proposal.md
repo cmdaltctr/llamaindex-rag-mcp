@@ -24,6 +24,6 @@
 - CLI: new Typer subcommand, help text, prompts, validation, dry-run/yes/options.
 - New module: LaunchAgent plist generation, atomic writes, load/unload/start helpers, and path/label sanitisation.
 - macOS integration: writes to `~/Library/LaunchAgents/` and uses `launchctl bootstrap/gui/$UID`, `bootout`, and/or `kickstart` where appropriate.
-- Ingestion: optional initial catch-up uses existing `ingest_path_async(..., collection_name=...)` before watcher installation/start.
+- Ingestion: optional initial catch-up mirrors the `rag-mcp ingest` flow — resolve the collection profile once via the composition root, inject the resulting `EffectiveSettings` into `ingest_path_async(path, collection_name=..., effective_settings=...)` — before watcher installation/start.
 - Tests: CLI wizard and non-interactive coverage plus plist generation and macOS command invocation tests with subprocess calls mocked.
 - Documentation: usage examples and operational notes for install/update/remove/startup behaviour.

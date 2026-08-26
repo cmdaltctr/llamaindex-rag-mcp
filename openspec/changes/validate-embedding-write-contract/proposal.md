@@ -13,15 +13,28 @@ malformed batch can therefore reach ChromaDB or LanceDB and fail late.
 
 ## What Changes
 
-- Add one shared production-core validator for vectors about to be written.
-- Apply it to every `VectorStore` write path, including `write_nodes` and
-  `upsert_precomputed`.
-- Reject empty vectors, non-numeric elements, mixed dimensions, and conflicts
-  with an existing collection dimension.
+- Add one shared production-core validator for vectors about to be written, in a small focused helper (`core/vectordb/validation.py`). No wrapper or service hierarchy around the adapters.
+- Guarantee: validation completes **before any backend SDK or persistent-store mutation** — not merely before an adapter receives a write request. Adapter code invokes the shared validation immediately before its backend SDK mutation as the enforcement point.
+- Apply it to every `VectorStore` write path, including `write_nodes` and `upsert_precomputed`: empty embedding batches, missing embeddings, inconsistent dimensions within a batch, dimension conflicts with an existing collection, non-numeric elements, and non-finite values (NaN, infinity) are all rejected. Valid precomputed vectors and embeddings produced from `write_nodes` both pass.
 - Reject the complete batch before a backend write. No valid subset persists.
-- Identify the collection, embedding provider/model, and affected node or row
-  identifiers in each failure.
-- Make Experiment 14 use this validator before its precomputed upsert.
+- Identify the collection, embedding provider/model, and affected node or row identifiers in each failure.
+- Make Experiment 14 validate all embeddings **before deleting or recreating an existing collection**; validation immediately before the upsert alone is too late because the existing collection may already have been destroyed by then.
+
+## Relationship to landed PR #63 groundwork (do not duplicate)
+
+PR #63 (`harden-pipeline-correctness-before-calibration`) already added:
+failure-safe replacement ordering, durability verification after writes,
+store-owned collection generation counters, valid precomputed-upsert
+parity, and exactly-once mutation/generation tests. This change adds the
+one missing piece — the shared structural embedding validator — and
+must not re-implement or re-specify the landed work.
+
+## Sequencing
+
+Implement **before** `implement-native-sparse-backend-strategy` and
+before any Chroma migration work from `add-per-collection-persist-dirs`:
+those changes share the write/adapter path, and the shared write
+boundary must land first.
 
 ## Capabilities
 
@@ -40,8 +53,13 @@ reports invalid input and stops the write. Experiment 14 outputs stay untouched.
 
 ## Impact
 
-**Code:** `core/vectordb/`, `core/ingestion/writer.py`,
+**Code:** `core/vectordb/validation.py` (new focused helper),
+`core/vectordb/{chroma,lancedb}.py` (validation invocation at the SDK
+mutation seam), `core/ingestion/writer.py`,
 `core/ingestion/replacement.py`, and the Experiment 14 builder.
+`lancedb.py` (497 lines) and `chroma.py` (499 lines) sit at the
+500-line ceiling — invocation is a thin call, and any shared logic
+lives in the focused helper, not inline growth.
 
 **Tests:** focused validator, direct store, ingestion, replacement, and
 cross-backend contract tests for ChromaDB and LanceDB.
