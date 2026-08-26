@@ -1,11 +1,11 @@
 # Proposal: add-per-collection-persist-dirs
 
-> **Re-scoped 2026-08-22** for the post-ADR-049 storage topology: LanceDB
-> is the default vector store; Chroma is the opt-in `chroma` extra. The
-> original (pre-ADR-049) proposal treated the Chroma `PersistentClient`
-> shared-SQLite layout as the production default; that premise is gone.
-> The rewrite keeps what still matters and drops what the topology change
-> dissolved.
+> **Re-scoped twice.** First on 2026-08-22 for the post-ADR-049 storage
+> topology (LanceDB default, Chroma opt-in extra). Then on 2026-08-26
+> after a static review against v3 corrected two factual errors in the
+> re-scope and split the remaining work into a small default-path scope
+> plus a deferred Chroma scope gated on operator demand and contention
+> evidence.
 
 ## Why
 
@@ -14,75 +14,103 @@ Claude instance, each spawning its own server subprocess) is the normal,
 supported pattern. The storage layer — not the transport — decides whether
 those processes contend.
 
-On the default LanceDB path each collection is already its own `.lance`
-directory under `LANCEDB_URI`, so cross-collection write contention does
-not exist by construction (qualified for concurrency by Experiment 19).
-But nothing in the specs guarantees that layout, and collection names
-cross into filesystem paths without a stated safety contract.
+Three distinct layers decide that, and they must not be conflated:
 
-On the opt-in Chroma path the original problem stands in full:
-`chromadb.PersistentClient` keeps every collection in one shared SQLite
-file inside `chroma_persist_dir`, so two agents ingesting to *different*
-collections still contend on one file-level write lock. The watcher
-already warns about this (`transports/cli/watch.py`).
+1. **Process-level orchestration lock.** Ingestion mutations inside one
+   process run under a process-global lock (`write_lock` in
+   `core/ingestion/_state.py`, acquired by `replacement.py`'s commit
+   section). It serialises store mutations across *all* collections in
+   that process. It is not a per-collection lock, and it is invisible to
+   other processes.
+2. **Backend physical layout.** On the default LanceDB path each
+   collection is its own `.lance` table directory under `LANCEDB_URI`.
+   Distinct table directories remove *shared-storage* coupling between
+   collections; they say nothing by themselves about cross-process write
+   safety.
+3. **Backend/filesystem locking across processes.** Whether two separate
+   operating-system processes can safely write two different LanceDB
+   collections concurrently is a property of LanceDB's file locking. It
+   is **unverified**: no experiment has exercised two concurrent writers.
+   Experiment 19 (campaign `19-lancedb-lifecycle-qualification`, gate
+   G13) qualified a concurrent *read* on one populated collection while
+   an ingestion into a *second* collection was in flight — one writer,
+   one reader. It did not qualify concurrent writes, so this proposal
+   makes no contention-free claim for LanceDB cross-collection writes.
 
-## What Changes
+What the default path lacks today is not new storage machinery but a
+stated contract: nothing in the specs guarantees the per-table layout,
+and collection names cross into filesystem paths without a stated safety
+contract.
 
-- **LanceDB (default): specify and guarantee the native layout.** The
-  per-collection isolation of `{lancedb_uri}/{collection_name}.lance`
-  becomes a specified contract with regression tests pinning it, so a
-  future adapter change cannot silently co-locate collections.
-- **Path-component safety, both backends.** Collection names become
-  filesystem path components on both paths; names MUST be validated as
+## What Changes (this change: default-path scope)
+
+- **Path-component safety on the active LanceDB path.** LanceDB collection
+  names become table-directory path components; names MUST be validated as
   non-empty single path components (no separators, `.`, `..`, absolute
-  paths) before any store operation touches disk.
-- **Chroma (opt-in extra): per-collection persist directories.** When
-  `VECTOR_STORE=chroma` runs in local mode, each unmapped collection
-  resolves to `{chroma_persist_dir}/{collection_name}/` — one SQLite file
-  per independently-written collection. An explicit static grouping map
-  opts collections back into shared directories where co-location is
-  wanted. Resolution lives in `compose.py`; `config/` holds the mapping
-  data.
-- **Chroma-only migration.** Existing flat-layout Chroma data moves once
-  through a Chroma-API export/import command (`rag-mcp
-  migrate-storage`), copying IDs, embeddings, documents and metadata
-  without recomputing embeddings. Default-path users (LanceDB) have no
-  migration step; legacy Chroma directories at the old default location
-  remain governed by the ADR-049 fail-closed legacy guard.
-- **Watcher warning accuracy.** The daemon warning is split by backend:
-  same-collection concurrent writes contend on both backends;
-  different-collection writes contend only under Chroma co-location.
+  paths) before table access touches disk. Current Chroma collection names
+  stay logical database identifiers inside one shared persist directory;
+  Chroma and group-name path validation remains deferred with that scope.
+- **LanceDB (default): specify and pin the native layout.** The
+  per-collection isolation of `{lancedb_uri}/{collection_name}.lance`
+  becomes a specified contract that regression tests will pin, so a
+  future adapter change cannot silently co-locate collections. This is
+  a layout guarantee only — no concurrency guarantee is claimed.
+- **Documentation.** The layout and safety contract is documented per
+  backend, including the honest statement that cross-process concurrent
+  writes are unverified.
 
-Not in scope: HTTP Chroma server mode, transport-layer changes,
-cross-process locking, runtime-mutable grouping (recorded as the Option 2
-follow-up in the original design, unchanged).
+## Deferred scope (recorded, not built by this change)
+
+The original re-scope bundled a Chroma-side programme: per-collection
+persist directories under `chroma_persist_dir`, a static grouping map,
+per-collection resolution in `compose.py`, and a
+backup/export/staging/swap/resume/rollback migration CLI
+(`rag-mcp migrate-storage`). That programme is **deferred** until both
+of these hold:
+
+1. Demonstrated demand from real Chroma-extra operators with data worth
+   migrating (the `chroma` extra is opt-in and isolated).
+2. Contention evidence: for any cross-process contention claim, a
+   two-process, two-collection concurrent-write experiment on the
+   relevant backend.
+
+When taken up, the deferred scope would amend the
+`vectordb-abstraction` "Store selection via configuration" requirement
+(per-collection persist resolution at the composition root; no
+self-read flat global default) and extend `collection-storage-layout`
+with the Chroma per-directory, grouping, and migration requirements.
+
+Not in scope in any phase: HTTP Chroma server mode, transport-layer
+changes, cross-process locking, runtime-mutable grouping.
 
 ## Capabilities
 
 ### New Capabilities
 
 - `collection-storage-layout`: how a collection name resolves to on-disk
-  storage per backend — the LanceDB native-layout guarantee, path-safety
-  validation, the Chroma per-collection rule with opt-in grouping, and
-  the Chroma-only migration contract.
+  storage per backend — path-safety validation and the LanceDB
+  native-layout guarantee (default-path scope of this change).
 
 ### Modified Capabilities
 
-- `vectordb-abstraction`: "Store selection via configuration" gains the
-  constraint that the persist location for an operation is resolved per
-  collection at the composition root (per-backend rules from
-  `collection-storage-layout`), never read as one flat global default
-  inside the store.
+- None. The `vectordb-abstraction` amendment belongs to the deferred
+  Chroma scope.
 
 ## Impact
 
-- **Code**: `compose.py` (per-collection resolution + directory-keyed
-  store provider for Chroma local mode), `config/` + `core/settings.py`
-  (grouping-map setting), `core/vectordb/chroma.py` (injected resolved
-  directory), `core/vectordb/lancedb.py` (name validation at the
-  filesystem boundary), `daemon/watcher.py` (split warning).
-- **On-disk data**: LanceDB users — none. Chroma-extra local users —
-  one-time migration or re-ingest.
+- **Code**: `core/vectordb/lancedb.py` (name validation at the
+  table-name/filesystem boundary), a focused validation helper, plus tests.
+  `lancedb.py` (497 lines) sits at the 500-line ceiling — validation logic
+  does not land inline, and no broad refactor accompanies it.
+- **On-disk data**: none. No migration, no layout change on any backend.
 - **Dependencies**: none new. `chroma` remains an optional extra.
-- **Contracts**: MCP tool surface unchanged; every tool already passes
-  `collection: str` per call.
+- **Contracts**: MCP tool surface unchanged.
+
+## Watcher warning
+
+The warning's underlying point — separate processes do not share the
+internal write lock — remains accurate. Its current CLI wording names
+"the same ChromaDB", which is stale now that LanceDB is the default.
+This change will make the warning store-neutral without claiming that
+either backend supports safe concurrent writers. Backend-specific wording
+still requires the deferred contention evidence.

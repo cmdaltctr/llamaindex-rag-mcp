@@ -21,7 +21,7 @@ When required options are omitted in an interactive terminal, the installer SHAL
 #### Scenario: Wizard collects missing values
 - **WHEN** the user runs `rag-mcp install-login-watcher` in an interactive terminal without required options
 - **THEN** the CLI SHALL prompt for the folder to watch
-- **THEN** the CLI SHALL prompt for the ChromaDB collection name, defaulting to `documents`
+- **THEN** the CLI SHALL prompt for the vector-store collection name, defaulting to `documents`
 - **THEN** the CLI SHALL prompt for whether to run an initial catch-up ingest
 - **THEN** the CLI SHALL display a final summary before installation
 
@@ -47,12 +47,21 @@ The installer SHALL support non-interactive usage when the watch directory and c
 
 ### Requirement: LaunchAgent plist generation
 
-The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library/LaunchAgents` by default. The plist SHALL use a deterministic label, absolute program arguments, the chosen watch path, collection, debounce interval, RunAtLoad behaviour, KeepAlive disabled by default, and log paths under `~/Library/Logs/rag-mcp`.
+The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library/LaunchAgents` by default. The plist SHALL use a deterministic label, an absolute path to the resolved `rag-mcp` console executable as `ProgramArguments[0]` (overridable via an explicit command-path option when resolution is ambiguous), the chosen watch path, collection, debounce interval, RunAtLoad behaviour, KeepAlive disabled by default, and log paths under `~/Library/Logs/rag-mcp`.
 
 #### Scenario: Plist contains watcher command
 - **WHEN** the installer generates a plist for path `/docs`, collection `research`, and debounce `3`
-- **THEN** the plist SHALL contain `ProgramArguments` that invoke `rag-mcp watch /docs --collection research --debounce 3`
+- **THEN** the plist SHALL contain the resolved absolute executable followed by `watch /docs --collection research --debounce 3`
 - **THEN** the plist SHALL not invoke the command through an unescaped shell string
+
+#### Scenario: Command executable is resolved absolutely
+- **WHEN** the installer generates a plist without an explicit command-path option
+- **THEN** `ProgramArguments[0]` SHALL be the absolute path of the installed `rag-mcp` console executable resolved at install time
+- **AND** the resolved path SHALL be persisted in the plist and shown to the user
+
+#### Scenario: Command path override is honoured
+- **WHEN** the user provides an explicit command-path option such as `--command-path /opt/homebrew/bin/rag-mcp`
+- **THEN** `ProgramArguments[0]` SHALL use that path exactly
 
 #### Scenario: Deterministic label and paths
 - **WHEN** the user does not provide a custom label
@@ -83,11 +92,12 @@ If the target generated plist already exists, the installer SHALL protect the ex
 
 ### Requirement: Optional initial catch-up ingest
 
-The installer SHALL support running an initial catch-up ingestion of the selected directory into the selected collection before loading or starting the LaunchAgent. This operation SHALL use the existing ingestion pipeline and SHALL route documents to the selected collection.
+The installer SHALL support running an initial catch-up ingestion of the selected directory into the selected collection before loading or starting the LaunchAgent. This operation SHALL use the existing ingestion pipeline, SHALL route documents to the selected collection, and SHALL mirror the `rag-mcp ingest` flow by resolving the collection's profile once and injecting the resulting effective settings.
 
 #### Scenario: Initial ingest runs before load
 - **WHEN** the user enables initial ingest for path `/docs` and collection `research`
 - **THEN** the installer SHALL call the existing ingest pipeline for `/docs` with collection `research`
+- **AND** the catch-up SHALL resolve the collection's profile once and inject the resulting effective settings into the ingestion call
 - **THEN** the installer SHALL complete or report the ingestion result before loading or starting the LaunchAgent
 
 #### Scenario: Initial ingest failure stops installation unless confirmed
