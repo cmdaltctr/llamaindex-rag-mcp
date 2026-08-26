@@ -380,10 +380,17 @@ pin `pypdf` for determinism.
 | `AZURE_DOC_INTELLIGENCE_KEY` | — | Azure key |
 | `AZURE_DOC_INTELLIGENCE_MODEL` | `prebuilt-layout` | Azure model |
 
-Azure is opt-in and degrades to local parsing if credentials are missing
-or unreachable ([ADR-024](../adr/024-dual-deployment-modes.md)).  An
-unrecognised `DOCUMENT_BACKEND` value (not `local` or `azure`) fails
-startup rather than silently falling back.
+Azure is opt-in ([ADR-024](../adr/024-dual-deployment-modes.md)) and
+degrades to local parsing when credentials are missing or unreachable,
+or when the optional SDK is absent. Each warning names the missing
+piece: the `AZURE_DOC_INTELLIGENCE_ENDPOINT` /
+`AZURE_DOC_INTELLIGENCE_KEY` variables, or the
+`azure-ai-documentintelligence` package with `uv sync --extra azure`.
+Azure reads `.pdf`, `.docx`, and `.doc` only; every other file type
+goes through the local backend whatever `DOCUMENT_BACKEND` is set to.
+An unrecognised `DOCUMENT_BACKEND` value (not `local` or `azure`) fails
+startup rather than silently falling back. The accepted names come from
+the document-backend registry instead of a fixed config-time list.
 
 ### Codebase map
 
