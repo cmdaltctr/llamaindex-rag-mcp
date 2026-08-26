@@ -23,6 +23,14 @@ Settings come from five places. Each beats the one above it:
 - Different for one collection → its profile
 - Just for this one command → an environment variable
 
+**Why the schema is Python while the values are YAML.** In short: YAML for
+data, Python for the contract. Humans edit values, so the values live in YAML
+(`defaults.yaml` and the profile bundles), while the contract (which keys
+exist, their types, which source wins) is defined once in the typed Python
+models in `config/__init__.py`. A misspelt key in YAML or an environment
+variable therefore fails at startup and lists the valid fields, instead of
+being silently ignored.
+
 ### The trap worth knowing
 
 `.env` sits **above** profiles. Put a tuning value there and it overrides every
