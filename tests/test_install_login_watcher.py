@@ -96,6 +96,10 @@ class TestHelpText:
     def test_help_lists_all_options(self) -> None:
         """--help shows purpose plus every scriptable option group."""
         result = runner.invoke(app, ["install-login-watcher", "--help"])
+        # TEMPORARY CI diagnosis (remove after root cause): captured
+        # stdout is printed by pytest for failing tests even under -q.
+        print(f"DIAG-exit={result.exit_code}")
+        print(f"DIAG-output={result.output!r}")
         assert result.exit_code == 0
         output = result.output
         for token in (
@@ -114,6 +118,8 @@ class TestHelpText:
     def test_watch_help_word_regression_no_chromadb(self) -> None:
         """Task 3.6: watch help must use vector-store, not ChromaDB, terms."""
         result = runner.invoke(app, ["watch", "--help"])
+        print(f"DIAG-watch-exit={result.exit_code}")
+        print(f"DIAG-watch-output={result.output!r}")
         assert result.exit_code == 0
         assert "ChromaDB" not in result.output
 
