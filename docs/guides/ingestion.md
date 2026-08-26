@@ -24,7 +24,8 @@ Source file (PDF, DOCX, TXT, ...)
       |                     Produces a fixed-dimension vector (768, 1024, etc.)
       |
       v
-[4] Store in ChromaDB
+[4] Store in the selected vector store
+      |  LanceDB is the base-install default
       |  collection = "documents" (or --collection value)
       |  Each record: vector + text + metadata + file_path
       v
@@ -38,23 +39,33 @@ Re-ingesting a file is an **upsert** — old chunks are removed before new ones 
 The PDF parser is a pluggable factory controlled by the `PDF_READER`
 environment variable. Accepted values:
 
-| Value       | Description                                               | Extra required              |
-| ----------- | --------------------------------------------------------- | --------------------------- |
-| `pypdf`     | Default. Always available via `llama-index-readers-file`. | None                        |
-| `liteparse` | Column-aware reading order + bounding-box metadata.       | `[pdf-liteparse]`           |
-| `pypdfium2` | Same PDFium engine as LiteParse, no bbox. Fallback tier.  | `[pdf-pypdfium2]`           |
-| `auto`      | Probes in order: liteparse → pypdfium2 → pypdf.           | Depends on what's installed |
+| Value           | Description                                                              | Install                        |
+| --------------- | ------------------------------------------------------------------------ | ------------------------------ |
+| `pdf_inspector` | Default. Rust markdown extractor. Emits one document per PDF.            | Base dependency                |
+| `pypdf`         | Always available via `llama-index-readers-file`. Terminal fallback.      | Base (transitive)              |
+| `liteparse`     | Column-aware reading order + bounding-box metadata.                      | Base dependency                |
+| `pypdfium2`     | Same PDFium engine as LiteParse, no bbox. Fallback tier.                 | `[pdf-pypdfium2]` extra        |
+| `auto`          | Probes in order: liteparse → pypdfium2 → pypdf.                          | Depends on what is installed   |
 
-The default is `auto`, which resolves to LiteParse (installed as a core
-dependency), then pypdfium2, then pypdf.
+The packaged default is `pdf_inspector`, a base dependency selected through
+configuration after Experiment 14
+([ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)).
+`auto` keeps the LiteParse-first capability policy. Set `PDF_READER` to any
+registered name to override the default. A configured reader that is not
+importable logs an error and falls back to pypdf.
+
+`pdf_inspector` emits one document per PDF, where pypdf and LiteParse emit
+per-page documents. Markdown chunking then splits that single document, so
+source-document boundaries change with this reader.
 
 LiteParse captures bounding-box metadata (`page`, `column`,
 `section_bbox`, `bbox_schema_version`) on every emitted Document for
 future spatial RAG capabilities. OCR is disabled by default
 (`LITEPARSE_OCR_ENABLED=false`) — enable it only for scanned PDFs.
 
-See [ADR-020](../adr/020-use-liteparse-as-pdf-reader.md) for the adoption
-rationale and Experiment 11 results.
+See [ADR-020](../adr/020-use-liteparse-as-pdf-reader.md) for the factory
+adoption rationale and [ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)
+for the default-selection decision and Experiment 14 results.
 
 ## Supported file formats
 
@@ -105,14 +116,11 @@ ollama pull mxbai-embed-large
 # 2. Update .env
 EMBED_MODEL=mxbai-embed-large
 
-# 3. Delete the old vector store (dimensions differ between models)
-rm -rf chroma_db
-
-# 4. Re-index your documents
+# 3. Re-index your documents into a fresh collection
 rag-mcp ingest /path/to/docs/
 ```
 
-> **Why delete chroma_db?** ChromaDB locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires starting fresh.
+> **Why re-index?** The selected vector store locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires a fresh collection.
 
 ## Chunk size guide
 

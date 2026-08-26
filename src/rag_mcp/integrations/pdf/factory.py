@@ -30,14 +30,14 @@ def get_pdf_reader(reader: str) -> Any:
     ``file_extractor`` parameter.
 
     Args:
-        reader: Reader name from the injected settings — ``pypdf``,
-            ``pypdfium2``, ``liteparse``, or ``auto``. ``auto`` is resolved
-            locally (LiteParse → pypdfium2 → pypdf) for callers that bypass
-            the composition root.
+        reader: Reader name from the injected settings — ``pdf_inspector``,
+            ``pypdf``, ``pypdfium2``, ``liteparse``, or ``auto``. ``auto`` is
+            resolved locally (LiteParse → pypdfium2 → pypdf) for callers that
+            bypass the composition root.
 
     Returns:
-        An instance of ``PyPDFReader``, ``PyPDFium2Reader``, or
-        ``LiteParseReader``.
+        An instance of ``PdfInspectorReader``, ``PyPDFReader``,
+        ``PyPDFium2Reader``, or ``LiteParseReader``.
 
     Raises:
         ValueError: If *reader* is an unknown value. This should be

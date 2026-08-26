@@ -17,9 +17,14 @@
 
 # ── Chunking ──────────────────────────────────────────────────────────
 chunking:
+  # Sentence/Markdown splitters use tokenizer units.
   chunk_size: 512
   chunk_overlap: 100
   markdown_chunk_size: 1024
+  # CodeSplitter uses lines plus an explicit character ceiling.
+  code_chunk_lines: 40
+  code_chunk_lines_overlap: 15
+  code_max_chars: 1500
   markdown_heading_prepend: false
   markdown_min_chunk_fraction: 0.0
   strategy_fallback: markdown
@@ -73,10 +78,11 @@ CHROMA_SCAN_PAGE_SIZE: 10000
 # .env (see .env.example); tenant/database identifiers are optional
 # there and must be supplied together. No cloud secrets belong here.
 CHROMA_MODE: local
-# Vector-store backend: "chroma" (default) or "lancedb". Selection is
-# resolved through the vector-store registry at startup; an unknown
-# name fails with the registered names listed.
-VECTOR_STORE: chroma
+# Vector-store backend: "lancedb" (canonical base-install default, ADR-049)
+# or "chroma" (supported optional extra; install with `uv sync --extra
+# chroma`). Selection is resolved through the vector-store registry at
+# startup; an unknown name fails with the registered names listed.
+VECTOR_STORE: lancedb
 # Parent directory for LanceDB tables (VECTOR_STORE=lancedb only).
 # Each collection maps to one table under this directory.
 LANCEDB_URI: ./lancedb
@@ -88,7 +94,8 @@ LOCAL_BACKEND: llamacpp
 CLOUD_BACKEND: openrouter
 
 # ── PDF reader ────────────────────────────────────────────────────────
-PDF_READER: auto
+# Change this selector, not runtime code, to choose another reader.
+PDF_READER: pdf_inspector
 LITEPARSE_OCR_ENABLED: false
 
 # ── Codebase map ──────────────────────────────────────────────────────

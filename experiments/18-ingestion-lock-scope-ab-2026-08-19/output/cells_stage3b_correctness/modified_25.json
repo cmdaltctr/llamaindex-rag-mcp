@@ -1,0 +1,89 @@
+{
+  "cell_id": "modified_25",
+  "factors": {
+    "corpus_size": 25,
+    "failure_point": "none",
+    "repeat_state": "one_file_modified",
+    "ingest_topology": "sequential_1_stream",
+    "embedding_block": "fake_deterministic"
+  },
+  "manifest": {
+    "repo_commit": "b4b01b6780d5a13b5e8dca15970313bc3b9c98c6",
+    "git_dirty": true,
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "18-ingestion-lock-scope-ab",
+    "protocol_version": "1.0",
+    "python_version": "3.12.10",
+    "platform": "Darwin-arm64",
+    "timestamp_utc": "2026-08-19T16:09:38Z",
+    "corpus_identity": "63d42f7c90b87e44b50f9f1d2efb5d4666fc201067a446206cc7e27ed84c8f3d",
+    "embedding": {
+      "requested_provider": "fake_deterministic",
+      "effective_provider": "fake_deterministic",
+      "effective_model": "mock-deterministic-v1",
+      "dim": 32
+    },
+    "vector_store": {
+      "backend": "chroma_local",
+      "mode": "persistent_local",
+      "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/18-ingestion-lock-scope-ab-2026-08-19/output/chroma_cells_stage3b_correctness_modified_25"
+    }
+  },
+  "status": "completed",
+  "wall_seconds": 1.0678034169832245,
+  "first": {
+    "status": "ok",
+    "files_indexed": 25,
+    "files_skipped_unchanged": 0,
+    "chunks_created": 54,
+    "chunks_removed": 0,
+    "max_chunks_per_file": 3,
+    "timings": {
+      "change_detection_seconds": 0.09806470788316801,
+      "parse_chunk_seconds": 0.4789542911457829,
+      "embedding_seconds": 0.005871583038242534,
+      "store_write_seconds": 0.18867612394387834,
+      "lock_wait_seconds": 8.879025699570775e-06,
+      "cleanup_seconds": 0.04551491804886609,
+      "total_seconds": 0.848101375013357
+    },
+    "peak_rss_bytes": 272596992
+  },
+  "unchanged_second": {
+    "status": "ok",
+    "files_indexed": 0,
+    "files_skipped_unchanged": 25,
+    "chunks_created": 0,
+    "chunks_removed": 0,
+    "max_chunks_per_file": 0,
+    "timings": {
+      "change_detection_seconds": 0.04287658384419046,
+      "parse_chunk_seconds": 0.0,
+      "embedding_seconds": 0.0,
+      "store_write_seconds": 0.0,
+      "lock_wait_seconds": 0.0,
+      "cleanup_seconds": 0.0,
+      "total_seconds": 0.04785766699933447
+    },
+    "peak_rss_bytes": 273186816
+  },
+  "one_file_modified": {
+    "status": "ok",
+    "files_indexed": 1,
+    "files_skipped_unchanged": 24,
+    "chunks_created": 2,
+    "chunks_removed": 2,
+    "max_chunks_per_file": 2,
+    "timings": {
+      "change_detection_seconds": 0.08058816692209803,
+      "parse_chunk_seconds": 0.003333291009766981,
+      "embedding_seconds": 0.0002529580087866634,
+      "store_write_seconds": 0.04491574998246506,
+      "lock_wait_seconds": 3.3300602808594704e-07,
+      "cleanup_seconds": 0.02697966599953361,
+      "total_seconds": 0.16556649998528883
+    },
+    "peak_rss_bytes": 274186240
+  },
+  "process_peak_rss_bytes": 274219008
+}

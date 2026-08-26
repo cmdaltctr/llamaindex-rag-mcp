@@ -17,20 +17,29 @@ read/update, and generation bumping.
 
 from __future__ import annotations
 
+import inspect
+from importlib.util import find_spec
 from pathlib import Path
 
 import pytest
 
 from rag_mcp.core.vectordb.base import VectorStore
-from rag_mcp.core.vectordb.chroma import ChromaVectorStore
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
-# Backend name → concrete class, for the ABC-compliance checks that
-# inspect the class itself rather than a constructed instance.
-_STORE_CLASSES = {
-    "chroma": ChromaVectorStore,
-    "lancedb": LanceVectorStore,
-}
+# Task 5.1: the ChromaDB adapter import is lazy so this shared contract
+# module collects (and runs every LanceDB parameter) in the base install
+# without the optional chroma extra. The chroma parameters skip by design
+# with a named reason and run in the chroma-extra CI job.
+_CHROMA_EXTRA = find_spec("chromadb") is not None
+
+
+def _store_class(backend: str) -> type[VectorStore]:
+    """Resolve the concrete class lazily (chromadb may be absent)."""
+    if backend == "lancedb":
+        return LanceVectorStore
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    return ChromaVectorStore
 
 
 @pytest.fixture(params=["chroma", "lancedb"])
@@ -38,13 +47,18 @@ def store(request: pytest.FixtureRequest, tmp_path: Path) -> VectorStore:
     """Return a fresh store for each backend under test.
 
     ``chroma`` relies on the in-memory EphemeralClient monkeypatched by
-    ``conftest._patch_chromadb`` so no disk I/O occurs.  ``lancedb``
+    ``conftest._patch_chromadb`` so no disk I/O occurs; it skips when the
+    optional chroma extra is absent (task 5.1). ``lancedb``
     points at an isolated database under ``tmp_path``, giving each test
     a clean on-disk store; the embedded LanceDB writer is fast enough
     to stay out of the ``slow`` mark.
     """
     if request.param == "chroma":
-        return ChromaVectorStore()
+        pytest.importorskip(
+            "chromadb",
+            reason="chroma extra not installed; runs in the chroma-extra CI job",
+        )
+        return _store_class("chroma")()
     return LanceVectorStore(uri=str(tmp_path / "lancedb"))
 
 
@@ -61,6 +75,11 @@ class TestABCCompliance:
     @pytest.mark.parametrize("backend", ["chroma", "lancedb"])
     def test_all_abstract_methods_implemented(self, backend: str) -> None:
         """Every ABC method must have a concrete implementation."""
+        if backend == "chroma" and not _CHROMA_EXTRA:
+            pytest.skip(
+                "chroma extra not installed (uv sync --extra chroma); "
+                "runs in the chroma-extra CI job"
+            )
         abstract_methods = {
             "create_collection",
             "collection_exists",
@@ -78,7 +97,7 @@ class TestABCCompliance:
             "bump_generation",
             "get_generation",
         }
-        implemented = set(_STORE_CLASSES[backend].__abstractmethods__)
+        implemented = set(_store_class(backend).__abstractmethods__)
         assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
         # Verify the ABC actually declares the expected surface.
         abc_methods = {name for name in dir(VectorStore) if callable(getattr(VectorStore, name))}
@@ -134,6 +153,60 @@ class TestWriteAndQuery:
         assert "document" in results[0]
         assert "metadata" in results[0]
         assert "id" in results[0]
+        assert results[0]["score_kind"] == "dense_similarity_v1"
+        assert 0.0 < results[0]["score"] <= 1.0
+        assert "distance" not in results[0]
+
+    def test_precomputed_vectors_have_cross_store_semantic_score_parity(
+        self, store: VectorStore
+    ) -> None:
+        """Both adapters expose the same ranking/range/kind invariants.
+
+        Exact numeric equality is intentionally not asserted: ChromaDB and
+        LanceDB may report differently scaled native L2 distances. The
+        canonical contract is bounded, higher-is-better, and monotonic.
+        """
+        store.upsert_precomputed(
+            "semantic_scores",
+            ids=["exact", "near", "far"],
+            documents=["exact", "near", "far"],
+            metadatas=[{"rank": 1}, {"rank": 2}, {"rank": 3}],
+            embeddings=[[1.0, 0.0], [0.8, 0.2], [0.0, 1.0]],
+        )
+
+        rows = store.query_dense("semantic_scores", [1.0, 0.0], n_results=3)
+
+        assert [row["id"] for row in rows] == ["exact", "near", "far"]
+        assert all(row["score_kind"] == "dense_similarity_v1" for row in rows)
+        scores = [row["score"] for row in rows]
+        assert scores[0] == pytest.approx(1.0)
+        assert all(0.0 < score <= 1.0 for score in scores)
+        assert scores == sorted(scores, reverse=True)
+
+    def test_native_squared_l2_is_rooted_before_canonical_score(self, store: VectorStore) -> None:
+        """A native squared distance of 4 must score 1/(1+sqrt(4)) = 1/3.
+
+        ChromaDB and LanceDB report *squared* L2 for their l2 metric.
+        The canonical ``dense_similarity_v1`` contract consumes the true
+        distance, so each adapter roots the native value before the
+        ``1 / (1 + d)`` transform while ``native_distance`` keeps the
+        raw squared value for diagnostics.
+        """
+        store.upsert_precomputed(
+            "squared_l2_probe",
+            ids=["two_away"],
+            documents=["two units away"],
+            metadatas=[{"rank": 1}],
+            embeddings=[[2.0, 0.0]],
+        )
+
+        rows = store.query_dense("squared_l2_probe", [0.0, 0.0], n_results=1)
+
+        assert len(rows) == 1
+        # Native field stays the raw squared distance: (2-0)**2 = 4.
+        assert rows[0]["native_distance"] == pytest.approx(4.0)
+        # Canonical score uses the rooted distance: 1/(1+sqrt(4)) = 1/3.
+        assert rows[0]["score"] == pytest.approx(1.0 / 3.0)
 
     def test_query_with_metadata_filter(self, store: VectorStore) -> None:
         """A metadata filter must restrict results to matching chunks."""
@@ -158,6 +231,32 @@ class TestWriteAndQuery:
         store.create_collection("empty")
         results = store.query_dense("empty", [0.0] * 384, n_results=5)
         assert results == []
+
+
+class TestNativeMetricAssumptions:
+    """Adapters must pin or reject metrics outside the canonical contract."""
+
+    def test_chroma_rejects_explicit_non_l2_collection(self) -> None:
+        if not _CHROMA_EXTRA:
+            pytest.skip("chroma extra not installed; runs in the chroma-extra CI job")
+        store = _store_class("chroma")()
+        collection = store._get_client().get_or_create_collection(
+            "unsupported_cosine_metric",
+            metadata={"hnsw:space": "cosine"},
+        )
+        collection.add(
+            ids=["row"],
+            documents=["row"],
+            metadatas=[{"kind": "probe"}],
+            embeddings=[[1.0, 0.0]],
+        )
+
+        with pytest.raises(ValueError, match="requires hnsw:space='l2'"):
+            store.query_dense("unsupported_cosine_metric", [1.0, 0.0], 1)
+
+    def test_lance_query_pins_l2_instead_of_relying_on_default(self) -> None:
+        source = inspect.getsource(LanceVectorStore.query_dense)
+        assert '.distance_type("l2")' in source
 
 
 # ── Paged reads ───────────────────────────────────────────────────────
@@ -357,6 +456,48 @@ class TestGenerationCounter:
             embeddings=[[0.1, 0.2]],
         )
         assert store.get_generation("precomputed") == 1
+
+    def test_each_successful_mutation_advances_exactly_once(self, store: VectorStore) -> None:
+        """Direct store callers get the same invalidation ownership as pipelines."""
+        from llama_index.core.schema import TextNode
+
+        name = "exactly_once"
+        assert store.get_generation(name) == 0
+        store.write_nodes(
+            [TextNode(text="keep", metadata={"kind": "keep"})],
+            name,
+        )
+        assert store.get_generation(name) == 1
+
+        store.delete_where(name, {"kind": "keep"})
+        assert store.get_generation(name) == 2
+
+        store.delete_collection(name)
+        assert store.get_generation(name) == 3
+
+    @pytest.mark.asyncio
+    async def test_pipeline_mutations_do_not_add_caller_owned_bumps(
+        self, store: VectorStore
+    ) -> None:
+        """Writer orchestration observes one bump per store mutation."""
+        from llama_index.core.schema import TextNode
+
+        from rag_mcp.core.ingestion.writer import embed_and_write_async, remove_document
+
+        name = "pipeline_exactly_once"
+        written = await embed_and_write_async(
+            [TextNode(text="pipeline row", metadata={"file_path": "pipeline.txt"})],
+            collection_name=name,
+            store=store,
+            embed_concurrency=1,
+        )
+        assert written == 1
+        assert store.get_generation(name) == 1
+
+        result = remove_document("pipeline.txt", collection_name=name, store=store)
+        assert result["status"] == "ok"
+        assert result["chunks_removed"] == 1
+        assert store.get_generation(name) == 2
 
     def test_generations_are_per_collection(self, store: VectorStore) -> None:
         store.bump_generation("a")

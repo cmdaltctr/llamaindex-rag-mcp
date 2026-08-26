@@ -3,9 +3,9 @@
 Handles embedding nodes via the configured embed model, writing to the
 vector store through the :class:`VectorStore` interface, and all
 deletion operations (per-file, per-metadata-filter, per-collection).
-Includes the collection generation bumping for BM25 cache
-invalidation.  Extracted from the original ``ingestion.py`` monolith
-as part of Phase 1; rewired through the vector store ABC in Phase 3.
+Vector stores own BM25 generation invalidation for every successful
+mutation.  Extracted from the original ``ingestion.py`` monolith as part
+of Phase 1; rewired through the vector store ABC in Phase 3.
 """
 
 from __future__ import annotations
@@ -75,7 +75,6 @@ async def embed_and_write_async(
                     LlamaIndexSettings.embed_model.model_name,
                 )
                 resolved_store.write_nodes(nodes, collection_name)
-                resolved_store.bump_generation(collection_name)
                 logger.info("Successfully stored %d chunks in vector store", len(nodes))
             return len(nodes)
 
@@ -190,7 +189,6 @@ def remove_document(
         if chunks_removed > 0:
             with write_lock:
                 resolved_store.delete_where(collection_name, where)
-                resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -251,7 +249,6 @@ def remove_by_metadata(
         if chunks_removed > 0:
             with write_lock:
                 resolved_store.delete_where(collection_name, metadata_filter)
-                resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",
@@ -290,7 +287,6 @@ def remove_collection(
     try:
         with write_lock:
             resolved_store.delete_collection(collection_name)
-            resolved_store.bump_generation(collection_name)
     except Exception as exc:
         return {
             "status": "error",

@@ -136,20 +136,35 @@ def scan_with_magika(path: str) -> list[FileEntry]:
     return _scan(path)
 
 
+def _classify_suffix(suffix: str) -> tuple[str, str, bool]:
+    """Map a lowercase suffix to its ``(group, label, is_text)`` triple."""
+    if suffix in _BINARY_SUFFIXES:
+        return "binary", suffix.lstrip("."), False
+    if suffix in _SUFFIX_MAP:
+        return (*_SUFFIX_MAP[suffix], True)
+    return "unknown", "unknown", True
+
+
+def _entry(path: str, suffix: str) -> FileEntry:
+    """Build one suffix-classified :class:`FileEntry`."""
+    group, label, is_text = _classify_suffix(suffix)
+    return FileEntry(path=path, group=group, label=label, is_text=is_text, suffix=suffix)
+
+
 def scan_with_suffix(path: str) -> list[FileEntry]:
-    """Scan a directory using file suffix mapping as fallback.
+    """Scan a directory — or a single file — using suffix mapping.
 
-    Uses ``Path.suffix`` to map files to group/label pairs. Files with
-    unknown extensions are classified as ``("unknown", "unknown")``.
-
-    Args:
-        path: Directory path to scan.
-
-    Returns:
-        List of ``FileEntry`` objects for each detected file.
+    Unknown extensions classify as ``("unknown", "unknown")``. A single
+    file yields one entry keyed ``"."`` (its path relative to itself),
+    which is the key ``ingest_path_async`` looks up for direct file
+    ingest. The directory walk cannot produce it: ``iterdir()`` on a
+    file raises ``NotADirectoryError``, which the walk swallows.
     """
     project_root = Path(path)
     entries: list[FileEntry] = []
+
+    if project_root.is_file():
+        return [_entry(".", project_root.suffix.lower())]
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
@@ -165,27 +180,11 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
                     continue
                 _walk(child, current_depth + 1)
             elif child.is_file():
-                suffix = child.suffix.lower()
                 try:
                     rel_path = str(child.relative_to(project_root))
                 except ValueError:
                     rel_path = str(child)
-
-                if suffix in _BINARY_SUFFIXES:
-                    group, label = "binary", suffix.lstrip(".")
-                    is_text = False
-                elif suffix in _SUFFIX_MAP:
-                    group, label = _SUFFIX_MAP[suffix]
-                    is_text = True
-                else:
-                    group, label = "unknown", "unknown"
-                    is_text = True
-
-                entries.append(
-                    FileEntry(
-                        path=rel_path, group=group, label=label, is_text=is_text, suffix=suffix
-                    )
-                )
+                entries.append(_entry(rel_path, child.suffix.lower()))
 
     _walk(project_root, 0)
 

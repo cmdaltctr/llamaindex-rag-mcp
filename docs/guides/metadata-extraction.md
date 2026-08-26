@@ -1,8 +1,8 @@
 # Metadata Extraction
 
-During ingestion, the server can automatically extract metadata from documents and attach it to every chunk as ChromaDB metadata. This metadata can then be used to **filter search results** — for example, searching only chunks categorised as `"AI"` or `"Biology"`.
+During ingestion, the server can automatically extract metadata from documents and attach it to every chunk as vector-store metadata. This metadata can then be used to **filter search results** — for example, searching only chunks categorised as `"AI"` or `"Biology"`.
 
-Extraction runs **once per file** (not per chunk), so overhead is O(files), not O(chunks).
+Extraction is exposed as a **file-level operation**. In `llamaindex` mode the file is temporarily split into nodes so the LLM extractors have bounded context, but those temporary per-node outputs are aggregated back to one file-level metadata dict and then copied to the final stored chunks.
 
 ## Modes
 
@@ -11,8 +11,8 @@ Set `METADATA__EXTRACTION_MODE` in `.env`:
 | Mode                | What it does                                                                                                                                                                                   | Speed       | Status |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------ |
 | `keyword`            | Regex pattern matching against built-in rules. Scans the first ~2000 chars for keywords.                                                                                                       | Instant     | Ready  |
-| `local`             | Sends the first 3000 chars to a lightweight chat model via the configured `METADATA_LLM_PROVIDER` (default `local` + `LOCAL_BACKEND=llamacpp`). Returns `category`, `keywords`, and `summary`. | ~2s/file    | Ready  |
-| `llamaindex` (default) | Uses LlamaIndex's `IngestionPipeline` with `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`. Per-chunk enrichment. Requires `uv sync --extra metadata`.                         | ~5–30s/file | Ready  |
+| `local`             | Sends a bounded file prefix to a lightweight chat model via the configured `METADATA_LLM_PROVIDER` (default `local` + `LOCAL_BACKEND=llamacpp`). Returns `category`, `keywords`, and `summary`. | ~2s/file    | Ready  |
+| `llamaindex` (default) | Splits the file with `SentenceSplitter`, caps the temporary node set with `LLAMANDEX_EXTRACTOR_MAX_CHUNKS`, runs `TitleExtractor`, `KeywordExtractor`, and `SummaryExtractor`, then aggregates the temporary node metadata back to one file-level dict. | ~5–30s/file | Ready  |
 | `disabled`          | No metadata extracted. No `category` field written to chunks.                                                                                                                                  | N/A         | Ready  |
 | `ollama`            | Uses the registered Ollama extraction strategy directly.                                                                                                                                       | Varies      | Ready  |
 | `llamacpp`          | Uses the registered llama.cpp extraction strategy directly.                                                                                                                                    | Varies      | Ready  |
@@ -32,6 +32,12 @@ METADATA__EXTRACTION_MODE=disabled
 METADATA__EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
 ```
 
+## LlamaIndex mode
+
+`llamaindex` mode uses the configured document token settings to split the full file first. It then sends at most the first `LLAMANDEX_EXTRACTOR_MAX_CHUNKS` split nodes (default `10`) to the three LLM-backed extractors. The cap is therefore an exact **node-count budget**, not an approximation such as `max_chunks × characters`.
+
+The extractor pipeline produces temporary per-node metadata, but the current persistence contract remains file-level: the first usable title/summary/keyword output is aggregated and normalised into one dict, and ingestion copies that dict onto each final stored chunk. A future move to genuinely different LLM metadata per stored chunk requires its own design and experiment.
+
 ## Local mode
 
 Uses a **separate chat model** (not the embedding model) set via `METADATA_LLM_PROVIDER` (default `local`). The sub-provider is selected by `LOCAL_BACKEND` (default `llamacpp`) or `CLOUD_BACKEND` (default `openrouter`).
@@ -42,7 +48,7 @@ When `METADATA_LLM_PROVIDER=local` and `LOCAL_BACKEND=ollama`, the model is conf
 ollama pull qwen3:0.6b
 ```
 
-This tiny 0.6B model is purpose-built for fast classification. It only sees the first 2000 characters per file — good enough for category classification, not comprehensive content extraction.
+This tiny 0.6B model is purpose-built for fast classification and receives a bounded file prefix rather than the complete document.
 
 > **Other sub-providers:** When `LOCAL_BACKEND=llamacpp`, this mode routes to llama.cpp's `/v1/chat/completions` endpoint using `LLAMACPP_CHAT_URL` and `LLAMACPP_CHAT_MODEL`. When `METADATA_LLM_PROVIDER=cloud` and `CLOUD_BACKEND=openrouter`, it routes to OpenRouter's chat API using `OPENROUTER_API_KEY` and `OPENROUTER_LLM_MODEL`. See [Providers](providers.md) for setup.
 
@@ -79,7 +85,7 @@ Two shared timeouts govern LLM-backed extraction:
 | Setting                       | Default | Governs                                                                                          |
 | ------------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
 | `METADATA__CLASSIFY_TIMEOUT`   | `30.0`s | Per-attempt HTTP timeout for the `local` mode's direct-chat classification call (retried up to `METADATA__CLASSIFY_MAX_ATTEMPTS` times). |
-| `METADATA__PIPELINE_TIMEOUT`   | `180.0`s | Timeout for the `llamaindex` mode's `IngestionPipeline` run (three extractors per chunk, one attempt, no retry). |
+| `METADATA__PIPELINE_TIMEOUT`   | `180.0`s | Timeout for the `llamaindex` mode's extractor pipeline over the capped temporary nodes (one attempt, no retry). |
 
 Each also has three optional **per-provider overrides**, all `None` (unset) by default — an unset override falls back to the shared value above, so behaviour is unchanged until you set one:
 
@@ -110,7 +116,7 @@ If the LLM call backing `llamaindex` or `local` mode fails — the required pack
 }
 ```
 
-`metadata_degraded` counts files whose metadata came from a fallback tier rather than the configured mode; only affected `file_details` entries carry the `metadata_degraded: true` marker. `keyword` and `disabled` as the *configured* mode never degrade — there's no LLM call to fall back from. The chunk metadata written to ChromaDB is unaffected: `category`, `keywords`, and `summary` keep their usual shape, with no extra key added.
+`metadata_degraded` counts files whose metadata came from a fallback tier rather than the configured mode; only affected `file_details` entries carry the `metadata_degraded: true` marker. `keyword` and `disabled` as the *configured* mode never degrade — there's no LLM call to fall back from. The stored chunk metadata shape is unchanged: `category`, `keywords`, and `summary` remain file-level values copied onto final chunks, with no internal degradation key added.
 
 ## Filtering search results
 
@@ -124,4 +130,4 @@ Use the `metadata_filter` parameter on the `search_documents` MCP tool:
 }
 ```
 
-The filter is applied **server-side** via ChromaDB's native `where` clause — only matching chunks leave the vector store. This is more efficient than fetching everything and filtering client-side.
+Dense retrieval applies the filter server-side through the configured vector store. The pre-calibration hardening change separately tracks the requirement that hybrid sparse retrieval must obey the same query constraint before results are accepted as calibration evidence.

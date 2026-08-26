@@ -1,0 +1,116 @@
+{
+  "experiment_id": "14-liteparse-qasper-promotion",
+  "protocol_version": "2.1",
+  "experimental_unit": "one Qasper document/question pair, paired across parsers",
+  "primary_metric": "coverage_at_20",
+  "manipulated_factors": [
+    {
+      "name": "reader",
+      "levels": [
+        "pypdf",
+        "liteparse",
+        "pdf_inspector"
+      ]
+    },
+    {
+      "name": "rerank",
+      "levels": [
+        false,
+        true
+      ]
+    }
+  ],
+  "controlled_variables": {
+    "top_k": 50,
+    "embedding_provider": "ollama",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "corpus": "qasper-pdfs-immutable"
+  },
+  "cells": [
+    {
+      "id": "build_pypdf",
+      "factors": {
+        "reader": "pypdf"
+      }
+    },
+    {
+      "id": "build_liteparse",
+      "factors": {
+        "reader": "liteparse"
+      }
+    },
+    {
+      "id": "build_pdf_inspector",
+      "factors": {
+        "reader": "pdf_inspector"
+      }
+    },
+    {
+      "id": "pypdf_off",
+      "factors": {
+        "reader": "pypdf",
+        "rerank": false
+      }
+    },
+    {
+      "id": "pypdf_on",
+      "factors": {
+        "reader": "pypdf",
+        "rerank": true
+      }
+    },
+    {
+      "id": "liteparse_off",
+      "factors": {
+        "reader": "liteparse",
+        "rerank": false
+      }
+    },
+    {
+      "id": "liteparse_on",
+      "factors": {
+        "reader": "liteparse",
+        "rerank": true
+      }
+    },
+    {
+      "id": "pdf_inspector_off",
+      "factors": {
+        "reader": "pdf_inspector",
+        "rerank": false
+      }
+    },
+    {
+      "id": "pdf_inspector_on",
+      "factors": {
+        "reader": "pdf_inspector",
+        "rerank": true
+      }
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "document_backend.effective",
+      "operator": "in",
+      "expected": [
+        "pypdf",
+        "liteparse",
+        "pdf_inspector"
+      ],
+      "reason": "the requested parser must be the parser that ran (no fallback)"
+    },
+    {
+      "manifest_field": "corpus_identity",
+      "operator": "not_null",
+      "reason": "the build must record the immutable PDF corpus identity"
+    }
+  ],
+  "vector_store_policy": {
+    "addendum": "2026-08-21",
+    "source": "ADR-049 decision D11 (make-lancedb-default-and-isolate-chromadb)",
+    "policy": "first admissible measured run follows ADR-049 -> must run on the qualified LanceDB default unless the vector-store backend is a declared manipulated factor",
+    "declaration": "vector-store backend declared a manipulated factor",
+    "limitation": "prepared-on-Chroma inputs produce Chroma-specific results; not LanceDB-admissible evidence. Re-base immutable inputs on LanceDB, or keep this declaration, before any measured row.",
+    "preflight": "assert_policy_vector_store in experiments/_lib/preflight.py (task 6.3)"
+  }
+}

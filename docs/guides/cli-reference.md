@@ -10,10 +10,10 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `rag-mcp ingest <path>` | Index a file or directory into the vector store |
 | `rag-mcp search <query>` | Search indexed documents for semantically relevant chunks |
 | `rag-mcp list` | Show indexed documents with chunk counts |
-| `rag-mcp list-collections` | Show all ChromaDB collections with document and chunk counts |
+| `rag-mcp list-collections` | Show all collections in the selected vector store with document and chunk counts |
 | `rag-mcp watch <dir>` | Watch a directory for new/changed documents and auto-ingest them |
 | `rag-mcp delete` | Delete documents by file path, metadata filter, or drop a collection |
-| `rag-mcp benchmark` | Benchmark embedding throughput (no ChromaDB writes) |
+| `rag-mcp benchmark` | Benchmark embedding throughput without vector-store writes |
 | `rag-mcp --version` | Show version |
 | `rag-mcp --help` | Show help |
 | `rag-mcp --install-completion` | Install shell tab completion |
@@ -22,7 +22,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 
 | Flag | Applies to | Description |
 |------|-----------|-------------|
-| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete` | ChromaDB collection name (default `"documents"`) |
+| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete` | Collection name in the selected vector store (default `"documents"`) |
 | `--json` | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON |
 | `--chunk-size` | `ingest` | Override chunk size (characters) |
 | `--chunk-overlap` | `ingest` | Override chunk overlap (characters) |
@@ -33,7 +33,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `--hybrid` | `search` | Fuse dense vector search with sparse BM25 via RRF |
 | `--debounce`, `-d` | `watch` | Debounce interval in seconds (default: 2) |
 | `--verbose`, `-v` | `watch` | Enable DEBUG-level logging |
-| `--dry-run` | `delete` | Preview deletion without modifying ChromaDB |
+| `--dry-run` | `delete` | Preview deletion without modifying the selected vector store |
 | `--yes`, `-y` | `delete` | Skip confirmation prompt for collection deletion |
 
 ## Examples
@@ -144,7 +144,7 @@ rag-mcp watch /path/to/docs/ --verbose
 
 > **Cold-start gap:** The watcher only detects changes after it starts. Run `rag-mcp ingest <path>` first to catch up on existing files.
 
-> **Concurrency warning:** Do not run `rag-mcp watch` and `rag-mcp ingest` (or the MCP server) simultaneously on the same ChromaDB — two processes do not share the internal write lock.
+> **Concurrency warning:** Do not run `rag-mcp watch` and `rag-mcp ingest` (or the MCP server) simultaneously against the same collection. Two processes do not share the internal write lock.
 
 ### Shell tab completion
 

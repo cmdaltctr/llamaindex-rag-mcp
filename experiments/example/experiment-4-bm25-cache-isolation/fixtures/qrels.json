@@ -1,0 +1,103 @@
+{
+  "cache_build_expectations": {
+    "affected_namespace_after_collection_drop": 1,
+    "affected_namespace_after_mutation": 1,
+    "affected_namespace_after_recreate": 1,
+    "first_query_per_namespace": 1,
+    "repeated_query_without_mutation": 0,
+    "unaffected_namespace_after_mutation": 0
+  },
+  "contamination_tolerance": 0,
+  "generation_arithmetic": {
+    "expected_delta_per_successful_mutation": 1,
+    "mutations": [
+      "setup upsert (per namespace)",
+      "direct upsert_precomputed",
+      "direct delete_where",
+      "orchestration embed_and_write_async",
+      "orchestration remove_document",
+      "direct delete_collection",
+      "recreate upsert_precomputed"
+    ]
+  },
+  "mutation_token_expected_ids": {
+    "delta_only": {
+      "A/documents": {
+        "post_direct_upsert": [
+          "a_d_delta"
+        ],
+        "post_filtered_delete": [],
+        "pre_mutation": []
+      },
+      "A/other": [],
+      "B/documents": []
+    },
+    "epsilon_only": {
+      "A/documents": {
+        "post_orchestration_remove": [],
+        "post_orchestration_write": [
+          "orch_eps_1"
+        ],
+        "pre_orchestration": []
+      },
+      "A/other": [],
+      "B/documents": []
+    }
+  },
+  "namespaces": {
+    "A/documents": {
+      "collection": "documents",
+      "expected_generation_after_setup": 1,
+      "stable_ids": [
+        "a_d_alpha",
+        "a_d_f1",
+        "a_d_f2"
+      ],
+      "store": "A"
+    },
+    "A/other": {
+      "collection": "other",
+      "expected_generation_after_setup": 1,
+      "stable_ids": [
+        "a_o_f1",
+        "a_o_f2",
+        "a_o_gamma"
+      ],
+      "store": "A"
+    },
+    "B/documents": {
+      "collection": "documents",
+      "expected_generation_after_setup": 1,
+      "stable_ids": [
+        "b_d_beta",
+        "b_d_f1",
+        "b_d_f2"
+      ],
+      "store": "B"
+    }
+  },
+  "stable_token_expected_ids": {
+    "alpha_only": {
+      "A/documents": [
+        "a_d_alpha"
+      ],
+      "A/other": [],
+      "B/documents": []
+    },
+    "beta_only": {
+      "A/documents": [],
+      "A/other": [],
+      "B/documents": [
+        "b_d_beta"
+      ]
+    },
+    "gamma_only": {
+      "A/documents": [],
+      "A/other": [
+        "a_o_gamma"
+      ],
+      "B/documents": []
+    }
+  },
+  "stale_row_count_after_rebuild": 0
+}

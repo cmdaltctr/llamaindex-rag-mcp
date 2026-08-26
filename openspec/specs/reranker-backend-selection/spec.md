@@ -1,9 +1,7 @@
 ## Purpose
 
 Lets operators choose which inference engine re-scores search results, so a heavyweight PyTorch reranker can be opted into for quality work without that weight ever reaching the default install. Guarantees every backend produces scores on the same scale, so the calibrated similarity threshold stays valid whichever engine runs.
-
 ## Requirements
-
 ### Requirement: reranker backend is selectable
 
 The system SHALL support more than one reranker inference backend and SHALL
@@ -67,36 +65,44 @@ lazily during retrieval, so the two paths cannot diverge.
 ### Requirement: all backends share one score range and public contract
 
 Every reranker backend SHALL expose the same public behaviour: re-score
-query-document pairs, return results sorted by descending relevance,
-truncate to `top_k`, and set the reranked provenance flag. Every backend
-SHALL normalise raw model outputs to the `(0, 1)` range via a sigmoid
-transform so scores remain comparable with vector cosine similarity and
-with each other.
+query-document pairs, return results sorted by descending relevance, truncate
+to `top_k`, and set the reranked provenance flag. Every backend SHALL normalise
+raw model outputs to the `(0, 1)` range via the registered transform.
 
-This is a correctness requirement, not a stylistic one. The similarity
-threshold is scaled by a factor calibrated against sigmoid-normalised
-scores. A backend emitting raw logits would make threshold filtering
-admit everything or reject everything with no error raised.
+Sharing a public range does not make different inference backends,
+quantisations or model artefacts numerically or rank equivalent. Device routes
+using the same backend, precision and model revision SHALL meet their declared
+device-parity tolerance. ONNX-int8 and Torch-fp32 scores, rankings and threshold
+decisions SHALL be treated as backend-specific until admissible calibration
+evidence proves interchangeability.
 
-#### Scenario: every backend returns normalised scores
+#### Scenario: Every backend returns normalised scores
 
 - **GIVEN** any registered reranker backend
-- **WHEN** it re-scores a set of results
+- **WHEN** it re-scores a set of results successfully
 - **THEN** every returned score SHALL be greater than 0.0 and less than or equal to 1.0
 
-#### Scenario: backends agree on ranking
+#### Scenario: Same Torch model agrees across CPU and MPS
 
-- **GIVEN** a fixed query and a fixed set of candidate documents
-- **WHEN** the ONNX backend and the torch backend each re-score them using the same model ID
-- **THEN** the top-ranked document SHALL be the same for both backends
+- **GIVEN** a fixed query, candidates and Torch fp32 model revision
+- **WHEN** Torch CPU and Torch MPS each re-score them under a registered device-parity protocol
+- **THEN** ranking equality and score differences MUST satisfy that protocol's tolerance
 
-#### Scenario: threshold filtering behaves the same across backends
+#### Scenario: Different backend or quantisation disagrees
 
-- **GIVEN** a similarity threshold that admits N results under the ONNX backend
-- **WHEN** the same query is run under the torch backend with the same model ID
-- **THEN** the number of admitted results SHALL NOT differ by more than one
+- **GIVEN** ONNX-int8 and Torch-fp32 routes using nominally the same model ID
+- **WHEN** their rankings or scores differ
+- **THEN** the difference MUST be reported as backend or quantisation divergence
+- **AND** it MUST NOT by itself be reported as an MPS device defect
 
-#### Scenario: every backend degrades gracefully
+#### Scenario: Thresholds are backend calibrated
+
+- **GIVEN** a threshold calibrated for one reranker backend and model artefact
+- **WHEN** another backend, quantisation or model artefact is selected
+- **THEN** the threshold MUST NOT be assumed equivalent without admissible calibration evidence
+- **AND** runtime or experiment evidence MUST identify the backend and model artefact used
+
+#### Scenario: Every backend degrades gracefully
 
 - **GIVEN** any registered reranker backend whose model cannot be loaded
 - **WHEN** a search is run with `rerank=True`
@@ -156,3 +162,4 @@ distinguishable from reranking being switched off.
 - **GIVEN** the selected backend has failed to load on every attempt
 - **WHEN** the failure count passes the escalation threshold
 - **THEN** the system SHALL log at error severity rather than warning severity
+

@@ -5,9 +5,8 @@ Identity tests mirror the ChromaDB semantics documented in
 through public ``VectorStore`` ABC methods plus ``EmbeddingIdentity``
 only.  Hybrid tests mirror ``test_hybrid_retrieval.py``: the in-memory
 BM25 sparse retriever must build its index from ``iter_documents`` and
-rebuild whenever a write or delete advances the generation counter (an
-explicit LanceDB-spec difference from the Chroma pipeline, where the
-ingestion writer owns write-side bumping).
+rebuild whenever a store-owned write or delete advances the generation
+counter.
 
 All tests run offline against an isolated on-disk database under
 ``tmp_path`` using the conftest MockEmbedding (384 dims).
@@ -17,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyarrow as pa
 import pytest
 
 from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
@@ -27,6 +27,42 @@ from rag_mcp.core.vectordb.identity import (
     EmbeddingIdentity,
 )
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+
+
+def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
+    """Equal collection/generation values cannot cross backend instances."""
+    # Task 5.1: the Chroma half of this cross-backend test needs the
+    # optional chroma extra; it skips by design in the base install and
+    # runs in the chroma-extra CI job.
+    pytest.importorskip(
+        "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
+    )
+    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+
+    collection = "cross_backend_cache_isolation"
+    chroma = ChromaVectorStore()
+    lance = LanceVectorStore(uri=str(tmp_path / "cross_backend_lance"))
+    common_metadatas = [{"row": 1}, {"row": 2}, {"row": 3}]
+    common_embeddings = [[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]]
+    chroma.upsert_precomputed(
+        collection,
+        ["chroma", "chroma-f1", "chroma-f2"],
+        ["alpha unique", "filler gamma", "filler delta"],
+        common_metadatas,
+        common_embeddings,
+    )
+    lance.upsert_precomputed(
+        collection,
+        ["lance", "lance-f1", "lance-f2"],
+        ["beta unique", "filler gamma", "filler delta"],
+        common_metadatas,
+        common_embeddings,
+    )
+    assert chroma.get_generation(collection) == lance.get_generation(collection) == 1
+
+    assert BM25SparseRetriever(collection, store=chroma).query("alpha", 1)[0][1] == "chroma"
+    assert BM25SparseRetriever(collection, store=lance).query("beta", 1)[0][1] == "lance"
+
 
 # ── Embedding identity (task 6.3) ─────────────────────────────────────
 
@@ -642,3 +678,33 @@ class TestDeleteCollectionGeneration:
 
         store.delete_collection("bm25drop")
         assert retriever.query("orphantoken", top_n=5) == []
+
+
+def test_write_nodes_widens_null_typed_doc_id_column(tmp_path: Path) -> None:
+    """A Null-typed top-level doc_id column no longer blocks later writes.
+
+    The LlamaIndex adapter types ``doc_id`` as Arrow Null when the first
+    write carries no SOURCE relationship. The pipeline always sets that
+    relationship, so real tables never hit this, but the store rebuilds
+    the column as string before writing so a hand-shaped table cannot
+    wedge the store (TDR-012).
+    """
+    from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
+
+    store = LanceVectorStore(uri=str(tmp_path / "null-doc-id"))
+    store.write_nodes(
+        [TextNode(text="bare sentinel", metadata={"file_path": "bare.txt"})],
+        "null_doc_id",
+    )
+    schema_before = store._open_table("null_doc_id").schema
+    assert pa.types.is_null(schema_before.field("doc_id").type)
+
+    sourced = TextNode(text="with source relationship", metadata={"file_path": "bare.txt"})
+    sourced.relationships[NodeRelationship.SOURCE] = RelatedNodeInfo(
+        node_id="11111111-1111-1111-1111-111111111111"
+    )
+    store.write_nodes([sourced], "null_doc_id")
+
+    rows = list(store.iter_documents("null_doc_id"))
+    assert len(rows) == 2
+    assert any("with source relationship" in text for _, text, _ in rows)

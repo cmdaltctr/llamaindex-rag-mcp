@@ -63,7 +63,7 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("RETRIEVAL__HYBRID_RRF_K", "retrieval.hybrid_rrf_k", 60),
     ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25"),
     # PDF reader.
-    ("PDF_READER", "pdf_reader", "auto"),
+    ("PDF_READER", "pdf_reader", "pdf_inspector"),
     ("LITEPARSE_NUM_WORKERS", "liteparse_num_workers", None),
     ("LITEPARSE_OCR_ENABLED", "liteparse_ocr_enabled", False),
     # Metadata.
@@ -181,6 +181,17 @@ def _fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     sources remain active.
     """
     return Settings(_env_file=None)
+
+
+@pytest.mark.parametrize("reader", ["liteparse", "pdf_inspector"])
+def test_explicit_pdf_reader_is_preserved(
+    reader: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Configured concrete PDF readers must not silently fall back to auto."""
+    monkeypatch.setenv("PDF_READER", reader)
+
+    assert _fresh_settings(monkeypatch).pdf_reader == reader
 
 
 # ── Default resolution ──────────────────────────────────────────────────

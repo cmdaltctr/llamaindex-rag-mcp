@@ -1,0 +1,421 @@
+Synthetic token-character divergence corpus.
+
+Block 000 reference MARK0000X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 001 reference MARK0001X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 002 reference MARK0002X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 003 reference MARK0003X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 004 reference MARK0004X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 005 reference MARK0005X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 006 reference MARK0006X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 007 reference MARK0007X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 008 reference MARK0008X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 009 reference MARK0009X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 010 reference MARK0010X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 011 reference MARK0011X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 012 reference MARK0012X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 013 reference MARK0013X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 014 reference MARK0014X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 015 reference MARK0015X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 016 reference MARK0016X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 017 reference MARK0017X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 018 reference MARK0018X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 019 reference MARK0019X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 020 reference MARK0020X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 021 reference MARK0021X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 022 reference MARK0022X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 023 reference MARK0023X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 024 reference MARK0024X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 025 reference MARK0025X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 026 reference MARK0026X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 027 reference MARK0027X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 028 reference MARK0028X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 029 reference MARK0029X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 030 reference MARK0030X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 031 reference MARK0031X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 032 reference MARK0032X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 033 reference MARK0033X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 034 reference MARK0034X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 035 reference MARK0035X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 036 reference MARK0036X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 037 reference MARK0037X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 038 reference MARK0038X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 039 reference MARK0039X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 040 reference MARK0040X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 041 reference MARK0041X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 042 reference MARK0042X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 043 reference MARK0043X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 044 reference MARK0044X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 045 reference MARK0045X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 046 reference MARK0046X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 047 reference MARK0047X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 048 reference MARK0048X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 049 reference MARK0049X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 050 reference MARK0050X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 051 reference MARK0051X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 052 reference MARK0052X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 053 reference MARK0053X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 054 reference MARK0054X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 055 reference MARK0055X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 056 reference MARK0056X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 057 reference MARK0057X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 058 reference MARK0058X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 059 reference MARK0059X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 060 reference MARK0060X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 061 reference MARK0061X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 062 reference MARK0062X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 063 reference MARK0063X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 064 reference MARK0064X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 065 reference MARK0065X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 066 reference MARK0066X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.
+
+Block 067 reference MARK0067X.
+lexemes 00: internationalisation characterisation responsibilities comprehensiveness interoperability disproportionately.
+lexemes 01: characterisation responsibilities comprehensiveness interoperability disproportionately unconstitutional.
+lexemes 02: responsibilities comprehensiveness interoperability disproportionately unconstitutional misinterpretations.
+lexemes 03: comprehensiveness interoperability disproportionately unconstitutional misinterpretations internationalisation.
+
+Block 068 reference MARK0068X.
+corpus 00: 図書館 検索 要約 量子 文献 分析 要約.
+corpus 01: 検索 要約 量子 文献 分析 要約 検索.
+corpus 02: 要約 量子 文献 分析 要約 検索 図書館.
+corpus 03: 量子 文献 分析 要約 検索 図書館 検索.
+
+Block 069 reference MARK0069X.
+letters 00: a b c d e f g h i j a b c d e f g h i j a b c d e f g h.
+letters 01: b c d e f g h i j a b c d e f g h i j a b c d e f g h i.
+letters 02: c d e f g h i j a b c d e f g h i j a b c d e f g h i j.
+letters 03: d e f g h i j a b c d e f g h i j a b c d e f g h i j a.

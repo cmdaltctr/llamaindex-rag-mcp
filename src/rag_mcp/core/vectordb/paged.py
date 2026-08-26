@@ -1,8 +1,8 @@
-"""Paged and bulk collection reads for the Chroma vector store.
+"""Paged collection reads and row-ID deletion for the Chroma store.
 
-Extracted from ``chroma.py`` to respect the 500-line file ceiling.
-These methods operate on duck-typed Chroma collection handles — no
-``chromadb`` import, which stays confined to ``chroma.py``.
+Extracted from ``chroma.py`` to respect the 500-line file ceiling. These
+methods operate on duck-typed Chroma collection handles, keeping the direct
+``chromadb`` import confined to ``chroma.py``.
 """
 
 from __future__ import annotations
@@ -15,16 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class PagedReadMixin:
-    """Bounded-page and full-collection reads over Chroma collections.
-
-    The concrete store supplies ``_get_collection(name)`` returning the
-    raw collection handle or ``None`` when absent, and resolves the
-    default page size through ``_default_page_size()``.
-    """
+    """Bounded-page reads plus stable-ID deletion over Chroma collections."""
 
     # Supplied by the concrete store.
     _get_collection: Callable[[str], Any]
     _default_page_size: Callable[[], int]
+    bump_generation: Callable[[str], None]
 
     def _resolve_page_size(self, page_size: int | None) -> int:
         """Resolve the effective page size, validating it is positive."""
@@ -39,10 +35,7 @@ class PagedReadMixin:
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[dict | None]:
-        """Yield per-chunk metadata using bounded ChromaDB pages.
-
-        Absorbed from the former ``chroma_utils.iter_collection_metadatas``.
-        """
+        """Yield per-chunk metadata using bounded ChromaDB pages."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return
@@ -58,9 +51,7 @@ class PagedReadMixin:
             metadatas = result.get("metadatas") or []
             if not metadatas:
                 break
-
             yield from metadatas
-
             if len(metadatas) < effective_page_size:
                 break
             offset += len(metadatas)
@@ -70,7 +61,7 @@ class PagedReadMixin:
         collection_name: str,
         include: list[str],
     ) -> dict[str, list] | None:
-        """Return every chunk's requested fields (see :meth:`VectorStore.fetch_all`)."""
+        """Return every chunk's requested fields in one payload."""
         try:
             collection = self._get_collection(collection_name)
         except Exception as exc:
@@ -96,10 +87,7 @@ class PagedReadMixin:
         collection_name: str,
         page_size: int | None = None,
     ) -> Iterator[tuple[str, str, dict]]:
-        """Yield ``(id, text, metadata)`` tuples using bounded pages.
-
-        Absorbed from the former ``sparse._read_collection_rows`` logic.
-        """
+        """Yield ``(id, text, metadata)`` tuples using bounded pages."""
         collection = self._get_collection(collection_name)
         if collection is None:
             return
@@ -124,3 +112,18 @@ class PagedReadMixin:
             if len(ids) < effective_page_size:
                 break
             offset += len(ids)
+
+    def delete_ids(self, collection_name: str, ids: list[str]) -> None:
+        """Delete stable row IDs and advance generation exactly once.
+
+        Empty ID lists and absent collections are no-ops. Selection of the IDs
+        is performed by store-neutral ingestion logic, so this operation does
+        not inherit backend-specific missing-metadata filter semantics.
+        """
+        if not ids:
+            return
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return
+        collection.delete(ids=ids)
+        self.bump_generation(collection_name)

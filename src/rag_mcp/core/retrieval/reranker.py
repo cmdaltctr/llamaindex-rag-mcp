@@ -186,6 +186,9 @@ class CrossEncoderReranker:
         # state deliberately — it describes only this call, not a
         # process-wide streak, and a fresh reranker is built per search().
         self.last_failure_reason: str | None = None
+        # ONNX variant last downloaded by this process, recorded for the
+        # experiment runtime manifest (D13).  None until a download happens.
+        self.last_loaded_variant: str | None = None
 
     # ── Model loading ──────────────────────────────────────────────────
 
@@ -209,6 +212,9 @@ class CrossEncoderReranker:
                 self._load_attempted = True
                 self._load_error = None
                 self.last_failure_reason = None
+                # Cache hit: `last_loaded_variant` stays None — the cache
+                # stores (session, tokenizer, max_length) only, so variant
+                # provenance is known only to the downloading process.
                 # Deliberately do NOT call _reset_failure_state() here.
                 # A cache hit means the model loaded successfully in the
                 # past, but inference may be persistently failing (the
@@ -266,6 +272,7 @@ class CrossEncoderReranker:
                         f"Tried: {', '.join(candidates)}"
                     )
 
+                self.last_loaded_variant = onnx_filename
                 self._tokenizer = Tokenizer.from_pretrained(self._model_id)
                 # Cap max_length at the model's own limit.  MiniLM supports
                 # 512 tokens; ModernBERT supports 8192.  Using a max_length

@@ -174,6 +174,7 @@ class TestChromaCloudSettingsSources:
         """CHROMA_MODE=cloud flows from the environment into the model."""
         from rag_mcp.config import Settings
 
+        monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "sk-env-coverage-1")
         assert Settings(_env_file=None).chroma_mode == "cloud"
@@ -182,6 +183,7 @@ class TestChromaCloudSettingsSources:
         """The optional identifiers resolve from the environment as a pair."""
         from rag_mcp.config import Settings
 
+        monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", "sk-env-coverage-1")
         monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-env")

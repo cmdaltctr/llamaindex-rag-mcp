@@ -1,0 +1,52 @@
+{
+  "f1_exact_ortho_opposite": {
+    "query_id": "f1_exact_ortho_opposite::q",
+    "text": "exp2 analytic query f1_exact_ortho_opposite",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "f2_progressive_rotation": {
+    "query_id": "f2_progressive_rotation::q",
+    "text": "exp2 analytic query f2_progressive_rotation",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "f3_duplicate_ties": {
+    "query_id": "f3_duplicate_ties::q",
+    "text": "exp2 analytic query f3_duplicate_ties",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "f4_unnormalised_scale": {
+    "query_id": "f4_unnormalised_scale::q",
+    "text": "exp2 analytic query f4_unnormalised_scale",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "f5_metadata_filters": {
+    "query_id": "f5_metadata_filters::q",
+    "text": "exp2 analytic query f5_metadata_filters",
+    "vector": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

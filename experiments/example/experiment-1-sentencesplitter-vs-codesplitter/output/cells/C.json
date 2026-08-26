@@ -1,0 +1,680 @@
+{
+  "cell_id": "C",
+  "cut_events": [
+    {
+      "boundary_line": 37,
+      "boundary_offset": 1448,
+      "definition": "oversizedJs",
+      "file": "js_boundary_01"
+    },
+    {
+      "boundary_line": 71,
+      "boundary_offset": 2942,
+      "definition": "oversizedJs",
+      "file": "js_boundary_01"
+    },
+    {
+      "boundary_line": 38,
+      "boundary_offset": 1492,
+      "definition": "at_ceiling",
+      "file": "py_boundary_01"
+    },
+    {
+      "boundary_line": 69,
+      "boundary_offset": 2971,
+      "definition": "at_ceiling",
+      "file": "py_boundary_01"
+    },
+    {
+      "boundary_line": 5,
+      "boundary_offset": 86,
+      "definition": "oversized",
+      "file": "py_boundary_02"
+    },
+    {
+      "boundary_line": 36,
+      "boundary_offset": 1570,
+      "definition": "oversized",
+      "file": "py_boundary_02"
+    },
+    {
+      "boundary_line": 5,
+      "boundary_offset": 87,
+      "definition": "boundary_engine",
+      "file": "py_boundary_03"
+    },
+    {
+      "boundary_line": 29,
+      "boundary_offset": 1197,
+      "definition": "boundary_engine",
+      "file": "py_boundary_03"
+    },
+    {
+      "boundary_line": 5,
+      "boundary_offset": 70,
+      "definition": "long_body_0",
+      "file": "py_longbody_03"
+    },
+    {
+      "boundary_line": 37,
+      "boundary_offset": 1568,
+      "definition": "long_body_0",
+      "file": "py_longbody_03"
+    }
+  ],
+  "factors": {
+    "chunker": "code"
+  },
+  "manifest_path": "output/manifests/C.manifest.json",
+  "rows": [
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1417,
+          27,
+          1489,
+          668,
+          291
+        ],
+        "chunk_count": 5,
+        "chunk_text_sha256": [
+          "fad206c8e8c2ed343b2fe731f8896d2cadcdcffe5e2836a6bf79c874171c7a9e",
+          "46fbc8f6748d21ffcfabe50c2e6b31a1a5a0c0490604f5e66cd916206931e5e9",
+          "6912f4d76bb92d6713b38e9a664c367090b8a8cc790ade38358c5bcaff68e9e0",
+          "ba584b1ebfcc8b02f7e22a8d10112fdda9067102dc0f5eacb2a5701a0b4b4c1e",
+          "8962ac010cf35170975fac1cd0bf56f525b835256cd804f5be18cabbde3e10e8"
+        ],
+        "complexity": "boundary",
+        "cut_boundaries": 2,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 1,
+        "definitions_fit_under_ceiling": 2,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "javascript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3905,
+        "source_sha256": "205608e019dddd522690a71c348910234bfa885387f23ee3dbfd361ec31923a4",
+        "total_boundaries": 4
+      },
+      "phase": "measured",
+      "query_id": "js_boundary_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1302,
+          1169,
+          522
+        ],
+        "chunk_count": 3,
+        "chunk_text_sha256": [
+          "58e752c45fcf555477b00e2d0546ae574da868cfa2063e963d30ce945afad424",
+          "fcc93de2a58da44b2bc95c0f53229d8e0b42e81803b39a0e1e4e71e066fb84ff",
+          "61894615688823d8ac9c6b6841ea939f18e9c5e0db84a5a73c828c9d29d3f834"
+        ],
+        "complexity": "long-body",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 3,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "javascript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3000,
+        "source_sha256": "4f858a83674dad8b8eb537a422cd77b8f6c2aa0331d59fec8fc8a4293965861e",
+        "total_boundaries": 2
+      },
+      "phase": "measured",
+      "query_id": "js_longbody_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          891,
+          838,
+          838
+        ],
+        "chunk_count": 3,
+        "chunk_text_sha256": [
+          "8a06ddd020ad1ea014feb1a32255cce197c2962be8c6deb38c4ac03204e17ac8",
+          "534dad222499b640c9e6d43b8fc70a6fc54e71bc854b94c51b92001ba2d46c68",
+          "a1f67217ed3d179012520d7524370ac4fd979411c92520d2f4e237553d40263c"
+        ],
+        "complexity": "nested",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 3,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "javascript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 2574,
+        "source_sha256": "410800924e7c562f11fda8852b64c1f048a91ca1994072d705448c6cf4174116",
+        "total_boundaries": 2
+      },
+      "phase": "measured",
+      "query_id": "js_nested_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          907,
+          854,
+          854
+        ],
+        "chunk_count": 3,
+        "chunk_text_sha256": [
+          "be92ef3c9f4cff0d5c212350fc9e945c92b95e0b21d4013cee5860dfcb1dfbfa",
+          "525146aaa5b2985a0afdaab4c6febef6eda5983fcb34d37a4c10c771fd96beeb",
+          "d7a62a06b878db933d82dd72d5aaf7dd466eef3e7218c71ac1c7ff808f3c29b7"
+        ],
+        "complexity": "nested",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 3,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "typescript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 2622,
+        "source_sha256": "befaa80512011eb6210d0eb0b0a3ae4065e9694fc16d377016635ec67d8f43de",
+        "total_boundaries": 2
+      },
+      "phase": "measured",
+      "query_id": "js_nested_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1229,
+          293
+        ],
+        "chunk_count": 2,
+        "chunk_text_sha256": [
+          "55c4f4aebc53166da8276b316ed6110e8b037248419822a726a72707f089b753",
+          "a046ac83cff16537780f7a38401813d0ae5ca96df7bf00e14d457d206f8e3a90"
+        ],
+        "complexity": "simple",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 3,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 5,
+        "definitions_total": 5,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "javascript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 1526,
+        "source_sha256": "75dc11c18eb85637f6299a0e8c99645f0cc263c217e113ad1ae7cfcbe041a3c9",
+        "total_boundaries": 1
+      },
+      "phase": "measured",
+      "query_id": "js_simple_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1293
+        ],
+        "chunk_count": 1,
+        "chunk_text_sha256": [
+          "56c73c109d7dd8ddc9111abf1aa626db1ddf644a1eb7b394da527f5c6d9583c3"
+        ],
+        "complexity": "simple",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 3,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 4,
+        "definitions_total": 4,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "typescript",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 1294,
+        "source_sha256": "01853b3236e6d4c5abe697d56baecd0b487b86dd91c6c4704b015cc84faa5fa8",
+        "total_boundaries": 0
+      },
+      "phase": "measured",
+      "query_id": "js_simple_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1462,
+          22,
+          1477,
+          37,
+          306
+        ],
+        "chunk_count": 5,
+        "chunk_text_sha256": [
+          "e04757509af2af1f5dc4171b4bba5edd278138773c61fdbc451e3ab9451b33aa",
+          "f7d307792279ac5310e4e53204d14d9a8cf233bcc6be2bd764277cbea12ce1f2",
+          "03321a1a823ec71180607fe2dc4de9f95c3601b584e7f3e0eabfa1c9368d4ec1",
+          "45ba0d0ad6efc0906466c7e792b4c340be3194ca47d9d300f74ed21344c79e3a",
+          "e76d95c738203900f8c6199de33745750f436cf3917fdb653a558081f78ea06c"
+        ],
+        "complexity": "boundary",
+        "cut_boundaries": 2,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 1,
+        "definitions_fit_under_ceiling": 2,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3318,
+        "source_sha256": "603aa9c0c4b1a88cfe1fe63d5ec26d1883b356bd77bcb7b5cbda363abdeaeb75",
+        "total_boundaries": 4
+      },
+      "phase": "measured",
+      "query_id": "py_boundary_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          57,
+          21,
+          1482,
+          846,
+          915
+        ],
+        "chunk_count": 5,
+        "chunk_text_sha256": [
+          "a60238d11c413bc2c39d60a646b031647897d465148eb076d8aedeb227acac14",
+          "c34ca524de0906a1a01549c3e48824ac6c3e86a9a94d2551403f55191b2e7f97",
+          "3618f65220a03c2a4063f80ebb57677fbb81d73fe3bd0401a66d59e04babe32e",
+          "d89439dbc1f26ddabcc72b43b9f6a5ca28ba353c0a8710b3f909f49bc85e5940",
+          "d9b22eac91253096fd942e5203e875932fe2b812012e4906668a558a226e5ac7"
+        ],
+        "complexity": "boundary",
+        "cut_boundaries": 2,
+        "definitions_covered_whole": 1,
+        "definitions_cut": 1,
+        "definitions_fit_under_ceiling": 2,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3335,
+        "source_sha256": "83a740723b43f23e47d157e6c863181f6e9cd6fb751ddc6e30334d241924a8ef",
+        "total_boundaries": 4
+      },
+      "phase": "measured",
+      "query_id": "py_boundary_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          57,
+          22,
+          1104,
+          1104,
+          362
+        ],
+        "chunk_count": 5,
+        "chunk_text_sha256": [
+          "8dacea09d859b1f6e2e29e0e0c813a2de001acdd55f9982c7f26880297fcc287",
+          "329a9bf786f81a555946da6ab43e6e49f3eea3a9a84459aedd035c02ff20e0ec",
+          "079991d22781ed36fbe30b020af3cca38bb29180c99b250793352edbeb71c0f3",
+          "e8c34aa9ee21c2d8770dadec7112e122cb1bdce05d22c8beeb263541fd490e20",
+          "6da2b13a5d051f38aa50d091e77074dda67e892539b1a25e45c602bdbaa0d74c"
+        ],
+        "complexity": "boundary",
+        "cut_boundaries": 2,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 1,
+        "definitions_fit_under_ceiling": 1,
+        "definitions_total": 2,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 2667,
+        "source_sha256": "704b8ea472549814869338863af46c9ef73e66bc6aa5871047416a530f49fd2a",
+        "total_boundaries": 4
+      },
+      "phase": "measured",
+      "query_id": "py_boundary_03"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1339,
+          1489,
+          632
+        ],
+        "chunk_count": 3,
+        "chunk_text_sha256": [
+          "d44898f2aad973bc285cfb95f932699adb1cc32f89ac959bb869965292a76c06",
+          "479aba372226ac49b577529fc47f16613651cd9fa42a918093c85751ff9861ee",
+          "96f82668d264262c1a1faa1489fda14d45b7ce8254d93cbbbd864dd65e61335b"
+        ],
+        "complexity": "long-body",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 3,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3467,
+        "source_sha256": "4082c64ee18e1fd3a895c8ee8ef1f7da5405850c035771efb4957a1b769d8cd2",
+        "total_boundaries": 2
+      },
+      "phase": "measured",
+      "query_id": "py_longbody_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1245,
+          1203,
+          1203
+        ],
+        "chunk_count": 3,
+        "chunk_text_sha256": [
+          "b5fa8406cd88fea52b6c54d724d0128ce4b826197efa03c232a9317c8bc89dfa",
+          "8cc274e8cb61bb166220c046ef4bbca14dee73936342298a8215c97fb95d4db4",
+          "18062ecb8eb78e1571312e23195f6c6dd4644df1c1dbe59db97d5179b533ad54"
+        ],
+        "complexity": "long-body",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 3,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3658,
+        "source_sha256": "f828d840036cb002a22bfdd8edbc51b4b2eb66e931aeeb553473abbaa93d1f1f",
+        "total_boundaries": 2
+      },
+      "phase": "measured",
+      "query_id": "py_longbody_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          39,
+          23,
+          1493,
+          57,
+          917,
+          725
+        ],
+        "chunk_count": 6,
+        "chunk_text_sha256": [
+          "1cd62362c858a32bfad544a47f61595a8d74ae929a2523843c738d1447e073db",
+          "80ff250097508de9c875364d48de7440f4f653078cb39a53db45e5dd83b755f5",
+          "72306fc86e32312b42002f35a8c03d4b0223a8374da354b40aecacf167b37bb4",
+          "a85e4acf52850eb639d1d3432c405796554e2d7d2cd30f8c31df33783f9ce6c6",
+          "720f829bf62adee07e16d1faff14638ce216f8e4c44f65bc61cb67253238eca0",
+          "6294023fcc1454755158b3ec7ad2738c25eca0de46863aa76a429de2e6f685f0"
+        ],
+        "complexity": "long-body",
+        "cut_boundaries": 2,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 1,
+        "definitions_fit_under_ceiling": 2,
+        "definitions_total": 3,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 3274,
+        "source_sha256": "2fc0531a62dfe90a0ad3ce5a59349f75cdd870f2b41108116c9ad31e6d1ce7e1",
+        "total_boundaries": 5
+      },
+      "phase": "measured",
+      "query_id": "py_longbody_03"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          879,
+          970,
+          1113,
+          1498
+        ],
+        "chunk_count": 4,
+        "chunk_text_sha256": [
+          "b0efc0221d3d3ff8bcae41dfd2e7bde98c182ea548ac2da4875672810386bfad",
+          "88282a7c76b3c1bae1beb95bf87a83553aef2b0aa4cc676cbd0b6ea75f6d0256",
+          "de57986c9111ebe9829e38fd45becd020b53f44065119e25879850c92bffa2f6",
+          "88f6c0deb351df933632fe025c5e0f019e2db4ae2b1927e87d9fec521ead7fd7"
+        ],
+        "complexity": "nested",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 4,
+        "definitions_total": 4,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 4470,
+        "source_sha256": "5bea62ee4caa476649129c110081fcc76c066053d12f11918aa7deefd0cc7a6b",
+        "total_boundaries": 3
+      },
+      "phase": "measured",
+      "query_id": "py_nested_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          969,
+          1069,
+          1212,
+          1498
+        ],
+        "chunk_count": 4,
+        "chunk_text_sha256": [
+          "75521d0ed70948dc99e6fef6051a6f8e9cb862a159082c2581bea781ea16cf08",
+          "1d4375f25d458dfe79c92bc240a13feba7a2b6fe1af0f75d66c11250f4e05db3",
+          "670a8f1d4b6a24eda36a0d0bbb66afe5b2214686e33028331bd35335388bfe7b",
+          "88f6c0deb351df933632fe025c5e0f019e2db4ae2b1927e87d9fec521ead7fd7"
+        ],
+        "complexity": "nested",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 4,
+        "definitions_total": 4,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 4758,
+        "source_sha256": "2c1ebe2242e455581381519d5e1a2b09de79ae81d42b26852390b10154ff2f20",
+        "total_boundaries": 3
+      },
+      "phase": "measured",
+      "query_id": "py_nested_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1068,
+          1163,
+          1307,
+          1498
+        ],
+        "chunk_count": 4,
+        "chunk_text_sha256": [
+          "722ca9bf0e3a66760ae421958623d8260b14d3623f73509e92f72246c26ad671",
+          "39541abbc05db7167ef92ec0b7a8018e56ec0e334297e455aab29f95a0137708",
+          "df4334ba08a5dc2c90b5d001e4346aecb05e46f1c4375b863700a18d3a054845",
+          "88f6c0deb351df933632fe025c5e0f019e2db4ae2b1927e87d9fec521ead7fd7"
+        ],
+        "complexity": "nested",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 0,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 4,
+        "definitions_total": 4,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 5046,
+        "source_sha256": "2032fe52a6d191f4b241cff63191547bab095126aed1d55198ab7d8e20144f5a",
+        "total_boundaries": 3
+      },
+      "phase": "measured",
+      "query_id": "py_nested_03"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1351
+        ],
+        "chunk_count": 1,
+        "chunk_text_sha256": [
+          "0181abdae6f9582010a31c5003a6effc56f103bf7366a8b5c00795190fbd6185"
+        ],
+        "complexity": "simple",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 4,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 5,
+        "definitions_total": 5,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 1352,
+        "source_sha256": "82c034b4e32e01625d2ee0c6436a6b0428fe651e323d7e576a27d0f38d4926a9",
+        "total_boundaries": 0
+      },
+      "phase": "measured",
+      "query_id": "py_simple_01"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1366,
+          246
+        ],
+        "chunk_count": 2,
+        "chunk_text_sha256": [
+          "0672800afe5288b4724102863db6f15a22708244d521af9f48f7159601101f62",
+          "4ba3c3fdc175c6f2e825cfcb715edbedd17e3bed67575393367add0071959543"
+        ],
+        "complexity": "simple",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 4,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 6,
+        "definitions_total": 6,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 1616,
+        "source_sha256": "cfc74e6d31196cf66e492aef7dad174dbe91a7070c39c777fde01332faf2c7ba",
+        "total_boundaries": 1
+      },
+      "phase": "measured",
+      "query_id": "py_simple_02"
+    },
+    {
+      "cell_id": "C",
+      "latency_ms": 0.0,
+      "metrics": {
+        "chunk_char_lengths": [
+          1366,
+          510
+        ],
+        "chunk_count": 2,
+        "chunk_text_sha256": [
+          "57f567cdbd93f79ff03112771482dfeabec47731fcb964ccdf017d96dd344b50",
+          "e26492ac540aae57cbfada20bdff28ffc668e63c2af4332d47aedd5277f70a46"
+        ],
+        "complexity": "simple",
+        "cut_boundaries": 0,
+        "definitions_covered_whole": 5,
+        "definitions_cut": 0,
+        "definitions_fit_under_ceiling": 7,
+        "definitions_total": 7,
+        "effective_strategy": "code",
+        "fallback": false,
+        "language": "python",
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "source_chars": 1880,
+        "source_sha256": "22cc36bf51fc037e453894dac67a554429dae6cd81de2b4d0988a1e6b89e2bff",
+        "total_boundaries": 1
+      },
+      "phase": "measured",
+      "query_id": "py_simple_03"
+    }
+  ],
+  "violation_events": []
+}

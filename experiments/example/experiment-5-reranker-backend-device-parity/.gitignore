@@ -1,0 +1,9 @@
+__pycache__/
+*.tmp
+# TDR-014 raw artefacts under output/ are required evidence: keep them
+# committable. The repository-level `experiments/**/eval_results.json`
+# and `.../eval_results_checkpoint.json` patterns target the same names,
+# so re-include them explicitly from this deeper file (a negation works
+# because no parent directory of these files is excluded).
+!output/**/eval_results.json
+!output/**/eval_results_checkpoint.json

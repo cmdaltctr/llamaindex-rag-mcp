@@ -2,8 +2,8 @@
 
 **ID**: `13-hard-technical-threshold-calibration-2026-06-29`  
 **Date planned**: 2026-06-29  
-**Status**: PLANNED  
-**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-019
+**Status**: REPAIRED (v2.0, Stage 4 task 4.3.5) — policy mode rerank=None, fixed fraction blocks, reference envelope arms  
+**Relation**: OpenSpec change `calibrate-rag-retrieval-defaults`; informs ADR-019. Repaired under OpenSpec change `harden-pipeline-correctness-before-calibration` (design D18).
 
 ---
 
@@ -60,19 +60,37 @@ regression.
 
 ## Experimental design / cell matrix
 
-5 thresholds × 6 fractions = 30 cells. Each cell evaluates retrieval with
-reranker-on at the given `HARD_TECHNICAL_THRESHOLD`, measuring Coverage@20
-for technical and semantic queries separately.
+42 cells (v2.0). **`plan.json` is the machine-readable truth** for this
+matrix; the runner aborts if its generated cells disagree with the plan
+(D15 agreement test).
+
+- **30 policy cells** (5 thresholds × 6 fractions): the runner calls
+  `search(..., rerank=None)` so the policy resolver decides reranking from
+  the per-cell `EffectiveSettings` carrying the swept
+  `HARD_TECHNICAL_THRESHOLD`.
+- **12 reference envelope cells** (6 fractions × 2 arms):
+  `reranker_off` (`search(..., rerank=False)`, no-rerank floor) and
+  `reranker_on` (`search(..., rerank=True)`, forced-rerank ceiling).
+  These carry no threshold factor — they are threshold-independent and
+  are run once per fraction, never duplicated per threshold.
 
 | Threshold | Fraction 100% | 90% | 75% | 50% | 25% | 0% |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0.1 | cell | cell | cell | cell | cell | cell |
-| 0.2 | cell | cell | cell | cell | cell | cell |
-| 0.3 | cell | cell | cell | cell | cell | cell |
-| 0.5 | cell | cell | cell | cell | cell | cell |
-| 0.7 | cell | cell | cell | cell | cell | cell |
+| 0.1 | policy | policy | policy | policy | policy | policy |
+| 0.2 | policy | policy | policy | policy | policy | policy |
+| 0.3 | policy | policy | policy | policy | policy | policy |
+| 0.5 | policy | policy | policy | policy | policy | policy |
+| 0.7 | policy | policy | policy | policy | policy | policy |
+| — | off/on | off/on | off/on | off/on | off/on | off/on |
 
-Each cell contains ≥ 30 queries (subsample if needed; flag cells below this).
+Query blocks are **fixed per fraction** and reused verbatim for every
+threshold and arm of that fraction: each block is drawn once from
+`random.Random(f"{20260629}:{fraction}")` and persisted to
+`output/fixed_blocks.json`, so all comparisons pair by `query_id`
+(D18/D16). The fraction axis is a blocked analysis factor, never a
+source of fresh per-cell samples. Each block contains ≥ 30 queries
+(subsample if needed; flag cells below this). Warm-up queries are
+recorded with `phase="warmup"` and excluded from measured aggregates.
 
 ## Metrics
 
@@ -147,16 +165,54 @@ uv run python experiments/13-hard-technical-threshold-calibration-2026-06-29/sum
 | File | Description | Required? |
 | --- | --- | :--: |
 | `protocol.md` | This plan | ✅ |
+| `plan.json` | Machine-readable 42-cell matrix (v2.0 truth) | ✅ |
 | `results.md` | Human-readable report | ✅ |
 | `prepare_qasper.py` | Qasper corpus preparation | ✅ |
 | `build_indexes.py` | Index builder | ✅ |
-| `run_eval.py` | Evaluation runner | ✅ |
-| `summarise_eval.py` | Results summariser | ✅ |
-| `eval_results.json` | Raw results | ✅ |
+| `run_eval.py` | Evaluation runner (v2.0) | ✅ |
+| `summarise_eval.py` | Results summariser (paired CIs) | ✅ |
+| `eval_results.json` | Raw results (per-query rows, D16) | ✅ |
 | `eval_results.summary.json` | Aggregated summary | ✅ |
+| `output/fixed_blocks.json` | Fixed per-fraction query blocks | ✅ |
 
 ## References
 
 - Exp 10: `experiments/10-reranker-technical-workload-calibration-2026-05-31/`
 - ADR-019: `docs/adr/019-reranker-disabled-for-technical-workloads.md`
 - ADR-021: `docs/adr/021-reranker-fetch-reduction-and-speed-optimization.md`
+
+## Repair history
+
+### v1 (2026-06-29, superseded)
+
+The original design declared 30 cells (5 thresholds × 6 fractions) and
+intended each cell to evaluate retrieval with the reranker active at the
+given `HARD_TECHNICAL_THRESHOLD`. The v1 runner implemented that
+literally — `search(..., rerank=True)` in every cell — which bypassed
+the policy resolver entirely, so the swept threshold never affected
+routing: the experiment measured a forced reranker arm, not the
+threshold policy it claimed to calibrate. Two further defects:
+`_sample_queries` drew a fresh random sample per (threshold × fraction)
+cell (rng state advanced between cells, so thresholds were compared on
+different query sets), and no reference arms existed. The v1 runner is
+preserved in git history (repaired in place per the Stage 4 repair
+plan); no v1 result is interpretable as threshold-policy evidence.
+
+### v2.0 (2026-08-19, Stage 4 task 4.3.5)
+
+Repaired per design D18 of `harden-pipeline-correctness-before-
+calibration`: policy cells pass `rerank=None` with the swept threshold
+carried in per-cell `EffectiveSettings`; one fixed query block per
+fraction (seeded `random.Random(f"{SEED}:{fraction}")`) is reused across
+every threshold and arm; threshold-independent `reranker_off` /
+`reranker_on` reference envelope arms run once per fraction. Added
+per-query D16 rows with warm-up separation, per-cell D13 runtime
+manifests with D14 preflight assertions (including
+`assert_policy_rerank_mode` for policy cells), controlled-variable
+pinning across cells, and the machine-readable `plan.json` whose
+42-cell matrix is enforced against the runner by agreement tests
+(`tests/test_experiment_13_harness.py`) and at run start. The
+summariser now reports paired bootstrap CIs for the semantic-benefit
+and technical-guard contrasts against the same-fraction reference arms.
+Audit regression:
+`tests/test_precalibration_audit_regressions.py::test_experiment_13_threshold_cells_do_not_force_reranking`.

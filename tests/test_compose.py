@@ -14,6 +14,10 @@ Covers the config-composition-root spec scenarios:
 from __future__ import annotations
 
 import sys
+
+# Chroma-path delegation tests (task 5.1): skipped in the base install,
+# run in the chroma-extra CI job.
+from importlib.util import find_spec as _find_spec
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -28,6 +32,19 @@ from rag_mcp.compose import (
 )
 from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
+
+requires_chroma = pytest.mark.skipif(
+    _find_spec("chromadb") is None,
+    reason="chroma extra not installed (uv sync --extra chroma); runs in the chroma-extra CI job",
+)
+
+
+def test_embedding_provider_scope_is_process_global() -> None:
+    """Profiles must not imply concurrent per-collection embed providers."""
+    import rag_mcp.compose as compose
+
+    assert compose.EMBEDDING_PROVIDER_SCOPE == "process"
+
 
 # Subpackage field -> the nested block that owns it (v2.0.0 schema).
 _BLOCK_OF = {
@@ -293,8 +310,11 @@ class TestResolveSparseBackendNative:
         from rag_mcp.config import Settings
         from rag_mcp.core.retrieval.settings import RetrievalSettings
 
+        # The probe path applies to the Chroma backend, which advertises
+        # native sparse (task 3.3): capability follows the SELECTED store.
         return Settings(
             _env_file=None,
+            vector_store="chroma",
             retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
         )
 
@@ -348,6 +368,68 @@ class TestResolvePdfReader:
         settings = Settings(_env_file=None, pdf_reader="liteparse")
         assert compose.resolve_pdf_reader(settings) == "pypdf"
 
+    def test_pdf_inspector_available_returns_pdf_inspector(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An explicit pdf_inspector reader resolves to pdf_inspector when
+        the package is importable — even though liteparse is importable too.
+
+        Spec: pdf-reader delta (promote-pdf-inspector-default-reader),
+        scenario "Explicit pdf-inspector selection via env var": explicit
+        selection SHALL win over the auto preference order.
+        """
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        settings = Settings(_env_file=None, pdf_reader="pdf_inspector")
+        assert compose.resolve_pdf_reader(settings) == "pdf_inspector"
+
+    def test_pdf_inspector_missing_falls_back_to_pypdf_with_error(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A pdf_inspector reader with the package absent falls back to pypdf.
+
+        Spec: pdf-reader delta, scenario "Missing configured backend falls
+        back safely": log an error naming the missing package and return
+        pypdf rather than raising. An installed liteparse must NOT be
+        silently selected in place of the configured reader.
+        """
+        import logging
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "pdf_inspector", None)
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        settings = Settings(_env_file=None, pdf_reader="pdf_inspector")
+        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+            assert compose.resolve_pdf_reader(settings) == "pypdf"
+        assert any("pdf_inspector" in r.message and "pypdf" in r.message for r in caplog.records)
+
+    def test_packaged_default_reader_is_pdf_inspector(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The packaged PDF_READER default is pdf_inspector.
+
+        Spec: pdf-reader delta, scenario "Packaged default selects
+        pdf-inspector": with no PDF_READER environment variable set, both
+        the packaged Settings default and the composition-root resolution
+        yield pdf_inspector.
+        """
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.delenv("PDF_READER", raising=False)
+        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
+
+        settings = Settings(_env_file=None)
+        assert settings.pdf_reader == "pdf_inspector"
+        assert compose.resolve_pdf_reader(settings) == "pdf_inspector"
+
     def test_auto_resolves_to_liteparse_when_available(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -371,10 +453,249 @@ class TestResolvePdfReader:
         settings = Settings(_env_file=None, pdf_reader="auto")
         assert compose.resolve_pdf_reader(settings) == "pypdf"
 
+    def test_auto_keeps_liteparse_first_with_pdf_inspector_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """auto must keep its liteparse-first policy even when pdf_inspector is installed.
+
+        Spec: promote-pdf-inspector-default-reader — only the packaged
+        default changes; ``auto`` "SHALL retain its existing
+        capability-resolution and graceful-fallback behaviour" (design
+        non-goal: no pdf-inspector priority inside auto). Pins the
+        current liteparse → pypdfium2 → pypdf probe order.
+        """
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        settings = Settings(_env_file=None, pdf_reader="auto")
+
+        # pdf_inspector importable must not demote liteparse.
+        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        assert compose.resolve_pdf_reader(settings) == "liteparse"
+
+        # With liteparse and pypdfium2 absent, auto falls to pypdf —
+        # pdf_inspector is never promoted into the auto chain.
+        monkeypatch.setitem(sys.modules, "liteparse", None)
+        monkeypatch.setitem(sys.modules, "pypdfium2", None)
+        assert compose.resolve_pdf_reader(settings) == "pypdf"
+
+    def test_unregistered_but_importable_reader_rejected(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """An importable but unregistered concrete name falls back to pypdf.
+
+        Spec: pdf-reader, requirement "Reader factory SHALL be extensible
+        without modifying ingestion code" — a name becomes a reader only
+        through the config accepted values plus one ``register()`` call;
+        an importable module is not a reader. resolve_pdf_reader must
+        gate explicit names through integrations.pdf.registry membership,
+        not ``__import__``: today any importable module name passes, so a
+        config/registry drift (a name Settings accepted but nobody
+        registered) would surface as a factory KeyError at query time
+        instead of an upfront fallback here.
+
+        The unregistered name is planted into ``sys.modules`` as a
+        SimpleNamespace so ``__import__`` succeeds. Settings validation
+        is bypassed with ``object.__setattr__`` because the config-layer
+        warn-and-fallback (unknown value coerced to ``auto``) is that
+        layer's own contract, covered by its own tests.
+        """
+        import logging
+        from types import SimpleNamespace
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "fastparser", SimpleNamespace())
+
+        settings = Settings(_env_file=None)
+        object.__setattr__(settings, "pdf_reader", "fastparser")
+
+        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+            assert compose.resolve_pdf_reader(settings) == "pypdf"
+        assert any("fastparser" in r.message and "registered" in r.message for r in caplog.records)
+
+    def test_unregistered_reader_log_repr_escapes_value(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """The unregistered-reader error repr-escapes the settings value.
+
+        The value reaches this branch only when Settings bypass the
+        config validator (direct construction). A newline-bearing value
+        rendered with ``%s`` could forge additional log lines; ``%r``
+        escapes it. The rendered message must contain the ``repr`` form
+        and must not contain a literal newline inside the value.
+        """
+        import logging
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        hostile = "evil\nreader"
+        settings = Settings(_env_file=None)
+        object.__setattr__(settings, "pdf_reader", hostile)
+
+        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+            assert compose.resolve_pdf_reader(settings) == "pypdf"
+        record = next(r for r in caplog.records if "unregistered" in r.message)
+        assert repr(hostile) in record.message
+        assert "evil\nreader" not in record.message
+
+    @pytest.fixture()
+    def pdf_registry_sandbox(self):
+        """Snapshot and restore the PDF reader registry around a test.
+
+        The registry is module-global state. Tests below plant temporary
+        entries via the public ``register()`` call, and a correct
+        composition root will resolve (and cache) through those entries;
+        the sandbox restores ``_registry``, ``_probe_modules``, and ``_cache``
+        so the planted names never leak into other tests.
+        """
+        from rag_mcp.integrations.pdf import registry as pdf_registry
+
+        saved_registry = dict(pdf_registry._registry)
+        saved_probe_modules = dict(pdf_registry._probe_modules)
+        saved_cache = dict(pdf_registry._cache)
+        try:
+            yield pdf_registry
+        finally:
+            pdf_registry._registry.clear()
+            pdf_registry._registry.update(saved_registry)
+            pdf_registry._probe_modules.clear()
+            pdf_registry._probe_modules.update(saved_probe_modules)
+            pdf_registry._cache.clear()
+            pdf_registry._cache.update(saved_cache)
+
+    def test_registered_reader_resolves_via_registry_probe_not_name_import(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        pdf_registry_sandbox,
+    ) -> None:
+        """A registered name that differs from its probe module still resolves.
+
+        CodeRabbit (major) on resolve_pdf_reader: availability of an
+        explicit registered reader is probed with ``__import__(reader_name)``,
+        which only works while every registry key coincides with an
+        importable top-level module name. Spec: pdf-reader, requirement
+        "Reader factory SHALL be extensible without modifying ingestion
+        code", scenario "Adding a new adapter" — one adapter module plus
+        one ``register()`` call must make ``PDF_READER=<name>`` functional,
+        and nothing in that contract requires the registry key to equal a
+        module name.
+
+        Fixture: ``resolvetest_reader`` is registered against a probe
+        module planted in ``sys.modules`` (importable), while the registry
+        name itself is deliberately NOT importable. Name-import probing
+        falls back to pypdf; probing the registry-owned dependency
+        metadata resolves the configured name. Settings validation is
+        bypassed with ``object.__setattr__`` per the precedent above —
+        the config accepted-values list is a separate contract.
+        """
+        import types
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        probe = types.ModuleType("resolvetest_pdf_probe")
+
+        class ResolveTestReader:
+            """Duck-typed ``load_data`` adapter, per the registry contract."""
+
+            def load_data(self, file, *args, **kwargs):
+                return []
+
+        probe.ResolveTestReader = ResolveTestReader
+        monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
+
+        pdf_registry_sandbox.register(
+            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
+        )
+
+        settings = Settings(_env_file=None)
+        object.__setattr__(settings, "pdf_reader", "resolvetest_reader")
+
+        assert compose.resolve_pdf_reader(settings) == "resolvetest_reader"
+
+    def test_registered_reader_with_missing_probe_falls_back_to_pypdf_with_error(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+        pdf_registry_sandbox,
+    ) -> None:
+        """A registered reader whose probe module is missing falls back to pypdf.
+
+        The discriminator: the registry NAME is planted into
+        ``sys.modules`` so ``__import__(reader_name)`` succeeds, while the
+        module named by the registry-owned dependency metadata does not
+        exist. Resolution must follow that metadata — the configured
+        reader is unavailable, so composition logs an error naming the
+        reader and falls back to pypdf rather than raising, per spec
+        pdf-reader scenario "Missing configured backend falls back
+        safely". A name-import probe would instead return the ghost name
+        and defer the failure to a factory KeyError at query time.
+        """
+        import logging
+        from types import SimpleNamespace
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        monkeypatch.setitem(sys.modules, "resolvetest_ghost", SimpleNamespace())
+        monkeypatch.delitem(sys.modules, "resolvetest_missing_probe", raising=False)
+
+        pdf_registry_sandbox.register("resolvetest_ghost", "resolvetest_missing_probe:GhostReader")
+
+        settings = Settings(_env_file=None)
+        object.__setattr__(settings, "pdf_reader", "resolvetest_ghost")
+
+        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+            assert compose.resolve_pdf_reader(settings) == "pypdf"
+        assert any(
+            "resolvetest_ghost" in r.message and "pypdf" in r.message for r in caplog.records
+        )
+
+    def test_auto_policy_ignores_registered_selector_mismatches(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        pdf_registry_sandbox,
+    ) -> None:
+        """auto keeps its capability chain when a mismatched alias is registered.
+
+        Spec: pdf-reader — the default-promotion requirement clause that
+        ``auto`` "SHALL retain its existing capability-resolution and
+        graceful-fallback behaviour". Registry probing governs explicit
+        selections only: a registered name whose dependency is importable
+        must never enter the auto chain, which keeps probing the fixed
+        liteparse → pypdfium2 → pypdf order over installed packages.
+        """
+        import types
+
+        import rag_mcp.compose as compose
+        from rag_mcp.config import Settings
+
+        probe = types.ModuleType("resolvetest_pdf_probe")
+        monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
+        pdf_registry_sandbox.register(
+            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
+        )
+        settings = Settings(_env_file=None, pdf_reader="auto")
+
+        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
+        assert compose.resolve_pdf_reader(settings) == "liteparse"
+
+        monkeypatch.setitem(sys.modules, "liteparse", None)
+        monkeypatch.setitem(sys.modules, "pypdfium2", None)
+        assert compose.resolve_pdf_reader(settings) == "pypdf"
+
 
 # ── build_vector_store (chroma path) ────────────────────────────────────────
 
 
+@requires_chroma
 def test_build_vector_store_chroma_delegates_to_factory() -> None:
     """build_vector_store with chroma delegates to build_chroma_vector_store."""
     from rag_mcp.compose import build_vector_store
@@ -748,6 +1069,7 @@ def test_build_embed_model_none_delegates_to_get_settings() -> None:
     mock_gs.assert_called_once()
 
 
+@requires_chroma
 def test_build_vector_store_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings for vector store construction."""
     from rag_mcp.compose import build_vector_store

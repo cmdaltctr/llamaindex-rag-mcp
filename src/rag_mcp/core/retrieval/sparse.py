@@ -23,6 +23,8 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
+from .filters import matches_metadata_filter
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,7 +180,7 @@ def _detect_native_sparse_capability() -> bool:
 class BM25SparseRetriever:
     """Generation-aware BM25 retriever for one collection."""
 
-    _cache: dict[str, _CachedBM25] = {}
+    _cache: dict[tuple[object, str], _CachedBM25] = {}
     _cache_lock = threading.Lock()
 
     def __init__(
@@ -189,8 +191,21 @@ class BM25SparseRetriever:
         self.collection_name = collection_name
         self._store = store
 
-    def query(self, query_text: str, top_n: int) -> list[tuple[int, str, str, dict]]:
-        """Return ``[(rank, doc_id, text, metadata), ...]`` for BM25 matches."""
+    def query(
+        self,
+        query_text: str,
+        top_n: int,
+        metadata_filter: dict | None = None,
+    ) -> list[tuple[int, str, str, dict]]:
+        """Return filtered BM25 matches in rank order.
+
+        Args:
+            query_text: Sparse query text.
+            top_n: Maximum number of eligible matches.
+            metadata_filter: Store-neutral query constraint evaluated before
+                truncation so forbidden rows cannot consume the candidate
+                budget or re-enter through RRF.
+        """
         if top_n <= 0:
             return []
         query_tokens = tokenize_english(query_text)
@@ -202,7 +217,12 @@ class BM25SparseRetriever:
             return []
 
         scores = cached.index.get_scores(query_tokens)
-        ranked = [(idx, float(score)) for idx, score in enumerate(scores) if float(score) > 0.0]
+        ranked = [
+            (idx, float(score))
+            for idx, score in enumerate(scores)
+            if float(score) > 0.0
+            and matches_metadata_filter(cached.rows[idx].metadata, metadata_filter)
+        ]
         ranked.sort(key=lambda item: item[1], reverse=True)
 
         results: list[tuple[int, str, str, dict]] = []
@@ -221,10 +241,16 @@ class BM25SparseRetriever:
     def _get_generation(self) -> int:
         return self._get_store().get_generation(self.collection_name)
 
+    def _cache_key(self) -> tuple[object, str]:
+        store = self._get_store()
+        identity = getattr(store, "cache_identity", store)
+        return identity, self.collection_name
+
     def _get_or_build_index(self) -> _CachedBM25:
         generation = self._get_generation()
+        cache_key = self._cache_key()
         with self._cache_lock:
-            cached = self._cache.get(self.collection_name)
+            cached = self._cache.get(cache_key)
             if cached is not None and cached.generation == generation:
                 return cached
 
@@ -233,7 +259,7 @@ class BM25SparseRetriever:
             tokenised = [tokenize_english(row.text) for row in rows]
             index = _make_bm25(tokenised)
             cached = _CachedBM25(generation=generation, index=index, rows=rows)
-            self._cache[self.collection_name] = cached
+            self._cache[cache_key] = cached
             return cached
 
 

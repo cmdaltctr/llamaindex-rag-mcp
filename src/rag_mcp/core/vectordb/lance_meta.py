@@ -54,6 +54,10 @@ logger = logging.getLogger(__name__)
 # Column the LlamaIndex adapter uses for user metadata.
 _METADATA_COLUMN = "metadata"
 
+# The adapter's top-level scalar columns; every schema the adapter or
+# ``upsert_schema`` creates types them as string.
+_ADAPTER_STRING_COLUMNS = frozenset({"id", "doc_id", "text"})
+
 
 def decode_schema_metadata_entries(raw: dict) -> dict[str, str]:
     """Return schema-metadata entries as plain strings.
@@ -320,5 +324,51 @@ class LanceTableMetadataMixin:
             "Evolved metadata struct of %r: added %s",
             collection_name,
             sorted(missing),
+        )
+        return True
+
+    def _widen_null_adapter_columns(self, collection_name: str) -> bool:
+        """Re-type null-typed top-level adapter columns to string (TDR-012).
+
+        The LlamaIndex adapter types a top-level column as Arrow Null when
+        the first write carries None for it — reachable only for nodes
+        without a SOURCE relationship, which the pipeline never produces.
+        A Null-typed column then rejects every later typed write
+        (``cannot cast field 'doc_id' from Utf8 to Null``), and LanceDB
+        0.37 offers no in-place repair: ``alter_columns`` refuses the
+        Null→Utf8 cast and the SDK has no ``add_column``. Following
+        :meth:`evolve_metadata_fields`, the table is rebuilt with the
+        column re-typed as string. A Null-typed column holds only nulls,
+        so the re-type is lossless. The schema metadata bag (identity
+        triple, profile tags) is carried across the rewrite.
+        """
+        table = self._open_table(collection_name)
+        if table is None:
+            return False
+        widen = [
+            field.name
+            for field in table.schema
+            if field.name in _ADAPTER_STRING_COLUMNS and pa.types.is_null(field.type)
+        ]
+        if not widen:
+            return False
+        # Fresh handle: handles pin a version; the rebuild must read the
+        # latest schema so its metadata bag carries across the overwrite.
+        table = self._get_connection().open_table(collection_name)
+        arrow = table.to_arrow()
+        new_schema = pa.schema(
+            [
+                (pa.field(field.name, pa.string()) if field.name in widen else field)
+                for field in arrow.schema
+            ],
+            metadata=arrow.schema.metadata,
+        )
+        self._get_connection().create_table(
+            collection_name, arrow.cast(new_schema), mode="overwrite"
+        )
+        logger.warning(
+            "Widened null-typed column(s) %s in %r to string (TDR-012)",
+            sorted(widen),
+            collection_name,
         )
         return True

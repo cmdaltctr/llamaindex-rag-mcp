@@ -1,10 +1,11 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, v3]
   pull_request:
-    branches: [main, v3]
+    branches: [main, v3, harden-pipeline-correctness-before-calibration]
 
 jobs:
   test:
@@ -71,7 +72,15 @@ jobs:
         if: matrix.os == 'macos-latest'
         env:
           PDF_READER: liteparse
-        run: uv run --no-sync pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
+        # Gate strictly when an Ollama server is reachable; skip visibly
+        # otherwise. The old `|| echo` swallowed genuine slow-suite
+        # failures along with Ollama-unavailability.
+        run: |
+          if ! curl -s --max-time 5 http://localhost:11434/api/tags > /dev/null 2>&1; then
+            echo "Slow tests skipped: no Ollama server at localhost:11434"
+            exit 0
+          fi
+          uv run --no-sync pytest -m "slow" --tb=short -q
 
   # ── Floor-resolution CI job (ADR-042) ────────────────────────────────
   # Installs at the declared lower bounds (--resolution lowest-direct) and
@@ -101,6 +110,7 @@ jobs:
           - azure
           - llamacpp
           - openrouter
+          - chroma
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -135,7 +145,10 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --tb=short -q
+        # The exact skip/count manifest is a clean-base assertion. Optional
+        # extras intentionally activate additional tests, so those matrix
+        # entries exercise the suite without the base-only tripwire module.
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '' }}
 
       - name: Verify base install stays Leiden-free
         if: matrix.extra == ''
@@ -282,9 +295,12 @@ jobs:
         # community-leiden, llamacpp, and openrouter included so patch
         # coverage exercises the optional Leiden strategies and the
         # OpenAILikeEmbedding adapters (their tests skipif-guard without
-        # the extra). The base-only absence assertions live in the floors
-        # job instead.
-        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter
+        # the extra). chroma and hybrid join for the same reason: this is
+        # the sole coverage upload, and the chroma adapter plus the
+        # chroma-gated suites must count towards patch coverage of
+        # vector-store diffs. The base-only absence assertions live in
+        # the floors job instead.
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid
 
       - name: Run tests with coverage
         env:
@@ -294,7 +310,9 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        # This job deliberately installs optional extras to maximise coverage;
+        # the exact clean-base skip manifest is asserted in the base jobs.
+        run: uv run --no-sync pytest -m "not slow" --ignore=tests/test_clean_base_tripwire.py --cov=rag_mcp --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         # Pinned to SHA for security — codecov/codecov-action@v7.0.0
@@ -310,3 +328,49 @@ jobs:
         uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Chroma-extra CI job (task 5.6, make-lancedb-default-and-isolate-chromadb) ──
+  # chromadb moved out of the base install into the optional `chroma` extra
+  # (CVE-2026-45829 quarantine). Without this dedicated job, every
+  # chroma-skipped base case (contract parameters, cloud, legacy-seeding and
+  # hybrid adapter tests) would never run. Installs the extra plus hybrid
+  # (BM25 paths), runs the fast suite, records the Chroma adapter coverage
+  # slice, and inverts the skip assertion: nothing may skip with the
+  # "chroma extra not installed" reason.
+  chroma-extra:
+    name: Chroma extra tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies with the chroma extra
+        run: uv sync --frozen --extra chroma --extra hybrid
+
+      - name: Run tests (fast) with chroma present, assert no chroma skips
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest -m "not slow" --tb=short -q -rs --cov=rag_mcp.core.vectordb.chroma --cov-branch --cov-report=term-missing 2>&1 | tee pytest_chroma_extra.log
+          if grep -q "chroma extra not installed" pytest_chroma_extra.log; then
+            echo "::error::Tests skipped with the chroma-extra reason even though the extra is installed"
+            exit 1
+          fi

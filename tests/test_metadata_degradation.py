@@ -465,25 +465,49 @@ class TestChunkerForwardsSettings:
 class TestPipelineDegradationAggregation:
     """``ingest_path_async`` aggregates the per-file degradation flag.
 
-    Uses an empty node list from the patched chunker so
-    ``embed_and_write_async`` short-circuits — no real embedding model or
-    vector store write is exercised; only the aggregation logic in
-    ``core/ingestion/pipeline.py`` is under test.
+    The chunker is patched to return one real node per file, and
+    ``replace_source_nodes_async`` is patched to a no-write outcome —
+    no real embedding model or vector store write is exercised; only
+    the aggregation logic in ``core/ingestion/pipeline.py`` is under
+    test. (Empty chunk lists are no longer a viable fixture: Stage 3A
+    treats an empty parse as a failed replacement per ADR-048.)
     """
+
+    @staticmethod
+    async def _fake_replacement_outcome(nodes, **kwargs):
+        """Async stand-in for ``replace_source_nodes_async``."""
+        from rag_mcp.core.ingestion.replacement import WriteTimings
+
+        class _Outcome:
+            chunks_written = len(nodes)
+            chunks_removed = 0
+            source_attempt = "test-attempt"
+            timings = WriteTimings()
+
+        return _Outcome()
 
     def test_no_degradation_reports_zero(self, tmp_path, monkeypatch) -> None:
         """Scenario: no degradation reports zero."""
         (tmp_path / "a.txt").write_text("hello")
         (tmp_path / "b.txt").write_text("world")
 
+        from llama_index.core.schema import TextNode
+
         from rag_mcp.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
-            return _ChunkResult([], metadata_degraded=False)
+            return _ChunkResult(
+                [TextNode(text=f"content of {file_path.name}", metadata={})],
+                metadata_degraded=False,
+            )
 
         monkeypatch.setattr(
             "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
+        )
+        monkeypatch.setattr(
+            "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
+            self._fake_replacement_outcome,
         )
 
         from rag_mcp.core.ingestion import ingest_path_async
@@ -499,15 +523,24 @@ class TestPipelineDegradationAggregation:
         (tmp_path / "b.txt").write_text("world")
         (tmp_path / "c.txt").write_text("!")
 
+        from llama_index.core.schema import TextNode
+
         from rag_mcp.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
             degraded = file_path.name == "b.txt"
-            return _ChunkResult([], metadata_degraded=degraded)
+            return _ChunkResult(
+                [TextNode(text=f"content of {file_path.name}", metadata={})],
+                metadata_degraded=degraded,
+            )
 
         monkeypatch.setattr(
             "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
+        )
+        monkeypatch.setattr(
+            "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
+            self._fake_replacement_outcome,
         )
 
         from rag_mcp.core.ingestion import ingest_path_async
@@ -527,29 +560,34 @@ class TestPipelineDegradationAggregation:
         """Scenario: embedding failure preserves the degradation count.
 
         Files are read and metadata extracted (some degrading) before
-        ``embed_and_write_async`` raises. The error result must still
-        carry ``metadata_degraded`` so the caller knows degradation
+        the embedding step raises. The error result must still carry
+        ``metadata_degraded`` so the caller knows degradation
         happened, even though the embedding step failed.
         """
         (tmp_path / "a.txt").write_text("hello")
         (tmp_path / "b.txt").write_text("world")
 
+        from llama_index.core.schema import TextNode
+
         from rag_mcp.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
             degraded = file_path.name == "b.txt"
-            return _ChunkResult([], metadata_degraded=degraded)
+            return _ChunkResult(
+                [TextNode(text=f"content of {file_path.name}", metadata={})],
+                metadata_degraded=degraded,
+            )
 
         monkeypatch.setattr(
             "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
         )
 
-        async def _failing_embed(*args, **kwargs):
+        def _failing_embed(nodes):
             raise RuntimeError("embedding backend down")
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+            "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
             _failing_embed,
         )
 

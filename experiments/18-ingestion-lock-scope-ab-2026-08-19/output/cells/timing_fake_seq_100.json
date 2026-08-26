@@ -1,0 +1,56 @@
+{
+  "cell_id": "timing_fake_seq_100",
+  "factors": {
+    "corpus_size": 100,
+    "failure_point": "none",
+    "repeat_state": "first",
+    "ingest_topology": "sequential_1_stream",
+    "embedding_block": "fake_deterministic"
+  },
+  "manifest": {
+    "repo_commit": "1b93442d1762240b77a8370ce2870095066e20dd",
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "18-ingestion-lock-scope-ab",
+    "protocol_version": "1.0",
+    "python_version": "3.12.10",
+    "platform": "Darwin-arm64",
+    "timestamp_utc": "2026-08-19T15:37:45Z",
+    "corpus_identity": "a91dfaa8800d96002b335dd16c0cacf7e645362cf8e4d5060e390bf61b0768a8",
+    "embedding": {
+      "requested_provider": "fake_deterministic",
+      "effective_provider": "fake_deterministic",
+      "effective_model": "mock-deterministic-v1",
+      "dim": 32
+    },
+    "vector_store": {
+      "backend": "chroma_local",
+      "mode": "persistent_local",
+      "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/18-ingestion-lock-scope-ab-2026-08-19/output/chroma_timing_fake_seq_100"
+    }
+  },
+  "status": "completed",
+  "warmup_seconds": null,
+  "wall_seconds": 3.398104958003387,
+  "streams": [
+    {
+      "status": "ok",
+      "files_indexed": 100,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 212,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.18144383310573176,
+        "parse_chunk_seconds": 0.6846373238950036,
+        "embedding_seconds": 0.02430445497157052,
+        "store_write_seconds": 1.5680853371159174,
+        "lock_wait_seconds": 4.171387990936637e-05,
+        "cleanup_seconds": 0.7353402508888394,
+        "total_seconds": 3.3941033750015777
+      },
+      "peak_rss_bytes": 289095680
+    }
+  ],
+  "combined": null,
+  "process_peak_rss_bytes": 289193984
+}

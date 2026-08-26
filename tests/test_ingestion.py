@@ -7,6 +7,7 @@ Tests cover:
 
 from __future__ import annotations
 
+from asyncio import run as asyncio_run
 from pathlib import Path
 
 from rag_mcp.core.ingestion import ingest_path_async, list_documents
@@ -52,33 +53,34 @@ class TestListDocuments:
         result = list_documents()
         assert result == []
 
-    def test_list_documents_scans_multiple_metadata_pages(self, monkeypatch) -> None:
-        """Document chunk counts must include metadata beyond one scan page."""
-        import chromadb
+    def test_list_documents_scans_multiple_metadata_pages(self, tmp_path, monkeypatch) -> None:
+        """Document chunk counts must include metadata beyond one scan page.
 
-        from rag_mcp.config import get_settings as _gs
+        Task 5.1 rewrite: seeds the store through the real ingestion path
+        (store-agnostic) instead of a direct ChromaDB client, so the
+        pagination contract runs against the default tmp-path LanceDB
+        store in the base install and Chroma in the chroma-extra job.
+        """
+        from rag_mcp.core.ingestion import ingest_path_async, list_documents
         from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_or_create_collection("paged_docs")
-        collection.add(
-            ids=["1", "2", "3", "4", "5"],
-            documents=["one", "two", "three", "four", "five"],
-            embeddings=[[float(i)] * 384 for i in range(5)],
-            metadatas=[
-                {"file_path": "a.txt"},
-                {"file_path": "a.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "b.txt"},
-            ],
-        )
+        created: dict[str, int] = {}
+        resolved: dict[str, str] = {}
+        for name in ("a.txt", "b.txt"):
+            doc = tmp_path / name
+            doc.write_text(f"Document {name} content sentence. " * 150)
+            result = asyncio_run(ingest_path_async(str(doc), collection_name="paged_docs"))
+            assert result["status"] == "ok"
+            created[name] = result["chunks_created"]
+            resolved[name] = str(doc.resolve())
+        # Force more than one scan page at page size 2.
+        assert sum(created.values()) > 2
 
         assert list_documents(collection_name="paged_docs") == [
-            {"source": "a.txt", "chunks": 2},
-            {"source": "b.txt", "chunks": 3},
+            {"source": resolved["a.txt"], "chunks": created["a.txt"]},
+            {"source": resolved["b.txt"], "chunks": created["b.txt"]},
         ]
 
 
@@ -177,24 +179,14 @@ class TestMetadataAttachment:
         result = await ingest_path_async(str(test_file), collection_name="test_metadata")
         assert result["status"] == "ok"
 
-        # Verify metadata in ChromaDB
-        import chromadb
+        # Verify category metadata through the store ABC (task 5.1 rewrite:
+        # store-agnostic, runs on the default tmp-path LanceDB store in the
+        # base install and on Chroma in the chroma-extra job).
+        from rag_mcp.core.vectordb import get_default_store
 
-        from rag_mcp.config import get_settings as _gs
-
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_collection("test_metadata")
-        data = collection.get(include=["metadatas"])
-
-        # At least one chunk should have category metadata
-        categories = []
-        for meta in data.get("metadatas", []) or []:
-            if meta and "category" in meta:
-                categories.append(meta["category"])
-
-        assert len(categories) > 0
-        # With our test text, it should be categorised as AI
-        assert all(c == "AI" for c in categories)
+        categorised = get_default_store().count_where("test_metadata", {"category": "AI"})
+        assert categorised == result["chunks_created"]
+        assert categorised > 0
 
     async def test_no_metadata_when_disabled(
         self,
@@ -219,18 +211,11 @@ class TestMetadataAttachment:
         result = await ingest_path_async(str(test_file), collection_name="test_disabled_meta")
         assert result["status"] == "ok"
 
-        import chromadb
+        # No chunk should carry category metadata (store-agnostic check,
+        # task 5.1).
+        from rag_mcp.core.vectordb import get_default_store
 
-        from rag_mcp.config import get_settings as _gs
-
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_collection("test_disabled_meta")
-        data = collection.get(include=["metadatas"])
-
-        # No chunk should have category metadata
-        for meta in data.get("metadatas", []) or []:
-            if meta is not None:
-                assert "category" not in meta
+        assert get_default_store().count_where("test_disabled_meta", {"category": "AI"}) == 0
 
 
 # ── Document deletion tests ────────────────────────────────────────────────

@@ -34,6 +34,7 @@ from ..core.retrieval.settings import RetrievalSettings
 load_dotenv()
 
 from .sources import LegacyBool  # noqa: E402
+from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ def _validate_provider_value(
 # ── Root Settings model ─────────────────────────────────────────────
 
 
-class Settings(BaseSettings):
+class Settings(StorageValidationMixin, BaseSettings):
     """Resolved configuration for the RAG MCP server.
 
     Composes the per-subpackage settings models by **nesting** (PROPOSAL
@@ -137,7 +138,15 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./chroma_db"
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
-    vector_store: str = "chroma"
+    # Canonical default (make-lancedb-default-and-isolate-chromadb, task 2.1).
+    # LanceDB is the qualified base-install backend (ADR-049); Chroma is a
+    # supported but quarantined optional extra.
+    vector_store: str = "lancedb"
+    # Records whether VECTOR_STORE came from an explicit operator source
+    # (constructor/CLI, environment, .env) or from shipped defaults. This
+    # is internal configuration data, not another backend selector
+    # (design D6) — the fail-closed legacy-Chroma gate reads it.
+    vector_store_provenance: str = "default"
     # Parent directory for LanceDB tables when VECTOR_STORE=lancedb.
     lancedb_uri: str = "./lancedb"
 
@@ -168,7 +177,7 @@ class Settings(BaseSettings):
     embed_model: str = ""
 
     # ── PDF reader ────────────────────────────────────────────────
-    pdf_reader: str = "auto"
+    pdf_reader: str = "pdf_inspector"
     liteparse_num_workers: int | None = None
     liteparse_ocr_enabled: LegacyBool = False
 
@@ -264,7 +273,7 @@ class Settings(BaseSettings):
 
         # PDF reader — governed by the pdf-reader capability spec, which
         # has its own warn-and-fallback contract.  Unchanged here.
-        if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
+        if self.pdf_reader not in ("auto", "liteparse", "pdf_inspector", "pypdfium2", "pypdf"):
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
             object.__setattr__(self, "pdf_reader", "auto")
 
@@ -280,41 +289,6 @@ class Settings(BaseSettings):
             )
             object.__setattr__(self, "rag_profile", "documents")
 
-        return self
-
-    @model_validator(mode="after")
-    def _validate_chroma_cloud_settings(self) -> Settings:
-        """Validate explicit cloud selection: key required, tenant/database paired.
-
-        Fails at Settings construction so startup aborts before any
-        ingestion or retrieval begins (chroma-cloud-backend spec).  Unlike
-        the Azure document backend, cloud storage has no silent local
-        fallback: an explicit ``CHROMA_MODE=cloud`` without credentials is
-        an operator error, not a degradation opportunity (ADR-029 lesson).
-
-        Error messages name the missing variables but never echo the
-        submitted key material.
-        """
-        if self.chroma_mode != "cloud":
-            return self
-        if not self.chroma_cloud_api_key.strip():
-            raise ValueError(
-                "CHROMA_MODE=cloud requires CHROMA_CLOUD_API_KEY to be set. "
-                "Add it to your .env file (see .env.example); never commit the key."
-            )
-        # Store the stripped key so padded .env values authenticate cleanly.
-        object.__setattr__(self, "chroma_cloud_api_key", self.chroma_cloud_api_key.strip())
-        tenant = self.chroma_cloud_tenant.strip()
-        database = self.chroma_cloud_database.strip()
-        if bool(tenant) != bool(database):
-            raise ValueError(
-                "CHROMA_CLOUD_TENANT and CHROMA_CLOUD_DATABASE must be supplied "
-                "together, or both omitted so the cloud client resolves them "
-                "from the API key."
-            )
-        # Store stripped identifiers so padded .env values resolve cleanly.
-        object.__setattr__(self, "chroma_cloud_tenant", tenant)
-        object.__setattr__(self, "chroma_cloud_database", database)
         return self
 
     @model_validator(mode="after")
@@ -349,9 +323,19 @@ class Settings(BaseSettings):
 
         The profile source (Phase 4) sits between defaults.yaml and the
         environment sources so env vars still win over profile bundles.
+
+        Also records whether an explicit (operator) source resolves
+        ``vector_store`` so the provenance validator can distinguish
+        operator selection from shipped defaults (task 2.4, design D6).
         """
         yaml_source = _YamlDefaultsSource(settings_cls)
         profile_source = _ProfileYamlSettingsSource(settings_cls)
+        cls._explicit_vector_store_sources = {
+            "vector_store"
+            for source in (init_settings, env_settings, dotenv_settings)
+            for key in source_keys(source)
+            if key.lower() == "vector_store"
+        }
         return (
             init_settings,  # explicit args (highest)
             env_settings,  # env vars

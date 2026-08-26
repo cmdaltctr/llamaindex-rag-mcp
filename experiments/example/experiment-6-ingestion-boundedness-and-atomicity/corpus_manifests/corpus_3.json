@@ -1,0 +1,25 @@
+{
+  "generator_version": "1.0-exp6",
+  "seed": 20260806,
+  "file_count": 3,
+  "target_chars_per_file": 6000,
+  "total_bytes": 19065,
+  "corpus_identity": "64009dc2907ab211c2f513ed72b6595437b7c165ceecf86bcd15d1200d1262ca",
+  "files": [
+    {
+      "file": "source_0000.txt",
+      "sha256": "dd9f10b9e9dd61fe0649423f1c6a2ec0acc66a7309a8059e042fffb100622c7c",
+      "bytes": 6471
+    },
+    {
+      "file": "source_0001.txt",
+      "sha256": "0d9059277e424e7fb64d8813672d0edb23fd38e07a44d25780019a9729bb5073",
+      "bytes": 6096
+    },
+    {
+      "file": "source_0002.txt",
+      "sha256": "422b8a73c57d4a7f041c63c533367d034164826d7977e6e30556d2f17b6dedb3",
+      "bytes": 6498
+    }
+  ]
+}

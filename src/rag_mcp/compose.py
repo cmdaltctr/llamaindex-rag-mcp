@@ -21,6 +21,12 @@ from .core.providers.embeddings import registry as embed_registry
 
 logger = logging.getLogger(__name__)
 
+# LlamaIndex exposes one process-global embed model. Vector stores and
+# collection profiles are runtime-swappable, but embedding-provider selection
+# is deliberately deployment/process scoped until an explicit per-operation
+# embedding context replaces this global assignment.
+EMBEDDING_PROVIDER_SCOPE = "process"
+
 # ── Runtime setup state ─────────────────────────────────────────────
 
 _runtime_setup_done: bool = False
@@ -36,16 +42,28 @@ _runtime_setup_done: bool = False
 def resolve_sparse_backend(settings: Settings) -> str:
     """Resolve the configured sparse backend to ``bm25`` or ``native``.
 
-    Probes ChromaDB's native sparse capability when ``auto`` or
-    ``native`` is selected.
+    The native-sparse capability belongs to the SELECTED store, not to
+    whichever optional packages happen to be installed (design D5, task
+    3.3): ``auto`` resolves through the selected store's registry
+    metadata, and an explicit ``native`` under a store without native
+    sparse falls back to BM25 with a warning — without probing Chroma.
     """
     backend = settings.retrieval.hybrid_sparse_backend
     if backend == "bm25":
         return "bm25"
 
-    from .core.retrieval.sparse import _detect_native_sparse_capability
+    from .core.vectordb import registry as vectordb_registry
 
-    native_available = _detect_native_sparse_capability()
+    # Registry metadata answers "does this store advertise native sparse?"
+    # (None for lancedb, truthy for chroma) — selection, not installation,
+    # decides the route. For stores that advertise native, the installed
+    # runtime probe is the final arbiter (auto and explicit native alike).
+    native_available = False
+    if bool(vectordb_registry.describe(settings.vector_store)["native_sparse_probe"]):
+        from .core.retrieval.sparse import _detect_native_sparse_capability
+
+        native_available = _detect_native_sparse_capability()
+
     if backend == "auto":
         return "native" if native_available else "bm25"
 
@@ -53,9 +71,10 @@ def resolve_sparse_backend(settings: Settings) -> str:
         return "native"
 
     logger.warning(
-        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
-        "ChromaDB runtime does not expose native sparse retrieval for this "
-        "project configuration. Falling back to bm25."
+        "HYBRID_SPARSE_BACKEND=native was requested, but the selected "
+        "vector store %r does not expose native sparse retrieval. "
+        "Falling back to bm25.",
+        settings.vector_store,
     )
     return "bm25"
 
@@ -63,26 +82,28 @@ def resolve_sparse_backend(settings: Settings) -> str:
 def resolve_pdf_reader(settings: Settings) -> str:
     """Resolve the configured PDF reader to a concrete backend name.
 
-    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
-    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
+    Explicit values probe their registered dependency metadata. ``auto``
+    keeps the established LiteParse → pypdfium2 → pypdf capability policy.
     """
     reader = settings.pdf_reader
-    if reader == "pypdf":
-        return "pypdf"
+    if reader != "auto":
+        from .integrations.pdf import registry as pdf_registry
 
-    if reader in ("liteparse", "pypdfium2"):
+        if reader not in pdf_registry.available():
+            logger.error("PDF_READER=%r is unregistered; falling back to pypdf.", reader)
+            return "pypdf"
         try:
-            __import__(reader)
+            pdf_registry.probe(reader)
             return reader
         except ImportError:
             logger.error(
-                "PDF_READER=%s was requested but the package is not "
+                "PDF_READER=%r was requested but the package is not "
                 "installed. Falling back to pypdf.",
                 reader,
             )
             return "pypdf"
 
-    # auto resolution: probe in preference order.
+    # auto resolution: probe the established capability preference order.
     for backend in ("liteparse", "pypdfium2"):
         try:
             __import__(backend)
@@ -269,7 +290,10 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     from .core.vectordb import registry as vectordb_registry
 
     try:
-        factory = vectordb_registry.get(settings.vector_store)
+        # verify_available() distinguishes unknown/absent/partial/broken
+        # installs generically (task 3.2) and raises an actionable error
+        # naming the backend, required packages, extra, and guidance.
+        factory = vectordb_registry.verify_available(settings.vector_store)
     except KeyError as exc:
         # Startup selection errors are ValueError by house convention
         # (see _validate_community_strategy); the registry itself keeps
@@ -281,23 +305,15 @@ def build_vector_store(settings: Settings | None = None) -> Any:
     return factory(settings)
 
 
-def chroma_storage_summary(settings: Settings | None = None) -> str:
-    """Return a one-line Chroma storage description for startup logging.
-
-    Includes the deployment mode and, in cloud mode, the tenant and
-    database identifiers.  The API key is never included — not even a
-    prefix.
-    """
+def storage_summary(settings: Settings | None = None) -> str:
+    """One-line storage description for the SELECTED backend (task 2.6)."""
     if settings is None:
         settings = get_settings()
-    if settings.chroma_mode != "cloud":
-        return "chroma mode=local"
-    parts = ["chroma mode=cloud"]
-    if settings.chroma_cloud_tenant:
-        parts.append(f"tenant={settings.chroma_cloud_tenant}")
-    if settings.chroma_cloud_database:
-        parts.append(f"database={settings.chroma_cloud_database}")
-    return " ".join(parts)
+    return _summary_storage(settings)
+
+
+# Backward-compatible import surface (existing callers/tests).
+from .core.vectordb.summary import storage_summary as _summary_storage  # noqa: E402
 
 
 def build_profile_resolver(settings: Settings | None = None) -> Any:
@@ -443,6 +459,16 @@ def ensure_runtime_setup() -> None:
 
     check_legacy_env_vars()
     settings = get_settings()
+    # Fail closed on recognised legacy Chroma data when no explicit backend
+    # was selected (task 4, design D6) — before any store construction so
+    # ingestion/retrieval can never touch the untouched directory.
+    from .core.vectordb.legacy import evaluate_legacy_chroma_data
+
+    evaluate_legacy_chroma_data(
+        settings.chroma_persist_dir,
+        settings.vector_store,
+        settings.vector_store_provenance,
+    )
     # Construction failures propagate instead of being swallowed.  A process
     # that reports successful startup MUST have a working embed model and a
     # registered default vector store — leaving either unset and continuing

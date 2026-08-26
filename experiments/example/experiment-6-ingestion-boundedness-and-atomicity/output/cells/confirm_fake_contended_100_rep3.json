@@ -1,0 +1,210 @@
+{
+  "status": "complete",
+  "cell_id": "confirm_fake_contended_100_rep3",
+  "factors": {
+    "corpus_size": 100,
+    "failure_point": "none",
+    "repeat_state": "first",
+    "ingest_topology": "concurrent_2_streams",
+    "embedding_block": "fake_deterministic",
+    "run_phase": "concurrency_ab"
+  },
+  "manifest": {
+    "repo_commit": "c475852cf195658ce6af8654e11e07dce4c39fec",
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "6-ingestion-boundedness-and-atomicity",
+    "protocol_version": "1.0",
+    "corpus_identity": "sha256:0659043659acc1ec89ed6eccc5b271e08b50f1e43fc405b5ffb4ddca7d3a5bfe",
+    "query_set_identity": null,
+    "qrels_identity": null,
+    "embedding": {
+      "requested_provider": "fake_deterministic",
+      "effective_provider": "fake_deterministic",
+      "model": "mock-deterministic-v1"
+    },
+    "vector_store": {
+      "backend": "chroma",
+      "mode": "persistent_local",
+      "index_identity": "ee81610dc01a9f453d517ba5a61a4b91548ee42074cc73689f57fd643c2b83dc",
+      "score_kind": null
+    },
+    "sparse": {
+      "requested_backend": null,
+      "effective_backend": null,
+      "cache_namespace": null
+    },
+    "reranker": {
+      "requested_backend": null,
+      "effective_backend": null,
+      "model": null,
+      "device": null,
+      "execution_provider": null,
+      "variant_or_precision": null
+    },
+    "chunker": {
+      "requested": null,
+      "effective": null,
+      "fallback_reason": null
+    },
+    "document_backend": {
+      "requested": null,
+      "effective": null
+    },
+    "retrieval": {
+      "top_k": null,
+      "fetch_k": null,
+      "hybrid": null,
+      "rrf_k": null,
+      "threshold": null,
+      "threshold_score_kind": null,
+      "rerank_policy_reason": null
+    },
+    "timestamp_utc": "2026-08-19T20:46:31Z",
+    "git_dirty": true,
+    "null_reasons": {
+      "vector_store.score_kind": "'score_kind' missing from provided vector_store mapping",
+      "sparse.requested_backend": "sparse mapping not provided",
+      "sparse.effective_backend": "sparse mapping not provided",
+      "sparse.cache_namespace": "sparse mapping not provided",
+      "reranker.requested_backend": "reranker_requested_backend parameter not provided",
+      "reranker.effective_backend": "reranker object not provided",
+      "reranker.model": "reranker object not provided",
+      "reranker.device": "reranker object not provided",
+      "reranker.execution_provider": "reranker object not provided",
+      "reranker.variant_or_precision": "reranker object not provided",
+      "chunker.requested": "chunker mapping not provided",
+      "chunker.effective": "chunker mapping not provided",
+      "chunker.fallback_reason": "chunker mapping not provided",
+      "document_backend.requested": "document_backend mapping not provided",
+      "document_backend.effective": "document_backend mapping not provided",
+      "retrieval.top_k": "retrieval mapping not provided",
+      "retrieval.fetch_k": "retrieval mapping not provided",
+      "retrieval.hybrid": "retrieval mapping not provided",
+      "retrieval.rrf_k": "retrieval mapping not provided",
+      "retrieval.threshold": "retrieval mapping not provided",
+      "retrieval.threshold_score_kind": "retrieval mapping not provided",
+      "retrieval.rerank_policy_reason": "retrieval mapping not provided",
+      "query_set_identity": "query_set_path not provided",
+      "qrels_identity": "qrels_path not provided"
+    },
+    "cell_id": "confirm_fake_contended_100_rep3",
+    "run_phase": "concurrency_ab",
+    "pipeline_variant": "stage3b_narrow_lock_current",
+    "phase_b_mode": "confirming_only",
+    "reference": "experiments/18-ingestion-lock-scope-ab-2026-08-19 stage3b arm"
+  },
+  "rows": [
+    {
+      "cell_id": "confirm_fake_contended_100_rep3",
+      "query_id": "confirm_fake_contended_100_rep3#stream1",
+      "phase": "measured",
+      "latency_ms": 3402.49,
+      "metrics": {
+        "status": "ok",
+        "files_indexed": 49,
+        "files_skipped_unchanged": 0,
+        "chunks_created": 143,
+        "chunks_removed": 0,
+        "max_chunks_per_file": 3,
+        "timings": {
+          "change_detection_seconds": 0.8835969569336157,
+          "parse_chunk_seconds": 0.5844150799093768,
+          "embedding_seconds": 0.01551442002528347,
+          "store_write_seconds": 0.9092933780048043,
+          "lock_wait_seconds": 0.3427324199292343,
+          "cleanup_seconds": 0.4377898391103372,
+          "total_seconds": 3.401214749988867
+        },
+        "peak_rss_bytes": 296321024
+      }
+    },
+    {
+      "cell_id": "confirm_fake_contended_100_rep3",
+      "query_id": "confirm_fake_contended_100_rep3#stream2",
+      "phase": "measured",
+      "latency_ms": 3402.49,
+      "metrics": {
+        "status": "ok",
+        "files_indexed": 49,
+        "files_skipped_unchanged": 0,
+        "chunks_created": 146,
+        "chunks_removed": 0,
+        "max_chunks_per_file": 3,
+        "timings": {
+          "change_detection_seconds": 0.8724381709180307,
+          "parse_chunk_seconds": 0.5720725420105737,
+          "embedding_seconds": 0.015652417932869866,
+          "store_write_seconds": 0.8888582059880719,
+          "lock_wait_seconds": 0.31236517216893844,
+          "cleanup_seconds": 0.4744218329433352,
+          "total_seconds": 3.349973542004591
+        },
+        "peak_rss_bytes": 296124416
+      }
+    }
+  ],
+  "streams": [
+    {
+      "status": "ok",
+      "files_indexed": 49,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 143,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.8835969569336157,
+        "parse_chunk_seconds": 0.5844150799093768,
+        "embedding_seconds": 0.01551442002528347,
+        "store_write_seconds": 0.9092933780048043,
+        "lock_wait_seconds": 0.3427324199292343,
+        "cleanup_seconds": 0.4377898391103372,
+        "total_seconds": 3.401214749988867
+      },
+      "peak_rss_bytes": 296321024
+    },
+    {
+      "status": "ok",
+      "files_indexed": 49,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 146,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.8724381709180307,
+        "parse_chunk_seconds": 0.5720725420105737,
+        "embedding_seconds": 0.015652417932869866,
+        "store_write_seconds": 0.8888582059880719,
+        "lock_wait_seconds": 0.31236517216893844,
+        "cleanup_seconds": 0.4744218329433352,
+        "total_seconds": 3.349973542004591
+      },
+      "peak_rss_bytes": 296124416
+    }
+  ],
+  "combined": {
+    "files_total": 98,
+    "chunks_total": 289,
+    "wall_seconds": 3.402,
+    "docs_per_second": 28.8024,
+    "lock_wait_seconds_total": 0.6551,
+    "lock_wait_fraction_of_wall": 0.1925,
+    "stage_seconds_total": {
+      "change_detection_seconds": 1.756,
+      "parse_chunk_seconds": 1.1565,
+      "embedding_seconds": 0.0312,
+      "store_write_seconds": 1.7982,
+      "lock_wait_seconds": 0.6551,
+      "cleanup_seconds": 0.9122
+    },
+    "embed_seam_calls": 98,
+    "store_write_calls": 98,
+    "probe": {
+      "live": 0,
+      "max_live": 2,
+      "max_nodes": 3,
+      "batches": 98
+    }
+  },
+  "process_peak_rss_bytes": 296386560,
+  "phase_b_mode": "confirming_only"
+}

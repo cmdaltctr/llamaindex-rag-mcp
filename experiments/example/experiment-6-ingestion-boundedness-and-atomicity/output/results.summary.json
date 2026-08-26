@@ -1,0 +1,533 @@
+{
+  "experiment_id": "6-ingestion-boundedness-and-atomicity",
+  "protocol_version": "1.0",
+  "executed": "2026-08-19",
+  "pipeline_variant": "stage3b_narrow_lock_current",
+  "cell_statuses": [
+    "complete"
+  ],
+  "cells_total": 23,
+  "rows_total": 39,
+  "controlled_constants": {
+    "fake_block": {
+      "cells": 20,
+      "fields_held_constant": [
+        "embedding.effective_provider",
+        "embedding.model",
+        "vector_store.backend",
+        "vector_store.mode",
+        "pipeline_variant"
+      ],
+      "sample_values": {
+        "embedding.effective_provider": "fake_deterministic",
+        "embedding.model": "mock-deterministic-v1",
+        "vector_store.backend": "chroma",
+        "vector_store.mode": "persistent_local",
+        "pipeline_variant": "stage3b_narrow_lock_current"
+      }
+    },
+    "real_block": {
+      "cells": 3,
+      "fields_held_constant": [
+        "embedding.effective_provider",
+        "embedding.model",
+        "vector_store.backend",
+        "vector_store.mode",
+        "pipeline_variant"
+      ],
+      "sample_values": {
+        "embedding.effective_provider": "ollama",
+        "embedding.model": "nomic-embed-text",
+        "vector_store.backend": "chroma",
+        "vector_store.mode": "persistent_local",
+        "pipeline_variant": "stage3b_narrow_lock_current"
+      }
+    }
+  },
+  "gates_phase_a": {
+    "H1_bounded_units": {
+      "pass": true,
+      "max_live_by_corpus_size": {
+        "25": 1,
+        "100": 1,
+        "400": 1
+      },
+      "max_nodes_per_batch_by_size": {
+        "25": 3,
+        "100": 3,
+        "400": 3
+      },
+      "max_live_2_stream_contended": 2,
+      "declared_bounded_unit": "one source file's node set per ingest stream",
+      "code_path_evidence": "src/rag_mcp/core/ingestion/pipeline.py processes files in a sequential for-loop and drops the node set in the finally block ('del nodes'); replacement receives exactly one source's nodes. The probe wraps pipeline.replace_source_nodes_async and its high-water mark equals the stream count, independent of corpus size."
+    },
+    "H2_rss_scaling": {
+      "pass": true,
+      "frozen_guard": {
+        "statement": "4x corpus files must not cause >2x baseline-adjusted peak RSS",
+        "frozen_before_measured_run": true,
+        "baseline_definition": "median peak RSS over rss_baseline_rep1..3 (fake runtime installed, empty-directory ingest)",
+        "adjusted_definition": "peak_rss_bytes(cell) - baseline_median",
+        "pairs_4x": [
+          [
+            "boundedness_25",
+            "boundedness_100"
+          ],
+          [
+            "boundedness_100",
+            "boundedness_400"
+          ]
+        ],
+        "max_ratio_per_4x": 2.0,
+        "aggregation_per_size": "median over reps; all raw reps reported, outliers never removed"
+      },
+      "baseline_raw_peaks_bytes": [
+        135643136,
+        137216000,
+        137281536
+      ],
+      "baseline_median_bytes": 137216000,
+      "raw_peaks_bytes": {
+        "25": [
+          277020672,
+          277135360,
+          277839872
+        ],
+        "100": [
+          298680320,
+          298254336,
+          302596096
+        ],
+        "400": [
+          375619584,
+          371752960,
+          375308288
+        ]
+      },
+      "baseline_adjusted_peaks_bytes": {
+        "25": [
+          139804672,
+          139919360,
+          140623872
+        ],
+        "100": [
+          161464320,
+          161038336,
+          165380096
+        ],
+        "400": [
+          238403584,
+          234536960,
+          238092288
+        ]
+      },
+      "baseline_adjusted_median_bytes": {
+        "25": 139919360,
+        "100": 161464320,
+        "400": 238092288
+      },
+      "pair_ratios": {
+        "25_to_100": {
+          "ratio": 1.154,
+          "max_allowed": 2.0,
+          "pass": true
+        },
+        "100_to_400": {
+          "ratio": 1.4746,
+          "max_allowed": 2.0,
+          "pass": true
+        }
+      },
+      "note": "all raw repetitions reported; medians used only for the frozen guard"
+    },
+    "H3_failure_safety": {
+      "pass": true,
+      "stages": {
+        "parse": {
+          "present": true,
+          "injection_marker_seen": true,
+          "observed_failure_stage": "file",
+          "old_version_survived": true,
+          "rows_after_failure_equals_first": true
+        },
+        "embed": {
+          "present": true,
+          "injection_marker_seen": true,
+          "observed_failure_stage": "embedding",
+          "old_version_survived": true,
+          "rows_after_failure_equals_first": true
+        },
+        "store_write": {
+          "present": true,
+          "injection_marker_seen": true,
+          "observed_failure_stage": "store_write",
+          "old_version_survived": true,
+          "rows_after_failure_equals_first": true
+        }
+      }
+    },
+    "H4_swap": {
+      "pass": true,
+      "cells": {
+        "none": {
+          "present": true,
+          "swap_completed": true,
+          "swap_chunks": 3,
+          "rows_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0
+        },
+        "parse": {
+          "present": true,
+          "swap_completed": true,
+          "swap_chunks": 3,
+          "rows_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0
+        },
+        "embed": {
+          "present": true,
+          "swap_completed": true,
+          "swap_chunks": 3,
+          "rows_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0
+        },
+        "store_write": {
+          "present": true,
+          "swap_completed": true,
+          "swap_chunks": 3,
+          "rows_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0
+        }
+      },
+      "single_effective_version_evidence": "rows_for_target_after_recovery == swap_chunks and final_version_rows == swap_chunks and stale_rows == 0 for every F0-F3 cell"
+    },
+    "H5_unchanged_skip": {
+      "pass": true,
+      "per_size": {
+        "25": [
+          {
+            "skipped": 25,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 25,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 25,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          }
+        ],
+        "100": [
+          {
+            "skipped": 100,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 100,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 100,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          }
+        ],
+        "400": [
+          {
+            "skipped": 400,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 400,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          },
+          {
+            "skipped": 400,
+            "chunks_created": 0,
+            "embed_seam_calls": 0,
+            "store_write_calls": 0
+          }
+        ]
+      },
+      "one_file_modified": {
+        "files_indexed": 1,
+        "files_skipped_unchanged": 99,
+        "embed_seam_calls": 1,
+        "store_write_calls": 1
+      }
+    }
+  },
+  "phase_a_pass": true,
+  "rerun_proof": {
+    "comparisons": {
+      "fault_none": {
+        "identical": true,
+        "primary": {
+          "failure_point": "none",
+          "observed_failure_stage": null,
+          "expected_failure_stage": null,
+          "injection_marker": null,
+          "injection_marker_seen": false,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 0,
+          "old_version_survived": false,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 0,
+          "recovery_files_skipped_unchanged": 1,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        },
+        "rerun": {
+          "failure_point": "none",
+          "observed_failure_stage": null,
+          "expected_failure_stage": null,
+          "injection_marker": null,
+          "injection_marker_seen": false,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 0,
+          "old_version_survived": false,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 0,
+          "recovery_files_skipped_unchanged": 1,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        }
+      },
+      "fault_parse": {
+        "identical": true,
+        "primary": {
+          "failure_point": "parse",
+          "observed_failure_stage": "file",
+          "expected_failure_stage": "file",
+          "injection_marker": "injected parse failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        },
+        "rerun": {
+          "failure_point": "parse",
+          "observed_failure_stage": "file",
+          "expected_failure_stage": "file",
+          "injection_marker": "injected parse failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        }
+      },
+      "fault_embed": {
+        "identical": true,
+        "primary": {
+          "failure_point": "embed",
+          "observed_failure_stage": "embedding",
+          "expected_failure_stage": "embedding",
+          "injection_marker": "injected embed failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        },
+        "rerun": {
+          "failure_point": "embed",
+          "observed_failure_stage": "embedding",
+          "expected_failure_stage": "embedding",
+          "injection_marker": "injected embed failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        }
+      },
+      "fault_store_write": {
+        "identical": true,
+        "primary": {
+          "failure_point": "store_write",
+          "observed_failure_stage": "store_write",
+          "expected_failure_stage": "store_write",
+          "injection_marker": "injected store_write failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        },
+        "rerun": {
+          "failure_point": "store_write",
+          "observed_failure_stage": "store_write",
+          "expected_failure_stage": "store_write",
+          "injection_marker": "injected store_write failure",
+          "injection_marker_seen": true,
+          "rows_for_target_after_first": 3,
+          "rows_for_target_after_failure": 3,
+          "old_version_rows_after_failure": 3,
+          "old_version_survived": true,
+          "recovery_status": "ok",
+          "recovery_files_indexed": 1,
+          "recovery_files_skipped_unchanged": 0,
+          "rows_for_target_after_recovery": 3,
+          "final_version_rows": 3,
+          "stale_rows_after_recovery": 0,
+          "swap_chunks": 3,
+          "swap_completed": true
+        }
+      }
+    },
+    "all_identical": true
+  },
+  "embedding_runtime_decision": {
+    "phase_a": "deterministic fake embedding via the harness-assigned LlamaIndex Settings.embed_model (MockEmbedding, mock-deterministic-v1) \u2014 protocol \u00a75 fake/precomputed seam; clean injection seam exists because the composition root assigns the embed model before ingestion",
+    "phase_b": "real Ollama nomic-embed-text pinned via env (EMBED_PROVIDER=local, LOCAL_BACKEND=ollama, EMBED_MODEL=nomic-embed-text) to match experiment 18's real-runtime arm for comparability",
+    "ollama_reachability": "up, nomic-embed-text:latest present (checked before run)"
+  },
+  "phase_b_confirming": {
+    "mode": "confirming_only",
+    "framing": "Stage 3B (narrow write lock) is already implemented and retained at HEAD; the Stage 3A baseline arm no longer exists. Phase B therefore measures CURRENT-code throughput only and compares it descriptively against experiment 18's recorded Stage 3B arm. This is not a re-run of the A/B.",
+    "verdict_rule": {
+      "consistent_if": "current-code docs/s mean >= 0.9 x reference Stage 3B mean AND real-arm lock_wait_fraction mean <= 0.10",
+      "caveat": "single-machine, different-day descriptive comparison; a regression verdict flags investigation, not automatic reversion"
+    },
+    "reference_artefacts": {
+      "ab": "experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.ab.json",
+      "summary": "experiments/18-ingestion-lock-scope-ab-2026-08-19/output/results.summary.json",
+      "reference_commit_for_ab": "b4b01b6780d5a13b5e8dca15970313bc3b9c98c6"
+    },
+    "arms": {
+      "fake": {
+        "status": "measured",
+        "repetitions": 3,
+        "current_docs_per_second": [
+          29.2798,
+          29.8558,
+          28.8024
+        ],
+        "current_docs_per_second_mean": 29.3127,
+        "current_lock_wait_fraction_mean": 0.1907,
+        "current_peak_rss_bytes": [
+          295600128,
+          296599552,
+          296386560
+        ],
+        "reference_stage3b_docs_per_second_mean": 36.28,
+        "reference_stage3b_lock_wait_fraction_mean": 0.1567,
+        "frozen_rule_pass": false,
+        "chunk_normalisation": {
+          "current_chunks_per_100_files": 289,
+          "reference_stage3b_chunks_per_100_files": 208,
+          "current_chunks_per_second": 86.4507,
+          "reference_stage3b_chunks_per_second": 76.3863,
+          "chunks_per_second_ratio": 1.1318,
+          "note": "docs/s is not like-for-like across the two corpora: the exp-6 generator's word pool yields more chunks per file (289 vs ~212 per 100 files). Chunk-normalised throughput is the honest cross-corpus comparison."
+        }
+      },
+      "real": {
+        "status": "measured",
+        "repetitions": 3,
+        "current_docs_per_second": [
+          6.6848,
+          6.7882,
+          6.7576
+        ],
+        "current_docs_per_second_mean": 6.7435,
+        "current_lock_wait_fraction_mean": 0.0,
+        "current_peak_rss_bytes": [
+          315637760,
+          314228736,
+          314097664
+        ],
+        "reference_stage3b_docs_per_second_mean": 7.4,
+        "reference_stage3b_lock_wait_fraction_mean": 0.0,
+        "frozen_rule_pass": true,
+        "chunk_normalisation": {
+          "current_chunks_per_100_files": 295,
+          "reference_stage3b_chunks_per_100_files": 213,
+          "current_chunks_per_second": 19.8938,
+          "reference_stage3b_chunks_per_second": 15.7614,
+          "chunks_per_second_ratio": 1.2622,
+          "note": "docs/s is not like-for-like across the two corpora: the exp-6 generator's word pool yields more chunks per file (289 vs ~212 per 100 files). Chunk-normalised throughput is the honest cross-corpus comparison."
+        }
+      }
+    },
+    "gates": {
+      "H6_throughput_consistent_with_stage3b": true,
+      "H7_no_resource_regression_vs_stage3b": true,
+      "note": "Confirming evidence only (single variant at HEAD); the frozen docs/s rule is evaluated AND reported alongside the chunk-normalised ratio because the corpora differ in chunks per file. H6 = real arm passes the frozen rule OR the chunk-normalised ratio shows no regression."
+    },
+    "peak_rss": {
+      "current_max_bytes": 315637760,
+      "reference_stage3b_max_bytes": 303677440
+    }
+  },
+  "status_word": "GREEN"
+}

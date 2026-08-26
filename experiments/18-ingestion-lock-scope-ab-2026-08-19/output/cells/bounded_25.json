@@ -1,0 +1,71 @@
+{
+  "cell_id": "bounded_25",
+  "factors": {
+    "corpus_size": 25,
+    "failure_point": "none",
+    "repeat_state": "first_plus_unchanged_second",
+    "ingest_topology": "sequential_1_stream",
+    "embedding_block": "fake_deterministic"
+  },
+  "manifest": {
+    "repo_commit": "1b93442d1762240b77a8370ce2870095066e20dd",
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "18-ingestion-lock-scope-ab",
+    "protocol_version": "1.0",
+    "python_version": "3.12.10",
+    "platform": "Darwin-arm64",
+    "timestamp_utc": "2026-08-19T15:36:22Z",
+    "corpus_identity": "63d42f7c90b87e44b50f9f1d2efb5d4666fc201067a446206cc7e27ed84c8f3d",
+    "embedding": {
+      "requested_provider": "fake_deterministic",
+      "effective_provider": "fake_deterministic",
+      "effective_model": "mock-deterministic-v1",
+      "dim": 32
+    },
+    "vector_store": {
+      "backend": "chroma_local",
+      "mode": "persistent_local",
+      "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/18-ingestion-lock-scope-ab-2026-08-19/output/chroma_bounded_25"
+    }
+  },
+  "status": "completed",
+  "wall_seconds": 1.4576037499937229,
+  "first": {
+    "status": "ok",
+    "files_indexed": 25,
+    "files_skipped_unchanged": 0,
+    "chunks_created": 54,
+    "chunks_removed": 0,
+    "max_chunks_per_file": 3,
+    "timings": {
+      "change_detection_seconds": 0.16069275297923014,
+      "parse_chunk_seconds": 0.8964817910746206,
+      "embedding_seconds": 0.005694750987458974,
+      "store_write_seconds": 0.24504300096305087,
+      "lock_wait_seconds": 1.0167044820263982e-05,
+      "cleanup_seconds": 0.05144221195951104,
+      "total_seconds": 1.3998154580185656
+    },
+    "peak_rss_bytes": 274104320
+  },
+  "unchanged_second": {
+    "status": "ok",
+    "files_indexed": 0,
+    "files_skipped_unchanged": 25,
+    "chunks_created": 0,
+    "chunks_removed": 0,
+    "max_chunks_per_file": 0,
+    "timings": {
+      "change_detection_seconds": 0.04447245685150847,
+      "parse_chunk_seconds": 0.0,
+      "embedding_seconds": 0.0,
+      "store_write_seconds": 0.0,
+      "lock_wait_seconds": 0.0,
+      "cleanup_seconds": 0.0,
+      "total_seconds": 0.0493713750038296
+    },
+    "peak_rss_bytes": 274677760
+  },
+  "one_file_modified": null,
+  "process_peak_rss_bytes": 274710528
+}

@@ -10,6 +10,13 @@ mutation or module-constant patching.  Works in local and cloud Chroma
 modes; retrieval-only cells reuse the immutable index read-only.
 """
 
+# Policy addendum 2026-08-21 (ADR-049 D11, make-lancedb-default-and-isolate-chromadb):
+# first admissible measured run follows ADR-049 -> must run on the qualified
+# LanceDB default unless the vector-store backend is a declared manipulated
+# factor. Prepared-on-Chroma inputs produce Chroma-specific results; not
+# LanceDB-admissible evidence. Run assert_policy_vector_store from
+# experiments/_lib/preflight.py before any measured row (task 6.3).
+
 from __future__ import annotations
 
 import argparse

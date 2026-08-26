@@ -1,6 +1,7 @@
 """Run Experiment 14: LiteParse promotion on Qasper corpus.
 
-4-cell grid: {pypdf, liteparse} × {rerank-off, rerank-on}.
+6-cell grid (protocol v2.1): {pypdf, liteparse, pdf_inspector} ×
+{rerank-off, rerank-on}.
 Validates H1 (corpus validity), H2 (speed), H3 (reranker benefit).
 
 Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
@@ -26,11 +27,31 @@ PROJECT_ROOT = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+
+def build_eval_cell_matrix() -> list[dict[str, Any]]:
+    """Return the six evaluation cells as plan-comparable dicts (D15).
+
+    Shape matches ``plan.json`` cells: ``{"id": ..., "factors": {...}}``.
+    ``plan.json`` is the machine truth for the cell matrix; the agreement
+    tests in ``tests/test_experiment_14_harness.py`` compare this pure
+    generator against the plan via ``ExperimentPlan.assert_runner_cells``.
+    Protocol v2.1 (2026-08-23): pdf_inspector joins as the third reader.
+    """
+    return [
+        {"id": "pypdf_off", "factors": {"reader": "pypdf", "rerank": False}},
+        {"id": "pypdf_on", "factors": {"reader": "pypdf", "rerank": True}},
+        {"id": "liteparse_off", "factors": {"reader": "liteparse", "rerank": False}},
+        {"id": "liteparse_on", "factors": {"reader": "liteparse", "rerank": True}},
+        {"id": "pdf_inspector_off", "factors": {"reader": "pdf_inspector", "rerank": False}},
+        {"id": "pdf_inspector_on", "factors": {"reader": "pdf_inspector", "rerank": True}},
+    ]
+
+
+# Execution view derived from the pure generator above — same six cells,
+# same order and values.
 CELLS = [
-    {"name": "pypdf_off", "reader": "pypdf", "rerank": False},
-    {"name": "pypdf_on", "reader": "pypdf", "rerank": True},
-    {"name": "liteparse_off", "reader": "liteparse", "rerank": False},
-    {"name": "liteparse_on", "reader": "liteparse", "rerank": True},
+    {"name": cell["id"], "reader": cell["factors"]["reader"], "rerank": cell["factors"]["rerank"]}
+    for cell in build_eval_cell_matrix()
 ]
 
 
@@ -139,6 +160,7 @@ def _run_cell(
             hybrid=False,
             collection_name=collection_name,
             store=store,
+            include_diagnostics=True,
         )
         latency_ms = (time.perf_counter() - t0) * 1000
         results.append(
@@ -183,10 +205,23 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
+
+    # Retrieval resolves the composition-root default EffectiveSettings
+    # (ADR-037); no entry point imported compose.  Install it explicitly
+    # (mirrors 873e6d3 in the 10b harness) so search() can resolve a
+    # default without raising.
+    from rag_mcp.compose import settings_to_effective
+    from rag_mcp.config import get_settings
+    from rag_mcp.core.settings import set_default_effective_settings
+
+    set_default_effective_settings(settings_to_effective(get_settings()))
+
     output_dir = SCRIPT_DIR / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    gt_path = output_dir / "qasper_qrels.json"
+    # The frozen qrels live at the experiment root (written there by
+    # prepare_qasper_pdfs.py and gitignored); output/ holds only artefacts.
+    gt_path = SCRIPT_DIR / "qasper_qrels.json"
     gt = _load_ground_truth(gt_path)
     queries = gt.get("queries", [])
     qrels = gt.get("qrels", {})
@@ -214,7 +249,8 @@ def main() -> None:
 
     # Load ingestion times from index build metadata
     ingestion_times: dict[str, float] = {}
-    for reader in ["pypdf", "liteparse"]:
+    # Protocol v2.1: three readers — pdf_inspector timing is H2 evidence too.
+    for reader in ["pypdf", "liteparse", "pdf_inspector"]:
         build_info_path = output_dir / f"index_build_{reader}.json"
         if build_info_path.exists():
             build_info = json.loads(build_info_path.read_text(encoding="utf-8"))

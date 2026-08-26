@@ -26,6 +26,11 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
+# Chroma-only suite (task 5.1): skips by design in the base install and
+# runs in the chroma-extra CI job.
+pytest.importorskip("chromadb", reason="chroma extra not installed (uv sync --extra chroma)")
 import chromadb
 import pytest
 
@@ -70,7 +75,14 @@ def _storage():
 
 
 def _settings(**overrides) -> Settings:
-    """Build a fresh Settings without ``.env`` and deterministic defaults."""
+    """Build a fresh Settings without ``.env`` and deterministic defaults.
+
+    ``vector_store`` defaults to ``chroma``: the experiment-storage helpers
+    drive the ChromaDB cloud/local paths, and the conftest ``_isolate_env``
+    fixture pins ``VECTOR_STORE=lancedb`` for every test — leaving the env
+    default would trip the backend-compat validator (task 2.5).
+    """
+    overrides.setdefault("vector_store", "chroma")
     overrides.setdefault("embed_provider", "local")
     overrides.setdefault("local_backend", "ollama")
     overrides.setdefault("embed_model", "nomic-embed-text")
@@ -270,6 +282,7 @@ class TestExperimentStorageConfig:
     ) -> None:
         """Checkpoints serialise without the API key even when it is in the env."""
         _clear_chroma_env(monkeypatch)
+        monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
         monkeypatch.setenv("CHROMA_CLOUD_API_KEY", _CLOUD_KEY)
         monkeypatch.setenv("CHROMA_CLOUD_TENANT", "tenant-ck")

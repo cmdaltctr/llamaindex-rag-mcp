@@ -165,6 +165,7 @@ reviews:
     base_branches:
       - "main"
       - "v3"
+      - "harden-pipeline-correctness-before-calibration"
 
   finishing_touches:
     docstrings:

@@ -6,13 +6,18 @@ Define a pluggable PDF reader architecture with environment-variable-driven back
 
 The system SHALL read a `PDF_READER` environment variable at config-load
 time into the frozen `Settings.pdf_reader` field. Accepted values SHALL be
-`auto`, `liteparse`, `pypdfium2`, and `pypdf`. Any other value SHALL log a
-warning naming the offending value and fall back to `auto`. The composition
-root SHALL resolve `auto` to a concrete backend name exactly once at startup
-and bake the result into the injected `EffectiveSettings.pdf_reader`; no
-module-level resolved constant exists.
+`auto`, `pdf_inspector`, `liteparse`, `pypdfium2`, and `pypdf`. Any other
+value SHALL log a warning naming the offending value and fall back to
+`auto`. The composition root SHALL resolve `auto` to a concrete backend
+name exactly once at startup and bake the result into the injected
+`EffectiveSettings.pdf_reader`; no module-level resolved constant exists.
 
-#### Scenario: Explicit backend selection via env var
+#### Scenario: Explicit pdf-inspector selection via env var
+
+- **WHEN** `PDF_READER=pdf_inspector` is set and the package is importable
+- **THEN** the injected `EffectiveSettings.pdf_reader` SHALL equal `"pdf_inspector"` and its adapter SHALL ingest all `.pdf` files
+
+#### Scenario: Explicit override selection via env var
 
 - **WHEN** `PDF_READER=liteparse` is set and the `liteparse` package is importable
 - **THEN** the injected `EffectiveSettings.pdf_reader` SHALL equal `"liteparse"` and the LiteParse adapter SHALL be used for all `.pdf` ingestion
@@ -146,35 +151,40 @@ caller: `get_pdf_reader(reader)`.
 
 ### Requirement: LiteParse SHALL be a core dependency
 
-The `liteparse` package SHALL be declared in the main `[project.dependencies]`
-list in `pyproject.toml`, not as an optional extra. The base `uv sync` SHALL
-install `liteparse` and make it available for PDF parsing. The `auto`
+Both `liteparse` and `pdf-inspector` SHALL be declared in the main
+`[project.dependencies]` list in `pyproject.toml`, not as optional extras.
+The base `uv sync` SHALL install both packages and make the configured
+default available without an optional dependency extra. The `auto`
 resolution order SHALL prefer LiteParse when importable.
 
-#### Scenario: Baseline install includes liteparse
+#### Scenario: Baseline install includes pdf-inspector
 - **WHEN** a user runs `uv sync` without any extras
-- **THEN** the `liteparse` package SHALL be importable
-- **AND** the resolved reader SHALL be `"liteparse"`
+- **THEN** `pdf_inspector` and `liteparse` SHALL be importable
 
-#### Scenario: Explicit override to pypdf
-- **WHEN** a user sets `PDF_READER=pypdf` in `.env`
-- **THEN** the system SHALL use pypdf regardless of LiteParse being installed
+#### Scenario: Explicit override to LiteParse
+- **WHEN** a user sets `PDF_READER=liteparse` in `.env`
+- **THEN** the system SHALL use LiteParse regardless of pdf-inspector availability
 
-### Requirement: PDF reader default SHALL be auto after Experiment 11 validation
+### Requirement: PDF reader default SHALL be configuration-owned after Experiment 14 validation
 
-The default value for `PDF_READER` SHALL be `auto`. When `auto` is selected
-and `liteparse` is installed, the system SHALL resolve to LiteParse. When
-LiteParse is not installed, the system SHALL fall back to pypdf. Experiment
-11 validated this adoption (+6.9% nDCG@10); see ADR-020 for the decision
-record.
+The packaged `PDF_READER` default SHALL be `pdf_inspector`. The selected
+backend SHALL remain configurable through `PDF_READER`; `auto` SHALL retain
+its existing capability-resolution and graceful-fallback behaviour. Experiment
+14 validated this promotion with zero parser failures, a 346.7-second ingest
+run, and the highest reranked Hit@5 result (0.6250).
 
-#### Scenario: Auto default (current state)
+#### Scenario: Packaged default selects pdf-inspector
 
-- **WHEN** no `PDF_READER` env var is set and `liteparse` is installed
-- **THEN** the resolved reader SHALL be `"liteparse"`
+- **WHEN** no `PDF_READER` environment variable is set
+- **THEN** the resolved reader SHALL be `"pdf_inspector"`
 
-#### Scenario: Auto fallback when LiteParse not installed
+#### Scenario: Environment override takes precedence
 
-- **WHEN** no `PDF_READER` env var is set and `liteparse` is NOT installed
-- **THEN** the resolved reader SHALL be `"pypdf"` (always available)
+- **WHEN** `PDF_READER=pypdf` is set
+- **THEN** the system SHALL use pypdf regardless of the packaged default
+
+#### Scenario: Missing configured backend falls back safely
+
+- **WHEN** `PDF_READER=pdf_inspector` is configured but the package is not importable
+- **THEN** the system SHALL log an error naming the missing package and fall back to pypdf rather than raising
 

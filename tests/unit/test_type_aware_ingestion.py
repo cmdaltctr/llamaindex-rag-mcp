@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -137,6 +138,14 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
+        from rag_mcp.core.ingestion.replacement import WriteTimings
+
+        outcome = SimpleNamespace(
+            chunks_written=1,
+            chunks_removed=0,
+            source_attempt="test-attempt",
+            timings=WriteTimings(),
+        )
         with (
             patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
             patch(
@@ -147,13 +156,9 @@ class TestBinarySkip:
                 return_value=([tmp_path / "app.py", tmp_path / "image.png"], []),
             ),
             patch(
-                "rag_mcp.core.ingestion.pipeline.remove_document",
-                return_value={"status": "ok", "chunks_removed": 0},
-            ),
-            patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
                 new_callable=AsyncMock,
-                return_value=1,
+                return_value=outcome,
             ),
         ):
             from rag_mcp.core.ingestion import ingest_path_async
@@ -162,3 +167,58 @@ class TestBinarySkip:
 
         skipped = [d for d in result["file_details"] if d.get("status") == "skipped"]
         assert len(skipped) >= 1
+
+
+class TestSingleFileIngestRouting:
+    """End-to-end type detection when ``ingest_path_async`` is handed one file.
+
+    Regression for the directory-assumption bug: type detection produced an
+    empty map for a single-file path (the suffix walk silently fails on a
+    file argument), the pipeline looked up key ``"."`` and got
+    ``content_type=None``, so a directly ingested file lost the typed
+    metadata (and any content-based routing) that directory ingestion
+    provides. Code/config extensions are currently outside
+    ``SUPPORTED_EXTENSIONS``, so the observable contract here is typed
+    metadata parity; the scan-level code/config classification for single
+    files is pinned directly in ``test_codebase_map.py``.
+    """
+
+    @pytest.mark.asyncio
+    async def test_single_markdown_file_ingests_with_typed_metadata(self, tmp_path: Path) -> None:
+        """A directly ingested .md file carries content_type document/markdown."""
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.vectordb import get_default_store
+
+        f = tmp_path / "note.md"
+        f.write_text("# Heading\n\nParagraph one.\n\n## Sub\n\nParagraph two.\n")
+
+        result = await ingest_path_async(str(f), collection_name="single_file_md")
+
+        indexed = [d for d in result["file_details"] if d.get("status") == "indexed"]
+        assert len(indexed) == 1, f"expected the single file indexed: {result['file_details']}"
+        assert result["status"] == "ok"
+
+        payload = get_default_store().fetch_all("single_file_md", ["metadatas"])
+        assert payload, "no chunks stored for the single file"
+        types = {m.get("content_type") for m in payload["metadatas"]}
+        assert types == {"document/markdown"}, types
+
+    @pytest.mark.asyncio
+    async def test_single_text_file_ingests_with_typed_metadata(self, tmp_path: Path) -> None:
+        """A directly ingested .txt file carries content_type document/text."""
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.vectordb import get_default_store
+
+        f = tmp_path / "notes.txt"
+        f.write_text("First line.\nSecond line with more words.\nThird line.\n")
+
+        result = await ingest_path_async(str(f), collection_name="single_file_txt")
+
+        indexed = [d for d in result["file_details"] if d.get("status") == "indexed"]
+        assert len(indexed) == 1, f"expected the single file indexed: {result['file_details']}"
+        assert result["status"] == "ok"
+
+        payload = get_default_store().fetch_all("single_file_txt", ["metadatas"])
+        assert payload, "no chunks stored for the single file"
+        types = {m.get("content_type") for m in payload["metadatas"]}
+        assert types == {"document/text"}, types

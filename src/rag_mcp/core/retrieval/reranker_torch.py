@@ -86,6 +86,9 @@ class SentenceTransformerReranker:
         # (``rerank_reason``).  Instance state — describes only this call,
         # not a process-wide streak.
         self.last_failure_reason: str | None = None
+        # Device the CrossEncoder landed on, recorded for the experiment
+        # runtime manifest (D13).  None until ``_load_model`` succeeds.
+        self.last_loaded_device: str | None = None
 
     # ── Model loading ──────────────────────────────────────────────────
 
@@ -138,6 +141,10 @@ class SentenceTransformerReranker:
                 self._cross_encoder = CrossEncoder(
                     self._model_id,
                     max_length=self._effective_max_length,
+                )
+                self.last_loaded_device = str(
+                    getattr(self._cross_encoder, "device", None)
+                    or getattr(getattr(self._cross_encoder, "model", None), "device", "unknown")
                 )
                 self._loaded = True
                 self._load_error = None

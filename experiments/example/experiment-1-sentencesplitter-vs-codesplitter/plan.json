@@ -1,0 +1,65 @@
+{
+  "experiment_id": "example-experiment-1-sentencesplitter-vs-codesplitter",
+  "protocol_version": "1.0",
+  "experimental_unit": "one committed synthetic source file fixture, chunked once per cell",
+  "primary_metric": "structural_cut_rate",
+  "manipulated_factors": [
+    {
+      "name": "chunker",
+      "levels": ["sentence", "code"]
+    }
+  ],
+  "controlled_variables": {
+    "source_bytes": "fixtures/manifest.json sha256 anchors both cells",
+    "code_chunk_lines": 40,
+    "code_chunk_lines_overlap": 15,
+    "code_max_chars": 1500,
+    "sentence_chunk_size_tokens": 512,
+    "sentence_chunk_overlap_tokens": 100,
+    "metadata_extraction_mode": "disabled",
+    "vector_store": "none (structural arm only)",
+    "dependency_lock": "uv.lock hash recorded per manifest"
+  },
+  "cells": [
+    {
+      "id": "S",
+      "factors": {
+        "chunker": "sentence"
+      }
+    },
+    {
+      "id": "C",
+      "factors": {
+        "chunker": "code"
+      }
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "repo_commit",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "dependency_lock_hash",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "corpus_identity",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "chunker.fallback_reason",
+      "operator": "is_null"
+    },
+    {
+      "manifest_field": "chunking_settings.code_max_chars",
+      "operator": "eq",
+      "expected": 1500
+    },
+    {
+      "manifest_field": "chunking_settings.chunk_size",
+      "operator": "eq",
+      "expected": 512
+    }
+  ]
+}

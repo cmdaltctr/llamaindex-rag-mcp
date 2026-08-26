@@ -32,6 +32,29 @@ class TestScanWithSuffix:
         assert entries[0].label == "python"
         assert entries[0].is_text is True
 
+    def test_single_file_path_returns_one_entry(self, tmp_path: Path) -> None:
+        """A file (not directory) path yields a single entry keyed ``"."``.
+
+        ``ingest_path_async`` may be handed one file directly; it computes
+        that file's path relative to itself as ``"."`` and looks the type
+        up by that key. The suffix scanner must therefore classify a file
+        argument rather than silently returning nothing (its directory
+        walk fails with NotADirectoryError, an OSError it swallows).
+        """
+        f = tmp_path / "app.py"
+        f.write_text("print('hello')")
+        entries = scan_with_suffix(str(f))
+        assert [(e.path, e.group, e.label) for e in entries] == [(".", "code", "python")]
+
+    def test_single_config_file_path_returns_one_entry(self, tmp_path: Path) -> None:
+        """A single config file is classified config/<label> with key ``"."``."""
+        f = tmp_path / "settings.yaml"
+        f.write_text("key: value\n")
+        entries = scan_with_suffix(str(f))
+        assert len(entries) == 1
+        assert entries[0].path == "."
+        assert entries[0].group == "config"
+
     def test_typescript_file_detected(self, tmp_path: Path) -> None:
         """TypeScript files are detected as code/typescript."""
         (tmp_path / "app.ts").write_text("const x = 1;")
@@ -348,15 +371,27 @@ class TestBuildCodebaseMap:
             mock_store.fetch_all.assert_called_with("documents", ["metadatas"])
 
     def test_no_collection_graceful_degradation(self, tmp_path: Path) -> None:
-        """When ChromaDB collection is unavailable, code graph still works."""
+        """When the vector-store collection is unavailable, code graph still works.
+
+        Task 5.1 rewrite: patches the process-wide store accessor with a
+        failing stub instead of ``chromadb.PersistentClient`` so the
+        degradation contract is store-agnostic and runs in the base
+        install without the chroma extra.
+        """
+
+        class _NoCollectionStore:
+            def get_collection(self, name: str) -> object:
+                raise Exception("no collection")
+
         (tmp_path / "app.py").write_text("x = 1\n")
 
         with (
             patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
-            patch("chromadb.PersistentClient") as mock_client,
+            patch(
+                "rag_mcp.core.vectordb.get_default_store",
+                return_value=_NoCollectionStore(),
+            ),
         ):
-            mock_client.return_value.get_collection.side_effect = Exception("no collection")
-
             result = build_codebase_map(str(tmp_path))
 
             assert result.inventory is not None
