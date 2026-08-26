@@ -1,10 +1,10 @@
 """Content-type → chunking strategy dispatch.
 
-Reads files via LlamaIndex's ``SimpleDirectoryReader``, extracts metadata,
-and dispatches to the appropriate chunking strategy based on Magika
-content-type detection.  Content-type takes precedence over file extension
-when available.  Extracted from the original ``ingestion.py`` monolith as
-part of Phase 1.
+Reads files via the registry-backed document backends
+(``core/ingestion/backends/``), extracts metadata, and dispatches to the
+appropriate chunking strategy based on Magika content-type detection.
+Content-type takes precedence over file extension when available.
+Extracted from the original ``ingestion.py`` monolith as part of Phase 1.
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
 from ..chunking.registry import get as _chunking_get
 from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..settings import resolve_effective_settings
+from .backends import read_document
 
 logger = logging.getLogger(__name__)
 
@@ -95,53 +95,33 @@ async def read_and_chunk_file_async(
         chunk_config_file = _chunking_get("config")
         return chunk_config_file(file_path, content_type)
 
-    if group in ("document", "") and group != "config":
-        if resolved.document_backend == "azure" and file_path.suffix.lower() in {
-            ".pdf",
-            ".docx",
-            ".doc",
-        }:
-            try:
-                from ...integrations.azure import read_with_azure_fallback
-
-                documents = await read_with_azure_fallback(
-                    file_path, pdf_reader=resolved.pdf_reader
-                )
-                if content_type:
-                    for doc in documents:
-                        doc.metadata.setdefault("content_type", content_type)
-                effective_chunk_size = (
-                    markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
-                )
-                splitter = SentenceSplitter(
-                    chunk_size=effective_chunk_size,
-                    chunk_overlap=chunk_overlap,
-                )
-                nodes = await asyncio.to_thread(
-                    lambda: splitter.get_nodes_from_documents(documents)
-                )
-                if content_type:
-                    for node in nodes:
-                        node.metadata.setdefault("content_type", content_type)
-                return nodes
-            except Exception as exc:
-                logger.warning(
-                    "Azure reader failed for %s: %s — falling back to local chain",
-                    file_path.name,
-                    exc,
-                )
-
-    def _read_sync() -> list:
-        from ...integrations.pdf import get_pdf_reader
-
-        reader = SimpleDirectoryReader(
-            input_files=[str(file_path)],
-            filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader(resolved.pdf_reader)},
+    # Document-backend dispatch: the orchestrator applies the configured
+    # backend, its registered suffix gate, the retry budget, and the
+    # local-first fallback (spec document-backend-strategies).  The
+    # chunker keeps only the post-processing choice, driven by the
+    # structured flag: cloud parsers return pre-structured documents
+    # (paragraphs/tables) that split directly, while the local chain
+    # feeds file-level metadata extraction below.
+    backend_read = await read_document(file_path, settings=resolved)
+    if backend_read.structured:
+        documents = backend_read.documents
+        if content_type:
+            for doc in documents:
+                doc.metadata.setdefault("content_type", content_type)
+        effective_chunk_size = (
+            markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
         )
-        return reader.load_data()
+        splitter = SentenceSplitter(
+            chunk_size=effective_chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        nodes = await asyncio.to_thread(lambda: splitter.get_nodes_from_documents(documents))
+        if content_type:
+            for node in nodes:
+                node.metadata.setdefault("content_type", content_type)
+        return nodes
 
-    documents = await asyncio.to_thread(_read_sync)
+    documents = backend_read.documents
 
     from ..metadata.extractor import extract_metadata_with_status_async
 

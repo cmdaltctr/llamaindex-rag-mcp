@@ -16,6 +16,13 @@ from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 
+from .capabilities import (  # noqa: F401  (re-exported for existing callers/tests)
+    _resolve_sparse_backend_for,
+    resolve_document_backend,
+    resolve_pdf_reader,
+    resolve_sparse_backend,
+    validate_document_backend,
+)
 from .config import Settings, _resolve_effective_embed_provider, get_settings
 from .core.providers.embeddings import registry as embed_registry
 
@@ -32,92 +39,13 @@ EMBEDDING_PROVIDER_SCOPE = "process"
 _runtime_setup_done: bool = False
 
 
-# ── Runtime capability probes (moved from config.py, task 7.10) ──────
-# These ask the runtime a question ("is native sparse available?", "is
-# LiteParse installed?"), which is construction work, not settings data.
-# Keeping them in config.py forced it to import core.retrieval.sparse,
-# inverting the layering the config-is-leaf contract now forbids.
-
-
-def resolve_sparse_backend(settings: Settings) -> str:
-    """Resolve the configured sparse backend to ``bm25`` or ``native``.
-
-    The native-sparse capability belongs to the SELECTED store, not to
-    whichever optional packages happen to be installed (design D5, task
-    3.3): ``auto`` resolves through the selected store's registry
-    metadata, and an explicit ``native`` under a store without native
-    sparse falls back to BM25 with a warning — without probing Chroma.
-    """
-    backend = settings.retrieval.hybrid_sparse_backend
-    if backend == "bm25":
-        return "bm25"
-
-    from .core.vectordb import registry as vectordb_registry
-
-    # Registry metadata answers "does this store advertise native sparse?"
-    # (None for lancedb, truthy for chroma) — selection, not installation,
-    # decides the route. For stores that advertise native, the installed
-    # runtime probe is the final arbiter (auto and explicit native alike).
-    native_available = False
-    if bool(vectordb_registry.describe(settings.vector_store)["native_sparse_probe"]):
-        from .core.retrieval.sparse import _detect_native_sparse_capability
-
-        native_available = _detect_native_sparse_capability()
-
-    if backend == "auto":
-        return "native" if native_available else "bm25"
-
-    if native_available:
-        return "native"
-
-    logger.warning(
-        "HYBRID_SPARSE_BACKEND=native was requested, but the selected "
-        "vector store %r does not expose native sparse retrieval. "
-        "Falling back to bm25.",
-        settings.vector_store,
-    )
-    return "bm25"
-
-
-def resolve_pdf_reader(settings: Settings) -> str:
-    """Resolve the configured PDF reader to a concrete backend name.
-
-    Explicit values probe their registered dependency metadata. ``auto``
-    keeps the established LiteParse → pypdfium2 → pypdf capability policy.
-    """
-    reader = settings.pdf_reader
-    if reader != "auto":
-        from .integrations.pdf import registry as pdf_registry
-
-        if reader not in pdf_registry.available():
-            logger.error("PDF_READER=%r is unregistered; falling back to pypdf.", reader)
-            return "pypdf"
-        try:
-            pdf_registry.probe(reader)
-            return reader
-        except ImportError:
-            logger.error(
-                "PDF_READER=%r was requested but the package is not "
-                "installed. Falling back to pypdf.",
-                reader,
-            )
-            return "pypdf"
-
-    # auto resolution: probe the established capability preference order.
-    for backend in ("liteparse", "pypdfium2"):
-        try:
-            __import__(backend)
-            logger.info("PDF_READER=auto resolved to %s", backend)
-            return backend
-        except ImportError:
-            continue
-
-    return "pypdf"
-
-
-def _resolve_sparse_backend_for(settings: Settings) -> str:
-    """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
-    return resolve_sparse_backend(settings)
+# ── Runtime capability probes ────────────────────────────────────────
+# resolve_sparse_backend / resolve_pdf_reader / _resolve_sparse_backend_for
+# moved to .capabilities (register-document-backend-strategies, task 2.4:
+# this module sits at the 500-line ceiling and must not grow inline).
+# resolve_document_backend (azure→local SDK degradation) and
+# validate_document_backend (registry-owned name validation at startup)
+# live there too; both are re-exported above.
 
 
 def settings_to_effective(settings: Settings | None = None) -> Any:
@@ -193,7 +121,11 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         codebase_map_max_depth=settings.codebase_map_max_depth,
         community_algorithm=settings.community_algorithm.strip() or "louvain",
         community_seed=settings.community_seed,
-        document_backend=settings.document_backend,
+        # Bake the RESOLVED backend in: azure without the optional SDK
+        # degrades to local here (with a diagnostic naming the missing
+        # dependency), so ingestion performs a plain registry read
+        # instead of probing at read time (task 2.4).
+        document_backend=resolve_document_backend(settings),
         azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
         azure_doc_intelligence_key=settings.azure_doc_intelligence_key,
         azure_doc_intelligence_model=settings.azure_doc_intelligence_model,
@@ -434,6 +366,12 @@ def _resolve_active_strategies(settings: Settings) -> None:
     # Community detection validates strictly: unknown names fail startup
     # (no skip-on-unknown — the error listing available names IS the gate).
     _validate_community_strategy(settings)
+
+    # Document backends validate strictly too (unknown names fail startup
+    # listing the registered names, task 2.4).  An unavailable azure SDK
+    # degrades to local in settings_to_effective rather than failing here
+    # (cloud opt-in, ADR-024) — unlike community strategies, which fail.
+    validate_document_backend(settings)
 
 
 def ensure_runtime_setup() -> None:

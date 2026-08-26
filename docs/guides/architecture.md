@@ -350,7 +350,7 @@ test fails when a module is missing from this table.
 | Module | Availability | Selector | Shared contract | Fallback owner | Disposition |
 |---|---|---|---|---|---|
 | `rag_mcp.integrations` | Native | None | Package facade | None | Facade; exports stable integration APIs only |
-| `rag_mcp.integrations.azure` | Optional `azure` extra | `DOCUMENT_BACKEND=azure` | Document parsing into LlamaIndex Documents | Split today: config handles missing credentials, Azure retries, and ingestion/local readers handle runtime fallback | Capability integration; deferred to `register-document-backend-strategies` |
+| `rag_mcp.integrations.azure` | Optional `azure` extra | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry |
 | `rag_mcp.integrations.leidenalg` | Optional `community-leiden` extra | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py` | Flat partition callable | None; explicit selection fails startup | External adapter behind the community registry |
 | `rag_mcp.integrations.magika` | Optional executable | `MAGIKA_BINARY` selects the binary path, not an implementation | `FileEntry` detection results | `core/codebase/codebase_map.py` suffix detection | Capability integration; remains unregistered |
 | `rag_mcp.integrations.pdf` | Native | None | `get_pdf_reader(reader)` | None | Public facade exposing the factory |
@@ -378,7 +378,7 @@ The same rule applied to every name-dispatched family, inside and outside
 | Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/registry.py` (`bm25`) | `bm25` registered; `native` is currently a warning-to-BM25 placeholder | `openspec/changes/implement-native-sparse-backend-strategy/` |
 | Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
 | Vector store | `VECTOR_STORE` | `core/vectordb/registry.py` | `chroma` and `lancedb` registered | None |
-| Document backends | `DOCUMENT_BACKEND` | None; direct construction | `local` and `azure` do not yet form one registry contract, and fallback ownership changes with registration | `openspec/changes/register-document-backend-strategies/` |
+| Document backends | `DOCUMENT_BACKEND` | `core/ingestion/backends/registry.py` | Registered by `register-document-backend-strategies`: `local` native, `azure` optional via `integrations/azure.py`; retry and fallback owned by the orchestrator | None |
 
 Live registry contents, kept in step with the code by contract tests:
 
@@ -414,15 +414,22 @@ Live registry contents, kept in step with the code by contract tests:
 `chroma` `lancedb`
 <!-- /registry-names:vectordb -->
 
+<!-- registry-names:document-backend -->
+`azure` `local`
+<!-- /registry-names:document-backend -->
+
 ### Audit conclusions
 
 - The concrete PDF readers were the one behaviour-preserving missing registry
   family. They are now registered behind the unchanged `auto` factory.
 - Magika remains a capability adapter, not a strategy family: one configured
   capability, no interchangeable named peers.
-- Azure and local document backends are deferred to the strict-valid follow-up
+- Azure and local document backends were deferred to the strict-valid follow-up
   `openspec/changes/register-document-backend-strategies/` because fallback
-  ownership changes with registration.
+  ownership changes with registration. That change has now delivered the
+  document-backend registry: accepted `DOCUMENT_BACKEND` names are registry-
+  owned, validated at startup at the composition boundary, and the orchestrator
+  owns the retry budget plus exactly one local fallback.
 - Native sparse retrieval is deferred to
   `openspec/changes/implement-native-sparse-backend-strategy/` because `native`
   is currently a warning-to-BM25 placeholder and stored sparse coverage
