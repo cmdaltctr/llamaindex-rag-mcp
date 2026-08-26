@@ -72,7 +72,15 @@ jobs:
         if: matrix.os == 'macos-latest'
         env:
           PDF_READER: liteparse
-        run: uv run --no-sync pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
+        # Gate strictly when an Ollama server is reachable; skip visibly
+        # otherwise. The old `|| echo` swallowed genuine slow-suite
+        # failures along with Ollama-unavailability.
+        run: |
+          if ! curl -s --max-time 5 http://localhost:11434/api/tags > /dev/null 2>&1; then
+            echo "Slow tests skipped: no Ollama server at localhost:11434"
+            exit 0
+          fi
+          uv run --no-sync pytest -m "slow" --tb=short -q
 
   # ── Floor-resolution CI job (ADR-042) ────────────────────────────────
   # Installs at the declared lower bounds (--resolution lowest-direct) and

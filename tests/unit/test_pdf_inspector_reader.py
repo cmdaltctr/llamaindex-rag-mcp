@@ -94,3 +94,31 @@ def test_missing_package_raises_actionable_importerror(monkeypatch, tmp_path):
     assert "pdf_inspector" in message
     assert "install" in message.lower()
     assert "uv sync" in message
+
+
+def test_real_pdf_end_to_end_smoke(fixtures_dir):
+    """The packaged default reader parses a real fixture PDF end to end.
+
+    CI forces ``PDF_READER=pypdf`` for the deterministic suite, so the
+    promoted default has no real-execution coverage unless a test invokes
+    the adapter against an actual PDF. This is that test: the real
+    ``pdf_inspector`` package, a real text PDF (hand-built minimal
+    fixture — the five ``pdf_dir`` fixtures are synthetic shells that
+    classify as scanned with no text layer), real markdown output.
+    """
+    from pathlib import Path
+
+    from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+
+    pdf = fixtures_dir / "smoke_text.pdf"
+    assert isinstance(pdf, Path)
+
+    docs = PdfInspectorReader().load_data(file=pdf)
+
+    assert len(docs) == 1
+    meta = docs[0].metadata
+    assert meta["pdf_reader"] == "pdf_inspector"
+    assert meta["pdf_type"] == "text_based"
+    assert meta["page_count"] == 1
+    content = docs[0].get_content()
+    assert "Smoke Test Document" in content, content[:200]

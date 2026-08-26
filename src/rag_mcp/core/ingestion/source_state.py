@@ -107,13 +107,38 @@ def build_index_identity(
             "effective_chunk_overlap": chunk_overlap,
         },
         # Extracted metadata participates in LlamaIndex embedding text unless a
-        # strategy excludes it. Timeouts/retry budgets affect failure behavior,
-        # not the representation of a successful index.
+        # strategy excludes it. Timeouts and retry budgets decide whether a
+        # real ingest completes extraction or falls back to degraded/local
+        # metadata, so a budget change must invalidate the identity —
+        # otherwise a source indexed under a degraded budget stays "current"
+        # after the operator raises the budget (spec: complete index-shaping
+        # identity).
         "metadata_shape": {
             "extraction_mode": settings.metadata.extraction_mode,
             "keyword_rules": settings.metadata.keyword_rules,
             "ollama_classify_model": settings.metadata.ollama_classify_model,
             "taxonomy_mode": settings.metadata.taxonomy_mode,
+            "classify_max_attempts": settings.metadata.classify_max_attempts,
+            "classify_timeout": settings.metadata.classify_timeout,
+            "pipeline_timeout": settings.metadata.pipeline_timeout,
+            "llamacpp_classify_timeout_override": (
+                settings.metadata.llamacpp_classify_timeout_override
+            ),
+            "ollama_classify_timeout_override": (
+                settings.metadata.ollama_classify_timeout_override
+            ),
+            "openrouter_classify_timeout_override": (
+                settings.metadata.openrouter_classify_timeout_override
+            ),
+            "llamacpp_pipeline_timeout_override": (
+                settings.metadata.llamacpp_pipeline_timeout_override
+            ),
+            "ollama_pipeline_timeout_override": (
+                settings.metadata.ollama_pipeline_timeout_override
+            ),
+            "openrouter_pipeline_timeout_override": (
+                settings.metadata.openrouter_pipeline_timeout_override
+            ),
             "metadata_llm_provider": settings.metadata_llm_provider,
             "local_backend": settings.local_backend,
             "cloud_backend": settings.cloud_backend,
