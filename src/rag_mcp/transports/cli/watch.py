@@ -31,7 +31,7 @@ def watch(
         "documents",
         "--collection",
         "-c",
-        help="ChromaDB collection to route auto-ingested files into.",
+        help="Vector-store collection to route auto-ingested files into.",
     ),
     verbose: bool = typer.Option(
         False,
@@ -43,7 +43,7 @@ def watch(
     """Watch a directory for new/changed documents and auto-ingest them.
 
     Monitors the given directory tree for supported document files and
-    auto-ingests them into the ChromaDB index.  Includes SHA-256
+    auto-ingests them into the vector-store index.  Includes SHA-256
     content-hash deduplication, per-file debouncing, ingestion
     throttling, and consecutive-error detection.
 
@@ -52,8 +52,9 @@ def watch(
     • The watcher only detects changes after it starts.  Run
       ``rag-mcp ingest <path>`` first to catch up on existing files.
     • Do NOT run ``rag-mcp watch`` and ``rag-mcp ingest`` (or the MCP
-      server) simultaneously on the same ChromaDB — two processes do
-      not share the internal write lock.
+      server) simultaneously on the same vector-store collection —
+      whether concurrent writers are safe depends on the selected
+      vector-store backend.
     """
     from ...daemon.runner import watch_directory
 

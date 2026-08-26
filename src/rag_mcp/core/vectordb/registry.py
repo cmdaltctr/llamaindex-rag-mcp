@@ -39,6 +39,7 @@ def register(
     install_hint: str | None = None,
     native_sparse_probe: Any = None,
     summary: str | None = None,
+    cross_process_writes_safe: bool = False,
 ) -> None:
     """Register a vector-store backend."""
     _registry[name] = import_path
@@ -48,6 +49,10 @@ def register(
         "install_hint": install_hint,
         "native_sparse_probe": native_sparse_probe,
         "summary": summary,
+        # Whether concurrent writers in SEPARATE processes are isolated
+        # (serialised) by the backend itself. Drives the installer's
+        # adapter-conditional contention warning (login-watcher design).
+        "cross_process_writes_safe": cross_process_writes_safe,
     }
 
 
@@ -62,6 +67,7 @@ def describe(name: str) -> dict[str, Any]:
         "install_hint": meta.get("install_hint"),
         "native_sparse_probe": meta.get("native_sparse_probe"),
         "summary": meta.get("summary"),
+        "cross_process_writes_safe": meta.get("cross_process_writes_safe", False),
     }
 
 
@@ -186,4 +192,7 @@ register(
     extra=None,
     native_sparse_probe=None,
     summary="rag_mcp.core.vectordb.summary:lancedb_storage_summary",
+    # LanceDB serialises concurrent writers across processes through
+    # file-level locking, unlike Chroma's in-process-only write lock.
+    cross_process_writes_safe=True,
 )

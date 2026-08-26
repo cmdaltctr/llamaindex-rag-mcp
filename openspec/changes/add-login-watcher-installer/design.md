@@ -49,6 +49,10 @@ macOS supports this without a GUI dependency through per-user LaunchAgents in `~
 7. **Treat launchctl load/start as best-effort and test via mocked subprocess.**
    - Rationale: CI may not run on macOS or may lack a GUI launchd domain. Plist generation and command construction are the portable contract; actual `launchctl` execution is platform-gated.
 
+8. **The installer's catch-up ingest fails closed on profile-resolution errors (resolved during PR review of the corrected proposal).**
+   - Rationale: `rag-mcp ingest` — the flow the catch-up must mirror — treats a `ValueError` from `compose.build_profile_resolver().resolve()` as a hard exit with no bypass, and the catch-up inherits those semantics. The running watcher's per-file `except ValueError: effective = None` fallback (daemon/watcher.py) is a resilience choice for an unattended long-running process: a transient failure degrades one file's ingest to server defaults. The installer is a one-shot, user-present operation over a whole directory; silently degrading would ingest every file under default-profile settings while later watcher ingests run under the collection's real profile, baking a mixed-profile baseline into a login-time agent. ADR-037's injection discipline also rules out implicit default-settings fallback below the boundary.
+   - Behaviour: resolution failure prints the collection and the resolver error, exits 1, and writes nothing (no plist, no `launchctl`). `--force` does not bypass it: the escape hatch in the spec covers ingest *execution* failure, where partial results exist; an unresolvable profile is broken configuration that the watcher would re-hit at every login. Both paths are tested (`test_profile_resolution_failure_is_fail_closed`, `test_ingest_error_proceeds_when_forced`).
+
 ## Risks / Trade-offs
 
 - **LaunchAgent environment lacks user shell variables** → Use absolute paths in `ProgramArguments`, avoid shell wrappers by default, and document `OLLAMA_HOST`/environment limitations if needed.
