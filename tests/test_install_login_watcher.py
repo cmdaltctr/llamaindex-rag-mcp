@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import plistlib
+import re
 import subprocess
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -25,6 +26,13 @@ from typer.testing import CliRunner
 from rag_mcp.transports.cli import app
 
 runner = CliRunner()
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from Rich-formatted help output."""
+    return _ANSI_RE.sub("", text)
 
 
 def _installer():
@@ -93,15 +101,15 @@ def macos_home(monkeypatch: pytest.MonkeyPatch):
 class TestHelpText:
     """Scenario: Help describes guided and scriptable usage."""
 
+    def test_ansi_stripping_reassembles_styled_option_token(self) -> None:
+        """A Rich style boundary inside an option name does not hide the token."""
+        assert _strip_ansi("-\x1b[1;36m-path\x1b[0m") == "--path"
+
     def test_help_lists_all_options(self) -> None:
         """--help shows purpose plus every scriptable option group."""
         result = runner.invoke(app, ["install-login-watcher", "--help"])
-        # TEMPORARY CI diagnosis (remove after root cause): captured
-        # stdout is printed by pytest for failing tests even under -q.
-        print(f"DIAG-exit={result.exit_code}")
-        print(f"DIAG-output={result.output!r}")
         assert result.exit_code == 0
-        output = result.output
+        output = _strip_ansi(result.output)
         for token in (
             "--path",
             "--collection",
@@ -118,8 +126,6 @@ class TestHelpText:
     def test_watch_help_word_regression_no_chromadb(self) -> None:
         """Task 3.6: watch help must use vector-store, not ChromaDB, terms."""
         result = runner.invoke(app, ["watch", "--help"])
-        print(f"DIAG-watch-exit={result.exit_code}")
-        print(f"DIAG-watch-output={result.output!r}")
         assert result.exit_code == 0
         assert "ChromaDB" not in result.output
 
