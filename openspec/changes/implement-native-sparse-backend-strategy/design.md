@@ -45,10 +45,12 @@ schema: `id`, `doc_id`, `vector`, `text`, `metadata`).
 
 ### 1. Extend the vector-store capability first
 
-A native sparse backend must call a typed vector-store method. The
-implementation will not reach into `lancedb` from the retrieval
-pipeline, preserving ADR-034 confinement. `VectorStore` gains a
-sparse-query capability method with explicit unsupported behaviour; the
+The registered native retrieval backend must call a typed vector-store
+capability method. The shared retrieval-level contract also admits BM25,
+which continues to build from store-neutral paged rows and does not become a
+vector-store adapter method. The retrieval pipeline will not reach into
+`lancedb`, preserving ADR-034 confinement. `VectorStore` gains a native-FTS
+query capability method with explicit unsupported behaviour; the
 LanceDB adapter implements it over a **native FTS index on the `text`
 column**, configured and queried through the locked LanceDB version's
 documented FTS API (index configuration + `"fts"` search). A
@@ -86,9 +88,12 @@ lifecycle separately:
   replacements so indexed content tracks row content.
 - **Deletion/stale nodes:** defined behaviour when rows are deleted or
   replaced, including stale-node handling.
-- **Freshness:** the query path must be able to tell fresh from stale
-  index state and surface it in diagnostics.
-- **Coverage:** indexed versus unindexed rows are distinguished;
+- **Freshness:** after a write, replacement, or deletion, the index is stale
+  until refresh is complete. The query path must distinguish fresh from stale
+  state, surface it in diagnostics, and never return stale native results as
+  successful; refresh failure falls back to BM25.
+- **Coverage:** indexed versus unindexed rows are distinguished separately
+  from freshness;
   unindexed rows remain in dense rankings and are absent only from
   native sparse rankings (the mixed-coverage contract, restated for FTS
   instead of sparse vectors).

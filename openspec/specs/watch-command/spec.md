@@ -152,7 +152,7 @@ The `ingest_path_async()` function SHALL include an `error_type` field in all er
 
 ### Requirement: Graceful shutdown
 
-The watcher SHALL handle SIGINT (Ctrl+C) with a watcher-owned shutdown sequence. It SHALL NOT rely on `_shutdown_requested` as its primary shutdown mechanism (because `ingest_path_async()` unconditionally clears it). The shutdown sequence SHALL be: (1) cancel all pending `threading.Timer` callbacks to prevent new `ingest_path_async()` calls, (2) wait for any in-flight `ingest_path_async()` to complete naturally, with a **maximum wait of 30 seconds** — if in-flight ingestion has not completed within 30 seconds, the watcher SHALL log a WARNING with the number of abandoned in-flight ingestions and force-stop, (3) set `_shutdown_requested` as belt-and-suspenders for the in-flight call, (4) stop the watchdog `Observer`, (5) exit cleanly with status 0.
+The watcher SHALL handle SIGINT (Ctrl+C) with a watcher-owned shutdown sequence. It SHALL NOT rely on `_shutdown_requested` as its primary shutdown mechanism (because `ingest_path_async()` unconditionally clears it). The shutdown sequence SHALL be: (1) cancel all pending `threading.Timer` callbacks to prevent new `ingest_path_async()` calls, (2) wait for any in-flight `ingest_path_async()` to complete naturally, with a **maximum wait of 30 seconds** — if ingestion has not completed, log a WARNING with the number of callbacks that remain in flight and stop waiting, (3) set `_shutdown_requested` as belt-and-suspenders for those callbacks, (4) stop the watchdog `Observer`, and (5) let the command return with status 0. The current daemon-timer implementation cannot synchronously cancel an in-flight async pipeline; a callback still running after the deadline may be abandoned when the process exits.
 
 #### Scenario: Ctrl+C stops the watcher
 - **WHEN** the user presses Ctrl+C while the watcher is running and no ingestion is in progress
@@ -169,7 +169,8 @@ The watcher SHALL handle SIGINT (Ctrl+C) with a watcher-owned shutdown sequence.
 #### Scenario: Ctrl+C during hung ingestion
 - **WHEN** the user presses Ctrl+C while an `ingest_path_async()` call is in progress and the ingestion does not complete within 30 seconds
 - **THEN** the watcher SHALL log a WARNING with the number of abandoned in-flight ingestions
-- **THEN** the watcher SHALL force-stop (cancel timers, stop observer, exit 0)
+- **THEN** the watcher SHALL stop waiting, set the shutdown flag, stop the observer, and let the command return with status 0
+- **AND** the still-running daemon callback MAY be abandoned when the process exits
 
 #### Scenario: Ctrl+C during debounce window
 - **WHEN** the user presses Ctrl+C while a debounce timer is pending for a file
@@ -226,7 +227,7 @@ When `ingest_path_async()` fails for a file, the watcher SHALL NOT update the ca
 
 ### Requirement: Ingestion throttling
 
-To prevent thread explosion under batch file events (e.g. copying hundreds of files into the watched directory), the watcher SHALL limit concurrent calls to `ingest_path_async()` using a `threading.BoundedSemaphore(2)`. The semaphore ensures at most 2 ingestions run simultaneously, while excess events queue naturally behind their debounce timers.
+To limit active ingestion under batch file events (e.g. copying hundreds of files into the watched directory), the watcher SHALL limit concurrent calls to `ingest_path_async()` using a `threading.BoundedSemaphore(2)`. The semaphore ensures at most 2 ingestions run simultaneously. Each file still owns a daemon `threading.Timer`; callbacks waiting on the semaphore are therefore pending threads, not a bounded work queue.
 
 #### Scenario: Batch file creation is throttled
 - **WHEN** 100 supported files are created simultaneously in the watched directory

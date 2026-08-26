@@ -51,7 +51,7 @@ The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library
 
 #### Scenario: Plist contains watcher command
 - **WHEN** the installer generates a plist for path `/docs`, collection `research`, and debounce `3`
-- **THEN** the plist SHALL contain `ProgramArguments` that invoke `rag-mcp watch /docs --collection research --debounce 3`
+- **THEN** the plist SHALL contain the resolved absolute executable followed by `watch /docs --collection research --debounce 3`
 - **THEN** the plist SHALL not invoke the command through an unescaped shell string
 
 #### Scenario: Command executable is resolved absolutely

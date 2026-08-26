@@ -39,9 +39,9 @@ aligned identifiers and vectors, a collection name, provider/model
 diagnostic, and a known existing dimension. No wrapper or service
 hierarchy is introduced around the adapters — current architecture
 makes a plain module sufficient. It returns only when the complete
-batch is structurally valid. It rejects an empty batch, a missing
-embedding (batch shorter than the node set), an empty vector, a
-non-numeric element, a non-finite value (NaN, infinity), mixed
+batch is structurally valid. It rejects an empty batch, any identifier/vector
+cardinality mismatch (whether vectors are missing or surplus), an empty
+vector, a non-numeric element, a non-finite value (NaN, infinity), mixed
 dimensions in one batch, or a batch dimension that conflicts with an
 existing collection. Failures name the rule, collection,
 provider/model, and affected identifiers. They do not include raw
@@ -50,9 +50,10 @@ vector values or credentials.
 ### D2: Adapters expose dimension facts only
 
 `VectorStore` gains a narrow read capability that returns an established
-collection vector dimension, or `None` before a vector schema exists. ChromaDB
-and LanceDB obtain this fact from their own representations. The shared
-validator owns the comparison rule.
+collection vector dimension, or `None` before a vector schema exists. This
+lookup is read-only: it must not create a collection, table, schema, row, or
+other persistent state. ChromaDB and LanceDB obtain the fact from their own
+representations. The shared validator owns the comparison rule.
 
 This preserves the boundary: core owns business rules; adapters own SDK access.
 It keeps settings injection and existing embedding-identity checks unchanged.
@@ -75,6 +76,13 @@ backend upsert, row conversion, and generation change. Both write
 entry points are covered: embeddings produced from `write_nodes` and
 valid precomputed vectors pass through the same rule.
 
+The diagnostic identity cannot be inferred reliably from a directly
+constructed store because its attached embedding identity may be `None`.
+`write_nodes` uses the composed provider/model identity already associated
+with the write path; every direct `upsert_precomputed` caller supplies an
+explicit provider/model diagnostic at call time. The diagnostic is sanitised
+metadata only and never contains credentials.
+
 A rejected batch never writes a valid subset. It must not create a collection
 dimension or advance generation.
 
@@ -88,8 +96,9 @@ means validation placed only at the upsert seam runs after the existing
 collection has already been destroyed; validation must precede the
 delete. Parser preflight stays separate — that separation already
 exists in the builder today and this change must not merge the two.
-The builder does not write, delete, rename, or regenerate files in its
-`output/` directory.
+The builder's normal run writes parsed artefacts, preflight results, and index
+build output. This change must not delete, rename, or regenerate existing
+`output/` files merely to add validation.
 
 ### D5: Sequence before adapter-heavy follow-ons
 

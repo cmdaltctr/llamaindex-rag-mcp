@@ -6,7 +6,7 @@
 
 ## 2. Backend Registry
 
-> `src/rag_mcp/compose.py` is at the 498-line file ceiling. Tasks 2.1 and 2.4 that add code there must use a small helper extraction or a separate focused module.
+> `src/rag_mcp/compose.py` is at the 497-line file ceiling. Tasks 2.1 and 2.4 that add code there must use a small helper extraction or a separate focused module.
 
 - [ ] 2.1 Define the shared async document-backend protocol and lazy registry.
 - [ ] 2.2 Extract the current local reader chain into a registered `local` implementation.

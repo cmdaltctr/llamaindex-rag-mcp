@@ -15,9 +15,10 @@ malformed batch can therefore reach ChromaDB or LanceDB and fail late.
 
 - Add one shared production-core validator for vectors about to be written, in a small focused helper (`core/vectordb/validation.py`). No wrapper or service hierarchy around the adapters.
 - Guarantee: validation completes **before any backend SDK or persistent-store mutation** — not merely before an adapter receives a write request. Adapter code invokes the shared validation immediately before its backend SDK mutation as the enforcement point.
-- Apply it to every `VectorStore` write path, including `write_nodes` and `upsert_precomputed`: empty embedding batches, missing embeddings, inconsistent dimensions within a batch, dimension conflicts with an existing collection, non-numeric elements, and non-finite values (NaN, infinity) are all rejected. Valid precomputed vectors and embeddings produced from `write_nodes` both pass.
+- Apply it to every `VectorStore` write path, including `write_nodes` and `upsert_precomputed`: empty embedding batches, identifier/vector cardinality mismatches (missing or surplus vectors), inconsistent dimensions within a batch, dimension conflicts with an existing collection, non-numeric elements, and non-finite values (NaN, infinity) are all rejected. Valid precomputed vectors and embeddings produced from `write_nodes` both pass.
 - Reject the complete batch before a backend write. No valid subset persists.
-- Identify the collection, embedding provider/model, and affected node or row identifiers in each failure.
+- Identify the collection, embedding provider/model, and affected node or row identifiers in each failure. Normal node writes use their composed embedding identity; direct precomputed-upsert callers must supply the diagnostic explicitly rather than relying on an optional store identity.
+- Discover an existing collection dimension without creating or mutating backend state.
 - Make Experiment 14 validate all embeddings **before deleting or recreating an existing collection**; validation immediately before the upsert alone is too late because the existing collection may already have been destroyed by then.
 
 ## Relationship to landed PR #63 groundwork (do not duplicate)
@@ -49,7 +50,9 @@ This change does not add L2 normalisation, norm thresholds, cosine conversion,
 or a norm-policy decision. It does not change embedding providers, models,
 parser policy, retries, or retrieval score semantics.
 The validator does not transform, truncate, repair, or replace vectors. It
-reports invalid input and stops the write. Experiment 14 outputs stay untouched.
+reports invalid input and stops the write. The change preserves existing
+Experiment 14 output artefacts; ordinary builder runs may still write their
+documented parsed, preflight, and index-build outputs.
 
 ## Impact
 

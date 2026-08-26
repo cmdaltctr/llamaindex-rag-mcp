@@ -43,21 +43,22 @@ The system SHALL retain BM25 fallback when native sparse capability is absent or
 
 #### Scenario: Existing collection has mixed sparse coverage
 - **WHEN** native retrieval runs against a collection with partial sparse coverage
-- **THEN** dense retrieval SHALL still cover every chunk
+- **THEN** every chunk SHALL remain eligible for dense ranking
 - **AND** the existing one-shot remediation warning SHALL remain in effect
 
 ### Requirement: Native FTS lifecycle is specified and durable
-The native sparse implementation on LanceDB SHALL define its full-text-search index lifecycle explicitly: additive initial creation on the stored `text` column, refresh after writes and source replacements, delete and stale-node handling, freshness diagnostics distinguishing indexed from unindexed rows, and failure diagnostics that route to BM25 fallback. The process-local store generation counter SHALL NOT be used as durable FTS-index maintenance; it SHALL remain a cache-invalidation mechanism for the in-memory BM25 index.
+The native sparse implementation on LanceDB SHALL define its full-text-search index lifecycle explicitly: additive initial creation on the stored `text` column, refresh after writes and source replacements, delete and stale-node handling, freshness diagnostics distinct from indexed/unindexed coverage, and failure diagnostics that route to BM25 fallback. After a write, replacement, or deletion, the index SHALL be treated as stale until refresh completes. A native query SHALL NOT return stale index results as successful: it SHALL establish freshness or warn and fall back to BM25. The process-local store generation counter SHALL NOT be used as durable FTS-index maintenance; it SHALL remain a cache-invalidation mechanism for the in-memory BM25 index.
 
 #### Scenario: FTS index is created additively
 - **WHEN** native sparse is first used on a collection without an FTS index
 - **THEN** index creation SHALL be additive and explicitly triggered
 - **AND** the collection SHALL remain queryable throughout
 
-#### Scenario: Writes refresh FTS coverage
-- **WHEN** chunks are written or a source is replaced after an FTS index exists
-- **THEN** the FTS index SHALL reach a defined post-write state covering the new rows
-- **AND** stale rows SHALL NOT remain matchable after replacement or deletion
+#### Scenario: Mutations make freshness explicit
+- **WHEN** chunks are written, a source is replaced, or rows are deleted after an FTS index exists
+- **THEN** the FTS index SHALL be considered stale until refresh completes
+- **AND** a native query SHALL either establish a fresh state that covers new rows and excludes stale or deleted rows, or warn and fall back to BM25
+- **AND** diagnostics SHALL report the resulting fresh, stale, or fallback state
 
 #### Scenario: Partial FTS coverage is distinguishable
 - **WHEN** a collection contains both indexed and unindexed rows

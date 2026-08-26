@@ -23,7 +23,7 @@
 
 ## Impact
 
-- Code: `core/ingestion/chunker.py`, a new document-backend registry and local adapter, `integrations/azure.py`, and `compose.py`. `compose.py` sits at the 498-line ceiling, so implementation must land its additions through a small helper extraction or a separate focused module rather than inline growth.
+- Code: `core/ingestion/chunker.py`, a new document-backend registry and local adapter, `integrations/azure.py`, and `compose.py`. `compose.py` sits at the 497-line ceiling, so implementation must land its additions through a small helper extraction or a separate focused module rather than inline growth.
 - Configuration: `DOCUMENT_BACKEND` keeps `local|azure`; no default changes.
 - Dependencies: Azure remains optional behind the existing `azure` extra.
 - Behaviour: fallback outcomes stay local-first, but ownership and diagnostics become explicit and testable.

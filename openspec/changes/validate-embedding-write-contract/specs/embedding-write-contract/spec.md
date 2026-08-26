@@ -17,9 +17,11 @@ creation, schema derivation, row conversion, and the SDK write itself
 included. Adapter code SHALL invoke the shared validation immediately
 before its backend SDK mutation as the enforcement point. The validator
 SHALL receive the collection name, embedding provider/model diagnostic,
-and stable node or row identifiers. Both `write_nodes`-produced
-embeddings and valid precomputed vectors SHALL pass through the same
-rule.
+and stable node or row identifiers. The number of identifiers SHALL
+exactly equal the number of vectors. `write_nodes` SHALL use its composed
+embedding identity; a direct `upsert_precomputed` caller SHALL supply the
+provider/model diagnostic explicitly. Both `write_nodes`-produced embeddings
+and valid precomputed vectors SHALL pass through the same rule.
 
 #### Scenario: Valid batch reaches a vector store
 
@@ -43,12 +45,19 @@ rule.
 - **WHEN** the batch is submitted
 - **THEN** the write MUST fail with the shared diagnostic before any mutation
 
-#### Scenario: Missing embeddings are rejected
+#### Scenario: Identifier/vector cardinality mismatch is rejected
 
-- **GIVEN** the embedding count is smaller than the node or row count
+- **GIVEN** the vector count is smaller or larger than the node or row identifier count
 - **WHEN** the batch is submitted
-- **THEN** the write MUST fail with the shared diagnostic naming the shortfall
+- **THEN** the write MUST fail with the shared diagnostic naming the mismatch
 - **AND** no partial write MUST occur
+
+#### Scenario: Direct precomputed write supplies its diagnostic
+
+- **GIVEN** a caller invokes `upsert_precomputed` without a composed embedding identity
+- **WHEN** the caller submits vectors
+- **THEN** it MUST supply the embedding provider/model diagnostic explicitly
+- **AND** validation MUST NOT depend on an optional store identity
 
 ### Requirement: Empty vectors are rejected
 
@@ -61,7 +70,7 @@ embedding provider/model diagnostic.
 - **GIVEN** one candidate vector has zero elements
 - **WHEN** normal ingestion, source replacement, or a precomputed upsert
   prepares the batch
-- **THEN** the write MUST fail before the adapter receives it
+- **THEN** the write MUST fail before any backend SDK or persistent-store mutation
 - **AND** the error MUST identify the affected identifier
 
 ### Requirement: Non-numeric elements are rejected
@@ -107,7 +116,8 @@ observed dimensions.
 ### Requirement: Existing collection dimension is enforced
 
 The `VectorStore` contract SHALL expose the existing vector dimension for a
-collection without exposing backend SDK objects. ChromaDB and LanceDB adapters
+collection without exposing backend SDK objects or creating or mutating
+backend state. ChromaDB and LanceDB adapters
 SHALL provide this fact from their own backend representations. The shared
 validator SHALL reject a candidate batch whose sole dimension conflicts with
 that existing dimension.
@@ -148,7 +158,8 @@ structural-vector validation rule.
 - **GIVEN** the Experiment 14 embedder returns a malformed vector batch
 - **WHEN** the builder prepares its precomputed upsert
 - **THEN** the shared validator MUST stop the write with its standard diagnostic
-- **AND** the builder MUST NOT call `upsert_precomputed`
+- **AND** the builder MUST NOT call `delete_collection`, `create_collection`, or `upsert_precomputed`
+- **AND** existing Experiment 14 output artefacts MUST remain unchanged
 
 #### Scenario: Experiment 14 validates before destructive rebuild
 
@@ -166,5 +177,5 @@ and replacement paths that reach node writes.
 #### Scenario: Both backend adapters receive valid vectors only
 
 - **WHEN** the contract suite runs against ChromaDB and LanceDB
-- **THEN** each invalid-vector case MUST reject before the backend write seam
+- **THEN** each invalid-vector case MUST reject before collection or schema creation, row conversion, SDK mutation, or generation advancement
 - **AND** each valid-vector case MUST persist through the selected adapter

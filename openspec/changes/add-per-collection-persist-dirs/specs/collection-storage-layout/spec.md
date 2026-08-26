@@ -2,16 +2,17 @@
 
 ### Requirement: Collection names are safe path components
 
-Collection and group names SHALL be validated before any filesystem path
-is constructed. Each name MUST be a non-empty, single path component.
-Absolute paths, separators, `.` and `..` MUST be rejected on every
-backend.
+LanceDB collection names SHALL be validated before the table name can
+resolve to a filesystem path. Each name MUST be a non-empty, single path
+component. Absolute paths, separators, `.` and `..` MUST be rejected.
+Current Chroma collection names are not filesystem path components; Chroma
+and group-name validation belongs to the deferred per-directory scope.
 
-#### Scenario: Unsafe collection or group name is rejected
+#### Scenario: Unsafe LanceDB collection name is rejected
 
-- **WHEN** a collection or group name is empty, absolute, contains `/` or
+- **WHEN** a LanceDB collection name is empty, absolute, contains `/` or
   `\\`, or equals `.` or `..`
-- **THEN** path resolution MUST fail with a clear error
+- **THEN** table access MUST fail with a clear error
 - **AND** no filesystem path MUST be created
 
 ### Requirement: LanceDB collections are isolated by native layout

@@ -44,7 +44,7 @@ The registry owns the accepted backend names. `config/` continues to declare `do
 - Metadata parity can drift between readers. Contract fixtures compare required fields.
 - Moving fallback ownership can double-read documents. Tests assert one retry budget and one local fallback.
 - A registry adds indirection to one branch. Startup validation and contract tests make failures earlier and clearer.
-- `compose.py` sits at the 498-line ceiling. Implementation must land startup validation through a small helper extraction or a separate focused module, and must not bundle a broad refactor.
+- `compose.py` sits at the 497-line ceiling. Implementation must land startup validation through a small helper extraction or a separate focused module, and must not bundle a broad refactor.
 
 ## Migration Plan
 

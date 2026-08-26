@@ -56,4 +56,4 @@ macOS supports this without a GUI dependency through per-user LaunchAgents in `~
 - **User chooses a folder that does not exist or is not a directory** → Validate before writing and fail early in non-interactive mode; re-prompt in interactive mode.
 - **User changes Python environments after installation** → Show the exact command embedded in the plist and provide an update/overwrite path.
 - **Non-macOS usage** → Fail with a clear message unless `--dry-run` is used for preview/testing.
-- **Shared CLI registration files** → This change and the migration CLI contemplated by `add-per-collection-persist-dirs` both modify the command-group registration import in `src/rag_mcp/transports/cli/__init__.py`. The two implementations must not modify that file concurrently; land them on sequenced branches.
+- **Existing watcher help uses ChromaDB-specific wording** → Update `rag-mcp watch --help` and its docstring to say vector-store collection/index. This is a wording-only correction; watcher behaviour stays unchanged.

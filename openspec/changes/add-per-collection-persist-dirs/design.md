@@ -40,8 +40,8 @@ Layer separation this design must respect:
 
 **Goals (default-path scope):**
 
-- Path-component safety for collection names at both adapters'
-  filesystem boundaries.
+- Path-component safety for LanceDB collection names at the adapter's
+  table-name/filesystem boundary.
 - A specified, regression-tested layout pin on the default LanceDB
   path: two collections always resolve to distinct `.lance` table
   directories.
@@ -64,7 +64,7 @@ Layer separation this design must respect:
 
 ### D1: The LanceDB guarantee is a layout guarantee, not a concurrency guarantee
 
-`{lancedb_uri}/{collection_name}.lance` is pinned with a regression
+`{lancedb_uri}/{collection_name}.lance` will be pinned with a regression
 test asserting two collections occupy distinct table directories
 against a real temporary store. The prior draft's scenario asserting
 that concurrent writes to two collections "MUST NOT serialise on a
@@ -74,13 +74,14 @@ behaviour is unverified.
 
 ### D2: Path-component validation at the filesystem boundary
 
-Both adapters validate collection names before touching disk:
+The LanceDB adapter validates collection names before table access:
 non-empty, single path component, no absolute paths, separators, `.` or
-`..`. The validation is a small shared helper (both adapters sit at the
-500-line ceiling — `lancedb.py` 497, `chroma.py` 499 — so the logic
-lands in a focused module both call, not inline in either). The
-resolver never creates directories itself; creation stays with the
-store engine.
+`..`. Chroma collection names are not filesystem path components in the
+current shared-`PersistentClient` layout, so Chroma validation and group
+names remain deferred with the Chroma per-directory scope. `lancedb.py`
+sits at the 500-line ceiling (497 lines), so validation lands in a
+focused helper rather than inline. The resolver never creates directories
+itself; creation stays with LanceDB.
 
 ### D3: No compose.py changes in this scope
 
@@ -119,14 +120,14 @@ needed contention evidence exist. When taken up:
 - [Spec-only guarantee on LanceDB could rot] → Regression test asserts
   two collections resolve to distinct table paths against a real
   temporary store.
-- [Name validation rejects previously accepted collections] → Rejection
+- [LanceDB name validation rejects previously accepted tables] → Rejection
   set is narrow (empty, separators, `.`, `..`, absolute); existing
   documented collection names remain valid.
 - [Users assume cross-process safety from layout isolation] → The
   documented contract states explicitly that concurrent multi-process
   writes are unverified and the daemon warning stands.
-- [Adapter files at the ceiling] → Shared validation helper in a
-  focused module; no inline growth; no bundled refactor.
+- [LanceDB adapter at the ceiling] → Validation lands in a focused
+  helper; no inline growth; no bundled refactor.
 
 ## Migration Plan
 

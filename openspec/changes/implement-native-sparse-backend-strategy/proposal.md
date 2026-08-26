@@ -10,8 +10,9 @@
 
 ## Why
 
-`RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25|native` looks like a configured
-strategy family, but only BM25 has a working registry implementation.
+`RETRIEVAL__HYBRID_SPARSE_BACKEND=auto|native|bm25` looks like a configured
+strategy family, but only the concrete `bm25` backend has a working registry
+implementation. `auto` is a selection policy, not a concrete backend.
 The current `native` path logs that native querying is unavailable and
 delegates to BM25. Registering that placeholder as a native
 implementation would misrepresent capability and could change ranking,
@@ -29,10 +30,10 @@ design/spec corrections recorded here.
 
 - Implement a real native sparse query adapter for the LanceDB backend,
   backed by **LanceDB native FTS** over the stored `text` column.
-- Define one sparse-query contract on the `VectorStore` ABC shared by
-  native and BM25 implementations; native execution happens inside the
-  LanceDB adapter, never in the retrieval pipeline (ADR-034
-  confinement).
+- Define one retrieval-level sparse-backend contract shared by the
+  registered native and BM25 implementations. Add a separate typed native-FTS
+  capability method to the `VectorStore` ABC; LanceDB execution stays inside
+  its adapter, never in the retrieval pipeline (ADR-034 confinement).
 - Define the FTS index lifecycle as its own behaviour — initial
   creation, refresh after writes and replacements, delete/stale-node
   handling, freshness, indexed versus unindexed rows, and failure and
@@ -43,8 +44,10 @@ design/spec corrections recorded here.
   composition-root capability policy resolving to a concrete registered
   name, informed by the selected store's registry capability metadata
   and a real native-FTS probe.
-- Preserve explicit diagnostics and BM25 fallback when native
-  capability is absent (no FTS index) or fails safely at query time.
+- Preserve explicit diagnostics and BM25 fallback when the selected store
+  lacks native FTS capability or when index creation, refresh, freshness
+  verification, or query execution fails safely. A missing index is a
+  lifecycle state: first use attempts additive creation before falling back.
 - Calibrate ranking quality and latency against BM25 on representative
   corpora before considering any default change. D17 (archived Stage 6)
   is complete and shows hybrid value with reranking disabled, but it
@@ -80,8 +83,9 @@ design/spec corrections recorded here.
 - Configuration: accepted values remain `auto|native|bm25`; the default
   remains `bm25` unless a later calibrated decision changes it.
   Accepted-name validation moves from the hard-coded settings tuple to
-  registry-owned validation at the composition boundary (`config/`
-  stays a leaf).
+  composition-boundary validation backed by the concrete registry (`config/`
+  stays a leaf). The policy name `auto` remains accepted separately; errors
+  list `auto` plus the registered concrete names.
 - Stored data: FTS index creation is additive on existing `.lance`
   tables; collections without an FTS index keep working with explicit
   mixed-coverage diagnostics. No embedding re-computation.

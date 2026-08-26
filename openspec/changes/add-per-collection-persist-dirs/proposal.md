@@ -44,14 +44,15 @@ contract.
 
 ## What Changes (this change: default-path scope)
 
-- **Path-component safety, both adapters.** Collection names become
-  filesystem path components; names MUST be validated as non-empty
-  single path components (no separators, `.`, `..`, absolute paths)
-  before any store operation touches disk. Applies at both adapters'
-  filesystem boundaries.
+- **Path-component safety on the active LanceDB path.** LanceDB collection
+  names become table-directory path components; names MUST be validated as
+  non-empty single path components (no separators, `.`, `..`, absolute
+  paths) before table access touches disk. Current Chroma collection names
+  stay logical database identifiers inside one shared persist directory;
+  Chroma and group-name path validation remains deferred with that scope.
 - **LanceDB (default): specify and pin the native layout.** The
   per-collection isolation of `{lancedb_uri}/{collection_name}.lance`
-  becomes a specified contract with regression tests pinning it, so a
+  becomes a specified contract that regression tests will pin, so a
   future adapter change cannot silently co-locate collections. This is
   a layout guarantee only — no concurrency guarantee is claimed.
 - **Documentation.** The layout and safety contract is documented per
@@ -98,19 +99,18 @@ changes, cross-process locking, runtime-mutable grouping.
 ## Impact
 
 - **Code**: `core/vectordb/lancedb.py` (name validation at the
-  filesystem boundary; also validated in the Chroma adapter for
-  symmetry), plus tests. `lancedb.py` (497 lines) and `chroma.py` (499
-  lines) sit at the 500-line ceiling — validation logic lands via a
-  small shared helper or focused module, not inline growth, and no
-  broad refactor accompanies it.
+  table-name/filesystem boundary), a focused validation helper, plus tests.
+  `lancedb.py` (497 lines) sits at the 500-line ceiling — validation logic
+  does not land inline, and no broad refactor accompanies it.
 - **On-disk data**: none. No migration, no layout change on any backend.
 - **Dependencies**: none new. `chroma` remains an optional extra.
 - **Contracts**: MCP tool surface unchanged.
 
 ## Watcher warning
 
-The current daemon warning — that two processes do not share the
-internal write lock — remains accurate under the corrected concurrency
-picture and is left unchanged. The previously proposed backend-split
-warning rested on the withdrawn contention-free claim; if the deferred
-Chroma scope lands, revisit the wording then.
+The warning's underlying point — separate processes do not share the
+internal write lock — remains accurate. Its current CLI wording names
+"the same ChromaDB", which is stale now that LanceDB is the default.
+This change will make the warning store-neutral without claiming that
+either backend supports safe concurrent writers. Backend-specific wording
+still requires the deferred contention evidence.

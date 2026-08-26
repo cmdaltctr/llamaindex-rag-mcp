@@ -1,12 +1,11 @@
-## 1. Path-component safety (both adapters)
+## 1. Path-component safety (LanceDB active scope)
 
-> `core/vectordb/lancedb.py` (497 lines) and `core/vectordb/chroma.py`
-> (499 lines) are at the 500-line ceiling. Task 1.1 lands validation in a
-> small shared focused module both adapters call — not inline growth, and
-> no broad refactor.
+> `core/vectordb/lancedb.py` is 497 lines at the 500-line ceiling. Task
+> 1.1 lands validation in a small focused helper — not inline growth, and
+> no broad refactor. Chroma and group-name path validation stay deferred.
 
-- [ ] 1.1 Add path-component validation for collection names (non-empty, single component, no separators/`.`/`..`/absolute) in a small shared helper, invoked at both adapters' filesystem boundaries before any disk-touching store operation, with unit tests for every rejection case.
-- [ ] 1.2 Verify the validation rejects bad names on the real store paths (LanceDB table open, Chroma collection use) without creating filesystem artefacts.
+- [ ] 1.1 Add path-component validation for LanceDB collection names (non-empty, single component, no separators/`.`/`..`/absolute) in a small focused helper, invoked before table access can touch disk, with unit tests for every rejection case.
+- [ ] 1.2 Verify the validation rejects bad names on real LanceDB table-open/create paths without creating filesystem artefacts.
 
 ## 2. LanceDB layout pin (default path)
 
@@ -17,6 +16,7 @@
 
 - [ ] 3.1 Document the layout and safety contract per backend in `docs/guides/configuration.md` and `docs/guides/architecture.md`, stating explicitly that cross-process concurrent writes are unverified and that the process-global ingestion mutation lock serialises mutations across collections within one process.
 - [ ] 3.2 Record the deferred Chroma scope and its two blockers (operator demand; two-process/two-collection write experiment for any contention claim) in the proposal and design (done in this refresh) and reference them from the documentation where the Chroma extra is described.
+- [ ] 3.3 Correct the existing watcher CLI warning from "same ChromaDB" to store-neutral wording. Preserve the warning that separate processes do not share the internal write lock; do not claim either backend supports safe concurrent writers.
 
 ## 4. Validation
 

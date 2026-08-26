@@ -21,6 +21,7 @@
 - [ ] 3.3 Implement non-interactive validation so missing required values fail clearly instead of blocking on prompts.
 - [ ] 3.4 Implement final summary/confirmation before writing in the wizard flow.
 - [ ] 3.5 Implement existing plist detection with interactive overwrite confirmation and non-interactive `--force` behaviour.
+- [ ] 3.6 Correct the existing `rag-mcp watch` CLI help/docstring from ChromaDB-specific wording to vector-store terminology without changing watcher behaviour.
 
 ## 4. Initial Catch-up Ingestion
 
