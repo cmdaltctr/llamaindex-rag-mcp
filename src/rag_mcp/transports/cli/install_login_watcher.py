@@ -373,7 +373,10 @@ def install_login_watcher(
                 and typer.confirm("Continue installing anyway?", default=False)
             )
             if not proceed:
-                console.print("Installation stopped — nothing was written.")
+                console.print(
+                    "Installation stopped — no LaunchAgent was installed. The "
+                    "failed catch-up ingest may have written partial results."
+                )
                 raise typer.Exit(code=1)
             console.print("[yellow]Continuing after ingest failure (--force).[/yellow]")
         else:

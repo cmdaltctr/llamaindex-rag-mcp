@@ -509,7 +509,8 @@ class TestDifferentLabelReplacement:
                 input="y\ny\nn\n",  # removal consent, summary, continue-anyway decline
             )
         assert result.exit_code != 0
-        assert "nothing was written" in result.output.lower()
+        assert "no launchagent was installed" in result.output.lower()
+        assert "partial results" in result.output.lower()
         mock_lc.assert_not_called()
         assert old_plist.read_bytes() == old_bytes
         agents = home / "Library/LaunchAgents"
