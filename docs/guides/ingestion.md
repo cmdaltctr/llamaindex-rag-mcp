@@ -17,7 +17,7 @@ Source file (PDF, DOCX, TXT, ...)
       v
 [2] Split into chunks (SentenceSplitter)
       |  chunk_size = 512 chars (default)
-      |  chunk_overlap = 64 chars
+      |  chunk_overlap = 100 chars
       |
       v
 [3] Embed each chunk --> Ollama embedding model (EMBED_MODEL)
@@ -66,6 +66,30 @@ future spatial RAG capabilities. OCR is disabled by default
 See [ADR-020](../adr/020-use-liteparse-as-pdf-reader.md) for the factory
 adoption rationale and [ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)
 for the default-selection decision and Experiment 14 results.
+
+## Document backends
+
+Document reading dispatches through a registry selected by `DOCUMENT_BACKEND`.
+
+| Value   | Reads                             | Install                 |
+| ------- | --------------------------------- | ----------------------- |
+| `local` | All supported formats (default)   | Base dependency         |
+| `azure` | `.pdf`, `.docx`, and `.doc` only  | `uv sync --extra azure` |
+
+Files outside azure's list read through the local backend even when
+`DOCUMENT_BACKEND=azure`. An unknown value fails server start-up and
+lists the registered names.
+
+Azure needs credentials (`AZURE_DOC_INTELLIGENCE_ENDPOINT`,
+`AZURE_DOC_INTELLIGENCE_KEY`) and the optional package. Either piece
+missing degrades azure to local before any file is read; each warning
+names what is missing. At read time a failed azure attempt retries once
+after a 5-second delay, then falls back to local exactly once. Every
+step logs a diagnostic naming what happened, so a local-served file is
+never silent.
+
+Both backends run their blocking parser work in worker threads, so a
+long parse never blocks the MCP event loop.
 
 ## Supported file formats
 

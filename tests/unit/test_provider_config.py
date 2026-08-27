@@ -312,13 +312,15 @@ def test_unknown_local_backend_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
 # (env_name, field_path, default, accepted_override)
 # field_path uses dotted notation for nested fields.
+# NOTE: DOCUMENT_BACKEND is deliberately absent — unknown values no longer
+# raise at Settings; validation moved to capabilities.validate_document_backend
+# (register-document-backend-strategies task 2.4). Dedicated tests live below.
 _PROVIDER_FIELDS: list[tuple[str, str, str, str]] = [
     ("EMBED_PROVIDER", "embed_provider", "local", "ollama"),
     ("METADATA_LLM_PROVIDER", "metadata_llm_provider", "local", "cloud"),
     ("LOCAL_BACKEND", "local_backend", "llamacpp", "ollama"),
     ("CLOUD_BACKEND", "cloud_backend", "openrouter", "openrouter"),
     ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25", "native"),
-    ("DOCUMENT_BACKEND", "document_backend", "local", "azure"),
 ]
 
 
@@ -368,11 +370,6 @@ def test_whitespace_padded_valid_value_is_stripped(
     from rag_mcp.config import Settings
 
     monkeypatch.setenv(env_name, f"  {valid_value}  ")
-    # DOCUMENT_BACKEND=azure triggers the credential check; set dummy
-    # credentials so the value is preserved rather than falling back.
-    if env_name == "DOCUMENT_BACKEND" and valid_value == "azure":
-        monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "https://example.azure.com/")
-        monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_KEY", "dummy-key")
     settings = Settings(_env_file=None)
     assert _get_nested(settings, field_path) == valid_value
 
@@ -426,6 +423,46 @@ def test_document_backend_azure_missing_credentials_falls_back_to_local(
     monkeypatch.delenv("AZURE_DOC_INTELLIGENCE_KEY", raising=False)
     settings = Settings(_env_file=None)
     assert settings.document_backend == "local"
+
+
+def test_document_backend_whitespace_value_preserved_with_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DOCUMENT_BACKEND="  azure  " strips to azure (config idiom retained).
+
+    The config layer keeps the strip/reset behaviour even though the
+    unknown-value raise moved to the composition boundary. Dummy
+    credentials keep the credential degradation from firing.
+    """
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("DOCUMENT_BACKEND", "  azure  ")
+    monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "https://example.azure.com/")
+    monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_KEY", "dummy-key")
+    assert Settings(_env_file=None).document_backend == "azure"
+
+
+def test_unknown_document_backend_defers_to_compose_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A bogus backend constructs at Settings and fails at the startup gate.
+
+    Spec scenario "Unknown backend is configured": startup SHALL fail and
+    list the available backend names. Validation now lives in
+    ``capabilities.validate_document_backend``, so this test fails until
+    register-document-backend-strategies lands.
+    """
+    from rag_mcp.capabilities import validate_document_backend
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("DOCUMENT_BACKEND", "totally-bogus")
+    settings = Settings(_env_file=None)
+    with pytest.raises(ValueError) as excinfo:
+        validate_document_backend(settings)
+    message = str(excinfo.value)
+    assert "DOCUMENT_BACKEND" in message
+    assert "totally-bogus" in message
+    assert "local" in message and "azure" in message
 
 
 def test_rag_profile_unknown_falls_back_to_documents(

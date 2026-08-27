@@ -30,6 +30,7 @@ import pytest
 
 from rag_mcp.core.chunking import registry as chunking_registry
 from rag_mcp.core.community import registry as community_registry
+from rag_mcp.core.ingestion.backends import registry as docbackend_registry
 from rag_mcp.core.metadata import registry as metadata_registry
 from rag_mcp.core.providers.embeddings import registry as embed_registry
 from rag_mcp.core.providers.llm import registry as llm_registry
@@ -62,13 +63,13 @@ REGISTRY_KINDS: dict[str, ModuleType] = {
     "llm": llm_registry,
     "retrieval": retrieval_registry,
     "vectordb": vectordb_registry,
+    "document-backend": docbackend_registry,
 }
 
 #: Behaviour-changing migrations the audit defers to follow-up changes.
-STRICT_VALID_FOLLOW_UPS = (
-    "register-document-backend-strategies",
-    "implement-native-sparse-backend-strategy",
-)
+#: ``register-document-backend-strategies`` was delivered and left this
+#: list: the document-backend registry is now live and audited above.
+STRICT_VALID_FOLLOW_UPS = ("implement-native-sparse-backend-strategy",)
 
 # Audited contract constants from the architecture.md strategy-family
 # audit. The PDF set is the concrete ``PDF_READER`` values Settings
