@@ -6,8 +6,8 @@
 - **Scope**: `src/rag_mcp/core/ingestion/backends/` (registry, orchestrator, local, contract), `src/rag_mcp/capabilities.py`, and diffs to `compose.py`, `integrations/azure.py`, `core/ingestion/chunker.py`, `config/__init__.py`, `tests/test_document_backends.py` on branch `feat/register-document-backend-strategies`
 - **Auditor**: a-security (s-agent-security skill)
 - **Scanner verdict (deterministic floor)**: BLOCKED — {'CRITICAL': 76, 'HIGH': 4, 'MEDIUM': 2}
-- **Final verdict**: NEEDS FIXES
-- **Verdict lowered below floor?**: Yes — BLOCKED → NEEDS FIXES. Rationale: all 72 gitleaks CRITICALs are disproven false positives (content inspected); the 4 chromadb CRITICAL/HIGH CVEs are pre-existing, carry no patched version, and are unreachable in this codebase's embedded-only chromadb usage (source-proven below). This follows the unreachable-CVE precedent. The verdict cannot drop further to APPROVED without a recorded user acceptance of the chromadb exposure (Decision 1 below).
+- **Final verdict**: APPROVED (2026-08-27) — the chromadb acceptance condition (Decision 1) is now recorded by the maintainer. Original verdict at scan time: NEEDS FIXES, pending that acceptance.
+- **Verdict lowered below floor?**: Yes — BLOCKED → NEEDS FIXES → APPROVED. Rationale: all 72 gitleaks CRITICALs are disproven false positives (content inspected); the 4 chromadb CRITICAL/HIGH CVEs are pre-existing, carry no patched version, and are unreachable in this codebase's embedded-only chromadb usage (source-proven below). This follows the unreachable-CVE precedent. The drop to APPROVED is authorised by the recorded maintainer acceptance in Decision 1.
 
 ## Deterministic Scan Results
 
@@ -15,11 +15,11 @@
 - **Counts (merged findings.json)**: 3,093 total — gitleaks 72, semgrep 2, osv-scanner 4, trivy 4, bandit 3,011 (LOW/INFO, test-code noise: S101 asserts and similar)
 - **Findings inside the change surface (all tools, all severities): 0**
 - **Scope deviations (recorded)**: semgrep/bandit scoped to `src/ tests/ scripts/`; trivy/osv scoped to root lockfiles — `experiments/` (368 MB of research artefacts) excluded after the full-repo run exceeded the 10-minute budget twice. gitleaks history scan stopped after 20 minutes: every change-surface file is uncommitted (absent from history by definition), the working-tree scan completed, and the repo's own pre-commit hook runs gitleaks 8.30.1 on every commit.
-- Raw evidence: `.security/findings.json` (untracked, audit artefact)
+- Raw evidence: `.security/findings.json` (scan artefacts reviewed, then deleted from disk after acceptance; the directory is gitignored for future scans)
 
 ## Findings
 
-### [MEDIUM] chromadb 1.5.9 carries four unpatched CVEs (2 CRITICAL, 2 HIGH) — decision required
+### [MEDIUM] chromadb 1.5.9 carries four unpatched CVEs (2 CRITICAL, 2 HIGH) — ACCEPTED, see Decision 1
 **Source**: [scanner: osv-scanner + trivy CVE-2026-45829/45830/45831/45833], reachability [LLM-judged]
 **Location**: `uv.lock` (chromadb==1.5.9; not modified by this change)
 **Evidence**:
@@ -33,9 +33,16 @@
 
 All four exploit a **network-exposed chroma server** (CVSS AV:N; tenant/RBAC/v2-endpoint prerequisites). This project constructs chromadb exclusively as an embedded client: `chromadb.PersistentClient(path=...)` at `src/rag_mcp/core/vectordb/chroma.py:113` and `:465`. No `HttpClient`, no `chroma run`, no listening port exists anywhere in `src/`. The vulnerable server component never executes. `CHROMA_MODE=cloud` uses `CloudClient` against Chroma's operated service, whose server side is the vendor's responsibility.
 **Impact**: Not exploitable in the shipped configuration. Becomes relevant only if a future change exposes a chroma server or points an HttpClient at untrusted infrastructure.
-**Fix / action**: No patched release exists upstream ("Patched versions: None" on all four GHSAs), so no upgrade remedy is available. **Action required from the maintainer** — choose one and record it:
-1. Accept the exposure with the documented mitigation (embedded-only usage; never deploy a chroma server from this codebase) and re-scan when upstream publishes a patch; or
-2. Track upstream (chroma-core/chroma#6717, #7588, #7602) and bump the floor the day a patch lands.
+
+**Decision 1 — recorded 2026-08-27, maintainer Dr Muhammad Aizat Bin Md Hawari: ACCEPTED (option 1).**
+chromadb stays behind the `chroma` extra (ADR-049 quarantine). The four
+CVEs are unreachable in this codebase's embedded-only usage:
+`PersistentClient` (`chroma.py:113,465`) and `CloudClient` only — no
+`chroma run`, no `HttpClient`, no listening port, ever. Standing
+constraint: **never deploy a chroma server from this codebase.** If a
+future change needs chroma server mode, this acceptance is void and the
+exposure must be re-assessed. Re-scan when upstream publishes a patch
+(chroma-core/chroma#6717, #7588, #7602 tracked for awareness).
 
 ### [LOW] Per-file retry delay amplifies ingest latency (accepted)
 **Source**: [LLM-judged]
@@ -77,3 +84,5 @@ All four exploit a **network-exposed chroma server** (CVSS AV:N; tenant/RBAC/v2-
 ## Verdict Justification
 
 The change surface itself is clean: zero scanner findings across five tools, zero S-rule hits, all ten checklist items pass, import contracts intact, and the 35-test suite pins the retry/fallback/propagation contract. The deterministic floor of BLOCKED rests entirely on two groups outside the change: 72 disproven gitleaks false positives (SHA-256 model hashes, curated in `.gitleaksignore`) and four chromadb advisories that are pre-existing, unpatchable today, and unreachable while chromadb stays embedded (`PersistentClient` only — proven at `chroma.py:113,465`). NEEDS FIXES rather than APPROVED because the chromadb exposure needs a recorded maintainer decision (accept-with-mitigation or upstream tracking); the verdict must not fall to APPROVED until that acceptance is recorded.
+
+**Post-scan update (2026-08-27):** the maintainer acceptance is recorded in Decision 1 (accepted with the embedded-only constraint), satisfying the condition above — the final verdict is APPROVED. Separately, the LOW note about `AzureDocReader`'s default-args fallback was resolved after the scan: the a-refactor step removed the constructor's settings-singleton fallback, so `azure.py` now takes explicit endpoint/key/model only.
