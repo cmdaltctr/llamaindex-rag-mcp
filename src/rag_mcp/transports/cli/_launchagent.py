@@ -102,9 +102,16 @@ def validate_watch_path(raw: str | Path) -> Path:
         InstallerError: If the path is missing or not a directory.
     """
     text = str(raw)
-    if text.startswith("~"):
-        rest = text[1:].lstrip("/")
-        candidate = Path.home() / rest if rest else Path.home()
+    if text == "~":
+        candidate = Path.home()
+    elif text.startswith("~/"):
+        candidate = Path.home() / text[2:].lstrip("/")
+    elif text.startswith("~"):
+        # `~user` names another user's home; guessing wrong here would
+        # silently watch the wrong folder, so refuse instead (CodeRabbit).
+        raise InstallerError(
+            f"Only '~' and '~/...' expand; pass an absolute path instead of {text!r}."
+        )
     else:
         candidate = Path(text)
     if not candidate.exists():
@@ -205,18 +212,39 @@ def build_program_arguments(plan: LaunchAgentPlan) -> list[str]:
     ]
 
 
+def _plist_watches(plist_path: Path) -> Path | None:
+    """Return the watch path persisted in a generated plist, if readable.
+
+    Unreadable or non-installer plists return ``None`` — a slug-name
+    match alone proves nothing (another folder may share the name
+    prefix), so the persisted watch path is the only verdict.
+    """
+    try:
+        data = plistlib.loads(plist_path.read_bytes())
+        argv = data.get("ProgramArguments")
+        if isinstance(argv, list) and len(argv) > 2 and argv[1] == "watch":
+            return Path(str(argv[2]))
+    # InvalidFileException subclasses ValueError, so it is covered here.
+    except (OSError, AttributeError, TypeError, ValueError):
+        return None
+    return None
+
+
 def find_existing_plist(plan: LaunchAgentPlan) -> Path | None:
     """Return a previously generated plist for this watch folder, if any.
 
-    Checks the exact planned path first, then any generated label for the
-    same watch directory slug (a different collection on the same folder
-    still counts as a duplicate watcher).
+    Checks the exact planned path first, then any generated label whose
+    slug matches the watch directory. Slug candidates are verified via
+    :func:`_plist_watches` — the slug glob is a shortlist, never the
+    verdict, because ``docs`` also prefixes ``docs-backup``.
     """
     if plan.plist_path.exists():
         return plan.plist_path
     slug = slugify_label_part(plan.watch_path.name)
-    matches = sorted(plan.plist_path.parent.glob(f"{LABEL_PREFIX}{slug}*.plist"))
-    return matches[0] if matches else None
+    for candidate in sorted(plan.plist_path.parent.glob(f"{LABEL_PREFIX}{slug}*.plist")):
+        if _plist_watches(candidate) == plan.watch_path:
+            return candidate
+    return None
 
 
 def render_plist(plan: LaunchAgentPlan) -> bytes:

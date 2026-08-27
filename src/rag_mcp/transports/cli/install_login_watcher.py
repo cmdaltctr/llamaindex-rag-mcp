@@ -50,6 +50,65 @@ def _contention_warning(collection: str) -> str | None:
     )
 
 
+def _gate_same_label_replacement(existing: Path, force: bool, interactive: bool, yes: bool) -> None:
+    """Overwrite gate for a re-run that regenerates the same label.
+
+    The existing plist is the exact file this run would write, so plain
+    replacement semantics apply: confirm interactively or pass --force.
+    """
+    if not force:
+        if interactive and not yes:
+            if not typer.confirm(f"Overwrite existing watcher plist {existing}?", default=False):
+                console.print("Aborted — existing plist left unchanged.")
+                raise typer.Exit(code=1)
+        else:
+            console.print(
+                f"[red]Error:[/red] LaunchAgent plist already exists: "
+                f"{existing}. Pass --force to replace it."
+            )
+            raise typer.Exit(code=1)
+    console.print(f"[yellow]Replacing existing watcher: {existing}[/yellow]")
+
+
+def _handle_different_label(existing: Path, force: bool, interactive: bool, yes: bool) -> None:
+    """Refuse-and-instruct for a different label on the same watch folder.
+
+    The old watcher is a live duplicate (it starts at login alongside the
+    new one), so it must go — but the installer never deletes another
+    label's plist without explicit consent. Consent is an interactive
+    confirmation or --force; anything else stops with the exact removal
+    commands so the user can do it manually.
+    """
+    label = existing.stem
+    uid = os.getuid()
+    confirmed = force
+    if not confirmed and interactive and not yes:
+        confirmed = typer.confirm(
+            f"A different watcher label already exists for this folder:\n"
+            f"  {existing}\n"
+            f"Remove it and install the new watcher?",
+            default=False,
+        )
+    if not confirmed:
+        console.print(
+            f"[red]Error:[/red] a different watcher label already exists for "
+            f"this folder:\n"
+            f"  label: {label}\n"
+            f"  plist: {existing}\n"
+            f"Remove it first:\n"
+            f"  launchctl bootout gui/{uid} {label}\n"
+            f"  rm '{existing}'\n"
+            f"Or re-run with --force to remove it automatically."
+        )
+        raise typer.Exit(code=1)
+    console.print(f"[yellow]Removing existing watcher: {label}[/yellow]")
+    boot = _launchagent.run_launchctl(_launchagent.bootout_command(uid, label))
+    if boot.returncode != 0:
+        # Non-zero bootout usually means the label was never loaded.
+        console.print(f"[dim]Label {label} was not loaded; removing its plist only.[/dim]")
+    existing.unlink(missing_ok=True)
+
+
 def _prompt_watch_path() -> Path:
     """Prompt for a watch directory until validation passes."""
     while True:
@@ -250,20 +309,10 @@ def install_login_watcher(
         warning = _contention_warning(collection)
         if warning:
             console.print(f"[yellow]⚠ An existing watcher was detected. {warning}[/yellow]")
-        if not force:
-            if interactive and not yes:
-                if not typer.confirm(
-                    f"Overwrite existing watcher plist {existing}?", default=False
-                ):
-                    console.print("Aborted — existing plist left unchanged.")
-                    raise typer.Exit(code=1)
-            else:
-                console.print(
-                    f"[red]Error:[/red] LaunchAgent plist already exists: "
-                    f"{existing}. Pass --force to replace it."
-                )
-                raise typer.Exit(code=1)
-        console.print(f"[yellow]Replacing existing watcher: {existing}[/yellow]")
+        if existing == plan.plist_path:
+            _gate_same_label_replacement(existing, force, interactive, yes)
+        else:
+            _handle_different_label(existing, force, interactive, yes)
 
     # ── Wizard summary confirmation before any mutation ──
     if interactive and not yes:

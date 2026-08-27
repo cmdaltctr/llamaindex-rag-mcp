@@ -166,7 +166,7 @@ rag-mcp install-login-watcher --path /path/to/docs/ --initial-ingest --load --st
 rag-mcp install-login-watcher --path /path/to/docs/ --force
 ```
 
-On macOS the command writes a per-user LaunchAgent that runs `rag-mcp watch <dir>` at login. In an interactive terminal it prompts for the folder, the collection (default `documents`), and whether to run a catch-up ingest, then shows a summary of the full plan before installing. In scripts pass `--path` and add `--yes` to skip prompts. A second install over the same folder stops until you confirm it or pass `--force`.
+On macOS the command writes a per-user LaunchAgent that runs `rag-mcp watch <dir>` at login. In an interactive terminal it prompts for the folder, the collection (default `documents`), and whether to run a catch-up ingest, then shows a summary of the full plan before installing. In scripts pass `--path` and add `--yes` to skip prompts. A second install over the same folder stops until you confirm it or pass `--force`. When the existing watcher uses a different label (for example a different collection), the installer refuses and prints the exact `launchctl bootout` and `rm` commands; confirming the prompt or passing `--force` removes the old watcher first, so exactly one watcher remains.
 
 The label is deterministic: `com.rag-mcp.watch.<slug>-<hash>`, built from the folder name and the collection. Files live at `~/Library/LaunchAgents/<label>.plist`, `~/Library/Logs/rag-mcp/<label>.out.log`, and `~/Library/Logs/rag-mcp/<label>.err.log`. Without `--load` or `--start` the watcher starts at your next login. Use `--command-path` to pin an exact `rag-mcp` executable when you keep several Python environments.
 

@@ -16,7 +16,7 @@
 - **Scope**: uncommitted working-tree changes on `feat/add-login-watcher-installer`
   - New: `src/rag_mcp/transports/cli/_launchagent.py`, `src/rag_mcp/transports/cli/install_login_watcher.py`, `tests/test_install_login_watcher.py`, `tests/unit/test_launchagent.py`
   - Modified: `src/rag_mcp/transports/cli/__init__.py` (import registration only), `src/rag_mcp/transports/cli/watch.py` (help wording only), `src/rag_mcp/core/vectordb/registry.py` (additive `cross_process_writes_safe` flag), `tests/test_clean_base_tripwire.py` (count bump, reviewed — no assertion weakened)
-- **Commit range audited**: `fc12d58` (HEAD, clean) + uncommitted working-tree diff (the 10 files above). `src/rag_mcp/transports/mcp.py` confirmed untouched.
+- **Commit range audited**: `fc12d58` (HEAD, clean) + uncommitted working-tree diff (the 8 files above). `src/rag_mcp/transports/mcp.py` confirmed untouched.
 - **Scanner verdict (deterministic floor)**: `BLOCKED` (76 CRITICAL / 4 HIGH / 6 MEDIUM / 2936 LOW / 98 INFO) — see deconfirmation analysis below.
 - **Final verdict**: **NEEDS FIXES** (change-scoped code: clean above LOW; the fix-required items are pre-existing, out-of-diff dependency CVEs plus LOW hardening)
 - **Verdict raised above floor?**: No. Verdict is below the scanner floor of BLOCKED. The lowering rationale is recorded below and requires your ratification.
@@ -91,6 +91,8 @@ The changed code is sound against every injection, path, race, and disclosure ve
 
 **Action-required**:
 1. F1 — chromadb CVEs: monitor for a fixed version; upgrade immediately when published; keep `CloudClient` opt-in-only. (Pre-existing; not blockable by this PR.)
-2. Ratify (or reject) the floor-lowering rationale so the verdict can be recorded as final.
-3. F7 — add the two missing test pins (slugify leading-dash; `--force` vs profile-resolution failure).
-4. Optional hardening: F2 (absolute/existing `--command-path` guard), F4 (reject `-`-prefixed collection names), F5 (NaN debounce guard), F3 (pin `/bin/launchctl`).
+2. Ratify (or reject) the floor-lowering rationale so the verdict can be recorded as final. — **Ratified above (build owner).**
+3. ~~F7 — add the two missing test pins~~ — **Done** (slugify leading-dash pin; `--force` vs profile-resolution failure pin).
+4. ~~Optional hardening: F2 (absolute/existing `--command-path` guard), F4 (reject `-`-prefixed collection names)~~ — **Done, with regression tests.** F5 (NaN debounce) and F3 (pin `/bin/launchctl`) remain accepted residuals.
+
+**Post-audit remediation (CodeRabbit round, 2026-08-27)** — three functional fixes applied on top of the audited tree, each with regression tests: existing-watcher detection now verifies the persisted watch path instead of trusting the slug glob (no more `docs`/`docs-backup` false positives); a different label on the same folder now refuses with exact removal instructions and only removes the old watcher on explicit confirmation or `--force` (bootout + plist delete — consent-gated, never silent); `~user` watch paths are rejected instead of mis-expanded. No new subprocess sites, no new writes outside the plist/log paths, plist rendering unchanged.

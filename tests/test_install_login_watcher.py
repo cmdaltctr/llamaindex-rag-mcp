@@ -115,11 +115,13 @@ class TestHelpText:
             "--collection",
             "--debounce",
             "--label",
+            "--command-path",
             "--dry-run",
             "--force",
             "--initial-ingest",
             "--load",
             "--start",
+            "--yes",
         ):
             assert token in output, f"--help missing {token}"
 
@@ -253,17 +255,19 @@ class TestExistingWatcherSafety:
     def test_existing_plist_protected_without_force(
         self, macos_home, invoke_happy, tmp_path
     ) -> None:
-        """Without --force an existing plist survives untouched."""
+        """Without --force a same-label re-run leaves the plist untouched."""
         home = macos_home(tmp_path / "h")
         watched = tmp_path / "docs3"
         watched.mkdir()
-        existing = home / "Library/LaunchAgents/com.rag-mcp.watch.docs3.plist"
-        existing.parent.mkdir(parents=True, exist_ok=True)
-        existing.write_bytes(b"<plist><dict><key>OLD</key></dict></plist>")
-        result, _meta = invoke_happy(watched, home)
-        assert result.exit_code != 0
-        assert str(existing) in result.output or ".plist" in result.output
-        assert existing.read_bytes() == b"<plist><dict><key>OLD</key></dict></plist>"
+        first_run, _meta = invoke_happy(watched, home)
+        assert first_run.exit_code == 0
+        plist_path = next((home / "Library/LaunchAgents").glob("*.plist"))
+        original_bytes = plist_path.read_bytes()
+
+        second_run, _m2 = invoke_happy(watched, home)  # same plan → same label
+        assert second_run.exit_code != 0
+        assert "--force" in second_run.output
+        assert plist_path.read_bytes() == original_bytes
 
     def test_existing_plist_replaced_with_force(self, macos_home, invoke_happy, tmp_path) -> None:
         """--force allows replacement and reports success."""
@@ -274,6 +278,172 @@ class TestExistingWatcherSafety:
         assert first_run.exit_code == 0
         second_run, _m2 = invoke_happy(watched, home, extra_args=["--force"])
         assert second_run.exit_code == 0, second_run.output
+
+
+# ── Different-label replacement: refuse, instruct, or consent ────────
+
+
+class TestDifferentLabelReplacement:
+    """A different label watching the same folder is a live duplicate.
+
+    Non-consented runs refuse with exact removal instructions; --force or
+    an interactive confirmation removes the old watcher (bootout + plist
+    delete) before installing the new one (CodeRabbit major finding).
+    """
+
+    @staticmethod
+    def _seed_other_label(home: Path, watched: Path) -> Path:
+        """Seed a generated-style plist with a different label; return it."""
+        label = f"com.rag-mcp.watch.{watched.name}-deadbeef"
+        plist_path = home / "Library/LaunchAgents" / f"{label}.plist"
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
+        plist_path.write_bytes(
+            plistlib.dumps(
+                {
+                    "Label": label,
+                    "ProgramArguments": [
+                        "/fake/bin/rag-mcp",
+                        "watch",
+                        str(watched.resolve()),
+                        "--collection",
+                        "old-collection",
+                        "--debounce",
+                        "2.0",
+                    ],
+                }
+            )
+        )
+        return plist_path
+
+    def test_refuses_and_instructs_without_force(self, macos_home, tmp_path) -> None:
+        """Non-interactive, no --force: refuse, print removal commands, exit 1."""
+        home = macos_home(tmp_path / "hr")
+        watched = tmp_path / "dl-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        old_bytes = old_plist.read_bytes()
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--yes"],
+            )
+        assert result.exit_code != 0
+        output = result.output
+        assert "different watcher label" in output
+        assert (
+            f"launchctl bootout gui/{os.getuid()} com.rag-mcp.watch.{watched.name}-deadbeef"
+            in output
+        )
+        # Rich hard-wraps long tokens at the console width, so flatten
+        # before matching the rm command and the plist name.
+        flat = output.replace("\n", "").replace(" ", "")
+        assert "rm'" in flat and old_plist.name in flat
+        assert "--force" in output
+        mock_lc.assert_not_called()
+        assert old_plist.read_bytes() == old_bytes
+        agents = home / "Library/LaunchAgents"
+        assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
+
+    def test_force_removes_old_and_installs_new(self, macos_home, tmp_path) -> None:
+        """--force: bootout the old label, delete its plist, install one new."""
+        home = macos_home(tmp_path / "hq")
+        watched = tmp_path / "df-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        ok = subprocess.CompletedProcess(args=[], returncode=0)
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch(
+                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                new=MagicMock(return_value=ok),
+            ) as mock_lc,
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "install-login-watcher",
+                    "--path",
+                    str(watched),
+                    "--yes",
+                    "--force",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        assert not old_plist.exists()
+        plists = list((home / "Library/LaunchAgents").glob("*.plist"))
+        assert len(plists) == 1  # exactly one watcher remains
+        assert plists[0].stem != old_plist.stem
+        bootouts = [
+            c
+            for c in mock_lc.call_args_list
+            if c.args and c.args[0][:2] == ["launchctl", "bootout"]
+        ]
+        assert any(c.args[0][2] == f"gui/{os.getuid()}/{old_plist.stem}" for c in bootouts), (
+            f"old label not booted out: {mock_lc.call_args_list}"
+        )
+
+    def test_interactive_confirmation_removes_old(self, macos_home, monkeypatch, tmp_path) -> None:
+        """Interactive 'y' at the removal prompt consents to the delete."""
+        home = macos_home(tmp_path / "hy")
+        monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
+        watched = tmp_path / "di-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        ok = subprocess.CompletedProcess(args=[], returncode=0)
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch(
+                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                new=MagicMock(return_value=ok),
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--collection", "research"],
+                input="n\ny\ny\n",  # catch-up, removal prompt, wizard summary
+            )
+        assert result.exit_code == 0, result.output
+        assert not old_plist.exists()
+        plists = list((home / "Library/LaunchAgents").glob("*.plist"))
+        assert len(plists) == 1
+        assert "Removing existing watcher" in result.output
+
+    def test_interactive_decline_leaves_everything_unchanged(
+        self, macos_home, monkeypatch, tmp_path
+    ) -> None:
+        """Interactive 'n' aborts with instructions and writes nothing."""
+        home = macos_home(tmp_path / "hn2")
+        monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
+        watched = tmp_path / "dn-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        old_bytes = old_plist.read_bytes()
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--collection", "research"],
+                input="n\nn\n",  # catch-up decline, removal decline
+            )
+        assert result.exit_code != 0
+        assert "launchctl bootout" in result.output  # instructions shown
+        mock_lc.assert_not_called()
+        assert old_plist.read_bytes() == old_bytes
+        agents = home / "Library/LaunchAgents"
+        assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
 
 
 class TestDryRun:
@@ -679,10 +849,26 @@ class TestContentionWarning:
 
     @staticmethod
     def _seed_existing(home: Path, watched: Path) -> Path:
-        """Create a slug-matched pre-existing watcher plist; return it."""
-        existing = home / "Library/LaunchAgents" / f"com.rag-mcp.watch.{watched.name}.plist"
+        """Create a different-label plist watching the same folder; return it."""
+        label = f"com.rag-mcp.watch.{watched.name}"
+        existing = home / "Library/LaunchAgents" / f"{label}.plist"
         existing.parent.mkdir(parents=True, exist_ok=True)
-        existing.write_bytes(b"<plist><dict><key>OLD</key></dict></plist>")
+        existing.write_bytes(
+            plistlib.dumps(
+                {
+                    "Label": label,
+                    "ProgramArguments": [
+                        "/fake/bin/rag-mcp",
+                        "watch",
+                        str(watched.resolve()),
+                        "--collection",
+                        "other",
+                        "--debounce",
+                        "2.0",
+                    ],
+                }
+            )
+        )
         return existing
 
     def test_warning_shown_when_adapter_lacks_write_isolation(self, macos_home, tmp_path) -> None:

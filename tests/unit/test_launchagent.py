@@ -143,13 +143,35 @@ class TestValidateWatchPath:
         link.symlink_to(target)
         assert la.validate_watch_path(link) == target.resolve()
 
-    def test_tilde_expansion_uses_home(self, la, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_tilde_expansion_uses_home(
+        self, la, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """``~/docs`` expands against the monkeypatched home directory."""
-        fake_home = Path("/tmp/fake-home-for-tests")
+        fake_home = tmp_path / "fake-home"
         docs = fake_home / "docs"
         docs.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(Path, "home", lambda: fake_home)
         assert la.validate_watch_path("~/docs") == docs.resolve()
+
+    def test_bare_tilde_returns_home(
+        self, la, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``~`` alone expands to the home directory."""
+        fake_home = tmp_path / "bare-home"
+        fake_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(Path, "home", lambda: fake_home)
+        assert la.validate_watch_path("~") == fake_home.resolve()
+
+    def test_tilde_user_form_rejected_even_when_target_exists(
+        self, la, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``~alice/docs`` is refused, not guessed as ``<home>/alice/docs``."""
+        fake_home = tmp_path / "user-home"
+        alice_docs = fake_home / "alice" / "docs"
+        alice_docs.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(Path, "home", lambda: fake_home)
+        with pytest.raises(la.InstallerError, match="absolute path"):
+            la.validate_watch_path("~alice/docs")
 
 
 # ── Paths and command resolution (tasks 1.4, 1.5) ─────────────────────
@@ -289,6 +311,101 @@ class TestRenderAndWritePlist:
         plan = make_plan(plist_path=target)
         la.write_plist(plan, b"NEW", overwrite=True)
         assert target.read_bytes() == b"NEW"
+
+
+# ── Existing-watcher detection (exact watch-path matching) ──────────
+
+
+class TestFindExistingPlist:
+    """Slug glob is a shortlist; the persisted watch path is the verdict."""
+
+    @staticmethod
+    def _seed(plist_path: Path, watch_path: Path, label: str | None = None) -> Path:
+        """Write a parseable installer-style plist; return its path."""
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
+        plist_path.write_bytes(
+            plistlib.dumps(
+                {
+                    "Label": label or plist_path.stem,
+                    "ProgramArguments": [
+                        "/fake/bin/rag-mcp",
+                        "watch",
+                        str(watch_path),
+                        "--collection",
+                        "other",
+                        "--debounce",
+                        "2.0",
+                    ],
+                }
+            )
+        )
+        return plist_path
+
+    def test_exact_planned_path_returned_first(self, la, make_plan, tmp_path: Path) -> None:
+        """The exact planned path short-circuits — no parsing needed."""
+        agents = tmp_path / "Library/LaunchAgents"
+        planned = agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist"
+        planned.parent.mkdir(parents=True)
+        planned.write_bytes(b"junk-but-exact-path")
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        plan = make_plan(watch_path=watched, plist_path=planned)
+        assert la.find_existing_plist(plan) == planned
+
+    def test_slug_candidate_matching_watch_path_returned(
+        self, la, make_plan, tmp_path: Path
+    ) -> None:
+        """A different label watching the same folder is detected."""
+        agents = tmp_path / "Library/LaunchAgents"
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        other = self._seed(agents / "com.rag-mcp.watch.docs-00000000.plist", watched.resolve())
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) == other
+
+    def test_slug_prefix_of_unrelated_folder_not_matched(
+        self, la, make_plan, tmp_path: Path
+    ) -> None:
+        """``docs`` must not match a ``docs-backup`` watcher (CodeRabbit)."""
+        agents = tmp_path / "Library/LaunchAgents"
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        backup = tmp_path / "docs-backup"
+        backup.mkdir()
+        self._seed(agents / "com.rag-mcp.watch.docs-backup-00000000.plist", backup.resolve())
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) is None
+
+    def test_unparseable_slug_candidate_skipped(self, la, make_plan, tmp_path: Path) -> None:
+        """Corrupt candidate files are ignored, never block an install."""
+        agents = tmp_path / "Library/LaunchAgents"
+        agents.mkdir(parents=True)
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        (agents / "com.rag-mcp.watch.docs-00000000.plist").write_bytes(b"not-a-plist")
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) is None
+
+    def test_no_candidates_returns_none(self, la, make_plan, tmp_path: Path) -> None:
+        """A clean LaunchAgents directory yields None."""
+        agents = tmp_path / "Library/LaunchAgents"
+        agents.mkdir(parents=True)
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) is None
 
 
 # ── launchctl wrapper (task 2.4/2.5) ────────────────────────────────
