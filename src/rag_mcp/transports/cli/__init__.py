@@ -2,7 +2,8 @@
 
 This package contains the Typer application and one module per command
 group: ``ingest.py``, ``search.py``, ``list.py``, ``watch.py``,
-``delete.py``, ``benchmark.py``, and ``profile.py``.
+``delete.py``, ``benchmark.py``, ``profile.py``, and
+``install_login_watcher.py``.
 
 All output goes to stderr (gotcha #5 — stdout is the MCP protocol channel
 when the server starts with no subcommand).
@@ -217,4 +218,13 @@ def run_cli() -> None:
 
 # ── Register all command groups ───────────────────────────────────────────
 # Importing these modules registers their ``@app.command()`` decorators.
-from . import benchmark, delete, ingest, list, profile, search, watch  # noqa: E402,F401
+from . import (  # noqa: E402,F401
+    benchmark,
+    delete,
+    ingest,
+    install_login_watcher,
+    list,
+    profile,
+    search,
+    watch,
+)

@@ -91,3 +91,6 @@ Thumbs.db
 
 # Project Management
 /niftypm
+
+# Security-scanner scratch output (a-security audits) — never commit
+.security/

@@ -139,6 +139,7 @@ The same `rag-mcp` command is both the MCP server and a terminal tool.
 | `rag-mcp list`             | List indexed documents                |
 | `rag-mcp list-collections` | List all collections                  |
 | `rag-mcp watch <dir>`      | Auto-ingest new and changed files     |
+| `rag-mcp install-login-watcher` | Install a macOS login watcher for a folder |
 | `rag-mcp delete`           | Delete documents or drop a collection |
 | `rag-mcp set-profile`      | Bind a collection to a profile        |
 | `rag-mcp benchmark`        | Benchmark embedding throughput        |
