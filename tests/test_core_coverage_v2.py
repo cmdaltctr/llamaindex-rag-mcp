@@ -30,26 +30,35 @@ class TestAzureDocumentBranch:
 
         docs = [Document(text="Azure extracted prose. " * 40)]
         with patch(
-            "rag_mcp.integrations.azure.read_with_azure_fallback",
+            "rag_mcp.integrations.azure.read_documents",
             AsyncMock(return_value=docs),
         ):
             nodes = await read_and_chunk_file_async(
                 pdf,
                 content_type="document",
-                settings=EffectiveSettings(document_backend="azure"),
+                settings=EffectiveSettings(
+                    document_backend="azure",
+                    azure_doc_intelligence_endpoint="https://example.azure.com/",
+                    azure_doc_intelligence_key="dummy-key",
+                ),
             )
         assert nodes
         assert all(n.metadata.get("content_type") == "document" for n in nodes)
 
     async def test_azure_failure_degrades_to_local(self, tmp_path: Path) -> None:
-        """An Azure error must not abort ingestion (ADR-024 graceful degradation)."""
+        """An Azure error must not abort ingestion (ADR-024 graceful degradation).
+
+        Under the registry dispatch the .md suffix never reaches the azure
+        backend at all (registry suffix gate); the RuntimeError stub stays
+        as a belt-and-braces guard for any future suffix drift.
+        """
         from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 
         md = tmp_path / "notes.md"
         md.write_text("# Heading\n\n" + ("local fallback prose. " * 30))
 
         with patch(
-            "rag_mcp.integrations.azure.read_with_azure_fallback",
+            "rag_mcp.integrations.azure.read_documents",
             AsyncMock(side_effect=RuntimeError("azure down")),
         ):
             nodes = await read_and_chunk_file_async(

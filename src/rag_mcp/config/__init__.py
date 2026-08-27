@@ -195,6 +195,12 @@ class Settings(StorageValidationMixin, BaseSettings):
     community_seed: int = 0
 
     # ── Document backend ──────────────────────────────────────────
+    # Declared as a plain string: accepted backend names are registry-
+    # owned and validated at the composition boundary
+    # (rag_mcp.capabilities.validate_document_backend), so config must
+    # not duplicate the accepted-name tuple (invariant #10).  The Azure
+    # credential check below stays here deliberately: it is graceful
+    # degradation under the cloud-opt-in boundary, not name validation.
     document_backend: str = "local"
     azure_doc_intelligence_endpoint: str = ""
     azure_doc_intelligence_key: str = ""
@@ -214,13 +220,18 @@ class Settings(StorageValidationMixin, BaseSettings):
     def _validate_provider_selections(self) -> Settings:
         """Validate provider-selection fields: raise on unrecognised values.
 
-        Six provider settings raise ValueError on an unrecognised non-empty
+        Provider settings raise ValueError on an unrecognised non-empty
         value. An empty or
         whitespace-only value (``SETTING=`` in .env) is treated as unset and
         reset to the field's declared default — raising on it would be
         hostile to a common operator idiom.
 
-        Two deliberate graceful-degradation policies are unchanged:
+        DOCUMENT_BACKEND no longer validates names here: accepted names
+        are registry-owned and checked at the composition boundary
+        (compose → capabilities.validate_document_backend), so config
+        keeps only the whitespace/reset idiom for it.
+
+        Deliberate graceful-degradation policies are unchanged:
         DOCUMENT_BACKEND=azure with missing credentials falls back to local
         (cloud-opt-in hard boundary), and an unrecognised RAG_PROFILE falls
         back to documents (profile system design).  PDF_READER's unknown-value
@@ -255,19 +266,35 @@ class Settings(StorageValidationMixin, BaseSettings):
             ("onnx", "torch"),
             "RETRIEVAL__RERANK_BACKEND",
         )
-        _validate_provider_value(self, "document_backend", ("local", "azure"), "DOCUMENT_BACKEND")
+        # Document backend names are registry-owned: compose validates
+        # DOCUMENT_BACKEND against the document-backend registry at
+        # startup and fails listing the registered names (task 2.4,
+        # register-document-backend-strategies).  Only the §6.10
+        # whitespace idiom stays here: strip padding and reset an empty
+        # value to the declared default.
+        object.__setattr__(self, "document_backend", self.document_backend.strip() or "local")
         # Chroma deployment mode is an explicit selector: API-key presence
         # must NEVER switch storage silently (design decision 1).
         _validate_provider_value(self, "chroma_mode", ("local", "cloud"), "CHROMA_MODE")
 
         # Azure credential check — deliberate graceful degradation.
-        # DOCUMENT_BACKEND=azure is a valid value, but without credentials
-        # the cloud-opt-in hard boundary requires a local fallback.
+        # DOCUMENT_BACKEND=azure is a valid selection, but without
+        # credentials the cloud-opt-in hard boundary requires a local
+        # fallback.  The diagnostic names the missing credential(s).
         if self.document_backend == "azure":
-            if not self.azure_doc_intelligence_endpoint or not self.azure_doc_intelligence_key:
+            missing = [
+                name
+                for name, value in (
+                    ("AZURE_DOC_INTELLIGENCE_ENDPOINT", self.azure_doc_intelligence_endpoint),
+                    ("AZURE_DOC_INTELLIGENCE_KEY", self.azure_doc_intelligence_key),
+                )
+                if not value
+            ]
+            if missing:
                 logger.warning(
-                    "DOCUMENT_BACKEND=azure but AZURE_DOC_INTELLIGENCE_ENDPOINT or "
-                    "AZURE_DOC_INTELLIGENCE_KEY is not set. Falling back to local mode."
+                    "DOCUMENT_BACKEND=azure but %s %s not set. Falling back to local mode.",
+                    " and ".join(missing),
+                    "is" if len(missing) == 1 else "are",
                 )
                 object.__setattr__(self, "document_backend", "local")
 
