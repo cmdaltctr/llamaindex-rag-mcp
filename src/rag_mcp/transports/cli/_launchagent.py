@@ -23,6 +23,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from xml.parsers.expat import ExpatError
 
 LABEL_PREFIX = "com.rag-mcp.watch."
 _LAUNCHAGENTS_PARTS = ("Library", "LaunchAgents")
@@ -224,8 +225,10 @@ def _plist_watches(plist_path: Path) -> Path | None:
         argv = data.get("ProgramArguments")
         if isinstance(argv, list) and len(argv) > 2 and argv[1] == "watch":
             return Path(str(argv[2]))
-    # InvalidFileException subclasses ValueError, so it is covered here.
-    except (OSError, AttributeError, TypeError, ValueError):
+    # InvalidFileException subclasses ValueError; XML-shaped input that
+    # passes the format sniff escapes as ExpatError (not a ValueError),
+    # so both are named explicitly.
+    except (OSError, AttributeError, TypeError, ValueError, ExpatError):
         return None
     return None
 
@@ -304,6 +307,15 @@ def bootstrap_command(uid: int, plist_path: Path) -> list[str]:
 def bootout_command(uid: int, label: str) -> list[str]:
     """Return the argv that unloads a label from the user's GUI domain."""
     return ["launchctl", "bootout", f"gui/{uid}/{label}"]
+
+
+def print_command(uid: int, label: str) -> list[str]:
+    """Return the argv that reports whether a label is currently loaded.
+
+    Exit 0 means loaded; non-zero means not loaded — used to
+    disambiguate a failed bootout from an agent that never ran.
+    """
+    return ["launchctl", "print", f"gui/{uid}/{label}"]
 
 
 def kickstart_command(uid: int, label: str) -> list[str]:

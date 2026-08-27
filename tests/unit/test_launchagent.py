@@ -395,6 +395,26 @@ class TestFindExistingPlist:
         )
         assert la.find_existing_plist(plan) is None
 
+    def test_xml_shaped_malformed_plist_skipped(self, la, make_plan, tmp_path: Path) -> None:
+        """XML-declared but broken plists raise ExpatError and are skipped.
+
+        ``ExpatError`` subclasses ``Exception``, not ``ValueError`` — an
+        uncaught one would crash the installer instead of skipping the
+        corrupt candidate (CodeRabbit).
+        """
+        agents = tmp_path / "Library/LaunchAgents"
+        agents.mkdir(parents=True)
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        (agents / "com.rag-mcp.watch.docs-00000000.plist").write_bytes(
+            b'<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>Label</key>'
+        )
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.rag-mcp.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) is None
+
     def test_no_candidates_returns_none(self, la, make_plan, tmp_path: Path) -> None:
         """A clean LaunchAgents directory yields None."""
         agents = tmp_path / "Library/LaunchAgents"

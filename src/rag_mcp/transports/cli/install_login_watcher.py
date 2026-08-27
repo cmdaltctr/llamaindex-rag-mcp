@@ -70,14 +70,20 @@ def _gate_same_label_replacement(existing: Path, force: bool, interactive: bool,
     console.print(f"[yellow]Replacing existing watcher: {existing}[/yellow]")
 
 
-def _handle_different_label(existing: Path, force: bool, interactive: bool, yes: bool) -> None:
-    """Refuse-and-instruct for a different label on the same watch folder.
+def _confirm_different_label_removal(
+    existing: Path, force: bool, interactive: bool, yes: bool
+) -> bool:
+    """Obtain consent for removing a differently-labelled watcher.
 
     The old watcher is a live duplicate (it starts at login alongside the
     new one), so it must go — but the installer never deletes another
     label's plist without explicit consent. Consent is an interactive
     confirmation or --force; anything else stops with the exact removal
     commands so the user can do it manually.
+
+    Performs NO mutation: the removal itself is deferred until every
+    later abort gate (wizard summary, ingest failure) has passed, so an
+    abort always leaves the old watcher installed.
     """
     label = existing.stem
     uid = os.getuid()
@@ -101,10 +107,34 @@ def _handle_different_label(existing: Path, force: bool, interactive: bool, yes:
             f"Or re-run with --force to remove it automatically."
         )
         raise typer.Exit(code=1)
+    return True
+
+
+def _remove_old_watcher(existing: Path) -> None:
+    """Boot out and delete an old watcher, after all abort gates passed.
+
+    A failed bootout is ambiguous: usually the label was simply never
+    loaded (the default install never calls --load), in which case
+    deleting the plist is correct. But if ``launchctl print`` says the
+    agent is still loaded, deleting the plist would leave two live
+    watchers — so the install stops with the manual commands instead.
+    """
+    label = existing.stem
+    uid = os.getuid()
     console.print(f"[yellow]Removing existing watcher: {label}[/yellow]")
     boot = _launchagent.run_launchctl(_launchagent.bootout_command(uid, label))
     if boot.returncode != 0:
-        # Non-zero bootout usually means the label was never loaded.
+        probe = _launchagent.run_launchctl(_launchagent.print_command(uid, label))
+        if probe.returncode == 0:
+            console.print(
+                f"[red]Error:[/red] could not boot out the old watcher "
+                f"(still loaded). The install was stopped and the old "
+                f"watcher is unchanged.\n"
+                f"Remove it manually, then re-run:\n"
+                f"  launchctl bootout gui/{uid} {label}\n"
+                f"  rm '{existing}'"
+            )
+            raise typer.Exit(code=1)
         console.print(f"[dim]Label {label} was not loaded; removing its plist only.[/dim]")
     existing.unlink(missing_ok=True)
 
@@ -304,6 +334,10 @@ def install_login_watcher(
         raise typer.Exit()
 
     # ── Existing watcher safety ──
+    # A different-label removal is only *consented* to here; the actual
+    # bootout/delete is deferred to just before write_plist so every
+    # later abort gate leaves the old watcher installed.
+    pending_removal: Path | None = None
     existing = _launchagent.find_existing_plist(plan)
     if existing is not None:
         warning = _contention_warning(collection)
@@ -311,8 +345,8 @@ def install_login_watcher(
             console.print(f"[yellow]⚠ An existing watcher was detected. {warning}[/yellow]")
         if existing == plan.plist_path:
             _gate_same_label_replacement(existing, force, interactive, yes)
-        else:
-            _handle_different_label(existing, force, interactive, yes)
+        elif _confirm_different_label_removal(existing, force, interactive, yes):
+            pending_removal = existing
 
     # ── Wizard summary confirmation before any mutation ──
     if interactive and not yes:
@@ -351,6 +385,11 @@ def install_login_watcher(
             )
 
     # ── Write, report, and optionally load/start ──
+    # Deferred different-label removal executes here: every abort gate
+    # (summary confirmation, ingest failure) has now passed, so removing
+    # the old watcher can no longer strand the user with none.
+    if pending_removal is not None:
+        _remove_old_watcher(pending_removal)
     _launchagent.write_plist(plan, _launchagent.render_plist(plan), overwrite=True)
     console.print(f"[green]✓[/green] LaunchAgent installed: {plan.label}")
     console.print(f"  Plist: {plan.plist_path}")

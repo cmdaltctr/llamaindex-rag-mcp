@@ -7,7 +7,8 @@
 > fixed with regression tests (relative `--command-path` rejection,
 > dash-prefixed collection rejection) plus F7's two test pins; F3
 > (launchctl via PATH) and F5 (NaN debounce) are accepted residual
-> risks — both fail loudly at login time, not silently.
+> risks — F3 executes at *install time* when `--load` or `--start` is
+> used, not at login; F5 fails loudly at login time, not silently.
 
 ## Summary
 
@@ -95,4 +96,4 @@ The changed code is sound against every injection, path, race, and disclosure ve
 3. ~~F7 — add the two missing test pins~~ — **Done** (slugify leading-dash pin; `--force` vs profile-resolution failure pin).
 4. ~~Optional hardening: F2 (absolute/existing `--command-path` guard), F4 (reject `-`-prefixed collection names)~~ — **Done, with regression tests.** F5 (NaN debounce) and F3 (pin `/bin/launchctl`) remain accepted residuals.
 
-**Post-audit remediation (CodeRabbit round, 2026-08-27)** — three functional fixes applied on top of the audited tree, each with regression tests: existing-watcher detection now verifies the persisted watch path instead of trusting the slug glob (no more `docs`/`docs-backup` false positives); a different label on the same folder now refuses with exact removal instructions and only removes the old watcher on explicit confirmation or `--force` (bootout + plist delete — consent-gated, never silent); `~user` watch paths are rejected instead of mis-expanded. No new subprocess sites, no new writes outside the plist/log paths, plist rendering unchanged.
+**Post-audit remediation (CodeRabbit rounds, 2026-08-26/27)** — functional fixes applied on top of the audited tree, each with regression tests: existing-watcher detection verifies the persisted watch path instead of trusting the slug glob (no more `docs`/`docs-backup` false positives; XML-shaped corrupt plists raise `ExpatError`, which is caught explicitly); a different label on the same folder refuses with exact removal instructions and is only removed on explicit confirmation or `--force`, deferred until every abort gate has passed, with a `launchctl print` probe stopping the install if a failed bootout leaves the old agent loaded; `~user` watch paths are rejected instead of mis-expanded. The remediation changes add no new installer-managed *filesystem* writes beyond the existing plist/log paths (the `--initial-ingest` vector-store writes pre-date this remediation and flow through the audited ingest pipeline). No new subprocess sites beyond the `print` probe, plist rendering unchanged.

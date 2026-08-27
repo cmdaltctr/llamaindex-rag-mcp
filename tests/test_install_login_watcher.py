@@ -445,6 +445,138 @@ class TestDifferentLabelReplacement:
         agents = home / "Library/LaunchAgents"
         assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
 
+    def test_summary_decline_after_removal_consent_keeps_old(
+        self, macos_home, monkeypatch, tmp_path
+    ) -> None:
+        """Consent to removal, then decline the summary: old watcher stays.
+
+        The removal is deferred until after every abort gate, so an
+        abort can never strand the user with no watcher (CodeRabbit).
+        """
+        home = macos_home(tmp_path / "hs2")
+        monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
+        watched = tmp_path / "sd2-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        old_bytes = old_plist.read_bytes()
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--collection", "research"],
+                input="n\ny\nn\n",  # catch-up, removal consent, summary decline
+            )
+        assert result.exit_code != 0
+        assert "nothing was written" in result.output.lower()
+        mock_lc.assert_not_called()  # removal never executed
+        assert old_plist.read_bytes() == old_bytes
+        agents = home / "Library/LaunchAgents"
+        assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
+
+    def test_ingest_gate_abort_after_removal_consent_keeps_old(
+        self, macos_home, monkeypatch, tmp_path
+    ) -> None:
+        """Consent, confirm summary, then decline after ingest failure."""
+        home = macos_home(tmp_path / "hi2")
+        monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
+        watched = tmp_path / "ig2-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        old_bytes = old_plist.read_bytes()
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch(
+                "rag_mcp.core.ingestion.ingest_path_async",
+                new=AsyncMock(return_value={"status": "error", "message": "boom"}),
+            ),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "install-login-watcher",
+                    "--path",
+                    str(watched),
+                    "--collection",
+                    "research",
+                    "--initial-ingest",
+                ],
+                input="y\ny\nn\n",  # removal consent, summary, continue-anyway decline
+            )
+        assert result.exit_code != 0
+        assert "nothing was written" in result.output.lower()
+        mock_lc.assert_not_called()
+        assert old_plist.read_bytes() == old_bytes
+        agents = home / "Library/LaunchAgents"
+        assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
+
+    def test_force_stops_when_bootout_fails_and_agent_loaded(self, macos_home, tmp_path) -> None:
+        """A still-loaded old agent stops the install; plist is kept."""
+        home = macos_home(tmp_path / "hb")
+        watched = tmp_path / "bl-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+        old_bytes = old_plist.read_bytes()
+
+        def _launchctl(cmd: list[str]) -> subprocess.CompletedProcess:
+            op = cmd[1] if len(cmd) > 1 else ""
+            rc = 0 if op == "print" else 1  # bootout fails, probe says loaded
+            return subprocess.CompletedProcess(args=cmd, returncode=rc)
+
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch(
+                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                side_effect=_launchctl,
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--yes", "--force"],
+            )
+        assert result.exit_code != 0
+        assert "still loaded" in result.output
+        assert "launchctl bootout" in result.output  # manual instructions
+        assert old_plist.read_bytes() == old_bytes  # old watcher unchanged
+        agents = home / "Library/LaunchAgents"
+        assert [p.name for p in agents.glob("*.plist")] == [old_plist.name]
+
+    def test_force_proceeds_when_bootout_fails_not_loaded(self, macos_home, tmp_path) -> None:
+        """Bootout failing because the label never loaded is benign."""
+        home = macos_home(tmp_path / "hu2")
+        watched = tmp_path / "nl-docs"
+        watched.mkdir()
+        old_plist = self._seed_other_label(home, watched)
+
+        def _launchctl(cmd: list[str]) -> subprocess.CompletedProcess:
+            return subprocess.CompletedProcess(args=cmd, returncode=1)
+
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch(
+                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                side_effect=_launchctl,
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                ["install-login-watcher", "--path", str(watched), "--yes", "--force"],
+            )
+        assert result.exit_code == 0, result.output
+        assert "was not loaded" in result.output
+        assert not old_plist.exists()
+        plists = list((home / "Library/LaunchAgents").glob("*.plist"))
+        assert len(plists) == 1
+
 
 class TestDryRun:
     """Scenario: Dry run previews without writing."""
