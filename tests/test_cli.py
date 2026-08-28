@@ -1333,6 +1333,20 @@ class TestDeleteCLI:
         assert result.exit_code != 0
         assert "mutually exclusive" in result.output
 
+    def test_delete_path_with_invalid_value_exits_cleanly(self) -> None:
+        """An uncanonicalisable --path exits with an error, not a traceback.
+
+        A path containing a NUL byte makes ``Path.expanduser``/``resolve``
+        raise ``ValueError`` inside the CLI transport. The command must
+        report it like any other invalid flag value (red error, exit 1)
+        instead of surfacing a raw traceback.
+        """
+        result = runner.invoke(app, ["delete", "--path", "bad\0path.txt"])
+        assert result.exit_code == 1
+        output = _strip_ansi(result.output)
+        assert "Invalid --path" in output
+        assert not isinstance(result.exception, ValueError)
+
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_path_removes_chunks(
         self,
