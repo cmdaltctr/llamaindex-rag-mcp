@@ -29,6 +29,7 @@ __all__ = [
 _NAMES: dict[str, str] = {
     "_cached_query_embedding": ".dense",
     "_dense_query_rows": ".dense",
+    "_distance_to_score": ".dense",
     "_embed_query": ".dense",
     "_result_source": ".dense",
     "reciprocal_rank_fusion": ".fusion",

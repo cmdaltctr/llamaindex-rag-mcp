@@ -170,19 +170,6 @@ cycle and to align with the lazy-registry design.
   parsing semantic is preserved. The refactor moves where values are read, not
   what values mean.
 
-> **Update (silent-failure-audit-and-guards, 2026-08-11):** the composition
-> root's failure semantics tightened. `ensure_runtime_setup()` now lets
-> construction failures (missing optional dependency, missing credentials,
-> failed embedding-model build) propagate instead of warn-and-continue, so a
-> bad configuration raises at import time — `rag-mcp --help` and every other
-> command fail loudly rather than running on a degraded store. This was
-> accepted deliberately: `VECTOR_STORE`'s unknown-value check already raised
-> through the same import-time path (ADR-034), the retired-env-var tripwire
-> (`config/legacy.py`) had already established "loud failure over silent
-> misconfiguration", and a stderr traceback with a non-zero exit is the whole
-> point of ADR-029. Full rationale in the archived change's `design.md`
-> (decision D5).
-
 ## Alternatives Considered
 
 | Option | Rejected Because |
@@ -190,7 +177,7 @@ cycle and to align with the lazy-registry design.
 | **Single `core.py` doing both resolution and construction** | Construction inside the settings module is exactly the coupling this change removes. The name `core.py` also visually collides with the `core/` package directory (design D1). |
 | **Rewrite every constant consumer in one commit (no shim)** | The diff would be too large to review safely, and a single bad merge would break the whole tree at once. The shim lets migration proceed file-by-file with the suite green at each step (design D2). |
 | **Leave the bare constants forever** | Defeats the structured-settings goal. The constant surface is what made `config.py` fragile in the first place. |
-| **Eager registry of live callables** | One missing optional dependency would break the whole registry import. Lazy `"module:attr"` strings defer the import to first `get()`, so a missing dependency in an *unselected* strategy degrades gracefully — only the strategy this deployment actually selects gets imported at startup, and a missing dependency there now fails loudly instead (see the 2026-08-11 update above) (design D3). |
+| **Eager registry of live callables** | One missing optional dependency would break the whole registry import. Lazy `"module:attr"` strings defer the import to first `get()` so a missing dep degrades gracefully (design D3). |
 | **Keep the reranker singleton** | The singleton's `__new__` and independent `load_dotenv()` existed only to dodge the config-construction coupling. Once construction moves to `compose.py`, DI with a process-wide model cache achieves the same load-once semantics without the workaround (design D4). |
 | **Convention-based boundaries (status quo)** | Convention had already drifted once. Lint makes the boundaries mechanical and fails CI on violation, so the layering cannot quietly rot (design D5). |
 

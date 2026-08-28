@@ -10,9 +10,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from conftest import connected_client
+
 from rag_mcp.core.settings import EffectiveSettings
+
 
 # ── core/ingestion/chunker.py: the Azure document branch ────────────────
 
@@ -30,35 +31,26 @@ class TestAzureDocumentBranch:
 
         docs = [Document(text="Azure extracted prose. " * 40)]
         with patch(
-            "rag_mcp.integrations.azure.read_documents",
+            "rag_mcp.integrations.azure.read_with_azure_fallback",
             AsyncMock(return_value=docs),
         ):
             nodes = await read_and_chunk_file_async(
                 pdf,
                 content_type="document",
-                settings=EffectiveSettings(
-                    document_backend="azure",
-                    azure_doc_intelligence_endpoint="https://example.azure.com/",
-                    azure_doc_intelligence_key="dummy-key",
-                ),
+                settings=EffectiveSettings(document_backend="azure"),
             )
         assert nodes
         assert all(n.metadata.get("content_type") == "document" for n in nodes)
 
     async def test_azure_failure_degrades_to_local(self, tmp_path: Path) -> None:
-        """An Azure error must not abort ingestion (ADR-024 graceful degradation).
-
-        Under the registry dispatch the .md suffix never reaches the azure
-        backend at all (registry suffix gate); the RuntimeError stub stays
-        as a belt-and-braces guard for any future suffix drift.
-        """
+        """An Azure error must not abort ingestion (ADR-024 graceful degradation)."""
         from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 
         md = tmp_path / "notes.md"
         md.write_text("# Heading\n\n" + ("local fallback prose. " * 30))
 
         with patch(
-            "rag_mcp.integrations.azure.read_documents",
+            "rag_mcp.integrations.azure.read_with_azure_fallback",
             AsyncMock(side_effect=RuntimeError("azure down")),
         ):
             nodes = await read_and_chunk_file_async(
@@ -77,13 +69,17 @@ class TestAzureDocumentBranch:
         small = await read_and_chunk_file_async(
             md,
             settings=EffectiveSettings(
-                chunking=ChunkingBlock(markdown_chunk_size=256, chunk_size=4096, chunk_overlap=16)
+                chunking=ChunkingBlock(
+                    markdown_chunk_size=256, chunk_size=4096, chunk_overlap=16
+                )
             ),
         )
         large = await read_and_chunk_file_async(
             md,
             settings=EffectiveSettings(
-                chunking=ChunkingBlock(markdown_chunk_size=4096, chunk_size=256, chunk_overlap=16)
+                chunking=ChunkingBlock(
+                    markdown_chunk_size=4096, chunk_size=256, chunk_overlap=16
+                )
             ),
         )
         assert len(small) > len(large), (
@@ -152,7 +148,9 @@ class TestMcpHandlersNeverRaise:
         targets = {
             "search_documents": "rag_mcp.transports.mcp.search",
             "list_indexed_documents": "rag_mcp.transports.mcp._list_documents",
-            "get_codebase_map": ("rag_mcp.core.codebase.codebase_map.get_codebase_map_text"),
+            "get_codebase_map": (
+                "rag_mcp.core.codebase.codebase_map.get_codebase_map_text"
+            ),
         }
         with patch(targets[tool], side_effect=RuntimeError("boom")):
             async with connected_client(mcp_server) as client:

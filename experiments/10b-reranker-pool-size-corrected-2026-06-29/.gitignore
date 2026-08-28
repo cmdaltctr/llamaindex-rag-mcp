@@ -1,6 +1,4 @@
 output/chroma_*/
-output/lancedb_dense/
-output/build-run-*.log
 output/ground-truth.json
 output/eval_results.json
 output/eval_results_checkpoint.json

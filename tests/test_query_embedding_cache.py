@@ -14,9 +14,10 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from rag_mcp.core.ingestion import ingest_path_async
 from rag_mcp.core.retrieval import dense as _dense
 from rag_mcp.core.retrieval import search as _retrieval_search
+from rag_mcp.core.ingestion import ingest_path_async
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ class _CountingMockEmbedding(MockEmbedding):
     """
 
     @classmethod
-    def make(cls, model_name: str = "counting-mock") -> _CountingMockEmbedding:
+    def make(cls, model_name: str = "counting-mock") -> "_CountingMockEmbedding":
         instance = cls(embed_dim=384, model_name=model_name)
         # Stash a list as a per-instance counter via object.__setattr__
         # to bypass pydantic's field validation.  Tuple ensures
@@ -80,8 +81,7 @@ def counting_embed():
 
 @pytest.mark.asyncio
 async def test_unfiltered_repeat_query_embeds_once(
-    sample_md,
-    counting_embed,
+    sample_md, counting_embed,
 ) -> None:
     """Two identical unfiltered searches SHALL embed the query only once."""
     await ingest_path_async(str(sample_md), collection_name="cache_unfiltered")
@@ -99,7 +99,8 @@ async def test_unfiltered_repeat_query_embeds_once(
     )
 
     assert counting_embed.calls == 1, (
-        f"Expected 1 embed call across two identical queries, got {counting_embed.calls}"
+        f"Expected 1 embed call across two identical queries, got "
+        f"{counting_embed.calls}"
     )
 
 
@@ -108,8 +109,7 @@ async def test_unfiltered_repeat_query_embeds_once(
 
 @pytest.mark.asyncio
 async def test_filtered_repeat_query_embeds_once(
-    sample_md,
-    counting_embed,
+    sample_md, counting_embed,
 ) -> None:
     """Two identical filtered searches SHALL embed the query only once."""
     await ingest_path_async(str(sample_md), collection_name="cache_filtered")
@@ -134,8 +134,7 @@ async def test_filtered_repeat_query_embeds_once(
 
 @pytest.mark.asyncio
 async def test_filtered_and_unfiltered_share_cache(
-    sample_md,
-    counting_embed,
+    sample_md, counting_embed,
 ) -> None:
     """An unfiltered call and a filtered call with the same query embed once."""
     await ingest_path_async(str(sample_md), collection_name="cache_shared")
@@ -156,8 +155,7 @@ async def test_filtered_and_unfiltered_share_cache(
 
 @pytest.mark.asyncio
 async def test_distinct_queries_do_not_collide(
-    sample_md,
-    counting_embed,
+    sample_md, counting_embed,
 ) -> None:
     """Two different queries SHALL each get their own embedding."""
     await ingest_path_async(str(sample_md), collection_name="cache_distinct")
@@ -187,7 +185,123 @@ def test_lru_eviction_caps_cache_at_maxsize() -> None:
 
         info = cache.cache_info()
         assert info.maxsize == _dense._QUERY_EMBED_CACHE_MAXSIZE == 128
-        assert info.currsize <= 128, f"Cache currsize {info.currsize} exceeded maxsize 128"
+        assert info.currsize <= 128, (
+            f"Cache currsize {info.currsize} exceeded maxsize 128"
+        )
     finally:
         Settings.embed_model = previous
+        cache.cache_clear()
+
+
+# ── 4.4: unfiltered repeat hits cache ─────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_unfiltered_repeat_query_embeds_once(
+    sample_md, counting_embed,
+) -> None:
+    """Two identical unfiltered searches SHALL embed the query only once."""
+    await ingest_path_async(str(sample_md), collection_name="cache_unfiltered")
+
+    _retrieval_search(
+        "capital of France",
+        collection_name="cache_unfiltered",
+    )
+    _retrieval_search(
+        "capital of France",
+        collection_name="cache_unfiltered",
+    )
+
+    assert counting_embed.calls == 1, (
+        f"Expected 1 embed call across two identical queries, got "
+        f"{counting_embed.calls}"
+    )
+
+
+# ── 4.5: filtered repeat hits cache ───────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_filtered_repeat_query_embeds_once(
+    sample_md, counting_embed,
+) -> None:
+    """Two identical filtered searches SHALL embed the query only once."""
+    await ingest_path_async(str(sample_md), collection_name="cache_filtered")
+
+    _retrieval_search(
+        "capital of France",
+        collection_name="cache_filtered",
+        metadata_filter={"category": "AI"},
+    )
+    _retrieval_search(
+        "capital of France",
+        collection_name="cache_filtered",
+        metadata_filter={"category": "AI"},
+    )
+
+    assert counting_embed.calls == 1
+
+
+# ── 4.6: filtered + unfiltered share the cache ────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_filtered_and_unfiltered_share_cache(
+    sample_md, counting_embed,
+) -> None:
+    """An unfiltered call and a filtered call with the same query embed once."""
+    await ingest_path_async(str(sample_md), collection_name="cache_shared")
+
+    _retrieval_search("capital of France", collection_name="cache_shared")
+    _retrieval_search(
+        "capital of France",
+        collection_name="cache_shared",
+        metadata_filter={"category": "AI"},
+    )
+
+    assert counting_embed.calls == 1
+
+
+# ── 4.7: distinct queries do not collide ──────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_distinct_queries_do_not_collide(
+    sample_md, counting_embed,
+) -> None:
+    """Two different queries SHALL each get their own embedding."""
+    await ingest_path_async(str(sample_md), collection_name="cache_distinct")
+
+    _retrieval_search("capital of France", collection_name="cache_distinct")
+    _retrieval_search("capital of Germany", collection_name="cache_distinct")
+
+    assert counting_embed.calls == 2
+
+
+# ── 4.8: LRU eviction at configured maxsize ───────────────────────────────
+
+
+def test_lru_eviction_caps_cache_at_maxsize(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The cache SHALL evict least-recently-used entries past maxsize=128."""
+    cache = _dense._cached_query_embedding
+    cache.cache_clear()
+
+    # Use a stable model_name so all 200 entries land in the same cache
+    # bucket and the eviction logic is the only thing capping growth.
+    monkeypatch.setattr(
+        Settings.embed_model, "model_name", "lru-test-model", raising=False,
+    )
+
+    try:
+        for i in range(200):
+            _dense._embed_query(f"query-{i}")
+
+        info = cache.cache_info()
+        assert info.maxsize == _dense._QUERY_EMBED_CACHE_MAXSIZE == 128
+        assert info.currsize <= 128, (
+            f"Cache currsize {info.currsize} exceeded maxsize 128"
+        )
+    finally:
         cache.cache_clear()

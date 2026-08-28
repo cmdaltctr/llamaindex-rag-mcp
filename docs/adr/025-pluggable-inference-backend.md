@@ -130,16 +130,3 @@ What changed:
 
 See ADR-031 for the composition-root design and the `import-linter` contracts
 that confine provider construction to `compose.py`.
-
----
-
-## Update (2026-08-15, add-chroma-cloud-backend)
-
-The `llamacpp` extra originally installed
-`llama-index-embeddings-openai` (providing `OpenAIEmbedding`). That
-package's fixed model enum cannot express provider-prefixed model IDs, so
-the llamacpp and openrouter embedding providers now use
-`OpenAILikeEmbedding` from `llama-index-embeddings-openai-like>=0.3.0`
-instead. The `llamacpp` extra installs `llama-index-embeddings-openai-like`
-(and `llama-index-llms-openai-like` for the chat side). See the
-add-chroma-cloud-backend change and the ADR-026 update for rationale.

@@ -23,62 +23,16 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-from .filters import matches_metadata_filter
-
 logger = logging.getLogger(__name__)
 
 
-_STOP_WORDS = frozenset(
-    {
-        "a",
-        "an",
-        "and",
-        "are",
-        "as",
-        "at",
-        "be",
-        "but",
-        "by",
-        "for",
-        "from",
-        "has",
-        "have",
-        "he",
-        "her",
-        "his",
-        "i",
-        "in",
-        "is",
-        "it",
-        "its",
-        "of",
-        "on",
-        "or",
-        "our",
-        "she",
-        "that",
-        "the",
-        "their",
-        "them",
-        "there",
-        "these",
-        "they",
-        "this",
-        "to",
-        "was",
-        "we",
-        "were",
-        "what",
-        "when",
-        "where",
-        "which",
-        "who",
-        "will",
-        "with",
-        "you",
-        "your",
-    }
-)
+_STOP_WORDS = frozenset({
+    "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
+    "from", "has", "have", "he", "her", "his", "i", "in", "is", "it",
+    "its", "of", "on", "or", "our", "she", "that", "the", "their",
+    "them", "there", "these", "they", "this", "to", "was", "we", "were",
+    "what", "when", "where", "which", "who", "will", "with", "you", "your",
+})
 
 
 def tokenize_english(text: str) -> list[str]:
@@ -91,11 +45,7 @@ def tokenize_english(text: str) -> list[str]:
 
 
 class _SimpleBM25Okapi:
-    """Small BM25Okapi fallback used when ``rank_bm25`` is not installed.
-
-    Mirrors the IDF formula and epsilon clipping of ``rank_bm25.BM25Okapi``
-    so the fallback does not mask scoring divergences on tiny corpora.
-    """
+    """Small BM25Okapi fallback used when ``rank_bm25`` is not installed."""
 
     def __init__(self, corpus: list[list[str]], k1: float = 1.5, b: float = 0.75) -> None:
         self.corpus = corpus
@@ -108,26 +58,14 @@ class _SimpleBM25Okapi:
         for freqs in self.doc_freqs:
             nd.update(freqs.keys())
         corpus_size = len(corpus)
-        # RSJ IDF: log((N - df + 0.5) / (df + 0.5)) — same as rank_bm25.
-        # Negative IDFs (term in more than half the corpus) are clipped to
-        # epsilon * average_idf, matching rank_bm25's default epsilon=0.25.
-        idf_sum = 0.0
-        negative_idfs: list[str] = []
-        self.idf: dict[str, float] = {}
-        for term, freq in nd.items():
-            idf = math.log(corpus_size - freq + 0.5) - math.log(freq + 0.5)
-            self.idf[term] = idf
-            idf_sum += idf
-            if idf < 0:
-                negative_idfs.append(term)
-        avg_idf = idf_sum / len(self.idf) if self.idf else 0.0
-        eps = 0.25 * avg_idf
-        for term in negative_idfs:
-            self.idf[term] = eps
+        self.idf = {
+            term: math.log(1 + (corpus_size - freq + 0.5) / (freq + 0.5))
+            for term, freq in nd.items()
+        }
 
     def get_scores(self, query_tokens: list[str]) -> list[float]:
         scores: list[float] = []
-        for freqs, doc_len in zip(self.doc_freqs, self.doc_len, strict=False):
+        for freqs, doc_len in zip(self.doc_freqs, self.doc_len):
             score = 0.0
             for token in query_tokens:
                 tf = freqs.get(token, 0)
@@ -180,7 +118,7 @@ def _detect_native_sparse_capability() -> bool:
 class BM25SparseRetriever:
     """Generation-aware BM25 retriever for one collection."""
 
-    _cache: dict[tuple[object, str], _CachedBM25] = {}
+    _cache: dict[str, _CachedBM25] = {}
     _cache_lock = threading.Lock()
 
     def __init__(
@@ -191,21 +129,13 @@ class BM25SparseRetriever:
         self.collection_name = collection_name
         self._store = store
 
-    def query(
-        self,
-        query_text: str,
-        top_n: int,
-        metadata_filter: dict | None = None,
-    ) -> list[tuple[int, str, str, dict]]:
-        """Return filtered BM25 matches in rank order.
+    @classmethod
+    def clear_all_caches(cls) -> None:
+        with cls._cache_lock:
+            cls._cache.clear()
 
-        Args:
-            query_text: Sparse query text.
-            top_n: Maximum number of eligible matches.
-            metadata_filter: Store-neutral query constraint evaluated before
-                truncation so forbidden rows cannot consume the candidate
-                budget or re-enter through RRF.
-        """
+    def query(self, query_text: str, top_n: int) -> list[tuple[int, str, str, dict]]:
+        """Return ``[(rank, doc_id, text, metadata), ...]`` for BM25 matches."""
         if top_n <= 0:
             return []
         query_tokens = tokenize_english(query_text)
@@ -221,7 +151,6 @@ class BM25SparseRetriever:
             (idx, float(score))
             for idx, score in enumerate(scores)
             if float(score) > 0.0
-            and matches_metadata_filter(cached.rows[idx].metadata, metadata_filter)
         ]
         ranked.sort(key=lambda item: item[1], reverse=True)
 
@@ -241,16 +170,10 @@ class BM25SparseRetriever:
     def _get_generation(self) -> int:
         return self._get_store().get_generation(self.collection_name)
 
-    def _cache_key(self) -> tuple[object, str]:
-        store = self._get_store()
-        identity = getattr(store, "cache_identity", store)
-        return identity, self.collection_name
-
     def _get_or_build_index(self) -> _CachedBM25:
         generation = self._get_generation()
-        cache_key = self._cache_key()
         with self._cache_lock:
-            cached = self._cache.get(cache_key)
+            cached = self._cache.get(self.collection_name)
             if cached is not None and cached.generation == generation:
                 return cached
 
@@ -259,7 +182,7 @@ class BM25SparseRetriever:
             tokenised = [tokenize_english(row.text) for row in rows]
             index = _make_bm25(tokenised)
             cached = _CachedBM25(generation=generation, index=index, rows=rows)
-            self._cache[cache_key] = cached
+            self._cache[self.collection_name] = cached
             return cached
 
 

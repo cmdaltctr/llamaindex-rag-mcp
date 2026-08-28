@@ -6,6 +6,4 @@ output/run_eval.log
 output/index_build.json
 qasper_pdfs/
 qasper_qrels.json
-output/prepare_pdfs.log
-output/qasper_validation.parquet
 analysis.ipynb

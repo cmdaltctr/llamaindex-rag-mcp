@@ -113,13 +113,11 @@ def on_deleted(self, event):
     # Cancel any pending ingest timer
     with self._timers_lock:
         old_timer = self._timers.pop(file_path, None)
-        if old_timer:
-            old_timer.cancel()
+        if old_timer: old_timer.cancel()
     # Clear hash cache
     self._hash_cache.pop(file_path, None)
     # Remove vectors
     from .ingestion import remove_document
-
     remove_document(file_path, collection_name=self._collection_name)
 ```
 

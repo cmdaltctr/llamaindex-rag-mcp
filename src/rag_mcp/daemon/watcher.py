@@ -19,15 +19,17 @@ Usage::
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
+import signal
 import threading
 import time
 from pathlib import Path
 
 from watchdog.events import PatternMatchingEventHandler
+from watchdog.observers import Observer
 
 from ..core.ingestion.loader import SUPPORTED_EXTENSIONS
-from ._shared import _sha256_file
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ MIN_DEBOUNCE_SECONDS = 0.5
 MAX_CONCURRENT_INGESTS = 2
 CONSECUTIVE_ERROR_THRESHOLD = 5
 MAX_SHUTDOWN_SECONDS = 30
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
 MAX_HASH_CACHE_ENTRIES = 50_000
 
 
@@ -45,7 +48,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
     Attributes:
         debounce_seconds: Quiet period before triggering ingestion.
-        _collection_name: Vector-store collection to route into (default "documents").
+        _collection_name: ChromaDB collection to route into (default "documents").
         _timers: Per-file debounce timers.
         _hash_cache: Per-file SHA-256 content hashes.
         _ingest_semaphore: Limits concurrent ingest_path() calls.
@@ -64,10 +67,10 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
         # Ignore hidden files, temp files, and .git directories
         ignore_patterns = [
-            ".*",  # hidden files (.DS_Store, .gitkeep, etc.)
-            "~$*",  # Office temporary files
-            "*.tmp",  # generic temp files
-            "*.part",  # incomplete downloads
+            ".*",           # hidden files (.DS_Store, .gitkeep, etc.)
+            "~$*",          # Office temporary files
+            "*.tmp",        # generic temp files
+            "*.part",       # incomplete downloads
         ]
 
         super().__init__(
@@ -152,7 +155,9 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         try:
             from ..core.ingestion import remove_document
 
-            result = remove_document(file_path, collection_name=self._collection_name)
+            result = remove_document(
+                file_path, collection_name=self._collection_name
+            )
             if result.get("status") == "ok":
                 removed = result.get("chunks_removed", 0)
                 logger.info(
@@ -225,7 +230,8 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                 file_path = str(resolved)
             except ValueError:
                 logger.warning(
-                    "Path traversal blocked: %s resolves to %s outside watch root %s",
+                    "Path traversal blocked: %s resolves to %s "
+                    "outside watch root %s",
                     file_path,
                     resolved,
                     self._watch_root,
@@ -248,7 +254,9 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         try:
             current_hash = _sha256_file(path)
         except FileNotFoundError:
-            logger.debug("File vanished before debounce completed: %s", file_path)
+            logger.debug(
+                "File vanished before debounce completed: %s", file_path
+            )
             with self._state_lock:
                 self._timers.pop(file_path, None)
                 self._hash_cache.pop(file_path, None)
@@ -287,10 +295,11 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         with self._state_lock:
             self._timers.pop(file_path, None)
 
+
     def _dispatch_ingest(self, file_path: str, current_hash: str) -> None:
         """Run ingestion via asyncio.run from the watcher thread."""
-        from .. import compose
         from ..core.ingestion import ingest_path_async
+        from .. import compose
 
         # Phase 4: resolve the collection's profile for per-operation levers.
         try:
@@ -324,7 +333,9 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         except RuntimeError as exc:
             self._handle_runtime_error(file_path, exc)
         except FileNotFoundError:
-            logger.debug("File not found during ingestion (deleted): %s", file_path)
+            logger.debug(
+                "File not found during ingestion (deleted): %s", file_path
+            )
             with self._state_lock:
                 self._hash_cache.pop(file_path, None)
                 self._timers.pop(file_path, None)
@@ -333,7 +344,10 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
 
     def _update_hash_cache(self, file_path: str, current_hash: str) -> None:
         """Update hash cache with eviction if at capacity."""
-        if file_path not in self._hash_cache and len(self._hash_cache) >= MAX_HASH_CACHE_ENTRIES:
+        if (
+            file_path not in self._hash_cache
+            and len(self._hash_cache) >= MAX_HASH_CACHE_ENTRIES
+        ):
             oldest = next(iter(self._hash_cache))
             del self._hash_cache[oldest]
         self._hash_cache[file_path] = current_hash
@@ -345,9 +359,7 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
             current_errors = self._consecutive_errors
         logger.warning(
             "Ingestion failed (ConnectionError) for %s: %s [%d consecutive]",
-            file_path,
-            exc,
-            current_errors,
+            file_path, exc, current_errors,
         )
         if current_errors >= CONSECUTIVE_ERROR_THRESHOLD:
             logger.critical(
@@ -387,7 +399,8 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
                     break
             if time.monotonic() >= deadline:
                 logger.warning(
-                    "Shutdown timeout after %ds — abandoning %d in-flight ingestion(s)",
+                    "Shutdown timeout after %ds — abandoning %d "
+                    "in-flight ingestion(s)",
                     MAX_SHUTDOWN_SECONDS,
                     self._in_flight_count,
                 )
@@ -404,3 +417,8 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         """Return the number of currently in-flight ingestions."""
         with self._in_flight_lock:
             return self._in_flight_count
+
+# ── Re-exports ───────────────────────────────────────────────────────────────
+# Daemon lifecycle lives in ``runner.py`` after the task 8.6 split.
+
+from .runner import _sha256_file, watch_directory  # noqa: E402

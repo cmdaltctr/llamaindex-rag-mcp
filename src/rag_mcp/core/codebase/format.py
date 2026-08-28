@@ -7,6 +7,8 @@ construction or IO happens here.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -15,7 +17,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 logger = logging.getLogger(__name__)
 
 
-def format_codebase_map(codebase_map: CodebaseMap) -> str:
+def format_codebase_map(codebase_map: "CodebaseMap") -> str:
     """Format a complete codebase map as compact text (≤800 tokens).
 
     Produces sections for File Types, Code Communities, Document Communities,
@@ -52,7 +54,9 @@ def format_codebase_map(codebase_map: CodebaseMap) -> str:
                 )
             else:
                 shown = ", ".join(files) if files else ""
-                lines.append(f"- {label} ({file_count} files, {edge_count} edges): {shown}")
+                lines.append(
+                    f"- {label} ({file_count} files, {edge_count} edges): {shown}"
+                )
         sections.append("\n".join(lines))
 
     # Document Communities section
@@ -72,7 +76,8 @@ def format_codebase_map(codebase_map: CodebaseMap) -> str:
         lines = ["", "## Cross-links"]
         for link in codebase_map.cross_links[:15]:
             lines.append(
-                f"- {link.get('code', '?')} ↔ {link.get('doc', '?')} ({link.get('relation', '?')})"
+                f"- {link.get('code', '?')} ↔ {link.get('doc', '?')} "
+                f"({link.get('relation', '?')})"
             )
         if len(codebase_map.cross_links) > 15:
             lines.append(f"- ... and {len(codebase_map.cross_links) - 15} more")
@@ -82,7 +87,11 @@ def format_codebase_map(codebase_map: CodebaseMap) -> str:
     if codebase_map.hubs:
         lines = ["", "## Architectural Hubs"]
         for hub in codebase_map.hubs[:10]:
-            lines.append(f"- {hub.get('file', '?')} (imported by {hub.get('in_degree', 0)})")
+            lines.append(
+                f"- {hub.get('file', '?')} (imported by {hub.get('in_degree', 0)})"
+            )
         sections.append("\n".join(lines))
 
     return "\n".join(sections)
+
+

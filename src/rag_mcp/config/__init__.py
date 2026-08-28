@@ -21,10 +21,16 @@ existing imports working during migration.
 from __future__ import annotations
 
 import logging
+import os
+import warnings
+from importlib.resources import files
+from typing import Annotated, Any
+
+import yaml
+from pydantic import BeforeValidator, Field, model_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from dotenv import load_dotenv
-from pydantic import model_validator
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from ..core.chunking.settings import ChunkingSettings
 from ..core.ingestion.settings import IngestionSettings
@@ -34,66 +40,14 @@ from ..core.retrieval.settings import RetrievalSettings
 load_dotenv()
 
 from .sources import LegacyBool  # noqa: E402
-from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
 logger = logging.getLogger(__name__)
-
-_METADATA_EXTRACTION_MODES = (
-    "disabled",
-    "keyword",
-    "local",
-    "llamaindex",
-    "ollama",
-    "llamacpp",
-    "openrouter",
-)
-
-
-# ── Provider-selection validation helper ──────────────────────────────
-
-
-def _validate_provider_value(
-    obj: object,
-    field: str,
-    accepted: tuple[str, ...],
-    env_name: str,
-) -> None:
-    """Strip whitespace, reset empty to default, raise on unrecognised value.
-
-    An empty or whitespace-only value (``SETTING=`` in .env) is how operators
-    unset a knob, so it resets to the field's declared default rather than
-    raising.  A non-empty value not in ``accepted`` raises ValueError naming
-    the offending value and the accepted set.  The stripped value is stored
-    so that padded input like ``" auto "`` resolves to ``"auto"``.
-
-    Args:
-        obj: The model instance owning the field (``self`` or a nested block).
-        field: The field name on ``obj``.
-        accepted: The recognised values.
-        env_name: The environment variable name for the error message.
-    """
-    raw = getattr(obj, field)
-    if not isinstance(raw, str):
-        return
-    stripped = raw.strip()
-    if not stripped:
-        # Empty after strip = operator unset the knob.  Reset to the
-        # declared default so "" does not reach runtime code that would
-        # probe it (e.g. resolve_sparse_backend on "").
-        object.__setattr__(obj, field, type(obj).model_fields[field].default)
-        return
-    if stripped not in accepted:
-        raise ValueError(
-            f"{env_name}={raw!r} is not recognised. Accepted values: {', '.join(accepted)}."
-        )
-    # Store the stripped value so " auto " becomes "auto".
-    object.__setattr__(obj, field, stripped)
 
 
 # ── Root Settings model ─────────────────────────────────────────────
 
 
-class Settings(StorageValidationMixin, BaseSettings):
+class Settings(BaseSettings):
     """Resolved configuration for the RAG MCP server.
 
     Composes the per-subpackage settings models by **nesting** (PROPOSAL
@@ -138,26 +92,7 @@ class Settings(StorageValidationMixin, BaseSettings):
     chroma_persist_dir: str = "./chroma_db"
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
-    # Canonical default (make-lancedb-default-and-isolate-chromadb, task 2.1).
-    # LanceDB is the qualified base-install backend (ADR-049); Chroma is a
-    # supported but quarantined optional extra.
-    vector_store: str = "lancedb"
-    # Records whether VECTOR_STORE came from an explicit operator source
-    # (constructor/CLI, environment, .env) or from shipped defaults. This
-    # is internal configuration data, not another backend selector
-    # (design D6) — the fail-closed legacy-Chroma gate reads it.
-    vector_store_provenance: str = "default"
-    # Parent directory for LanceDB tables when VECTOR_STORE=lancedb.
-    lancedb_uri: str = "./lancedb"
-
-    # ── Chroma deployment mode ─────────────────────────────────────
-    # Local keeps the embedded PersistentClient (unchanged default).
-    # Cloud selects hosted Chroma Cloud; the API key never appears in
-    # YAML, profiles, logs, or result files — .env only.
-    chroma_mode: str = "local"
-    chroma_cloud_api_key: str = ""
-    chroma_cloud_tenant: str = ""
-    chroma_cloud_database: str = ""
+    vector_store: str = "chroma"
 
     # ── Provider selection ────────────────────────────────────────
     embed_provider: str = "local"
@@ -177,7 +112,7 @@ class Settings(StorageValidationMixin, BaseSettings):
     embed_model: str = ""
 
     # ── PDF reader ────────────────────────────────────────────────
-    pdf_reader: str = "pdf_inspector"
+    pdf_reader: str = "auto"
     liteparse_num_workers: int | None = None
     liteparse_ocr_enabled: LegacyBool = False
 
@@ -187,20 +122,8 @@ class Settings(StorageValidationMixin, BaseSettings):
     codebase_map_cache_dir: str = ".opencode"
     codebase_map_max_files: int = 5000
     codebase_map_max_depth: int = 10
-    # Community detection algorithm shared by codebase and document graphs.
-    # Validation is registry-driven: compose checks the name against the
-    # community registry at startup and fails with the available names
-    # (config must not duplicate registry knowledge — invariant #10).
-    community_algorithm: str = "louvain"
-    community_seed: int = 0
 
     # ── Document backend ──────────────────────────────────────────
-    # Declared as a plain string: accepted backend names are registry-
-    # owned and validated at the composition boundary
-    # (rag_mcp.capabilities.validate_document_backend), so config must
-    # not duplicate the accepted-name tuple (invariant #10).  The Azure
-    # credential check below stays here deliberately: it is graceful
-    # degradation under the cloud-opt-in boundary, not name validation.
     document_backend: str = "local"
     azure_doc_intelligence_endpoint: str = ""
     azure_doc_intelligence_key: str = ""
@@ -213,119 +136,12 @@ class Settings(StorageValidationMixin, BaseSettings):
     rag_profile: str = "documents"
 
     # ── Validation ────────────────────────────────────────────────
-    # Provider validation runs BEFORE the EMBED_MODEL-required check so a
-    # bad EMBED_PROVIDER reports itself, not a missing EMBED_MODEL (§6.1).
-    # Pydantic runs mode="after" validators in definition order.
-    @model_validator(mode="after")
-    def _validate_provider_selections(self) -> Settings:
-        """Validate provider-selection fields: raise on unrecognised values.
-
-        Provider settings raise ValueError on an unrecognised non-empty
-        value. An empty or
-        whitespace-only value (``SETTING=`` in .env) is treated as unset and
-        reset to the field's declared default — raising on it would be
-        hostile to a common operator idiom.
-
-        DOCUMENT_BACKEND no longer validates names here: accepted names
-        are registry-owned and checked at the composition boundary
-        (compose → capabilities.validate_document_backend), so config
-        keeps only the whitespace/reset idiom for it.
-
-        Deliberate graceful-degradation policies are unchanged:
-        DOCUMENT_BACKEND=azure with missing credentials falls back to local
-        (cloud-opt-in hard boundary), and an unrecognised RAG_PROFILE falls
-        back to documents (profile system design).  PDF_READER's unknown-value
-        handling is also unchanged (governed by the pdf-reader capability).
-        """
-        _validate_provider_value(
-            self,
-            "embed_provider",
-            ("local", "cloud", "ollama", "llamacpp", "openrouter"),
-            "EMBED_PROVIDER",
-        )
-        _validate_provider_value(
-            self, "metadata_llm_provider", ("local", "cloud"), "METADATA_LLM_PROVIDER"
-        )
-        _validate_provider_value(
-            self.metadata,
-            "extraction_mode",
-            _METADATA_EXTRACTION_MODES,
-            "METADATA__EXTRACTION_MODE",
-        )
-        _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
-        _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")
-        _validate_provider_value(
-            self.retrieval,
-            "hybrid_sparse_backend",
-            ("auto", "native", "bm25"),
-            "RETRIEVAL__HYBRID_SPARSE_BACKEND",
-        )
-        _validate_provider_value(
-            self.retrieval,
-            "rerank_backend",
-            ("onnx", "torch"),
-            "RETRIEVAL__RERANK_BACKEND",
-        )
-        # Document backend names are registry-owned: compose validates
-        # DOCUMENT_BACKEND against the document-backend registry at
-        # startup and fails listing the registered names (task 2.4,
-        # register-document-backend-strategies).  Only the §6.10
-        # whitespace idiom stays here: strip padding and reset an empty
-        # value to the declared default.
-        object.__setattr__(self, "document_backend", self.document_backend.strip() or "local")
-        # Chroma deployment mode is an explicit selector: API-key presence
-        # must NEVER switch storage silently (design decision 1).
-        _validate_provider_value(self, "chroma_mode", ("local", "cloud"), "CHROMA_MODE")
-
-        # Azure credential check — deliberate graceful degradation.
-        # DOCUMENT_BACKEND=azure is a valid selection, but without
-        # credentials the cloud-opt-in hard boundary requires a local
-        # fallback.  The diagnostic names the missing credential(s).
-        if self.document_backend == "azure":
-            missing = [
-                name
-                for name, value in (
-                    ("AZURE_DOC_INTELLIGENCE_ENDPOINT", self.azure_doc_intelligence_endpoint),
-                    ("AZURE_DOC_INTELLIGENCE_KEY", self.azure_doc_intelligence_key),
-                )
-                if not value
-            ]
-            if missing:
-                logger.warning(
-                    "DOCUMENT_BACKEND=azure but %s %s not set. Falling back to local mode.",
-                    " and ".join(missing),
-                    "is" if len(missing) == 1 else "are",
-                )
-                object.__setattr__(self, "document_backend", "local")
-
-        # PDF reader — governed by the pdf-reader capability spec, which
-        # has its own warn-and-fallback contract.  Unchanged here.
-        if self.pdf_reader not in ("auto", "liteparse", "pdf_inspector", "pypdfium2", "pypdf"):
-            logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
-            object.__setattr__(self, "pdf_reader", "auto")
-
-        # Profile selection (Phase 4).  Unknown values fall back to
-        # "documents" with a warning rather than raising — the profile
-        # system degrades gracefully to the document-grounding default.
-        # This warn-and-fallback is a deliberate design decision, not an
-        # oversight: see silent-failure-audit-and-guards/design.md.
-        if self.rag_profile not in ("documents", "codebase", "hybrid"):
-            logger.warning(
-                "Unknown RAG_PROFILE=%r; falling back to documents",
-                self.rag_profile,
-            )
-            object.__setattr__(self, "rag_profile", "documents")
-
-        return self
-
     @model_validator(mode="after")
     def _validate_embed_model_required(self) -> Settings:
         """Preserve the legacy EMBED_MODEL validation.
 
         EMBED_MODEL is required when the effective embedding provider
         resolves to ollama (either via the flat or two-tier scheme).
-        Runs after _validate_provider_selections so a bad EMBED_PROVIDER
-        reports itself, not a missing EMBED_MODEL.
         """
         effective = _resolve_effective_embed_provider(self)
         if effective == "ollama" and not self.embed_model:
@@ -335,6 +151,67 @@ class Settings(StorageValidationMixin, BaseSettings):
                 "    EMBED_MODEL=qwen3-embedding:8b\n\n"
                 "See .env.example for alternatives."
             )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_provider_selections(self) -> Settings:
+        """Clamp unknown provider values to known defaults with a warning."""
+        if self.embed_provider not in ("local", "cloud", "ollama", "llamacpp", "openrouter"):
+            logger.warning("Unknown EMBED_PROVIDER=%r; falling back to local", self.embed_provider)
+            object.__setattr__(self, "embed_provider", "local")
+
+        if self.metadata_llm_provider not in ("local", "cloud"):
+            logger.warning("Unknown METADATA_LLM_PROVIDER=%r; falling back to local", self.metadata_llm_provider)
+            object.__setattr__(self, "metadata_llm_provider", "local")
+
+        if self.local_backend not in ("llamacpp", "ollama"):
+            logger.warning("Unknown LOCAL_BACKEND=%r; falling back to llamacpp", self.local_backend)
+            object.__setattr__(self, "local_backend", "llamacpp")
+
+        if self.cloud_backend not in ("openrouter",):
+            logger.warning("Unknown CLOUD_BACKEND=%r; falling back to openrouter", self.cloud_backend)
+            object.__setattr__(self, "cloud_backend", "openrouter")
+
+        if self.retrieval.hybrid_sparse_backend not in ("auto", "native", "bm25"):
+            logger.warning("Unknown HYBRID_SPARSE_BACKEND=%r; falling back to bm25", self.retrieval.hybrid_sparse_backend)
+            object.__setattr__(self, "hybrid_sparse_backend", "bm25")
+
+        if self.pdf_reader not in ("auto", "liteparse", "pypdfium2", "pypdf"):
+            logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
+            object.__setattr__(self, "pdf_reader", "auto")
+
+        if self.document_backend not in ("local", "azure"):
+            logger.warning("Unknown DOCUMENT_BACKEND=%r; falling back to local", self.document_backend)
+            object.__setattr__(self, "document_backend", "local")
+
+        # Vector store selection (Phase 3, ADR-034).  Only "chroma" is
+        # registered today; unknown values raise at compose time with a
+        # clear error listing available implementations.
+        if self.vector_store not in ("chroma",):
+            raise ValueError(
+                f"VECTOR_STORE={self.vector_store!r} is not a registered "
+                f"implementation. Available: chroma"
+            )
+
+        # Azure credential check.
+        if self.document_backend == "azure":
+            if not self.azure_doc_intelligence_endpoint or not self.azure_doc_intelligence_key:
+                logger.warning(
+                    "DOCUMENT_BACKEND=azure but AZURE_DOC_INTELLIGENCE_ENDPOINT or "
+                    "AZURE_DOC_INTELLIGENCE_KEY is not set. Falling back to local mode."
+                )
+                object.__setattr__(self, "document_backend", "local")
+
+        # Profile selection (Phase 4).  Unknown values fall back to
+        # "documents" with a warning rather than raising — the profile
+        # system degrades gracefully to the document-grounding default.
+        if self.rag_profile not in ("documents", "codebase", "hybrid"):
+            logger.warning(
+                "Unknown RAG_PROFILE=%r; falling back to documents",
+                self.rag_profile,
+            )
+            object.__setattr__(self, "rag_profile", "documents")
+
         return self
 
     @classmethod
@@ -350,26 +227,16 @@ class Settings(StorageValidationMixin, BaseSettings):
 
         The profile source (Phase 4) sits between defaults.yaml and the
         environment sources so env vars still win over profile bundles.
-
-        Also records whether an explicit (operator) source resolves
-        ``vector_store`` so the provenance validator can distinguish
-        operator selection from shipped defaults (task 2.4, design D6).
         """
         yaml_source = _YamlDefaultsSource(settings_cls)
         profile_source = _ProfileYamlSettingsSource(settings_cls)
-        cls._explicit_vector_store_sources = {
-            "vector_store"
-            for source in (init_settings, env_settings, dotenv_settings)
-            for key in source_keys(source)
-            if key.lower() == "vector_store"
-        }
         return (
-            init_settings,  # explicit args (highest)
-            env_settings,  # env vars
-            dotenv_settings,  # .env file
-            profile_source,  # config/profiles/<RAG_PROFILE>.yaml
-            yaml_source,  # defaults.yaml
-            file_secret_settings,  # unused (lowest)
+            init_settings,        # explicit args (highest)
+            env_settings,         # env vars
+            dotenv_settings,      # .env file
+            profile_source,       # config/profiles/<RAG_PROFILE>.yaml
+            yaml_source,          # defaults.yaml
+            file_secret_settings, # unused (lowest)
         )
 
 
@@ -400,7 +267,6 @@ def _resolve_effective_embed_provider(settings: Settings) -> str:
 
 
 # ── Resolved singleton ──────────────────────────────────────────────
-
 
 def get_settings() -> Settings:
     """Return the resolved Settings singleton.
@@ -438,11 +304,11 @@ _settings: Settings | None = None
 # Settings sources and the legacy-name tripwire live in sibling modules
 # after the task 8.7 split.
 
-from .legacy import (  # noqa: E402, F401
-    _RETIRED_ENV_VARS,
+from .legacy import (  # noqa: E402
+    _LEGACY_FLAT_ENV_VARS,
     check_legacy_env_vars,
 )
-from .sources import (  # noqa: E402, F401
+from .sources import (  # noqa: E402
     _load_profile_bundle,
     _parse_legacy_bool,
     _ProfileYamlSettingsSource,

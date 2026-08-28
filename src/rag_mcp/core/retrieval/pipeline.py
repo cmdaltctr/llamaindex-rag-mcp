@@ -16,13 +16,11 @@ from typing import Any
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
-from ..vectordb.score import DENSE_SCORE_KIND
 from .registry import get as _retrieval_get
 
 logger = logging.getLogger(__name__)
 _warned_collections: set[str] = set()
 _warned_native_fallback_collections: set[str] = set()
-RERANK_SCORE_KIND = "reranker_sigmoid_v1"
 
 
 def _resolve_store(store: VectorStore | None) -> VectorStore:
@@ -45,16 +43,11 @@ def _sparse_bm25_query(
     store: VectorStore,
     query: str,
     fetch_k: int,
-    metadata_filter: dict | None = None,
 ) -> list[dict]:
     from .dense import _result_source
 
     BM25SparseRetriever = _retrieval_get("bm25")
-    rows = BM25SparseRetriever(collection_name, store=store).query(
-        query,
-        fetch_k,
-        metadata_filter=metadata_filter,
-    )
+    rows = BM25SparseRetriever(collection_name, store=store).query(query, fetch_k)
     return [
         {
             "id": doc_id,
@@ -68,7 +61,9 @@ def _sparse_bm25_query(
     ]
 
 
-def _emit_mixed_coverage_warning(collection_name: str, store: VectorStore) -> None:
+def _emit_mixed_coverage_warning(
+    collection_name: str, store: VectorStore
+) -> None:
     if collection_name in _warned_collections:
         return
     total = 0
@@ -97,7 +92,6 @@ def _native_sparse_query(
     store: VectorStore,
     query: str,
     fetch_k: int,
-    metadata_filter: dict | None = None,
 ) -> list[dict]:
     """Return sparse results for native mode, falling back safely in v1."""
     if collection_name not in _warned_native_fallback_collections:
@@ -109,13 +103,7 @@ def _native_sparse_query(
             "silently degrade to dense-only results.",
             collection_name,
         )
-    return _sparse_bm25_query(
-        collection_name,
-        store,
-        query,
-        fetch_k,
-        metadata_filter,
-    )
+    return _sparse_bm25_query(collection_name, store, query, fetch_k)
 
 
 def _hybrid_query_rows(
@@ -126,49 +114,25 @@ def _hybrid_query_rows(
     rrf_k: int,
     settings: Any,
     metadata_filter: dict | None = None,
-    dense_threshold: float = 0.0,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
-            _dense_query_rows,
-            store,
-            collection_name,
-            query,
-            fetch_k,
+            _dense_query_rows, store, collection_name, query, fetch_k,
             metadata_filter,
         )
         if backend == "native":
             _emit_mixed_coverage_warning(collection_name, store)
             sparse_future = executor.submit(
-                _native_sparse_query,
-                collection_name,
-                store,
-                query,
-                fetch_k,
-                metadata_filter,
+                _native_sparse_query, collection_name, store, query, fetch_k,
             )
         else:
             sparse_future = executor.submit(
-                _sparse_bm25_query,
-                collection_name,
-                store,
-                query,
-                fetch_k,
-                metadata_filter,
+                _sparse_bm25_query, collection_name, store, query, fetch_k,
             )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
-
-    if dense_threshold > 0.0:
-        # A dense similarity threshold is evaluated on canonical dense
-        # evidence, never on RRF's rank-fusion utility. Sparse candidates
-        # without qualifying dense evidence are ineligible in non-reranked
-        # hybrid mode.
-        dense_rows = [row for row in dense_rows if row["score"] >= dense_threshold]
-        eligible_ids = {str(row["id"]) for row in dense_rows}
-        sparse_rows = [row for row in sparse_rows if str(row["id"]) in eligible_ids]
 
     return _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)[:fetch_k]
 
@@ -176,15 +140,7 @@ def _hybrid_query_rows(
 def _strip_internal_result_fields(result: dict) -> dict:
     """Remove retrieval diagnostics that are not public API by default."""
     public = dict(result)
-    for key in (
-        "id",
-        "fused_score",
-        "dense_score",
-        "dense_score_kind",
-        "dense_rank",
-        "sparse_rank",
-        "fused_rank",
-    ):
+    for key in ("id", "fused_score", "dense_rank", "sparse_rank", "fused_rank"):
         public.pop(key, None)
     return public
 
@@ -213,7 +169,7 @@ def search(
             ``effective_settings`` is provided, else ``settings.top_k``.
         similarity_threshold: Minimum score to include a result
             (0.0 = no filtering, default from env).  When ``rerank``
-            is True the threshold is scaled down by 30x because
+            is True the threshold is scaled down by 30× because
             cross-encoder sigmoid scores occupy a lower range than
             cosine similarity.  For example, 0.3 becomes 0.01.
         rerank: Tri-state rerank control:
@@ -238,7 +194,7 @@ def search(
             ``fused_rank``) and policy resolution reason for experiments.
             Public MCP/CLI callers leave this False so result shape stays stable.
         technical_fraction: Optional workload-level identifier-heavy fraction
-            (0.0-1.0). When provided, it overrides the single-query classifier
+            (0.0–1.0). When provided, it overrides the single-query classifier
             for policy resolution.
         fetch_k: Optional override for the candidate pool size.  When set,
             bypasses the ``max(RERANK_MAX_FETCH, top_k * RERANK_FETCH_MULTIPLIER)``
@@ -262,16 +218,14 @@ def search(
 
     Returns:
         A list of dicts sorted by descending relevance score, each with:
-            score      - float interpreted according to ``score_kind``
-            score_kind - dense similarity, RRF utility, or reranker score
-            source     - source file path
-            page_label - page number (or None)
-            text       - the chunk text
-            reranked   - bool (True if cross-encoder re-scored the result)
+            score      – float (0–1, vector similarity or reranker score)
+            source     – source file path
+            page_label – page number (or None)
+            text       – the chunk text
+            reranked   – bool (True if cross-encoder re-scored the result)
 
         When ``include_diagnostics=True``, each result also includes:
-            rerank_reason       - string explaining the policy decision
-            threshold_score_kind - semantics used for threshold evaluation
+            rerank_reason – string explaining the policy decision
 
     Raises:
         ValueError: If ``metadata_filter`` is rejected by the store
@@ -323,90 +277,43 @@ def search(
     # When fetch_k is explicitly provided (experiment runners), it
     # bypasses the formula to allow genuinely distinct pool sizes.
     resolved_fetch_k = _resolve_fetch_k(
-        top_k,
-        effective_rerank,
-        chunk_count,
-        resolved_settings,
+        top_k, effective_rerank, chunk_count, resolved_settings,
         fetch_k_override=fetch_k,
     )
 
     _dense_query_rows = _retrieval_get("dense")
     if hybrid:
-        dense_threshold = similarity_threshold if not effective_rerank else 0.0
         results = _hybrid_query_rows(
-            resolved_store,
-            collection_name,
-            query,
-            resolved_fetch_k,
-            resolved_settings.retrieval.hybrid_rrf_k,
-            resolved_settings,
+            resolved_store, collection_name, query, resolved_fetch_k,
+            resolved_settings.retrieval.hybrid_rrf_k, resolved_settings,
             metadata_filter,
-            dense_threshold,
         )
     else:
         results = _dense_query_rows(
-            resolved_store,
-            collection_name,
-            query,
-            resolved_fetch_k,
+            resolved_store, collection_name, query, resolved_fetch_k,
             metadata_filter,
         )
 
     # Optional: re-score with cross-encoder reranker.
-    active_backend: str | None = None
     if effective_rerank and results:
         if reranker is None:
-            from .backend import build_reranker_from_settings
-
-            reranker = build_reranker_from_settings(resolved_settings)
+            reranker = _retrieval_get("reranker")()
         results = reranker.rerank(query, results, top_k=top_k)
-        # Record which backend actually ran (may differ from the settings
-        # value when the torch extra is missing and the helper fell back
-        # to ONNX).
-        active_backend = getattr(reranker, "backend_name", None)
         # Propagate the reranked flag from the internal _reranked key.
         for r in results:
             r["reranked"] = r.pop("_reranked", False)
-            if r["reranked"]:
-                r["score_kind"] = RERANK_SCORE_KIND
-        # The reranker's own failure reason (if any) is more specific than
-        # the policy string computed before reranking ran — surface it.
-        failure_reason = getattr(reranker, "last_failure_reason", None)
-        if failure_reason:
-            rerank_reason = failure_reason
 
     # Filter by similarity threshold (applies after reranking).
     #
     # Reranker scores are sigmoid-normalised and occupy a different range
-    # than canonical dense similarity.  A dense threshold of 0.3 is a weak match,
+    # than cosine similarity.  A cosine threshold of 0.3 is a weak match,
     # but the reranker may assign a valid result only 0.015 (sigmoid).
-    # Scale the threshold down by 30x when reranking to avoid over-filtering.
-    # Uses whether reranking actually succeeded (the "reranked" flag), not
-    # merely whether it was requested — a failed reranker leaves dense
-    # scores in place, which the ÷30-scaled threshold would over-admit.
-    rerank_succeeded = (
-        effective_rerank and bool(results) and all(r.get("reranked", False) for r in results)
-    )
-    # A failed hybrid reranker must return to the pre-rerank dense-threshold
-    # rule. Re-run the cheap first-stage query with the threshold applied
-    # before fusion; reranker failure is rare, and correctness is preferable
-    # to retaining full-pool RRF ranks with incompatible semantics.
-    if effective_rerank and hybrid and not rerank_succeeded and similarity_threshold > 0.0:
-        results = _hybrid_query_rows(
-            resolved_store,
-            collection_name,
-            query,
-            resolved_fetch_k,
-            resolved_settings.retrieval.hybrid_rrf_k,
-            resolved_settings,
-            metadata_filter,
-            similarity_threshold,
-        )
-
-    threshold_score_kind = RERANK_SCORE_KIND if rerank_succeeded else DENSE_SCORE_KIND
-    effective_threshold = _effective_threshold(similarity_threshold, rerank_succeeded)
-    if effective_threshold > 0.0 and (rerank_succeeded or not hybrid):
-        results = [r for r in results if r["score"] >= effective_threshold]
+    # Scale the threshold down by 30× when reranking to avoid over-filtering.
+    effective_threshold = _effective_threshold(similarity_threshold, effective_rerank)
+    if effective_threshold > 0.0:
+        results = [
+            r for r in results if r["score"] >= effective_threshold
+        ]
 
     results.sort(key=lambda r: r["score"], reverse=True)
     results = results[:top_k]
@@ -415,13 +322,6 @@ def search(
     if include_diagnostics:
         for r in results:
             r["rerank_reason"] = rerank_reason
-            r["threshold_score_kind"] = threshold_score_kind
-            # Attach the active backend name alongside the failure reason
-            # so a torch-fallback or a failed backend is distinguishable
-            # from reranking being switched off (ADR-029 §3 deferred
-            # item 2, now landed).
-            if active_backend is not None:
-                r["rerank_backend"] = active_backend
 
     if not include_diagnostics:
         results = [_strip_internal_result_fields(r) for r in results]
@@ -455,17 +355,19 @@ def list_collections(
                 for meta in resolved_store.iter_metadatas(name):
                     if meta is None:
                         continue
-                    source = meta.get("file_path") or meta.get("file_name") or "unknown"
+                    source = (
+                        meta.get("file_path")
+                        or meta.get("file_name")
+                        or "unknown"
+                    )
                     doc_sources.add(source)
 
-            collections.append(
-                {
-                    "name": name,
-                    "document_count": len(doc_sources),
-                    "chunk_count": chunk_count,
-                }
-            )
-        except Exception:  # noqa: S112
+            collections.append({
+                "name": name,
+                "document_count": len(doc_sources),
+                "chunk_count": chunk_count,
+            })
+        except Exception:
             # Skip collections that can't be accessed
             continue
     return collections

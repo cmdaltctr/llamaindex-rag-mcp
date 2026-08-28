@@ -4,9 +4,10 @@ This is the **only** module that instantiates provider and pipeline
 objects.  It reads the resolved ``Settings`` from ``rag_mcp.config``
 and wires objects together by resolving registries.
 
-Entry points call :func:`ensure_runtime_setup` during startup to assign the
-LlamaIndex global ``Settings.embed_model`` and register the default vector
-store. Importing this module has no runtime side effects.
+Importing this module triggers the LlamaIndex global ``Settings.embed_model``
+assignment (previously done at import time in ``config.py``).  This means
+entry points (``server.py``, ``cli.py``) should import ``compose`` early
+in their startup sequence.
 """
 
 from __future__ import annotations
@@ -16,36 +17,84 @@ from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 
-from .capabilities import (  # noqa: F401  (re-exported for existing callers/tests)
-    _resolve_sparse_backend_for,
-    resolve_document_backend,
-    resolve_pdf_reader,
-    resolve_sparse_backend,
-    validate_document_backend,
-)
-from .config import Settings, _resolve_effective_embed_provider, get_settings
+from .config import Settings, get_settings, _resolve_effective_embed_provider
 from .core.providers.embeddings import registry as embed_registry
 
 logger = logging.getLogger(__name__)
-
-# LlamaIndex exposes one process-global embed model. Vector stores and
-# collection profiles are runtime-swappable, but embedding-provider selection
-# is deliberately deployment/process scoped until an explicit per-operation
-# embedding context replaces this global assignment.
-EMBEDDING_PROVIDER_SCOPE = "process"
 
 # ── Runtime setup state ─────────────────────────────────────────────
 
 _runtime_setup_done: bool = False
 
 
-# ── Runtime capability probes ────────────────────────────────────────
-# resolve_sparse_backend / resolve_pdf_reader / _resolve_sparse_backend_for
-# moved to .capabilities (register-document-backend-strategies, task 2.4:
-# this module sits at the 500-line ceiling and must not grow inline).
-# resolve_document_backend (azure→local SDK degradation) and
-# validate_document_backend (registry-owned name validation at startup)
-# live there too; both are re-exported above.
+# ── Runtime capability probes (moved from config.py, task 7.10) ──────
+# These ask the runtime a question ("is native sparse available?", "is
+# LiteParse installed?"), which is construction work, not settings data.
+# Keeping them in config.py forced it to import core.retrieval.sparse,
+# inverting the layering the config-is-leaf contract now forbids.
+
+def resolve_sparse_backend(settings: Settings) -> str:
+    """Resolve the configured sparse backend to ``bm25`` or ``native``.
+
+    Probes ChromaDB's native sparse capability when ``auto`` or
+    ``native`` is selected.
+    """
+    backend = settings.retrieval.hybrid_sparse_backend
+    if backend == "bm25":
+        return "bm25"
+
+    from .core.retrieval.sparse import _detect_native_sparse_capability
+
+    native_available = _detect_native_sparse_capability()
+    if backend == "auto":
+        return "native" if native_available else "bm25"
+
+    if native_available:
+        return "native"
+
+    logger.warning(
+        "HYBRID_SPARSE_BACKEND=native was requested, but the installed "
+        "ChromaDB runtime does not expose native sparse retrieval for this "
+        "project configuration. Falling back to bm25."
+    )
+    return "bm25"
+
+
+def resolve_pdf_reader(settings: Settings) -> str:
+    """Resolve the configured PDF reader to a concrete backend name.
+
+    Probes imports in preference order: liteparse → pypdfium2 → pypdf.
+    Mirrors the pre-refactor ``_resolve_pdf_reader`` logic.
+    """
+    reader = settings.pdf_reader
+    if reader == "pypdf":
+        return "pypdf"
+
+    if reader in ("liteparse", "pypdfium2"):
+        try:
+            __import__(reader)
+            return reader
+        except ImportError:
+            logger.error(
+                "PDF_READER=%s was requested but the package is not "
+                "installed. Falling back to pypdf.", reader,
+            )
+            return "pypdf"
+
+    # auto resolution: probe in preference order.
+    for backend in ("liteparse", "pypdfium2"):
+        try:
+            __import__(backend)
+            logger.info("PDF_READER=auto resolved to %s", backend)
+            return backend
+        except ImportError:
+            continue
+
+    return "pypdf"
+
+def _resolve_sparse_backend_for(settings: Settings) -> str:
+    """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
+    return resolve_sparse_backend(settings)
 
 
 def settings_to_effective(settings: Settings | None = None) -> Any:
@@ -95,7 +144,6 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         collection_name=settings.collection_name,
         chroma_scan_page_size=settings.chroma_scan_page_size,
         vector_store=settings.vector_store,
-        lancedb_uri=settings.lancedb_uri,
         embed_provider=settings.embed_provider,
         metadata_llm_provider=settings.metadata_llm_provider,
         local_backend=settings.local_backend,
@@ -119,13 +167,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         codebase_map_cache_dir=settings.codebase_map_cache_dir,
         codebase_map_max_files=settings.codebase_map_max_files,
         codebase_map_max_depth=settings.codebase_map_max_depth,
-        community_algorithm=settings.community_algorithm.strip() or "louvain",
-        community_seed=settings.community_seed,
-        # Bake the RESOLVED backend in: azure without the optional SDK
-        # degrades to local here (with a diagnostic naming the missing
-        # dependency), so ingestion performs a plain registry read
-        # instead of probing at read time (task 2.4).
-        document_backend=resolve_document_backend(settings),
+        document_backend=settings.document_backend,
         azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
         azure_doc_intelligence_key=settings.azure_doc_intelligence_key,
         azure_doc_intelligence_model=settings.azure_doc_intelligence_model,
@@ -154,56 +196,59 @@ def build_embed_model(settings: Settings | None = None) -> Any:
     return build_fn(settings)
 
 
-def runtime_summary() -> tuple[str, int, int]:
-    """Return resolved embedding settings for startup logging."""
-    settings = get_settings()
-    return (
-        settings.embed_model,
-        settings.ingestion.embed_batch_size,
-        settings.ingestion.embed_concurrency,
-    )
+def build_llm_model(settings: Settings | None = None) -> Any:
+    """Construct the LLM model for metadata classification.
+
+    Resolves via the METADATA_LLM_PROVIDER + LOCAL_BACKEND/CLOUD_BACKEND
+    two-tier scheme.
+    """
+    if settings is None:
+        settings = get_settings()
+
+    # Resolve the effective LLM provider (same two-tier logic as embeddings).
+    if settings.metadata_llm_provider == "local":
+        provider = settings.local_backend
+    elif settings.metadata_llm_provider == "cloud":
+        provider = settings.cloud_backend
+    else:
+        provider = settings.local_backend
+
+    from .core.providers.llm import registry as llm_registry
+
+    build_fn = llm_registry.get(provider)
+    return build_fn(settings)
 
 
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
     The reranker is a plain class (former ``__new__`` singleton).  The
-    underlying model is cached process-wide inside
-    ``core.retrieval._reranker_cache`` keyed by ``(backend, model_id)``,
-    so constructing a new instance here does NOT re-download or re-load
-    the model.
-
-    Backend selection flows through ``core.retrieval.backend`` so both
-    this path and the lazy pipeline path share the same fallback
-    behaviour (design decision 5).
+    underlying ONNX session is cached process-wide inside
+    ``core.retrieval.reranker`` keyed by model ID, so constructing a new
+    instance here does NOT re-download or re-load the model.
 
     Args:
         settings: Resolved settings (defaults to the singleton).
 
     Returns:
-        A reranker instance wired to
-        ``settings.retrieval.rerank_model`` and selected by
-        ``settings.retrieval.rerank_backend``.
+        A ``CrossEncoderReranker`` instance wired to
+        ``settings.retrieval.rerank_model``.
     """
     if settings is None:
         settings = get_settings()
 
-    from .core.retrieval.backend import build_reranker_from_settings
+    from .core.retrieval.reranker import CrossEncoderReranker
 
-    return build_reranker_from_settings(settings)
+    return CrossEncoderReranker(model_id=settings.retrieval.rerank_model)
 
 
 def build_vector_store(settings: Settings | None = None) -> Any:
     """Construct the vector store from the ``VECTOR_STORE`` setting.
 
-    Phase 3 (ADR-034) constructed the store in the composition root and
-    injected it into the pipeline; this change resolves it through the
-    vector-store registry (``core/vectordb/registry.py``) instead of a
-    branch over the name (architecture invariant #10).  The registry
-    resolves the settings-driven factory registered under the
-    configured name; an unregistered name is translated to a
-    ``ValueError`` at this boundary listing the registered names,
-    which propagates through ``ensure_runtime_setup``.
+    Phase 3 (ADR-034): the store is constructed in the composition root
+    and injected into the ingestion writer and retrieval pipeline.
+    Only ``chroma`` is registered today; the Settings validator rejects
+    unknown values at construction time with a clear error.
 
     Args:
         settings: Resolved settings (defaults to the singleton).
@@ -212,40 +257,23 @@ def build_vector_store(settings: Settings | None = None) -> Any:
         A :class:`rag_mcp.core.vectordb.base.VectorStore` instance.
 
     Raises:
-        ValueError: Unregistered ``VECTOR_STORE`` name (lists the
-            registered names) or incomplete cloud values.
-        RuntimeError: Cloud connection check failed (redacted).
+        ValueError: If ``VECTOR_STORE`` names an unregistered impl.
     """
     if settings is None:
         settings = get_settings()
 
-    from .core.vectordb import registry as vectordb_registry
+    if settings.vector_store == "chroma":
+        from .core.vectordb.chroma import build_chroma_vector_store
 
-    try:
-        # verify_available() distinguishes unknown/absent/partial/broken
-        # installs generically (task 3.2) and raises an actionable error
-        # naming the backend, required packages, extra, and guidance.
-        factory = vectordb_registry.verify_available(settings.vector_store)
-    except KeyError as exc:
-        # Startup selection errors are ValueError by house convention
-        # (see _validate_community_strategy); the registry itself keeps
-        # the KeyError pattern shared by every strategy registry.
-        raise ValueError(
-            f"VECTOR_STORE={settings.vector_store!r} is not a registered vector "
-            f"store. Available: {', '.join(vectordb_registry.available())}."
-        ) from exc
-    return factory(settings)
+        return build_chroma_vector_store()
 
-
-def storage_summary(settings: Settings | None = None) -> str:
-    """One-line storage description for the SELECTED backend (task 2.6)."""
-    if settings is None:
-        settings = get_settings()
-    return _summary_storage(settings)
-
-
-# Backward-compatible import surface (existing callers/tests).
-from .core.vectordb.summary import storage_summary as _summary_storage  # noqa: E402
+    # The Settings validator should have caught this already, but guard
+    # defensively in case Settings was constructed with _env_file=None
+    # bypassing validation.
+    raise ValueError(
+        f"VECTOR_STORE={settings.vector_store!r} is not registered. "
+        f"Available: chroma"
+    )
 
 
 def build_profile_resolver(settings: Settings | None = None) -> Any:
@@ -275,34 +303,6 @@ def build_profile_resolver(settings: Settings | None = None) -> Any:
     )
 
 
-def _validate_community_strategy(settings: Settings) -> None:
-    """Validate the community strategy selection strictly at startup.
-
-    Unlike the loop below, an unknown community strategy name FAILS startup
-    (spec: community-detection-strategies) — the error lists the registered
-    names.  Availability is probed through the registry's registered probe,
-    so selecting ``leiden`` without the optional extra fails here with an
-    installation instruction instead of silently falling back to Louvain.
-
-    The empty/whitespace value idiom (``COMMUNITY_ALGORITHM=``) resets to
-    the ``louvain`` default, matching ``_validate_provider_value`` policy.
-    """
-    from .core.community import registry as community_registry
-
-    name = settings.community_algorithm.strip() or "louvain"
-    if name not in community_registry.available():
-        raise ValueError(
-            f"COMMUNITY_ALGORITHM={settings.community_algorithm!r} is not a "
-            "registered community strategy. Available: "
-            f"{', '.join(community_registry.available())}."
-        )
-    # Resolve the callable (fail-fast on a bad import string) and probe
-    # optional-dependency availability (raises ImportError with the
-    # installation instruction when the extra is missing).
-    community_registry.get(name)
-    community_registry.verify_available(name)
-
-
 def _resolve_active_strategies(settings: Settings) -> None:
     """Resolve the *configured* strategies at startup so a bad ``register()``
     import string fails fast rather than at first query (task 3.6).
@@ -326,52 +326,18 @@ def _resolve_active_strategies(settings: Settings) -> None:
         ("chunking", chunking_registry, settings.chunking.strategy_fallback),
         ("metadata", metadata_registry, settings.metadata.extraction_mode),
         ("embeddings", embed_registry, _resolve_effective_embed_provider(settings)),
+        ("llm", llm_registry, settings.metadata_llm_provider),
     ]
-    if settings.metadata.extraction_mode in ("llamaindex", "local"):
-        # Only these two modes route through the LLM registry (see
-        # core.metadata.extractor._LLM_BACKED_MODES). Resolve the
-        # local/cloud alias to the concrete backend name here so the
-        # actually-selected provider is what gets validated below —
-        # not the alias itself, which is always a valid registry miss.
-        llm_backend = (
-            settings.cloud_backend
-            if settings.metadata_llm_provider == "cloud"
-            else settings.local_backend
-        )
-        active.append(("llm", llm_registry, llm_backend))
 
     for label, registry, name in active:
-        if label == "chunking" and name == "markdown":
-            # The default document path is dispatched inline by
-            # core.ingestion.chunker, so it has no callable registry entry.
-            continue
-        if label == "metadata" and name in ("disabled", "local"):
-            # Both modes are validated by Settings. ``disabled`` has no
-            # implementation, while ``local`` selects a provider strategy
-            # inline in core.metadata.extractor.
+        if not name or name in ("disabled", "none"):
             continue
         if name not in registry.available():
-            available = ", ".join(registry.available())
-            if label == "chunking":
-                raise ValueError(
-                    f"CHUNKING__STRATEGY_FALLBACK={name!r} is not a registered "
-                    f"strategy. Available: {available}"
-                )
-            raise ValueError(
-                f"Configured {label} selection {name!r} is not registered. Available: {available}"
-            )
+            # Not a registry-backed selection (e.g. a mode handled inline);
+            # leave validation to the consuming dispatcher.
+            continue
         registry.get(name)
         logger.debug("Resolved active %s strategy %r at startup", label, name)
-
-    # Community detection validates strictly: unknown names fail startup
-    # (no skip-on-unknown — the error listing available names IS the gate).
-    _validate_community_strategy(settings)
-
-    # Document backends validate strictly too (unknown names fail startup
-    # listing the registered names, task 2.4).  An unavailable azure SDK
-    # degrades to local in settings_to_effective rather than failing here
-    # (cloud opt-in, ADR-024) — unlike community strategies, which fail.
-    validate_document_backend(settings)
 
 
 def ensure_runtime_setup() -> None:
@@ -382,11 +348,6 @@ def ensure_runtime_setup() -> None:
     registers it as the process-wide default so all pipeline callers
     share one instance (and one generation counter dict).  Safe to call
     multiple times — only runs once.
-
-    Construction failures (``ImportError`` for missing optional deps,
-    ``ValueError`` for missing credentials) propagate instead of being
-    swallowed. Entry points call this function at startup so failures have
-    a controlled error boundary.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -397,25 +358,16 @@ def ensure_runtime_setup() -> None:
 
     check_legacy_env_vars()
     settings = get_settings()
-    # Fail closed on recognised legacy Chroma data when no explicit backend
-    # was selected (task 4, design D6) — before any store construction so
-    # ingestion/retrieval can never touch the untouched directory.
-    from .core.vectordb.legacy import evaluate_legacy_chroma_data
+    try:
+        LlamaIndexSettings.embed_model = build_embed_model(settings)
+    except (ImportError, ValueError) as exc:
+        logger.warning("Failed to construct embedding model: %s", exc)
+    try:
+        from .core.vectordb import set_default_store
 
-    evaluate_legacy_chroma_data(
-        settings.chroma_persist_dir,
-        settings.vector_store,
-        settings.vector_store_provenance,
-    )
-    # Construction failures propagate instead of being swallowed.  A process
-    # that reports successful startup MUST have a working embed model and a
-    # registered default vector store — leaving either unset and continuing
-    # turns a construction failure into a confusing downstream error (or
-    # silent misbehaviour) instead of a clear startup failure.  Because
-    LlamaIndexSettings.embed_model = build_embed_model(settings)
-    from .core.vectordb import set_default_store
-
-    set_default_store(build_vector_store(settings))
+        set_default_store(build_vector_store(settings))
+    except (ImportError, ValueError) as exc:
+        logger.warning("Failed to construct vector store: %s", exc)
     # Install the process-wide default EffectiveSettings so core entry points
     # have a composition-root-provided fallback when no instance is passed.
     from .core.settings import set_default_effective_settings
@@ -433,3 +385,8 @@ def reset_runtime_setup() -> None:
     """
     global _runtime_setup_done
     _runtime_setup_done = False
+
+
+# Trigger runtime setup on import (preserves the pre-refactor side effect
+# where importing config.py would set Settings.embed_model).
+ensure_runtime_setup()

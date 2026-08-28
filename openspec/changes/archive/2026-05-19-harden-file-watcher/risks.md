@@ -73,7 +73,8 @@ The debounce timer (minimum 0.5s) provides a predictable window for the symlink 
 
 ```python
 logger.warning(
-    "Path traversal blocked: %s resolves to %s outside watch root %s",
+    "Path traversal blocked: %s resolves to %s "
+    "outside watch root %s",
     file_path,
     resolved,
     self._watch_root,
@@ -164,10 +165,10 @@ except ValueError:
 **Vulnerability**: `_sha256_file()` calls `path.stat().st_size` twice — once for the size comparison and once inside the error message f-string:
 
 ```python
-if path.stat().st_size > MAX_FILE_SIZE:  # call 1 (line 339)
+if path.stat().st_size > MAX_FILE_SIZE:       # call 1 (line 339)
     raise OSError(
         f"File exceeds maximum size of {MAX_FILE_SIZE} bytes "
-        f"(got {path.stat().st_size} bytes)"  # call 2 (line 342)
+        f"(got {path.stat().st_size} bytes)"   # call 2 (line 342)
     )
 ```
 
@@ -219,8 +220,7 @@ If `exc` contains file paths or embedding model details (which Ollama error mess
 ```python
 logger.error(
     "Embedding batch %d failed (connection): %s",
-    batch_idx,
-    type(exc).__name__,
+    batch_idx, type(exc).__name__,
 )
 ```
 

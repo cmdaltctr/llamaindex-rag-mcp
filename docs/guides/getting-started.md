@@ -47,11 +47,11 @@ npx @modelcontextprotocol/inspector uv run rag-mcp
 
 ## Reranker and hybrid search
 
-The reranker is **off by default**. Experiment 10 measured a 19–27% degradation on technical/code workloads, so it is opt-in. The `documents` profile turns it on for semantic workloads; the `codebase` profile leaves it off for speed (ADR-018). It's a ~23 MB ONNX model that downloads once from HuggingFace and runs entirely locally.
+The reranker is enabled by default and significantly improves search precision. It's a ~23 MB ONNX model that downloads once from HuggingFace and runs entirely locally.
 
 1. Edit `.env` and set:
    ```
-   RETRIEVAL__RERANK_ENABLED=true
+   RERANK_ENABLED=true
    ```
 2. Trigger the first download by running any search with `rerank=True`. The model caches in `~/.cache/huggingface/` — no repeat downloads.
 

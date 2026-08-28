@@ -2,8 +2,7 @@
 
 This package contains the Typer application and one module per command
 group: ``ingest.py``, ``search.py``, ``list.py``, ``watch.py``,
-``delete.py``, ``benchmark.py``, ``profile.py``, and
-``install_login_watcher.py``.
+``delete.py``, ``benchmark.py``, and ``profile.py``.
 
 All output goes to stderr (gotcha #5 — stdout is the MCP protocol channel
 when the server starts with no subcommand).
@@ -18,18 +17,21 @@ import logging
 import os
 import re
 import subprocess
-import sys
+from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-# The composition root is initialised from ``callback`` after Click has
-# handled help and version flags.
-from ... import compose
+from ...config import get_settings
+from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
+
+# Import the composition root early so the LlamaIndex global
+# ``Settings.embed_model`` is assigned before any ingest/search call
+# (previously done at import time in ``config.py``; see ADR-031).
+from ... import compose  # noqa: F401
 
 _JSON_HELP = "Output results as JSON."
-_runtime_details_enabled = False
 
 app = typer.Typer(
     name="rag-mcp",
@@ -50,7 +52,8 @@ _OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 def _print_ollama_error(detail: str, json_output: bool = False) -> None:
     """Print a friendly Ollama connection error message."""
     msg = (
-        f"Cannot connect to Ollama at {_OLLAMA_URL}. Is Ollama running? Start it with: ollama serve"
+        f"Cannot connect to Ollama at {_OLLAMA_URL}. "
+        "Is Ollama running? Start it with: ollama serve"
     )
     if detail:
         msg += f"\n  Detail: {detail}"
@@ -60,18 +63,17 @@ def _print_ollama_error(detail: str, json_output: bool = False) -> None:
         console.print(f"[red]Error:[/red] {msg}")
 
 
-def _detect_gpu_acceleration(embed_model: str | None = None) -> None:
+
+def _detect_gpu_acceleration() -> None:
     """Check Ollama runner type and log GPU acceleration status.
 
     Only runs when ``LOG_LEVEL=DEBUG``.  Never raises — logs a warning
     on any failure.
     """
     logger = logging.getLogger(__name__)
-    if embed_model is None:
-        embed_model = compose.runtime_summary()[0]
     try:
         result = subprocess.run(
-            ["ollama", "ps", "--format", "json"],  # noqa: S607
+            ["ollama", "ps", "--format", "json"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -87,27 +89,28 @@ def _detect_gpu_acceleration(embed_model: str | None = None) -> None:
         models = data.get("models", [])
         for model_info in models:
             name = model_info.get("name", "")
-            if embed_model in name:
-                runner = model_info.get("details", {}).get("format", "") or model_info.get(
-                    "details", {}
-                ).get("runner", "")
+            if get_settings().embed_model in name:
+                runner = model_info.get("details", {}).get(
+                    "format", ""
+                ) or model_info.get("details", {}).get("runner", "")
                 vram = model_info.get("size", "")
                 if "metal" in runner.lower() or "gpu" in runner.lower():
                     logger.debug(
                         "Ollama running %s on Metal GPU — VRAM: %s",
-                        name,
-                        vram,
+                        name, vram,
                     )
                 else:
                     logger.warning(
-                        "Ollama running %s on CPU — consider enabling Metal for faster embeddings",
+                        "Ollama running %s on CPU — consider enabling "
+                        "Metal for faster embeddings",
                         name,
                     )
                 return
 
         logger.debug(
-            "Could not determine Ollama runner — %s not found in running models",
-            embed_model,
+            "Could not determine Ollama runner — %s not found in "
+            "running models",
+            get_settings().embed_model,
         )
     except FileNotFoundError:
         logger.debug("Could not determine Ollama runner — ollama CLI not found")
@@ -123,8 +126,6 @@ def _setup_logging() -> None:
     All output goes to stderr to keep stdout clean for the MCP protocol.
     Controlled by LOG_LEVEL env var (default: INFO).
     """
-    global _runtime_details_enabled
-
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, level, logging.INFO)
 
@@ -142,7 +143,17 @@ def _setup_logging() -> None:
         handlers=[handler],
         force=True,
     )
-    _runtime_details_enabled = True
+
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Embedding model: %s | batch_size: %d | concurrency: %d",
+        get_settings().embed_model,
+        get_settings().ingestion.embed_batch_size,
+        get_settings().ingestion.embed_concurrency,
+    )
+
+    if log_level <= logging.DEBUG:
+        _detect_gpu_acceleration()
 
 
 def _sanitise_display_name(name: str) -> str:
@@ -159,32 +170,6 @@ def _version(value: bool) -> None:
         raise typer.Exit()
 
 
-def _initialise_runtime() -> None:
-    """Initialise runtime dependencies for a command that will execute."""
-    try:
-        compose.ensure_runtime_setup()
-    except (ImportError, ValueError, RuntimeError) as exc:
-        # RuntimeError carries the redacted Chroma Cloud connection
-        # failure — an explicit cloud selection never falls back to a
-        # local index, so the command must stop here.
-        console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from None
-    if not _runtime_details_enabled:
-        return
-    embed_model, batch_size, concurrency = compose.runtime_summary()
-    logger = logging.getLogger(__name__)
-    logger.info(
-        "Embedding model: %s | batch_size: %d | concurrency: %d",
-        embed_model,
-        batch_size,
-        concurrency,
-    )
-    # Storage summary: selected backend plus location — never the API key.
-    logger.info("%s", compose.storage_summary())
-    if logger.isEnabledFor(logging.DEBUG):
-        _detect_gpu_acceleration(embed_model)
-
-
 @app.callback(invoke_without_command=True)
 def callback(
     ctx: typer.Context,
@@ -197,7 +182,6 @@ def callback(
     ),
 ) -> None:
     """Run with no arguments to start the MCP stdio server."""
-    _initialise_runtime()
     if ctx.invoked_subcommand is None:
         from ..mcp import main as mcp_main
 
@@ -206,25 +190,11 @@ def callback(
 
 def run_cli() -> None:
     """Entry point for CLI mode — delegates to the Typer app."""
-    global _runtime_details_enabled
+    _setup_logging()
+    app()
 
-    if not {"--help", "-h", "--version"}.intersection(sys.argv[1:]):
-        _setup_logging()
-    try:
-        app()
-    finally:
-        _runtime_details_enabled = False
 
 
 # ── Register all command groups ───────────────────────────────────────────
 # Importing these modules registers their ``@app.command()`` decorators.
-from . import (  # noqa: E402,F401
-    benchmark,
-    delete,
-    ingest,
-    install_login_watcher,
-    list,
-    profile,
-    search,
-    watch,
-)
+from . import ingest, search, list, watch, delete, benchmark, profile  # noqa: E402,F401

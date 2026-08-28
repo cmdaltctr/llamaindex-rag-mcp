@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, ConfigDict, BeforeValidator
 
 
 def _parse_legacy_bool(value: object) -> object:
@@ -34,27 +34,18 @@ class ChunkingSettings(BaseModel):
 
     """Configuration knobs for the document chunking pipeline.
 
-    Defaults mirror the pre-refactor ``config.py`` values unless the setting
-    is explicitly code-specific.  Sentence and code splitters deliberately
-    use separate unit vocabularies so a token count can never be passed to a
-    line/character API by accident.
+    Defaults mirror the pre-refactor ``config.py`` values exactly.
     """
 
-    # SentenceSplitter chunk size in tokenizer units (tokens).
+    # SentenceSplitter / CodeSplitter chunk size (tokens).
     chunk_size: int = 512
 
-    # SentenceSplitter overlap in tokenizer units (tokens). Raised from
-    # 64 → 100 after Stäbler et al. 2025 (see ADR-018).
+    # Token overlap between adjacent chunks.  Raised from 64 → 100
+    # after Stäbler et al. 2025 (see ADR-018).
     chunk_overlap: int = 100
 
-    # CodeSplitter parameters.  LlamaIndex 0.14.x exposes code chunking in
-    # lines plus an explicit character ceiling; these are NOT token counts.
-    code_chunk_lines: int = 40
-    code_chunk_lines_overlap: int = 15
-    code_max_chars: int = 1500
-
-    # Markdown-specific SentenceSplitter chunk size (tokens, Experiment 6c).
-    # Non-markdown document files continue to use ``chunk_size``.
+    # Markdown-specific chunk size (Experiment 6c).  Non-markdown files
+    # continue to use ``chunk_size``.
     markdown_chunk_size: int = 1024
 
     # Experimental: prepend heading text to each markdown chunk.

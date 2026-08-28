@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, ConfigDict, BeforeValidator
 
 
 def _parse_legacy_bool(value: object) -> object:
@@ -63,11 +63,6 @@ class RetrievalSettings(BaseModel):
 
     # Reranker model HuggingFace ID.
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-
-    # Reranker inference backend: "onnx" (default, torch-free) or "torch"
-    # (opt-in via the ``torch`` optional extra).  Validated at settings
-    # resolution by ``_validate_provider_value`` — see config/__init__.py.
-    rerank_backend: str = "onnx"
 
     # ── Hybrid retrieval ────────────────────────────────────────────
 

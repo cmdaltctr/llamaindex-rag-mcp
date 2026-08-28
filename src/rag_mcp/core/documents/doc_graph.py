@@ -2,29 +2,22 @@
 
 Computes pairwise cosine similarity between document chunk embeddings,
 builds metadata-based and heading-hierarchy edges, and detects document
-communities through the shared strategy registry. Also computes cross-links
-between code and document communities.
+communities using Louvain. Also computes cross-links between code and
+document communities.
 
-Settings arrive through the frozen ``EffectiveSettings`` value object. The
-module has no cross-imports with ``core/retrieval``.
+All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
 """
 
 from __future__ import annotations
 
 import logging
-from collections import Counter
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast
 
 import networkx as nx
 
-from ..community import partition_graph
-from ..settings import (
-    EffectiveSettings,
-    get_default_effective_settings,
-    resolve_effective_settings,
-)
+from ..settings import get_default_effective_settings
 
 logger = logging.getLogger(__name__)
 
@@ -139,8 +132,7 @@ def build_document_graph(
 
     logger.debug(
         "Document graph: %d nodes, %d edges",
-        graph.number_of_nodes(),
-        graph.number_of_edges(),
+        graph.number_of_nodes(), graph.number_of_edges(),
     )
     return graph
 
@@ -148,22 +140,14 @@ def build_document_graph(
 # ── Document community detection ─────────────────────────────────────────
 
 
-def detect_document_communities(
-    graph: nx.Graph,
-    settings: EffectiveSettings | None = None,
-) -> list[DocCommunity]:
-    """Detect document communities via the configured strategy.
+def detect_document_communities(graph: nx.Graph) -> list[DocCommunity]:
+    """Detect document communities using Louvain.
 
-    Partitions the document graph into topic clusters using the
-    ``community_algorithm`` strategy resolved through the shared
-    ``core/community`` registry, seeded with ``community_seed``. Each
-    community is labelled with its representative category.
+    Partitions the document graph into topic clusters. Each community is
+    labelled with its representative category.
 
     Args:
         graph: The document graph as a ``networkx.Graph``.
-        settings: Effective settings carrying the algorithm name and seed.
-            Defaults to the composition-root instance; the codebase-map
-            boundary passes its resolved instance explicitly.
 
     Returns:
         List of ``DocCommunity`` objects with labels, chunks, and categories.
@@ -171,60 +155,49 @@ def detect_document_communities(
     if graph.number_of_nodes() == 0:
         return []
 
-    effective = resolve_effective_settings(settings)
-
     if graph.number_of_nodes() < 5:
         # Small graph: single community.
         chunks = list(graph.nodes())
         categories = [
-            graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
+            graph.nodes[n].get("category", "")
+            for n in chunks
+            if graph.nodes[n].get("category")
         ]
         category = categories[0] if categories else ""
-        return [
-            DocCommunity(
-                label=category or "all",
-                chunks=chunks,
-                category=category,
-            )
-        ]
+        return [DocCommunity(
+            label=category or "all",
+            chunks=chunks,
+            category=category,
+        )]
 
     try:
-        communities_sets = partition_graph(
-            graph,
-            algorithm=effective.community_algorithm,
-            seed=effective.community_seed,
-        )
+        communities_sets = nx.algorithms.community.louvain_communities(graph)
     except Exception as exc:
-        logger.warning(
-            "Document community detection (%s) failed: %s",
-            effective.community_algorithm,
-            exc,
-        )
+        logger.warning("Document Louvain failed: %s", exc)
         chunks = list(graph.nodes())
         return [DocCommunity(label="all", chunks=chunks)]
 
     communities: list[DocCommunity] = []
     for comm_set in communities_sets:
-        # Document-graph node IDs are strings; the shared strategy contract
-        # remains generic for consumers that use other hashable identifiers.
-        chunks = sorted(cast(set[str], comm_set))
+        chunks = sorted(comm_set)
         # Determine representative category.
         categories = [
-            graph.nodes[n].get("category", "") for n in chunks if graph.nodes[n].get("category")
+            graph.nodes[n].get("category", "")
+            for n in chunks
+            if graph.nodes[n].get("category")
         ]
         if categories:
             # Most common category.
+            from collections import Counter
             category = Counter(categories).most_common(1)[0][0]
         else:
             category = ""
         label = category or f"Topic {len(communities) + 1}"
-        communities.append(
-            DocCommunity(
-                label=label,
-                chunks=chunks,
-                category=category,
-            )
-        )
+        communities.append(DocCommunity(
+            label=label,
+            chunks=chunks,
+            category=category,
+        ))
 
     communities.sort(key=lambda c: len(c.chunks), reverse=True)
     return communities
@@ -250,18 +223,14 @@ def _filename_match_links(
             doc_parts = Path(doc_path).parts
             if len(doc_parts) < 2:
                 continue
-            if (
-                code_file in doc_path
-                or doc_path in code_file
-                or (code_basename and code_basename in doc_path)
+            if code_file in doc_path or doc_path in code_file or (
+                code_basename and code_basename in doc_path
             ):
-                links.append(
-                    CrossLink(
-                        code=code_file,
-                        doc=doc_id,
-                        relation="filename_match",
-                    )
-                )
+                links.append(CrossLink(
+                    code=code_file,
+                    doc=doc_id,
+                    relation="filename_match",
+                ))
     return links
 
 
@@ -277,13 +246,11 @@ def _symbol_match_links(
                 if not doc_path:
                     continue
                 if symbol and symbol in doc_path:
-                    links.append(
-                        CrossLink(
-                            code=code_file,
-                            doc=doc_id,
-                            relation="symbol_match",
-                        )
-                    )
+                    links.append(CrossLink(
+                        code=code_file,
+                        doc=doc_id,
+                        relation="symbol_match",
+                    ))
     return links
 
 
@@ -305,18 +272,14 @@ def _keyword_overlap_links(
         if not category and not keywords:
             continue
         for dir_name, files in code_dirs.items():
-            if (
-                dir_name.lower() in [k.lower() for k in keywords]
-                or dir_name.lower() == category.lower()
-            ):
+            if dir_name.lower() in [k.lower() for k in keywords] or \
+               dir_name.lower() == category.lower():
                 for code_file in files:
-                    links.append(
-                        CrossLink(
-                            code=code_file,
-                            doc=node,
-                            relation="keyword_overlap",
-                        )
-                    )
+                    links.append(CrossLink(
+                        code=code_file,
+                        doc=node,
+                        relation="keyword_overlap",
+                    ))
     return links
 
 
@@ -376,6 +339,9 @@ def compute_cross_links(
 from .similarity import (  # noqa: E402
     _add_doc_nodes,
     _add_edges_safe,
+    _category_edges,
+    _heading_prefix_edges,
+    _keyword_edges,
     compute_heading_edges,
     compute_metadata_edges,
     compute_similarity_edges,

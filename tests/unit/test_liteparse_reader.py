@@ -13,7 +13,8 @@ from pathlib import Path
 import pytest
 
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
-    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
+    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/"
+    "vaswani2017_attention.pdf"
 )
 
 
@@ -52,7 +53,9 @@ class TestLiteParseReader:
 
         columns = {doc.metadata.get("column") for doc in documents}
         # At least some pages should have left or right column labels
-        assert columns & {"left", "right"}, f"Expected column labels but got: {columns}"
+        assert columns & {"left", "right"}, (
+            f"Expected column labels but got: {columns}"
+        )
 
     def test_section_bbox_is_json_string(self):
         """section_bbox must be a JSON-encoded string (ChromaDB scalar requirement)."""

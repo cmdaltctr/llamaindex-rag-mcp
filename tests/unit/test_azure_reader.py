@@ -1,14 +1,9 @@
-"""Unit tests for azure_reader.py — response parsing, table chunking, import guarding.
-
-The fallback/retry surface moved to
-``core/ingestion/backends/orchestrator`` (register-document-backend-
-strategies, task 3.2); its coverage lives in ``tests/test_document_backends.py``.
-"""
+"""Unit tests for azure_reader.py — response parsing, table chunking, fallback, import guarding."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
 
@@ -17,6 +12,7 @@ from rag_mcp.integrations.azure import (
     _format_table,
     _split_table_rows,
     parse_azure_response,
+    read_with_azure_fallback,
 )
 
 
@@ -128,3 +124,47 @@ class TestImportGuarding:
         reader = AzureDocReader(endpoint="https://example.com", key="fake")
         assert reader.endpoint == "https://example.com"
         assert reader.model == "prebuilt-layout"
+
+
+class TestFallback:
+    """Tests for graceful fallback paths."""
+
+    @pytest.mark.asyncio
+    async def test_fallback_to_local_on_import_error(self, tmp_path: Path) -> None:
+        """ImportError triggers fallback to local reader chain."""
+        (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
+
+        with patch("rag_mcp.integrations.azure.AzureDocReader._get_client", side_effect=ImportError("no sdk")), \
+             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]):
+            result = await read_with_azure_fallback(tmp_path / "test.pdf")
+            assert result == []
+
+    @pytest.mark.asyncio
+    async def test_retry_on_network_error(self, tmp_path: Path) -> None:
+        """Network error triggers one retry before fallback."""
+        (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
+
+        call_count = 0
+
+        def mock_read(path):
+            nonlocal call_count
+            call_count += 1
+            raise ConnectionError("network error")
+
+        with patch("rag_mcp.integrations.azure.AzureDocReader.read", side_effect=mock_read), \
+             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]), \
+             patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await read_with_azure_fallback(tmp_path / "test.pdf", max_retries=1, retry_delay=0.01)
+            assert call_count == 2  # Initial + 1 retry
+            assert result == []
+
+    @pytest.mark.asyncio
+    async def test_fallback_to_local_on_persistent_failure(self, tmp_path: Path) -> None:
+        """Persistent Azure failure falls back to local chain."""
+        (tmp_path / "test.pdf").write_bytes(b"%PDF-1.4 test")
+
+        with patch("rag_mcp.integrations.azure.AzureDocReader.read", side_effect=RuntimeError("persistent")), \
+             patch("rag_mcp.integrations.azure._read_with_local_chain", new_callable=AsyncMock, return_value=[]), \
+             patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await read_with_azure_fallback(tmp_path / "test.pdf", max_retries=1, retry_delay=0.01)
+            assert result == []

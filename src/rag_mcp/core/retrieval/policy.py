@@ -174,18 +174,8 @@ def _classify_query_technical(query: str) -> float:
             continue
         # Explicit package/API/tooling terms and HTTP-ish API tokens.
         if token.lower().strip(".,:;()[]{}") in {
-            "api",
-            "sdk",
-            "cli",
-            "package",
-            "module",
-            "import",
-            "endpoint",
-            "http",
-            "json",
-            "yaml",
-            "pip",
-            "npm",
+            "api", "sdk", "cli", "package", "module", "import",
+            "endpoint", "http", "json", "yaml", "pip", "npm",
         }:
             technical_count += 1
 
@@ -274,5 +264,6 @@ def _resolve_rerank_policy(
     # Below threshold: semantic workload override.
     return (
         True,
-        f"enabled by semantic policy (fraction={technical_fraction:.2f} < threshold={threshold})",
+        f"enabled by semantic policy (fraction={technical_fraction:.2f} "
+        f"< threshold={threshold})",
     )

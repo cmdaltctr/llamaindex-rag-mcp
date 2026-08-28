@@ -116,27 +116,6 @@ they only lived because the flat schema had nowhere better.
 | `OLLAMA_CLASSIFY_MAX_ATTEMPTS` | `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS` |
 | `OLLAMA_CLASSIFY_TIMEOUT` | `METADATA__OLLAMA_CLASSIFY_TIMEOUT` |
 
-> **Update (rename-classify-settings, 2026-08-07):** the last two rows record
-> the v2.0.0 targets, which have since been retired. Both knobs govern *all*
-> metadata LLM backends, not just Ollama, so they are now
-> `METADATA__CLASSIFY_MAX_ATTEMPTS` and `METADATA__CLASSIFY_TIMEOUT`.
-> `METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS` and
-> `METADATA__OLLAMA_CLASSIFY_TIMEOUT` are themselves tripwired and will fail
-> at startup — migrate straight to the `CLASSIFY_*` forms. The third row,
-> `METADATA__OLLAMA_CLASSIFY_MODEL`, is unaffected: it really is
-> Ollama-specific.
->
-> **Update (rename-classify-settings, 2026-08-07, validation hardening):** the
-> same change replaced the call-time `max(1, value)` clamp on
-> `classify_max_attempts` with `Field(gt=0)` on both `MetadataSettings` and
-> `MetadataBlock`, and added the same bound to `classify_timeout` (previously
-> unguarded, so a non-positive value reached `httpx.AsyncClient(timeout=...)`).
-> A configuration that previously ran with
-> `METADATA__CLASSIFY_MAX_ATTEMPTS=0` was silently rewritten to `1`; it now
-> fails at settings resolution with a named `ValidationError`. This is
-> deliberate — silently rewriting an operator's value hides the error, the
-> same reasoning that governs the tripwire and ADR-029's fail-loud lesson.
-
 `defaults.yaml` and all three profile bundles are rewritten nested and ship
 with this change; a bundle using the flat schema, or a `hybrid.yaml`
 carrying lever blocks, is now rejected with the offending key named.
@@ -337,26 +316,3 @@ better signal until that is addressed separately.
   design (D1–D10), specs, tasks, and the lint-imports before/after evidence
 * ADR-031 — three-layer config/compose DI, which this completes
 * ADR-032 … ADR-036 — the five phases this change reconciles with the proposal
-
----
-
-## Update (2026-08-07, tripwire retirement policy)
-
-**Supersedes:** the "removal trigger is v3.0.0" statement in §3 above.
-
-The uniform v3.0.0 removal trigger is replaced by a **shape-aware lifetime
-rule** (see `src/rag_mcp/config/legacy.py` docstring for the authority):
-
-- **Nested** retired names (carrying a block prefix) are rejected by their
-  settings block's `extra="forbid"` without the tripwire. They expire one
-  major version after the release that retired them and may then be deleted.
-- **Flat** retired names (no block prefix) are silently discarded by
-  pydantic-settings — `extra="forbid"` on the root model does not catch
-  them, verified empirically. The tripwire is the only detector, so they
-  are retained for as long as an upgrade path exists from a version that
-  read them.
-
-The previously scheduled deletion of the 25 flat pre-v2 entries at v3.0.0
-is therefore **reversed**: deleting them would restore the silent
-misconfiguration they exist to prevent. The two nested classify entries
-remain deletable one major after the classify rename.

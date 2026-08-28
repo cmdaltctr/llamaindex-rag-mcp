@@ -6,8 +6,6 @@ the original ``retrieval.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
-RRF_SCORE_KIND = "rrf_v1"
-
 
 def reciprocal_rank_fusion(
     rankings: list[list[str]],
@@ -52,12 +50,7 @@ def rrf_with_metadata(
     for rank, row in enumerate(dense_ranked, start=1):
         doc_id = str(row["id"])
         dense_rank[doc_id] = rank
-        dense_row = dict(row)
-        if "score" in row:
-            dense_row["dense_score"] = row["score"]
-        if "score_kind" in row:
-            dense_row["dense_score_kind"] = row["score_kind"]
-        by_id.setdefault(doc_id, dense_row)
+        by_id.setdefault(doc_id, dict(row))
     for rank, row in enumerate(sparse_ranked, start=1):
         doc_id = str(row["id"])
         sparse_rank[doc_id] = rank
@@ -69,7 +62,6 @@ def rrf_with_metadata(
         row["id"] = doc_id
         row["fused_score"] = score
         row["score"] = score
-        row["score_kind"] = RRF_SCORE_KIND
         row["dense_rank"] = dense_rank.get(doc_id)
         row["sparse_rank"] = sparse_rank.get(doc_id)
         fused_rows.append(row)

@@ -17,14 +17,9 @@
 
 # ── Chunking ──────────────────────────────────────────────────────────
 chunking:
-  # Sentence/Markdown splitters use tokenizer units.
   chunk_size: 512
   chunk_overlap: 100
   markdown_chunk_size: 1024
-  # CodeSplitter uses lines plus an explicit character ceiling.
-  code_chunk_lines: 40
-  code_chunk_lines_overlap: 15
-  code_max_chars: 1500
   markdown_heading_prepend: false
   markdown_min_chunk_fraction: 0.0
   strategy_fallback: markdown
@@ -57,35 +52,13 @@ metadata:
   extraction_mode: llamaindex
   taxonomy_mode: category
   ollama_classify_model: "qwen3:0.6b"
-  classify_max_attempts: 3
-  classify_timeout: 30.0
-  # pipeline_timeout defaults to 180.0 in the settings model (not listed
-  # here — same convention as the six per-provider overrides below).
-  #
-  # Six optional per-provider overrides for classify_timeout/pipeline_timeout
-  # — llamacpp_classify_timeout_override, ollama_classify_timeout_override,
-  # openrouter_classify_timeout_override, llamacpp_pipeline_timeout_override,
-  # ollama_pipeline_timeout_override, openrouter_pipeline_timeout_override. Each defaults to
-  # null (unset) and falls back to the shared value above; set one here or
-  # via METADATA__<NAME> only on the machine that needs different tuning.
+  ollama_classify_max_attempts: 3
+  ollama_classify_timeout: 30.0
 
 # ── Storage (cross-cutting, flat) ─────────────────────────────────────
 CHROMA_PERSIST_DIR: ./chroma_db
 COLLECTION_NAME: documents
 CHROMA_SCAN_PAGE_SIZE: 10000
-# Chroma deployment mode: "local" (embedded PersistentClient) or
-# "cloud" (hosted Chroma Cloud). Cloud mode requires an API key in
-# .env (see .env.example); tenant/database identifiers are optional
-# there and must be supplied together. No cloud secrets belong here.
-CHROMA_MODE: local
-# Vector-store backend: "lancedb" (canonical base-install default, ADR-049)
-# or "chroma" (supported optional extra; install with `uv sync --extra
-# chroma`). Selection is resolved through the vector-store registry at
-# startup; an unknown name fails with the registered names listed.
-VECTOR_STORE: lancedb
-# Parent directory for LanceDB tables (VECTOR_STORE=lancedb only).
-# Each collection maps to one table under this directory.
-LANCEDB_URI: ./lancedb
 
 # ── Provider selection (two-tier) ─────────────────────────────────────
 EMBED_PROVIDER: local
@@ -94,8 +67,7 @@ LOCAL_BACKEND: llamacpp
 CLOUD_BACKEND: openrouter
 
 # ── PDF reader ────────────────────────────────────────────────────────
-# Change this selector, not runtime code, to choose another reader.
-PDF_READER: pdf_inspector
+PDF_READER: auto
 LITEPARSE_OCR_ENABLED: false
 
 # ── Codebase map ──────────────────────────────────────────────────────
@@ -104,12 +76,6 @@ DOC_SIMILARITY_THRESHOLD: 0.85
 CODEBASE_MAP_CACHE_DIR: .opencode
 CODEBASE_MAP_MAX_FILES: 5000
 CODEBASE_MAP_MAX_DEPTH: 10
-# Community detection shared by codebase and document graphs.
-# louvain = base install (default); leiden = optional community-leiden extra
-# (startup fails with an installation instruction when the extra is absent).
-COMMUNITY_ALGORITHM: louvain
-# Seed for algorithm randomness; 0 keeps partitions deterministic.
-COMMUNITY_SEED: 0
 
 # ── Document backend ──────────────────────────────────────────────────
 DOCUMENT_BACKEND: local

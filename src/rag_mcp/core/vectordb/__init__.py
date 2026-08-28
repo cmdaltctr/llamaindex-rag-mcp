@@ -32,26 +32,18 @@ _default_store: VectorStore | None = None
 def get_default_store() -> VectorStore:
     """Return the process-wide default vector store.
 
-    Task 2.2 (default-flip change): the accessor is injected-only. It
-    returns the instance installed by ``compose.ensure_runtime_setup``
-    and raises a controlled error when composition has not run — it
-    never constructs a fallback store, never imports settings, compose,
-    or a concrete backend (design D3: ``compose.py`` is the sole
-    vector-store constructor).
+    Lazily constructs a ChromaDB-backed store on first call when
+    ``compose.ensure_runtime_setup`` has not run yet (e.g. in tests
+    that import pipeline modules directly).
 
     Returns:
-        The installed :class:`VectorStore` instance.
-
-    Raises:
-        RuntimeError: If no composition root has installed a store yet.
+        The default :class:`VectorStore` instance.
     """
+    global _default_store
     if _default_store is None:
-        raise RuntimeError(
-            "No default vector store has been composed yet. Call "
-            "rag_mcp.compose.ensure_runtime_setup() (server/CLI startup) or "
-            "inject a store explicitly before accessing the process-wide "
-            "default."
-        )
+        from .chroma import build_chroma_vector_store
+
+        _default_store = build_chroma_vector_store()
     return _default_store
 
 

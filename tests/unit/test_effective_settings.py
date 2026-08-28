@@ -37,11 +37,13 @@ def test_two_instances_are_independent() -> None:
     """
     from rag_mcp.core.settings import RetrievalBlock
 
-    base = EffectiveSettings(retrieval=RetrievalBlock(top_k=10, rerank_enabled=False))
+    base = EffectiveSettings(
+        retrieval=RetrievalBlock(top_k=10, rerank_enabled=False)
+    )
     overlaid = base.model_copy(
-        update={
-            "retrieval": base.retrieval.model_copy(update={"top_k": 20, "rerank_enabled": True})
-        }
+        update={"retrieval": base.retrieval.model_copy(
+            update={"top_k": 20, "rerank_enabled": True}
+        )}
     )
 
     assert overlaid.retrieval.top_k == 20
@@ -59,6 +61,7 @@ def test_overlay_preserves_non_lever_fields() -> None:
     cross-cutting fields (``chroma_persist_dir``, ``embed_model``, chunk sizes)
     to class defaults, discarding the operator's configuration.
     """
+    from rag_mcp.core.settings import RetrievalBlock
 
     base = EffectiveSettings(
         chroma_persist_dir="/custom/path",
@@ -90,7 +93,11 @@ def test_backward_compat_properties() -> None:
 def test_core_settings_has_no_upward_imports() -> None:
     """``core/settings.py`` must not import from config, compose, or core."""
     settings_path = (
-        Path(__file__).resolve().parent.parent.parent / "src" / "rag_mcp" / "core" / "settings.py"
+        Path(__file__).resolve().parent.parent.parent
+        / "src"
+        / "rag_mcp"
+        / "core"
+        / "settings.py"
     )
     source = settings_path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(settings_path))

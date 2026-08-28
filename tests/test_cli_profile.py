@@ -24,7 +24,8 @@ _CONTRACT = {
     "new_profile": "codebase",
     "lever_impacts": [
         {"lever": "top_k", "timing": "query-time", "change": "10 → 20"},
-        {"lever": "chunk strategy", "timing": "ingest-time", "change": "markdown → code"},
+        {"lever": "chunk strategy", "timing": "ingest-time",
+         "change": "markdown → code"},
     ],
     "reingest_pointer": "Run `rag-mcp ingest --force` to re-chunk.",
 }
@@ -40,7 +41,8 @@ def _patched(apply_result: dict | None = None):
         patch(
             "rag_mcp.core.profiles.apply_profile_change",
             return_value=apply_result
-            or {"status": "ok", "profile": "codebase", "chunk_count_unchanged": 12},
+            or {"status": "ok", "profile": "codebase",
+                "chunk_count_unchanged": 12},
         ),
         patch("rag_mcp.compose.build_profile_resolver", return_value=MagicMock()),
     )
@@ -67,7 +69,9 @@ class TestPreviewAndConfirm:
         """--json alone previews: it must NOT apply the change."""
         c, a, r = _patched()
         with c, a as apply_mock, r:
-            result = runner.invoke(app, ["set-profile", "-c", "docs", "-p", "codebase", "--json"])
+            result = runner.invoke(
+                app, ["set-profile", "-c", "docs", "-p", "codebase", "--json"]
+            )
         assert result.exit_code == 0
         payload = json.loads(result.stdout)
         assert payload["new_profile"] == "codebase"

@@ -154,7 +154,7 @@ Each command wraps the existing functions `ingest_path()`, `search()`, and
 
 ```python
 # New config constants
-EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))  # was hardcoded 10
+EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))   # was hardcoded 10
 INGEST_WORKERS = int(os.getenv("INGEST_WORKERS", "4"))
 EMBED_CONCURRENCY = int(os.getenv("EMBED_CONCURRENCY", "2"))
 ```

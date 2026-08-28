@@ -34,7 +34,9 @@ def _python_files() -> list[Path]:
     """Return every ``.py`` file under the scanned directories."""
     files: list[Path] = []
     for root in _SCAN_DIRS:
-        files.extend(p for p in root.rglob("*.py") if "__pycache__" not in p.parts)
+        files.extend(
+            p for p in root.rglob("*.py") if "__pycache__" not in p.parts
+        )
     return sorted(files)
 
 
@@ -52,4 +54,6 @@ def test_no_global_settings_reads_in_core_or_integrations() -> None:
             f"  {path.relative_to(_SRC_ROOT.parent)}:{line_no}: {snippet}"
             for path, line_no, snippet in hits
         ]
-        pytest.fail(f"{len(hits)} settings-singleton import(s) found:\n" + "\n".join(lines))
+        pytest.fail(
+            f"{len(hits)} settings-singleton import(s) found:\n" + "\n".join(lines)
+        )

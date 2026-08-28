@@ -9,48 +9,44 @@ from __future__ import annotations
 import json
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from io import StringIO
+from typing import Optional
 
 import typer
 from rich.table import Table
 
-from ... import compose
-from . import _print_ollama_error, _sanitise_display_name, app, console
+from . import app, console, _sanitise_display_name, _print_ollama_error
+from ...config import get_settings
 
 
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Natural language search query."),
-    top_k: int | None = typer.Option(None, "--top-k", "-k", help="Max results to return."),
-    threshold: float = typer.Option(0.0, "--threshold", "-t", help="Minimum similarity score."),
-    rerank: bool | None = typer.Option(
-        None,
-        "--rerank/--no-rerank",
-        help="Re-score with cross-encoder reranker (omit for policy default).",
+    top_k: int = typer.Option(get_settings().retrieval.top_k, "--top-k", "-k", help="Max results to return."),
+    threshold: float = typer.Option(
+        0.0, "--threshold", "-t", help="Minimum similarity score."
+    ),
+    rerank: Optional[bool] = typer.Option(
+        None, "--rerank/--no-rerank",
+        help="Re-score with cross-encoder reranker (omit for policy default)."
     ),
     hybrid: bool = typer.Option(
-        False,
-        "--hybrid/--no-hybrid",
+        False, "--hybrid/--no-hybrid",
         help="Fuse dense vector search with sparse BM25 retrieval via RRF.",
     ),
     collection: str = typer.Option(
-        "documents",
-        "--collection",
-        "-c",
-        help="ChromaDB collection to search.",
+        "documents", "--collection", "-c", help="ChromaDB collection to search.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
+    from ... import compose
     from ...core.retrieval import search as do_search
 
     try:
         effective = compose.build_profile_resolver().resolve(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from None
-
-    if top_k is None:
-        top_k = effective.top_k
+        raise typer.Exit(code=1)
 
     try:
         output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()
@@ -67,14 +63,14 @@ def search(
             )
     except ConnectionError as exc:
         _print_ollama_error(str(exc), json_output)
-        raise typer.Exit(code=1) from None
+        raise typer.Exit(code=1)
     except Exception as exc:
         err_msg = str(exc)
         if "ollama" in err_msg.lower() or "embed" in err_msg.lower():
             _print_ollama_error(err_msg, json_output)
         else:
             console.print(f"[red]Error:[/red] {err_msg}")
-        raise typer.Exit(code=1) from None
+        raise typer.Exit(code=1)
 
     if not results:
         if json_output:

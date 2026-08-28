@@ -1,8 +1,8 @@
-"""Tests for ingestion module - read/chunk and sequential ingestion.
+"""Tests for ingestion module — _read_and_chunk_file and parallel ingestion.
 
 Tests cover:
-- read_and_chunk_file with MockEmbedding
-- Bounded sequential ingestion behavior
+- _read_and_chunk_file with MockEmbedding
+- Parallel vs sequential produces same chunks
 - Per-file error isolation (corrupt files skipped)
 - All-files-fail scenario
 - Concurrency primitives (write lock, semaphore, shutdown)
@@ -17,19 +17,18 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.ingestion import ingest_path_async
+from rag_mcp.core.ingestion import ingest_path_async, list_documents
 from rag_mcp.core.ingestion._state import (
     get_embed_semaphore as _get_embed_semaphore,
-)
-from rag_mcp.core.ingestion._state import (
     shutdown_requested as _shutdown_requested,
-)
-from rag_mcp.core.ingestion._state import (
     write_lock as _write_lock,
 )
 from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 from rag_mcp.core.ingestion.loader import gather_supported_files as _gather_supported_files
+
+
+# ── _gather_supported_files ──────────────────────────────────────────────
 
 
 class TestGatherSupportedFiles:
@@ -63,8 +62,12 @@ class TestGatherSupportedFiles:
         assert "also_good.md" in names
         assert "bad.xyz" not in names
 
+        # Verify skipped files are tracked
         skipped_names = {s["file"] for s in skipped}
         assert "bad.xyz" in skipped_names
+
+
+# ── _read_and_chunk_file ─────────────────────────────────────────────────
 
 
 class TestReadAndChunkFile:
@@ -101,8 +104,11 @@ class TestReadAndChunkFile:
             asyncio.run(_read_and_chunk_file_async(tmp_path / "nonexistent.txt"))
 
 
+# ── Sequential ingestion ─────────────────────────────────────────────────
+
+
 class TestSequentialIngestPath:
-    """Tests for the bounded sequential async ingestion path."""
+    """Tests for the sequential async ingestion path."""
 
     async def test_directory_ingest(self, dir_with_docs: Path) -> None:
         """Directory ingestion works."""
@@ -111,17 +117,14 @@ class TestSequentialIngestPath:
         assert result["files_indexed"] > 0
         assert result["chunks_created"] > 0
 
-    async def test_repeated_ingest_skips_unchanged_files(self, dir_with_docs: Path) -> None:
-        """A complete matching source/index version skips expensive reprocessing."""
+    async def test_repeated_ingest_consistent_chunk_count(
+        self, dir_with_docs: Path
+    ) -> None:
+        """Repeated sequential ingestion produces consistent chunk count."""
         r1 = await ingest_path_async(str(dir_with_docs))
         r2 = await ingest_path_async(str(dir_with_docs))
-        assert r1["files_indexed"] > 0
-        assert r1["chunks_created"] > 0
-        assert r2["status"] == "ok"
-        assert r2["files_indexed"] == 0
-        assert r2["files_skipped_unchanged"] == r1["files_indexed"]
-        assert r2["chunks_created"] == 0
-        assert r2["chunks_removed"] == 0
+        assert r1["files_indexed"] == r2["files_indexed"]
+        assert r1["chunks_created"] == r2["chunks_created"]
 
     async def test_single_file_ingest(self, sample_txt: Path) -> None:
         """Single-file ingestion works."""
@@ -153,11 +156,14 @@ class TestErrorIsolation:
         assert "not found" in result["message"].lower()
 
 
+# ── Concurrency primitives ────────────────────────────────────────────────
+
+
 class TestConcurrencyPrimitives:
     """Tests for thread-safety primitives in ingestion module."""
 
     def test_concurrent_write_lock_serialises(self) -> None:
-        """The write lock serialises access to one thread at a time."""
+        """_write_lock serialises access — only one thread at a time."""
         max_concurrent = 0
         current = 0
         counter_lock = threading.Lock()
@@ -173,18 +179,19 @@ class TestConcurrencyPrimitives:
                     current -= 1
 
         threads = [threading.Thread(target=worker) for _ in range(4)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
         assert max_concurrent == 1
 
     def test_embed_semaphore_limits_concurrency(self) -> None:
         """The limiter caps concurrent holders at the injected value.
 
-        The limiter is built from the injected concurrency at call time rather
-        than snapshotted at import, so the test states the value it depends on.
+        The limiter is now built from the injected concurrency at call time
+        rather than snapshotted at import, so the test states the value it
+        depends on instead of reading a module constant.
         """
         concurrency = 2
         semaphore = _get_embed_semaphore(concurrency)
@@ -204,18 +211,21 @@ class TestConcurrencyPrimitives:
                     current -= 1
 
         threads = [threading.Thread(target=worker) for _ in range(4)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
         assert max_concurrent <= concurrency
 
     async def test_parallel_shutdown_early_exit(self, tmp_path: Path) -> None:
-        """Shutdown flag set mid-ingest causes early exit with fewer files."""
+        """Shutdown flag set mid-parallel causes early exit with fewer files."""
         for i in range(5):
-            (tmp_path / f"doc_{i}.txt").write_text(f"content {i} " * 20)
+            (tmp_path / f"doc_{i}.txt").write_text(
+                f"content {i} " * 20
+            )
 
+        # Set the flag via progress callback after some files are read
         def _signal_midway(phase: str, current: int, total: int) -> None:
             if phase == "read" and current >= 2:
                 _shutdown_requested.set()
@@ -225,6 +235,7 @@ class TestConcurrencyPrimitives:
                 str(tmp_path),
                 progress_callback=_signal_midway,
             )
+            # Should have stopped early — fewer files indexed than total
             assert result["files_indexed"] < 5
         finally:
             _shutdown_requested.clear()

@@ -133,44 +133,6 @@ evidence for a general semantic reranker policy.
 For details, see the corrected report:
 [`experiments/10-reranker-technical-workload-calibration-2026-05-31/results.md`](../../experiments/10-reranker-technical-workload-calibration-2026-05-31/results.md).
 
-### Evidence update — Experiment 10b / D17 (2026-08-23)
-
-The repaired factorial campaign
-([`experiments/10b-reranker-pool-size-corrected-2026-06-29/`](../../experiments/10b-reranker-pool-size-corrected-2026-06-29/))
-re-tested this ADR's core claim with corrected methodology: the Experiment 10
-effective-fetch confound is gone (true pools 50/100/150/200/500 verified
-distinct by preflight), identities frozen (corpus manifest sha256 `f6e7bb09…`,
-LanceDB index per ADR-049), 223 paired queries per cell, bootstrap 95% CIs.
-
-Results confirm and strengthen the decision:
-
-- Reranking degrades Coverage@20 at **every** pool size and both retrieval
-  modes. At the policy pool 150: dense −0.0996 [−0.1483, −0.0507]; hybrid
-  −0.1346 [−0.1865, −0.0821].
-- The best observed pool (50) still loses on hybrid (−0.0783 [−0.1142,
-  −0.0436]) and is inconclusive on dense (−0.0327 [−0.0714, +0.0069]).
-  Larger pools are monotonically worse.
-- New observation (H5): hybrid BM25 beats dense with the reranker off
-  (+0.0457 [0.0107, 0.0811]) — recorded as a candidate for a future
-  defaults discussion, out of scope for this ADR.
-- Latency columns are invalid for guardrail adjudication (ambient machine
-  load; see the experiment's deviation record). Quality metrics are
-  unaffected.
-
-Policy outcome: **ADR-019 stands unchanged** — reranker disabled by default
-and for the `codebase` profile.
-
-One evidence gap is now explicit: the `documents` profile sets
-`reranker_enabled: true` (restoring ADR-018's balanced intent for semantic
-workloads), but **no experiment in this record has demonstrated reranker
-benefit on any workload since the Experiment 10 correction**. D17 measured a
-technical corpus only and cannot adjudicate the semantic case. Task 6.3
-(Qasper PDF A/B — a semantic corpus) of the
-`harden-pipeline-correctness-before-calibration` change is designated as
-that setting's first real test; until it reports, the `documents` profile
-value rests on the pre-correction Experiments 7a/8a Qasper evidence cited
-above and should be treated as provisional.
-
 ## Consequences
 
 ### Positive

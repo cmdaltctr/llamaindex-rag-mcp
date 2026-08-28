@@ -23,7 +23,6 @@
 # Before path usage, resolve and validate:
 from pathlib import Path
 
-
 def _validate_path(user_path: str, allowed_roots: list[Path] | None = None) -> Path:
     """Resolve and validate a user-supplied path.
 
@@ -48,7 +47,8 @@ def _validate_path(user_path: str, allowed_roots: list[Path] | None = None) -> P
             continue
     else:
         raise ValueError(
-            f"Path '{resolved}' is outside allowed directories: {[str(r) for r in roots]}"
+            f"Path '{resolved}' is outside allowed directories: "
+            f"{[str(r) for r in roots]}"
         )
     return resolved
 ```
@@ -117,7 +117,6 @@ import threading
 # Single ingestion lock — prevents concurrent ChromaDB writes
 _ingestion_lock = threading.Lock()
 
-
 def ingest_path(path: str) -> dict:
     with _ingestion_lock:
         return _ingest_path_inner(path)
@@ -126,7 +125,6 @@ def ingest_path(path: str) -> dict:
 Or, better for CLI parallelism:
 ```python
 from concurrent.futures import ThreadPoolExecutor
-
 
 def ingest_directory_parallel(dir_path: Path, max_workers: int = 4) -> dict:
     """Ingest multiple files in parallel but serialise ChromaDB writes."""
@@ -148,7 +146,8 @@ def ingest_directory_parallel(dir_path: Path, max_workers: int = 4) -> dict:
         for file, nodes in all_nodes.items():
             _write_nodes_to_chromadb(nodes)
 
-    return {"status": "ok", "files_indexed": len(all_nodes), "errors": errors}
+    return {"status": "ok", "files_indexed": len(all_nodes),
+            "errors": errors}
 ```
 
 **Severity**: HIGH — guarantees data corruption under load. Must be addressed before shipping parallel ingestion.
@@ -173,7 +172,6 @@ import threading
 
 # Limit concurrent Ollama API calls to avoid overwhelming the server
 _embed_semaphore = threading.BoundedSemaphore(value=2)
-
 
 def _embed_texts(texts: list[str]) -> list[list[float]]:
     with _embed_semaphore:
@@ -203,11 +201,9 @@ def _embed_texts(texts: list[str]) -> list[list[float]]:
 import hashlib
 from pathlib import Path
 
-
 def _file_hash(file_path: Path) -> str:
     """Compute SHA-256 of file contents for deduplication."""
     return hashlib.sha256(file_path.read_bytes()).hexdigest()
-
 
 def _ingest_path_deduped(path: Path) -> dict:
     file_hash = _file_hash(path)
@@ -245,14 +241,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 _shutdown_requested = threading.Event()
 
-
 def _handle_sigint(signum, frame):
-    print("\nShutting down gracefully... (press Ctrl+C again to force)", file=sys.stderr)
+    print("\nShutting down gracefully... (press Ctrl+C again to force)",
+          file=sys.stderr)
     _shutdown_requested.set()
 
-
 signal.signal(signal.SIGINT, _handle_sigint)
-
 
 def ingest_parallel(paths: list[Path], max_workers: int = 4) -> dict:
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -303,10 +297,9 @@ def ingest_parallel(paths: list[Path], max_workers: int = 4) -> dict:
 ```python
 import re
 
-
 def _sanitise_display_name(name: str) -> str:
     """Remove ANSI escape sequences from display strings."""
-    return re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", name)
+    return re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', name)
 ```
 - tqdm already handles this for its own output; the risk is in custom status messages
 

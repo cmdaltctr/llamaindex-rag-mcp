@@ -56,17 +56,9 @@ experiments/**/analysis.ipynb
 htmlcov/
 coverage.xml
 
-# Security scan artefacts (gitleaks/semgrep/bandit/osv/trivy SARIF output)
-.security/
-
 # IDE
 .idea/
 .vscode/
-.sonarlint/
-
-# Ruff
-.ruff_cache/
-
 # VS Code comment tracking files (e.g. .README.md.comments.json)
 .comments.json
 *.comments.json
@@ -80,7 +72,6 @@ coverage.xml
 
 # Generated knowledge graph artifacts
 graphify-out/
-.ua/
 
 # GGUF model files (downloaded by llama-server -hf to ~/.cache/huggingface/hub)
 models/
@@ -91,6 +82,3 @@ Thumbs.db
 
 # Project Management
 /niftypm
-
-# Security-scanner scratch output (a-security audits) — never commit
-.security/

@@ -20,6 +20,7 @@ import pytest
 from rag_mcp.core.profiles.resolver import ProfileResolver, _bundle_to_effective
 from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
 
+
 # ── H-7: overlay must inherit non-lever fields ──────────────────────────
 
 
@@ -102,7 +103,9 @@ def test_resolver_uses_injected_server_profile_without_touching_singleton(
     import rag_mcp.config as config_module
 
     def _boom(*args, **kwargs):  # pragma: no cover - must not be called
-        raise AssertionError("ProfileResolver read the settings singleton despite injection")
+        raise AssertionError(
+            "ProfileResolver read the settings singleton despite injection"
+        )
 
     monkeypatch.setattr(config_module, "settings", property(_boom), raising=False)
 

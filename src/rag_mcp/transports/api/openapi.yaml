@@ -367,10 +367,7 @@ components:
           type: number
           minimum: 0.0
           maximum: 1.0
-          description: >
-            Minimum canonical dense similarity (default 0.0 — no filtering).
-            Hybrid/no-rerank applies it to dense evidence before RRF;
-            successful reranking uses the calibrated reranker transform.
+          description: Minimum relevance score (default 0.0 — no filtering)
         rerank:
           type:
             - boolean
@@ -396,9 +393,6 @@ components:
         score:
           type: number
           format: float
-        score_kind:
-          type: string
-          enum: [dense_similarity_v1, rrf_v1, reranker_sigmoid_v1]
         source:
           type: string
         page_label:

@@ -46,16 +46,14 @@ class PyPDFium2Reader:
             page = pdf[i]
             text = page.get_textpage().get_text_range()
             if text.strip():
-                documents.append(
-                    Document(
-                        text=text,
-                        metadata={
-                            "pdf_reader": "pypdfium2",
-                            "page": i + 1,
-                            "file_path": str(file),
-                            "file_name": file.name,
-                        },
-                    )
-                )
+                documents.append(Document(
+                    text=text,
+                    metadata={
+                        "pdf_reader": "pypdfium2",
+                        "page": i + 1,
+                        "file_path": str(file),
+                        "file_name": file.name,
+                    },
+                ))
         pdf.close()
         return documents

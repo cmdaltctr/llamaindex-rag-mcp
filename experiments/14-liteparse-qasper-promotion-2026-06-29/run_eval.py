@@ -1,14 +1,16 @@
 """Run Experiment 14: LiteParse promotion on Qasper corpus.
 
-6-cell grid (protocol v2.1): {pypdf, liteparse, pdf_inspector} ×
-{rerank-off, rerank-on}.
+4-cell grid: {pypdf, liteparse} × {rerank-off, rerank-on}.
 Validates H1 (corpus validity), H2 (speed), H3 (reranker benefit).
-
-Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
-through ``rag_mcp.core.retrieval.search`` with an injected store from
-``experiments/_lib/storage.py`` — no environment mutation or
-module-constant patching.  Works in local and cloud Chroma modes.
 """
+
+# NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
+# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# removed by the architecture-v2 conformance change. It is an archived
+# historical artefact, is not run in CI, and is intentionally NOT repaired:
+# its results are already recorded in results.md, and rewriting it would
+# change the code that produced them. See docs/adr/037.
+
 
 from __future__ import annotations
 
@@ -22,36 +24,16 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-
-def build_eval_cell_matrix() -> list[dict[str, Any]]:
-    """Return the six evaluation cells as plan-comparable dicts (D15).
-
-    Shape matches ``plan.json`` cells: ``{"id": ..., "factors": {...}}``.
-    ``plan.json`` is the machine truth for the cell matrix; the agreement
-    tests in ``tests/test_experiment_14_harness.py`` compare this pure
-    generator against the plan via ``ExperimentPlan.assert_runner_cells``.
-    Protocol v2.1 (2026-08-23): pdf_inspector joins as the third reader.
-    """
-    return [
-        {"id": "pypdf_off", "factors": {"reader": "pypdf", "rerank": False}},
-        {"id": "pypdf_on", "factors": {"reader": "pypdf", "rerank": True}},
-        {"id": "liteparse_off", "factors": {"reader": "liteparse", "rerank": False}},
-        {"id": "liteparse_on", "factors": {"reader": "liteparse", "rerank": True}},
-        {"id": "pdf_inspector_off", "factors": {"reader": "pdf_inspector", "rerank": False}},
-        {"id": "pdf_inspector_on", "factors": {"reader": "pdf_inspector", "rerank": True}},
-    ]
-
-
-# Execution view derived from the pure generator above — same six cells,
-# same order and values.
 CELLS = [
-    {"name": cell["id"], "reader": cell["factors"]["reader"], "rerank": cell["factors"]["rerank"]}
-    for cell in build_eval_cell_matrix()
+    {"name": "pypdf_off", "reader": "pypdf", "rerank": False},
+    {"name": "pypdf_on", "reader": "pypdf", "rerank": True},
+    {"name": "liteparse_off", "reader": "liteparse", "rerank": False},
+    {"name": "liteparse_on", "reader": "liteparse", "rerank": True},
 ]
 
 
@@ -104,74 +86,41 @@ def _compute_metrics(
     return metrics
 
 
-def _resolve_cell_runtime(reader: str, rerank: bool) -> tuple[Any, str]:
-    """Build the per-reader store/collection from the shared helper.
-
-    The reader is part of the immutable index identity (parsed text
-    differs), so each reader cell resolves its own collection.
-    """
-    from experiments._lib.storage import experiment_storage_config, identity_embed_model
-
-    model = os.getenv("EMBED_MODEL")
-    if not model:
-        raise SystemExit("EMBED_MODEL is required; set it in .env or the environment")
-    chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{reader}")
-    storage = experiment_storage_config(
-        experiment_id="exp14",
-        corpus="qasper",
-        provider="ollama",
-        model=model,
-        parser=reader,
-        persist_dir=chroma_dir,
-    )
-    store = storage.build_store()
-
-    from llama_index.core import Settings as LlamaIndexSettings
-
-    from rag_mcp.core.vectordb import set_default_store
-
-    # Pin the query embedder to the index identity; ambient Settings()
-    # could select a different provider and query with incompatible vectors.
-    LlamaIndexSettings.embed_model = identity_embed_model(model)
-    set_default_store(store)
-    return store, storage.collection_name
-
-
 def _run_cell(
     cell: dict[str, Any],
     queries: list[dict[str, Any]],
     qrels: dict[str, dict[str, int]],
     k_values: list[int],
 ) -> dict[str, Any]:
-    from rag_mcp.core.retrieval import search
+    from rag_mcp import config, retrieval
 
     reader = cell["reader"]
     rerank = cell["rerank"]
 
-    store, collection_name = _resolve_cell_runtime(reader, rerank)
+    chroma_dir = str(SCRIPT_DIR / "output" / f"chroma_{reader}")
+    config.CHROMA_PERSIST_DIR = chroma_dir
+    config.HYBRID_ENABLED = False
+    config.RERANK_ENABLED = rerank
+    config.RERANK_FETCH_MULTIPLIER = 3
+    config.RERANK_MAX_FETCH = 100
+    os.environ["PDF_READER"] = reader
 
     results: list[dict[str, Any]] = []
     for i, query in enumerate(queries):
         t0 = time.perf_counter()
-        search_results = search(
+        search_results = retrieval.search(
             query=query["text"],
             top_k=max(k_values),
             rerank=rerank,
             hybrid=False,
-            collection_name=collection_name,
-            store=store,
-            include_diagnostics=True,
+            collection_name="documents",
         )
         latency_ms = (time.perf_counter() - t0) * 1000
-        results.append(
-            {
-                "query_id": query["id"],
-                "retrieved": [
-                    {"id": r["id"], "score": r.get("score", 0.0)} for r in search_results
-                ],
-                "latency_ms": latency_ms,
-            }
-        )
+        results.append({
+            "query_id": query["id"],
+            "retrieved": [{"id": r["id"], "score": r.get("score", 0.0)} for r in search_results],
+            "latency_ms": latency_ms,
+        })
         if (i + 1) % 20 == 0:
             print(f"  [{cell['name']}] {i + 1}/{len(queries)}", flush=True)
 
@@ -205,23 +154,10 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv(PROJECT_ROOT / ".env")
-
-    # Retrieval resolves the composition-root default EffectiveSettings
-    # (ADR-037); no entry point imported compose.  Install it explicitly
-    # (mirrors 873e6d3 in the 10b harness) so search() can resolve a
-    # default without raising.
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.settings import set_default_effective_settings
-
-    set_default_effective_settings(settings_to_effective(get_settings()))
-
     output_dir = SCRIPT_DIR / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # The frozen qrels live at the experiment root (written there by
-    # prepare_qasper_pdfs.py and gitignored); output/ holds only artefacts.
-    gt_path = SCRIPT_DIR / "qasper_qrels.json"
+    gt_path = output_dir / "qasper_qrels.json"
     gt = _load_ground_truth(gt_path)
     queries = gt.get("queries", [])
     qrels = gt.get("qrels", {})
@@ -249,8 +185,7 @@ def main() -> None:
 
     # Load ingestion times from index build metadata
     ingestion_times: dict[str, float] = {}
-    # Protocol v2.1: three readers — pdf_inspector timing is H2 evidence too.
-    for reader in ["pypdf", "liteparse", "pdf_inspector"]:
+    for reader in ["pypdf", "liteparse"]:
         build_info_path = output_dir / f"index_build_{reader}.json"
         if build_info_path.exists():
             build_info = json.loads(build_info_path.read_text(encoding="utf-8"))

@@ -9,27 +9,27 @@ without producing uncapped oversized chunks.
 ### Requirement: Markdown files use heading-aware chunking with a size cap
 
 The system SHALL chunk files with extension `.md` using a heading-aware node
-parser chained with a sentence splitter capped at `CHUNKING__MARKDOWN_CHUNK_SIZE`.
+parser chained with a sentence splitter capped at `MARKDOWN_CHUNK_SIZE`.
 Heading boundaries SHALL be respected wherever the heading-bounded section is
-at most `CHUNKING__MARKDOWN_CHUNK_SIZE` characters; sections longer than
-`CHUNKING__MARKDOWN_CHUNK_SIZE` SHALL be further split by the sentence splitter so that
-no produced chunk exceeds `CHUNKING__MARKDOWN_CHUNK_SIZE` within the splitter's
+at most `MARKDOWN_CHUNK_SIZE` characters; sections longer than
+`MARKDOWN_CHUNK_SIZE` SHALL be further split by the sentence splitter so that
+no produced chunk exceeds `MARKDOWN_CHUNK_SIZE` within the splitter's
 tokenisation tolerance. Non-Markdown files SHALL retain the existing splitter
-behaviour and global `CHUNKING__CHUNK_SIZE` default.
+behaviour and global `CHUNK_SIZE` default.
 
 #### Scenario: Markdown headings remain intact when sections fit
 
-- **GIVEN** a Markdown document with multiple `##` sections, each shorter than `CHUNKING__MARKDOWN_CHUNK_SIZE`
+- **GIVEN** a Markdown document with multiple `##` sections, each shorter than `MARKDOWN_CHUNK_SIZE`
 - **WHEN** the document is ingested
 - **THEN** chunk boundaries SHALL align with heading boundaries
 - **THEN** no chunk SHALL contain a partial heading line followed by unrelated section text
 
 #### Scenario: Long heading-bounded section is further split
 
-- **GIVEN** a Markdown document whose single `##` section text exceeds `CHUNKING__MARKDOWN_CHUNK_SIZE`
+- **GIVEN** a Markdown document whose single `##` section text exceeds `MARKDOWN_CHUNK_SIZE`
 - **WHEN** the document is ingested
 - **THEN** that section SHALL be split into more than one chunk
-- **THEN** every produced chunk SHALL have length at most `CHUNKING__MARKDOWN_CHUNK_SIZE` within the splitter's tokenisation tolerance
+- **THEN** every produced chunk SHALL have length at most `MARKDOWN_CHUNK_SIZE` within the splitter's tokenisation tolerance
 
 #### Scenario: Non-Markdown files are unchanged
 
@@ -54,10 +54,10 @@ remain opt-in. Defensive heading metadata propagation SHALL be idempotent.
 
 #### Scenario: Markdown branch can use a different chunk size from non-Markdown files
 
-- **GIVEN** `CHUNKING__CHUNK_SIZE=512` and `CHUNKING__MARKDOWN_CHUNK_SIZE=1024`
+- **GIVEN** `CHUNK_SIZE=512` and `MARKDOWN_CHUNK_SIZE=1024`
 - **WHEN** a `.md` file is ingested
-- **THEN** the Markdown branch SHALL use `CHUNKING__MARKDOWN_CHUNK_SIZE` for the second-stage `SentenceSplitter`
-- **AND** non-Markdown files SHALL continue using `CHUNKING__CHUNK_SIZE`
+- **THEN** the Markdown branch SHALL use `MARKDOWN_CHUNK_SIZE` for the second-stage `SentenceSplitter`
+- **AND** non-Markdown files SHALL continue using `CHUNK_SIZE`
 
 #### Scenario: Heading metadata is defensively preserved
 
@@ -68,16 +68,16 @@ remain opt-in. Defensive heading metadata propagation SHALL be idempotent.
 
 #### Scenario: Heading text can be prepended before embedding
 
-- **GIVEN** `CHUNKING__MARKDOWN_HEADING_PREPEND=true`
+- **GIVEN** `MARKDOWN_HEADING_PREPEND=true`
 - **WHEN** a Markdown chunk has a non-empty heading path
 - **THEN** the system SHALL prepend the heading path to the chunk text before embedding
 - **AND** the system SHALL avoid double-prepending the same prefix on repeated processing
 
 #### Scenario: Small Markdown chunks can be filtered
 
-- **GIVEN** `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION > 0.0`
+- **GIVEN** `MARKDOWN_MIN_CHUNK_FRACTION > 0.0`
 - **WHEN** Markdown chunks are emitted after splitting
-- **THEN** chunks smaller than `CHUNKING__MARKDOWN_CHUNK_SIZE * 4 * CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` characters SHALL be filtered before embedding
+- **THEN** chunks smaller than `MARKDOWN_CHUNK_SIZE * 4 * MARKDOWN_MIN_CHUNK_FRACTION` characters SHALL be filtered before embedding
 - **AND** the system SHALL log how many chunks were filtered
 
 ### Requirement: Markdown chunking evaluations use evidence-level labels

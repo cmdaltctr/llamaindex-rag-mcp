@@ -59,7 +59,6 @@ dataset to determine the range. Sigmoid is parameter-free and well-understood.
 Instead of:
 ```python
 from sentence_transformers import CrossEncoder
-
 model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 scores = model.predict(pairs)
 ```
@@ -71,8 +70,7 @@ from transformers import AutoTokenizer
 from huggingface_hub import hf_hub_download
 
 onnx_path = hf_hub_download(
-    repo_id=MODEL_ID,
-    filename="onnx/model_qint8_arm64.onnx",
+    repo_id=MODEL_ID, filename="onnx/model_qint8_arm64.onnx",
 )
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
@@ -106,7 +104,6 @@ Replace the permanent `_failed` flag with a retry mechanism:
 ```python
 _load_attempted: bool = False
 _load_error: str | None = None
-
 
 def _load_model(self) -> None:
     if self._loaded:

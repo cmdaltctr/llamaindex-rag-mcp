@@ -28,7 +28,7 @@ Extend the return dict with a `file_details` list containing per-file status:
         {"file": "doc1.pdf", "status": "indexed", "chunks": 20},
         {"file": "doc2.txt", "status": "indexed", "chunks": 15},
         {"file": "corrupt.pdf", "status": "failed", "chunks": 0, "error": "..."},
-    ],
+    ]
 }
 ```
 

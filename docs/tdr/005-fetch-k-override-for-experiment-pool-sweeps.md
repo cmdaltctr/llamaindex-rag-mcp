@@ -50,18 +50,16 @@ collection size).
 ```python
 # retrieval.py — _resolve_fetch_k with override
 
-
 def _resolve_fetch_k(
     top_k: int,
     rerank: bool,
     collection_count: int,
-    fetch_k_override: int | None = None,  # ← NEW
+    fetch_k_override: int | None = None,   # ← NEW
 ) -> int:
     if fetch_k_override is not None:
-        fetch_k = fetch_k_override  # ← bypass formula
+        fetch_k = fetch_k_override           # ← bypass formula
     elif rerank:
         from . import config as _config
-
         fetch_k = max(
             _config.RERANK_MAX_FETCH,
             top_k * _config.RERANK_FETCH_MULTIPLIER,
@@ -145,7 +143,8 @@ from rag_mcp.retrieval import _resolve_fetch_k
 
 # Check whether labelled pool sizes are genuinely distinct:
 for label in (50, 100, 200, 500):
-    actual = _resolve_fetch_k(top_k=50, rerank=True, collection_count=10000, fetch_k_override=label)
+    actual = _resolve_fetch_k(top_k=50, rerank=True, collection_count=10000,
+                              fetch_k_override=label)
     print(f"label={label}, actual={actual}")
 
 # Without the override (the old path):

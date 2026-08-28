@@ -1,12 +1,17 @@
-"""Unit tests for doc_graph.py — similarity edges, metadata edges, heading edges, community detection, cross-links."""  # noqa: E501
+"""Unit tests for doc_graph.py — similarity edges, metadata edges, heading edges, community detection, cross-links."""
 
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 
 import networkx as nx
+import numpy as np
+import pytest
 
 from rag_mcp.core.documents.doc_graph import (
+    CrossLink,
+    DocCommunity,
+    Edge,
     build_document_graph,
     compute_cross_links,
     compute_heading_edges,
@@ -14,6 +19,7 @@ from rag_mcp.core.documents.doc_graph import (
     compute_similarity_edges,
     detect_document_communities,
 )
+
 
 # ── Helper: create a mock ChromaDB collection ────────────────────────────
 
@@ -252,20 +258,18 @@ class TestComputeCrossLinks:
 
         links = compute_cross_links(code_graph, doc_graph)
         # "src/auth/login.ts" and "docs/src/auth/login.md" — basename "login" matches.
-        assert any(link.relation == "filename_match" for link in links)
+        assert any(l.relation == "filename_match" for l in links)
 
     def test_symbol_match(self) -> None:
         """Symbol matching creates cross-links."""
         code_graph = nx.DiGraph()
-        code_graph.add_node(
-            "src/user_service.ts", exports=["UserService"], classes=[], functions=[]
-        )
+        code_graph.add_node("src/user_service.ts", exports=["UserService"], classes=[], functions=[])
 
         doc_graph = nx.Graph()
         doc_graph.add_node("doc1", file_path="docs/UserService.md", category="", keywords=[])
 
         links = compute_cross_links(code_graph, doc_graph)
-        assert any(link.relation == "symbol_match" for link in links)
+        assert any(l.relation == "symbol_match" for l in links)
 
     def test_generic_name_no_false_positive(self) -> None:
         """Generic single-segment names don't create false positive cross-links."""
@@ -277,7 +281,7 @@ class TestComputeCrossLinks:
 
         links = compute_cross_links(code_graph, doc_graph)
         # "config.ts" has only 1 path segment — should not match.
-        filename_links = [link for link in links if link.relation == "filename_match"]
+        filename_links = [l for l in links if l.relation == "filename_match"]
         assert len(filename_links) == 0
 
     def test_empty_graphs(self) -> None:
@@ -296,7 +300,7 @@ class TestComputeCrossLinks:
         doc_graph.add_node("doc1", file_path="docs/security.md", category="auth", keywords=["auth"])
 
         links = compute_cross_links(code_graph, doc_graph)
-        overlap_links = [link for link in links if link.relation == "keyword_overlap"]
+        overlap_links = [l for l in links if l.relation == "keyword_overlap"]
         assert len(overlap_links) > 0
 
 

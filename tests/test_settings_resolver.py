@@ -16,6 +16,7 @@ import pytest
 
 from rag_mcp.config import Settings
 
+
 # ── Env var → (field name, documented default) ──────────────────────────
 # EMBED_MODEL is handled separately because the model validator requires
 # it whenever the effective embedding provider resolves to ollama.
@@ -63,15 +64,15 @@ _DEFAULTS: list[tuple[str, str, object]] = [
     ("RETRIEVAL__HYBRID_RRF_K", "retrieval.hybrid_rrf_k", 60),
     ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25"),
     # PDF reader.
-    ("PDF_READER", "pdf_reader", "pdf_inspector"),
+    ("PDF_READER", "pdf_reader", "auto"),
     ("LITEPARSE_NUM_WORKERS", "liteparse_num_workers", None),
     ("LITEPARSE_OCR_ENABLED", "liteparse_ocr_enabled", False),
     # Metadata.
     ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "llamaindex"),
     ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", None),
     ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "qwen3:0.6b"),
-    ("METADATA__CLASSIFY_MAX_ATTEMPTS", "metadata.classify_max_attempts", 3),
-    ("METADATA__CLASSIFY_TIMEOUT", "metadata.classify_timeout", 30.0),
+    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", 3),
+    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", 30.0),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", 0.85),
@@ -120,12 +121,7 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     # Retrieval.
     ("RETRIEVAL__TOP_K", "retrieval.top_k", "25", 25),
     ("RETRIEVAL__RERANK_ENABLED", "retrieval.rerank_enabled", "true", True),
-    (
-        "RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC",
-        "retrieval.rerank_enabled_for_semantic",
-        "false",
-        False,
-    ),
+    ("RETRIEVAL__RERANK_ENABLED_FOR_SEMANTIC", "retrieval.rerank_enabled_for_semantic", "false", False),
     ("RETRIEVAL__HARD_TECHNICAL_THRESHOLD", "retrieval.hard_technical_threshold", "0.7", 0.7),
     ("RETRIEVAL__SIMILARITY_THRESHOLD", "retrieval.similarity_threshold", "0.5", 0.5),
     ("RETRIEVAL__RERANK_FETCH_MULTIPLIER", "retrieval.rerank_fetch_multiplier", "5", 5),
@@ -141,8 +137,8 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("METADATA__EXTRACTION_MODE", "metadata.extraction_mode", "disabled", "disabled"),
     ("METADATA__KEYWORD_RULES", "metadata.keyword_rules", "rules.json", "rules.json"),
     ("METADATA__OLLAMA_CLASSIFY_MODEL", "metadata.ollama_classify_model", "llama3:8b", "llama3:8b"),
-    ("METADATA__CLASSIFY_MAX_ATTEMPTS", "metadata.classify_max_attempts", "5", 5),
-    ("METADATA__CLASSIFY_TIMEOUT", "metadata.classify_timeout", "60.5", 60.5),
+    ("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "metadata.ollama_classify_max_attempts", "5", 5),
+    ("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "metadata.ollama_classify_timeout", "60.5", 60.5),
     # Codebase map.
     ("MAGIKA_BINARY", "magika_binary", "/usr/bin/magika", "/usr/bin/magika"),
     ("DOC_SIMILARITY_THRESHOLD", "doc_similarity_threshold", "0.9", 0.9),
@@ -150,19 +146,9 @@ _OVERRIDES: list[tuple[str, str, str, object]] = [
     ("CODEBASE_MAP_MAX_FILES", "codebase_map_max_files", "10000", 10000),
     ("CODEBASE_MAP_MAX_DEPTH", "codebase_map_max_depth", "20", 20),
     # Document backend (endpoint/key/model keep distinct valid overrides).
-    (
-        "AZURE_DOC_INTELLIGENCE_ENDPOINT",
-        "azure_doc_intelligence_endpoint",
-        "https://example.azure.com/",
-        "https://example.azure.com/",
-    ),
+    ("AZURE_DOC_INTELLIGENCE_ENDPOINT", "azure_doc_intelligence_endpoint", "https://example.azure.com/", "https://example.azure.com/"),
     ("AZURE_DOC_INTELLIGENCE_KEY", "azure_doc_intelligence_key", "key-123", "key-123"),
-    (
-        "AZURE_DOC_INTELLIGENCE_MODEL",
-        "azure_doc_intelligence_model",
-        "prebuilt-read",
-        "prebuilt-read",
-    ),
+    ("AZURE_DOC_INTELLIGENCE_MODEL", "azure_doc_intelligence_model", "prebuilt-read", "prebuilt-read"),
 ]
 
 
@@ -181,17 +167,6 @@ def _fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     sources remain active.
     """
     return Settings(_env_file=None)
-
-
-@pytest.mark.parametrize("reader", ["liteparse", "pdf_inspector"])
-def test_explicit_pdf_reader_is_preserved(
-    reader: str,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Configured concrete PDF readers must not silently fall back to auto."""
-    monkeypatch.setenv("PDF_READER", reader)
-
-    assert _fresh_settings(monkeypatch).pdf_reader == reader
 
 
 # ── Default resolution ──────────────────────────────────────────────────
@@ -271,13 +246,13 @@ def test_embed_model_required_for_ollama(
 # ── Provider-selection clamping ─────────────────────────────────────────
 
 
-def test_cloud_backend_invalid_value_raises(
+def test_cloud_backend_invalid_value_clamped_to_openrouter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """CLOUD_BACKEND has a single valid value; others raise (§7.4)."""
+    """CLOUD_BACKEND has a single valid value; others clamp to openrouter."""
     monkeypatch.setenv("CLOUD_BACKEND", "definitely-not-a-backend")
-    with pytest.raises(ValueError, match="CLOUD_BACKEND='definitely-not-a-backend'"):
-        _fresh_settings(monkeypatch)
+    settings = _fresh_settings(monkeypatch)
+    assert settings.cloud_backend == "openrouter"
 
 
 def test_document_backend_azure_without_credentials_falls_back_to_local(
@@ -300,31 +275,6 @@ def test_document_backend_azure_kept_with_credentials(
     monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_KEY", "secret-key")
     settings = _fresh_settings(monkeypatch)
     assert settings.document_backend == "azure"
-
-
-# ── Metadata extraction mode validation ─────────────────────────────────
-
-
-def test_metadata_extraction_mode_local_is_accepted(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The inline-dispatched ``local`` mode is a recognised setting."""
-    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "local")
-    settings = _fresh_settings(monkeypatch)
-    assert settings.metadata.extraction_mode == "local"
-
-
-def test_unknown_metadata_extraction_mode_raises_at_settings_resolution(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An unknown metadata mode must fail before runtime dispatch."""
-    monkeypatch.setenv("METADATA__EXTRACTION_MODE", "typo")
-    with pytest.raises(
-        ValueError,
-        match=r"METADATA__EXTRACTION_MODE='typo'.*Accepted values: "
-        r"disabled, keyword, local, llamaindex, ollama, llamacpp, openrouter",
-    ):
-        _fresh_settings(monkeypatch)
 
 
 # ── Legacy boolean semantics ────────────────────────────────────────────

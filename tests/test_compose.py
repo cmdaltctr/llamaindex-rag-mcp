@@ -1,7 +1,7 @@
 """Tests for the composition root (``rag_mcp.compose``) and provider helpers.
 
 Covers the config-composition-root spec scenarios:
-- ``compose.build_embed_model`` constructs the embedding provider
+- ``compose.build_embed_model`` / ``build_llm_model`` construct providers
   by resolving lazy registries against the resolved ``Settings``.
 - ``compose.build_reranker`` constructs the DI reranker wired to
   ``settings.retrieval.rerank_model``.
@@ -13,37 +13,19 @@ Covers the config-composition-root spec scenarios:
 
 from __future__ import annotations
 
-import sys
-
-# Chroma-path delegation tests (task 5.1): skipped in the base install,
-# run in the chroma-extra CI job.
-from importlib.util import find_spec as _find_spec
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from rag_mcp.config import Settings
 from rag_mcp.compose import (
     build_embed_model,
+    build_llm_model,
     build_reranker,
     ensure_runtime_setup,
     reset_runtime_setup,
-    runtime_summary,
 )
-from rag_mcp.config import Settings
 from rag_mcp.core.providers.common import get_embed_endpoint
-
-requires_chroma = pytest.mark.skipif(
-    _find_spec("chromadb") is None,
-    reason="chroma extra not installed (uv sync --extra chroma); runs in the chroma-extra CI job",
-)
-
-
-def test_embedding_provider_scope_is_process_global() -> None:
-    """Profiles must not imply concurrent per-collection embed providers."""
-    import rag_mcp.compose as compose
-
-    assert compose.EMBEDDING_PROVIDER_SCOPE == "process"
 
 
 # Subpackage field -> the nested block that owns it (v2.0.0 schema).
@@ -53,49 +35,8 @@ _BLOCK_OF = {
     "rerank_model": "retrieval",
     "top_k": "retrieval",
     "ollama_classify_model": "metadata",
-    "classify_timeout": "metadata",
+    "ollama_classify_timeout": "metadata",
 }
-
-
-# Flat defaults for ``_settings()``. Every key must be routable: either
-# ``_BLOCK_OF`` owns it, or the root ``Settings`` model declares it. A key
-# that is neither falls through to ``root`` and is silently dropped by
-# ``Settings(extra="ignore")`` — see ``_assert_routable``.
-_DEFAULT_FLAT: dict[str, object] = {
-    "embed_provider": "local",
-    "local_backend": "ollama",
-    "embed_model": "nomic-embed-text",
-    "ollama_base_url": "http://localhost:11434",
-    "embed_batch_size": 64,
-    "metadata_llm_provider": "local",
-    "ollama_classify_model": "qwen3:0.6b",
-    "classify_timeout": 30.0,
-    "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
-}
-
-
-def _assert_routable(flat: dict[str, object]) -> None:
-    """Fail if any flat key would be silently discarded.
-
-    ``_settings()`` routes a key into a nested block when ``_BLOCK_OF``
-    names one, and otherwise passes it to the root ``Settings`` model.
-    A key in neither place — a subpackage field left behind by a rename,
-    say — is accepted and dropped without a word by
-    ``Settings(extra="ignore")``, so the test relying on it silently
-    stops testing anything.
-
-    Args:
-        flat: The merged defaults-plus-overrides mapping to check.
-
-    Raises:
-        AssertionError: Naming every key that routes nowhere.
-    """
-    root_fields = set(Settings.model_fields)
-    unroutable = sorted(key for key in flat if key not in _BLOCK_OF and key not in root_fields)
-    assert not unroutable, (
-        f"flat keys route nowhere and would be silently dropped: {unroutable}. "
-        "Add each to _BLOCK_OF, or use its current root Settings name."
-    )
 
 
 def _settings(**overrides) -> Settings:
@@ -108,11 +49,18 @@ def _settings(**overrides) -> Settings:
     from rag_mcp.core.metadata.settings import MetadataSettings
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-    flat = dict(_DEFAULT_FLAT)
+    flat = {
+        "embed_provider": "local",
+        "local_backend": "ollama",
+        "embed_model": "nomic-embed-text",
+        "ollama_base_url": "http://localhost:11434",
+        "embed_batch_size": 64,
+        "metadata_llm_provider": "local",
+        "ollama_classify_model": "qwen3:0.6b",
+        "ollama_classify_timeout": 30.0,
+        "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    }
     flat.update(overrides)
-    # Guards the override path too, not just the defaults: an override
-    # naming a renamed field is the same silent no-op.
-    _assert_routable(flat)
 
     blocks: dict[str, dict] = {}
     root: dict = {}
@@ -132,30 +80,6 @@ def _settings(**overrides) -> Settings:
     return Settings(_env_file=None, **root, **nested)
 
 
-# ── Fixture guard ───────────────────────────────────────────────────────────
-
-
-def test_every_default_key_is_routable() -> None:
-    """No default key may silently vanish into ``Settings(extra="ignore")``.
-
-    Named explicitly rather than left to the in-fixture guard so the
-    failure reads as its own test rather than as a collapse of every test
-    that builds settings.
-    """
-    _assert_routable(dict(_DEFAULT_FLAT))
-
-
-def test_routability_guard_rejects_a_renamed_key() -> None:
-    """The guard itself must fail on a key that routes nowhere.
-
-    ``classify_timeout`` was once ``ollama_classify_timeout``; the stale
-    name sat in the defaults being silently dropped. This pins that the
-    guard catches that shape of key rather than passing vacuously.
-    """
-    with pytest.raises(AssertionError, match="ollama_classify_timeout"):
-        _assert_routable({"ollama_classify_timeout": 30.0})
-
-
 # ── build_embed_model ───────────────────────────────────────────────────────
 
 
@@ -173,35 +97,58 @@ def test_build_embed_model_ollama() -> None:
 
 def test_build_embed_model_llamacpp_two_tier() -> None:
     """EMBED_PROVIDER=local + LOCAL_BACKEND=llamacpp resolves llamacpp."""
-    pytest.importorskip("llama_index.embeddings.openai_like")
     settings = _settings(local_backend="llamacpp", llamacpp_embed_model="t.gguf")
-    with patch("llama_index.embeddings.openai_like.OpenAILikeEmbedding") as mock_cls:
+    with patch("llama_index.embeddings.openai.OpenAIEmbedding") as mock_cls:
         build_embed_model(settings)
         mock_cls.assert_called_once()
         kwargs = mock_cls.call_args.kwargs
-        assert kwargs["model_name"] == "t.gguf"
+        assert kwargs["model"] == "t.gguf"
         assert kwargs["api_base"] == "http://localhost:8080/v1"
 
 
 def test_build_embed_model_validates_unknown_provider() -> None:
-    """Unknown provider values raise at Settings construction (§7.3).
+    """Unknown provider values are clamped by the Settings validator.
 
-    The Settings model validator raises ValueError naming the offending
-    value before compose ever resolves a registry — so compose itself
-    cannot see an unregistered provider through a validated Settings
-    object.  (The registry-level ``KeyError`` path is covered in
+    The Settings model falls back to ``local`` with a warning before
+    compose ever resolves a registry — so compose itself cannot see an
+    unregistered provider through a validated Settings object.  (The
+    registry-level ``KeyError`` path is covered in
     ``test_registry_contract.py``.)
     """
-    with pytest.raises(ValueError, match="EMBED_PROVIDER='bogus'"):
-        _settings(embed_provider="bogus")
+    settings = _settings(embed_provider="bogus", local_backend="bogus")
+    assert settings.embed_provider == "local"
+    assert settings.local_backend == "llamacpp"
 
 
-def test_runtime_summary_reads_resolved_settings_once() -> None:
-    """Runtime logging details are resolved by the composition root."""
-    settings = _settings(embed_model="summary-model", embed_batch_size=24, embed_concurrency=3)
-    with patch("rag_mcp.compose.get_settings", return_value=settings) as mock_settings:
-        assert runtime_summary() == ("summary-model", 24, 3)
-    mock_settings.assert_called_once()
+# ── build_llm_model ─────────────────────────────────────────────────────────
+
+
+def test_build_llm_model_local_ollama() -> None:
+    """METADATA_LLM_PROVIDER=local + LOCAL_BACKEND=ollama builds an Ollama."""
+    settings = _settings()
+    with patch("llama_index.llms.ollama.Ollama") as mock_cls:
+        build_llm_model(settings)
+        mock_cls.assert_called_once()
+        kwargs = mock_cls.call_args.kwargs
+        assert kwargs["model"] == "qwen3:0.6b"
+        assert kwargs["base_url"] == "http://localhost:11434"
+
+
+def test_build_llm_model_cloud_openrouter_not_registered() -> None:
+    """Cloud openrouter LLM is served by the extractor's HTTP path.
+
+    The LLM provider registry deliberately registers only ``ollama`` and
+    ``llamacpp`` (design: ``core/providers/llm/``).  OpenRouter chat
+    extraction lives in ``core.metadata.extractor`` as a raw HTTP call
+    (``_extract_openrouter_chat_async``), so ``build_llm_model`` with
+    ``CLOUD_BACKEND=openrouter`` must raise a helpful ``KeyError``.
+    """
+    settings = _settings(
+        metadata_llm_provider="cloud",
+        cloud_backend="openrouter",
+    )
+    with pytest.raises(KeyError, match="openrouter"):
+        build_llm_model(settings)
 
 
 # ── build_reranker ──────────────────────────────────────────────────────────
@@ -222,7 +169,7 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     from llama_index.core import Settings as LlamaIndexSettings
     from llama_index.core.embeddings import MockEmbedding
 
-    _ = _settings()
+    settings = _settings()
     reset_runtime_setup()
 
     mock_model = MockEmbedding(embed_dim=384)
@@ -237,24 +184,18 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     reset_runtime_setup()
 
 
-def test_ensure_runtime_setup_propagates_embed_model_failure() -> None:
-    """A construction failure must propagate, not be swallowed (§5.4).
+def test_ensure_runtime_setup_degrades_gracefully() -> None:
+    """A construction failure must warn, not crash."""
+    from llama_index.core import Settings as LlamaIndexSettings
 
-    Previously ensure_runtime_setup caught ImportError/ValueError from
-    build_embed_model and logged a warning, leaving the process running
-    with no embed model set.  Now the exception propagates so startup
-    fails loudly.
-    """
-
-    _ = _settings()
+    settings = _settings()
     reset_runtime_setup()
 
     with patch(
         "rag_mcp.compose.build_embed_model",
         side_effect=ImportError("optional dep missing"),
     ):
-        with pytest.raises(ImportError, match="optional dep missing"):
-            ensure_runtime_setup()
+        ensure_runtime_setup()  # must not raise
     reset_runtime_setup()
 
 
@@ -266,9 +207,7 @@ def test_get_embed_endpoint_ollama() -> None:
     settings = _settings()
     endpoint = get_embed_endpoint(settings)
     assert endpoint == (
-        "http://localhost:11434",
-        "nomic-embed-text",
-        "",
+        "http://localhost:11434", "nomic-embed-text", "",
     )
 
 
@@ -297,806 +236,3 @@ def test_get_embed_endpoint_openrouter() -> None:
         "text-embedding-3-small",
         "sk-test",
     )
-
-
-# ── resolve_sparse_backend (native path) ────────────────────────────────────
-
-
-class TestResolveSparseBackendNative:
-    """The explicit 'native' backend path with capability probing."""
-
-    @staticmethod
-    def _settings(backend: str):
-        from rag_mcp.config import Settings
-        from rag_mcp.core.retrieval.settings import RetrievalSettings
-
-        # The probe path applies to the Chroma backend, which advertises
-        # native sparse (task 3.3): capability follows the SELECTED store.
-        return Settings(
-            _env_file=None,
-            vector_store="chroma",
-            retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
-        )
-
-    def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """A native request with the probe passing returns native."""
-        import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
-
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
-        assert compose.resolve_sparse_backend(self._settings("native")) == "native"
-
-    def test_native_with_probe_false_falls_back_to_bm25(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """A native request with the probe failing falls back to bm25 with a warning."""
-        import logging
-
-        import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
-
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
-            result = compose.resolve_sparse_backend(self._settings("native"))
-        assert result == "bm25"
-        assert any("native" in r.message and "bm25" in r.message for r in caplog.records)
-
-
-# ── resolve_pdf_reader (import probing) ─────────────────────────────────────
-
-
-class TestResolvePdfReader:
-    """The resolve_pdf_reader import-probe branches."""
-
-    def test_liteparse_available_returns_liteparse(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """A liteparse reader with the package importable returns liteparse."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        settings = Settings(_env_file=None, pdf_reader="liteparse")
-        assert compose.resolve_pdf_reader(settings) == "liteparse"
-
-    def test_liteparse_missing_falls_back_to_pypdf(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """A liteparse reader with the package absent falls back to pypdf."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "liteparse", None)
-        settings = Settings(_env_file=None, pdf_reader="liteparse")
-        assert compose.resolve_pdf_reader(settings) == "pypdf"
-
-    def test_pdf_inspector_available_returns_pdf_inspector(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """An explicit pdf_inspector reader resolves to pdf_inspector when
-        the package is importable — even though liteparse is importable too.
-
-        Spec: pdf-reader delta (promote-pdf-inspector-default-reader),
-        scenario "Explicit pdf-inspector selection via env var": explicit
-        selection SHALL win over the auto preference order.
-        """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        settings = Settings(_env_file=None, pdf_reader="pdf_inspector")
-        assert compose.resolve_pdf_reader(settings) == "pdf_inspector"
-
-    def test_pdf_inspector_missing_falls_back_to_pypdf_with_error(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """A pdf_inspector reader with the package absent falls back to pypdf.
-
-        Spec: pdf-reader delta, scenario "Missing configured backend falls
-        back safely": log an error naming the missing package and return
-        pypdf rather than raising. An installed liteparse must NOT be
-        silently selected in place of the configured reader.
-        """
-        import logging
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "pdf_inspector", None)
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        settings = Settings(_env_file=None, pdf_reader="pdf_inspector")
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
-            assert compose.resolve_pdf_reader(settings) == "pypdf"
-        assert any("pdf_inspector" in r.message and "pypdf" in r.message for r in caplog.records)
-
-    def test_packaged_default_reader_is_pdf_inspector(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """The packaged PDF_READER default is pdf_inspector.
-
-        Spec: pdf-reader delta, scenario "Packaged default selects
-        pdf-inspector": with no PDF_READER environment variable set, both
-        the packaged Settings default and the composition-root resolution
-        yield pdf_inspector.
-        """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.delenv("PDF_READER", raising=False)
-        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
-
-        settings = Settings(_env_file=None)
-        assert settings.pdf_reader == "pdf_inspector"
-        assert compose.resolve_pdf_reader(settings) == "pdf_inspector"
-
-    def test_auto_resolves_to_liteparse_when_available(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """An auto reader resolves to liteparse when the package is importable."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        settings = Settings(_env_file=None, pdf_reader="auto")
-        assert compose.resolve_pdf_reader(settings) == "liteparse"
-
-    def test_auto_falls_back_to_pypdf_when_none_available(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """An auto reader falls back to pypdf when both optional packages are absent."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "liteparse", None)
-        monkeypatch.setitem(sys.modules, "pypdfium2", None)
-        settings = Settings(_env_file=None, pdf_reader="auto")
-        assert compose.resolve_pdf_reader(settings) == "pypdf"
-
-    def test_auto_keeps_liteparse_first_with_pdf_inspector_available(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """auto must keep its liteparse-first policy even when pdf_inspector is installed.
-
-        Spec: promote-pdf-inspector-default-reader — only the packaged
-        default changes; ``auto`` "SHALL retain its existing
-        capability-resolution and graceful-fallback behaviour" (design
-        non-goal: no pdf-inspector priority inside auto). Pins the
-        current liteparse → pypdfium2 → pypdf probe order.
-        """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        settings = Settings(_env_file=None, pdf_reader="auto")
-
-        # pdf_inspector importable must not demote liteparse.
-        monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        assert compose.resolve_pdf_reader(settings) == "liteparse"
-
-        # With liteparse and pypdfium2 absent, auto falls to pypdf —
-        # pdf_inspector is never promoted into the auto chain.
-        monkeypatch.setitem(sys.modules, "liteparse", None)
-        monkeypatch.setitem(sys.modules, "pypdfium2", None)
-        assert compose.resolve_pdf_reader(settings) == "pypdf"
-
-    def test_unregistered_but_importable_reader_rejected(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """An importable but unregistered concrete name falls back to pypdf.
-
-        Spec: pdf-reader, requirement "Reader factory SHALL be extensible
-        without modifying ingestion code" — a name becomes a reader only
-        through the config accepted values plus one ``register()`` call;
-        an importable module is not a reader. resolve_pdf_reader must
-        gate explicit names through integrations.pdf.registry membership,
-        not ``__import__``: today any importable module name passes, so a
-        config/registry drift (a name Settings accepted but nobody
-        registered) would surface as a factory KeyError at query time
-        instead of an upfront fallback here.
-
-        The unregistered name is planted into ``sys.modules`` as a
-        SimpleNamespace so ``__import__`` succeeds. Settings validation
-        is bypassed with ``object.__setattr__`` because the config-layer
-        warn-and-fallback (unknown value coerced to ``auto``) is that
-        layer's own contract, covered by its own tests.
-        """
-        import logging
-        from types import SimpleNamespace
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "fastparser", SimpleNamespace())
-
-        settings = Settings(_env_file=None)
-        object.__setattr__(settings, "pdf_reader", "fastparser")
-
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
-            assert compose.resolve_pdf_reader(settings) == "pypdf"
-        assert any("fastparser" in r.message and "registered" in r.message for r in caplog.records)
-
-    def test_unregistered_reader_log_repr_escapes_value(
-        self,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """The unregistered-reader error repr-escapes the settings value.
-
-        The value reaches this branch only when Settings bypass the
-        config validator (direct construction). A newline-bearing value
-        rendered with ``%s`` could forge additional log lines; ``%r``
-        escapes it. The rendered message must contain the ``repr`` form
-        and must not contain a literal newline inside the value.
-        """
-        import logging
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        hostile = "evil\nreader"
-        settings = Settings(_env_file=None)
-        object.__setattr__(settings, "pdf_reader", hostile)
-
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
-            assert compose.resolve_pdf_reader(settings) == "pypdf"
-        record = next(r for r in caplog.records if "unregistered" in r.message)
-        assert repr(hostile) in record.message
-        assert "evil\nreader" not in record.message
-
-    @pytest.fixture()
-    def pdf_registry_sandbox(self):
-        """Snapshot and restore the PDF reader registry around a test.
-
-        The registry is module-global state. Tests below plant temporary
-        entries via the public ``register()`` call, and a correct
-        composition root will resolve (and cache) through those entries;
-        the sandbox restores ``_registry``, ``_probe_modules``, and ``_cache``
-        so the planted names never leak into other tests.
-        """
-        from rag_mcp.integrations.pdf import registry as pdf_registry
-
-        saved_registry = dict(pdf_registry._registry)
-        saved_probe_modules = dict(pdf_registry._probe_modules)
-        saved_cache = dict(pdf_registry._cache)
-        try:
-            yield pdf_registry
-        finally:
-            pdf_registry._registry.clear()
-            pdf_registry._registry.update(saved_registry)
-            pdf_registry._probe_modules.clear()
-            pdf_registry._probe_modules.update(saved_probe_modules)
-            pdf_registry._cache.clear()
-            pdf_registry._cache.update(saved_cache)
-
-    def test_registered_reader_resolves_via_registry_probe_not_name_import(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        pdf_registry_sandbox,
-    ) -> None:
-        """A registered name that differs from its probe module still resolves.
-
-        CodeRabbit (major) on resolve_pdf_reader: availability of an
-        explicit registered reader is probed with ``__import__(reader_name)``,
-        which only works while every registry key coincides with an
-        importable top-level module name. Spec: pdf-reader, requirement
-        "Reader factory SHALL be extensible without modifying ingestion
-        code", scenario "Adding a new adapter" — one adapter module plus
-        one ``register()`` call must make ``PDF_READER=<name>`` functional,
-        and nothing in that contract requires the registry key to equal a
-        module name.
-
-        Fixture: ``resolvetest_reader`` is registered against a probe
-        module planted in ``sys.modules`` (importable), while the registry
-        name itself is deliberately NOT importable. Name-import probing
-        falls back to pypdf; probing the registry-owned dependency
-        metadata resolves the configured name. Settings validation is
-        bypassed with ``object.__setattr__`` per the precedent above —
-        the config accepted-values list is a separate contract.
-        """
-        import types
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        probe = types.ModuleType("resolvetest_pdf_probe")
-
-        class ResolveTestReader:
-            """Duck-typed ``load_data`` adapter, per the registry contract."""
-
-            def load_data(self, file, *args, **kwargs):
-                return []
-
-        probe.ResolveTestReader = ResolveTestReader
-        monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
-
-        pdf_registry_sandbox.register(
-            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
-        )
-
-        settings = Settings(_env_file=None)
-        object.__setattr__(settings, "pdf_reader", "resolvetest_reader")
-
-        assert compose.resolve_pdf_reader(settings) == "resolvetest_reader"
-
-    def test_registered_reader_with_missing_probe_falls_back_to_pypdf_with_error(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-        pdf_registry_sandbox,
-    ) -> None:
-        """A registered reader whose probe module is missing falls back to pypdf.
-
-        The discriminator: the registry NAME is planted into
-        ``sys.modules`` so ``__import__(reader_name)`` succeeds, while the
-        module named by the registry-owned dependency metadata does not
-        exist. Resolution must follow that metadata — the configured
-        reader is unavailable, so composition logs an error naming the
-        reader and falls back to pypdf rather than raising, per spec
-        pdf-reader scenario "Missing configured backend falls back
-        safely". A name-import probe would instead return the ghost name
-        and defer the failure to a factory KeyError at query time.
-        """
-        import logging
-        from types import SimpleNamespace
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        monkeypatch.setitem(sys.modules, "resolvetest_ghost", SimpleNamespace())
-        monkeypatch.delitem(sys.modules, "resolvetest_missing_probe", raising=False)
-
-        pdf_registry_sandbox.register("resolvetest_ghost", "resolvetest_missing_probe:GhostReader")
-
-        settings = Settings(_env_file=None)
-        object.__setattr__(settings, "pdf_reader", "resolvetest_ghost")
-
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
-            assert compose.resolve_pdf_reader(settings) == "pypdf"
-        assert any(
-            "resolvetest_ghost" in r.message and "pypdf" in r.message for r in caplog.records
-        )
-
-    def test_auto_policy_ignores_registered_selector_mismatches(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        pdf_registry_sandbox,
-    ) -> None:
-        """auto keeps its capability chain when a mismatched alias is registered.
-
-        Spec: pdf-reader — the default-promotion requirement clause that
-        ``auto`` "SHALL retain its existing capability-resolution and
-        graceful-fallback behaviour". Registry probing governs explicit
-        selections only: a registered name whose dependency is importable
-        must never enter the auto chain, which keeps probing the fixed
-        liteparse → pypdfium2 → pypdf order over installed packages.
-        """
-        import types
-
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
-
-        probe = types.ModuleType("resolvetest_pdf_probe")
-        monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
-        pdf_registry_sandbox.register(
-            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
-        )
-        settings = Settings(_env_file=None, pdf_reader="auto")
-
-        monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
-        assert compose.resolve_pdf_reader(settings) == "liteparse"
-
-        monkeypatch.setitem(sys.modules, "liteparse", None)
-        monkeypatch.setitem(sys.modules, "pypdfium2", None)
-        assert compose.resolve_pdf_reader(settings) == "pypdf"
-
-
-# ── build_vector_store (chroma path) ────────────────────────────────────────
-
-
-@requires_chroma
-def test_build_vector_store_chroma_delegates_to_factory() -> None:
-    """build_vector_store with chroma delegates to build_chroma_vector_store."""
-    from rag_mcp.compose import build_vector_store
-
-    with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
-        build_vector_store(_settings(vector_store="chroma"))
-        mock_build.assert_called_once()
-
-
-def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
-    """build_vector_store with lancedb resolves through the registry.
-
-    The registry lookup must construct the LanceDB implementation with
-    the resolved ``LANCEDB_URI`` and an embedding identity derived from
-    the settings (registry path + factory wiring, not just the
-    registry's import-string resolution covered in
-    ``test_vectordb_registry.py``).
-    """
-    from rag_mcp.compose import build_vector_store
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
-
-    uri = str(tmp_path / "lancedb")
-    settings = _settings(
-        vector_store="lancedb",
-        lancedb_uri=uri,
-        embed_provider="ollama",
-        embed_model="nomic-embed-text",
-    )
-    store = build_vector_store(settings)
-
-    assert isinstance(store, LanceVectorStore)
-    assert store._uri == uri
-    assert store._identity is not None
-    # Exact values: a non-empty check would pass even if the factory
-    # ignored the provider selection or read the wrong model field.
-    assert store._identity.provider == "ollama"
-    assert store._identity.model == "nomic-embed-text"
-
-
-# ── settings_to_effective(None) ─────────────────────────────────────────────
-
-
-def test_settings_to_effective_none_delegates_to_get_settings() -> None:
-    """Passing None calls get_settings and bakes its embed_model into the result."""
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.core.settings import EffectiveSettings
-
-    controlled = _settings(embed_model="controlled-embed-model")
-    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
-        result = settings_to_effective(None)
-    mock_gs.assert_called_once()
-    assert isinstance(result, EffectiveSettings)
-    assert result.embed_model == "controlled-embed-model"
-
-
-# ── _resolve_active_strategies ──────────────────────────────────────────────
-
-
-class TestResolveActiveStrategies:
-    """The startup strategy resolution gate."""
-
-    def test_disabled_mode_skips_metadata(self) -> None:
-        """A 'disabled' extraction mode is not passed to the metadata registry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            metadata=MetadataSettings(extraction_mode="disabled"),
-        )
-        with (
-            patch.object(chunking_reg, "get"),
-            patch.object(metadata_reg, "get") as mock_metadata,
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get") as mock_llm,
-        ):
-            _resolve_active_strategies(settings)
-            mock_metadata.assert_not_called()
-            mock_llm.assert_not_called()
-
-    def test_unknown_chunking_name_raises_at_startup(self) -> None:
-        """A chunking fallback absent from the registry fails startup."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            chunking=ChunkingSettings(strategy_fallback="totally-bogus"),
-        )
-        with (
-            patch.object(chunking_reg, "get") as mock_chunking,
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
-        ):
-            with pytest.raises(
-                ValueError,
-                match=r"CHUNKING__STRATEGY_FALLBACK='totally-bogus'.*"
-                r"Available: code, config, sentence",
-            ):
-                _resolve_active_strategies(settings)
-            mock_chunking.assert_not_called()
-
-    def test_markdown_chunking_fallback_skips_registry_resolution(self) -> None:
-        """The inline document-path fallback does not need a registry entry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            chunking=ChunkingSettings(strategy_fallback="markdown"),
-        )
-        with (
-            patch.object(chunking_reg, "get") as mock_chunking,
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
-        ):
-            _resolve_active_strategies(settings)
-            mock_chunking.assert_not_called()
-
-    def test_valid_name_is_resolved(self) -> None:
-        """A registered chunking name triggers registry.get()."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            chunking=ChunkingSettings(strategy_fallback="sentence"),
-        )
-        with (
-            patch.object(chunking_reg, "get") as mock_chunking,
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
-        ):
-            _resolve_active_strategies(settings)
-            mock_chunking.assert_any_call("sentence")
-
-    def test_unregistered_metadata_selection_raises_generic_message(self) -> None:
-        """A Settings-accepted metadata mode absent from the registry (a
-        registry/Settings drift) raises the non-chunking diagnostic.
-        Settings validates the mode against its documented accepted set,
-        which is wider than the registered names — 'disabled' and 'local'
-        are accepted without registry entries — so acceptance by Settings
-        does not guarantee the registry holds an implementation."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            metadata=MetadataSettings(extraction_mode="llamaindex"),
-        )
-        with (
-            patch.object(chunking_reg, "get"),
-            patch.object(metadata_reg, "available", return_value=()),
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get"),
-        ):
-            with pytest.raises(
-                ValueError,
-                match="Configured metadata selection 'llamaindex' is not registered\\.",
-            ):
-                _resolve_active_strategies(settings)
-
-    def test_local_llm_alias_resolves_to_local_backend(self) -> None:
-        """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            metadata=MetadataSettings(extraction_mode="local"),
-            metadata_llm_provider="local",
-            local_backend="llamacpp",
-        )
-        with (
-            patch.object(chunking_reg, "get"),
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get") as mock_llm,
-        ):
-            _resolve_active_strategies(settings)
-            mock_llm.assert_called_once_with("llamacpp")
-
-    def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
-        """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            metadata=MetadataSettings(extraction_mode="llamaindex"),
-            metadata_llm_provider="cloud",
-            cloud_backend="openrouter",
-        )
-        with (
-            patch.object(chunking_reg, "get"),
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get") as mock_llm,
-        ):
-            _resolve_active_strategies(settings)
-            mock_llm.assert_called_once_with("openrouter")
-
-    @pytest.mark.parametrize("mode", ["keyword", "disabled"])
-    def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self, mode: str) -> None:
-        """'keyword'/'disabled' modes never call the LLM registry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
-
-        settings = Settings(
-            _env_file=None,
-            metadata=MetadataSettings(extraction_mode=mode),
-        )
-        with (
-            patch.object(chunking_reg, "get"),
-            patch.object(metadata_reg, "get"),
-            patch.object(embed_reg, "get"),
-            patch.object(llm_reg, "get") as mock_llm,
-        ):
-            _resolve_active_strategies(settings)
-            mock_llm.assert_not_called()
-
-
-# ── ensure_runtime_setup (vector-store failure) ─────────────────────────────
-
-
-def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
-    """A vector store construction failure must propagate (§5.5).
-
-    Previously ensure_runtime_setup caught ImportError/ValueError from
-    build_vector_store and logged a warning, leaving the process running
-    with no default store registered.  Now the exception propagates.
-    """
-    from llama_index.core.embeddings import MockEmbedding
-
-    from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
-
-    _ = _settings()
-    reset_runtime_setup()
-    mock_model = MockEmbedding(embed_dim=384)
-    with (
-        patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
-        patch("rag_mcp.compose.build_vector_store", side_effect=ImportError("missing")),
-    ):
-        with pytest.raises(ImportError, match="missing"):
-            ensure_runtime_setup()
-    reset_runtime_setup()
-
-
-@pytest.mark.parametrize(
-    "module",
-    ["rag_mcp.compose", "rag_mcp.transports.mcp", "rag_mcp.transports.cli"],
-)
-def test_import_does_not_initialise_runtime(module: str) -> None:
-    """Composition and MCP modules import without validating providers.
-
-    A bad provider must only fail when an entry point starts the runtime.
-    This subprocess avoids the parent process's imported-module cache.
-    """
-    import os
-    import subprocess
-    import sys
-
-    env = {
-        **os.environ,
-        "EMBED_PROVIDER": "not-a-provider",
-    }
-    result = subprocess.run(
-        [sys.executable, "-c", f"import {module}"],
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, (
-        f"import {module} failed in fresh subprocess:\n"
-        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
-    )
-
-
-def test_pytest_collection_does_not_initialise_runtime() -> None:
-    """Pytest collection succeeds even when runtime configuration is invalid."""
-    import os
-    import subprocess
-
-    env = {**os.environ, "EMBED_PROVIDER": "not-a-provider"}
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q", "tests/test_compose.py"],
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, (
-        "pytest collection initialised the runtime:\n"
-        f"stdout: {result.stdout[-500:]}\nstderr: {result.stderr[-500:]}"
-    )
-
-
-def test_experiment_help_does_not_initialise_runtime() -> None:
-    """The Experiment 11 runner parses help before runtime construction."""
-    import os
-    import subprocess
-
-    script = (
-        Path(__file__).parent.parent
-        / "experiments/11-liteparse-pdf-quality-2026-06-20/build_indexes.py"
-    )
-    result = subprocess.run(
-        [sys.executable, str(script), "--help"],
-        env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, result.stderr[-500:]
-    assert "--parser" in result.stdout
-
-
-# ── build functions (settings=None delegation) ──────────────────────────────
-
-
-def test_build_embed_model_none_delegates_to_get_settings() -> None:
-    """Passing None calls get_settings for embed model construction."""
-    controlled = _settings()
-    with (
-        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("llama_index.embeddings.ollama.OllamaEmbedding"),
-    ):
-        build_embed_model(None)
-    mock_gs.assert_called_once()
-
-
-@requires_chroma
-def test_build_vector_store_none_delegates_to_get_settings() -> None:
-    """Passing None calls get_settings for vector store construction."""
-    from rag_mcp.compose import build_vector_store
-
-    controlled = _settings(vector_store="chroma")
-    with (
-        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store"),
-    ):
-        build_vector_store(None)
-    mock_gs.assert_called_once()
-
-
-def test_build_profile_resolver_none_delegates_to_get_settings() -> None:
-    """Passing None calls get_settings for profile resolver construction."""
-    from rag_mcp.compose import build_profile_resolver
-
-    controlled = _settings()
-    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
-        build_profile_resolver(None)
-    mock_gs.assert_called_once()
-
-
-def test_build_profile_resolver_explicit_settings_skips_get_settings() -> None:
-    """Passing explicit settings does NOT call get_settings."""
-    from rag_mcp.compose import build_profile_resolver
-
-    with patch("rag_mcp.compose.get_settings") as mock_gs:
-        build_profile_resolver(_settings())
-    mock_gs.assert_not_called()

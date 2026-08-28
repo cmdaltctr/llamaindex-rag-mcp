@@ -22,12 +22,13 @@ logger = logging.getLogger(__name__)
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
 
 
+
+
 def make_file_detail(
     file_name: str,
     status: str,
     chunks: int,
     error: str = "",
-    metadata_degraded: bool = False,
 ) -> dict:
     """Create a standardised per-file detail dict.
 
@@ -36,20 +37,14 @@ def make_file_detail(
         status: One of ``"indexed"``, ``"failed"``, or ``"skipped"``.
         chunks: Number of chunks produced (0 for failed/skipped).
         error: Error message, present only when status is ``"failed"``.
-        metadata_degraded: Whether this file's metadata was produced by a
-            fallback tier rather than the configured LLM-backed mode. When
-            ``False`` (the default), no marker key is added — only
-            affected files carry it (fix-silent-metadata-degradation).
 
     Returns:
         A dict with keys ``file``, ``status``, ``chunks``, and optionally
-        ``error`` and ``metadata_degraded``.
+        ``error``.
     """
     detail: dict = {"file": file_name, "status": status, "chunks": chunks}
     if error:
         detail["error"] = error
-    if metadata_degraded:
-        detail["metadata_degraded"] = True
     return detail
 
 
@@ -79,14 +74,12 @@ def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
         supported_set = set(files)
         unsupported = sorted(all_files - supported_set, key=lambda p: p.name)
         for f in unsupported:
-            skipped.append(
-                make_file_detail(
-                    file_name=f.name,
-                    status="skipped",
-                    chunks=0,
-                    error=f"Unsupported extension: {f.suffix}",
-                )
-            )
+            skipped.append(make_file_detail(
+                file_name=f.name,
+                status="skipped",
+                chunks=0,
+                error=f"Unsupported extension: {f.suffix}",
+            ))
             logger.info("⏭ %s — unsupported extension %s", f.name, f.suffix)
 
     return files, skipped
@@ -119,4 +112,7 @@ def list_documents(
         source = meta.get("file_path") or meta.get("file_name") or "unknown"
         source_counts[source] = source_counts.get(source, 0) + 1
 
-    return [{"source": src, "chunks": cnt} for src, cnt in sorted(source_counts.items())]
+    return [
+        {"source": src, "chunks": cnt}
+        for src, cnt in sorted(source_counts.items())
+    ]

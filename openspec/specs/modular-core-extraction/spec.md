@@ -93,7 +93,7 @@ The system SHALL group dense retrieval, sparse retrieval, fusion, reranking,
 the `search()` orchestrator, and the rerank threshold policy under a
 `core/retrieval/` subpackage, including a `pipeline.py` module owning the
 end-to-end `search()` orchestration and a `policy.py` module owning the
-`RETRIEVAL__HARD_TECHNICAL_THRESHOLD` ÷30 rerank threshold policy. `pipeline.py` SHALL
+`HARD_TECHNICAL_THRESHOLD` ÷30 rerank threshold policy. `pipeline.py` SHALL
 resolve retrieval stages through `core/retrieval/registry.py` and SHALL NOT
 import concrete stage modules at the top level.
 
@@ -112,7 +112,7 @@ import concrete stage modules at the top level.
 #### Scenario: Threshold policy relocated intact
 
 - **WHEN** the rerank threshold policy is inspected in `core/retrieval/policy.py`
-- **THEN** the `RETRIEVAL__HARD_TECHNICAL_THRESHOLD = 0.3` ÷30 scaling logic MUST be
+- **THEN** the `HARD_TECHNICAL_THRESHOLD = 0.3` ÷30 scaling logic MUST be
   numerically identical to the pre-refactor implementation (AGENTS.md gotcha
   #3 — recalibration requires re-running experiment 1)
 

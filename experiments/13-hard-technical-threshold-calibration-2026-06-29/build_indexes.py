@@ -15,9 +15,9 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
@@ -82,7 +82,7 @@ def _load_qasper_corpus(qasper_gt: Path) -> tuple[list[str], list[dict[str, Any]
 def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
 
-    from experiments._lib.storage import experiment_storage_config
+    import chromadb
 
     embed_model = os.getenv("EMBED_MODEL", "qwen3-embedding:0.6b")
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -98,9 +98,7 @@ def main() -> None:
             / "freshstack-manifest.jsonl"
         )
 
-    fs_docs: list[dict[str, Any]] = (
-        _load_manifest(fs_manifest_path) if fs_manifest_path.exists() else []
-    )
+    fs_docs: list[dict[str, Any]] = _load_manifest(fs_manifest_path) if fs_manifest_path.exists() else []
     print(f"FreshStack docs: {len(fs_docs)}", flush=True)
 
     # Load Qasper corpus
@@ -132,38 +130,30 @@ def main() -> None:
     batch_size = int(os.getenv("EMBED_BATCH_SIZE", "50"))
     all_embeddings: list[list[float]] = []
     for i in range(0, len(all_texts), batch_size):
-        batch = all_texts[i : i + batch_size]
+        batch = all_texts[i:i + batch_size]
         embs = embedder.embed(batch)
         all_embeddings.extend(embs)
         print(f"  Embedded {i + len(batch)}/{len(all_texts)}", flush=True)
 
-    # Store through the production vector-store path (local or cloud).
+    # Store in ChromaDB
     print("Storing in ChromaDB...", flush=True)
-    storage = experiment_storage_config(
-        experiment_id="exp13",
-        corpus="freshstack-qasper-mixed",
-        provider="ollama",
-        model=embed_model,
-        persist_dir=chroma_dir,
-    )
-    collection_name = storage.collection_name
-    store = storage.build_store()
+    client = chromadb.PersistentClient(path=chroma_dir)
+    collection = client.get_or_create_collection("documents")
 
-    # Clear existing (delete + recreate replaces the v1 delete-all-ids).
-    if store.collection_exists(collection_name):
-        store.delete_collection(collection_name)
-    store.create_collection(collection_name)
+    # Clear existing
+    try:
+        collection.delete(ids=collection.get()["ids"])
+    except Exception:
+        pass
 
-    store.upsert_precomputed(
-        collection_name,
+    collection.add(
         ids=all_ids,
         documents=all_texts,
         embeddings=all_embeddings,
         metadatas=all_metas,
-        embedding_identity=storage.embedding_identity,
     )
 
-    print(f"Stored {len(all_ids)} documents in collection '{collection_name}'", flush=True)
+    print(f"Stored {len(all_ids)} documents in ChromaDB at {chroma_dir}", flush=True)
 
     # Write index build metadata
     build_info = {
@@ -173,12 +163,9 @@ def main() -> None:
         "freshstack_docs": len(fs_docs),
         "qasper_docs": len(qasper_texts),
         "chroma_dir": chroma_dir,
-        "collection_name": collection_name,
-        "storage": storage.checkpoint_metadata,
     }
     (SCRIPT_DIR / "output" / "index_build.json").write_text(
-        json.dumps(build_info, indent=2),
-        encoding="utf-8",
+        json.dumps(build_info, indent=2), encoding="utf-8",
     )
     print("Index build metadata written", flush=True)
 

@@ -15,6 +15,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .codebase_map import FileEntry
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,22 +43,10 @@ class ASTResult:
 # Relocated from config.py (task 7.11): this is a static lookup table, not an
 # env-configurable setting, and it belongs with the AST extraction that reads it.
 MAGIKA_LABEL_TO_TREESITTER: dict[str, str] = {
-    "python": "python",
-    "javascript": "javascript",
-    "typescript": "typescript",
-    "tsx": "tsx",
-    "jsx": "jsx",
-    "java": "java",
-    "c": "c",
-    "cpp": "cpp",
-    "csharp": "c_sharp",
-    "go": "go",
-    "rust": "rust",
-    "ruby": "ruby",
-    "php": "php",
-    "swift": "swift",
-    "kotlin": "kotlin",
-    "scala": "scala",
+    "python": "python", "javascript": "javascript", "typescript": "typescript",
+    "tsx": "tsx", "jsx": "jsx", "java": "java", "c": "c", "cpp": "cpp",
+    "csharp": "c_sharp", "go": "go", "rust": "rust", "ruby": "ruby",
+    "php": "php", "swift": "swift", "kotlin": "kotlin", "scala": "scala",
 }
 
 
@@ -103,7 +93,6 @@ def _get_parser(language: str):
     """
     try:
         from tree_sitter_language_pack import get_parser
-
         return get_parser(language)
     except Exception as exc:
         logger.debug("No tree-sitter parser for language %r: %s", language, exc)
@@ -378,9 +367,12 @@ def extract_ast_relationships(
     parser = _get_parser(ts_lang)
     if parser is not None:
         try:
-            parser.parse(content_bytes)
+            tree = parser.parse(content_bytes)
         except Exception as exc:
             logger.warning("tree-sitter parse error in %s: %s", file_path, exc)
+            tree = None
+    else:
+        tree = None
 
     # Extract imports based on language family.
     if ts_lang == "python":
@@ -398,8 +390,7 @@ def extract_ast_relationships(
 
     # Extract classes and inheritance.
     result.classes, result.inheritance = _extract_classes_and_inheritance(
-        content_bytes,
-        ts_lang,
+        content_bytes, ts_lang,
     )
 
     # Extract functions.
@@ -419,3 +410,5 @@ def extract_ast_relationships(
             result.exports.append(match.group(1))
 
     return result
+
+

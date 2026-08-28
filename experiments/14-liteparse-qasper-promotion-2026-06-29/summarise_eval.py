@@ -11,12 +11,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
-def _evaluate_gates(
-    cells: list[dict[str, Any]], ingestion_times: dict[str, float]
-) -> dict[str, Any]:
+def _evaluate_gates(cells: list[dict[str, Any]], ingestion_times: dict[str, float]) -> dict[str, Any]:
     cell_map = {c["cell"]: c for c in cells}
 
     pypdf_off = cell_map.get("pypdf_off", {})
@@ -31,20 +30,17 @@ def _evaluate_gates(
     # H2: speed — LiteParse ingestion < pypdf ingestion
     pypdf_ingest = ingestion_times.get("pypdf", 0.0)
     liteparse_ingest = ingestion_times.get("liteparse", 0.0)
-    # Arm C is reported (v2.1) but does not change the ratified H2 gate,
-    # which stays LiteParse-vs-pypdf per protocol §gates.
-    pdf_inspector_ingest = ingestion_times.get("pdf_inspector", 0.0)
-    h2_pass = (
-        liteparse_ingest < pypdf_ingest if pypdf_ingest > 0 and liteparse_ingest > 0 else False
-    )
+    h2_pass = liteparse_ingest < pypdf_ingest if pypdf_ingest > 0 and liteparse_ingest > 0 else False
 
     # H3: reranker lift — LiteParse > pypdf
-    pypdf_rerank_lift = pypdf_on.get("metrics", {}).get("coverage@20", 0.0) - pypdf_off.get(
-        "metrics", {}
-    ).get("coverage@20", 0.0)
-    liteparse_rerank_lift = liteparse_on.get("metrics", {}).get(
-        "coverage@20", 0.0
-    ) - liteparse_off.get("metrics", {}).get("coverage@20", 0.0)
+    pypdf_rerank_lift = (
+        pypdf_on.get("metrics", {}).get("coverage@20", 0.0)
+        - pypdf_off.get("metrics", {}).get("coverage@20", 0.0)
+    )
+    liteparse_rerank_lift = (
+        liteparse_on.get("metrics", {}).get("coverage@20", 0.0)
+        - liteparse_off.get("metrics", {}).get("coverage@20", 0.0)
+    )
     h3_pass = liteparse_rerank_lift > pypdf_rerank_lift
 
     # Non-regression: LiteParse Coverage@20 ≥ pypdf − 2pp
@@ -75,7 +71,9 @@ def _evaluate_gates(
             "Reranker benefit is reader-independent."
         )
     else:
-        recommendation = "Mixed results. Review per-cell metrics before deciding."
+        recommendation = (
+            "Mixed results. Review per-cell metrics before deciding."
+        )
 
     return {
         "h1_corpus_validity": {"pass": h1_pass, "dense_hit5": round(dense_hit5, 6)},
@@ -83,7 +81,6 @@ def _evaluate_gates(
             "pass": h2_pass,
             "pypdf_ingestion_s": pypdf_ingest,
             "liteparse_ingestion_s": liteparse_ingest,
-            "pdf_inspector_ingestion_s": pdf_inspector_ingest,
         },
         "h3_reranker_benefit": {
             "pass": h3_pass,
@@ -113,14 +110,13 @@ def _write_results_md(
         "",
         "## Gate summary",
         "",
-        "| Gate | Result | Detail |",
-        "| --- | :--: | --- |",
+        f"| Gate | Result | Detail |",
+        f"| --- | :--: | --- |",
         f"| H1: Corpus validity | {'✅' if summary['h1_corpus_validity']['pass'] else '❌'} | "
         f"Dense Hit@5={summary['h1_corpus_validity']['dense_hit5']:.4f} |",
         f"| H2: Speed | {'✅' if summary['h2_speed']['pass'] else '❌'} | "
         f"pypdf={summary['h2_speed']['pypdf_ingestion_s']:.1f}s, "
-        f"liteparse={summary['h2_speed']['liteparse_ingestion_s']:.1f}s, "
-        f"pdf_inspector={summary['h2_speed']['pdf_inspector_ingestion_s']:.1f}s |",
+        f"liteparse={summary['h2_speed']['liteparse_ingestion_s']:.1f}s |",
         f"| H3: Reranker benefit | {'✅' if summary['h3_reranker_benefit']['pass'] else '❌'} | "
         f"pypdf lift={summary['h3_reranker_benefit']['pypdf_rerank_lift']:+.4f}, "
         f"liteparse lift={summary['h3_reranker_benefit']['liteparse_rerank_lift']:+.4f} |",
@@ -134,14 +130,7 @@ def _write_results_md(
         "| --- | ---: | ---: | ---: | ---: | ---: |",
     ]
 
-    for cell_name in [
-        "pypdf_off",
-        "pypdf_on",
-        "liteparse_off",
-        "liteparse_on",
-        "pdf_inspector_off",
-        "pdf_inspector_on",
-    ]:
+    for cell_name in ["pypdf_off", "pypdf_on", "liteparse_off", "liteparse_on"]:
         cell = cells.get(cell_name, {})
         m = cell.get("metrics", {})
         lines.append(
@@ -156,9 +145,7 @@ def _write_results_md(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=SCRIPT_DIR / "output" / "eval_results.json")
-    parser.add_argument(
-        "--output", type=Path, default=SCRIPT_DIR / "output" / "eval_results.summary.json"
-    )
+    parser.add_argument("--output", type=Path, default=SCRIPT_DIR / "output" / "eval_results.summary.json")
     parser.add_argument("--results-md", type=Path, default=SCRIPT_DIR / "output" / "results.md")
     args = parser.parse_args()
 

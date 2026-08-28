@@ -10,16 +10,11 @@ Semantic similarity search over indexed documents.
 | ---------------------- | ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `query`                | string | _(required)_  | Natural language search query                                                                                                                                                                 |
 | `top_k`                | int    | `10`          | Maximum number of chunks to return                                                                                                                                                            |
-| `similarity_threshold` | float  | `0.0`         | Minimum canonical dense similarity (0.0 = no filtering). Hybrid/no-rerank applies it to dense evidence before RRF; successful reranking uses the calibrated 30× transform.                    |
+| `similarity_threshold` | float  | `0.0`         | Minimum relevance score (0.0 = no filtering). When `rerank=True`, automatically scaled down 30× because cross-encoder scores occupy a lower range.                                            |
 | `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RETRIEVAL__RERANK_ENABLED` config                                                |
 | `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
-| `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                              |
-| `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                              |
-
-Every result includes `score_kind`: `dense_similarity_v1` for dense search,
-`rrf_v1` for non-reranked hybrid fusion, or `reranker_sigmoid_v1` after a
-successful rerank. `similarity_threshold` is never applied directly to an
-`rrf_v1` value.
+| `collection`           | string | `"documents"` | ChromaDB collection to search                                                                                                                                                                 |
+| `metadata_filter`      | dict   | `null`        | ChromaDB `where` clause to filter by metadata fields, e.g. `{"category": "AI"}`. Applied server-side — only matching chunks are fetched.                                                      |
 
 ## `ingest_documents`
 
@@ -28,15 +23,15 @@ Index a file or directory into the vector store.
 | Parameter    | Type   | Default       | Description                               |
 | ------------ | ------ | ------------- | ----------------------------------------- |
 | `path`       | string | _(required)_  | Path to a file or directory to ingest     |
-| `collection` | string | `"documents"` | Vector-store collection to store documents in |
+| `collection` | string | `"documents"` | ChromaDB collection to store documents in |
 
 ## `list_indexed_documents`
 
 Show what's currently indexed.
 
-| Parameter    | Type   | Default       | Description                                   |
-| ------------ | ------ | ------------- | --------------------------------------------- |
-| `collection` | string | `"documents"` | Vector-store collection to list documents from |
+| Parameter    | Type   | Default       | Description                                |
+| ------------ | ------ | ------------- | ------------------------------------------ |
+| `collection` | string | `"documents"` | ChromaDB collection to list documents from |
 
 ## `list_collections`
 
@@ -49,9 +44,9 @@ Remove documents by file path, metadata filter, or drop an entire collection.
 | Parameter         | Type   | Default       | Description                                                                                                            |
 | ----------------- | ------ | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `path`            | string | `null`        | Source file path whose chunks to delete                                                                                |
-| `metadata_filter` | dict   | `null`        | ChromaDB-compatible `where` clause to match chunks, e.g. `{"category": "uncategorised"}`                              |
+| `metadata_filter` | dict   | `null`        | ChromaDB `where` clause to match chunks, e.g. `{"category": "uncategorised"}`                                          |
 | `collection`      | string | `"documents"` | Collection to operate on. When provided alone (without `path` or `metadata_filter`), the entire collection is dropped. |
-| `dry_run`         | bool   | `false`       | Preview what would be deleted without modifying the vector store                                                       |
+| `dry_run`         | bool   | `false`       | Preview what would be deleted without modifying ChromaDB                                                               |
 
 The three deletion modes (`path`, `metadata_filter`, `collection`-only) are mutually exclusive.
 

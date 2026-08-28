@@ -152,20 +152,6 @@ errors (wrong provider). Proposed changes for the refactor:
 These changes are deferred to the refactor to avoid scope creep in the
 current change.
 
-**Resolved by:** OpenSpec change `silent-failure-audit-and-guards` (2026-08).
-All three bullets shipped: consecutive same-signature failures are tracked
-module-wide, `rerank_reason` surfaces the reranker's own failure text under
-`include_diagnostics=True`, and the log level escalates. The third bullet
-shipped as **thresholded** escalation (WARNING below 3 consecutive
-same-signature failures, ERROR at or above), not the unconditional ERROR the
-bullet's wording implies literally. Unconditional ERROR would fire on the
-single transient network timeout the reranker is explicitly designed to
-retry, training operators to ignore the level meant to mean "incident" —
-thresholded escalation is the synthesis of this decision's first bullet
-("distinguish transient vs persistent failures") and third bullet, not a
-literal reading of the third alone. See that change's `design.md` for the
-full rationale.
-
 ## Consequences
 
 ### Positive

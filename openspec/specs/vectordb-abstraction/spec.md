@@ -83,8 +83,7 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 #### Scenario: Existing collections keep working
 
-- **WHEN** the server starts against an existing flat `chroma_persist_dir`
-  (default `./chroma_db`) containing collections
+- **WHEN** the server starts against existing `output/chroma_*` data
 - **THEN** all previously indexed collections MUST be readable and queryable
   with no data migration
 
@@ -98,127 +97,27 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 ### Requirement: Store selection via configuration
 
-The system SHALL select the vector-store implementation through the
-`VECTOR_STORE` setting, defaulting to `lancedb` after the registered LanceDB
-qualification gate passes. Settings SHALL be resolved in `config/` and object
-construction SHALL occur only in `compose.py` through the registry. Selection
-SHALL be a registry lookup, not a branch over store names. The constructed
-store SHALL be passed to every consumer by injection, including the codebase
-map subsystem.
+The system SHALL select the vector store implementation via a
+`VECTOR_STORE` environment variable defaulting to `chroma`, resolved through
+`config.py` and constructed in `compose.py`. The constructed store SHALL be
+passed to consumers by injection, including to the codebase map subsystem
+under `core/codebase/`.
 
-#### Scenario: Default store is resolved from configuration
+#### Scenario: Default is chroma
 
-- **GIVEN** the LanceDB qualification gate passed
-- **AND** `VECTOR_STORE` is not explicitly set
-- **AND** no recognised legacy Chroma data requires acknowledgement
-- **WHEN** runtime composition occurs
-- **THEN** `compose.py` MUST construct embedded LanceDB through the registry
+- **WHEN** `VECTOR_STORE` is not set
+- **THEN** `compose.py` MUST construct the ChromaDB implementation
 
 #### Scenario: Unknown store value
 
-- **WHEN** `VECTOR_STORE` names an unregistered implementation
-- **THEN** startup MUST fail with a clear error listing registered names
+- **WHEN** `VECTOR_STORE` names an implementation with no registered
+  implementation
+- **THEN** the system MUST fail at startup with a clear error listing
+  available implementations
 
 #### Scenario: Store is injected into every consumer
 
-- **WHEN** an operation or subsystem needs vector-store access
+- **WHEN** an operation or subsystem needs vector store access
 - **THEN** it MUST receive the store as a parameter or constructor argument
 - **AND** it MUST NOT construct one itself
-
-#### Scenario: Alternate store is selectable by configuration
-
-- **GIVEN** the complete `chroma` optional extra is installed
-- **AND** `VECTOR_STORE=chroma` is explicitly set
-- **WHEN** runtime composition occurs
-- **THEN** `compose.py` MUST resolve Chroma through the registry
-- **AND** every consumer MUST receive it through the same injection paths
-
-#### Scenario: Access before composition
-
-- **GIVEN** no vector store has been composed or injected
-- **WHEN** a core consumer requests process-wide store access
-- **THEN** the accessor MUST fail clearly rather than construct a default
-
-### Requirement: Chroma implementation SHALL accept an injected client
-
-The Chroma vector-store implementation SHALL support an injected client that
-conforms to the Chroma client API. The same implementation SHALL serve local
-and cloud deployments; pipeline consumers SHALL remain unaware of the client
-type.
-
-#### Scenario: Cloud client injection
-
-- **WHEN** the composition root selects cloud mode
-- **THEN** the Chroma store SHALL receive the constructed cloud client
-- **AND** all collection operations SHALL use that client
-
-#### Scenario: Local client compatibility
-
-- **WHEN** local mode is selected
-- **THEN** the existing persistent-client behaviour and tests SHALL remain unchanged
-
-### Requirement: Chroma client construction SHALL keep one import boundary
-
-All Chroma SDK imports and local/cloud client construction SHALL remain in
-`core/vectordb/chroma.py`. The composition root SHALL pass resolved primitive
-settings into the Chroma factory without importing or constructing a Chroma
-SDK client itself.
-
-#### Scenario: Single chromadb import site after cloud support
-
-- **WHEN** production source is searched for direct `chromadb` imports
-- **THEN** `core/vectordb/chroma.py` SHALL remain the only matching module
-
-### Requirement: Vector-store dense queries return canonical scored rows
-
-The `VectorStore.query_dense()` contract SHALL return store-neutral result rows whose `score` is higher-is-better and conforms to the canonical dense score contract defined by `retrieval-score-semantics`. Backend-native distance fields MAY be retained only as optional diagnostics; core retrieval SHALL NOT require them to compute public relevance scores.
-
-#### Scenario: Chroma adapter owns Chroma metric conversion
-- **WHEN** ChromaDB returns its native distance representation
-- **THEN** `core/vectordb/chroma.py` SHALL convert it to the canonical dense score before returning the store-neutral row
-- **AND** `core/retrieval/dense.py` SHALL not apply a Chroma-specific formula
-
-#### Scenario: Lance adapter owns Lance metric conversion
-- **WHEN** LanceDB returns `_distance` or another native score
-- **THEN** the Lance adapter SHALL convert it to the same declared canonical score semantics before core retrieval consumes it
-
-### Requirement: Registered vector stores pass differential semantic contract tests
-
-Every registered production vector store SHALL run against the same deterministic contract fixtures for dense ranking, score semantics, metadata filtering, mutations, generation invalidation, collection metadata and precomputed upsert where supported. Passing the ABC type/interface is not sufficient evidence of swappability.
-
-#### Scenario: New backend registration
-- **GIVEN** a new vector store is registered
-- **WHEN** CI runs the vector-store semantic contract suite
-- **THEN** the backend MUST satisfy the shared behavioural fixtures before it is considered production-swappable
-
-### Requirement: Generation counters are store-owned mutation state
-
-Each vector-store instance SHALL own and advance its collection generation counter exactly once for every successful mutation that changes sparse-visible state. Callers SHALL NOT be required to remember an additional generation bump after invoking a mutating store method.
-
-#### Scenario: Direct write and orchestrated write match
-- **GIVEN** the same store mutation is invoked directly in a contract test and through production orchestration
-- **WHEN** each operation succeeds from generation `g`
-- **THEN** generation SHALL become `g+1` in both cases
-- **AND** the orchestration path SHALL NOT end at `g+2`
-
-### Requirement: Store identity can namespace process-local derivative caches
-
-The vector-store abstraction SHALL provide or permit a stable process-local identity token suitable for namespacing derivative caches such as BM25. The identity need not persist across process restarts and MUST NOT expose credentials.
-
-#### Scenario: Two stores share a collection name
-- **GIVEN** two distinct store instances each expose collection `documents`
-- **WHEN** a process-local derivative cache is constructed
-- **THEN** the cache key SHALL be able to distinguish the two stores
-
-### Requirement: Embedding-provider swappability scope is explicit
-
-The current production composition model SHALL document embedding-provider selection as deployment/process-scoped while LlamaIndex's embed model remains process-global. The vector-store abstraction MUST NOT imply safe concurrent per-collection embedding-provider switching that the runtime does not implement.
-
-#### Scenario: Different deployment provider
-- **WHEN** a process starts with a different registered embedding provider
-- **THEN** the composition root MAY construct the new provider and stores SHALL operate through the same contract
-
-#### Scenario: Concurrent per-collection provider request
-- **WHEN** callers attempt to assume collection A and collection B can simultaneously use different process-global embed models
-- **THEN** documentation/tests SHALL make that unsupported boundary explicit until a future design removes the global dependency
 

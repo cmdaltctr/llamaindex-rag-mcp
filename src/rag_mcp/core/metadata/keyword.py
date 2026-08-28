@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 
 from ..settings import resolve_effective_settings
@@ -66,7 +67,9 @@ def _load_keyword_rules(resolved) -> list[dict[str, str]]:
             raise ValueError("METADATA_KEYWORD_RULES must be a JSON array")
         for rule in custom:
             if "pattern" not in rule or "category" not in rule:
-                raise ValueError("Each rule must have 'pattern' and 'category' keys")
+                raise ValueError(
+                    "Each rule must have 'pattern' and 'category' keys"
+                )
         logger.info(
             "Loaded %d custom keyword rule(s) from METADATA_KEYWORD_RULES",
             len(custom),
@@ -120,7 +123,9 @@ def _extract_keyword(text: str, settings: object | None = None) -> dict:
         return {"category": "uncategorised"}
 
     best_category = max(scores, key=scores.__getitem__)  # type: ignore[arg-type]
-    logger.debug("Keyword scores: %s → %s", scores, best_category)
+    logger.debug(
+        "Keyword scores: %s → %s", scores, best_category
+    )
     return {"category": best_category}
 
 

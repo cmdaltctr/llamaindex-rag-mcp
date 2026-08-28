@@ -16,7 +16,9 @@ import pytest
 from rag_mcp.core.settings import (
     EffectiveSettings,
     MetadataBlock,
+    RetrievalBlock,
 )
+
 
 # ── core/metadata/extractor.py: the OpenRouter cloud path ───────────────
 
@@ -29,7 +31,9 @@ class TestOpenRouterExtraction:
 
         response = MagicMock()
         response.raise_for_status = MagicMock()
-        response.json.return_value = {"choices": [{"message": {"content": payload}}]}
+        response.json.return_value = {
+            "choices": [{"message": {"content": payload}}]
+        }
 
         async def _post(*args, **kwargs):
             calls["n"] += 1
@@ -47,7 +51,7 @@ class TestOpenRouterExtraction:
     def _settings(self, **kw) -> EffectiveSettings:
         return EffectiveSettings(
             metadata=MetadataBlock(
-                extraction_mode="local", classify_max_attempts=kw.pop("attempts", 1)
+                extraction_mode="local", ollama_classify_max_attempts=kw.pop("attempts", 1)
             ),
             metadata_llm_provider="cloud",
             cloud_backend="openrouter",
@@ -58,19 +62,23 @@ class TestOpenRouterExtraction:
 
     async def test_valid_response_is_parsed(self, monkeypatch) -> None:
         """A well-formed OpenRouter reply produces parsed metadata."""
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from rag_mcp.core.metadata.extractor import _extract_openrouter_chat_async
 
         self._mock_openrouter(
             monkeypatch,
-            json.dumps({"category": "ai", "keywords": ["transformer"], "summary": "ok"}),
+            json.dumps(
+                {"category": "ai", "keywords": ["transformer"], "summary": "ok"}
+            ),
         )
-        result = await _extract_openrouter_chat_async("text", "f.txt", self._settings())
+        result = await _extract_openrouter_chat_async(
+            "text", "f.txt", self._settings()
+        )
         assert result["category"] == "ai"
         assert "transformer" in result["keywords"]
 
     async def test_unreachable_falls_back_to_uncategorised(self, monkeypatch) -> None:
         """A total failure degrades rather than raising into the pipeline."""
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from rag_mcp.core.metadata.extractor import _extract_openrouter_chat_async
 
         client = MagicMock()
         client.__aenter__ = AsyncMock(return_value=client)
@@ -81,8 +89,10 @@ class TestOpenRouterExtraction:
         async def _no_sleep(_s):
             return None
 
-        monkeypatch.setattr("rag_mcp.core.metadata._common._retry_sleep", _no_sleep)
-        result = await _extract_openrouter_chat_async("text", "f.txt", self._settings())
+        monkeypatch.setattr("rag_mcp.core.metadata.ollama._retry_sleep", _no_sleep)
+        result = await _extract_openrouter_chat_async(
+            "text", "f.txt", self._settings()
+        )
         assert result["category"] == "uncategorised"
 
     async def test_cloud_provider_routes_to_openrouter(self, monkeypatch) -> None:
@@ -90,13 +100,11 @@ class TestOpenRouterExtraction:
         from rag_mcp.core.metadata import extractor as ext
 
         mock = AsyncMock(return_value={"category": "x", "keywords": [], "summary": ""})
-        with (
-            patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False),
-            patch(
-                "rag_mcp.core.metadata.openrouter._extract_openrouter_chat_async",
-                mock,
-            ),
-        ):
+        with patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False), \
+             patch(
+                 "rag_mcp.core.metadata.extractor._extract_openrouter_chat_async",
+                 mock,
+             ):
             settings = self._settings()
             assert ext._local_strategy_name(settings) == "openrouter"
 
@@ -110,7 +118,9 @@ class TestCodebaseMapRendering:
     def _map(self, **kw):
         from rag_mcp.core.codebase.codebase_map import CodebaseMap, FileInventory
 
-        return CodebaseMap(inventory=FileInventory(type_counts={"code/python": 2}), **kw)
+        return CodebaseMap(
+            inventory=FileInventory(type_counts={"code/python": 2}), **kw
+        )
 
     def test_renders_code_communities(self) -> None:
         from rag_mcp.core.codebase.format import format_codebase_map
@@ -143,9 +153,12 @@ class TestCodebaseMapRendering:
         text = format_codebase_map(
             self._map(
                 doc_communities=[
-                    {"label": "Guides", "chunks": ["c1"], "chunk_count": 1, "category": "docs"}
+                    {"label": "Guides", "chunks": ["c1"], "chunk_count": 1,
+                     "category": "docs"}
                 ],
-                cross_links=[{"code": "a.py", "doc": "a.md", "relation": "filename_match"}],
+                cross_links=[
+                    {"code": "a.py", "doc": "a.md", "relation": "filename_match"}
+                ],
             )
         )
         assert "Guides" in text
@@ -176,11 +189,8 @@ class TestDefaultStoreHolder:
         assert get_default_store() is sentinel
 
         reset_default_store()
-        # Task 2.2: the holder is injected-only — after reset the accessor
-        # must refuse rather than rebuild (compose.py is the sole
-        # constructor).
-        with pytest.raises(RuntimeError, match="ensure_runtime_setup"):
-            get_default_store()
+        # After reset the holder must rebuild rather than hand back the old one.
+        assert get_default_store() is not sentinel
 
 
 # ── compose.py: the capability probes ───────────────────────────────────
@@ -193,11 +203,8 @@ class TestCapabilityProbes:
         from rag_mcp.config import Settings
         from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-        # The probe path applies to the Chroma backend, which advertises
-        # native sparse (task 3.3): capability follows the SELECTED store.
         return Settings(
             _env_file=None,
-            vector_store="chroma",
             retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
         )
 
@@ -212,12 +219,16 @@ class TestCapabilityProbes:
         monkeypatch.setattr(sparse, "_detect_native_sparse_capability", _boom)
         assert compose.resolve_sparse_backend(self._settings("bm25")) == "bm25"
 
-    @pytest.mark.parametrize("available, expected", [(True, "native"), (False, "bm25")])
+    @pytest.mark.parametrize(
+        "available, expected", [(True, "native"), (False, "bm25")]
+    )
     def test_auto_follows_the_probe(self, monkeypatch, available, expected) -> None:
         import rag_mcp.compose as compose
         import rag_mcp.core.retrieval.sparse as sparse
 
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: available)
+        monkeypatch.setattr(
+            sparse, "_detect_native_sparse_capability", lambda: available
+        )
         assert compose.resolve_sparse_backend(self._settings("auto")) == expected
 
     def test_pdf_reader_explicit_value_is_returned(self) -> None:
@@ -262,50 +273,3 @@ class TestSentenceChunkerSettings:
             settings=EffectiveSettings(),
         )
         assert nodes
-
-
-# ── core/vectordb/__init__.py: lazy re-export and lazy build ──────────────
-
-
-class TestVectordbLazyReexport:
-    """The __getattr__ lazy re-export and get_default_store lazy-build cache."""
-
-    def test_vector_store_lazy_reexport(self) -> None:
-        """VectorStore is resolved lazily via __getattr__, not imported at module level."""
-        import rag_mcp.core.vectordb as vdb
-        from rag_mcp.core.vectordb.base import VectorStore
-
-        # If VectorStore were imported eagerly at module top level it would
-        # appear in the module dict.  Its absence proves the __getattr__ path.
-        assert "VectorStore" not in vars(vdb)
-        assert vdb.VectorStore is VectorStore
-
-    def test_unknown_attribute_raises_attribute_error(self) -> None:
-        """An unknown attribute raises AttributeError mentioning the module name."""
-        import rag_mcp.core.vectordb as vdb
-
-        with pytest.raises(AttributeError, match="rag_mcp.core.vectordb"):
-            _ = vdb.Nope
-
-    def test_get_default_store_lazy_build_caches(self) -> None:
-        """Task 2.2 replaced lazy construction with injected-only access.
-
-        The accessor must raise a controlled RuntimeError naming the
-        composition root when nothing is installed, and hand back the
-        installed instance unchanged once composed.
-        """
-        from rag_mcp.core.vectordb import (
-            get_default_store,
-            reset_default_store,
-            set_default_store,
-        )
-
-        reset_default_store()
-        with pytest.raises(RuntimeError, match="ensure_runtime_setup"):
-            get_default_store()
-
-        sentinel = MagicMock()
-        set_default_store(sentinel)
-        assert get_default_store() is sentinel
-        assert get_default_store() is sentinel
-        reset_default_store()

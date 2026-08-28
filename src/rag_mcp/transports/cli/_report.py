@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-def write_report(report_path: str, result: dict, ingest_kwargs: dict, input_path: str) -> None:
+def write_report(
+    report_path: str, result: dict, ingest_kwargs: dict, input_path: str
+) -> None:
     """Write an ingestion report to a file (JSON or Markdown).
 
     Args:
@@ -38,7 +40,7 @@ def write_report(report_path: str, result: dict, ingest_kwargs: dict, input_path
     failed = sum(1 for f in file_details if f["status"] == "failed")
     skipped = sum(1 for f in file_details if f["status"] == "skipped")
 
-    timestamp = datetime.now(UTC).isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     config_info = {
         "model": get_settings().embed_model,
@@ -64,41 +66,36 @@ def write_report(report_path: str, result: dict, ingest_kwargs: dict, input_path
             "summary": summary,
             "files": file_details,
         }
-        report_file.write_text(json.dumps(report_data, indent=2) + "\n", encoding="utf-8")
+        report_file.write_text(
+            json.dumps(report_data, indent=2) + "\n", encoding="utf-8"
+        )
     else:
         lines = [
-            "# Ingestion Report",
-            "",
+            "# Ingestion Report", "",
             f"**Timestamp**: {timestamp}",
-            f"**Input**: `{input_path}`",
-            "",
-            "## Summary",
-            "",
-            "| Metric | Value |",
-            "|--------|-------|",
+            f"**Input**: `{input_path}`", "",
+            "## Summary", "",
+            "| Metric | Value |", "|--------|-------|",
             f"| Total files | {summary['total']} |",
             f"| Indexed | {summary['indexed']} |",
             f"| Failed | {summary['failed']} |",
             f"| Skipped | {summary['skipped']} |",
-            f"| Total chunks | {summary['chunks']} |",
-            "",
-            "## Configuration",
-            "",
-            "| Setting | Value |",
-            "|---------|-------|",
+            f"| Total chunks | {summary['chunks']} |", "",
+            "## Configuration", "",
+            "| Setting | Value |", "|---------|-------|",
             f"| Model | {config_info['model']} |",
             f"| Batch size | {config_info['batch_size']} |",
             f"| Concurrency | {config_info['concurrency']} |",
             f"| Chunk size | {config_info['chunk_size']} |",
-            f"| Chunk overlap | {config_info['chunk_overlap']} |",
-            "",
-            "## Per-File Details",
-            "",
+            f"| Chunk overlap | {config_info['chunk_overlap']} |", "",
+            "## Per-File Details", "",
             "| File | Status | Chunks | Error |",
             "|------|--------|--------|-------|",
         ]
         for fd in file_details:
             error = fd.get("error", "")
-            lines.append(f"| {fd['file']} | {fd['status']} | {fd['chunks']} | {error} |")
+            lines.append(
+                f"| {fd['file']} | {fd['status']} | {fd['chunks']} | {error} |"
+            )
         lines.append("")
         report_file.write_text("\n".join(lines), encoding="utf-8")

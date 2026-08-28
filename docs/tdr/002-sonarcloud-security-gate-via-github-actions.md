@@ -1,7 +1,7 @@
 # TDR-002: SonarCloud security gate via GitHub Actions
 
 **Date:** 2026-06-28
-**Status:** Superseded by [TDR-007](007-ci-quality-toolchain-consolidation.md)
+**Status:** Accepted
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Tags:** ci | security | sonarqube | sonarcloud
 

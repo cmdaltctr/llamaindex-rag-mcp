@@ -13,8 +13,7 @@
 4. Environment variables:
    - `EMBED_MODEL` = `nomic-embed-text`
    - `OLLAMA_BASE_URL` = `http://localhost:11434`
-   - `VECTOR_STORE` = `lancedb`
-   - `LANCEDB_URI` = `/absolute/path/to/llamaindex-rag-mcp/lancedb`
+   - `CHROMA_PERSIST_DIR` = `/absolute/path/to/llamaindex-rag-mcp/chroma_db`
 5. Click **Create** — the server should connect immediately (green indicator).
 
 ### Method B — Direct JSON edit
@@ -30,8 +29,7 @@ Add this block to `~/.opencode/opencode.json` (available in all projects) or `<p
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
-        "VECTOR_STORE": "lancedb",
-        "LANCEDB_URI": "/absolute/path/to/llamaindex-rag-mcp/lancedb"
+        "CHROMA_PERSIST_DIR": "/absolute/path/to/llamaindex-rag-mcp/chroma_db"
       },
       "enabled": true
     }
@@ -45,18 +43,15 @@ Then refresh in **OpenChamber → Settings → MCP**.
 
 ## Multi-project setup
 
-By default the server uses one LanceDB parent directory. Every chat and project
-can search collections in that directory. Here are your options.
+By default the server uses one flat ChromaDB — every chat and every project searches the same store. Here are your options.
 
 ### Option 1 — One shared store (simplest)
 
-The global `~/.opencode/opencode.json` points at one LanceDB parent directory.
-Anything you index is visible from any chat and project. Use it for general
-reference documents you want everywhere.
+The global `~/.opencode/opencode.json` points at one ChromaDB. Anything you index is visible from any chat, any project. Best for general reference docs you want everywhere.
 
 ### Option 2 — Project-scoped stores (recommended for isolation)
 
-Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`:
+Put a per-project `opencode.json` inside each project with its own `CHROMA_PERSIST_DIR`:
 
 ```json
 {
@@ -67,8 +62,7 @@ Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
-        "VECTOR_STORE": "lancedb",
-        "LANCEDB_URI": "/absolute/path/to/my-project/rag-store/lancedb"
+        "CHROMA_PERSIST_DIR": "/absolute/path/to/my-project/rag-store/chroma_db"
       },
       "enabled": true
     }
@@ -76,17 +70,15 @@ Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`
 }
 ```
 
-No initialisation is needed. Set `LANCEDB_URI` to a directory. The first
-`ingest_documents` call creates the collection table automatically.
+No init needed — just set `CHROMA_PERSIST_DIR` to any path. The first `ingest_documents` call creates the directory, database, and collection automatically.
 
 ### Option 3 — Per-project only, no global
 
 Remove `rag-docs` from `~/.opencode/opencode.json` entirely and only configure it per project. The server only spins up when you're inside a project that has an `opencode.json`. Cleaner, but you configure each project manually.
 
-### Option 4 — Named collections in one LanceDB parent directory
+### Option 4 — Named collections in one ChromaDB
 
-Use the built-in `collection` parameter to keep different projects isolated as
-separate LanceDB tables:
+Use the built-in `collection` parameter to keep different projects isolated within the same ChromaDB:
 
 ```bash
 rag-mcp ingest /path/to/project-a/docs/ --collection project-a

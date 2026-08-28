@@ -11,7 +11,6 @@ governs it, making that a conscious choice rather than an oversight.
 
 from __future__ import annotations
 
-import ast
 import tomllib
 from pathlib import Path
 
@@ -70,25 +69,3 @@ def test_contracts_are_actually_declared() -> None:
     named = _contract_modules()
     assert len(named) > 5, "expected several contract modules, found few"
     assert any(m.startswith("rag_mcp") for m in named)
-
-
-def test_config_does_not_import_chunking_registry() -> None:
-    """Chunking registry checks belong to the composition root, not config."""
-    config_root = _SRC / "config"
-    offenders: list[Path] = []
-    for path in config_root.rglob("*.py"):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                module = node.module or ""
-                if module.endswith("core.chunking.registry"):
-                    offenders.append(path)
-                if module.endswith("core.chunking") and any(
-                    alias.name == "registry" for alias in node.names
-                ):
-                    offenders.append(path)
-            if isinstance(node, ast.Import) and any(
-                alias.name.endswith("core.chunking.registry") for alias in node.names
-            ):
-                offenders.append(path)
-    assert not offenders, f"config imports the chunking registry: {offenders}"

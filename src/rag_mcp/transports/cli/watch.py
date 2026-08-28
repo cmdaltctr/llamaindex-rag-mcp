@@ -18,9 +18,7 @@ def watch(
         help="Directory to watch recursively for document changes.",
     ),
     debounce: float = typer.Option(
-        2.0,
-        "--debounce",
-        "-d",
+        2.0, "--debounce", "-d",
         help=(
             "Debounce interval in seconds (minimum 0.5). "
             "Controls how long to wait after the last file event "
@@ -28,22 +26,18 @@ def watch(
         ),
     ),
     collection: str = typer.Option(
-        "documents",
-        "--collection",
-        "-c",
-        help="Vector-store collection to route auto-ingested files into.",
+        "documents", "--collection", "-c",
+        help="ChromaDB collection to route auto-ingested files into.",
     ),
     verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-v",
+        False, "--verbose", "-v",
         help="Enable DEBUG-level logging for the watcher.",
     ),
 ) -> None:
     """Watch a directory for new/changed documents and auto-ingest them.
 
     Monitors the given directory tree for supported document files and
-    auto-ingests them into the vector-store index.  Includes SHA-256
+    auto-ingests them into the ChromaDB index.  Includes SHA-256
     content-hash deduplication, per-file debouncing, ingestion
     throttling, and consecutive-error detection.
 
@@ -52,15 +46,12 @@ def watch(
     • The watcher only detects changes after it starts.  Run
       ``rag-mcp ingest <path>`` first to catch up on existing files.
     • Do NOT run ``rag-mcp watch`` and ``rag-mcp ingest`` (or the MCP
-      server) simultaneously on the same vector-store collection —
-      whether concurrent writers are safe depends on the selected
-      vector-store backend.
+      server) simultaneously on the same ChromaDB — two processes do
+      not share the internal write lock.
     """
-    from ...daemon.runner import watch_directory
+    from ...daemon.watcher import watch_directory
 
     watch_directory(
-        path,
-        debounce=debounce,
-        verbose=verbose,
+        path, debounce=debounce, verbose=verbose,
         collection_name=collection,
     )

@@ -19,7 +19,7 @@ The system SHALL provide an opt-in hybrid retrieval mode that fuses dense vector
 - **THEN** the system SHALL fuse rankings using Reciprocal Rank Fusion before any reranking step
 
 ### Requirement: Reciprocal Rank Fusion with k=60
-The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion formula `score(d) = Σ_r 1 / (k + rank_r(d))` with `k = 60` as the default constant. The constant SHALL be configurable via the `RETRIEVAL__HYBRID_RRF_K` env var.
+The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion formula `score(d) = Σ_r 1 / (k + rank_r(d))` with `k = 60` as the default constant. The constant SHALL be configurable via the `HYBRID_RRF_K` env var.
 
 #### Scenario: RRF score combines both retrievers
 - **GIVEN** a chunk ranked 3rd by dense retrieval and 5th by sparse retrieval
@@ -32,75 +32,53 @@ The system SHALL fuse dense and sparse rankings using the Reciprocal Rank Fusion
 - **THEN** the chunk's fused score SHALL include only the dense reciprocal-rank term
 
 #### Scenario: Configurable k via env
-- **GIVEN** `RETRIEVAL__HYBRID_RRF_K=80` is set
+- **GIVEN** `HYBRID_RRF_K=80` is set
 - **WHEN** hybrid retrieval runs
 - **THEN** RRF SHALL use `k = 80` instead of the default
 
 ### Requirement: Sparse backend defaults to BM25 for v1
-At startup, the system SHALL select the sparse retrieval backend based on the `RETRIEVAL__HYBRID_SPARSE_BACKEND` env var, which SHALL accept `auto`, `native`, or `bm25`. **The default for v1 SHALL be `bm25`.** When `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`, the system SHALL run capability detection against the installed ChromaDB version and select `native` or `bm25` accordingly. When `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is set explicitly but the installed ChromaDB does not support sparse vectors, the system SHALL log a WARNING and fall back to `bm25` rather than crashing.
+At startup, the system SHALL select the sparse retrieval backend based on the `HYBRID_SPARSE_BACKEND` env var, which SHALL accept `auto`, `native`, or `bm25`. **The default for v1 SHALL be `bm25`.** When `HYBRID_SPARSE_BACKEND=auto`, the system SHALL run capability detection against the installed ChromaDB version and select `native` or `bm25` accordingly. When `HYBRID_SPARSE_BACKEND=native` is set explicitly but the installed ChromaDB does not support sparse vectors, the system SHALL log a WARNING and fall back to `bm25` rather than crashing.
 
 #### Scenario: v1 default is bm25
-- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` is unset
+- **GIVEN** `HYBRID_SPARSE_BACKEND` is unset
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL use the BM25 fallback path
 - **THEN** no capability detection SHALL be invoked
 
 #### Scenario: Auto-detected native path
 - **GIVEN** the installed ChromaDB version supports sparse vectors
-- **AND** `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`
+- **AND** `HYBRID_SPARSE_BACKEND=auto`
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL query ChromaDB for sparse rankings
 - **THEN** no in-memory BM25 index SHALL be constructed
 
 #### Scenario: Auto detection falls back when native is unsupported
 - **GIVEN** the installed ChromaDB version does not support sparse vectors
-- **AND** `RETRIEVAL__HYBRID_SPARSE_BACKEND=auto`
+- **AND** `HYBRID_SPARSE_BACKEND=auto`
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL build or reuse an in-memory BM25 index over the active collection
 - **THEN** sparse rankings SHALL come from the BM25 index
 
 #### Scenario: Explicit native override falls back gracefully
-- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is set
+- **GIVEN** `HYBRID_SPARSE_BACKEND=native` is set
 - **AND** the installed ChromaDB does not support sparse vectors
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL log a WARNING
 - **THEN** the system SHALL fall back to the BM25 path without crashing
 
 #### Scenario: Manual BM25 override
-- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25` is set
+- **GIVEN** `HYBRID_SPARSE_BACKEND=bm25` is set
 - **WHEN** hybrid retrieval runs
 - **THEN** the system SHALL use the BM25 fallback regardless of native capability detection
 
-### Requirement: BM25 fallback index is scoped by store and collection and invalidates on every mutation
-
-The in-memory BM25 index SHALL be cached by a process-local store identity token plus collection name. Two distinct vector-store instances containing the same collection name MUST NOT share cached rows or term statistics. The store SHALL own its collection generation counter and SHALL increment it exactly once for every successful mutation that can change sparse-visible rows. The sparse retriever SHALL compare the current generation against the cached generation on every hybrid query and lazily rebuild only the affected store/collection namespace when the generation changes.
-
-#### Scenario: Repeat queries reuse one store-scoped cache
-- **GIVEN** one store instance contains collection `documents`
-- **AND** the BM25 fallback path is active
-- **WHEN** two hybrid queries run with no intervening mutation
-- **THEN** the BM25 index SHALL be built once for that store/collection namespace
-- **AND** the second query SHALL reuse it
-
-#### Scenario: Same collection name in another store is isolated
-- **GIVEN** store A and store B both contain a collection named `documents`
-- **AND** their contents differ
-- **AND** their generation values happen to be equal
-- **WHEN** BM25 is queried against A and then B in the same process
-- **THEN** B MUST build/use an index from B's rows
-- **AND** no row originating only from A may appear due to cache reuse
-
-#### Scenario: Mutation advances generation exactly once
-- **GIVEN** a store/collection generation value `g`
-- **WHEN** a successful write, precomputed upsert, filtered delete, or collection delete mutates sparse-visible state
-- **THEN** the store generation SHALL become `g+1`
-- **AND** orchestration code SHALL NOT apply a second generation bump for the same mutation
+### Requirement: BM25 fallback index invalidates on every ingest write
+The in-memory BM25 index SHALL be cached per collection and SHALL invalidate whenever ingestion writes to or deletes from that collection. The implementation SHALL maintain a per-collection generation counter that increments under the existing `_write_lock` on every successful write or delete (in `_embed_and_write_async`, `remove_document`, `remove_by_metadata`, and `remove_collection`). The sparse retriever SHALL compare the current generation against its cached generation on every hybrid query and SHALL rebuild the index lazily on the next query when the generation has advanced.
 
 #### Scenario: Repeat queries reuse the BM25 cache
 - **GIVEN** a collection with chunks indexed
 - **AND** the BM25 fallback path is active
-- **WHEN** two hybrid queries are issued in succession with no mutation between them
-- **THEN** the BM25 index SHALL be built once for that store/collection namespace
+- **WHEN** two hybrid queries are issued in succession with no ingest between them
+- **THEN** the BM25 index SHALL be built once
 - **THEN** the second query SHALL reuse the cached index
 
 #### Scenario: Ingest invalidates the cache
@@ -112,7 +90,7 @@ The in-memory BM25 index SHALL be cached by a process-local store identity token
 
 #### Scenario: Deletion invalidates the cache
 - **GIVEN** a hybrid query has just built and cached the BM25 index
-- **WHEN** chunks are deleted from the same collection (via document removal, metadata-filtered removal, or collection removal)
+- **WHEN** chunks are deleted from the same collection (via `remove_document`, `remove_by_metadata`, or `remove_collection`)
 - **AND** another hybrid query runs against that collection
 - **THEN** the BM25 index SHALL be rebuilt before the query is served
 - **THEN** the rebuilt index SHALL not contain the deleted chunks
@@ -171,7 +149,7 @@ Experiment 9 SHALL fail before running ingestion or query evaluation if the acti
 - **THEN** no `hybrid_bm25` cell SHALL be evaluated using the dense-only path
 
 ### Requirement: Hybrid retrieval composes with the existing reranker
-The fused candidate list produced by hybrid retrieval SHALL be passed to the existing cross-encoder reranker when `rerank=True`. The reranker SHALL receive the configured fetch pool size derived from Tier 2 settings (`RETRIEVAL__RERANK_FETCH_MULTIPLIER`, `RETRIEVAL__RERANK_MAX_FETCH`).
+The fused candidate list produced by hybrid retrieval SHALL be passed to the existing cross-encoder reranker when `rerank=True`. The reranker SHALL receive the configured fetch pool size derived from Tier 2 settings (`RERANK_FETCH_MULTIPLIER`, `RERANK_MAX_FETCH`).
 
 #### Scenario: Hybrid + rerank end-to-end
 - **WHEN** `search_documents(query="X", hybrid=True, rerank=True, top_k=5)` is called
@@ -193,7 +171,7 @@ The system SHALL accept existing ChromaDB collections without forcing a re-inges
 If the native sparse backend is selected but the implementation cannot issue a real native sparse query, the system SHALL either fall back to the BM25 sparse retriever with a WARNING or fail loudly before any native-hybrid evaluation is reported. The system SHALL NOT represent native hybrid as successful when the sparse side is an empty placeholder.
 
 #### Scenario: Native selected without implemented sparse query
-- **GIVEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND=native` is selected
+- **GIVEN** `HYBRID_SPARSE_BACKEND=native` is selected
 - **AND** no real native sparse query implementation is available
 - **WHEN** hybrid retrieval is requested
 - **THEN** the system SHALL warn and use the BM25 sparse path, or raise a clear unsupported-backend error before evaluation
@@ -213,50 +191,13 @@ The system SHALL expose the following environment variables for hybrid retrieval
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RETRIEVAL__HYBRID_ENABLED` | `false` | Default value of `hybrid` parameter when not specified by the caller |
-| `RETRIEVAL__HYBRID_RRF_K` | `60` | RRF constant `k` |
-| `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `bm25` | One of `auto`, `native`, `bm25` (v1 default is `bm25`; promotion to `auto` belongs in a follow-up change) |
+| `HYBRID_ENABLED` | `false` | Default value of `hybrid` parameter when not specified by the caller |
+| `HYBRID_RRF_K` | `60` | RRF constant `k` |
+| `HYBRID_SPARSE_BACKEND` | `bm25` | One of `auto`, `native`, `bm25` (v1 default is `bm25`; promotion to `auto` belongs in a follow-up change) |
 
 #### Scenario: Default values
 - **WHEN** none of the hybrid env vars are set
-- **THEN** `RETRIEVAL__HYBRID_ENABLED` SHALL be `false`
-- **THEN** `RETRIEVAL__HYBRID_RRF_K` SHALL be `60`
-- **THEN** `RETRIEVAL__HYBRID_SPARSE_BACKEND` SHALL be `bm25`
-
-### Requirement: Hybrid metadata filters constrain every retrieval branch
-
-When `metadata_filter` is supplied to hybrid retrieval, the same logical filter SHALL constrain dense and sparse candidate eligibility before RRF. Fusion SHALL NOT re-introduce a row that fails the caller's filter merely because it ranked highly in BM25/native sparse retrieval.
-
-#### Scenario: BM25 ranks a forbidden row highly
-- **GIVEN** a metadata filter selects category `allowed`
-- **AND** a category `forbidden` row is the strongest BM25 keyword match
-- **WHEN** hybrid retrieval runs
-- **THEN** the forbidden row MUST NOT be present in the sparse ranking passed to RRF
-- **AND** the final result set MUST contain only filter-matching rows
-
-#### Scenario: Dense and hybrid enforce equivalent filters
-- **GIVEN** a supported metadata filter and a fixed collection
-- **WHEN** dense-only and hybrid searches run with that filter
-- **THEN** every returned row from both modes MUST satisfy the filter
-
-### Requirement: Reciprocal Rank Fusion scores are rank-fusion scores, not dense similarities
-
-The system SHALL continue to compute RRF using `score(d) = sum(1/(k+rank))`, but SHALL classify the result as an RRF/fusion score. Dense `similarity_threshold` SHALL NOT be applied directly to the RRF numeric value. Threshold semantics are governed by the `retrieval-score-semantics` capability.
-
-#### Scenario: High RRF rank with ordinary dense threshold
-- **GIVEN** `rrf_k=60`
-- **AND** a document ranks first in both dense and sparse lists
-- **WHEN** its RRF score is computed
-- **THEN** the score SHALL be `2/61`
-- **AND** a dense threshold such as `0.3` SHALL NOT be compared directly against `2/61`
-
-### Requirement: Hybrid diagnostics expose effective sparse backend and cache namespace
-
-When diagnostics are requested, the system SHALL expose the effective sparse backend used after capability/fallback resolution and enough cache/store identity to distinguish one store/collection namespace from another without exposing secrets or filesystem-sensitive data unnecessarily.
-
-#### Scenario: Native request falls back to BM25
-- **GIVEN** native sparse is requested but the runtime falls back to BM25
-- **WHEN** diagnostics are requested
-- **THEN** the effective backend SHALL be reported as `bm25`
-- **AND** an experiment that declared native as the manipulated backend SHALL be able to abort before reporting native results
+- **THEN** `HYBRID_ENABLED` SHALL be `false`
+- **THEN** `HYBRID_RRF_K` SHALL be `60`
+- **THEN** `HYBRID_SPARSE_BACKEND` SHALL be `bm25`
 

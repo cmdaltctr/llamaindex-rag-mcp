@@ -30,14 +30,8 @@ logger = logging.getLogger(__name__)
 # ── Detection data primitives (owned here, re-exported by codebase_map) ──
 # Directories excluded from both Magika and suffix scanning.
 _EXCLUDED_DIRS: set[str] = {
-    ".git",
-    "node_modules",
-    "__pycache__",
-    ".venv",
-    ".pytest_cache",
-    "dist",
-    "build",
-    ".opencode",
+    ".git", "node_modules", "__pycache__", ".venv", ".pytest_cache",
+    "dist", "build", ".opencode",
 }
 
 
@@ -87,10 +81,12 @@ def scan_with_magika(path: str) -> list:
         subprocess.CalledProcessError: If the Magika process fails.
     """
     if not _is_magika_available():
-        raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary()}")
+        raise FileNotFoundError(
+            f"Magika CLI binary not found: {_magika_binary()}"
+        )
 
     try:
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(
             [_magika_binary(), "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
@@ -98,8 +94,10 @@ def scan_with_magika(path: str) -> list:
             timeout=30,
         )
     except subprocess.TimeoutExpired:
-        logger.warning("Magika scan timed out after 30s, falling back to suffix detection")
-        raise FileNotFoundError("Magika scan timed out") from None
+        logger.warning(
+            "Magika scan timed out after 30s, falling back to suffix detection"
+        )
+        raise FileNotFoundError("Magika scan timed out")
 
     entries: list[FileEntry] = []
     project_root = Path(path)

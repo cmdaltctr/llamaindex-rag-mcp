@@ -1,22 +1,19 @@
-"""LlamaIndex metadata extraction backend.
+"""LlamaIndex Extractor metadata extraction backend.
 
-Runs LlamaIndex ``TitleExtractor``, ``KeywordExtractor`` and
-``SummaryExtractor`` over a bounded set of temporary document chunks.  The
-per-node extractor output is aggregated back to one file-level metadata dict;
-the ingestion chunker currently copies that file-level dict onto final stored
-chunks.  This is therefore not persisted per-chunk LLM metadata enrichment.
+Extracts metadata using LlamaIndex's ``IngestionPipeline.arun()`` with
+``TitleExtractor``, ``KeywordExtractor``, and ``SummaryExtractor``
+(per-chunk enrichment via LLM).  Falls back to local mode if the LLM
+package is not installed.  Extracted from the original
+``metadata_extractor.py`` monolith as part of Phase 1.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from ..settings import resolve_effective_settings
 from ._common import (
     _normalise_category,
-    _resolve_pipeline_timeout,
-    _signal_degraded,
     _strip_llm_prefix,
     _truncate_keywords,
     _truncate_summary,
@@ -25,14 +22,27 @@ from ._common import (
 
 
 def _get_max_chunks() -> int:
-    """Return the maximum split nodes sent to expensive LLM extractors."""
-    import os
+    """Return the max number of chunks for llamaindex extraction.
 
+    Reads the env var at call time so tests can override it via
+    ``monkeypatch.setenv`` after module load.
+    """
+    import os
     return int(os.getenv("LLAMANDEX_EXTRACTOR_MAX_CHUNKS", "10"))
 
 
 def _parse_keywords_from_meta(kws: str) -> list[str]:
-    """Parse a keywords string into cleaned, lower-cased keywords."""
+    """Parse a keywords string into a list of cleaned, lowercased keywords.
+
+    Strips LLM-emitted prefixes, splits on commas/newlines, and filters
+    out empty values.
+
+    Args:
+        kws: Raw keywords string from LlamaIndex metadata.
+
+    Returns:
+        List of cleaned keyword strings.
+    """
     kws_clean = _strip_llm_prefix(kws)
     return [
         stripped.lower()
@@ -42,7 +52,18 @@ def _parse_keywords_from_meta(kws: str) -> list[str]:
 
 
 def _derive_category(keywords_all: list[str], title: str) -> str:
-    """Derive a category from keywords or title."""
+    """Derive a category from keywords or title.
+
+    Tries each keyword in order, falling back to the first 1-2 words
+    of the title.
+
+    Args:
+        keywords_all: List of keyword strings.
+        title: Document title string (may be empty).
+
+    Returns:
+        Normalised category string, or "uncategorised".
+    """
     for kw in keywords_all:
         candidate = _normalise_category(kw)
         if candidate != "uncategorised":
@@ -53,7 +74,15 @@ def _derive_category(keywords_all: list[str], title: str) -> str:
 
 
 def _first_nonempty_str_field(meta: dict, key: str) -> str:
-    """Get the first non-empty string value for a metadata key."""
+    """Get the first non-empty string value for a metadata key.
+
+    Args:
+        meta: Node metadata dict.
+        key: Metadata field name.
+
+    Returns:
+        Stripped value with LLM prefix removed, or empty string.
+    """
     val = meta.get(key, "")
     if isinstance(val, str) and val.strip():
         return _strip_llm_prefix(val.strip())
@@ -61,7 +90,19 @@ def _first_nonempty_str_field(meta: dict, key: str) -> str:
 
 
 def _aggregate_llamaindex_metadata(nodes: list) -> dict:
-    """Aggregate temporary per-node extractor metadata to file-level metadata."""
+    """Aggregate per-node metadata into a single metadata dict.
+
+    Takes the first non-empty value for each field across all enriched
+    nodes.  Normalises category using ``_normalise_category`` and
+    truncates keywords/summary.
+
+    Args:
+        nodes: List of LlamaIndex ``BaseNode`` objects with extracted metadata.
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary``, and
+        optionally ``document_title``.
+    """
     keywords_all: list[str] = []
     summary = ""
     title = ""
@@ -94,9 +135,7 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
 
     logger.info(
         "LlamaIndex extraction: category=%s, keywords=%d, summary=%d chars",
-        category,
-        len(result.get("keywords", [])),
-        len(summary),
+        category, len(result.get("keywords", [])), len(summary),
     )
     return result
 
@@ -104,90 +143,99 @@ def _aggregate_llamaindex_metadata(nodes: list) -> dict:
 async def _extract_llamaindex_async(
     text: str, file_name: str = "", settings: object | None = None
 ) -> dict:
-    """Extract bounded file-level metadata via LlamaIndex extractors.
+    """Extract metadata using LlamaIndex's ``IngestionPipeline.arun()``.
 
-    The full input is first split with the configured ``SentenceSplitter``.
-    Only the first ``LLAMANDEX_EXTRACTOR_MAX_CHUNKS`` nodes are then sent to
-    the expensive LLM-backed extractors.  This makes the setting a real chunk
-    budget instead of the previous ``max_chunks * chunk_size`` character
-    approximation.
+    Calls ``pipeline.arun()`` directly — no ThreadPoolExecutor workaround
+    needed since we are already in an async context.
+
+    Args:
+        text: The full document text.
+        file_name: Name of the file being processed.
+
+    Returns:
+        A dict with ``category``, ``keywords``, ``summary``, and
+        optionally ``document_title``.  Falls back to keyword mode on failure.
     """
     resolved = resolve_effective_settings(settings)
     try:
-        from ..providers.llm.registry import get as _llm_get
-
-        backend = (
-            resolved.local_backend
-            if resolved.metadata_llm_provider == "local"
-            else resolved.cloud_backend
-        )
-        llm = _llm_get(backend)(resolved, timeout=_resolve_pipeline_timeout(resolved, backend))
+        if resolved.metadata_llm_provider == "local":
+            if resolved.local_backend == "llamacpp":
+                from llama_index.llms.openai_like import OpenAILike
+                llm = OpenAILike(
+                    model=resolved.llamacpp_chat_model,
+                    api_base=resolved.llamacpp_chat_url,
+                    api_key="no-key",
+                    request_timeout=180.0,
+                )
+            else:
+                from llama_index.llms.ollama import Ollama
+                llm = Ollama(
+                    model=resolved.metadata.ollama_classify_model,
+                    base_url=resolved.ollama_base_url,
+                    request_timeout=180.0,
+                )
+        else:
+            from llama_index.llms.openai_like import OpenAILike
+            llm = OpenAILike(
+                model=resolved.openrouter_llm_model,
+                api_base="https://openrouter.ai/api/v1",
+                api_key=resolved.openrouter_api_key,
+                request_timeout=180.0,
+            )
     except ImportError:
         logger.warning(
             "Required LLM package not installed for METADATA_LLM_PROVIDER=%s "
             "(backend=%s) — falling back to local mode",
             resolved.metadata_llm_provider,
-            resolved.local_backend
-            if resolved.metadata_llm_provider == "local"
-            else resolved.cloud_backend,
+            resolved.local_backend if resolved.metadata_llm_provider == "local" else resolved.cloud_backend,
         )
-        _signal_degraded()
+        # Lazy import to avoid a circular dependency: extractor.py imports
+        # this module at load time, but the fallback dispatch lives in
+        # extractor.py.  The import only runs at call time.
         from .extractor import _dispatch_local_extraction
-
         return await _dispatch_local_extraction(text, resolved, file_name)
 
     try:
         from llama_index.core import Document
+        from llama_index.core.ingestion import IngestionPipeline
+        from llama_index.core.node_parser import SentenceSplitter
         from llama_index.core.extractors import (
             KeywordExtractor,
             SummaryExtractor,
             TitleExtractor,
         )
-        from llama_index.core.ingestion import IngestionPipeline
-        from llama_index.core.node_parser import SentenceSplitter
 
         max_chunks = _get_max_chunks()
-        if max_chunks <= 0:
-            raise ValueError("LLAMANDEX_EXTRACTOR_MAX_CHUNKS must be greater than 0")
+        capped_text = text[:max_chunks * resolved.chunk_size]
 
-        doc = Document(text=text, metadata={"file_name": file_name})
-        splitter = SentenceSplitter(
-            chunk_size=resolved.chunking.chunk_size,
-            chunk_overlap=resolved.chunking.chunk_overlap,
-        )
-        split_nodes = await asyncio.to_thread(lambda: splitter.get_nodes_from_documents([doc]))
-        capped_nodes = split_nodes[:max_chunks]
+        doc = Document(text=capped_text, metadata={"file_name": file_name})
 
-        if not capped_nodes:
-            logger.debug("LlamaIndex metadata extraction produced no split nodes")
-            return {"category": "uncategorised", "keywords": [], "summary": ""}
-
-        # Splitting is complete before this pipeline begins, so every
-        # transformation below is an expensive metadata extractor and the
-        # max-chunks bound is exact.
         pipeline = IngestionPipeline(
             transformations=[
-                TitleExtractor(nodes=min(5, len(capped_nodes)), llm=llm),
+                SentenceSplitter(
+                    chunk_size=resolved.chunk_size,
+                    chunk_overlap=resolved.chunk_overlap,
+                ),
+                TitleExtractor(nodes=5, llm=llm),
                 KeywordExtractor(keywords=10, llm=llm),
                 SummaryExtractor(summaries=["self"], llm=llm),
             ],
         )
-        enriched_nodes = await pipeline.arun(nodes=capped_nodes)
 
-        result = _aggregate_llamaindex_metadata(enriched_nodes)
-        if result["category"] == "uncategorised":
-            _signal_degraded()
-        return result
+        # Call arun() directly — no nested-loop workaround needed.
+        enriched_nodes = await pipeline.arun(documents=[doc])
+
+        return _aggregate_llamaindex_metadata(enriched_nodes)
 
     except Exception as exc:
         logger.warning(
-            "LlamaIndex async metadata extraction failed: %s: %s — falling back to %s mode",
+            "LlamaIndex async metadata extraction failed: %s: %s — "
+            "falling back to %s mode",
             type(exc).__name__,
             exc,
             resolved.metadata_llm_provider,
             exc_info=logger.isEnabledFor(logging.DEBUG),
         )
-        _signal_degraded()
+        # Lazy import — see note above.
         from .extractor import _dispatch_local_extraction
-
         return await _dispatch_local_extraction(text, resolved, file_name)

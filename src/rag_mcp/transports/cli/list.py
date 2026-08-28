@@ -10,15 +10,13 @@ import json
 import typer
 from rich.table import Table
 
-from . import _sanitise_display_name, app, console
+from . import app, console, _sanitise_display_name
 
 
 @app.command(name="list")
 def list_cmd(
     collection: str = typer.Option(
-        "documents",
-        "--collection",
-        "-c",
+        "documents", "--collection", "-c",
         help="ChromaDB collection to list documents from.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
@@ -51,7 +49,9 @@ def list_cmd(
         table.add_row(source, str(chunks))
 
     console.print(table)
-    console.print(f"\n[bold]{len(docs)} document(s), {total_chunks} chunk(s) total.[/bold]")
+    console.print(
+        f"\n[bold]{len(docs)} document(s), {total_chunks} chunk(s) total.[/bold]"
+    )
 
 
 @app.command(name="list-collections")

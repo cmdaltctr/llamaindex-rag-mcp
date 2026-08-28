@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.table import Table
 
+from . import app, console, _print_ollama_error
 from ...config import get_settings
 from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
-from . import _print_ollama_error, app, console
 
 
 def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
@@ -28,7 +29,9 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
             console.print(f"[red]Error:[/red] File not found: {file}")
             raise typer.Exit(code=1)
         if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
-            console.print(f"[red]Error:[/red] Unsupported file extension: {file_path.suffix}")
+            console.print(
+                f"[red]Error:[/red] Unsupported file extension: {file_path.suffix}"
+            )
             raise typer.Exit(code=1)
 
         import asyncio
@@ -45,8 +48,7 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
         return [n.get_content() for n in nodes]
 
     splitter = SentenceSplitter(
-        chunk_size=get_settings().chunking.chunk_size,
-        chunk_overlap=get_settings().chunking.chunk_overlap,
+        chunk_size=get_settings().chunking.chunk_size, chunk_overlap=get_settings().chunking.chunk_overlap
     )
     doc = Document(text=text)
     nodes = splitter.get_nodes_from_documents([doc])
@@ -55,23 +57,14 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
 
 @app.command()
 def benchmark(
-    text: str | None = typer.Option(
-        None,
-        "--text",
-        "-t",
-        help="Inline text to embed for benchmarking.",
+    text: Optional[str] = typer.Option(
+        None, "--text", "-t", help="Inline text to embed for benchmarking.",
     ),
-    file: str | None = typer.Option(
-        None,
-        "--file",
-        "-f",
-        help="Path to a file to read, chunk, and embed.",
+    file: Optional[str] = typer.Option(
+        None, "--file", "-f", help="Path to a file to read, chunk, and embed.",
     ),
     iterations: int = typer.Option(
-        3,
-        "--iterations",
-        "-n",
-        help="Number of benchmark iterations (default 3).",
+        3, "--iterations", "-n", help="Number of benchmark iterations (default 3).",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
@@ -102,7 +95,7 @@ def benchmark(
         embed_model.get_text_embedding(chunks[0])
     except Exception as exc:
         _print_ollama_error(str(exc), json_output)
-        raise typer.Exit(code=1) from None
+        raise typer.Exit(code=1)
 
     timings: list[float] = []
     vector_dim: int | None = None
@@ -113,7 +106,7 @@ def benchmark(
             embeddings = embed_model.get_text_embedding_batch(chunks)
         except Exception as exc:
             _print_ollama_error(str(exc), json_output)
-            raise typer.Exit(code=1) from None
+            raise typer.Exit(code=1)
         elapsed = time.perf_counter() - start
         timings.append(elapsed)
 

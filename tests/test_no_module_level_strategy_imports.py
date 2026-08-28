@@ -9,6 +9,7 @@ at dispatch time (task 3.8, config-composition-root spec).
 from __future__ import annotations
 
 import ast
+import importlib
 from pathlib import Path
 
 import pytest
@@ -90,16 +91,6 @@ _FORBIDDEN_STRATEGY_MODULES = {
     "rag_mcp.core.retrieval.policy",
     "rag_mcp.core.retrieval.reranker",
     "rag_mcp.core.retrieval.sparse",
-    "rag_mcp.core.community.louvain",
-    "rag_mcp.core.community.leiden",
-    "rag_mcp.integrations.pdf.liteparse",
-    "rag_mcp.integrations.pdf.pypdf",
-    "rag_mcp.integrations.pdf.pypdfium",
-    # register-document-backend-strategies (task 4.2): the chunker and the
-    # backends orchestrator must resolve adapters through the registry —
-    # never a module-level import of either concrete backend.
-    "rag_mcp.core.ingestion.backends.local",
-    "rag_mcp.integrations.azure",
 }
 
 
@@ -109,8 +100,6 @@ _FORBIDDEN_STRATEGY_MODULES = {
         "core/ingestion/chunker.py",
         "core/metadata/extractor.py",
         "core/retrieval/pipeline.py",
-        "core/community/__init__.py",
-        "integrations/pdf/factory.py",
     ],
 )
 def test_no_module_level_strategy_import(rel_path: str) -> None:
@@ -124,24 +113,4 @@ def test_no_module_level_strategy_import(rel_path: str) -> None:
         f"{rel_path} has module-level imports of concrete strategy modules: "
         f"{sorted(offenders)}. Strategies must be resolved through the "
         f"registry at dispatch time."
-    )
-
-
-_ORCHESTRATOR_RELPATH = "core/ingestion/backends/orchestrator.py"
-
-
-def test_orchestrator_has_no_module_level_backend_imports() -> None:
-    """The backend orchestrator resolves adapters lazily (task 4.2).
-
-    The orchestrator must import neither the local backend module nor
-    the Azure integration at module scope — both resolve through the
-    registry at dispatch time.
-    """
-    module_path = _SRC_ROOT / _ORCHESTRATOR_RELPATH
-    assert module_path.exists(), f"orchestrator module missing: {_ORCHESTRATOR_RELPATH}"
-    imports = _module_top_level_imports(module_path)
-    offenders = imports & _FORBIDDEN_STRATEGY_MODULES
-    assert not offenders, (
-        f"{_ORCHESTRATOR_RELPATH} has module-level imports of concrete "
-        f"backend adapters: {sorted(offenders)}."
     )

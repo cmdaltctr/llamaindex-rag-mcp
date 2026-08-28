@@ -16,17 +16,14 @@ from types import SimpleNamespace
 import pytest
 
 from rag_mcp.config import get_settings as _gs
+from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings
 from rag_mcp.core.chunking.markdown import (
     apply_heading_prepend as _apply_heading_prepend,
-)
-from rag_mcp.core.chunking.markdown import (
     drop_small_markdown_chunks as _drop_small_markdown_chunks,
-)
-from rag_mcp.core.chunking.markdown import (
     ensure_heading_metadata as _ensure_heading_metadata,
 )
 from rag_mcp.core.ingestion import read_and_chunk_file_async
-from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -57,7 +54,8 @@ async def test_markdown_short_sections_align_with_headings(sample_md: Path) -> N
     """
     nodes = await read_and_chunk_file_async(sample_md)
     assert len(nodes) >= 2, (
-        "Markdown with multiple short H2 sections must yield more than one chunk"
+        "Markdown with multiple short H2 sections must yield more than one "
+        "chunk"
     )
 
     # Each H2 section should appear in some chunk; chunks should not blend
@@ -74,10 +72,15 @@ async def test_markdown_short_sections_align_with_headings(sample_md: Path) -> N
     full_blend = [
         t
         for t in texts
-        if "Paris" in t and "Berlin" in t and "Rome" in t and "Madrid" in t and "London" in t
+        if "Paris" in t
+        and "Berlin" in t
+        and "Rome" in t
+        and "Madrid" in t
+        and "London" in t
     ]
     assert not full_blend, (
-        "Heading-aware chunking must not collapse all 5 H2 sections into one chunk"
+        "Heading-aware chunking must not collapse all 5 H2 sections into one "
+        "chunk"
     )
 
 
@@ -102,11 +105,14 @@ async def test_markdown_long_section_is_split(
     nodes = await read_and_chunk_file_async(
         long_md,
         chunk_overlap=10,
-        settings=EffectiveSettings(chunking=ChunkingBlock(markdown_chunk_size=small_chunk_size)),
+        settings=EffectiveSettings(
+            chunking=ChunkingBlock(markdown_chunk_size=small_chunk_size)
+        ),
     )
 
     assert len(nodes) > 1, (
-        "A heading-bounded section longer than chunk_size must produce more than one chunk"
+        "A heading-bounded section longer than chunk_size must produce "
+        "more than one chunk"
     )
 
     # Tokens ≈ 4 chars on average for English; allow a generous tolerance
@@ -166,9 +172,13 @@ async def test_markdown_without_headings_still_chunks(
     no_headings = fixtures_dir / "markdown_no_headings.md"
     nodes = await read_and_chunk_file_async(no_headings)
 
-    assert len(nodes) >= 1, "Markdown without headings must still produce at least one chunk"
+    assert len(nodes) >= 1, (
+        "Markdown without headings must still produce at least one chunk"
+    )
     for node in nodes:
-        assert _node_text(node).strip(), "Markdown branch must not produce empty chunks"
+        assert _node_text(node).strip(), (
+            "Markdown branch must not produce empty chunks"
+        )
 
 
 # ── 6c: defensive Markdown metadata/helper coverage ──────────────────────
@@ -233,7 +243,9 @@ async def test_heading_prepend_enabled_adds_heading_prefix(
     """The experimental heading-prepend knob prefixes Markdown node text."""
     nodes = await read_and_chunk_file_async(
         sample_md,
-        settings=EffectiveSettings(chunking=ChunkingBlock(markdown_heading_prepend=True)),
+        settings=EffectiveSettings(
+            chunking=ChunkingBlock(markdown_heading_prepend=True)
+        ),
     )
 
     assert nodes
@@ -247,6 +259,7 @@ def test_heading_prepend_is_not_applied_twice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The heading prepend helper guards against double-prefixing text."""
+    import rag_mcp.core.chunking.markdown as _md
 
     node = SimpleNamespace(
         metadata={"header_path": "/Paper/Methods/"},
@@ -264,6 +277,7 @@ def test_min_size_floor_drops_tiny_markdown_chunks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The experimental min-size floor drops tiny Markdown chunks."""
+    import rag_mcp.core.chunking.markdown as _md
 
     small = SimpleNamespace(text="## Introduction\n\nWe study X.")
     large = SimpleNamespace(text="x" * 1200)
@@ -279,6 +293,8 @@ async def test_markdown_experimental_knobs_default_to_existing_chunks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Unset 6c knobs preserve the 6b Markdown chunk text for a small fixture."""
+    import rag_mcp.core.chunking.markdown as _md
+
 
     nodes = await read_and_chunk_file_async(sample_md)
     texts = [_node_text(node) for node in nodes]
@@ -289,5 +305,5 @@ async def test_markdown_experimental_knobs_default_to_existing_chunks(
         "## Germany\n\nThe capital of Germany is Berlin. It is known for the Brandenburg Gate.",
         "## Italy\n\nThe capital of Italy is Rome. It is known for the Colosseum.",
         "## Spain\n\nThe capital of Spain is Madrid. It is known for the Royal Palace.",
-        "## United Kingdom\n\nThe capital of the United Kingdom is London. It is known for Big Ben.",  # noqa: E501
+        "## United Kingdom\n\nThe capital of the United Kingdom is London. It is known for Big Ben.",
     ]

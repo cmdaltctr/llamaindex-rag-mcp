@@ -1,6 +1,0 @@
-output/gencorpus_*/
-output/gencorpus_warmup/
-output/store_*/
-output/split_*/
-output/smoke/
-__pycache__/

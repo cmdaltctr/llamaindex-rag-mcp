@@ -17,22 +17,13 @@ from . import app, console
 @app.command(name="set-profile")
 def set_profile_cmd(
     collection: str = typer.Option(
-        ...,
-        "--collection",
-        "-c",
-        help="Name of the ChromaDB collection.",
+        ..., "--collection", "-c", help="Name of the ChromaDB collection.",
     ),
     profile: str = typer.Option(
-        ...,
-        "--profile",
-        "-p",
-        help="Target profile: 'documents' or 'codebase'.",
+        ..., "--profile", "-p", help="Target profile: 'documents' or 'codebase'.",
     ),
     yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Skip the confirmation prompt.",
+        False, "--yes", "-y", help="Skip the confirmation prompt.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
@@ -46,7 +37,8 @@ def set_profile_cmd(
     """
     if profile not in ("documents", "codebase"):
         console.print(
-            f"[red]Error:[/red] Invalid profile {profile!r}. Available: documents, codebase."
+            f"[red]Error:[/red] Invalid profile {profile!r}. "
+            f"Available: documents, codebase."
         )
         raise typer.Exit(code=1)
 

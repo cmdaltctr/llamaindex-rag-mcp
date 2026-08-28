@@ -38,8 +38,7 @@ binary, thresholds). It SHALL live in a pure-data module with no imports from
 parameter and SHALL pass it down to every module they call. Modules under
 `core/` and `integrations/` SHALL NOT import a process-wide settings object.
 The producer of the instance SHALL be `ProfileResolver.resolve(collection)` for
-collection-bound operations and `compose.py` for operations with no
-collection.
+collection-bound operations and `compose.py` for operations with no collection.
 
 #### Scenario: No global settings read in core
 
@@ -69,12 +68,7 @@ collection.
   operation
 - **AND** it MUST NOT patch attributes on a module-level settings singleton
 
-#### Scenario: PDF reader factory receives the reader name
-
-- **WHEN** the ingestion pipeline needs a PDF reader adapter
-- **THEN** the call site SHALL pass the resolved reader name from its injected
-  settings
-- **AND** the factory SHALL perform no settings lookup of its own
+---
 
 ### Requirement: No settings singleton outside the composition root
 
