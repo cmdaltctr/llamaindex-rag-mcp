@@ -1,7 +1,7 @@
 # ADR-052: Stable Source and Chunk Lineage
 
 **Date:** 2026-08-28
-**Status:** Proposed
+**Status:** Accepted
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context

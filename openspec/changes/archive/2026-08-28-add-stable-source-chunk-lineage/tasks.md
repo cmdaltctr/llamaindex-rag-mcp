@@ -97,7 +97,7 @@
   identity hierarchy, ordered reconstruction example, move/copy semantics,
   and the boundary between indexed-sequence reconstruction and original-file
   recovery.
-- [ ] 5.2 Correct the living `document-deletion` baseline when this change is
+- [x] 5.2 Correct the living `document-deletion` baseline when this change is
   archived so it names `core/ingestion/writer.py` and write-verify-delete
   replacement rather than the deleted monolith and delete-before-read flow.
 - [x] 5.3 Create an ADR after implementation confirms the formulas and

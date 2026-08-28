@@ -8,25 +8,39 @@ Define document deletion, collection deletion, re-ingestion cleanup, and dry-run
 
 ### Requirement: Delete chunks by source file path
 
-The system SHALL provide a `remove_document(file_path: str, collection_name: str = "documents") -> dict` function in `ingestion.py` that deletes all chunks whose `file_path` metadata matches the given path. The function SHALL be idempotent — calling it on a file with no indexed chunks SHALL return success with `chunks_removed: 0`.
+The system SHALL provide a
+`core/ingestion/writer.py::remove_document(file_path: str,
+collection_name: str = "documents") -> dict` function that applies the same
+canonical path resolution and deterministic `source_id` derivation as
+production ingestion, then deletes all chunks whose `source_id` matches. The
+function SHALL be idempotent: calling it for a source with no indexed chunks
+SHALL return success with `chunks_removed: 0`. The existing general metadata
+deletion operation MAY delete a source directly with a `source_id` filter.
 
 #### Scenario: Delete existing file chunks
-- **WHEN** `remove_document("/path/to/file.pdf", collection_name="research")` is called on a file with 12 indexed chunks
-- **THEN** all 12 chunks SHALL be removed from the `"research"` collection
-- **THEN** the result SHALL include `"chunks_removed": 12` and `"status": "ok"`
+
+- **WHEN** `remove_document("/path/to/file.pdf", collection_name="research")` is called on a source with 12 indexed chunks
+- **THEN** the function MUST derive the same `source_id` used during ingestion
+- **AND** all 12 chunks for that `source_id` SHALL be removed from the `"research"` collection
+- **AND** the result SHALL include `"chunks_removed": 12` and `"status": "ok"`
 
 #### Scenario: Delete non-existent file chunks
+
 - **WHEN** `remove_document("/path/to/unknown.pdf")` is called
 - **THEN** the result SHALL include `"chunks_removed": 0` and `"status": "ok"`
-- **THEN** no error SHALL be raised
+- **AND** no error SHALL be raised
 
 #### Scenario: Delete from non-existent collection
+
 - **WHEN** `remove_document("/path/to/file.pdf", collection_name="nonexistent")` is called
 - **THEN** the result SHALL include `"status": "error"` and a descriptive message
 
 ### Requirement: Delete chunks by metadata filter
 
-The system SHALL provide a `remove_by_metadata(metadata_filter: dict, collection_name: str = "documents") -> dict` function in `ingestion.py` that deletes all chunks matching an arbitrary ChromaDB `where` filter.
+The system SHALL provide a
+`core/ingestion/writer.py::remove_by_metadata(metadata_filter: dict,
+collection_name: str = "documents") -> dict` function that deletes all chunks
+matching an arbitrary store-compatible `where` filter.
 
 #### Scenario: Delete by category filter
 - **WHEN** `remove_by_metadata({"category": "uncategorised"}, collection_name="research")` is called
@@ -35,11 +49,13 @@ The system SHALL provide a `remove_by_metadata(metadata_filter: dict, collection
 
 #### Scenario: Delete by empty filter
 - **WHEN** `remove_by_metadata({})` is called
-- **THEN** the function SHALL raise `ValueError` or return an error result (ChromaDB rejects empty where clauses)
+- **THEN** the function SHALL return an error result
 
 ### Requirement: Drop (delete) a collection
 
-The system SHALL provide a `remove_collection(collection_name: str) -> dict` function in `ingestion.py` that permanently deletes an entire ChromaDB collection.
+The system SHALL provide a
+`core/ingestion/writer.py::remove_collection(collection_name: str) -> dict`
+function that permanently deletes an entire configured vector-store collection.
 
 #### Scenario: Drop existing collection
 - **WHEN** `remove_collection("research")` is called on an existing collection
