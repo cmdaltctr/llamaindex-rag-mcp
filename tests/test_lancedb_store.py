@@ -28,6 +28,8 @@ from rag_mcp.core.vectordb.identity import (
 )
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
+_PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
+
 
 def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
     """Equal collection/generation values cannot cross backend instances."""
@@ -50,6 +52,7 @@ def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
         ["alpha unique", "filler gamma", "filler delta"],
         common_metadatas,
         common_embeddings,
+        embedding_identity=_PRECOMPUTED_IDENTITY,
     )
     lance.upsert_precomputed(
         collection,
@@ -57,6 +60,7 @@ def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
         ["beta unique", "filler gamma", "filler delta"],
         common_metadatas,
         common_embeddings,
+        embedding_identity=_PRECOMPUTED_IDENTITY,
     )
     assert chroma.get_generation(collection) == lance.get_generation(collection) == 1
 
@@ -385,8 +389,8 @@ class TestLifecycleEdges:
 class TestUpsertAndMetadataEdges:
     """Precomputed upserts into adapter tables and metadata decoding."""
 
-    def test_upsert_empty_batch_is_noop(self, tmp_path: Path) -> None:
-        """An empty batch must not create a zero-dimension-locked table.
+    def test_upsert_empty_batch_is_rejected_without_creating_a_table(self, tmp_path: Path) -> None:
+        """An empty batch must fail without creating a zero-dimension table.
 
         Creating the table from an empty batch would lock the vector
         column at dimension 0; every later write would then fail on the
@@ -396,14 +400,25 @@ class TestUpsertAndMetadataEdges:
 
         uri = str(tmp_path / "lancedb")
         store = LanceVectorStore(uri=uri)
-        store.upsert_precomputed("empty", ids=[], documents=[], metadatas=[], embeddings=[])
-        store.upsert_precomputed("empty", ids=["a"], documents=["d"], metadatas=[{}], embeddings=[])
+        from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
+
+        with pytest.raises(EmbeddingWriteContractError):
+            store.upsert_precomputed(
+                "empty", ids=[], documents=[], metadatas=[], embeddings=[],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
+        with pytest.raises(EmbeddingWriteContractError):
+            store.upsert_precomputed(
+                "empty", ids=["a"], documents=["d"], metadatas=[{}], embeddings=[],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
         assert not store.collection_exists("empty")
 
         # A later real write still creates the table with a usable dim.
         embedding = list(Settings.embed_model.get_query_embedding("x"))
         store.upsert_precomputed(
-            "empty", ids=["a"], documents=["d"], metadatas=[{"k": "v"}], embeddings=[embedding]
+            "empty", ids=["a"], documents=["d"], metadatas=[{"k": "v"}], embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.count("empty") == 1
 
@@ -424,6 +439,7 @@ class TestUpsertAndMetadataEdges:
             documents=["one"],
             metadatas=[{"category": None}],
             embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         store.upsert_precomputed(
             "nulls",
@@ -431,6 +447,7 @@ class TestUpsertAndMetadataEdges:
             documents=["two"],
             metadatas=[{"category": "AI"}],
             embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.count_where("nulls", {"category": "AI"}) == 1
 
@@ -449,6 +466,7 @@ class TestUpsertAndMetadataEdges:
             documents=["probe"],
             metadatas=[{"k": "w"}],
             embeddings=[list(embedding)],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.count("mixed") == 2
         assert store.count_where("mixed", {"k": "w"}) == 1
@@ -553,7 +571,8 @@ class TestSchemaEvolution:
         store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
         embedding = list(Settings.embed_model.get_query_embedding("x"))
         store.upsert_precomputed(
-            "evo", ids=["1"], documents=["one"], metadatas=[{"k": "v"}], embeddings=[embedding]
+            "evo", ids=["1"], documents=["one"], metadatas=[{"k": "v"}], embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         store.upsert_precomputed(
             "evo",
@@ -561,6 +580,7 @@ class TestSchemaEvolution:
             documents=["two"],
             metadatas=[{"category": "AI"}],
             embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
 
         assert store.count_where("evo", {"category": "AI"}) == 1
@@ -579,6 +599,7 @@ class TestSchemaEvolution:
             documents=["two"],
             metadatas=[{"new_key": "yes"}],
             embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.count_where("mixed", {"new_key": "yes"}) == 1
 
@@ -600,6 +621,7 @@ class TestSchemaEvolution:
             documents=["one"],
             metadatas=[{"k": "v"}],
             embeddings=[embedding],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         store.write_nodes([TextNode(text="two", metadata={"k": "w"})], "upsert_first")
         assert store.count("upsert_first") == 2

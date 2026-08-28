@@ -185,7 +185,12 @@ def _build_chroma(
             if progress_every > 0 and (batch_no == 1 or batch_no % progress_every == 0):
                 print(f"  writing batch {batch_no} to Chroma", flush=True)
             store.upsert_precomputed(
-                collection_name, ids=ids, documents=docs, metadatas=metas, embeddings=embeddings
+                collection_name,
+                ids=ids,
+                documents=docs,
+                metadatas=metas,
+                embeddings=embeddings,
+                embedding_identity=storage.embedding_identity,
             )
             done = existing + min(offset + len(batch), len(rows_to_add))
             if done == len(rows) or done % max(batch_size * 10, 500) == 0:

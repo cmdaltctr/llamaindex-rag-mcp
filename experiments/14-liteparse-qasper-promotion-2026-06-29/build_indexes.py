@@ -434,23 +434,37 @@ def main() -> None:
     print(f"Storing in ChromaDB (reader={args.reader})...", flush=True)
     collection_name = storage.collection_name
     store = storage.build_store()
+    row_ids = [Path(doc["file"]).stem for doc in documents]
+    metadatas = [
+        {
+            "id": Path(doc["file"]).stem,
+            "reader": args.reader,
+            "source_sha256": doc["source_sha256"],
+        }
+        for doc in documents
+    ]
+    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+    from rag_mcp.core.vectordb.validation import validate_embedding_batch
+
+    identity = EmbeddingIdentity(provider="ollama", model=embed_model)
+    validate_embedding_batch(
+        row_ids,
+        all_embeddings,
+        collection_name=collection_name,
+        embedding_identity=identity,
+        existing_dimension=store.get_collection_dimension(collection_name),
+    )
     if store.collection_exists(collection_name):
         store.delete_collection(collection_name)
     store.create_collection(collection_name)
 
     store.upsert_precomputed(
         collection_name,
-        ids=[Path(doc["file"]).stem for doc in documents],
+        ids=row_ids,
         documents=[doc["text"] for doc in documents],
         embeddings=all_embeddings,
-        metadatas=[
-            {
-                "id": Path(doc["file"]).stem,
-                "reader": args.reader,
-                "source_sha256": doc["source_sha256"],
-            }
-            for doc in documents
-        ],
+        metadatas=metadatas,
+        embedding_identity=identity,
     )
     embed_write_time_s = time.perf_counter() - embed_write_start
 

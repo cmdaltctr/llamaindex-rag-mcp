@@ -73,6 +73,21 @@ class ExperimentStorageConfig:
     backend: str = "chroma"
     checkpoint_metadata: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def embedding_identity(self) -> EmbeddingIdentity:
+        """Diagnostic identity for direct ``upsert_precomputed`` callers.
+
+        Matches the identity ``build_store`` stamps into the store, so
+        harness call sites pass the provider/model pair the shared
+        validator names in its fail-closed diagnostics without
+        reconstructing it per script.
+        """
+        return EmbeddingIdentity(
+            provider=self.embed_provider,
+            model=self.embed_model,
+            index_identity=self.collection_name,
+        )
+
     def build_store(self, settings: Settings | None = None) -> VectorStore:
         """Construct the store through the production factory path.
 
@@ -93,11 +108,7 @@ class ExperimentStorageConfig:
         """
         if settings is None:
             settings = Settings()
-        identity = EmbeddingIdentity(
-            provider=self.embed_provider,
-            model=self.embed_model,
-            index_identity=self.collection_name,
-        )
+        identity = self.embedding_identity
         if self.backend == "lancedb":
             if self.mode == "cloud":
                 raise ValueError("lancedb backend has no cloud mode; use chroma or local")

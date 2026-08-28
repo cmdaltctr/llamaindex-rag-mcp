@@ -160,6 +160,7 @@ def main() -> None:
         documents=all_texts,
         embeddings=all_embeddings,
         metadatas=all_metas,
+        embedding_identity=storage.embedding_identity,
     )
 
     print(f"Stored {len(all_ids)} documents in collection '{collection_name}'", flush=True)

@@ -1061,6 +1061,7 @@ class TestUpsertPrecomputed:
             documents=["alpha text", "beta text"],
             metadatas=[{"k": 1}, {"k": 2}],
             embeddings=[[0.1, 0.2], [0.3, 0.4]],
+            embedding_identity=_embedding_identity(provider="ollama", model="model-u"),
         )
         assert store.count("upsert_probe") == 2
         metadata = store.get_collection_metadata("upsert_probe")
@@ -1079,6 +1080,7 @@ class TestUpsertPrecomputed:
             documents=["original"],
             metadatas=[{"k": 1}],
             embeddings=[[0.5, 0.5]],
+            embedding_identity=_embedding_identity(model="model-a"),
         )
         second = ChromaVectorStore(
             client=shared, embedding_identity=_embedding_identity(model="model-b")
@@ -1090,6 +1092,7 @@ class TestUpsertPrecomputed:
                 documents=["usurper"],
                 metadatas=[{"k": 2}],
                 embeddings=[[0.5, 0.5]],
+                embedding_identity=_embedding_identity(model="model-b"),
             )
         assert first.count("upsert_guard") == 1
 

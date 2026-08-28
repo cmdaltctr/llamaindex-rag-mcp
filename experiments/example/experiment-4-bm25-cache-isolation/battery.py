@@ -84,6 +84,11 @@ def run_battery(
 
     rows: list[dict[str, Any]] = []
     mutations: list[dict[str, Any]] = []
+    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+
+    fixture_identity = EmbeddingIdentity(
+        provider="fixture", model="committed-fixture-vectors"
+    )
 
     def query(namespace: str, token: str, step: str) -> dict[str, Any]:
         store = stores[store_of[namespace]]
@@ -143,6 +148,7 @@ def run_battery(
             documents=[doc["text"]],
             metadatas=[doc["metadata"]],
             embeddings=[doc["vector"]],
+            embedding_identity=fixture_identity,
         )
 
     sparse_mod._read_collection_rows = counting_read
@@ -165,6 +171,7 @@ def run_battery(
                     documents=[x["text"] for x in d],
                     metadatas=[x["metadata"] for x in d],
                     embeddings=[x["embedding"] for x in d],
+                    embedding_identity=fixture_identity,
                 ),
             )
 
@@ -306,6 +313,7 @@ def run_battery(
                     documents=[x["text"] for x in other_spec["documents"]],
                     metadatas=[x["metadata"] for x in other_spec["documents"]],
                     embeddings=[x["embedding"] for x in other_spec["documents"]],
+                    embedding_identity=fixture_identity,
                 ),
             ),
         )
