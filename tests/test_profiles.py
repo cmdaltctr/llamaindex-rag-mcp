@@ -12,20 +12,17 @@ Covers all spec scenarios:
 from __future__ import annotations
 
 import os
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from rag_mcp.config import Settings, _load_profile_bundle
 from rag_mcp.core.profiles import (
-    EffectiveSettings,
     ProfileResolver,
     apply_profile_change,
     generate_safety_contract,
 )
 from rag_mcp.core.profiles.resolver import _bundle_to_effective
-
 
 # ── Helpers ────────────────────────────────────────────────────────────
 
@@ -91,8 +88,8 @@ class TestProfileBundles:
         """Documents profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("documents")
         assert bundle["retrieval"]["top_k"] == 10
-        assert bundle["retrieval"]["rerank_enabled"] == True
-        assert bundle["retrieval"]["hybrid_enabled"] == False
+        assert bundle["retrieval"]["rerank_enabled"] is True
+        assert bundle["retrieval"]["hybrid_enabled"] is False
         assert bundle["chunking"]["strategy_fallback"] == "markdown"
         assert bundle["metadata"]["taxonomy_mode"] == "category"
 
@@ -100,8 +97,8 @@ class TestProfileBundles:
         """Codebase profile resolves to the expected Tier 2 levers."""
         bundle = _load_profile_bundle("codebase")
         assert bundle["retrieval"]["top_k"] == 20
-        assert bundle["retrieval"]["rerank_enabled"] == False
-        assert bundle["retrieval"]["hybrid_enabled"] == True
+        assert bundle["retrieval"]["rerank_enabled"] is False
+        assert bundle["retrieval"]["hybrid_enabled"] is True
         assert bundle["chunking"]["strategy_fallback"] == "code"
         assert bundle["metadata"]["taxonomy_mode"] == "file_type"
 
@@ -111,7 +108,7 @@ class TestProfileBundles:
         # Hybrid resolves to documents (the default_profile), so it carries
         # documents' Tier 2 levers, not a default_profile key.
         assert bundle["retrieval"]["top_k"] == 10
-        assert bundle["retrieval"]["rerank_enabled"] == True
+        assert bundle["retrieval"]["rerank_enabled"] is True
 
     def test_documents_profile_bundle_contains_no_credentials(self) -> None:
         """Profile bundles SHALL contain no credentials."""
@@ -177,9 +174,7 @@ class TestProfileSelection:
 
     def test_collection_with_documents_tag_resolves_documents(self) -> None:
         """A collection tagged 'documents' resolves to the documents profile."""
-        store = _make_mock_store(
-            collection_meta={"docs": {"profile": "documents"}}
-        )
+        store = _make_mock_store(collection_meta={"docs": {"profile": "documents"}})
         resolver = ProfileResolver(store=store, server_profile="codebase")
         effective = resolver.resolve("docs")
         assert effective.profile_name == "documents"
@@ -187,9 +182,7 @@ class TestProfileSelection:
 
     def test_collection_with_codebase_tag_resolves_codebase(self) -> None:
         """A collection tagged 'codebase' resolves to the codebase profile."""
-        store = _make_mock_store(
-            collection_meta={"code": {"profile": "codebase"}}
-        )
+        store = _make_mock_store(collection_meta={"code": {"profile": "codebase"}})
         resolver = ProfileResolver(store=store, server_profile="documents")
         effective = resolver.resolve("code")
         assert effective.profile_name == "codebase"
@@ -205,18 +198,14 @@ class TestProfileSelection:
 
     def test_collection_tagged_hybrid_is_rejected(self) -> None:
         """A collection tagged 'hybrid' MUST be rejected."""
-        store = _make_mock_store(
-            collection_meta={"bad": {"profile": "hybrid"}}
-        )
+        store = _make_mock_store(collection_meta={"bad": {"profile": "hybrid"}})
         resolver = ProfileResolver(store=store, server_profile="documents")
         with pytest.raises(ValueError, match="mode selector"):
             resolver.resolve("bad")
 
     def test_collection_tagged_nonexistent_profile_rejected(self) -> None:
         """A collection tagged with a non-existent profile is rejected."""
-        store = _make_mock_store(
-            collection_meta={"bad": {"profile": "nonexistent"}}
-        )
+        store = _make_mock_store(collection_meta={"bad": {"profile": "nonexistent"}})
         resolver = ProfileResolver(store=store, server_profile="documents")
         with pytest.raises(ValueError, match="Available profiles"):
             resolver.resolve("bad")
@@ -277,9 +266,7 @@ class TestTwoTierResolution:
             }
         )
         resolver = ProfileResolver(store=store, server_profile="documents")
-        with patch(
-            "rag_mcp.core.profiles.resolver._load_profile_bundle"
-        ) as mock_load:
+        with patch("rag_mcp.core.profiles.resolver._load_profile_bundle") as mock_load:
             mock_load.return_value = {"TOP_K": 10, "RERANK_ENABLED": "true"}
             resolver.resolve("a")
             resolver.resolve("b")
@@ -331,20 +318,20 @@ class TestContentTypeDispatch:
         """A .py file uses code strategy regardless of profile."""
         # This is verified by the chunker's content-type dispatch logic.
         # The fallback_strategy only applies when content_type is None.
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
-
         # The function signature accepts fallback_strategy, but it only
         # activates when content_type is None (ambiguous).
         import inspect
+
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert "fallback_strategy" in sig.parameters
 
     def test_fallback_strategy_param_exists(self) -> None:
         """The chunker accepts a fallback_strategy parameter."""
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
-
         import inspect
+
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert sig.parameters["fallback_strategy"].default is None
@@ -363,9 +350,7 @@ class TestNonDestructiveProfileChanges:
             chunk_counts={"docs": 500},
         )
         resolver = ProfileResolver(store=store, server_profile="documents")
-        contract = generate_safety_contract(
-            "docs", "codebase", store=store, resolver=resolver
-        )
+        contract = generate_safety_contract("docs", "codebase", store=store, resolver=resolver)
         assert contract["collection"] == "docs"
         assert contract["chunk_count"] == 500
         assert contract["old_profile"] == "documents"
@@ -377,24 +362,16 @@ class TestNonDestructiveProfileChanges:
         """Query-time levers are marked as applying immediately."""
         store = _make_mock_store()
         resolver = ProfileResolver(store=store, server_profile="documents")
-        contract = generate_safety_contract(
-            "coll", "codebase", store=store, resolver=resolver
-        )
-        query_time_levers = [
-            i for i in contract["lever_impacts"] if i["timing"] == "query-time"
-        ]
+        contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
+        query_time_levers = [i for i in contract["lever_impacts"] if i["timing"] == "query-time"]
         assert len(query_time_levers) >= 3  # reranker, top_k, hybrid
 
     def test_safety_contract_ingest_time_levers_marked_future(self) -> None:
         """Ingest-time levers are marked as applying to future ingests only."""
         store = _make_mock_store()
         resolver = ProfileResolver(store=store, server_profile="documents")
-        contract = generate_safety_contract(
-            "coll", "codebase", store=store, resolver=resolver
-        )
-        ingest_time_levers = [
-            i for i in contract["lever_impacts"] if i["timing"] == "ingest-time"
-        ]
+        contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
+        ingest_time_levers = [i for i in contract["lever_impacts"] if i["timing"] == "ingest-time"]
         assert len(ingest_time_levers) >= 2  # chunk_strategy, taxonomy
 
     def test_apply_profile_change_updates_metadata_only(self) -> None:
@@ -405,9 +382,7 @@ class TestNonDestructiveProfileChanges:
         assert result["status"] == "ok"
         assert result["profile"] == "codebase"
         assert result["chunk_count_unchanged"] == 42
-        store.update_collection_metadata.assert_called_once_with(
-            "coll", {"profile": "codebase"}
-        )
+        store.update_collection_metadata.assert_called_once_with("coll", {"profile": "codebase"})
 
     def test_apply_profile_change_rejects_nonexistent_collection(self) -> None:
         """Applying a profile change to a nonexistent collection is rejected."""
@@ -439,13 +414,9 @@ class TestMCPProfileChangeFlow:
         """The MCP tool returns a preview with confirm_required=True."""
         from rag_mcp.transports.mcp import change_collection_profile
 
-        with patch(
-            "rag_mcp.core.profiles.generate_safety_contract"
-        ) as mock_gen:
+        with patch("rag_mcp.core.profiles.generate_safety_contract") as mock_gen:
             mock_gen.return_value = {"collection": "coll", "chunk_count": 0}
-            result = change_collection_profile(
-                collection="coll", profile="codebase", confirm=False
-            )
+            result = change_collection_profile(collection="coll", profile="codebase", confirm=False)
         assert result["status"] == "preview"
         assert result["confirm_required"] is True
         assert "contract" in result
@@ -454,18 +425,14 @@ class TestMCPProfileChangeFlow:
         """The MCP tool applies the change when confirm=True."""
         from rag_mcp.transports.mcp import change_collection_profile
 
-        with patch(
-            "rag_mcp.core.profiles.apply_profile_change"
-        ) as mock_apply:
+        with patch("rag_mcp.core.profiles.apply_profile_change") as mock_apply:
             mock_apply.return_value = {
                 "status": "ok",
                 "collection": "coll",
                 "profile": "codebase",
                 "chunk_count_unchanged": 0,
             }
-            result = change_collection_profile(
-                collection="coll", profile="codebase", confirm=True
-            )
+            result = change_collection_profile(collection="coll", profile="codebase", confirm=True)
         assert result["status"] == "ok"
         mock_apply.assert_called_once_with("coll", "codebase")
 
@@ -473,18 +440,14 @@ class TestMCPProfileChangeFlow:
         """The MCP tool rejects an invalid profile name."""
         from rag_mcp.transports.mcp import change_collection_profile
 
-        result = change_collection_profile(
-            collection="coll", profile="invalid", confirm=False
-        )
+        result = change_collection_profile(collection="coll", profile="invalid", confirm=False)
         assert result["status"] == "error"
 
     def test_mcp_rejects_hybrid_profile(self) -> None:
         """The MCP tool rejects 'hybrid' as a target profile."""
         from rag_mcp.transports.mcp import change_collection_profile
 
-        result = change_collection_profile(
-            collection="coll", profile="hybrid", confirm=False
-        )
+        result = change_collection_profile(collection="coll", profile="hybrid", confirm=False)
         assert result["status"] == "error"
 
 
@@ -504,27 +467,23 @@ class TestM1RerankerRevalidation:
         enables it; the codebase profile correctly disables it.
         """
         bundle = _load_profile_bundle("documents")
-        assert bundle["retrieval"]["rerank_enabled"] == True
+        assert bundle["retrieval"]["rerank_enabled"] is True
 
     def test_codebase_profile_sets_reranker_false(self) -> None:
         """The codebase profile disables the reranker (Experiment 10)."""
         bundle = _load_profile_bundle("codebase")
-        assert bundle["retrieval"]["rerank_enabled"] == False
+        assert bundle["retrieval"]["rerank_enabled"] is False
 
     def test_effective_settings_documents_reranker_on(self) -> None:
         """EffectiveSettings for documents has reranker_enabled=True."""
-        store = _make_mock_store(
-            collection_meta={"docs": {"profile": "documents"}}
-        )
+        store = _make_mock_store(collection_meta={"docs": {"profile": "documents"}})
         resolver = ProfileResolver(store=store, server_profile="documents")
         effective = resolver.resolve("docs")
         assert effective.reranker_enabled is True
 
     def test_effective_settings_codebase_reranker_off(self) -> None:
         """EffectiveSettings for codebase has reranker_enabled=False."""
-        store = _make_mock_store(
-            collection_meta={"code": {"profile": "codebase"}}
-        )
+        store = _make_mock_store(collection_meta={"code": {"profile": "codebase"}})
         resolver = ProfileResolver(store=store, server_profile="codebase")
         effective = resolver.resolve("code")
         assert effective.reranker_enabled is False
@@ -573,9 +532,7 @@ class TestBundleValidation:
 
         bundle_dir = tmp_path / "profiles"
         bundle_dir.mkdir()
-        (bundle_dir / "documents.yaml").write_text(
-            'TOP_K: 10\nRERANK_ENABLED: "true"\n'
-        )
+        (bundle_dir / "documents.yaml").write_text('TOP_K: 10\nRERANK_ENABLED: "true"\n')
 
         class _FakeAnchor:
             def __truediv__(self, part):
@@ -596,8 +553,9 @@ class TestTaxonomyModeWiring:
 
     def test_file_type_taxonomy_overrides_category(self) -> None:
         """file_type mode sets category from content_type, not LLM classification."""
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
         import inspect
+
+        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
 
         sig = inspect.signature(read_and_chunk_file_async)
         assert "taxonomy_mode" in sig.parameters
@@ -634,9 +592,7 @@ class TestCLIWatcherWiring:
             "rag_mcp.daemon.watcher",
         ],
     )
-    def test_module_has_no_bare_profile_resolver_construction(
-        self, module_path: str
-    ) -> None:
+    def test_module_has_no_bare_profile_resolver_construction(self, module_path: str) -> None:
         """No caller may construct a bare ``ProfileResolver()``.
 
         A bare construction inherits neither ``server_profile`` nor the
@@ -659,9 +615,7 @@ class TestCLIWatcherWiring:
         from rag_mcp import compose
 
         sentinel = compose.build_profile_resolver()
-        with patch.object(
-            compose, "build_profile_resolver", return_value=sentinel
-        ) as spy:
+        with patch.object(compose, "build_profile_resolver", return_value=sentinel) as spy:
             resolver = compose.build_profile_resolver()
         assert spy.called
         assert resolver._server_profile is not None
@@ -670,6 +624,7 @@ class TestCLIWatcherWiring:
     def test_cli_search_passes_effective_settings_to_search(self) -> None:
         """The CLI search command forwards effective_settings to search()."""
         import inspect
+
         from rag_mcp.transports.cli import search
 
         source = inspect.getsource(search)
@@ -679,6 +634,7 @@ class TestCLIWatcherWiring:
     def test_watcher_resolves_profile(self) -> None:
         """The watcher resolves the collection's profile before ingesting."""
         import inspect
+
         from rag_mcp.daemon.watcher import DocumentIngestHandler
 
         source = inspect.getsource(DocumentIngestHandler._dispatch_ingest)
@@ -699,9 +655,7 @@ class TestContractCoverage:
         store.get_collection_metadata.return_value = None
         store.list_collections.return_value = []
         resolver = ProfileResolver(store=store, server_profile="documents")
-        contract = generate_safety_contract(
-            "coll", "codebase", store=store, resolver=resolver
-        )
+        contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
         assert contract["chunk_count"] == 0
 
     def test_safety_contract_when_metadata_raises(self) -> None:
@@ -711,9 +665,7 @@ class TestContractCoverage:
         store.get_collection_metadata.side_effect = RuntimeError("store down")
         store.list_collections.return_value = []
         resolver = ProfileResolver(store=store, server_profile="documents")
-        contract = generate_safety_contract(
-            "coll", "codebase", store=store, resolver=resolver
-        )
+        contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
         assert contract["old_profile"] is None
 
     def test_safety_contract_with_old_profile_load_failure(self) -> None:
@@ -725,12 +677,8 @@ class TestContractCoverage:
         store.collection_exists.return_value = True
         resolver = ProfileResolver(store=store, server_profile="documents")
         # Force _load_effective to fail for the old profile.
-        with patch.object(
-            resolver, "_load_effective", side_effect=[RuntimeError("fail"), None]
-        ):
-            contract = generate_safety_contract(
-                "coll", "codebase", store=store, resolver=resolver
-            )
+        with patch.object(resolver, "_load_effective", side_effect=[RuntimeError("fail"), None]):
+            contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
         # old_effective is None, but contract still generates.
         assert contract["old_profile"] == "documents"
 
@@ -741,12 +689,8 @@ class TestContractCoverage:
         store.get_collection_metadata.return_value = None
         store.list_collections.return_value = []
         resolver = ProfileResolver(store=store, server_profile="documents")
-        with patch.object(
-            resolver, "_load_effective", side_effect=RuntimeError("fail")
-        ):
-            contract = generate_safety_contract(
-                "coll", "codebase", store=store, resolver=resolver
-            )
+        with patch.object(resolver, "_load_effective", side_effect=RuntimeError("fail")):
+            contract = generate_safety_contract("coll", "codebase", store=store, resolver=resolver)
         # new_effective is None → lever_impacts is empty.
         assert contract["lever_impacts"] == []
 
@@ -789,9 +733,7 @@ class TestResolverCoverage:
 
     def test_resolve_profile_name_method(self) -> None:
         """resolve_profile_name returns the name without loading the bundle."""
-        store = _make_mock_store(
-            collection_meta={"docs": {"profile": "documents"}}
-        )
+        store = _make_mock_store(collection_meta={"docs": {"profile": "documents"}})
         resolver = ProfileResolver(store=store, server_profile="codebase")
         name = resolver.resolve_profile_name("docs")
         assert name == "documents"

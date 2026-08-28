@@ -1,8 +1,12 @@
-"""Factory function returning the resolved PDF reader adapter.
+"""Factory returning a PDF reader resolved through the adapter registry.
 
-Mirrors the ``HYBRID_SPARSE_BACKEND`` resolver pattern in ``config.py``.
-The adapter choice is driven by ``config.reader``, computed
-once at import time. See ADR-020 for the adoption rationale.
+The caller passes the reader name (``EffectiveSettings.pdf_reader``); the
+factory performs no settings lookup of its own. ``auto`` remains a
+capability-resolution policy for callers that bypass the composition root:
+the factory probes LiteParse → pypdfium2 → pypdf locally, matching the
+composition root's preference order. Concrete construction then goes through
+``integrations.pdf.registry`` so adding another configured reader needs one
+adapter plus one ``register()`` call, with no strategy-specific branch here.
 """
 
 from __future__ import annotations
@@ -10,59 +14,63 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .registry import available as _available_readers
+from .registry import get as _get_reader
+
 logger = logging.getLogger(__name__)
 
-_pdf_reader_logged = False
+_pdf_reader_logged: set[str] = set()
 
 
-def get_pdf_reader() -> Any:
-    """Return the PDF reader adapter for the current configuration.
+def get_pdf_reader(reader: str) -> Any:
+    """Return the PDF reader adapter for *reader*.
 
     The returned object has a ``load_data(file: Path) -> list[Document]``
     method, compatible with LlamaIndex's ``SimpleDirectoryReader``
     ``file_extractor`` parameter.
 
+    Args:
+        reader: Reader name from the injected settings — ``pdf_inspector``,
+            ``pypdf``, ``pypdfium2``, ``liteparse``, or ``auto``. ``auto`` is
+            resolved locally (LiteParse → pypdfium2 → pypdf) for callers that
+            bypass the composition root.
+
     Returns:
-        An instance of ``PyPDFReader``, ``PyPDFium2Reader``, or
-        ``LiteParseReader`` based on ``reader``.
+        An instance of ``PdfInspectorReader``, ``PyPDFReader``,
+        ``PyPDFium2Reader``, or ``LiteParseReader``.
 
     Raises:
-        ValueError: If ``reader`` is an unknown value.
-            This should be unreachable because ``config.py`` validates.
+        ValueError: If *reader* is an unknown value. This should be
+            unreachable because the ``config`` package validates.
     """
-    global _pdf_reader_logged
-    from ...core.settings import get_default_effective_settings
-
-    reader = get_default_effective_settings().pdf_reader
-
     if reader == "auto":
         # compose.py normally bakes the resolved backend in, so "auto" only
         # reaches here when settings were built directly (tests, or a caller
         # bypassing the composition root). Resolve it the same way compose
         # would rather than failing.
-        try:
-            import liteparse  # noqa: F401
+        reader = _resolve_auto()
 
-            reader = "liteparse"
-        except ImportError:
-            reader = "pypdf"
-
-    if not _pdf_reader_logged:
+    if reader not in _pdf_reader_logged:
         logger.info("PDF reader backend: %s", reader)
-        _pdf_reader_logged = True
+        _pdf_reader_logged.add(reader)
 
-    if reader == "pypdf":
-        from .pypdf import PyPDFReader
-        return PyPDFReader()
-    elif reader == "pypdfium2":
-        from .pypdfium import PyPDFium2Reader
-        return PyPDFium2Reader()
-    elif reader == "liteparse":
-        from .liteparse import LiteParseReader
-        return LiteParseReader()
-    else:
+    try:
+        reader_class = _get_reader(reader)
+    except KeyError as exc:
         raise ValueError(
-            f"Unknown reader={reader!r}. "
-            f"This should be unreachable — config.py validates accepted "
-            f"values. Check for a config import error."
-        )
+            f"Unknown reader={reader!r}. Available concrete readers: "
+            f"{', '.join(_available_readers())}. The 'auto' value is a "
+            "factory capability policy, not a registered reader."
+        ) from exc
+    return reader_class()
+
+
+def _resolve_auto() -> str:
+    """Probe optional backends in the composition root's preference order."""
+    for backend in ("liteparse", "pypdfium2"):
+        try:
+            __import__(backend)
+        except ImportError:
+            continue
+        return backend
+    return "pypdf"

@@ -9,16 +9,17 @@ original ``metadata_extractor.py`` monolith as part of Phase 1.
 
 from __future__ import annotations
 
-import logging
-
 from ..settings import resolve_effective_settings
-from ._common import logger
+from ._common import (
+    _get_classify_max_attempts,
+    _resolve_classify_timeout,
+    _retry_sleep,
+    _signal_degraded,
+    logger,
+)
 from .ollama import (
     _build_ollama_prompt,
-    _get_ollama_max_attempts,
-    _get_ollama_timeout,
     _parse_ollama_json_response,
-    _retry_sleep,
 )
 
 
@@ -49,12 +50,16 @@ async def _extract_llamacpp_chat_async(
             "llama.cpp classification failed — could not build prompt: %s",
             exc,
         )
+        _signal_degraded()
         return fallback
 
     data = {
         "model": resolved.llamacpp_chat_model,
         "messages": [
-            {"role": "system", "content": "You are a document classification assistant. Return only valid JSON."},
+            {
+                "role": "system",
+                "content": "You are a document classification assistant. Return only valid JSON.",
+            },
             {"role": "user", "content": prompt},
         ],
         "stream": False,
@@ -66,8 +71,8 @@ async def _extract_llamacpp_chat_async(
     }
     url = f"{resolved.llamacpp_chat_url}/chat/completions"
 
-    max_attempts = _get_ollama_max_attempts(resolved)
-    timeout_s = _get_ollama_timeout(resolved)
+    max_attempts = _get_classify_max_attempts(resolved)
+    timeout_s = _resolve_classify_timeout(resolved, "llamacpp")
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
@@ -109,7 +114,7 @@ async def _extract_llamacpp_chat_async(
             )
 
             if attempt + 1 < max_attempts:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 await _retry_sleep(backoff)
 
     logger.warning(
@@ -119,4 +124,5 @@ async def _extract_llamacpp_chat_async(
         type(last_error).__name__ if last_error else "Unknown",
         last_error,
     )
+    _signal_degraded()
     return fallback

@@ -1,0 +1,44 @@
+{
+  "gates": {
+    "H1": {
+      "pass": true,
+      "criterion": "17C loads, selects MPS, no fallback"
+    },
+    "H2": {
+      "pass": true,
+      "criterion": "17C P50 <= 0.8 * 17B P50"
+    },
+    "H3": {
+      "pass": true,
+      "criterion": "17C P50 <= 0.8 * 17A P50 and 17C P95 <= 17A P95"
+    },
+    "H4": {
+      "pass": true,
+      "criterion": "17C cold <= 3x 17A and RSS <= 2x 17A"
+    },
+    "H5": {
+      "pass": false,
+      "criterion": "17B==17C rankings and 17A==17C rankings"
+    },
+    "overall": {
+      "pass": false,
+      "verdict": "FAIL"
+    }
+  },
+  "preflight": {
+    "cell_id": "PREFLIGHT",
+    "loaded": true,
+    "selected_device": "mps",
+    "versions": {
+      "torch": "2.13.0",
+      "sentence_transformers": "5.7.0",
+      "tokenizers": "0.22.2"
+    },
+    "repetition": 0,
+    "p50_query_ms": 0,
+    "p95_query_ms": 0,
+    "mean_query_ms": 0,
+    "min_query_ms": 0,
+    "max_query_ms": 0
+  }
+}

@@ -10,7 +10,7 @@ import json
 import logging
 import signal
 import sys
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import typer
 from rich.progress import (
@@ -60,24 +60,15 @@ def _run_ingest_with_rich_progress(path: str, ingest_kwargs: dict) -> dict:
             nonlocal read_task_id, embed_task_id
             if phase == "read":
                 if read_task_id is None:
-                    read_task_id = progress.add_task(
-                        "[green]Reading files…", total=total
-                    )
+                    read_task_id = progress.add_task("[green]Reading files…", total=total)
                 progress.update(read_task_id, completed=current)
             elif phase == "embed_start":
                 _finalise_read_bar(progress, read_task_id)
-                embed_task_id = progress.add_task(
-                    f"[cyan]Embedding {total} chunks…", total=total
-                )
+                embed_task_id = progress.add_task(f"[cyan]Embedding {total} chunks…", total=total)
             elif phase == "embed" and embed_task_id is not None:
                 progress.update(embed_task_id, completed=total)
 
-        return asyncio.run(
-            ingest_path_async(
-                path, progress_callback=on_progress, **ingest_kwargs
-            )
-        )
-
+        return asyncio.run(ingest_path_async(path, progress_callback=on_progress, **ingest_kwargs))
 
 
 def _make_plain_callback() -> Callable[[str, int, int], None]:
@@ -155,26 +146,21 @@ def _print_interrupt_result(result: dict, total_files: int, json_output: bool) -
     files_done = result.get("files_indexed", 0)
     if json_output:
         result["interrupted"] = True
-        result["message"] = (
-            f"Ingestion interrupted after {files_done}/{total_files} files"
-        )
-        typer.echo(json.dumps(result, indent=2))
+        result["message"] = f"Ingestion interrupted after {files_done}/{total_files} files"
+        console.print(json.dumps(result, indent=2), markup=False)
     else:
         console.print(
-            f"[yellow]⚠ Ingestion interrupted after "
-            f"{files_done}/{total_files} files.[/yellow]"
+            f"[yellow]⚠ Ingestion interrupted after {files_done}/{total_files} files.[/yellow]"
         )
         chunks = result.get("chunks_created", 0)
         if chunks > 0:
-            console.print(
-                f"  [dim]{chunks} chunk(s) were written before interruption.[/dim]"
-            )
+            console.print(f"  [dim]{chunks} chunk(s) were written before interruption.[/dim]")
 
 
 def _print_ingest_result(result: dict, json_output: bool) -> None:
     """Print the final ingestion result."""
     if json_output:
-        typer.echo(json.dumps(result, indent=2))
+        console.print(json.dumps(result, indent=2), markup=False)
     else:
         files = result.get("files_indexed", 0)
         chunks = result.get("chunks_created", 0)
@@ -186,29 +172,39 @@ def _print_ingest_result(result: dict, json_output: bool) -> None:
                 f"{removed} chunk(s) replaced."
             )
         else:
-            console.print(
-                f"[green]✓[/green] Indexed {files} file(s), "
-                f"{chunks} chunk(s) created."
-            )
+            console.print(f"[green]✓[/green] Indexed {files} file(s), {chunks} chunk(s) created.")
 
+        degraded = result.get("metadata_degraded", 0)
+        if degraded > 0:
+            console.print(
+                f"[yellow]⚠[/yellow] {degraded} file(s) had metadata fall back to keyword mode."
+            )
 
 
 @app.command()
 def ingest(
     path: str = typer.Argument(..., help="Path to a file or directory to ingest."),
-    chunk_size: Optional[int] = typer.Option(
-        None, "--chunk-size", help="Override CHUNK_SIZE for this ingestion.",
+    chunk_size: int | None = typer.Option(
+        None,
+        "--chunk-size",
+        help="Override CHUNK_SIZE for this ingestion.",
     ),
-    chunk_overlap: Optional[int] = typer.Option(
-        None, "--chunk-overlap", help="Override CHUNK_OVERLAP for this ingestion.",
+    chunk_overlap: int | None = typer.Option(
+        None,
+        "--chunk-overlap",
+        help="Override CHUNK_OVERLAP for this ingestion.",
     ),
     collection: str = typer.Option(
-        "documents", "--collection", "-c",
+        "documents",
+        "--collection",
+        "-c",
         help="ChromaDB collection to ingest into.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
-    report: Optional[str] = typer.Option(
-        None, "--report", "-r",
+    report: str | None = typer.Option(
+        None,
+        "--report",
+        "-r",
         help=(
             "Write an ingestion report to this path. "
             "Format: JSON if path ends in .json, otherwise Markdown."
@@ -220,14 +216,14 @@ def ingest(
     File reading is sequential. Tune ingestion throughput with the
     EMBED_BATCH_SIZE and EMBED_CONCURRENCY environment variables.
     """
-    from ...core.ingestion._state import shutdown_requested as _shutdown_requested
     from ... import compose
+    from ...core.ingestion._state import shutdown_requested as _shutdown_requested
 
     try:
         effective = compose.build_profile_resolver().resolve(collection)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     ingest_kwargs: dict = {"collection_name": collection, "effective_settings": effective}
     if chunk_size is not None:
@@ -241,18 +237,17 @@ def ingest(
         result = _run_ingest(path, ingest_kwargs, json_output)
     except ConnectionError as exc:
         from . import _print_ollama_error
+
         _print_ollama_error(str(exc), json_output)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
     except Exception as exc:
         _handle_ingest_error(exc, json_output)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
     finally:
         signal.signal(signal.SIGINT, _original_handler)
 
     was_interrupted = _shutdown_requested.is_set()
-    total_files = (
-        result.get("files_indexed", 0) + len(result.get("warnings", []))
-    )
+    total_files = result.get("files_indexed", 0) + len(result.get("warnings", []))
 
     if result["status"] == "error" and not was_interrupted:
         msg = result.get("message", "Ingestion failed — no files were indexed.")

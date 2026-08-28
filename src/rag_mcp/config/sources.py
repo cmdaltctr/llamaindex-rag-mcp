@@ -14,9 +14,8 @@ import os
 from importlib.resources import files
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator
-
 import yaml
+from pydantic import BeforeValidator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 logger = logging.getLogger(__name__)
@@ -65,9 +64,7 @@ class _YamlDefaultsSource(PydanticBaseSettingsSource):
         except (FileNotFoundError, ModuleNotFoundError):
             return {}
 
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
         return self._data.get(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
@@ -106,9 +103,7 @@ def _load_profile_bundle(profile_name: str) -> dict[str, Any]:
     except (FileNotFoundError, ModuleNotFoundError):
         return {}
     except yaml.YAMLError as exc:
-        logger.error(
-            "Profile bundle %r has invalid YAML: %s — ignoring", profile_name, exc
-        )
+        logger.error("Profile bundle %r has invalid YAML: %s — ignoring", profile_name, exc)
         return {}
 
     if not isinstance(data, dict):
@@ -165,9 +160,7 @@ class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
         profile = os.environ.get("RAG_PROFILE", "documents")
         return _load_profile_bundle(profile)
 
-    def get_field_value(
-        self, field: Any, field_name: str
-    ) -> tuple[Any, str, bool]:
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
         return self._data.get(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
@@ -176,5 +169,3 @@ class _ProfileYamlSettingsSource(PydanticBaseSettingsSource):
             if field_name in self._data:
                 result[field_name] = self._data[field_name]
         return result
-
-

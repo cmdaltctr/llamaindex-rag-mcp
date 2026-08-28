@@ -1,0 +1,57 @@
+{
+  "cell_id": "timing_fake_seq_100",
+  "factors": {
+    "corpus_size": 100,
+    "failure_point": "none",
+    "repeat_state": "first",
+    "ingest_topology": "sequential_1_stream",
+    "embedding_block": "fake_deterministic"
+  },
+  "manifest": {
+    "repo_commit": "b4b01b6780d5a13b5e8dca15970313bc3b9c98c6",
+    "git_dirty": true,
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "18-ingestion-lock-scope-ab",
+    "protocol_version": "1.0",
+    "python_version": "3.12.10",
+    "platform": "Darwin-arm64",
+    "timestamp_utc": "2026-08-19T16:08:18Z",
+    "corpus_identity": "a91dfaa8800d96002b335dd16c0cacf7e645362cf8e4d5060e390bf61b0768a8",
+    "embedding": {
+      "requested_provider": "fake_deterministic",
+      "effective_provider": "fake_deterministic",
+      "effective_model": "mock-deterministic-v1",
+      "dim": 32
+    },
+    "vector_store": {
+      "backend": "chroma_local",
+      "mode": "persistent_local",
+      "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/18-ingestion-lock-scope-ab-2026-08-19/output/chroma_cells_stage3b_rep3_timing_fake_seq_100"
+    }
+  },
+  "status": "completed",
+  "warmup_seconds": null,
+  "wall_seconds": 2.8793072499975096,
+  "streams": [
+    {
+      "status": "ok",
+      "files_indexed": 100,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 212,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.1457568360492587,
+        "parse_chunk_seconds": 0.5889427459915169,
+        "embedding_seconds": 0.02289158702478744,
+        "store_write_seconds": 1.337259454157902,
+        "lock_wait_seconds": 5.253602284938097e-05,
+        "cleanup_seconds": 0.6128489140246529,
+        "total_seconds": 2.8737883330031764
+      },
+      "peak_rss_bytes": 287899648
+    }
+  ],
+  "combined": null,
+  "process_peak_rss_bytes": 287997952
+}

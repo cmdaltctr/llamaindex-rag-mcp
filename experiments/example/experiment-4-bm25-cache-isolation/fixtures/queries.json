@@ -1,0 +1,27 @@
+{
+  "alpha_only": {
+    "carrier": "A/documents:a_d_alpha",
+    "query_id": "token::alpha_only",
+    "text": "alpha_only"
+  },
+  "beta_only": {
+    "carrier": "B/documents:b_d_beta",
+    "query_id": "token::beta_only",
+    "text": "beta_only"
+  },
+  "delta_only": {
+    "carrier": "A/documents:a_d_delta",
+    "query_id": "token::delta_only",
+    "text": "delta_only"
+  },
+  "epsilon_only": {
+    "carrier": "A/documents:orch_eps_1",
+    "query_id": "token::epsilon_only",
+    "text": "epsilon_only"
+  },
+  "gamma_only": {
+    "carrier": "A/other:a_o_gamma",
+    "query_id": "token::gamma_only",
+    "text": "gamma_only"
+  }
+}

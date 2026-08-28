@@ -1,10 +1,10 @@
 """Content-type → chunking strategy dispatch.
 
-Reads files via LlamaIndex's ``SimpleDirectoryReader``, extracts metadata,
-and dispatches to the appropriate chunking strategy based on Magika
-content-type detection.  Content-type takes precedence over file extension
-when available.  Extracted from the original ``ingestion.py`` monolith as
-part of Phase 1.
+Reads files via the registry-backed document backends
+(``core/ingestion/backends/``), extracts metadata, and dispatches to the
+appropriate chunking strategy based on Magika content-type detection.
+Content-type takes precedence over file extension when available.
+Extracted from the original ``ingestion.py`` monolith as part of Phase 1.
 """
 
 from __future__ import annotations
@@ -14,19 +14,22 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 
-from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..chunking.registry import get as _chunking_get
+from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..settings import resolve_effective_settings
-
-# NOTE: the ``MARKDOWN_CHUNK_SIZE`` module-level alias was removed — it was an
-# import-time snapshot of ``settings.markdown_chunk_size`` consumed as the live
-# value, which ADR-033 Part 2 forbids. The size is now read from the injected
-# settings at each use site.
+from .backends import read_document
 
 logger = logging.getLogger(__name__)
+
+
+class _ChunkResult(list):
+    """List of chunked nodes that also carries a metadata-degradation flag."""
+
+    def __init__(self, nodes=(), *, metadata_degraded: bool = False) -> None:
+        super().__init__(nodes)
+        self.metadata_degraded = metadata_degraded
 
 
 async def read_and_chunk_file_async(
@@ -40,34 +43,9 @@ async def read_and_chunk_file_async(
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
-    When ``content_type`` is provided (from Magika detection), the chunking
-    strategy is selected based on content type: ``code/*`` uses
-    ``CodeSplitter``, ``config/*`` uses whole-file chunking, and documents
-    use the existing ``SentenceSplitter`` / ``MarkdownNodeParser`` path.
-    When ``content_type`` is None, falls back to extension-based routing.
-
-    The ``fallback_strategy`` parameter (Phase 4 profiles) applies only to
-    ambiguous file types — content-type dispatch always wins for known
-    types.  When the fallback is ``"code"`` and the file extension maps to
-    a tree-sitter language, the code strategy is used; otherwise the
-    document path applies.
-
-    Args:
-        file_path: Path to the document file.
-        chunk_size: Maximum characters per chunk.
-        chunk_overlap: Overlap between chunks.
-        content_type: Magika content-type string (e.g., ``"code/python"``).
-            When provided, takes precedence over file extension.
-        fallback_strategy: Profile-resolved strategy name for ambiguous
-            types (Phase 4).  ``"code"`` routes ambiguous files through
-            the code strategy; ``"markdown"`` (default) uses the document
-            path.
-
-    Returns:
-        List of LlamaIndex Node objects, each with metadata attached.
-
-    Raises:
-        Exception: If the file cannot be read or parsed.
+    ``chunk_size`` and ``chunk_overlap`` are SentenceSplitter token units.
+    AST-aware code splitting uses the independent line/character settings in
+    ``resolved.chunking``; these token settings are used only by its fallback.
     """
     resolved = resolve_effective_settings(settings)
     if chunk_size is None:
@@ -76,124 +54,97 @@ async def read_and_chunk_file_async(
         chunk_overlap = resolved.chunking.chunk_overlap
     markdown_chunk_size = resolved.chunking.markdown_chunk_size
 
-    # Determine chunking strategy based on content_type (task 6.2, 6.6).
-    # Content_type takes precedence over extension when available.
     if content_type:
         group, _, label = content_type.partition("/")
     else:
         group, label = "", ""
 
-    # Phase 4: when content_type is absent (ambiguous file) and the
-    # profile's fallback strategy is "code", attempt code chunking via
-    # extension mapping.  Content-type dispatch always wins for known types.
     if not content_type and fallback_strategy == "code":
         ext = file_path.suffix.lower().lstrip(".")
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(ext)
         if ts_lang:
             chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
-                file_path, ts_lang, chunk_size, chunk_overlap, None,
+                file_path,
+                ts_lang,
+                chunk_size,
+                chunk_overlap,
+                None,
+                code_chunk_lines=resolved.chunking.code_chunk_lines,
+                code_chunk_lines_overlap=resolved.chunking.code_chunk_lines_overlap,
+                code_max_chars=resolved.chunking.code_max_chars,
             )
 
-    # Code files: use CodeSplitter with tree-sitter boundaries.
     if group == "code":
         ts_lang = MAGIKA_LABEL_TO_TREESITTER.get(label)
         if ts_lang:
             chunk_code_file_async = _chunking_get("code")
             return await chunk_code_file_async(
-                file_path, ts_lang, chunk_size, chunk_overlap, content_type,
+                file_path,
+                ts_lang,
+                chunk_size,
+                chunk_overlap,
+                content_type,
+                code_chunk_lines=resolved.chunking.code_chunk_lines,
+                code_chunk_lines_overlap=resolved.chunking.code_chunk_lines_overlap,
+                code_max_chars=resolved.chunking.code_max_chars,
             )
-        # Unknown code language — fall through to default splitter.
         logger.debug("No CodeSplitter mapping for code language %r", label)
 
-    # Config files: whole-file as single chunk.
     if group == "config":
         chunk_config_file = _chunking_get("config")
-        return chunk_config_file(
-            file_path, content_type,
+        return chunk_config_file(file_path, content_type)
+
+    # Document-backend dispatch: the orchestrator applies the configured
+    # backend, its registered suffix gate, the retry budget, and the
+    # local-first fallback (spec document-backend-strategies).  The
+    # chunker keeps only the post-processing choice, driven by the
+    # structured flag: cloud parsers return pre-structured documents
+    # (paragraphs/tables) that split directly, while the local chain
+    # feeds file-level metadata extraction below.
+    backend_read = await read_document(file_path, settings=resolved)
+    if backend_read.structured:
+        documents = backend_read.documents
+        if content_type:
+            for doc in documents:
+                doc.metadata.setdefault("content_type", content_type)
+        effective_chunk_size = (
+            markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
         )
-
-    # Documents: existing extension-based routing (task 6.2).
-    # Azure Document Intelligence branch (task 7.8).
-    if group in ("document", "") and group != "config":
-        if resolved.document_backend == "azure" and file_path.suffix.lower() in {".pdf", ".docx", ".doc"}:
-            try:
-                from ...integrations.azure import read_with_azure_fallback
-                documents = await read_with_azure_fallback(file_path)
-                # Add content_type metadata to Azure documents.
-                if content_type:
-                    for doc in documents:
-                        doc.metadata.setdefault("content_type", content_type)
-                # Chunk Azure documents with SentenceSplitter.
-                effective_chunk_size = (
-                    markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
-                )
-                splitter = SentenceSplitter(
-                    chunk_size=effective_chunk_size,
-                    chunk_overlap=chunk_overlap,
-                )
-                nodes = await asyncio.to_thread(
-                    lambda: splitter.get_nodes_from_documents(documents)
-                )
-                if content_type:
-                    for node in nodes:
-                        node.metadata.setdefault("content_type", content_type)
-                return nodes
-            except Exception as exc:
-                logger.warning(
-                    "Azure reader failed for %s: %s — falling back to local chain",
-                    file_path.name, exc,
-                )
-
-    def _read_sync() -> list:
-        from ...integrations.pdf import get_pdf_reader
-
-        reader = SimpleDirectoryReader(
-            input_files=[str(file_path)],
-            filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader()},
+        splitter = SentenceSplitter(
+            chunk_size=effective_chunk_size,
+            chunk_overlap=chunk_overlap,
         )
-        return reader.load_data()
+        nodes = await asyncio.to_thread(lambda: splitter.get_nodes_from_documents(documents))
+        if content_type:
+            for node in nodes:
+                node.metadata.setdefault("content_type", content_type)
+        return nodes
 
-    documents = await asyncio.to_thread(_read_sync)
+    documents = backend_read.documents
 
-    from ..metadata.extractor import extract_metadata_async
+    from ..metadata.extractor import extract_metadata_with_status_async
 
     if documents:
-        file_text = "\n".join(
-            d.get_content()
-            for d in documents
-            if hasattr(d, "get_content")
+        file_text = "\n".join(d.get_content() for d in documents if hasattr(d, "get_content"))
+        doc_metadata, metadata_degraded = await extract_metadata_with_status_async(
+            file_text, file_path.name, resolved
         )
-        doc_metadata = await extract_metadata_async(file_text, file_path.name)
     else:
         doc_metadata = {}
+        metadata_degraded = False
         logger.debug(
             "No documents loaded from %s — skipping metadata extraction",
             file_path.name,
         )
 
-    # Phase 4: file_type taxonomy mode overrides the category with the
-    # Magika-detected file type label (e.g. "python", "yaml").  This is
-    # the codebase profile's taxonomy — files are classified by language
-    # rather than by semantic category.
     if taxonomy_mode == "file_type" and content_type:
         _label = content_type.partition("/")[2] or content_type
         doc_metadata["category"] = _label
 
-    # Markdown files use a heading-aware parser chained with the sentence
-    # splitter so heading boundaries are preserved wherever the
-    # heading-bounded section fits in ``chunk_size``, while longer
-    # sections are still split so no chunk exceeds ``chunk_size``.
-    # See ADR-016 / OpenSpec change ``rag-retrieval-quality-improvements``
-    # Decision 1.  Non-Markdown files retain the existing splitter.
     is_markdown = file_path.suffix.lower() == ".md"
     effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
 
-    # Chunk splitting is CPU-bound and synchronous — offload to a worker
-    # thread so the MCP event loop stays responsive while large documents
-    # are split.  See ADR-015 / OpenSpec change
-    # ``rag-reliability-correctness-fixes`` Decision 1.
     from ..chunking.sentence import _split_documents_sync
 
     nodes = await asyncio.to_thread(
@@ -212,16 +163,13 @@ async def read_and_chunk_file_async(
         )
 
         ensure_heading_metadata(nodes)
-        apply_heading_prepend(
-            nodes, resolved.chunking.markdown_heading_prepend
-        )
+        apply_heading_prepend(nodes, resolved.chunking.markdown_heading_prepend)
         nodes = drop_small_markdown_chunks(
             nodes,
             effective_chunk_size,
             resolved.chunking.markdown_min_chunk_fraction,
         )
 
-    # Add content_type metadata to all nodes (task 6.4).
     if content_type:
         for node in nodes:
             node.metadata.setdefault("content_type", content_type)
@@ -234,4 +182,4 @@ async def read_and_chunk_file_async(
         for node in nodes:
             node.metadata.update(flat_metadata)
 
-    return nodes
+    return _ChunkResult(nodes, metadata_degraded=metadata_degraded)

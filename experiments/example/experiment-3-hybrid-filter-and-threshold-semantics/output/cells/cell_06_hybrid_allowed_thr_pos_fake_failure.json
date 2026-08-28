@@ -1,0 +1,327 @@
+{
+  "cell_id": "cell_06_hybrid_allowed_thr_pos_fake_failure",
+  "factors": {
+    "filter": "category_allowed",
+    "mode": "hybrid_bm25",
+    "rerank": "fake_failure",
+    "threshold": 0.3
+  },
+  "fake_probe": {
+    "armed": true,
+    "mode": "fake_failure"
+  },
+  "manifest": {
+    "cell_id": "cell_06_hybrid_allowed_thr_pos_fake_failure",
+    "chunker": {
+      "effective": null,
+      "fallback_reason": null,
+      "requested": null
+    },
+    "corpus_identity": "sha256:d73b73f84f4d41c78b626b63e44660a37cb2a76258a79d6ea1cbdda73dfa189d",
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "document_backend": {
+      "effective": null,
+      "requested": null
+    },
+    "embedding": {
+      "effective_provider": "precomputed_fixture",
+      "model": "fixture-fake-embed-model-v1",
+      "requested_provider": "precomputed_fixture"
+    },
+    "experiment_id": "3-hybrid-filter-and-threshold-semantics",
+    "git_dirty": true,
+    "null_reasons": {
+      "chunker.effective": "chunker mapping not provided",
+      "chunker.fallback_reason": "chunker mapping not provided",
+      "chunker.requested": "chunker mapping not provided",
+      "document_backend.effective": "document_backend mapping not provided",
+      "document_backend.requested": "document_backend mapping not provided",
+      "reranker.device": "no torch device attribute on reranker object",
+      "reranker.execution_provider": "no loaded ONNX session on reranker object",
+      "reranker.variant_or_precision": "no last_loaded_variant attribute on reranker object"
+    },
+    "protocol_version": "1.0",
+    "qrels_identity": "sha256:7434bc19e336109805e5e86b4408898004ba8e015ea1c8bfa4887f6177b9720e",
+    "query_set_identity": "sha256:d6cb9dc6b84d2b14ccf9fb403c005eb30c8e420026c7d5e8107d76396c18f781",
+    "repo_commit": "c475852cf195658ce6af8654e11e07dce4c39fec",
+    "reranker": {
+      "device": null,
+      "effective_backend": "FakeFailureReranker",
+      "execution_provider": null,
+      "model": "fake-double://failure/v1",
+      "requested_backend": "FakeFailureReranker",
+      "variant_or_precision": null
+    },
+    "retrieval": {
+      "fetch_k": 5,
+      "hybrid": true,
+      "mode": "hybrid_bm25",
+      "rerank_policy_reason": "fake failure double: simulated reranker backend load failure",
+      "rerank_requested": true,
+      "rrf_k": 60,
+      "threshold": 0.3,
+      "threshold_score_kind": "dense_similarity_v1",
+      "top_k": 5
+    },
+    "sparse": {
+      "cache_namespace": "ephemeral:exp3_hybrid_filter_threshold_fixture",
+      "effective_backend": "bm25",
+      "requested_backend": "bm25"
+    },
+    "timestamp_utc": "2026-08-19T20:43:00Z",
+    "vector_store": {
+      "backend": "chroma",
+      "index_identity": "exp3_hybrid_filter_threshold_fixture",
+      "mode": "ephemeral",
+      "score_kind": "dense_similarity_v1"
+    }
+  },
+  "observed": [
+    {
+      "dense_rank": 1,
+      "dense_score": 0.8,
+      "dense_score_kind": "dense_similarity_v1",
+      "fused_rank": 1,
+      "fused_score": 0.03278688524590164,
+      "id": "row_E",
+      "page_label": null,
+      "rerank_backend": "FakeFailureReranker",
+      "rerank_reason": "fake failure double: simulated reranker backend load failure",
+      "reranked": false,
+      "score": 0.03278688524590164,
+      "score_kind": "rrf_v1",
+      "source": "fixture://exp3/E",
+      "sparse_rank": 1,
+      "text": "harbour harbour opal cascade driftwood kestrel amber slate vellum juniper",
+      "threshold_score_kind": "dense_similarity_v1"
+    },
+    {
+      "dense_rank": 2,
+      "dense_score": 0.5,
+      "dense_score_kind": "dense_similarity_v1",
+      "fused_rank": 2,
+      "fused_score": 0.016129032258064516,
+      "id": "row_A",
+      "page_label": null,
+      "rerank_backend": "FakeFailureReranker",
+      "rerank_reason": "fake failure double: simulated reranker backend load failure",
+      "reranked": false,
+      "score": 0.016129032258064516,
+      "score_kind": "rrf_v1",
+      "source": "fixture://exp3/A",
+      "sparse_rank": null,
+      "text": "silver orchard lantern velvet compass marble timber pasture",
+      "threshold_score_kind": "dense_similarity_v1"
+    }
+  ],
+  "per_query": [
+    {
+      "cell_id": "cell_06_hybrid_allowed_thr_pos_fake_failure",
+      "latency_ms": 2.8524170047603548,
+      "metrics": {
+        "composed_trace_match": 1.0,
+        "dense_branch_filter_violations": 0,
+        "exact_ids_match": 1.0,
+        "exact_match": 1.0,
+        "exact_score_kind_match": 1.0,
+        "exact_scores_match": 1.0,
+        "fallback_reason_match": true,
+        "final_ids": [
+          "row_E",
+          "row_A"
+        ],
+        "final_score_kind": "rrf_v1",
+        "final_scores": [
+          0.03278688524590164,
+          0.016129032258064516
+        ],
+        "forbidden_leak_count": 0,
+        "n_final": 2,
+        "rerank_fallback_reason": "fake failure double: simulated reranker backend load failure",
+        "rerank_reason": "fake failure double: simulated reranker backend load failure",
+        "sparse_branch_filter_violations": 0,
+        "threshold_score_kind": "dense_similarity_v1"
+      },
+      "phase": "measured",
+      "query_id": "q1"
+    }
+  ],
+  "reason": null,
+  "status": "complete",
+  "traces": {
+    "dense": [
+      {
+        "id": "row_E",
+        "score": 0.8,
+        "score_kind": "dense_similarity_v1"
+      },
+      {
+        "id": "row_A",
+        "score": 0.5,
+        "score_kind": "dense_similarity_v1"
+      },
+      {
+        "id": "row_B",
+        "score": 0.1,
+        "score_kind": "dense_similarity_v1"
+      },
+      {
+        "id": "row_D",
+        "score": 0.058823529411764705,
+        "score_kind": "dense_similarity_v1"
+      }
+    ],
+    "dense_branch_filter_violations": 0,
+    "eligibility": {
+      "dense_qualifying_ids": [
+        "row_A",
+        "row_E"
+      ],
+      "sparse_eligible_ids": [
+        "row_E"
+      ]
+    },
+    "fused": [
+      {
+        "dense_rank": 1,
+        "dense_score": 0.8,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 1,
+        "fused_score": 0.03278688524590164,
+        "id": "row_E",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/E",
+          "row_label": "E"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.03278688524590164,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/E",
+        "sparse_rank": 1,
+        "text": "harbour harbour opal cascade driftwood kestrel amber slate vellum juniper"
+      },
+      {
+        "dense_rank": 2,
+        "dense_score": 0.5,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 2,
+        "fused_score": 0.016129032258064516,
+        "id": "row_A",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/A",
+          "row_label": "A"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.016129032258064516,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/A",
+        "sparse_rank": null,
+        "text": "silver orchard lantern velvet compass marble timber pasture"
+      }
+    ],
+    "fused_pre_rerank": [
+      {
+        "dense_rank": 1,
+        "dense_score": 0.8,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 1,
+        "fused_score": 0.03252247488101534,
+        "id": "row_E",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/E",
+          "row_label": "E"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.03252247488101534,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/E",
+        "sparse_rank": 2,
+        "text": "harbour harbour opal cascade driftwood kestrel amber slate vellum juniper"
+      },
+      {
+        "dense_rank": 3,
+        "dense_score": 0.1,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 2,
+        "fused_score": 0.032266458495966696,
+        "id": "row_B",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/B",
+          "row_label": "B"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.032266458495966696,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/B",
+        "sparse_rank": 1,
+        "text": "beacon beacon copper signal ferrite lantern"
+      },
+      {
+        "dense_rank": 4,
+        "dense_score": 0.058823529411764705,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 3,
+        "fused_score": 0.03149801587301587,
+        "id": "row_D",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/D",
+          "row_label": "D"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.03149801587301587,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/D",
+        "sparse_rank": 3,
+        "text": "harbour meadow cipher bramble falcon garnet thistle ridge"
+      },
+      {
+        "dense_rank": 2,
+        "dense_score": 0.5,
+        "dense_score_kind": "dense_similarity_v1",
+        "fused_rank": 4,
+        "fused_score": 0.016129032258064516,
+        "id": "row_A",
+        "metadata": {
+          "category": "allowed",
+          "file_path": "fixture://exp3/A",
+          "row_label": "A"
+        },
+        "page_label": null,
+        "reranked": false,
+        "score": 0.016129032258064516,
+        "score_kind": "rrf_v1",
+        "source": "fixture://exp3/A",
+        "sparse_rank": null,
+        "text": "silver orchard lantern velvet compass marble timber pasture"
+      }
+    ],
+    "sparse": [
+      {
+        "category": "allowed",
+        "id": "row_B",
+        "rank": 1
+      },
+      {
+        "category": "allowed",
+        "id": "row_E",
+        "rank": 2
+      },
+      {
+        "category": "allowed",
+        "id": "row_D",
+        "rank": 3
+      }
+    ],
+    "sparse_branch_filter_violations": 0
+  }
+}

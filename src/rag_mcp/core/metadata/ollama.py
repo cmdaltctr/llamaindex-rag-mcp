@@ -10,13 +10,20 @@ of Phase 1.
 
 from __future__ import annotations
 
-import asyncio
 import json
-import logging
 import re
 
 from ..settings import resolve_effective_settings
-from ._common import _normalise_category, _truncate_keywords, _truncate_summary, logger
+from ._common import (
+    _get_classify_max_attempts,
+    _normalise_category,
+    _resolve_classify_timeout,
+    _retry_sleep,
+    _signal_degraded,
+    _truncate_keywords,
+    _truncate_summary,
+    logger,
+)
 from .taxonomy import _gather_existing_categories, _get_seed_categories
 
 
@@ -49,19 +56,16 @@ def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
         )
     else:
         # ChromaDB empty and no seeds?  Only happens with empty custom rules.
-        category_section = (
-            "EXISTING CATEGORIES:\n"
-            "- uncategorised\n"
-        )
+        category_section = "EXISTING CATEGORIES:\n- uncategorised\n"
 
     return (
         "You are a document classifier. Analyse the document below and "
         "return ONLY a JSON object — no explanations, no markdown, no "
         "backticks.  The JSON must have exactly these keys:\n\n"
-        "  - \"category\": The best category label (string).\n"
-        "  - \"keywords\": 3-5 relevant keywords from the document "
+        '  - "category": The best category label (string).\n'
+        '  - "keywords": 3-5 relevant keywords from the document '
         "(list of strings).\n"
-        "  - \"summary\": A single-sentence summary of the document "
+        '  - "summary": A single-sentence summary of the document '
         "(string, max 300 chars).\n\n"
         "INSTRUCTIONS:\n"
         "1. First, determine if the document fits one of the "
@@ -69,9 +73,9 @@ def _build_ollama_prompt(text: str, settings: object | None = None) -> str:
         "2. If YES: use that exact category name.\n"
         "3. If NO existing category fits: propose ONE new concise "
         "category label — 1-3 words, lowercase, underscores for spaces "
-        "(e.g., \"music_theory\", \"environmental_science\").\n"
+        '(e.g., "music_theory", "environmental_science").\n'
         "4. Prefer existing categories over creating new ones.\n"
-        "5. If genuinely uncertain, use \"uncategorised\".\n\n"
+        '5. If genuinely uncertain, use "uncategorised".\n\n'
         f"{category_section}\n"
         f"Document:\n{text[:3000]}"
     )
@@ -142,10 +146,10 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     except ValueError:
         # Couldn't parse JSON — use raw text as category.
         logger.warning(
-            "Ollama returned non-JSON response. Using raw text as category. "
-            "Response: %s",
+            "Ollama returned non-JSON response. Using raw text as category. Response: %s",
             raw_response[:200],
         )
+        _signal_degraded()
         return {
             "category": _normalise_category(raw_response) or "uncategorised",
             "keywords": [],
@@ -159,11 +163,9 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
 
     raw_keywords = parsed.get("keywords", [])
     if isinstance(raw_keywords, list):
-        keywords = _truncate_keywords([
-            str(k).strip().lower()
-            for k in raw_keywords
-            if k and str(k).strip()
-        ])
+        keywords = _truncate_keywords(
+            [str(k).strip().lower() for k in raw_keywords if k and str(k).strip()]
+        )
     else:
         keywords = []
 
@@ -177,50 +179,6 @@ def _parse_ollama_json_response(raw_response: str) -> dict:
     }
 
 
-def _get_ollama_max_attempts(resolved) -> int:
-    """Return the bounded retry budget for Ollama metadata classification.
-
-    Reads ``OLLAMA_CLASSIFY_MAX_ATTEMPTS`` at call time so tests can
-    override it via ``monkeypatch.setenv`` without re-importing.
-
-    Returns:
-        Maximum number of attempts (>= 1).  Falls back to 3.
-    """
-    import os
-    raw = os.getenv("OLLAMA_CLASSIFY_MAX_ATTEMPTS")
-    if raw is None:
-        return resolved.metadata.ollama_classify_max_attempts
-    try:
-        value = int(raw)
-    except (TypeError, ValueError):
-        return resolved.metadata.ollama_classify_max_attempts
-    return max(1, value)
-
-
-def _get_ollama_timeout(resolved) -> float:
-    """Return the per-attempt HTTP timeout (seconds) for Ollama classification.
-
-    Reads ``OLLAMA_CLASSIFY_TIMEOUT`` at call time so tests can override
-    it via ``monkeypatch.setenv`` without re-importing.
-
-    Returns:
-        Per-attempt timeout in seconds.  Falls back to 30.0.
-    """
-    import os
-    raw = os.getenv("OLLAMA_CLASSIFY_TIMEOUT")
-    if raw is None:
-        return resolved.metadata.ollama_classify_timeout
-    try:
-        return float(raw)
-    except (TypeError, ValueError):
-        return resolved.metadata.ollama_classify_timeout
-
-
-# Sleep hook used between Ollama retry attempts.  Module-level so tests
-# can replace it with a no-op without touching ``asyncio`` globally.
-_retry_sleep = asyncio.sleep
-
-
 async def _extract_ollama_async(
     text: str, file_name: str = "", settings: object | None = None
 ) -> dict:
@@ -229,9 +187,10 @@ async def _extract_ollama_async(
     Uses ``httpx.AsyncClient`` for non-blocking HTTP to Ollama's
     ``/api/generate`` endpoint with a bounded retry loop.  On transient
     failures (timeouts, connection errors, network errors) the call is
-    retried up to ``OLLAMA_CLASSIFY_MAX_ATTEMPTS`` times with
-    exponential backoff (``2 ** attempt`` seconds between attempts).
-    Per-attempt HTTP timeout is ``OLLAMA_CLASSIFY_TIMEOUT`` seconds.
+    retried within a total budget of ``METADATA__CLASSIFY_MAX_ATTEMPTS``
+    attempts — the initial request included — with exponential backoff
+    (``2 ** attempt`` seconds between attempts).
+    Per-attempt HTTP timeout is ``METADATA__CLASSIFY_TIMEOUT`` seconds.
     On retry exhaustion the function returns the ``uncategorised``
     fallback dict and logs a single WARNING summarising the failure
     chain.
@@ -254,6 +213,7 @@ async def _extract_ollama_async(
             "Ollama classification failed — could not build prompt: %s",
             exc,
         )
+        _signal_degraded()
         return fallback
 
     data = {
@@ -269,8 +229,8 @@ async def _extract_ollama_async(
     }
     url = f"{resolved.ollama_base_url}/api/generate"
 
-    max_attempts = _get_ollama_max_attempts(resolved)
-    timeout_s = _get_ollama_timeout(resolved)
+    max_attempts = _get_classify_max_attempts(resolved)
+    timeout_s = _resolve_classify_timeout(resolved, "ollama")
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
@@ -288,8 +248,7 @@ async def _extract_ollama_async(
             result = _parse_ollama_json_response(raw)
 
             logger.info(
-                "Ollama classified document as: %s (keywords=%d, "
-                "summary=%d chars, attempt=%d/%d)",
+                "Ollama classified document as: %s (keywords=%d, summary=%d chars, attempt=%d/%d)",
                 result["category"],
                 len(result.get("keywords", [])),
                 len(result.get("summary", "")),
@@ -310,14 +269,14 @@ async def _extract_ollama_async(
 
             # Don't sleep after the final attempt.
             if attempt + 1 < max_attempts:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 await _retry_sleep(backoff)
 
     logger.warning(
-        "Ollama classification failed after %d attempt(s) — "
-        "falling back to uncategorised: %s: %s",
+        "Ollama classification failed after %d attempt(s) — falling back to uncategorised: %s: %s",
         max_attempts,
         type(last_error).__name__ if last_error else "Unknown",
         last_error,
     )
+    _signal_degraded()
     return fallback

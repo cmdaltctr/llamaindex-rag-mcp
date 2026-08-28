@@ -1,7 +1,11 @@
 """Shared test fixtures for the RAG MCP server test suite.
 
 Provides:
-- EphemeralClient monkeypatch (no disk I/O for ChromaDB)
+- Deterministic tmp-path LanceDB default store (task 5.3) plus matching
+  effective settings, so every test runs on the backend that ships in the
+  base install without depending on fixture-order accidents
+- EphemeralClient monkeypatch (no disk I/O for ChromaDB) — active only when
+  the optional ``chroma`` extra is installed
 - Mock embedding model (no Ollama server required)
 - FastMCP server instance fixture
 - Helper context manager for in-memory MCP client sessions
@@ -13,12 +17,10 @@ import os
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
-from unittest.mock import patch
 
-# ── IMPORTANT: EMBED_MODEL for test collection ─────────────────────────
-# config.py now requires EMBED_MODEL when LOCAL_BACKEND=ollama, and test
-# files import rag_mcp modules at module level (before fixtures run).
-# This setdefault ensures tests can be collected without a .env file.
+# ── IMPORTANT: EMBED_MODEL for test execution ─────────────────────────
+# Runtime-startup tests need a complete local provider configuration. Imports
+# and collection do not initialise this runtime.
 # LOCAL_BACKEND is set to ollama (core deps) so tests don't require
 # the llamacpp optional dependency group.
 os.environ.setdefault("EMBED_PROVIDER", "local")
@@ -28,12 +30,10 @@ os.environ.setdefault("OLLAMA_BASE_URL", "http://localhost:11434")
 os.environ.setdefault("METADATA_LLM_PROVIDER", "local")
 # ────────────────────────────────────────────────────────────────────────
 
-import chromadb
 import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
-from mcp import ClientSession
-from mcp.shared.memory import create_connected_server_and_client_session
+from mcp.client import Client
 
 # ── Constants ──────────────────────────────────────────────────────────────
 
@@ -53,8 +53,31 @@ _TEST_COLLECTION = "test_documents"
 
 
 @pytest.fixture(autouse=True)
+def _reset_default_store() -> None:
+    """Reset the process-wide default store before each test.
+
+    Every test must compose or explicitly install its own store; a leaked
+    instance from a previous test would share generation counters and
+    cached tables across test boundaries. The composition-root setup
+    flag is reset with it so a CLI/server entry point that calls
+    ``ensure_runtime_setup`` recomposes against this test's pinned
+    environment instead of skipping setup with a cleared store.
+    """
+    from rag_mcp.compose import reset_runtime_setup
+    from rag_mcp.core.vectordb import reset_default_store
+
+    reset_runtime_setup()
+    reset_default_store()
+
+
+@pytest.fixture(autouse=True)
 def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     """Replace PersistentClient with a singleton EphemeralClient globally.
+
+    Active only when the optional ``chroma`` extra is installed (task 5.1:
+    the shared conftest must not import chromadb at module level). In the
+    base install this fixture is a no-op — the default test store is the
+    tmp-path LanceDB database installed by ``_isolate_env``.
 
     This ensures no ``chroma_db/`` directory is created on disk and each
     test gets a fresh in-memory vector store that is shared across all
@@ -67,6 +90,11 @@ def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     instances (same default tenant/database).  We delete all existing
     collections so each test starts with a truly empty store.
     """
+    try:
+        import chromadb
+    except ImportError:
+        return  # base install: no chromadb, nothing to patch
+
     _original_ephemeral = chromadb.EphemeralClient
     _shared_client = _original_ephemeral()
 
@@ -83,12 +111,6 @@ def _patch_chromadb(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(chromadb, "PersistentClient", _ephemeral_singleton)
     monkeypatch.setattr(chromadb, "EphemeralClient", _ephemeral_singleton)
 
-    # Reset the default vector store so each test picks up the current
-    # monkeypatch when it lazily constructs a fresh store.
-    from rag_mcp.core.vectordb import reset_default_store
-
-    reset_default_store()
-
 
 @pytest.fixture(autouse=True)
 def _clear_registry_caches() -> None:
@@ -101,12 +123,26 @@ def _clear_registry_caches() -> None:
     patched function (task 3.7/3.9).
     """
     from rag_mcp.core.chunking import registry as _chunking
+    from rag_mcp.core.community import registry as _community
+    from rag_mcp.core.ingestion.backends import registry as _docbackend
     from rag_mcp.core.metadata import registry as _metadata
-    from rag_mcp.core.retrieval import registry as _retrieval
     from rag_mcp.core.providers.embeddings import registry as _embed
     from rag_mcp.core.providers.llm import registry as _llm
+    from rag_mcp.core.retrieval import registry as _retrieval
+    from rag_mcp.core.vectordb import registry as _vectordb
+    from rag_mcp.integrations.pdf import registry as _pdf
 
-    for reg in (_chunking, _metadata, _retrieval, _embed, _llm):
+    for reg in (
+        _chunking,
+        _metadata,
+        _retrieval,
+        _embed,
+        _llm,
+        _community,
+        _pdf,
+        _vectordb,
+        _docbackend,
+    ):
         reg._cache.clear()
 
 
@@ -126,10 +162,9 @@ def effective_settings():
     Builds a frozen :class:`EffectiveSettings` with sensible defaults so
     later test migrations are one-line changes (task 4.1).
     """
-    from rag_mcp.core.settings import EffectiveSettings
-
     from rag_mcp.core.settings import (
         ChunkingBlock,
+        EffectiveSettings,
         IngestionBlock,
         MetadataBlock,
         RetrievalBlock,
@@ -190,13 +225,21 @@ def effective_settings():
 
 
 @pytest.fixture(autouse=True)
-def _install_default_effective_settings():
+def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_path: Path):
     """Install a composition-root default EffectiveSettings for every test.
 
     Production installs this in ``compose.ensure_runtime_setup()``. Tests that
     call a core entry point without passing ``effective_settings`` need the
     same default present, and each test gets a fresh instance so no state
     leaks between them.
+
+    Task 5.3: the deterministic test store is embedded LanceDB under the
+    per-test ``tmp_path``, matching the ``LANCEDB_URI`` exported by
+    ``_isolate_env``. Both fixtures derive the path from ``tmp_path``
+    directly, so agreement does not depend on fixture ordering. The
+    explicit dependency on ``_reset_default_store`` pins reset-then-install
+    (pytest orders dependency-free autouse fixtures alphabetically, which
+    would otherwise reset the store AFTER this fixture installs it).
     """
     from rag_mcp.core.settings import (
         EffectiveSettings,
@@ -212,36 +255,60 @@ def _install_default_effective_settings():
     #   - extraction_mode="disabled" -> no auto-categorisation (was patched
     #     onto the settings singleton before v2.0.0)
     #   - pdf_reader="pypdf"         -> deterministic PDF path (gotcha #6)
-    set_default_effective_settings(
-        EffectiveSettings(
-            metadata=MetadataBlock(extraction_mode="disabled"),
-            pdf_reader="pypdf",
-            collection_name=_TEST_COLLECTION,
-            chroma_persist_dir=_TEST_PERSIST_DIR,
-        )
+    effective = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+        pdf_reader="pypdf",
+        collection_name=_TEST_COLLECTION,
+        chroma_persist_dir=_TEST_PERSIST_DIR,
+        vector_store="lancedb",
+        lancedb_uri=str(tmp_path / "lancedb"),
     )
+    set_default_effective_settings(effective)
+    # Task 2.3: get_default_store() is injected-only now, so the test
+    # harness composes explicitly through the production registry path —
+    # the same construction compose.ensure_runtime_setup performs. The
+    # store is built directly from the EffectiveSettings above (the
+    # factories read only attribute names both models expose) so this
+    # fixture never resolves — and therefore never caches — the flat
+    # Settings singleton: a test that overrides provider env vars inside
+    # a CliRunner.invoke() must still hit fresh validation.
+    from rag_mcp.core.vectordb import registry as vectordb_registry
+    from rag_mcp.core.vectordb import set_default_store
+
+    backend = os.environ.get("VECTOR_STORE", "lancedb")
+    set_default_store(vectordb_registry.get(backend)(effective))
     yield
     reset_default_effective_settings()
 
 
 @pytest.fixture(autouse=True)
-def _patch_embed_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Replace OllamaEmbedding with MockEmbedding globally.
+def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    """Replace OllamaEmbedding with MockEmbedding for tests that use runtime setup.
 
-    Tests should run without a running Ollama server. MockEmbedding
-    produces deterministic embeddings based on text hashing.
-
-    Note: The mock must be applied AFTER module imports because
-    ``config.py`` sets ``Settings.embed_model`` at import time.
-    The ``mcp_server`` fixture re-applies this mock after importing
-    those modules.
+    The shared LlamaIndex global remains mocked for the whole suite. CLI
+    tests additionally exercise the real composition-root startup path, so
+    their selected ``ollama`` registry factory is redirected to this mock.
+    Provider/settings validation still runs unchanged; only the networked
+    concrete embedding construction is replaced.
     """
     _patch_embed_model._mock = MockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
 
+    if request.node.path.name == "test_cli.py":
+        from rag_mcp.core.providers.embeddings import registry as embed_registry
+
+        real_get = embed_registry.get
+
+        def _get_for_test(name: str):
+            if name == "ollama":
+                return lambda _settings: _patch_embed_model._mock
+            return real_get(name)
+
+        monkeypatch.setattr(embed_registry, "get", _get_for_test)
+
 
 @pytest.fixture(autouse=True)
-def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Set deterministic environment variables for every test.
 
     Monkeypatches the shared ``config`` module's constants so that
@@ -254,9 +321,14 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     ``Settings.embed_model = OllamaEmbedding(...)``) during fixture
     setup.  Modules not yet loaded will pick up the env vars at their
     first import.
+
+    Task 5.3: every test runs on an explicit tmp-path LanceDB store so
+    the base install (no chroma extra) exercises the full pipeline.
     """
     import sys
 
+    monkeypatch.setenv("VECTOR_STORE", "lancedb")
+    monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb"))
     monkeypatch.setenv("CHROMA_PERSIST_DIR", _TEST_PERSIST_DIR)
     monkeypatch.setenv("COLLECTION_NAME", _TEST_COLLECTION)
     monkeypatch.setenv("EMBED_PROVIDER", "local")
@@ -270,8 +342,12 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     # Keep retry behaviour out of the default test path so existing
     # tests don't pay 1+2+...=O(2^n) seconds of backoff.  Retry-specific
     # tests opt back in by setting this to 2+.
-    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_MAX_ATTEMPTS", "1")
-    monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT", "5.0")
+    monkeypatch.setenv("METADATA__CLASSIFY_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("METADATA__CLASSIFY_TIMEOUT", "5.0")
+    # Deterministic PDF reader (gotcha #6) — also keeps the compose
+    # resolver's "PDF_READER=auto resolved to ..." INFO line out of
+    # captured CLI output, which the --json parsers must own entirely.
+    monkeypatch.setenv("PDF_READER", "pypdf")
 
     # NOTE: this fixture used to also monkeypatch legacy module constants
     # (config.CHROMA_PERSIST_DIR …) and then the resolved Settings singleton,
@@ -294,11 +370,11 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def mcp_server():
     """Return the real FastMCP server instance from rag_mcp.transports.mcp.
 
-    The ChromaDB and embedding patches are applied via autouse fixtures
-    above, so the server uses in-memory ChromaDB and mock embeddings.
+    The LanceDB store and embedding patches are applied via autouse
+    fixtures above, so the server uses a tmp-path store and mock
+    embeddings.
 
-    Re-applies MockEmbedding after import because ``config.py``
-    sets ``Settings.embed_model = OllamaEmbedding(...)`` at import time.
+    The test fixture supplies a mock embedding model for tool handlers.
     """
     from rag_mcp.transports.mcp import mcp
 
@@ -311,15 +387,16 @@ def mcp_server():
 
 @asynccontextmanager
 async def connected_client(mcp_server):
-    """Create an in-memory MCP ClientSession connected to the server.
+    """Create an in-memory MCP Client connected to the server.
 
     This is an async context manager, not a fixture, to avoid teardown
     issues with pytest-asyncio and anyio task groups.
+
+    Uses the v2 ``mcp.client.Client`` (replaces the v1
+    ``create_connected_server_and_client_session`` helper).
     """
-    async with create_connected_server_and_client_session(
-        mcp_server
-    ) as session:
-        yield session
+    async with Client(mcp_server) as client:
+        yield client
 
 
 # ── Fixture file paths ─────────────────────────────────────────────────────

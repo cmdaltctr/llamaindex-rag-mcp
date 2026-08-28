@@ -10,22 +10,18 @@ import logging
 import threading
 import time
 from pathlib import Path
-from unittest.mock import ANY, AsyncMock, MagicMock, patch, call
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
+from rag_mcp.daemon.runner import watch_directory
 from rag_mcp.daemon.watcher import (
     CONSECUTIVE_ERROR_THRESHOLD,
-    DEFAULT_DEBOUNCE_SECONDS,
-    MIN_DEBOUNCE_SECONDS,
     MAX_CONCURRENT_INGESTS,
     MAX_SHUTDOWN_SECONDS,
-    MAX_HASH_CACHE_ENTRIES,
     DocumentIngestHandler,
     _sha256_file,
-    watch_directory,
 )
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,7 +93,10 @@ class TestOnCreatedIngestion:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="abc123")
     @_patch_ingest()
     def test_on_created_triggers_ingest(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """Test that on_created with a supported PDF triggers ingest_path."""
         mock_ingest.return_value = {
@@ -121,7 +120,11 @@ class TestOnCreatedIngestion:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="abc123")
     @_patch_ingest()
     def test_on_created_logs_chunk_count(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """Test that successful ingestion logs chunk count."""
         caplog.set_level(logging.DEBUG)
@@ -135,10 +138,7 @@ class TestOnCreatedIngestion:
         timer = handler._timers.get("/tmp/doc.docx")
         timer.fire()
 
-        assert any(
-            "Auto-ingested" in r.message and "3 chunk" in r.message
-            for r in caplog.records
-        )
+        assert any("Auto-ingested" in r.message and "3 chunk" in r.message for r in caplog.records)
 
 
 # ── 5.3 & 5.4 Test content hash deduplication ──────────────────────────────
@@ -151,7 +151,10 @@ class TestContentHashDeduplication:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="fixed_hash")
     @_patch_ingest()
     def test_skips_unchanged_content(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """on_modified with identical content skips ingestion."""
         # First event: ingest succeeds
@@ -179,7 +182,10 @@ class TestContentHashDeduplication:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_ingests_changed_content(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """on_modified with different content triggers ingestion."""
         mock_hash.side_effect = ["hash_v1", "hash_v2"]
@@ -208,15 +214,19 @@ class TestContentHashDeduplication:
 class TestUnsupportedExtensions:
     """PatternMatchingEventHandler rejects unsupported file types."""
 
-    @pytest.mark.parametrize("filename", [
-        "image.png",
-        "video.mp4",
-        "data.tmp",
-        "download.part",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "image.png",
+            "video.mp4",
+            "data.tmp",
+            "download.part",
+        ],
+    )
     def test_unsupported_extensions_not_in_patterns(self, filename, handler):
         """Unsupported extensions are not in the handler's patterns."""
         from watchdog.utils.patterns import match_any_paths
+
         # Should NOT match any supported extension pattern
         matched = match_any_paths(
             [filename],
@@ -225,14 +235,18 @@ class TestUnsupportedExtensions:
         )
         assert not matched, f"{filename} should not match handler patterns"
 
-    @pytest.mark.parametrize("filename", [
-        ".DS_Store",
-        "~$temp.docx",
-        ".gitkeep",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            ".DS_Store",
+            "~$temp.docx",
+            ".gitkeep",
+        ],
+    )
     def test_ignored_files_match_ignore_patterns(self, filename, handler):
         """Hidden/temp files match the ignore patterns."""
         from watchdog.utils.patterns import match_any_paths
+
         ignored = match_any_paths(
             [filename],
             included_patterns=handler.ignore_patterns,
@@ -251,7 +265,10 @@ class TestDebouncing:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash1")
     @_patch_ingest()
     def test_rapid_events_single_ingest(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """Multiple rapid events reset the timer — single ingestion."""
         mock_ingest.return_value = {
@@ -299,7 +316,10 @@ class TestGracefulShutdown:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash1")
     @_patch_ingest()
     def test_stop_waits_for_in_flight(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """stop() waits for in-flight ingest_path() to complete."""
         barrier = threading.Barrier(2, timeout=5)
@@ -391,7 +411,11 @@ class TestConnectionErrorHandling:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_con")
     @_patch_ingest()
     def test_connection_error_no_hash_update(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """ConnectionError does NOT update hash cache."""
         mock_ingest.return_value = {
@@ -411,8 +435,7 @@ class TestConnectionErrorHandling:
         assert handler._consecutive_errors == 1
         # WARNING level log
         assert any(
-            r.levelno == logging.WARNING and "ConnectionError" in r.message
-            for r in caplog.records
+            r.levelno == logging.WARNING and "ConnectionError" in r.message for r in caplog.records
         )
 
 
@@ -426,7 +449,11 @@ class TestConsecutiveErrorThreshold:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_critical_after_threshold(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """CRITICAL log after CONSECUTIVE_ERROR_THRESHOLD failures."""
         mock_hash.side_effect = [f"hash_{i}" for i in range(10)]
@@ -445,8 +472,7 @@ class TestConsecutiveErrorThreshold:
 
         assert handler._consecutive_errors == CONSECUTIVE_ERROR_THRESHOLD
         assert any(
-            r.levelno == logging.CRITICAL
-            and "consecutive" in r.message.lower()
+            r.levelno == logging.CRITICAL and "consecutive" in r.message.lower()
             for r in caplog.records
         )
 
@@ -454,7 +480,10 @@ class TestConsecutiveErrorThreshold:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_success_resets_error_counter(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """Successful ingestion resets the consecutive error counter."""
         mock_hash.side_effect = [f"hash_{i}" for i in range(6)]
@@ -497,7 +526,11 @@ class TestFileDeletedDuringDebounce:
     @patch("rag_mcp.daemon.watcher._sha256_file", side_effect=FileNotFoundError)
     @_patch_ingest()
     def test_file_deleted_before_ingest(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """File deleted during debounce → DEBUG log, no crash."""
         caplog.set_level(logging.DEBUG)
@@ -506,10 +539,7 @@ class TestFileDeletedDuringDebounce:
         handler._timers["/tmp/gone.pdf"].fire()
 
         mock_ingest.assert_not_called()
-        assert any(
-            r.levelno == logging.DEBUG and "vanished" in r.message
-            for r in caplog.records
-        )
+        assert any(r.levelno == logging.DEBUG and "vanished" in r.message for r in caplog.records)
         # Hash and timer entries cleaned up
         assert "/tmp/gone.pdf" not in handler._hash_cache
         assert "/tmp/gone.pdf" not in handler._timers
@@ -525,7 +555,11 @@ class TestGenericException:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="corrupt_hash")
     @_patch_ingest()
     def test_generic_exception_logged(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """Corrupt file raises generic Exception → WARNING, hash unchanged."""
         mock_ingest.return_value = {
@@ -575,7 +609,10 @@ class TestIngestionThrottling:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_throttling_limits_concurrency(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """5 simultaneous events result in at most 2 concurrent calls."""
         mock_hash.side_effect = [f"hash_{i}" for i in range(5)]
@@ -625,7 +662,9 @@ class TestRealDebounceTiming:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="real_hash")
     @_patch_ingest()
     def test_debounce_with_real_timer(
-        self, mock_ingest, mock_hash,
+        self,
+        mock_ingest,
+        mock_hash,
     ):
         """Real debounce timer: rapid events → single ingestion."""
         mock_ingest.return_value = {
@@ -718,7 +757,11 @@ class TestSHA256OSError:
     @patch("rag_mcp.daemon.watcher._sha256_file", side_effect=OSError("Permission denied"))
     @_patch_ingest()
     def test_oserror_logged_as_warning(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """Permission-denied OSError → WARNING log, watcher continues."""
         caplog.set_level(logging.WARNING)
@@ -732,8 +775,7 @@ class TestSHA256OSError:
         assert "/tmp/protected.pdf" not in handler._timers
         # WARNING log about the read failure
         assert any(
-            r.levelno == logging.WARNING and "Cannot read file" in r.message
-            for r in caplog.records
+            r.levelno == logging.WARNING and "Cannot read file" in r.message for r in caplog.records
         )
 
 
@@ -774,6 +816,7 @@ class TestVerboseFlag:
 
         assert watcher_logger.level == logging.WARNING
 
+
 # ── 6.1 Test shutdown timeout ───────────────────────────────────────────────
 
 
@@ -785,7 +828,11 @@ class TestShutdownTimeout:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash1")
     @_patch_ingest()
     def test_stop_timeout_on_hung_ingestion(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """stop() completes within the timeout when ingestion hangs."""
         caplog.set_level(logging.WARNING)
@@ -831,6 +878,7 @@ class TestShutdownTimeout:
         keep_blocking.set()
         ingest_thread.join(timeout=5)
 
+
 # ── 6.2 Test symlink traversal ──────────────────────────────────────────────
 
 
@@ -841,15 +889,16 @@ class TestSymlinkTraversal:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_sym")
     @_patch_ingest()
     def test_traversal_blocked_outside_root(
-        self, mock_ingest, mock_hash, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        caplog,
     ):
         """Symlink resolving outside watch root → WARNING, no ingestion."""
         caplog.set_level(logging.WARNING)
 
         watch_root = Path("/tmp/watched")
-        handler = DocumentIngestHandler(
-            debounce_seconds=0.01, watch_root=watch_root
-        )
+        handler = DocumentIngestHandler(debounce_seconds=0.01, watch_root=watch_root)
 
         # Patch path.resolve() to return a path outside the watch root
         with patch.object(Path, "resolve", return_value=Path("/etc/passwd")):
@@ -862,8 +911,7 @@ class TestSymlinkTraversal:
 
         # WARNING log about path traversal blocked
         assert any(
-            r.levelno == logging.WARNING
-            and "path traversal blocked" in r.message.lower()
+            r.levelno == logging.WARNING and "path traversal blocked" in r.message.lower()
             for r in caplog.records
         )
 
@@ -875,7 +923,9 @@ class TestSymlinkTraversal:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_ok")
     @_patch_ingest()
     def test_traversal_allowed_inside_root(
-        self, mock_ingest, mock_hash,
+        self,
+        mock_ingest,
+        mock_hash,
     ):
         """Symlink resolving inside watch root → ingestion proceeds."""
         mock_ingest.return_value = {
@@ -885,13 +935,12 @@ class TestSymlinkTraversal:
         }
 
         watch_root = Path("/tmp/watched")
-        handler = DocumentIngestHandler(
-            debounce_seconds=0.01, watch_root=watch_root
-        )
+        handler = DocumentIngestHandler(debounce_seconds=0.01, watch_root=watch_root)
 
         # Patch path.resolve() to return a path inside the watch root
         with patch.object(
-            Path, "resolve",
+            Path,
+            "resolve",
             return_value=Path("/tmp/watched/subdir/file.pdf"),
         ):
             event = _make_event("/tmp/watched/subdir/file.pdf", "created")
@@ -905,7 +954,9 @@ class TestSymlinkTraversal:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_no_root")
     @_patch_ingest()
     def test_watch_root_none_allows_all(
-        self, mock_ingest, mock_hash,
+        self,
+        mock_ingest,
+        mock_hash,
     ):
         """When watch_root is None, all paths proceed (backward compat)."""
         mock_ingest.return_value = {
@@ -923,6 +974,7 @@ class TestSymlinkTraversal:
 
         mock_ingest.assert_called_once()
 
+
 # ── 6.3 Test error_type handling ────────────────────────────────────────────
 
 
@@ -934,7 +986,11 @@ class TestErrorTypeHandling:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_connection_error_increments_counter(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """error_type: "connection" increments _consecutive_errors."""
         mock_hash.side_effect = [f"hash_{i}" for i in range(6)]
@@ -952,15 +1008,16 @@ class TestErrorTypeHandling:
             handler._timers[path].fire()
 
         assert handler._consecutive_errors == CONSECUTIVE_ERROR_THRESHOLD
-        assert any(
-            r.levelno == logging.CRITICAL for r in caplog.records
-        )
+        assert any(r.levelno == logging.CRITICAL for r in caplog.records)
 
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_emb")
     @_patch_ingest()
     def test_embedding_error_resets_counter(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """error_type: "embedding" does NOT increment and resets to 0."""
         # Pre-set counter to simulate prior errors
@@ -983,7 +1040,11 @@ class TestErrorTypeHandling:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash_file")
     @_patch_ingest()
     def test_file_error_does_not_increment(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """error_type: "file" logs WARNING and does NOT increment counter."""
         caplog.set_level(logging.WARNING)
@@ -1002,9 +1063,8 @@ class TestErrorTypeHandling:
         # Counter must be reset (not incremented)
         assert handler._consecutive_errors == 0
         # WARNING log emitted
-        assert any(
-            r.levelno == logging.WARNING for r in caplog.records
-        )
+        assert any(r.levelno == logging.WARNING for r in caplog.records)
+
 
 # ── 6.4 Test ingest_path error fields ───────────────────────────────────────
 
@@ -1014,7 +1074,8 @@ class TestIngestPathAllFilesFail:
     fail."""
 
     async def test_all_files_fail_returns_file_error_type(
-        self, tmp_path,
+        self,
+        tmp_path,
     ):
         """When all files fail to index, ingest_path_async returns
         error_type: "file" with a descriptive message."""
@@ -1044,15 +1105,15 @@ class TestIngestPathAllFilesFail:
         """ConnectionError from embedding returns error_type: "connection"."""
         from rag_mcp.core.ingestion import ingest_path_async
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_text("fake pdf content")
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("plain text content " * 10)
 
         with patch(
             "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
                 side_effect=ConnectionError("No route to host"),
             ):
                 result = await ingest_path_async(str(test_file))
@@ -1064,21 +1125,22 @@ class TestIngestPathAllFilesFail:
         """RuntimeError from embedding returns error_type: "embedding"."""
         from rag_mcp.core.ingestion import ingest_path_async
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_text("fake pdf content")
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("plain text content " * 10)
 
         with patch(
             "rag_mcp.core.ingestion.pipeline.gather_supported_files",
             return_value=([test_file], []),
         ):
             with patch(
-                "rag_mcp.core.ingestion.pipeline.embed_and_write_async",
+                "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
                 side_effect=RuntimeError("Model inference failed"),
             ):
                 result = await ingest_path_async(str(test_file))
 
         assert result["status"] == "error"
         assert result["error_type"] == "embedding"
+
 
 # ── 6.5 Test file size limit ────────────────────────────────────────────────
 
@@ -1091,13 +1153,15 @@ class TestFileSizeLimit:
     @patch("rag_mcp.daemon.watcher._sha256_file")
     @_patch_ingest()
     def test_file_size_limit_oserror(
-        self, mock_ingest, mock_hash, handler, caplog,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
+        caplog,
     ):
         """_sha256_file raising OSError about size → WARNING, no ingest."""
         caplog.set_level(logging.WARNING)
-        mock_hash.side_effect = OSError(
-            "File exceeds maximum size of 524288000 bytes"
-        )
+        mock_hash.side_effect = OSError("File exceeds maximum size of 524288000 bytes")
 
         event = _make_event("/tmp/huge.pdf", "created")
         handler.on_created(event)
@@ -1107,11 +1171,11 @@ class TestFileSizeLimit:
         mock_ingest.assert_not_called()
         # WARNING log emitted
         assert any(
-            r.levelno == logging.WARNING and "Cannot read file" in r.message
-            for r in caplog.records
+            r.levelno == logging.WARNING and "Cannot read file" in r.message for r in caplog.records
         )
         # Timer entry should be cleaned up
         assert "/tmp/huge.pdf" not in handler._timers
+
 
 # ── 6.6 Test hash cache eviction ────────────────────────────────────────────
 
@@ -1124,9 +1188,7 @@ class TestHashCacheEviction:
         """Cache exceeding max entries evicts the oldest entry."""
         # Use a smaller limit for faster tests
         small_limit = 5
-        with patch(
-            "rag_mcp.daemon.watcher.MAX_HASH_CACHE_ENTRIES", small_limit
-        ):
+        with patch("rag_mcp.daemon.watcher.MAX_HASH_CACHE_ENTRIES", small_limit):
             # Fill cache to exactly the limit
             for i in range(small_limit):
                 handler._hash_cache[f"/tmp/file_{i}.pdf"] = f"hash_{i}"
@@ -1148,6 +1210,7 @@ class TestHashCacheEviction:
             assert "/tmp/new_file.pdf" in handler._hash_cache
             assert len(handler._hash_cache) == small_limit
 
+
 # ── 6.7 Test shutdown_requested early return ──────────────────────────────────
 
 
@@ -1158,7 +1221,9 @@ class TestShutdownRequestedBypass:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @_patch_ingest()
     def test_schedule_ingest_skips_during_shutdown(
-        self, mock_ingest, handler,
+        self,
+        mock_ingest,
+        handler,
     ):
         """_schedule_ingest returns early when _shutdown_requested is set."""
         handler._shutdown_requested.set()
@@ -1174,7 +1239,10 @@ class TestShutdownRequestedBypass:
     @patch("rag_mcp.daemon.watcher._sha256_file", return_value="hash1")
     @_patch_ingest()
     def test_do_ingest_skips_during_shutdown(
-        self, mock_ingest, mock_hash, handler,
+        self,
+        mock_ingest,
+        mock_hash,
+        handler,
     ):
         """_do_ingest returns early when _shutdown_requested is set."""
         handler._shutdown_requested.set()
@@ -1203,7 +1271,9 @@ class TestOnDeletedHandler:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_removes_vectors(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted must call remove_document and log success."""
         mock_remove.return_value = {
@@ -1215,18 +1285,20 @@ class TestOnDeletedHandler:
         handler.on_deleted(event)
 
         # remove_document must be called
-        mock_remove.assert_called_once_with(
-            "/tmp/paper.pdf", collection_name="documents"
-        )
+        mock_remove.assert_called_once_with("/tmp/paper.pdf", collection_name="documents")
 
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_cancels_pending_timer(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted must cancel any pending ingest timer."""
         mock_remove.return_value = {
-            "status": "ok", "chunks_removed": 0, "collection": "documents",
+            "status": "ok",
+            "chunks_removed": 0,
+            "collection": "documents",
         }
 
         # First, schedule an ingest
@@ -1244,11 +1316,15 @@ class TestOnDeletedHandler:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_clears_hash_cache(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted must clear hash cache entry for deleted file."""
         mock_remove.return_value = {
-            "status": "ok", "chunks_removed": 0, "collection": "documents",
+            "status": "ok",
+            "chunks_removed": 0,
+            "collection": "documents",
         }
 
         # Pre-populate hash cache
@@ -1263,28 +1339,33 @@ class TestOnDeletedHandler:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_uses_handler_collection(
-        self, mock_remove,
+        self,
+        mock_remove,
     ):
         """on_deleted must use the handler's configured collection."""
         mock_remove.return_value = {
-            "status": "ok", "chunks_removed": 3, "collection": "research",
+            "status": "ok",
+            "chunks_removed": 3,
+            "collection": "research",
         }
         handler = DocumentIngestHandler(collection_name="research")
         event = _make_event("/tmp/paper.pdf", "deleted")
         handler.on_deleted(event)
 
-        mock_remove.assert_called_once_with(
-            "/tmp/paper.pdf", collection_name="research"
-        )
+        mock_remove.assert_called_once_with("/tmp/paper.pdf", collection_name="research")
 
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_no_chunks_logs_info(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted with no indexed chunks must not raise error."""
         mock_remove.return_value = {
-            "status": "ok", "chunks_removed": 0, "collection": "documents",
+            "status": "ok",
+            "chunks_removed": 0,
+            "collection": "documents",
         }
 
         event = _make_event("/tmp/ghost.pdf", "deleted")
@@ -1296,7 +1377,9 @@ class TestOnDeletedHandler:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_logs_warning_on_failure(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted must not crash when remove_document fails."""
         mock_remove.return_value = {
@@ -1314,7 +1397,9 @@ class TestOnDeletedHandler:
     @patch("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
     @patch(_REMOVE_DOC_TARGET)
     def test_on_deleted_shutdown_bypass(
-        self, mock_remove, handler,
+        self,
+        mock_remove,
+        handler,
     ):
         """on_deleted must skip work during shutdown."""
         handler._shutdown_requested.set()
@@ -1328,6 +1413,7 @@ class TestOnDeletedHandler:
     def test_on_deleted_ignores_unsupported_files(self, handler):
         """Unsupported files are filtered by PatternMatchingEventHandler."""
         from watchdog.utils.patterns import match_any_paths
+
         # .png should not match handler patterns
         matched = match_any_paths(
             ["image.png"],

@@ -2,10 +2,8 @@
 
 Handles both plain-text and Markdown document splitting.  For Markdown,
 chains ``MarkdownNodeParser`` with ``SentenceSplitter`` so heading
-boundaries are preserved wherever the heading-bounded section fits in
-``chunk_size``, while longer sections are still split so no chunk exceeds
-``chunk_size`` (ADR-016).  Extracted from the original ``ingestion.py``
-monolith as part of Phase 1.
+boundaries are preserved wherever the heading-bounded section fits in the
+configured token budget, while longer sections are split further (ADR-016).
 """
 
 from __future__ import annotations
@@ -36,8 +34,8 @@ def _split_documents_sync(
     Args:
         documents: LlamaIndex Document objects.
         is_markdown: Whether to use the Markdown heading-aware parser.
-        chunk_size: Maximum characters per chunk.
-        chunk_overlap: Overlap between chunks.
+        chunk_size: SentenceSplitter maximum size in tokenizer units.
+        chunk_overlap: SentenceSplitter overlap in tokenizer units.
 
     Returns:
         List of LlamaIndex Node objects.
@@ -66,21 +64,23 @@ async def chunk_sentence_file_async(
     Args:
         documents: LlamaIndex Document objects from the file reader.
         file_path: Path string (used for logging only).
-        is_markdown: Whether to apply the Markdown heading-aware parser
-            and post-processing hooks (heading metadata, heading prepend,
-            small-chunk dropping).
-        chunk_size: Override chunk size.  Defaults to ``MARKDOWN_CHUNK_SIZE``
-            for Markdown, ``CHUNK_SIZE`` otherwise.
-        chunk_overlap: Override chunk overlap.  Defaults to ``CHUNK_OVERLAP``.
+        is_markdown: Whether to apply Markdown heading-aware parsing and
+            configured post-processing hooks.
+        chunk_size: Token-size override. Defaults to ``markdown_chunk_size``
+            for Markdown and ``chunk_size`` otherwise.
+        chunk_overlap: Token-overlap override. Defaults to configured overlap.
+        settings: Optional resolved ``EffectiveSettings``.
 
     Returns:
         List of LlamaIndex Node objects.
     """
     resolved = resolve_effective_settings(settings)
-    effective_chunk_size = chunk_size if chunk_size is not None else (
-        resolved.chunking.markdown_chunk_size
-        if is_markdown
-        else resolved.chunking.chunk_size
+    effective_chunk_size = (
+        chunk_size
+        if chunk_size is not None
+        else (
+            resolved.chunking.markdown_chunk_size if is_markdown else resolved.chunking.chunk_size
+        )
     )
     effective_overlap = (
         chunk_overlap if chunk_overlap is not None else resolved.chunking.chunk_overlap
@@ -96,7 +96,11 @@ async def chunk_sentence_file_async(
 
     if is_markdown:
         ensure_heading_metadata(nodes)
-        apply_heading_prepend(nodes)
-        nodes = drop_small_markdown_chunks(nodes, effective_chunk_size)
+        apply_heading_prepend(nodes, resolved.chunking.markdown_heading_prepend)
+        nodes = drop_small_markdown_chunks(
+            nodes,
+            effective_chunk_size,
+            resolved.chunking.markdown_min_chunk_fraction,
+        )
 
     return nodes

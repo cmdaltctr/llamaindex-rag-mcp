@@ -13,7 +13,7 @@ import-linter contract extended in task 10.2).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChunkingBlock(BaseModel):
@@ -24,10 +24,17 @@ class ChunkingBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
+    # Sentence/Markdown splitters consume tokenizer units.
     chunk_size: int = 512
     chunk_overlap: int = 100
     markdown_chunk_size: int = 1024
+
+    # LlamaIndex CodeSplitter consumes lines plus a character ceiling.
+    # These stay separate from the token-oriented document settings.
+    code_chunk_lines: int = 40
+    code_chunk_lines_overlap: int = 15
+    code_max_chars: int = 1500
+
     markdown_heading_prepend: bool = False
     markdown_min_chunk_fraction: float = 0.0
     strategy_fallback: str = "markdown"
@@ -41,7 +48,6 @@ class IngestionBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
     embed_concurrency: int = 2
     embed_batch_size: int = 100
 
@@ -54,7 +60,6 @@ class RetrievalBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
     top_k: int = 10
     similarity_threshold: float = 0.0
     rerank_enabled: bool = False
@@ -63,6 +68,7 @@ class RetrievalBlock(BaseModel):
     rerank_fetch_multiplier: int = 3
     rerank_max_fetch: int = 100
     rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_backend: str = "onnx"
     hybrid_enabled: bool = False
     hybrid_rrf_k: int = 60
     hybrid_sparse_backend: str = "bm25"
@@ -76,12 +82,27 @@ class MetadataBlock(BaseModel):
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
 
-
     extraction_mode: str = "llamaindex"
     keyword_rules: str | None = None
     ollama_classify_model: str = "qwen3:0.6b"
-    ollama_classify_max_attempts: int = 3
-    ollama_classify_timeout: float = 30.0
+    # Both knobs reject non-positive values outright rather than clamping:
+    # silently rewriting an operator's 0 to 1 hides the misconfiguration,
+    # and a non-positive timeout reaches httpx as a nonsensical deadline.
+    classify_max_attempts: int = Field(default=3, gt=0)
+    classify_timeout: float = Field(default=30.0, gt=0)
+    # Separate budget for the llamaindex pipeline: three extractors per chunk,
+    # one attempt, no retry.  See MetadataSettings for why it is not merged
+    # with classify_timeout.
+    pipeline_timeout: float = Field(default=180.0, gt=0)
+    # Per-provider overrides for the two shared timeouts above.  ``None``
+    # means "unset, use the shared value" — mirrors ``MetadataSettings``
+    # (core/metadata/settings.py); both models must stay in sync.
+    llamacpp_classify_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_classify_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_classify_timeout_override: float | None = Field(default=None, gt=0)
+    llamacpp_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    ollama_pipeline_timeout_override: float | None = Field(default=None, gt=0)
+    openrouter_pipeline_timeout_override: float | None = Field(default=None, gt=0)
     taxonomy_mode: str = "category"
 
 
@@ -116,7 +137,10 @@ class EffectiveSettings(BaseModel):
     chroma_persist_dir: str = "./chroma_db"
     collection_name: str = "documents"
     chroma_scan_page_size: int = 10000
-    vector_store: str = "chroma"
+    # Canonical default (make-lancedb-default-and-isolate-chromadb, task
+    # 2.1): LanceDB is the qualified base-install backend (ADR-049).
+    vector_store: str = "lancedb"
+    lancedb_uri: str = "./lancedb"
 
     # ── Provider selection ────────────────────────────────────────
     embed_provider: str = "local"
@@ -146,6 +170,12 @@ class EffectiveSettings(BaseModel):
     codebase_map_cache_dir: str = ".opencode"
     codebase_map_max_files: int = 5000
     codebase_map_max_depth: int = 10
+    # Community detection (shared by codebase and document graphs).
+    # Louvain stays the base-install default; "leiden" requires the
+    # optional community-leiden extra and fails startup when missing
+    # (no silent fallback — an explicit algorithm is an operator contract).
+    community_algorithm: str = "louvain"
+    community_seed: int = 0
 
     # ── Document backend ──────────────────────────────────────────
     document_backend: str = "local"

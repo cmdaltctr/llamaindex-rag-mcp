@@ -1,0 +1,479 @@
+{
+  "H4_retrieval_sanity": "NOT RUN \u2014 optional arm; requires embedding runtime; H1-H3 are the correctness gates",
+  "cells": {
+    "C": {
+      "aggregate": {
+        "chunk_chars_max": 1498,
+        "chunk_chars_mean": 878.8,
+        "chunks_total": 61,
+        "cut_boundaries": 10,
+        "definitions_covered_whole": 20,
+        "definitions_fit_under_ceiling": 63,
+        "fallback_count": 0,
+        "files": 18,
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "structural_cut_rate": 0.2326,
+        "total_boundaries": 43,
+        "whole_definition_coverage": 0.3175
+      },
+      "by_complexity": {
+        "boundary": {
+          "chunk_chars_max": 1489,
+          "chunk_chars_mean": 658.3,
+          "chunks_total": 20,
+          "cut_boundaries": 8,
+          "definitions_covered_whole": 1,
+          "definitions_fit_under_ceiling": 7,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.5,
+          "total_boundaries": 16,
+          "whole_definition_coverage": 0.1429
+        },
+        "long-body": {
+          "chunk_chars_max": 1493,
+          "chunk_chars_mean": 890.5,
+          "chunks_total": 15,
+          "cut_boundaries": 2,
+          "definitions_covered_whole": 0,
+          "definitions_fit_under_ceiling": 11,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.1818,
+          "total_boundaries": 11,
+          "whole_definition_coverage": 0.0
+        },
+        "nested": {
+          "chunk_chars_max": 1498,
+          "chunk_chars_mean": 1079.2,
+          "chunks_total": 18,
+          "cut_boundaries": 0,
+          "definitions_covered_whole": 0,
+          "definitions_fit_under_ceiling": 18,
+          "fallback_count": 0,
+          "files": 5,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.0,
+          "total_boundaries": 13,
+          "whole_definition_coverage": 0.0
+        },
+        "simple": {
+          "chunk_chars_max": 1366,
+          "chunk_chars_mean": 956.8,
+          "chunks_total": 8,
+          "cut_boundaries": 0,
+          "definitions_covered_whole": 19,
+          "definitions_fit_under_ceiling": 27,
+          "fallback_count": 0,
+          "files": 5,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.0,
+          "total_boundaries": 3,
+          "whole_definition_coverage": 0.7037
+        }
+      },
+      "by_language": {
+        "javascript": {
+          "chunk_chars_max": 1489,
+          "chunk_chars_mean": 844.2,
+          "chunks_total": 13,
+          "cut_boundaries": 2,
+          "definitions_covered_whole": 3,
+          "definitions_fit_under_ceiling": 13,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.2222,
+          "total_boundaries": 9,
+          "whole_definition_coverage": 0.2308
+        },
+        "python": {
+          "chunk_chars_max": 1498,
+          "chunk_chars_mean": 880.0,
+          "chunks_total": 44,
+          "cut_boundaries": 8,
+          "definitions_covered_whole": 14,
+          "definitions_fit_under_ceiling": 43,
+          "fallback_count": 0,
+          "files": 12,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.25,
+          "total_boundaries": 32,
+          "whole_definition_coverage": 0.3256
+        },
+        "typescript": {
+          "chunk_chars_max": 1293,
+          "chunk_chars_mean": 977.0,
+          "chunks_total": 4,
+          "cut_boundaries": 0,
+          "definitions_covered_whole": 3,
+          "definitions_fit_under_ceiling": 7,
+          "fallback_count": 0,
+          "files": 2,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.0,
+          "total_boundaries": 2,
+          "whole_definition_coverage": 0.4286
+        }
+      },
+      "cut_classification": {
+        "fit_definition_cuts": [],
+        "oversized_definition_cuts": [
+          {
+            "boundary_line": 37,
+            "boundary_offset": 1448,
+            "definition": "oversizedJs",
+            "definition_span_chars": 2191,
+            "file": "js_boundary_01"
+          },
+          {
+            "boundary_line": 71,
+            "boundary_offset": 2942,
+            "definition": "oversizedJs",
+            "definition_span_chars": 2191,
+            "file": "js_boundary_01"
+          },
+          {
+            "boundary_line": 38,
+            "boundary_offset": 1492,
+            "definition": "at_ceiling",
+            "definition_span_chars": 1544,
+            "file": "py_boundary_01"
+          },
+          {
+            "boundary_line": 69,
+            "boundary_offset": 2971,
+            "definition": "at_ceiling",
+            "definition_span_chars": 1544,
+            "file": "py_boundary_01"
+          },
+          {
+            "boundary_line": 5,
+            "boundary_offset": 86,
+            "definition": "oversized",
+            "definition_span_chars": 2357,
+            "file": "py_boundary_02"
+          },
+          {
+            "boundary_line": 36,
+            "boundary_offset": 1570,
+            "definition": "oversized",
+            "definition_span_chars": 2357,
+            "file": "py_boundary_02"
+          },
+          {
+            "boundary_line": 5,
+            "boundary_offset": 87,
+            "definition": "boundary_engine",
+            "definition_span_chars": 2242,
+            "file": "py_boundary_03"
+          },
+          {
+            "boundary_line": 29,
+            "boundary_offset": 1197,
+            "definition": "boundary_engine",
+            "definition_span_chars": 2242,
+            "file": "py_boundary_03"
+          },
+          {
+            "boundary_line": 5,
+            "boundary_offset": 70,
+            "definition": "long_body_0",
+            "definition_span_chars": 1584,
+            "file": "py_longbody_03"
+          },
+          {
+            "boundary_line": 37,
+            "boundary_offset": 1568,
+            "definition": "long_body_0",
+            "definition_span_chars": 1584,
+            "file": "py_longbody_03"
+          }
+        ]
+      }
+    },
+    "S": {
+      "aggregate": {
+        "chunk_chars_max": 1396,
+        "chunk_chars_mean": 993.2,
+        "chunks_total": 58,
+        "cut_boundaries": 15,
+        "definitions_covered_whole": 24,
+        "definitions_fit_under_ceiling": 63,
+        "fallback_count": 0,
+        "files": 18,
+        "max_chars_violations": 0,
+        "max_chars_violations_unexplained": 0,
+        "structural_cut_rate": 0.375,
+        "total_boundaries": 40,
+        "whole_definition_coverage": 0.381
+      },
+      "by_complexity": {
+        "boundary": {
+          "chunk_chars_max": 1396,
+          "chunk_chars_mean": 1095.1,
+          "chunks_total": 14,
+          "cut_boundaries": 9,
+          "definitions_covered_whole": 0,
+          "definitions_fit_under_ceiling": 7,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.9,
+          "total_boundaries": 10,
+          "whole_definition_coverage": 0.0
+        },
+        "long-body": {
+          "chunk_chars_max": 1297,
+          "chunk_chars_mean": 947.7,
+          "chunks_total": 15,
+          "cut_boundaries": 3,
+          "definitions_covered_whole": 0,
+          "definitions_fit_under_ceiling": 11,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.2727,
+          "total_boundaries": 11,
+          "whole_definition_coverage": 0.0
+        },
+        "nested": {
+          "chunk_chars_max": 1307,
+          "chunk_chars_mean": 932.4,
+          "chunks_total": 21,
+          "cut_boundaries": 3,
+          "definitions_covered_whole": 2,
+          "definitions_fit_under_ceiling": 18,
+          "fallback_count": 0,
+          "files": 5,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.1875,
+          "total_boundaries": 16,
+          "whole_definition_coverage": 0.1111
+        },
+        "simple": {
+          "chunk_chars_max": 1366,
+          "chunk_chars_mean": 1059.8,
+          "chunks_total": 8,
+          "cut_boundaries": 0,
+          "definitions_covered_whole": 22,
+          "definitions_fit_under_ceiling": 27,
+          "fallback_count": 0,
+          "files": 5,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.0,
+          "total_boundaries": 3,
+          "whole_definition_coverage": 0.8148
+        }
+      },
+      "by_language": {
+        "javascript": {
+          "chunk_chars_max": 1257,
+          "chunk_chars_mean": 925.8,
+          "chunks_total": 13,
+          "cut_boundaries": 3,
+          "definitions_covered_whole": 4,
+          "definitions_fit_under_ceiling": 13,
+          "fallback_count": 0,
+          "files": 4,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.3333,
+          "total_boundaries": 9,
+          "whole_definition_coverage": 0.3077
+        },
+        "python": {
+          "chunk_chars_max": 1396,
+          "chunk_chars_mean": 1016.1,
+          "chunks_total": 41,
+          "cut_boundaries": 12,
+          "definitions_covered_whole": 17,
+          "definitions_fit_under_ceiling": 43,
+          "fallback_count": 0,
+          "files": 12,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.4138,
+          "total_boundaries": 29,
+          "whole_definition_coverage": 0.3953
+        },
+        "typescript": {
+          "chunk_chars_max": 1293,
+          "chunk_chars_mean": 977.0,
+          "chunks_total": 4,
+          "cut_boundaries": 0,
+          "definitions_covered_whole": 3,
+          "definitions_fit_under_ceiling": 7,
+          "fallback_count": 0,
+          "files": 2,
+          "max_chars_violations": 0,
+          "max_chars_violations_unexplained": 0,
+          "structural_cut_rate": 0.0,
+          "total_boundaries": 2,
+          "whole_definition_coverage": 0.4286
+        }
+      }
+    }
+  },
+  "experiment_id": "example-experiment-1-sentencesplitter-vs-codesplitter",
+  "hypotheses": {
+    "H1_execution": {
+      "code_files_effective_code": 18,
+      "code_files_total": 18,
+      "fallback_count": 0,
+      "verdict": "PASS"
+    },
+    "H2_structural_integrity": {
+      "cut_boundaries_code": 10,
+      "cut_boundaries_sentence": 15,
+      "fit_definition_cuts_code": 0,
+      "fit_definition_cuts_sentence": 6,
+      "oversized_definition_cuts_code": 10,
+      "paired_bootstrap_ci_cut_boundaries_code_minus_sentence": {
+        "ci_high": 0.0,
+        "ci_low": -0.5555555555555556,
+        "confidence": 0.95,
+        "delta": -0.2777777777777778,
+        "n": 18.0
+      },
+      "structural_cut_rate_code": 0.2326,
+      "structural_cut_rate_sentence": 0.375,
+      "total_boundaries_code": 43,
+      "total_boundaries_sentence": 40,
+      "verdict": "PASS"
+    },
+    "H3_boundedness": {
+      "max_chars_violations": 0,
+      "max_chars_violations_unexplained": 0,
+      "verdict": "PASS",
+      "violation_events": []
+    }
+  },
+  "protocol_version": "1.0",
+  "sentence_cut_classification": {
+    "fit_definition_cuts": [
+      {
+        "boundary_line": 24,
+        "boundary_offset": 1007,
+        "definition": "fitsBelow",
+        "definition_span_chars": 1355,
+        "file": "js_boundary_01"
+      },
+      {
+        "boundary_line": 23,
+        "boundary_offset": 947,
+        "definition": "fits_below",
+        "definition_span_chars": 1403,
+        "file": "py_boundary_01"
+      },
+      {
+        "boundary_line": 54,
+        "boundary_offset": 2222,
+        "definition": "long_body_1",
+        "definition_span_chars": 1490,
+        "file": "py_longbody_01"
+      },
+      {
+        "boundary_line": 88,
+        "boundary_offset": 3068,
+        "definition": "nested_engine",
+        "definition_span_chars": 1499,
+        "file": "py_nested_01"
+      },
+      {
+        "boundary_line": 94,
+        "boundary_offset": 3356,
+        "definition": "nested_engine",
+        "definition_span_chars": 1499,
+        "file": "py_nested_02"
+      },
+      {
+        "boundary_line": 100,
+        "boundary_offset": 3644,
+        "definition": "nested_engine",
+        "definition_span_chars": 1499,
+        "file": "py_nested_03"
+      }
+    ],
+    "oversized_definition_cuts": [
+      {
+        "boundary_line": 50,
+        "boundary_offset": 1999,
+        "definition": "oversizedJs",
+        "definition_span_chars": 2191,
+        "file": "js_boundary_01"
+      },
+      {
+        "boundary_line": 71,
+        "boundary_offset": 2971,
+        "definition": "oversizedJs",
+        "definition_span_chars": 2191,
+        "file": "js_boundary_01"
+      },
+      {
+        "boundary_line": 47,
+        "boundary_offset": 1924,
+        "definition": "at_ceiling",
+        "definition_span_chars": 1544,
+        "file": "py_boundary_01"
+      },
+      {
+        "boundary_line": 65,
+        "boundary_offset": 2779,
+        "definition": "at_ceiling",
+        "definition_span_chars": 1544,
+        "file": "py_boundary_01"
+      },
+      {
+        "boundary_line": 23,
+        "boundary_offset": 949,
+        "definition": "oversized",
+        "definition_span_chars": 2357,
+        "file": "py_boundary_02"
+      },
+      {
+        "boundary_line": 44,
+        "boundary_offset": 1950,
+        "definition": "oversized",
+        "definition_span_chars": 2357,
+        "file": "py_boundary_02"
+      },
+      {
+        "boundary_line": 31,
+        "boundary_offset": 1270,
+        "definition": "boundary_engine",
+        "definition_span_chars": 2242,
+        "file": "py_boundary_03"
+      },
+      {
+        "boundary_line": 23,
+        "boundary_offset": 922,
+        "definition": "long_body_0",
+        "definition_span_chars": 1584,
+        "file": "py_longbody_03"
+      },
+      {
+        "boundary_line": 32,
+        "boundary_offset": 1351,
+        "definition": "long_body_0",
+        "definition_span_chars": 1584,
+        "file": "py_longbody_03"
+      }
+    ]
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,307 @@
+{
+  "experiment_id": "5b-persistent-mps-reranker-worker",
+  "protocol_version": "1.1",
+  "experimental_unit": "one fixed query with its fixed ordered 50-candidate pool served through one declared reranker route; persistent resource replication is one complete fresh worker lifetime",
+  "primary_metric": "persistent_mps_parent_observed_median_latency_ms",
+  "manipulated_factors": [
+    {
+      "name": "backend",
+      "levels": ["onnx", "torch"]
+    },
+    {
+      "name": "device",
+      "levels": ["cpu", "mps"]
+    },
+    {
+      "name": "process_shape",
+      "levels": ["in_process", "fresh_child", "persistent_worker"]
+    },
+    {
+      "name": "precision",
+      "levels": ["onnx_int8", "torch_fp32"]
+    },
+    {
+      "name": "onnx_provider",
+      "levels": ["cpu"]
+    }
+  ],
+  "controlled_variables": {
+    "model_id": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "model_revision_and_file_hashes": "revision 233902d25c440f23af6f7d6e94d2946bac0bee0a; full file SHA-256 digest list recorded in protocol.md section 7",
+    "tokenizer_max_length_env": 2048,
+    "sigmoid_normalisation": "shared production sigmoid contract; production SentenceTransformerReranker used unmodified for Torch cells",
+    "batch_size": 32,
+    "top_k": 50,
+    "workload_path": "experiments/example/experiment-5-reranker-backend-device-parity/workload.json",
+    "workload_identity": "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc",
+    "workload_queries": 24,
+    "workload_candidates_per_query": 50,
+    "heterogeneous_longevity_schedule_path": "experiments/5b-persistent-mps-reranker-worker-2026-08-20/longevity_schedule.json",
+    "heterogeneous_longevity_schedule_identity": "sha256:5463c0a9991a9348a3e1ca9a3dca9a4db9f9419067a3f5a0bf83f0c1eb9978e7",
+    "hf_hub_offline": true,
+    "pytorch_enable_mps_fallback": "0 set before every Torch-capable import",
+    "target_host": "Apple Silicon macOS with at least 16 GiB physical memory",
+    "machine_policy": "same physical machine, macOS build, power source and registered background-load/thermal policy; no vector DB, embedding, BM25, document parsing or network access inside measured inference",
+    "w1_parent_state": "fallback-ready parent with ONNX loaded and warmed before paired measured rows; identical state retained for W3 fallback measurement",
+    "inflight_requests_per_worker": 1,
+    "minimum_persistent_lifetimes_per_cell": 3,
+    "minimum_measured_requests_per_persistent_lifetime": 1000,
+    "minimum_paired_reference_repetitions": 3,
+    "warmup_policy": "untimed model load and warm-up recorded separately and excluded from aggregates",
+    "rss_sample_seconds_max": 1,
+    "rss_sample_completed_requests_max": 10,
+    "memory_burn_in_requests": 200,
+    "memory_plateau_request_start": 801,
+    "memory_plateau_request_end": 1000,
+    "memory_growth_request_start": 201,
+    "memory_growth_request_end": 1000,
+    "memory_growth_estimator": "Theil-Sen slope in MiB per 1,000 requests with seeded block-bootstrap one-sided 95% upper confidence bound",
+    "bootstrap_seed": 20260821,
+    "bootstrap_block_length": 40,
+    "growth_window_sampling": "after every completed request inside requests 201-1000 (at least 800 ordered samples per lifetime)",
+    "whole_lifetime_counterbalance_schedule": "seed 20260821; three blocks, each a rotation by +2 of the seeded shuffle [W5, W3, W2, W4, W1]; exact table in protocol.md section 15",
+    "request_deadline_seconds": 5.0,
+    "idle_expiry_seconds": 60,
+    "drain_deadline_seconds": 2,
+    "term_grace_seconds": 5,
+    "kill_grace_seconds": 5,
+    "orphan_observation_seconds": 10,
+    "restart_backoff_seconds": [1, 2, 4],
+    "maximum_restart_attempts": 3,
+    "maximum_json_frame_bytes": 8388608,
+    "maximum_candidate_count": 200,
+    "maximum_token_budget": 65536,
+    "maximum_queue_depth": 16,
+    "stderr_pressure_bytes": 4194304,
+    "thermal_and_interference_abort_policy": "mains power required; complete lifetime invalid when host thermal pressure exceeds nominal or a declared foreground interference occurs; invalidation repeats the complete lifetime"
+  },
+  "cells": [
+    {
+      "id": "onnx_cpu_in_process",
+      "factors": {
+        "backend": "onnx",
+        "device": "cpu",
+        "process_shape": "in_process",
+        "precision": "onnx_int8",
+        "onnx_provider": "cpu"
+      }
+    },
+    {
+      "id": "torch_mps_fresh",
+      "factors": {
+        "backend": "torch",
+        "device": "mps",
+        "process_shape": "fresh_child",
+        "precision": "torch_fp32"
+      }
+    },
+    {
+      "id": "torch_mps_persistent",
+      "factors": {
+        "backend": "torch",
+        "device": "mps",
+        "process_shape": "persistent_worker",
+        "precision": "torch_fp32"
+      }
+    },
+    {
+      "id": "torch_cpu_persistent",
+      "factors": {
+        "backend": "torch",
+        "device": "cpu",
+        "process_shape": "persistent_worker",
+        "precision": "torch_fp32"
+      }
+    },
+    {
+      "id": "torch_cpu_fresh",
+      "factors": {
+        "backend": "torch",
+        "device": "cpu",
+        "process_shape": "fresh_child",
+        "precision": "torch_fp32"
+      }
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "reranker.requested_backend",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "reranker.effective_backend",
+      "operator": "not_null"
+    },
+    {
+      "manifest_field": "reranker.model",
+      "operator": "eq",
+      "expected": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    },
+    {
+      "manifest_field": "retrieval.top_k",
+      "operator": "eq",
+      "expected": 50
+    },
+    {
+      "manifest_field": "workload_identity",
+      "operator": "eq",
+      "expected": "sha256:bb412ddcd1e3c855a6bd78e06e61ff6a5bf72592a1566602c3b769524d06e1dc"
+    }
+  ],
+  "per_cell_route_assertions": {
+    "onnx_cpu_in_process": {
+      "check": "onnx_providers_first",
+      "expected": "CPUExecutionProvider"
+    },
+    "torch_mps_fresh": {
+      "check": "torch_device_prefix",
+      "expected": "mps"
+    },
+    "torch_mps_persistent": {
+      "check": "torch_device_prefix",
+      "expected": "mps"
+    },
+    "torch_cpu_persistent": {
+      "check": "torch_device_prefix",
+      "expected": "cpu"
+    },
+    "torch_cpu_fresh": {
+      "check": "torch_device_prefix",
+      "expected": "cpu"
+    }
+  },
+  "gate_table": [
+    {
+      "id": "G1a",
+      "name": "persistent_vs_fresh_mps_compatible_parity",
+      "treatment": "torch_mps_persistent",
+      "control": "torch_mps_fresh",
+      "ranking_equality_fraction_min": 1.0,
+      "max_abs_score_delta_max": 0.0001
+    },
+    {
+      "id": "G1b",
+      "name": "persistent_mps_vs_persistent_cpu_compatible_parity",
+      "treatment": "torch_mps_persistent",
+      "control": "torch_cpu_persistent",
+      "ranking_equality_fraction_min": 1.0,
+      "max_abs_score_delta_max": 0.0001
+    },
+    {
+      "id": "G1c",
+      "name": "per_response_route_and_rerank_truth",
+      "treatment": "all",
+      "control": "declared_plan",
+      "route_or_rerank_violations_max": 0
+    },
+    {
+      "id": "G2",
+      "name": "persistent_mps_device_speed",
+      "treatment": "torch_mps_persistent",
+      "control": "torch_cpu_persistent",
+      "parent_observed_median_latency_ratio_max": 0.8
+    },
+    {
+      "id": "G3",
+      "name": "persistent_mps_deployment_value",
+      "treatment": "torch_mps_persistent",
+      "control": "onnx_cpu_in_process",
+      "parent_observed_median_latency_ratio_max": 0.8,
+      "interpretation": "deployment comparison only; not a cross-backend correctness gate or Experiment 5 H2 replication"
+    },
+    {
+      "id": "G4",
+      "name": "cumulative_startup_break_even",
+      "treatment": "torch_mps_persistent",
+      "control": "onnx_cpu_in_process",
+      "confidence_level": 0.95,
+      "one_sided_upper_bound_requests_max": 150
+    },
+    {
+      "id": "G5",
+      "name": "persistent_mps_memory_budget",
+      "treatment": "torch_mps_persistent",
+      "control": "declared_opt_in_budget",
+      "worker_plateau_rss_mib_max": 750,
+      "fallback_ready_process_tree_plateau_rss_mib_max": 1250,
+      "fallback_ready_process_tree_peak_rss_mib_max": 1500,
+      "aggregation_rule": "every lifetime passes independently"
+    },
+    {
+      "id": "G6",
+      "name": "post_burn_in_memory_growth",
+      "treatment": "persistent_cells",
+      "control": "zero_growth_direction",
+      "confidence_level": 0.95,
+      "one_sided_upper_bound_mib_per_1000_requests_strictly_below": 20,
+      "aggregation_rule": "every lifetime and pooled bound pass"
+    },
+    {
+      "id": "G7",
+      "name": "deadline_bounded_failure_fallback",
+      "treatment": "worker_death_worker_hang_pipe_pressure",
+      "control": "registered_deadlines",
+      "request_deadline_seconds": 5.0,
+      "required_outcome": "ONNX CPU or existing un-reranked fallback completes loudly; no late response admitted"
+    },
+    {
+      "id": "G8",
+      "name": "shutdown_restart_reaping_and_orphans",
+      "treatment": "shutdown_eof_idle_expiry_parent_death",
+      "control": "registered_lifecycle_bounds",
+      "remaining_worker_or_descendant_processes_max": 0,
+      "drain_term_kill_idle_orphan_bounds": "drain 2 s; TERM grace 5 s; KILL grace 5 s; idle expiry 60 s; orphan observation 10 s"
+    },
+    {
+      "id": "G9",
+      "name": "tdr_014_admissibility",
+      "treatment": "all_cited_cells",
+      "control": "TDR-014",
+      "required_outcome": "plan agreement, manifests, preflight, no fallback, raw rows, atomic complete-lifetime checkpoints, complete statuses and deterministic projections all pass"
+    }
+  ],
+  "lifecycle_probes": [
+    "worker SIGKILL during an in-flight request",
+    "worker SIGSTOP or otherwise non-responsive during an in-flight request",
+    "external parent SIGKILL while worker is idle",
+    "external parent SIGKILL while worker is in-flight",
+    "stdout backpressure",
+    "stderr flooding with concurrent drain",
+    "malformed and oversized protocol frames",
+    "request deadline and late-response rejection",
+    "idle expiry followed by new worker generation and route preflight",
+    "orderly shutdown with bounded drain then TERM/KILL",
+    "EOF-on-stdin exit",
+    "wait/reap verification and zero orphaned descendants"
+  ],
+  "abort_criteria": [
+    "plan and runner cell matrices disagree",
+    "requested backend/device/provider differs from the observed effective route",
+    "model identity, tokenizer policy, workload identity or fixed request order differs",
+    "PYTORCH_ENABLE_MPS_FALLBACK was not 0 before Torch import",
+    "a Torch-stack module is imported in the parent",
+    "any measured response is unreranked, wrong-cardinality, wrong-generation, malformed or late",
+    "model download or network activity contaminates preflight or measured work",
+    "current RSS sampling is unavailable -> G5/G6 NOT_EVALUABLE and promotion blocked",
+    "thermal, power or foreground-interference policy is breached -> complete lifetime invalid",
+    "a process failure prevents a declared lifetime from completing -> incomplete, never numeric",
+    "checkpoint is partial or a statistic would cross worker PIDs/generations"
+  ],
+  "raw_artefacts": [
+    "protocol.md",
+    "plan.json and plan hash",
+    "reference to the immutable Experiment 5 workload and SHA-256",
+    "heterogeneous longevity schedule (longevity_schedule.json) and SHA-256",
+    "output/manifests/<cell>__lifetime<N>.json",
+    "output/preflight/<cell>__lifetime<N>.json",
+    "output/raw_rows.jsonl",
+    "output/memory_samples.jsonl",
+    "output/lifecycle_probes.jsonl",
+    "output/eval_results_checkpoint.json",
+    "output/eval_results.json",
+    "output/eval_results.summary.json",
+    "output/correctness_projection_run1.json",
+    "output/correctness_projection_run2.json"
+  ]
+}

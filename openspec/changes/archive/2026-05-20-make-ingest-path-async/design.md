@@ -124,7 +124,10 @@ it runs by wrapping in `asyncio.to_thread(...)`:
 ```python
 await asyncio.to_thread(
     chroma_collection.add,
-    ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings,
+    ids=ids,
+    documents=documents,
+    metadatas=metadatas,
+    embeddings=embeddings,
 )
 ```
 

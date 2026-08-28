@@ -1,0 +1,57 @@
+{
+  "cell_id": "timing_real_seq_100",
+  "factors": {
+    "corpus_size": 100,
+    "failure_point": "none",
+    "repeat_state": "first",
+    "ingest_topology": "sequential_1_stream",
+    "embedding_block": "real_ollama"
+  },
+  "manifest": {
+    "repo_commit": "b4b01b6780d5a13b5e8dca15970313bc3b9c98c6",
+    "git_dirty": true,
+    "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+    "experiment_id": "18-ingestion-lock-scope-ab",
+    "protocol_version": "1.0",
+    "python_version": "3.12.10",
+    "platform": "Darwin-arm64",
+    "timestamp_utc": "2026-08-19T16:08:27Z",
+    "corpus_identity": "a91dfaa8800d96002b335dd16c0cacf7e645362cf8e4d5060e390bf61b0768a8",
+    "embedding": {
+      "requested_provider": "local",
+      "requested_model": "nomic-embed-text",
+      "effective_provider": "OllamaEmbedding",
+      "effective_model": "nomic-embed-text"
+    },
+    "vector_store": {
+      "backend": "chroma_local",
+      "mode": "persistent_local",
+      "persist_dir": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-harden-pipeline-correctness-before-calibration/experiments/18-ingestion-lock-scope-ab-2026-08-19/output/chroma_cells_stage3b_rep3_timing_real_seq_100"
+    }
+  },
+  "status": "completed",
+  "warmup_seconds": 0.9004838330147322,
+  "wall_seconds": 18.36173720797524,
+  "streams": [
+    {
+      "status": "ok",
+      "files_indexed": 100,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 212,
+      "chunks_removed": 0,
+      "max_chunks_per_file": 3,
+      "timings": {
+        "change_detection_seconds": 0.1161904129839968,
+        "parse_chunk_seconds": 0.16042295895749703,
+        "embedding_seconds": 15.61735008499818,
+        "store_write_seconds": 1.6203662848856766,
+        "lock_wait_seconds": 4.4749060180038214e-05,
+        "cleanup_seconds": 0.6867078729555942,
+        "total_seconds": 18.360719583986793
+      },
+      "peak_rss_bytes": 301924352
+    }
+  ],
+  "combined": null,
+  "process_peak_rss_bytes": 301957120
+}

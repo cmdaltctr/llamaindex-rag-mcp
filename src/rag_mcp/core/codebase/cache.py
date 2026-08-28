@@ -14,11 +14,10 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from dataclasses import asdict
 from pathlib import Path
 
 from ..settings import get_default_effective_settings
-from .codebase_map import CodebaseMap, FileEntry, FileInventory
+from .codebase_map import CodebaseMap, FileInventory
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def _get_git_commit_hash(path: str) -> str | None:
     """
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
+            ["git", "rev-parse", "HEAD"],  # noqa: S607
             capture_output=True,
             text=True,
             cwd=path,
@@ -131,5 +130,3 @@ def _codebase_map_from_dict(data: dict) -> CodebaseMap:
         hubs=data.get("hubs", []),
         commit_hash=data.get("commit_hash"),
     )
-
-

@@ -11,11 +11,10 @@ import pytest
 from rag_mcp.core.codebase.codebase_map import (
     CodebaseMap,
     FileInventory,
-    build_codebase_map,
-    format_codebase_map,
-    get_codebase_map_text,
     _load_cache,
     _save_cache,
+    build_codebase_map,
+    get_codebase_map_text,
 )
 
 
@@ -47,8 +46,10 @@ class TestBuildCodebaseMap:
     def test_build_no_git(self, tmp_path: Path) -> None:
         """Building outside a git repo sets commit_hash to None."""
         (tmp_path / "app.py").write_text("x = 1\n")
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None):
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None),
+        ):
             m = build_codebase_map(str(tmp_path))
         assert m.commit_hash is None
 
@@ -60,7 +61,9 @@ class TestCaching:
         """Cache round-trip preserves data."""
         m = CodebaseMap(
             inventory=FileInventory(type_counts={"code/python": 3}),
-            code_communities=[{"label": "Core", "files": ["a.py"], "file_count": 1, "edge_count": 0}],
+            code_communities=[
+                {"label": "Core", "files": ["a.py"], "file_count": 1, "edge_count": 0}
+            ],
             commit_hash="abc123",
         )
         _save_cache(str(tmp_path), m)
@@ -129,8 +132,10 @@ class TestGetCodebaseMapText:
         """Valid directory returns formatted map text."""
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None):
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None),
+        ):
             result = get_codebase_map_text(path=".")
         assert "## File Types" in result
         assert "code/python" in result
@@ -139,9 +144,11 @@ class TestGetCodebaseMapText:
         """Refresh=True bypasses cache."""
         (tmp_path / "app.py").write_text("x = 1\n")
         monkeypatch.chdir(tmp_path)
-        with patch("rag_mcp.integrations.magika._is_magika_available", return_value=False), \
-             patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None), \
-             patch("rag_mcp.core.codebase.cache._load_cache") as mock_load:
+        with (
+            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("rag_mcp.core.codebase.cache._get_git_commit_hash", return_value=None),
+            patch("rag_mcp.core.codebase.cache._load_cache") as mock_load,
+        ):
             result = get_codebase_map_text(path=".", refresh=True)
             # _load_cache should not be called when refresh=True.
             mock_load.assert_not_called()
@@ -150,7 +157,10 @@ class TestGetCodebaseMapText:
     def test_never_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """MCP tool handler never raises — returns error JSON."""
         monkeypatch.chdir(tmp_path)
-        with patch("rag_mcp.core.codebase.codebase_map.build_codebase_map", side_effect=RuntimeError("boom")):
+        with patch(
+            "rag_mcp.core.codebase.codebase_map.build_codebase_map",
+            side_effect=RuntimeError("boom"),
+        ):
             result = get_codebase_map_text(path=".")
             data = json.loads(result)
             assert data["status"] == "error"

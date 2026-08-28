@@ -7,15 +7,10 @@ Tests cover:
 
 from __future__ import annotations
 
-import os
-import tempfile
+from asyncio import run as asyncio_run
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from rag_mcp.core.ingestion import ingest_path_async, list_documents
-
 
 # ── ingest_path validation ─────────────────────────────────────────────────
 
@@ -37,9 +32,7 @@ class TestIngestPathValidation:
         assert result["status"] == "error"
         assert "unsupported" in result["message"].lower()
 
-    async def test_empty_directory_returns_success_zero_counts(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_empty_directory_returns_success_zero_counts(self, tmp_path: Path) -> None:
         """ingest_path_async on an empty directory must return ok with zero counts."""
         empty_dir = tmp_path / "empty_dir"
         empty_dir.mkdir()
@@ -60,34 +53,34 @@ class TestListDocuments:
         result = list_documents()
         assert result == []
 
-    def test_list_documents_scans_multiple_metadata_pages(self, monkeypatch) -> None:
-        """Document chunk counts must include metadata beyond one scan page."""
-        import chromadb
-        import rag_mcp.config as _config
-        from rag_mcp.config import get_settings as _gs
+    def test_list_documents_scans_multiple_metadata_pages(self, tmp_path, monkeypatch) -> None:
+        """Document chunk counts must include metadata beyond one scan page.
 
+        Task 5.1 rewrite: seeds the store through the real ingestion path
+        (store-agnostic) instead of a direct ChromaDB client, so the
+        pagination contract runs against the default tmp-path LanceDB
+        store in the base install and Chroma in the chroma-extra job.
+        """
+        from rag_mcp.core.ingestion import ingest_path_async, list_documents
         from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_or_create_collection("paged_docs")
-        collection.add(
-            ids=["1", "2", "3", "4", "5"],
-            documents=["one", "two", "three", "four", "five"],
-            embeddings=[[float(i)] * 384 for i in range(5)],
-            metadatas=[
-                {"file_path": "a.txt"},
-                {"file_path": "a.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "b.txt"},
-            ],
-        )
+        created: dict[str, int] = {}
+        resolved: dict[str, str] = {}
+        for name in ("a.txt", "b.txt"):
+            doc = tmp_path / name
+            doc.write_text(f"Document {name} content sentence. " * 150)
+            result = asyncio_run(ingest_path_async(str(doc), collection_name="paged_docs"))
+            assert result["status"] == "ok"
+            created[name] = result["chunks_created"]
+            resolved[name] = str(doc.resolve())
+        # Force more than one scan page at page size 2.
+        assert sum(created.values()) > 2
 
         assert list_documents(collection_name="paged_docs") == [
-            {"source": "a.txt", "chunks": 2},
-            {"source": "b.txt", "chunks": 3},
+            {"source": resolved["a.txt"], "chunks": created["a.txt"]},
+            {"source": resolved["b.txt"], "chunks": created["b.txt"]},
         ]
 
 
@@ -98,7 +91,8 @@ class TestCollectionRouting:
     """Tests for collection-aware ingestion."""
 
     async def test_ingest_into_named_collection(
-        self, sample_txt,
+        self,
+        sample_txt,
     ):
         """ingest_path_async with collection_name must store in the named collection."""
         result = await ingest_path_async(str(sample_txt), collection_name="research")
@@ -108,6 +102,7 @@ class TestCollectionRouting:
 
         # Verify the file is in the research collection, not documents
         from rag_mcp.core.ingestion import list_documents
+
         research_docs = list_documents(collection_name="research")
         assert len(research_docs) == 1
 
@@ -116,7 +111,8 @@ class TestCollectionRouting:
         assert len(default_docs) == 0
 
     async def test_ingest_default_collection(
-        self, sample_md,
+        self,
+        sample_md,
     ):
         """ingest_path_async without collection_name must use 'documents'."""
         result = await ingest_path_async(str(sample_md))
@@ -124,7 +120,9 @@ class TestCollectionRouting:
         assert result["collection"] == "documents"
 
     async def test_ingest_into_different_collections(
-        self, sample_txt, sample_md,
+        self,
+        sample_txt,
+        sample_md,
     ):
         """Two files ingested into different collections must be isolated."""
         # Ingest txt into "research"
@@ -137,6 +135,7 @@ class TestCollectionRouting:
 
         # Verify isolation
         from rag_mcp.core.ingestion import list_documents
+
         research = list_documents(collection_name="research")
         code = list_documents(collection_name="code")
         default = list_documents(collection_name="documents")
@@ -153,7 +152,9 @@ class TestMetadataAttachment:
     """Tests for metadata attachment during ingestion."""
 
     async def test_metadata_attached_to_chunks(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ):
         """Metadata must be attached to chunks when METADATA_EXTRACTION_MODE=keyword."""
         # Enable keyword extraction for this test via injected settings.
@@ -178,26 +179,19 @@ class TestMetadataAttachment:
         result = await ingest_path_async(str(test_file), collection_name="test_metadata")
         assert result["status"] == "ok"
 
-        # Verify metadata in ChromaDB
-        import chromadb
-        from rag_mcp.config import get_settings as _gs
+        # Verify category metadata through the store ABC (task 5.1 rewrite:
+        # store-agnostic, runs on the default tmp-path LanceDB store in the
+        # base install and on Chroma in the chroma-extra job).
+        from rag_mcp.core.vectordb import get_default_store
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_collection("test_metadata")
-        data = collection.get(include=["metadatas"])
-
-        # At least one chunk should have category metadata
-        categories = []
-        for meta in data.get("metadatas", []) or []:
-            if meta and "category" in meta:
-                categories.append(meta["category"])
-
-        assert len(categories) > 0
-        # With our test text, it should be categorised as AI
-        assert all(c == "AI" for c in categories)
+        categorised = get_default_store().count_where("test_metadata", {"category": "AI"})
+        assert categorised == result["chunks_created"]
+        assert categorised > 0
 
     async def test_no_metadata_when_disabled(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ):
         """When METADATA_EXTRACTION_MODE=disabled, no category metadata."""
         # Disable keyword extraction
@@ -217,17 +211,11 @@ class TestMetadataAttachment:
         result = await ingest_path_async(str(test_file), collection_name="test_disabled_meta")
         assert result["status"] == "ok"
 
-        import chromadb
-        from rag_mcp.config import get_settings as _gs
+        # No chunk should carry category metadata (store-agnostic check,
+        # task 5.1).
+        from rag_mcp.core.vectordb import get_default_store
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_collection("test_disabled_meta")
-        data = collection.get(include=["metadatas"])
-
-        # No chunk should have category metadata
-        for meta in data.get("metadatas", []) or []:
-            if meta is not None:
-                assert "category" not in meta
+        assert get_default_store().count_where("test_disabled_meta", {"category": "AI"}) == 0
 
 
 # ── Document deletion tests ────────────────────────────────────────────────
@@ -243,12 +231,14 @@ class TestDocumentDeletion:
         from rag_mcp.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
-            str(sample_txt), collection_name="preview_path_coll",
+            str(sample_txt),
+            collection_name="preview_path_coll",
         )
         assert ingest_result["status"] == "ok"
 
         result = preview_delete(
-            path=str(sample_txt), collection_name="preview_path_coll",
+            path=str(sample_txt),
+            collection_name="preview_path_coll",
         )
         assert result == {
             "status": "ok",
@@ -263,7 +253,8 @@ class TestDocumentDeletion:
         from rag_mcp.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
-            str(sample_txt), collection_name="preview_metadata_coll",
+            str(sample_txt),
+            collection_name="preview_metadata_coll",
         )
         assert ingest_result["status"] == "ok"
 
@@ -282,7 +273,8 @@ class TestDocumentDeletion:
         from rag_mcp.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
-            str(sample_txt), collection_name="preview_collection_coll",
+            str(sample_txt),
+            collection_name="preview_collection_coll",
         )
         assert ingest_result["status"] == "ok"
 
@@ -311,7 +303,7 @@ class TestDocumentDeletion:
 
     async def test_remove_document_deletes_existing_chunks(self, sample_txt):
         """remove_document must delete all chunks for an ingested file."""
-        from rag_mcp.core.ingestion import remove_document, list_documents
+        from rag_mcp.core.ingestion import list_documents, remove_document
 
         # First ingest
         result = await ingest_path_async(str(sample_txt))
@@ -348,9 +340,7 @@ class TestDocumentDeletion:
         """remove_document on non-existent collection must return error."""
         from rag_mcp.core.ingestion import remove_document
 
-        result = remove_document(
-            "/some/file.pdf", collection_name="nonexistent_coll"
-        )
+        result = remove_document("/some/file.pdf", collection_name="nonexistent_coll")
         assert result["status"] == "error"
         assert "does not exist" in result.get("message", "").lower()
 
@@ -359,17 +349,13 @@ class TestDocumentDeletion:
     async def test_remove_by_metadata_deletes_matching_chunks(self, tmp_path):
         """remove_by_metadata must delete chunks matching the filter."""
         from rag_mcp.core.ingestion import (
-            remove_by_metadata,
             list_documents,
+            remove_by_metadata,
         )
 
         test_file = tmp_path / "paper.txt"
-        test_file.write_text(
-            "This is a document about artificial intelligence."
-        )
-        result = await ingest_path_async(
-            str(test_file), collection_name="test_meta_delete"
-        )
+        test_file.write_text("This is a document about artificial intelligence.")
+        result = await ingest_path_async(str(test_file), collection_name="test_meta_delete")
         assert result["status"] == "ok"
 
         # Verify chunks exist
@@ -415,9 +401,7 @@ class TestDocumentDeletion:
         from rag_mcp.core.retrieval import list_collections
 
         # Ingest into a named collection
-        result = await ingest_path_async(
-            str(sample_txt), collection_name="test_drop_me"
-        )
+        result = await ingest_path_async(str(sample_txt), collection_name="test_drop_me")
         assert result["status"] == "ok"
 
         # Verify collection exists
@@ -449,14 +433,10 @@ class TestDocumentDeletion:
         from rag_mcp.core.ingestion import list_documents
 
         test_file = tmp_path / "reingest.txt"
-        test_file.write_text(
-            "First version of this document. " * 20
-        )
+        test_file.write_text("First version of this document. " * 20)
 
         # First ingest
-        result1 = await ingest_path_async(
-            str(test_file), collection_name="test_reingest"
-        )
+        result1 = await ingest_path_async(str(test_file), collection_name="test_reingest")
         assert result1["status"] == "ok"
         chunks1 = result1.get("chunks_created", 0)
         assert chunks1 > 0
@@ -467,14 +447,10 @@ class TestDocumentDeletion:
         assert total1 == chunks1
 
         # Modify the file
-        test_file.write_text(
-            "Second version with different content. " * 30
-        )
+        test_file.write_text("Second version with different content. " * 30)
 
         # Second ingest (should replace, not append)
-        result2 = await ingest_path_async(
-            str(test_file), collection_name="test_reingest"
-        )
+        result2 = await ingest_path_async(str(test_file), collection_name="test_reingest")
         assert result2["status"] == "ok"
         chunks2 = result2.get("chunks_created", 0)
         assert chunks2 > 0
@@ -490,9 +466,7 @@ class TestDocumentDeletion:
         test_file = tmp_path / "first.txt"
         test_file.write_text("Brand new document never ingested before.")
 
-        result = await ingest_path_async(
-            str(test_file), collection_name="test_first_ingest"
-        )
+        result = await ingest_path_async(str(test_file), collection_name="test_first_ingest")
         assert result["status"] == "ok"
         assert result["chunks_removed"] == 0
         assert result["chunks_created"] > 0

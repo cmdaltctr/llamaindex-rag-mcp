@@ -33,8 +33,6 @@ import logging
 import os
 from typing import Any
 
-from pydantic import BaseModel
-
 from ...config import _load_profile_bundle
 from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
@@ -98,14 +96,10 @@ def _bundle_to_effective(
         ) from exc
 
     reranker_enabled = _parse_profile_bool(
-        os.environ.get(
-            "RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False)
-        )
+        os.environ.get("RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False))
     )
     hybrid_enabled = _parse_profile_bool(
-        os.environ.get(
-            "RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False)
-        )
+        os.environ.get("RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False))
     )
     chunk_strategy_fallback = str(
         os.environ.get(
@@ -114,9 +108,7 @@ def _bundle_to_effective(
         )
     )
     metadata_taxonomy_mode = str(
-        os.environ.get(
-            "METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category")
-        )
+        os.environ.get("METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category"))
     )
 
     # Validate taxonomy mode against known values.
@@ -148,9 +140,7 @@ def _bundle_to_effective(
                     "hybrid_enabled": hybrid_enabled,
                 }
             ),
-            "metadata": base.metadata.model_copy(
-                update={"taxonomy_mode": metadata_taxonomy_mode}
-            ),
+            "metadata": base.metadata.model_copy(update={"taxonomy_mode": metadata_taxonomy_mode}),
         }
     )
 
@@ -279,9 +269,7 @@ class ProfileResolver:
 
         return get_default_effective_settings().rag_profile
 
-    def _read_collection_tag(
-        self, store: VectorStore, collection_name: str
-    ) -> str | None:
+    def _read_collection_tag(self, store: VectorStore, collection_name: str) -> str | None:
         """Read the ``profile`` key from collection metadata.
 
         Returns ``None`` when the collection has no metadata or no
@@ -307,10 +295,8 @@ class ProfileResolver:
 
     def _resolve_hybrid_default(self) -> str:
         """Resolve hybrid.yaml's ``default_profile`` to an operational name."""
-        bundle = _load_profile_bundle("hybrid")
-        # _load_profile_bundle already resolves hybrid → default_profile's
-        # bundle, so we need the raw hybrid.yaml to read default_profile.
-        # Re-read the raw file for the default_profile key.
+        # _load_profile_bundle resolves hybrid → default_profile's bundle,
+        # so read the raw hybrid.yaml for the default_profile key.
         try:
             from importlib.resources import files
 
@@ -323,13 +309,11 @@ class ProfileResolver:
                 default = raw.get("default_profile", "documents")
                 if default in OPERATIONAL_PROFILES:
                     return default
-        except Exception:
+        except Exception:  # noqa: S110
             pass
         return "documents"
 
-    def _validate_profile(
-        self, profile: str, tag: str | None, collection_name: str
-    ) -> None:
+    def _validate_profile(self, profile: str, tag: str | None, collection_name: str) -> None:
         """Validate the resolved profile name.
 
         Args:

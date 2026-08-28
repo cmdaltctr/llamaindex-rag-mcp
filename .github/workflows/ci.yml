@@ -1,10 +1,11 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, v3]
   pull_request:
-    branches: [main]
+    branches: [main, v3, harden-pipeline-correctness-before-calibration]
 
 jobs:
   test:
@@ -29,6 +30,8 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
 
       - name: Run tests (fast)
@@ -40,6 +43,20 @@ jobs:
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
         run: uv run --no-sync pytest -m "not slow" --tb=short -q
+
+      # Verify the default install stays torch-free (ADR-038).
+      - name: Verify default install is torch-free
+        run: |
+          set -euo pipefail
+          if ! packages="$(uv pip list)"; then
+            echo "FAIL: unable to inspect default install" >&2
+            exit 1
+          fi
+          if printf '%s\n' "$packages" | grep -qiE '^(torch|transformers)([[:space:]]|$)'; then
+            echo "FAIL: torch or transformers found in default install"
+            exit 1
+          fi
+          echo "OK: default install is torch-free"
 
       # Phase 2 (config/compose/DI layering): import-linter contracts must
       # pass — settings models stay pure data, providers are constructed
@@ -55,16 +72,184 @@ jobs:
         if: matrix.os == 'macos-latest'
         env:
           PDF_READER: liteparse
-        run: uv run --no-sync pytest -m "slow" --tb=short -q || echo "Slow tests skipped (Ollama not available in CI)"
+        # Gate strictly when an Ollama server is reachable; skip visibly
+        # otherwise. The old `|| echo` swallowed genuine slow-suite
+        # failures along with Ollama-unavailability.
+        run: |
+          if ! curl -s --max-time 5 http://localhost:11434/api/tags > /dev/null 2>&1; then
+            echo "Slow tests skipped: no Ollama server at localhost:11434"
+            exit 0
+          fi
+          uv run --no-sync pytest -m "slow" --tb=short -q
 
-  sonarcloud:
-    name: SonarCloud Scan
+  # ── Floor-resolution CI job (ADR-042) ────────────────────────────────
+  # Installs at the declared lower bounds (--resolution lowest-direct) and
+  # runs the fast test suite. This converts the floors in pyproject.toml
+  # from a comment into a tested contract. Without it they rot again on
+  # the next upgrade cycle. See raise-dependency-floors OpenSpec change.
+  #
+  # Matrix covers the base install plus every non-torch extra, because
+  # `uv sync` does not install optional dependencies unless an extra is
+  # selected — without the matrix the floors in [project.optional-dependencies]
+  # would never be exercised at their lower bounds. The torch extra is
+  # excluded here because it has its own dedicated job below (ADR-038) and
+  # must never enter the default install path.
+  floors:
+    name: Floor resolution${{ matrix.extra && format(' ({0})', matrix.extra) || '' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        extra:
+          - "" # base install, no extras
+          - hybrid
+          - pdf-pypdfium2
+          - community-leiden
+          - azure
+          - llamacpp
+          - openrouter
+          - chroma
     steps:
       # Pinned to SHA for security — actions/checkout@v7.0.0
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
-          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies at declared floors
+        # UV_LINK_MODE=copy avoids hardlinking package files from the uv
+        # cache into .venv. nltk >=3.10.3 refuses to open multiply-linked
+        # data files (CWE-59 hardening), and this job re-resolves
+        # transitive deps (unlike the frozen `test` job), so it can pick
+        # up the newer nltk release that trips that check. See TDR-008.
+        env:
+          UV_LINK_MODE: copy
+        run: uv sync --resolution lowest-direct${{ matrix.extra && format(' --extra {0}', matrix.extra) || '' }}
+
+      - name: Run tests (fast) at floors
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        # The exact skip/count manifest is a clean-base assertion. Optional
+        # extras intentionally activate additional tests, so those matrix
+        # entries exercise the suite without the base-only tripwire module.
+        run: uv run --no-sync pytest -m "not slow" --tb=short -q ${{ matrix.extra && '--ignore=tests/test_clean_base_tripwire.py' || '' }}
+
+      - name: Verify base install stays Leiden-free
+        if: matrix.extra == ''
+        run: |
+          set -euo pipefail
+          packages="$(uv pip list)"
+          if printf '%s\n' "$packages" | grep -qiE '^(leidenalg|igraph)([[:space:]]|$)'; then
+            echo "FAIL: Leiden packages found in the base installation" >&2
+            exit 1
+          fi
+          uv run --no-sync python -c "import sys; import rag_mcp.core.community; assert 'leidenalg' not in sys.modules and 'igraph' not in sys.modules"
+          echo "OK: base install uses Louvain without importing Leiden packages"
+
+  # Optional Leiden must install and pass its focused graph contracts on
+  # every supported CPython version. Both packages use abi3 wheels.
+  community-leiden-extra:
+    name: Leiden extra (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies with community-leiden extra
+        run: uv sync --frozen --extra community-leiden
+
+      - name: Run community strategy contracts
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest tests/test_community_baseline.py tests/test_community_strategies.py tests/test_strategy_registration_inventory.py --tb=short -q
+
+  # ── Torch-extra CI job (ADR-038, task 11.5) ───────────────────────────
+  # The torch backend is opt-in. Without this dedicated job it would never
+  # be exercised — the slow job has no schedule and suppresses failures
+  # with || echo. This job installs the torch extra and runs the
+  # torch-backend and cross-backend contract tests without suppression.
+  torch-extra:
+    name: Torch backend tests
+    # The full-suite codecov job is the sole coverage upload. This narrow
+    # optional-backend suite would otherwise replace the aggregate report.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies with torch extra
+        run: uv sync --extra torch
+
+      - name: Run torch-backend and cross-backend contract tests
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --tb=short -v
+
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         # Pinned to SHA for security — actions/setup-python@v6.3.0
@@ -77,7 +262,45 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
 
       - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
         run: uv sync --frozen
+
+      - name: Ruff check
+        run: uv run --no-sync ruff check .
+
+      - name: Ruff format check
+        run: uv run --no-sync ruff format --check .
+
+  codecov:
+    name: Coverage (Codecov)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies
+        # community-leiden, llamacpp, and openrouter included so patch
+        # coverage exercises the optional Leiden strategies and the
+        # OpenAILikeEmbedding adapters (their tests skipif-guard without
+        # the extra). chroma and hybrid join for the same reason: this is
+        # the sole coverage upload, and the chroma adapter plus the
+        # chroma-gated suites must count towards patch coverage of
+        # vector-store diffs. The base-only absence assertions live in
+        # the floors job instead.
+        run: uv sync --frozen --extra community-leiden --extra llamacpp --extra openrouter --extra chroma --extra hybrid
 
       - name: Run tests with coverage
         env:
@@ -87,10 +310,67 @@ jobs:
           EMBED_MODEL: nomic-embed-text
           OLLAMA_BASE_URL: http://localhost:11434
           METADATA_LLM_PROVIDER: local
-        run: uv run --no-sync pytest -m "not slow" --cov=rag_mcp --cov-report=xml
+        # This job deliberately installs optional extras to maximise coverage;
+        # the exact clean-base skip manifest is asserted in the base jobs.
+        run: uv run --no-sync pytest -m "not slow" --ignore=tests/test_clean_base_tripwire.py --cov=rag_mcp --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703
+      - name: Upload coverage to Codecov
+        # Pinned to SHA for security — codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1
+        with:
+          files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        # Pinned to SHA for security — codecov/test-results-action@v1
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Chroma-extra CI job (task 5.6, make-lancedb-default-and-isolate-chromadb) ──
+  # chromadb moved out of the base install into the optional `chroma` extra
+  # (CVE-2026-45829 quarantine). Without this dedicated job, every
+  # chroma-skipped base case (contract parameters, cloud, legacy-seeding and
+  # hybrid adapter tests) would never run. Installs the extra plus hybrid
+  # (BM25 paths), runs the fast suite, records the Chroma adapter coverage
+  # slice, and inverts the skip assertion: nothing may skip with the
+  # "chroma extra not installed" reason.
+  chroma-extra:
+    name: Chroma extra tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to SHA for security — actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up Python
+        # Pinned to SHA for security — actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        # Pinned to SHA for security — astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies with the chroma extra
+        run: uv sync --frozen --extra chroma --extra hybrid
+
+      - name: Run tests (fast) with chroma present, assert no chroma skips
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest -m "not slow" --tb=short -q -rs --cov=rag_mcp.core.vectordb.chroma --cov-branch --cov-report=term-missing 2>&1 | tee pytest_chroma_extra.log
+          if grep -q "chroma extra not installed" pytest_chroma_extra.log; then
+            echo "::error::Tests skipped with the chroma-extra reason even though the extra is installed"
+            exit 1
+          fi

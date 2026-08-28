@@ -10,8 +10,7 @@ from pathlib import Path
 import pytest
 
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
-    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/"
-    "vaswani2017_attention.pdf"
+    "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
 )
 
 

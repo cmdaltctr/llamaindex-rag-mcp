@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from conftest import connected_client
@@ -27,9 +28,7 @@ async def _ingest_fixtures(client, fixtures_dir: Path) -> None:
 async def test_search_empty_store_returns_empty(mcp_server) -> None:
     """Searching with no indexed documents must return an empty list."""
     async with connected_client(mcp_server) as client:
-        result = await client.call_tool(
-            "search_documents", {"query": "anything"}
-        )
+        result = await client.call_tool("search_documents", {"query": "anything"})
         data = _extract_result(result)
         assert data == []
 
@@ -37,9 +36,7 @@ async def test_search_empty_store_returns_empty(mcp_server) -> None:
 # ── Similarity threshold filtering ─────────────────────────────────────────
 
 
-async def test_high_threshold_filters_all(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_high_threshold_filters_all(mcp_server, fixtures_dir: Path) -> None:
     """A very high similarity_threshold should filter all results."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -53,9 +50,7 @@ async def test_high_threshold_filters_all(
         assert isinstance(data, list)
 
 
-async def test_default_threshold_includes_results(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_default_threshold_includes_results(mcp_server, fixtures_dir: Path) -> None:
     """Default threshold (0.0) should include all retrieved results."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -71,9 +66,7 @@ async def test_default_threshold_includes_results(
 # ── Rerank flag propagation ────────────────────────────────────────────────
 
 
-async def test_default_search_uses_policy_resolver(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_default_search_uses_policy_resolver(mcp_server, fixtures_dir: Path) -> None:
     """Default MCP search uses policy resolver and preserves result shape."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -88,9 +81,7 @@ async def test_default_search_uses_policy_resolver(
             assert "reranked" in r
 
 
-async def test_rerank_false_sets_flag_false(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_rerank_false_sets_flag_false(mcp_server, fixtures_dir: Path) -> None:
     """Explicit rerank=False still preserves the un-reranked path."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -105,9 +96,7 @@ async def test_rerank_false_sets_flag_false(
             assert r["reranked"] is False
 
 
-async def test_rerank_enabled_sets_flag(
-    mcp_server, fixtures_dir: Path
-) -> None:
+async def test_rerank_enabled_sets_flag(mcp_server, fixtures_dir: Path) -> None:
     """With rerank=True, the reranked flag reflects actual reranker state."""
     async with connected_client(mcp_server) as client:
         await _ingest_fixtures(client, fixtures_dir)
@@ -134,11 +123,35 @@ class TestPersistentRerankFailureFallback:
     raise; it returns un-reranked results and emits a warning.
     """
 
+    def setup_method(self) -> None:
+        """Clear the process-wide model cache before each test.
+
+        Earlier tests in this module (e.g. ``test_rerank_enabled_sets_flag``)
+        exercise the un-injected ``search()`` path with no mocking, which
+        may populate ``_MODEL_CACHE`` with a real successful load. Without
+        this reset, the escalation test below would hit that cache instead
+        of the patched failing import and never see a failure at all.
+        """
+        from rag_mcp.core.retrieval.reranker import reset_model_cache
+
+        reset_model_cache()
+
+    def teardown_method(self) -> None:
+        """Clear the process-wide model cache (task 1.13).
+
+        ``test_transient_failure_retries_then_succeeds`` populates
+        ``_MODEL_CACHE`` via ``_load_model()`` directly; without this reset
+        the loaded session leaks into later tests, which becomes
+        load-bearing once ``_FAILURE_STATE`` shares the same reset hook.
+        """
+        from rag_mcp.core.retrieval.reranker import reset_model_cache
+
+        reset_model_cache()
+
     async def test_persistent_failure_falls_back_without_crash(
         self, mcp_server, fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A permanently failing reranker yields un-reranked results + warning."""
-        import logging
 
         import rag_mcp.core.retrieval.reranker as reranker_mod
         from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
@@ -160,7 +173,6 @@ class TestPersistentRerankFailureFallback:
         import rag_mcp.transports.mcp as server
 
         original_search = server.search
-        from rag_mcp.core.retrieval import search as _search
 
         def _search_with_failing_reranker(*args, **kwargs):
             kwargs["reranker"] = failing
@@ -183,6 +195,55 @@ class TestPersistentRerankFailureFallback:
                 assert "reranked" in r
                 assert r["reranked"] is False
 
+    async def test_escalation_survives_instance_churn_via_search(
+        self,
+        fixtures_dir: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Escalation fires through the un-injected path (task 1.11).
+
+        The test above injects a single failing instance via DI, so its
+        instance state would accumulate across calls even if the counter
+        were wrongly scoped to ``self`` — a green test over a broken
+        production path (the exact ADR-029 trap). This test calls the
+        core ``search()`` with ``reranker`` left un-injected so it builds
+        a fresh ``CrossEncoderReranker()`` on every call, proving the
+        counter survives instance churn.
+        """
+        import builtins
+        import logging
+
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import search
+
+        await ingest_path_async(str(fixtures_dir), collection_name="escalation_churn")
+
+        real_import = builtins.__import__
+
+        def _selective_import(name, *args, **kwargs):
+            if name == "onnxruntime":
+                raise ImportError("persistent onnx failure")
+            return real_import(name, *args, **kwargs)
+
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+            with patch("builtins.__import__", side_effect=_selective_import):
+                for _ in range(3):
+                    search(
+                        "capital",
+                        collection_name="escalation_churn",
+                        rerank=True,
+                    )
+
+        load_failure_records = [
+            r for r in caplog.records if "Failed to load reranker model" in r.getMessage()
+        ]
+        assert len(load_failure_records) == 3
+        assert [r.levelno for r in load_failure_records] == [
+            logging.WARNING,
+            logging.WARNING,
+            logging.ERROR,
+        ]
+
     def test_transient_failure_retries_then_succeeds(self) -> None:
         """A transient load failure must retry on the next call and recover."""
         from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
@@ -194,13 +255,18 @@ class TestPersistentRerankFailureFallback:
 
         mock_session = MagicMock()
         mock_tokenizer = MagicMock()
-        mock_tokenizer.model_max_length = 1000000
 
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]):
+        with patch(
+            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+        ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
-                with patch("transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer):
+                with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
-                        reranker._load_model()
+                        with patch(
+                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            return_value=512,
+                        ):
+                            reranker._load_model()
 
         # Retry succeeded: model loaded, error cleared, cache populated.
         assert reranker._loaded is True
@@ -215,7 +281,7 @@ class TestThresholdScaling:
 
     When the reranker is active, sigmoid-normalised scores occupy a much
     lower range than cosine similarity.  The search() function should
-    scale the threshold down by 30× automatically to avoid over-filtering.
+    scale the threshold down by 30x automatically to avoid over-filtering.
     """
 
     def test_no_rerank_threshold_unchanged(self) -> None:
@@ -225,7 +291,7 @@ class TestThresholdScaling:
         assert _effective_threshold(0.3, rerank=False) == 0.3
 
     def test_rerank_threshold_scaled_down(self) -> None:
-        """With reranking, the threshold must be scaled down 30×."""
+        """With reranking, the threshold must be scaled down 30x."""
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=True) == pytest.approx(0.01)
@@ -246,16 +312,14 @@ class TestThresholdScaling:
         """A moderate threshold (0.5) should become ~0.0167 with rerank."""
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
-        assert _effective_threshold(0.5, rerank=True) == pytest.approx(
-            0.5 / 30
-        )
+        assert _effective_threshold(0.5, rerank=True) == pytest.approx(0.5 / 30)
 
     def test_colosseum_score_survives_threshold(self) -> None:
         """The Colosseum query (score 0.015) must survive threshold 0.3.
 
         This was the motivating case: the reranker correctly identified
         the Colosseum chunk but gave it a low sigmoid score (0.015).
-        With 30× scaling, threshold 0.3 → 0.01, so 0.015 passes.
+        With 30x scaling, threshold 0.3 → 0.01, so 0.015 passes.
         """
         from rag_mcp.core.retrieval.policy import _effective_threshold
 
@@ -263,16 +327,277 @@ class TestThresholdScaling:
         assert 0.015 >= threshold  # Colosseum score should pass
 
 
+# ── Helpers for §2/§3 pipeline-level tests ──────────────────────────────────
+
+
+def _fixed_dense_rows(rows: list[dict]):
+    """Return a fake ``_dense_query_rows`` callable yielding fixed rows."""
+
+    def _fake(store, collection_name, query, fetch_k, metadata_filter=None):
+        return [dict(r) for r in rows]
+
+    return _fake
+
+
+def _patch_dense(monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> None:
+    """Replace pipeline's "dense" strategy resolution with fixed rows.
+
+    The registry caches resolved callables by name (``registry.py::get``),
+    so patching ``rag_mcp.core.retrieval.dense._dense_query_rows`` after
+    the first real resolution elsewhere in the suite would be a no-op.
+    Patching ``pipeline._retrieval_get`` itself sidesteps that cache.
+    """
+    import rag_mcp.core.retrieval.pipeline as pipeline_mod
+
+    real_get = pipeline_mod._retrieval_get
+    monkeypatch.setattr(
+        pipeline_mod,
+        "_retrieval_get",
+        lambda name: _fixed_dense_rows(rows) if name == "dense" else real_get(name),
+    )
+
+
+def _mock_reranker_instance(*, fails: bool, logit: float = -3.0):
+    """Build a loaded ``CrossEncoderReranker`` whose inference succeeds or fails."""
+    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+
+    reranker = CrossEncoderReranker()
+    mock_session = MagicMock()
+    if fails:
+        mock_session.run.side_effect = RuntimeError("cross-encoder exploded")
+    else:
+        mock_session.run.return_value = [np.array([[logit]])]
+    mock_tokenizer = MagicMock()
+    mock_tokenizer.return_value = {
+        "input_ids": [[1, 2]],
+        "attention_mask": [[1, 1]],
+    }
+    reranker._session = mock_session
+    reranker._tokenizer = mock_tokenizer
+    reranker._loaded = True
+    return reranker
+
+
+# ── rerank_reason diagnostics (§2) ───────────────────────────────────────────
+
+
+class TestRerankReasonDiagnostics:
+    """Tests for surfacing the reranker's own failure reason in diagnostics."""
+
+    def test_failing_reranker_overrides_policy_rerank_reason(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A failing reranker's own reason replaces the policy string (task 2.3)."""
+        from rag_mcp.core.retrieval import search
+
+        _patch_dense(
+            monkeypatch,
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.9,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
+        )
+        failing = _mock_reranker_instance(fails=True)
+        fake_store = MagicMock()
+        fake_store.count.return_value = 1
+
+        results = search(
+            "query",
+            collection_name="ignored",
+            store=fake_store,
+            rerank=True,
+            reranker=failing,
+            include_diagnostics=True,
+        )
+
+        assert len(results) == 1
+        assert "inference failed" in results[0]["rerank_reason"]
+        assert "cross-encoder exploded" in results[0]["rerank_reason"]
+        # Must not be the policy resolver's string.
+        assert "explicit rerank=True override" not in results[0]["rerank_reason"]
+
+    def test_include_diagnostics_false_leaks_no_new_keys(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """include_diagnostics=False keeps result shape unchanged (task 2.4).
+
+        Exercised with a *failing* reranker specifically — the override
+        wiring must not leak ``rerank_reason`` (or any other new key)
+        into the public result dict when diagnostics are off, even
+        though the reranker did set ``last_failure_reason`` internally.
+        """
+        from rag_mcp.core.retrieval import search
+
+        _patch_dense(
+            monkeypatch,
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.9,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
+        )
+        failing = _mock_reranker_instance(fails=True)
+        fake_store = MagicMock()
+        fake_store.count.return_value = 1
+
+        results = search(
+            "query",
+            collection_name="ignored",
+            store=fake_store,
+            rerank=True,
+            reranker=failing,
+            include_diagnostics=False,
+        )
+
+        assert len(results) == 1
+        assert "rerank_reason" not in results[0]
+
+
+# ── Threshold follows rerank outcome, not intent (§3) ───────────────────────
+
+
+class TestThresholdFollowsRerankOutcome:
+    """Tests that the ÷30 threshold scaling follows actual rerank success."""
+
+    def test_successful_rerank_applies_scaled_threshold(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Successful reranking still applies the ÷30 threshold (task 3.2)."""
+        from rag_mcp.core.retrieval import search
+
+        # score=0.2 dense/raw would fail an unscaled 0.3 threshold, but the
+        # reranker replaces it with a sigmoid score (logit -3.0 -> ~0.047),
+        # which survives the scaled threshold (0.3 / 30 = 0.01).
+        _patch_dense(
+            monkeypatch,
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
+        )
+        succeeding = _mock_reranker_instance(fails=False, logit=-3.0)
+        fake_store = MagicMock()
+        fake_store.count.return_value = 1
+
+        results = search(
+            "query",
+            collection_name="ignored",
+            store=fake_store,
+            rerank=True,
+            reranker=succeeding,
+            similarity_threshold=0.3,
+        )
+
+        assert len(results) == 1
+        assert results[0]["reranked"] is True
+
+    def test_failed_rerank_applies_unscaled_threshold(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A failed reranker filters at the caller's raw threshold (task 3.3).
+
+        Regression guard for the bug this change fixes: before the fix,
+        ``_effective_threshold`` was called with the *requested* rerank
+        intent rather than the outcome, so a failed rerank kept scoring
+        raw cosine similarity while filtering at the ÷30-scaled threshold
+        — about 30x too permissive.
+        """
+        from rag_mcp.core.retrieval import search
+
+        _patch_dense(
+            monkeypatch,
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
+        )
+        failing = _mock_reranker_instance(fails=True)
+        fake_store = MagicMock()
+        fake_store.count.return_value = 1
+
+        results = search(
+            "query",
+            collection_name="ignored",
+            store=fake_store,
+            rerank=True,
+            reranker=failing,
+            similarity_threshold=0.3,
+        )
+
+        # Raw score 0.2 < unscaled threshold 0.3 -> filtered out.
+        assert results == []
+
+    def test_rerank_false_applies_unscaled_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """rerank=False applies the unscaled threshold, unchanged (task 3.4)."""
+        from rag_mcp.core.retrieval import search
+
+        _patch_dense(
+            monkeypatch,
+            [
+                {
+                    "id": "1",
+                    "source": "f.md",
+                    "page_label": None,
+                    "text": "hello world",
+                    "score": 0.2,
+                    "metadata": {},
+                    "reranked": False,
+                }
+            ],
+        )
+        fake_store = MagicMock()
+        fake_store.count.return_value = 1
+
+        results = search(
+            "query",
+            collection_name="ignored",
+            store=fake_store,
+            rerank=False,
+            similarity_threshold=0.3,
+        )
+
+        # Raw score 0.2 < unscaled threshold 0.3 -> filtered out.
+        assert results == []
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
 def _extract_result(result):
-    """Extract the data payload from a FastMCP CallToolResult."""
+    """Extract the data payload from an MCPServer CallToolResult."""
     import json
+
     from mcp.types import TextContent
 
-    if hasattr(result, "structuredContent") and result.structuredContent:
-        return result.structuredContent.get("result", result.structuredContent)
+    if hasattr(result, "structured_content") and result.structured_content:
+        return result.structured_content.get("result", result.structured_content)
 
     if result.content and isinstance(result.content[0], TextContent):
         return json.loads(result.content[0].text)
@@ -297,7 +622,6 @@ class TestCollectionAwareSearch:
 
         # Search "research" only
         results = search("test", collection_name="research")
-        sources = {r["source"] for r in results}
 
         # sample.txt should be in results, sample.md should not
         # (they have different file_name metadata)
@@ -425,36 +749,36 @@ class TestListCollections:
             assert "document_count" in c
             assert "chunk_count" in c
 
-    def test_list_collections_scans_multiple_metadata_pages(self, monkeypatch):
-        """Collection document counts must include all metadata pages."""
-        import chromadb
-        import rag_mcp.config as _config
-        from rag_mcp.config import get_settings as _gs
-        from rag_mcp.core.retrieval import list_collections
+    def test_list_collections_scans_multiple_metadata_pages(self, tmp_path):
+        """Collection document counts must include all metadata pages.
 
+        Task 5.1 rewrite: seeds through the real ingestion path
+        (store-agnostic) instead of a direct ChromaDB client, so the
+        pagination contract runs against the default tmp-path LanceDB
+        store in the base install and on Chroma in the chroma-extra job.
+        """
+        from asyncio import run as asyncio_run
+
+        from rag_mcp.core.ingestion import ingest_path_async
+        from rag_mcp.core.retrieval import list_collections
         from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
-        db = chromadb.PersistentClient(path=_gs().chroma_persist_dir)
-        collection = db.get_or_create_collection("paged_collection_stats")
-        collection.add(
-            ids=["1", "2", "3", "4", "5"],
-            documents=["one", "two", "three", "four", "five"],
-            embeddings=[[float(i)] * 384 for i in range(5)],
-            metadatas=[
-                {"file_path": "a.txt"},
-                {"file_path": "a.txt"},
-                {"file_path": "b.txt"},
-                {"file_path": "c.txt"},
-                {"file_path": "c.txt"},
-            ],
-        )
+        total_chunks = 0
+        for name in ("a.txt", "b.txt", "c.txt"):
+            doc = tmp_path / name
+            doc.write_text(f"Collection stats document {name} sentence. " * 12)
+            result = asyncio_run(
+                ingest_path_async(str(doc), collection_name="paged_collection_stats")
+            )
+            assert result["status"] == "ok"
+            total_chunks += result["chunks_created"]
+        # Force more than one scan page at page size 2.
+        assert total_chunks > 2
 
-        stats = {
-            c["name"]: c for c in list_collections()
-        }["paged_collection_stats"]
-        assert stats["chunk_count"] == 5
+        stats = {c["name"]: c for c in list_collections()}["paged_collection_stats"]
+        assert stats["chunk_count"] == total_chunks
         assert stats["document_count"] == 3
 
 
@@ -472,7 +796,9 @@ class TestScoreConsistency:
     """
 
     async def test_filtered_and_unfiltered_scores_match(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
         from rag_mcp.core.settings import (
@@ -494,7 +820,8 @@ class TestScoreConsistency:
             "neural networks train on large datasets. LLMs use embeddings."
         )
         await ingest_path_async(
-            str(ai_file), collection_name="score_consistency",
+            str(ai_file),
+            collection_name="score_consistency",
         )
 
         unfiltered = search(
@@ -515,7 +842,9 @@ class TestScoreConsistency:
         assert unfiltered, "expected at least one chunk from unfiltered path"
         assert filtered, "expected at least one chunk from filtered path"
 
-        keyed = lambda r: (r["source"], r.get("page_label"), r["text"])
+        def keyed(r):
+            return (r["source"], r.get("page_label"), r["text"])
+
         unfiltered_by_chunk = {keyed(r): r["score"] for r in unfiltered}
 
         for r in filtered:
@@ -527,7 +856,9 @@ class TestScoreConsistency:
             assert abs(r["score"] - unfiltered_by_chunk[key]) < 1e-6
 
     async def test_threshold_consistent_across_paths(
-        self, tmp_path, monkeypatch,
+        self,
+        tmp_path,
+        monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
         from rag_mcp.core.settings import (
@@ -549,7 +880,8 @@ class TestScoreConsistency:
             "embeddings power large language models."
         )
         await ingest_path_async(
-            str(ai_file), collection_name="threshold_consistency",
+            str(ai_file),
+            collection_name="threshold_consistency",
         )
 
         # Pick a threshold mid-way through the unfiltered scores.
@@ -585,11 +917,12 @@ class TestScoreConsistency:
         for r in filtered_filt:
             assert r["score"] >= threshold
 
-    def test_distance_to_score_canonical_formula(self) -> None:
-        """``_distance_to_score`` follows ``1 / (1 + d)`` exactly."""
-        from rag_mcp.core.retrieval.dense import _distance_to_score
+    def test_l2_to_score_canonical_formula_lives_at_store_boundary(self) -> None:
+        """The adapter helper follows ``1 / (1 + d)`` and rejects omissions."""
+        from rag_mcp.core.vectordb.score import canonical_score_from_l2
 
-        assert _distance_to_score(0.0) == pytest.approx(1.0)
-        assert _distance_to_score(1.0) == pytest.approx(0.5)
-        assert _distance_to_score(3.0) == pytest.approx(0.25)
-        assert _distance_to_score(None) == 0.0
+        assert canonical_score_from_l2(0.0, backend="test") == pytest.approx(1.0)
+        assert canonical_score_from_l2(1.0, backend="test") == pytest.approx(0.5)
+        assert canonical_score_from_l2(3.0, backend="test") == pytest.approx(0.25)
+        with pytest.raises(ValueError, match="no L2 distance"):
+            canonical_score_from_l2(None, backend="test")

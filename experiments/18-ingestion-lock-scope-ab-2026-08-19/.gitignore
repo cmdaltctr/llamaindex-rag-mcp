@@ -1,0 +1,5 @@
+output/corpus_*/
+output/chroma_*/
+output/smoke/
+analysis.ipynb
+__pycache__/

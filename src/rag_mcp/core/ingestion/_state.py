@@ -36,10 +36,5 @@ def get_embed_semaphore(concurrency: int) -> threading.BoundedSemaphore:
         return sem
 
 
-def reset_embed_semaphores() -> None:
-    """Clear the cached limiters (used by tests)."""
-    with _embed_semaphores_lock:
-        _embed_semaphores.clear()
-
 # ── Shutdown flag for graceful SIGINT handling ───────────────────────────
 shutdown_requested = threading.Event()

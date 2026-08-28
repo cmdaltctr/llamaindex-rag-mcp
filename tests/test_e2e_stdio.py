@@ -26,24 +26,30 @@ def test_stdio_server_lists_tools() -> None:
 
     try:
         # MCP initialise handshake
-        _send(proc, {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-11-25",
-                "capabilities": {},
-                "clientInfo": {"name": "test", "version": "0.0.1"},
+        _send(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-11-25",
+                    "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "0.0.1"},
+                },
             },
-        })
+        )
 
         # List tools
-        response = _send(proc, {
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/list",
-            "params": {},
-        })
+        response = _send(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            },
+        )
 
         tool_names = {t["name"] for t in response["result"]["tools"]}
         assert tool_names == {
@@ -52,6 +58,8 @@ def test_stdio_server_lists_tools() -> None:
             "list_indexed_documents",
             "list_collections",
             "delete_documents",
+            "get_codebase_map",
+            "change_collection_profile",
         }
     finally:
         proc.terminate()

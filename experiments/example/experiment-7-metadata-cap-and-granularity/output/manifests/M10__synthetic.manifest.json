@@ -1,0 +1,157 @@
+{
+  "cell_id": "M10__synthetic",
+  "chunker": {
+    "effective": "sentence",
+    "fallback_reason": null,
+    "requested": "sentence"
+  },
+  "chunking_settings": {
+    "chunk_overlap": 100,
+    "chunk_size": 512
+  },
+  "corpus_identity": "sha256:77afe91a344cf982aae00c96cff93893c152386942c090017e81dc07cea8f029",
+  "dependency_lock_hash": "3a225230a6ebe0f7513a4b4191b6158e1435135158a22ee4a63844cec4c5f77d",
+  "document": "synthetic",
+  "document_backend": {
+    "effective": null,
+    "requested": null
+  },
+  "embedding": {
+    "effective_provider": null,
+    "model": null,
+    "requested_provider": null
+  },
+  "experiment_id": "example-experiment-7-metadata-cap-and-granularity",
+  "fake_llm_calls": {
+    "context_sha256_set": [
+      "00832cd850d89cd07577c425da65d07a7e075eb6347db9691ff832958aca10b2",
+      "0caeb0c01f1a4e0a8ae14b447a66a404946501d54e9428b4ec86d07807b58cee",
+      "0d909eadf8b8aca50f691667999757a30940f0c74573c0b1ae9ac9ecb9ecd726",
+      "10fc6d1412a29e92ab4e09387b569c2aec3241cf5b25e80c5cf541ccd1f4ef50",
+      "1ff07fb0867eea488697a8081ed0f647c2d24e5a07968ebbb2b663245ace2c88",
+      "286f3d70eb8ba4eed7337f4f60cfc77b1f60cf253078e71ac9170a68d980fb50",
+      "2876aed5d3bcfd75a17a98bdf165c7cf4bb2bbf8b81b6bb8378c41181440c1e5",
+      "5104ebb54944b82ef7489d7dca8a5f594684b47197ef22c065cd98bd08eb123c",
+      "55128ece67c508f001ca960456a9d2cc9e6ca94cad7ca84e7509b4cef994cbe6",
+      "57f65d9446c23b92087c388f7411c7847d65141ea489fd98f2cf0bbe7aae81f6",
+      "6410ce4e1a9de4df9a5637d56b42b7c8cccd514a017057927ede2ab89e7bb8ba",
+      "6cfb9435f2143c18a1e7be71f21e6e47e7d7096d3a5f714de2c67e2a19cc40ba",
+      "78b71e10e39e8415844aeb19b91f292c458791dbf1e8cc49e90c55bf1964199c",
+      "7afa16fe24856af082734db77bed23c3ae1348866fa7504398f9b243b8474c32",
+      "8356d2eb04ae5796b636e8c2ae52415def4166838f4bcf5f4ede8bcd5534eae2",
+      "8c41513a5e7a0a3b7b723f94d9f39418ef1c58f2830f2b35fcb97a18d87fc66f",
+      "8c4961cbbafb102e751685c450c3fba14f61831e4fe68c2980f5f6b1484d8e12",
+      "954ec89f3bfae668e5a406f5cdc5d338ee6e6ac1c47b7aa54e056b3e66f85161",
+      "a52a1d66dca6faafff41d45bee69a27844f9a9d829e71f8f9b03d7e3305aa9f3",
+      "a7e6a66e598dd5261395fdafb3e7240fceb7794591fa0ea8e4fb28c03cd6a5d8",
+      "b0ab7abf7fcc111845c859aa1984ffd0d1ae6371b95d7cf9dccc9f9688819f48",
+      "bb6b6b6dccd139b8898fbdf2e38783204f3c29803553d1a37416ee36d9471984",
+      "bfcfb2326dc289b2aa4c65cab8cdf7090e1fe263c007c8759d905875c35d0e3e",
+      "c6417baf661d611747dda410fc07c5cc8c3df485712ddfb41afcb3792d66d30e",
+      "d9402d5dc1c4a25fe6b9dafa83aca772b70e03cfca0f478f2e9120bcd6ba48b3",
+      "f7f8776fc5a2e7b9c8231a316c62b174111353e4a7b78bf5f8590c04c2ef9ed8"
+    ],
+    "kinds": {
+      "keyword": [
+        "0000",
+        "0003",
+        "0006",
+        "0009",
+        "0012",
+        "0015",
+        "0018",
+        "0021",
+        "0024",
+        "0027"
+      ],
+      "summary": [
+        "0000",
+        "0003",
+        "0006",
+        "0009",
+        "0012",
+        "0015",
+        "0018",
+        "0021",
+        "0024",
+        "0027"
+      ],
+      "title_combine": [
+        "0000"
+      ],
+      "title_node": [
+        "0000",
+        "0003",
+        "0006",
+        "0009",
+        "0012"
+      ]
+    },
+    "total_calls": 26
+  },
+  "git_dirty": true,
+  "max_chunks": 10,
+  "metadata_granularity": "file_aggregate",
+  "null_reasons": {
+    "document_backend.effective": "document_backend mapping not provided",
+    "document_backend.requested": "document_backend mapping not provided",
+    "embedding.effective_provider": "embedding mapping not provided",
+    "embedding.model": "embedding mapping not provided",
+    "embedding.requested_provider": "embedding mapping not provided",
+    "qrels_identity": "qrels_path not provided",
+    "query_set_identity": "query_set_path not provided",
+    "reranker.device": "reranker object not provided",
+    "reranker.effective_backend": "reranker object not provided",
+    "reranker.execution_provider": "reranker object not provided",
+    "reranker.model": "reranker object not provided",
+    "reranker.requested_backend": "reranker_requested_backend parameter not provided",
+    "reranker.variant_or_precision": "reranker object not provided",
+    "retrieval.fetch_k": "retrieval mapping not provided",
+    "retrieval.hybrid": "retrieval mapping not provided",
+    "retrieval.rerank_policy_reason": "retrieval mapping not provided",
+    "retrieval.rrf_k": "retrieval mapping not provided",
+    "retrieval.threshold": "retrieval mapping not provided",
+    "retrieval.threshold_score_kind": "retrieval mapping not provided",
+    "retrieval.top_k": "retrieval mapping not provided",
+    "sparse.cache_namespace": "sparse mapping not provided",
+    "sparse.effective_backend": "sparse mapping not provided",
+    "sparse.requested_backend": "sparse mapping not provided",
+    "vector_store.backend": "vector_store mapping not provided",
+    "vector_store.index_identity": "vector_store mapping not provided",
+    "vector_store.mode": "vector_store mapping not provided",
+    "vector_store.score_kind": "vector_store mapping not provided"
+  },
+  "protocol_version": "1.0",
+  "qrels_identity": null,
+  "query_set_identity": null,
+  "repo_commit": "c475852cf195658ce6af8654e11e07dce4c39fec",
+  "reranker": {
+    "device": null,
+    "effective_backend": null,
+    "execution_provider": null,
+    "model": null,
+    "requested_backend": null,
+    "variant_or_precision": null
+  },
+  "retrieval": {
+    "fetch_k": null,
+    "hybrid": null,
+    "rerank_policy_reason": null,
+    "rrf_k": null,
+    "threshold": null,
+    "threshold_score_kind": null,
+    "top_k": null
+  },
+  "sparse": {
+    "cache_namespace": null,
+    "effective_backend": null,
+    "requested_backend": null
+  },
+  "timestamp_utc": "2026-08-19T20:46:42Z",
+  "vector_store": {
+    "backend": null,
+    "index_identity": null,
+    "mode": null,
+    "score_kind": null
+  }
+}

@@ -7,8 +7,10 @@ flag handling, progress reporting, and error messages.
 from __future__ import annotations
 
 import json
+import os
 import re
 import signal
+import subprocess
 import sys
 from io import StringIO
 from pathlib import Path
@@ -17,17 +19,32 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 from rag_mcp.transports.cli import (
-    _sanitise_display_name,
     _print_ollama_error,
+    _sanitise_display_name,
     app,
 )
 from rag_mcp.transports.cli.ingest import _make_plain_callback
-from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
 
 runner = CliRunner()
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+@pytest.fixture(autouse=True)
+def _reset_runtime_details_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reset the CLI runtime-details logging flag per test.
+
+    Task 5.3 companion: the composition root now re-runs per test, so a
+    test that enables runtime-details logging would otherwise leak INFO
+    lines into every later command's captured output and break the
+    --json parsers. In production the CLI is a one-shot process, so the
+    module-level flag never survives a command boundary.
+    """
+    import rag_mcp.transports.cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_runtime_details_enabled", False)
 
 
 def _strip_ansi(text: str) -> str:
@@ -54,6 +71,36 @@ class TestEntryPoint:
         assert "ingest" in result.output
         assert "search" in result.output
         assert "list" in result.output
+
+    def test_help_does_not_initialise_runtime(self) -> None:
+        """--help does not construct embedding or vector-store dependencies."""
+        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+            result = runner.invoke(app, ["--help"], env={"EMBED_PROVIDER": "not-a-provider"})
+
+        assert result.exit_code == 0
+        mock_setup.assert_not_called()
+
+    def test_help_accepts_invalid_provider_in_fresh_process(self) -> None:
+        """--help does not validate providers before Click handles the request."""
+        result = subprocess.run(
+            [str(Path(sys.executable).with_name("rag-mcp")), "--help"],
+            env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr[-500:]
+        assert "ingest" in result.stdout
+
+    def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
+        """Invalid provider configuration fails before the server starts."""
+        with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+            result = runner.invoke(app, [], env={"EMBED_PROVIDER": "not-a-provider"})
+
+        assert result.exit_code == 1
+        assert "EMBED_PROVIDER" in result.output
+        assert "Traceback" not in result.output
+        mock_run.assert_not_called()
 
     def test_unknown_subcommand(self) -> None:
         """Unknown subcommand produces a non-zero exit code."""
@@ -120,12 +167,13 @@ class TestIngestCLI:
     """Tests for the ingest subcommand."""
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_single_txt_file(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
-        """Ingesting a valid .txt file exits 0 with success message."""
-        result = runner.invoke(app, ["ingest", str(sample_txt)])
+    def test_ingest_single_txt_file(self, mock_signal: MagicMock, sample_txt: Path) -> None:
+        """Ingesting a valid .txt file initialises runtime and exits 0."""
+        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+            result = runner.invoke(app, ["ingest", str(sample_txt)])
+
         assert result.exit_code == 0
+        mock_setup.assert_called_once()
         # Rich renders to console (stderr), but CliRunner captures output
         # The success message should appear somewhere
         output = result.output or ""
@@ -138,9 +186,7 @@ class TestIngestCLI:
         assert result.exit_code == 1
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_unsupported_extension(
-        self, mock_signal: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_ingest_unsupported_extension(self, mock_signal: MagicMock, tmp_path: Path) -> None:
         """Unsupported file extension exits with error."""
         bad_file = tmp_path / "test.xyz"
         bad_file.write_text("content")
@@ -148,9 +194,7 @@ class TestIngestCLI:
         assert result.exit_code != 0
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_json_output(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_json_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--json flag produces valid JSON with expected keys."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
         assert result.exit_code == 0
@@ -170,36 +214,24 @@ class TestIngestCLI:
 
     def test_ingest_workers_option_removed(self, sample_txt: Path) -> None:
         """--workers is no longer accepted by the ingest command."""
-        result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--workers", "4"]
-        )
+        result = runner.invoke(app, ["ingest", str(sample_txt), "--workers", "4"])
         assert result.exit_code != 0
         assert "No such option" in result.output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_with_chunk_size(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_with_chunk_size(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--chunk-size override is accepted."""
-        result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--chunk-size", "128"]
-        )
+        result = runner.invoke(app, ["ingest", str(sample_txt), "--chunk-size", "128"])
         assert result.exit_code == 0
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_with_chunk_overlap(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_with_chunk_overlap(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--chunk-overlap override is accepted."""
-        result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--chunk-overlap", "32"]
-        )
+        result = runner.invoke(app, ["ingest", str(sample_txt), "--chunk-overlap", "32"])
         assert result.exit_code == 0
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_success_message(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_success_message(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Success output contains indexed file count."""
         result = runner.invoke(app, ["ingest", str(sample_txt)])
         assert result.exit_code == 0
@@ -208,9 +240,7 @@ class TestIngestCLI:
         assert "1 file(s)" in output or "Indexed" in output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_exit_code_success(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_exit_code_success(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Valid file produces exit code 0."""
         result = runner.invoke(app, ["ingest", str(sample_txt)])
         assert result.exit_code == 0
@@ -252,16 +282,12 @@ class TestSearchCLI:
         assert result.output.strip() == "[]"
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_search_json_results(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_search_json_results(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Search after ingest returns valid JSON results."""
         # First ingest
         runner.invoke(app, ["ingest", str(sample_txt)])
         # Then search
-        result = runner.invoke(
-            app, ["search", "capital of France", "--json"]
-        )
+        result = runner.invoke(app, ["search", "capital of France", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert isinstance(data, list)
@@ -273,16 +299,12 @@ class TestSearchCLI:
 
     def test_search_with_top_k(self) -> None:
         """--top-k flag is accepted."""
-        result = runner.invoke(
-            app, ["search", "query", "--top-k", "3"]
-        )
+        result = runner.invoke(app, ["search", "query", "--top-k", "3"])
         assert result.exit_code == 0
 
     def test_search_with_threshold(self) -> None:
         """--threshold flag is accepted."""
-        result = runner.invoke(
-            app, ["search", "query", "--threshold", "0.5"]
-        )
+        result = runner.invoke(app, ["search", "query", "--threshold", "0.5"])
         assert result.exit_code == 0
 
     def test_search_with_rerank(self) -> None:
@@ -295,9 +317,7 @@ class TestSearchCLI:
             CrossEncoderReranker._instance = None
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_search_rich_table_output(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_search_rich_table_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Default (non-JSON) search renders a table with column headers."""
         runner.invoke(app, ["ingest", str(sample_txt)])
         result = runner.invoke(app, ["search", "capital"])
@@ -338,9 +358,7 @@ class TestListCLI:
         assert result.output.strip() == "[]"
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_list_json_with_docs(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_list_json_with_docs(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """List --json after ingest shows documents with source and chunks."""
         runner.invoke(app, ["ingest", str(sample_txt)])
         result = runner.invoke(app, ["list", "--json"])
@@ -353,9 +371,7 @@ class TestListCLI:
             assert "chunks" in doc
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_list_rich_table_output(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_list_rich_table_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Default (non-JSON) list renders table with Source and Chunks."""
         runner.invoke(app, ["ingest", str(sample_txt)])
         result = runner.invoke(app, ["list"])
@@ -364,9 +380,7 @@ class TestListCLI:
         assert "Chunks" in result.output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_list_shows_total(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_list_shows_total(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """List output includes document and chunk total summary."""
         runner.invoke(app, ["ingest", str(sample_txt)])
         result = runner.invoke(app, ["list"])
@@ -404,10 +418,11 @@ class TestProgressReporting:
 
     def test_rich_progress_callback_structure(self) -> None:
         """Rich progress callback creates and updates tasks correctly."""
-        import asyncio
         from unittest.mock import AsyncMock
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
@@ -425,13 +440,9 @@ class TestProgressReporting:
             assert callable(call_kwargs.kwargs["progress_callback"])
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_json_suppresses_progress(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_json_suppresses_progress(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--json mode does not include progress messages in output."""
-        result = runner.invoke(
-            app, ["ingest", str(sample_txt), "--json"]
-        )
+        result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
         assert result.exit_code == 0
         assert "Reading file" not in result.output
         assert "Embedding" not in result.output
@@ -446,50 +457,52 @@ class TestIngestErrorHandling:
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_generic_exception_ollama(
-        self, mock_signal: MagicMock
-    ) -> None:
+    def test_ingest_generic_exception_ollama(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'ollama' in message triggers Ollama error."""
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.side_effect = Exception("ollama service unavailable")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_generic_exception_embed(
-        self, mock_signal: MagicMock
-    ) -> None:
+    def test_ingest_generic_exception_embed(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'embed' in message triggers Ollama error."""
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.side_effect = Exception("embed operation failed")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_generic_exception_other(
-        self, mock_signal: MagicMock
-    ) -> None:
+    def test_ingest_generic_exception_other(self, mock_signal: MagicMock) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.side_effect = Exception("Something went wrong")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_interrupt_message_plain(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_interrupt_message_plain(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt during ingest shows interruption message."""
         from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         # Simulate: ingest succeeds but shutdown was requested
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -505,13 +518,13 @@ class TestIngestErrorHandling:
                 _shutdown_requested.clear()
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_interrupt_message_json(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_interrupt_message_json(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt during ingest with --json outputs JSON with interrupted flag."""
         from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -519,9 +532,7 @@ class TestIngestErrorHandling:
             }
             _shutdown_requested.set()
             try:
-                result = runner.invoke(
-                    app, ["ingest", str(sample_txt), "--json"]
-                )
+                result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
                 assert result.exit_code == 130
                 data = json.loads(result.output)
                 assert data.get("interrupted") is True
@@ -529,13 +540,13 @@ class TestIngestErrorHandling:
                 _shutdown_requested.clear()
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_interrupt_with_chunks(
-        self, mock_signal: MagicMock, sample_txt: Path
-    ) -> None:
+    def test_ingest_interrupt_with_chunks(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt message mentions chunks written before interruption."""
         from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -550,15 +561,13 @@ class TestIngestErrorHandling:
                 _shutdown_requested.clear()
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_connection_error_json(
-        self, mock_signal: MagicMock
-    ) -> None:
+    def test_ingest_connection_error_json(self, mock_signal: MagicMock) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
-            result = runner.invoke(
-                app, ["ingest", "/fake/path", "--json"]
-            )
+            result = runner.invoke(app, ["ingest", "/fake/path", "--json"])
             assert result.exit_code == 1
             data = json.loads(result.output)
             assert data["status"] == "error"
@@ -570,13 +579,15 @@ class TestSearchErrorHandling:
 
     def test_search_cli_still_uses_sync_retrieval(self) -> None:
         """CLI search remains synchronous and delegates directly to retrieval.search."""
-        result_payload = [{
-            "score": 0.8,
-            "source": "cli.txt",
-            "page_label": None,
-            "text": "CLI result",
-            "reranked": False,
-        }]
+        result_payload = [
+            {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+            }
+        ]
 
         with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
@@ -611,13 +622,15 @@ class TestSearchErrorHandling:
         """CLI omitted rerank should pass None so retrieval resolves policy."""
         from rag_mcp.config import get_settings as _gs
 
-        result_payload = [{
-            "score": 0.8,
-            "source": "cli.txt",
-            "page_label": None,
-            "text": "CLI result",
-            "reranked": False,
-        }]
+        result_payload = [
+            {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+            }
+        ]
 
         with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(app, ["search", "cli query", "--json"])
@@ -636,13 +649,15 @@ class TestSearchErrorHandling:
 
     def test_search_cli_hybrid_flag_passes_true(self) -> None:
         """``rag-mcp search --hybrid`` delegates with ``hybrid=True``."""
-        result_payload = [{
-            "score": 0.8,
-            "source": "cli.txt",
-            "page_label": None,
-            "text": "CLI result",
-            "reranked": False,
-        }]
+        result_payload = [
+            {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+            }
+        ]
 
         with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
@@ -679,9 +694,7 @@ class TestSearchErrorHandling:
         """ConnectionError with --json outputs JSON error."""
         with patch("rag_mcp.core.retrieval.search") as mock_search:
             mock_search.side_effect = ConnectionError("Connection refused")
-            result = runner.invoke(
-                app, ["search", "test query", "--json"]
-            )
+            result = runner.invoke(app, ["search", "test query", "--json"])
             assert result.exit_code == 1
             data = json.loads(result.output)
             assert data["status"] == "error"
@@ -709,7 +722,7 @@ class TestRichProgressCallbackInternals:
         """Read phase creates and updates the read task."""
         from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
 
-        captured_callbacks: list[tuple[str, int, int]] = []
+        _captured_callbacks: list[tuple[str, int, int]] = []
 
         async def fake_ingest(
             path: str,
@@ -805,7 +818,9 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -852,7 +867,9 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
+        with patch(
+            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+        ) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -887,13 +904,13 @@ class TestConsoleIsTerminal:
     """Test the TTY path (console.is_terminal == True)."""
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    def test_ingest_tty_path_uses_rich_progress(
-        self, mock_signal: MagicMock
-    ) -> None:
+    def test_ingest_tty_path_uses_rich_progress(self, mock_signal: MagicMock) -> None:
         """When console.is_terminal is True, Rich progress is used."""
         with (
             patch("rag_mcp.transports.cli.ingest.console") as mock_console,
-            patch("rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
+            patch(
+                "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
+            ) as mock_ingest,
         ):
             mock_console.is_terminal = True
             mock_console.print = MagicMock()
@@ -919,9 +936,7 @@ class TestConsoleIsTerminal:
 class TestFileDetails:
     """Tests for per-file tracking in ingest_path results."""
 
-    async def test_single_file_has_file_details(
-        self, sample_txt: Path
-    ) -> None:
+    async def test_single_file_has_file_details(self, sample_txt: Path) -> None:
         """Single file ingest returns file_details with one indexed entry."""
         from rag_mcp.core.ingestion import ingest_path_async
 
@@ -934,9 +949,7 @@ class TestFileDetails:
         assert fd["chunks"] > 0
         assert fd["file"] == sample_txt.name
 
-    async def test_folder_has_file_details(
-        self, dir_with_docs: Path
-    ) -> None:
+    async def test_folder_has_file_details(self, dir_with_docs: Path) -> None:
         """Folder ingest returns file_details for each file."""
         from rag_mcp.core.ingestion import ingest_path_async
 
@@ -948,9 +961,7 @@ class TestFileDetails:
             assert fd["status"] == "indexed"
             assert fd["chunks"] > 0
 
-    async def test_corrupt_file_has_failed_status(
-        self, corrupt_dir: Path
-    ) -> None:
+    async def test_corrupt_file_has_failed_status(self, corrupt_dir: Path) -> None:
         """Corrupt file in folder has status 'failed' with error message."""
         from rag_mcp.core.ingestion import ingest_path_async
 
@@ -975,9 +986,7 @@ class TestFileDetails:
 class TestReportGeneration:
     """Tests for the --report CLI flag."""
 
-    def test_json_report_produced(
-        self, dir_with_docs: Path, tmp_path: Path
-    ) -> None:
+    def test_json_report_produced(self, dir_with_docs: Path, tmp_path: Path) -> None:
         """--report report.json produces a valid JSON report."""
         report_path = tmp_path / "report.json"
         result = runner.invoke(
@@ -1022,9 +1031,7 @@ class TestReportGeneration:
             assert "status" in fd
             assert "chunks" in fd
 
-    def test_markdown_report_produced(
-        self, dir_with_docs: Path, tmp_path: Path
-    ) -> None:
+    def test_markdown_report_produced(self, dir_with_docs: Path, tmp_path: Path) -> None:
         """--report report.md produces a Markdown report with tables."""
         report_path = tmp_path / "report.md"
         result = runner.invoke(
@@ -1048,9 +1055,7 @@ class TestReportGeneration:
         assert "| Workers |" not in content
         assert "| File | Status | Chunks | Error |" in content
 
-    def test_no_report_without_flag(
-        self, dir_with_docs: Path, tmp_path: Path
-    ) -> None:
+    def test_no_report_without_flag(self, dir_with_docs: Path, tmp_path: Path) -> None:
         """Without --report, no report file is created."""
         report_path = tmp_path / "report.json"
         result = runner.invoke(
@@ -1060,9 +1065,7 @@ class TestReportGeneration:
         assert result.exit_code == 0
         assert not report_path.exists()
 
-    def test_report_overwrites_existing(
-        self, dir_with_docs: Path, tmp_path: Path
-    ) -> None:
+    def test_report_overwrites_existing(self, dir_with_docs: Path, tmp_path: Path) -> None:
         """--report overwrites existing file and logs warning."""
         report_path = tmp_path / "report.json"
         report_path.write_text('{"old": true}')
@@ -1120,12 +1123,9 @@ class TestIntegrationWithPdfs:
         # All files should appear; at minimum 3 should have chunks
         # (minimal PDFs may parse differently across readers).
         indexed_with_chunks = sum(
-            1 for fd in report["files"]
-            if fd["status"] == "indexed" and fd["chunks"] > 0
+            1 for fd in report["files"] if fd["status"] == "indexed" and fd["chunks"] > 0
         )
-        assert indexed_with_chunks >= 3, (
-            f"Expected ≥3 PDFs with chunks, got {indexed_with_chunks}"
-        )
+        assert indexed_with_chunks >= 3, f"Expected ≥3 PDFs with chunks, got {indexed_with_chunks}"
         assert report["summary"]["indexed"] == 5
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
@@ -1159,12 +1159,10 @@ class TestIntegrationWithPdfs:
 class TestPartialFailureReport:
     """Tests for the report when ingestion has mixed success/failure."""
 
-    def test_partial_failure_in_report(
-        self, corrupt_dir: Path, tmp_path: Path
-    ) -> None:
+    def test_partial_failure_in_report(self, corrupt_dir: Path, tmp_path: Path) -> None:
         """Report includes both successful and failed file entries."""
         report_path = tmp_path / "report.json"
-        result = runner.invoke(
+        _result = runner.invoke(
             app,
             [
                 "ingest",
@@ -1198,11 +1196,8 @@ class TestPartialFailureReport:
 class TestPerFileLogging:
     """Tests for structured per-file INFO-level logging."""
 
-    async def test_per_file_logging_on_folder(
-        self, dir_with_docs: Path
-    ) -> None:
+    async def test_per_file_logging_on_folder(self, dir_with_docs: Path) -> None:
         """Folder ingest produces per-file INFO log lines."""
-        import logging
 
         from rag_mcp.core.ingestion import ingest_path_async
 
@@ -1211,10 +1206,7 @@ class TestPerFileLogging:
             assert result["status"] == "ok"
 
             # Verify info() was called for each file
-            info_calls = [
-                str(call)
-                for call in mock_logger.info.call_args_list
-            ]
+            info_calls = [str(call) for call in mock_logger.info.call_args_list]
             # Each file in dir_with_docs should have an info log
             assert len(info_calls) >= 2
             # The log should contain file names
@@ -1222,9 +1214,7 @@ class TestPerFileLogging:
                 found = any(filename in c for c in info_calls)
                 assert found, f"No info log for {filename}"
 
-    async def test_warning_logged_for_failure(
-        self, corrupt_dir: Path
-    ) -> None:
+    async def test_warning_logged_for_failure(self, corrupt_dir: Path) -> None:
         """Failed files produce WARNING-level log lines."""
         from rag_mcp.core.ingestion import ingest_path_async
 
@@ -1232,10 +1222,7 @@ class TestPerFileLogging:
             result = await ingest_path_async(str(corrupt_dir))
             assert result["status"] == "ok"
             # The corrupt.pdf should at minimum appear in warnings
-            warning_calls = [
-                str(call)
-                for call in mock_logger.warning.call_args_list
-            ]
+            warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
             # Should have at least one warning for corrupt.pdf
             # (may be a failure or a skipped log — both acceptable)
             assert len(warning_calls) >= 0  # At minimum, no crash
@@ -1247,9 +1234,7 @@ class TestPerFileLogging:
 class TestUnsupportedFileExclusion:
     """Tests for tracking of unsupported files in file_details."""
 
-    async def test_unsupported_file_not_in_file_details(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_unsupported_file_not_in_file_details(self, tmp_path: Path) -> None:
         """Files with unsupported extensions are tracked as skipped."""
         # Create a supported file and an unsupported file
         good_file = tmp_path / "doc.txt"
@@ -1269,10 +1254,7 @@ class TestUnsupportedFileExclusion:
         assert "not_supported.xyz" in file_names
 
         # Verify the unsupported file has status "skipped"
-        skipped_fd = next(
-            fd for fd in result["file_details"]
-            if fd["file"] == "not_supported.xyz"
-        )
+        skipped_fd = next(fd for fd in result["file_details"] if fd["file"] == "not_supported.xyz")
         assert skipped_fd["status"] == "skipped"
         assert skipped_fd["chunks"] == 0
         assert "error" in skipped_fd
@@ -1296,9 +1278,7 @@ class TestMakeFileDetail:
         """Failed entry includes error message."""
         from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
 
-        fd = _make_file_detail(
-            "bad.pdf", "failed", 0, error="Not a valid PDF"
-        )
+        fd = _make_file_detail("bad.pdf", "failed", 0, error="Not a valid PDF")
         assert fd["file"] == "bad.pdf"
         assert fd["status"] == "failed"
         assert fd["chunks"] == 0
@@ -1308,9 +1288,7 @@ class TestMakeFileDetail:
         """Skipped entry has chunks=0 with an error reason."""
         from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
 
-        fd = _make_file_detail(
-            "data.exe", "skipped", 0, error="Unsupported extension: .exe"
-        )
+        fd = _make_file_detail("data.exe", "skipped", 0, error="Unsupported extension: .exe")
         assert fd["status"] == "skipped"
         assert fd["chunks"] == 0
         assert fd["error"] == "Unsupported extension: .exe"
@@ -1342,15 +1320,24 @@ class TestDeleteCLI:
 
     def test_delete_multiple_flags_errors(self) -> None:
         """Delete with multiple flags must exit with error."""
-        result = runner.invoke(app, [
-            "delete", "--path", "/f.pdf", "--collection", "test",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--path",
+                "/f.pdf",
+                "--collection",
+                "test",
+            ],
+        )
         assert result.exit_code != 0
         assert "mutually exclusive" in result.output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_path_removes_chunks(
-        self, mock_signal, sample_txt,
+        self,
+        mock_signal,
+        sample_txt,
     ) -> None:
         """Delete --path after ingest must remove chunks."""
         # First ingest
@@ -1358,84 +1345,139 @@ class TestDeleteCLI:
         assert ingest_result.exit_code == 0
 
         # Now delete
-        result = runner.invoke(app, [
-            "delete", "--path", str(sample_txt),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--path",
+                str(sample_txt),
+            ],
+        )
         assert result.exit_code == 0
         assert "Removed" in result.output or "chunk" in result.output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_path_json(
-        self, mock_signal, sample_txt,
+        self,
+        mock_signal,
+        sample_txt,
     ) -> None:
         """Delete --path --json must output valid JSON."""
         runner.invoke(app, ["ingest", str(sample_txt)])
-        result = runner.invoke(app, [
-            "delete", "--path", str(sample_txt), "--json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--path",
+                str(sample_txt),
+                "--json",
+            ],
+        )
         assert result.exit_code == 0
         # JSON output goes to stdout via typer.echo; RichHandler logs go to
         # stderr.  When mix_stderr=True, finding the JSON requires scanning.
         # Fallback: verify the operation worked via exit code + list check.
         from rag_mcp.core.ingestion import list_documents
+
         docs = list_documents()
         assert docs == []  # chunks were removed
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_dry_run(
-        self, mock_signal, sample_txt,
+        self,
+        mock_signal,
+        sample_txt,
     ) -> None:
         """Delete --dry-run must preview without deleting."""
         runner.invoke(app, ["ingest", str(sample_txt)])
-        result = runner.invoke(app, [
-            "delete", "--path", str(sample_txt), "--dry-run",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--path",
+                str(sample_txt),
+                "--dry-run",
+            ],
+        )
         assert result.exit_code == 0
         assert "Dry run" in result.output or "would_delete" in result.output
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_delete_dry_run_json(
-        self, mock_signal, sample_txt,
+        self,
+        mock_signal,
+        sample_txt,
     ) -> None:
         """Delete --dry-run --json must show would_delete without deleting."""
         runner.invoke(app, ["ingest", str(sample_txt)])
-        result = runner.invoke(app, [
-            "delete", "--path", str(sample_txt), "--dry-run", "--json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--path",
+                str(sample_txt),
+                "--dry-run",
+                "--json",
+            ],
+        )
         assert result.exit_code == 0
         # Verify chunks still exist (dry-run didn't delete)
         from rag_mcp.core.ingestion import list_documents
+
         docs = list_documents()
         assert len(docs) > 0
 
     def test_delete_collection_dry_run(self) -> None:
         """Delete --collection --dry-run must preview drop."""
-        result = runner.invoke(app, [
-            "delete", "--collection", "test_coll", "--dry-run",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--collection",
+                "test_coll",
+                "--dry-run",
+            ],
+        )
         assert result.exit_code == 0
         assert "Dry run" in result.output or "would_delete" in result.output
 
     def test_delete_collection_dry_run_json(self) -> None:
         """Delete --collection --dry-run --json must show preview."""
-        result = runner.invoke(app, [
-            "delete", "--collection", "test_coll", "--dry-run", "--json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--collection",
+                "test_coll",
+                "--dry-run",
+                "--json",
+            ],
+        )
         assert result.exit_code == 0
 
     def test_delete_metadata_invalid_json(self) -> None:
         """Delete --metadata with invalid JSON must exit with error."""
-        result = runner.invoke(app, [
-            "delete", "--metadata", "not-json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--metadata",
+                "not-json",
+            ],
+        )
         assert result.exit_code != 0
         assert "Invalid JSON" in result.output or "Error" in result.output
 
     def test_delete_metadata_not_dict(self) -> None:
         """Delete --metadata with non-dict JSON must exit with error."""
-        result = runner.invoke(app, [
-            "delete", "--metadata", '"just a string"',
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "delete",
+                "--metadata",
+                '"just a string"',
+            ],
+        )
         assert result.exit_code != 0
         assert "must be a JSON object" in result.output
 
@@ -1456,17 +1498,29 @@ class TestBenchmarkCLI:
         """Both --text and --file provided → error exit."""
         f = tmp_path / "test.txt"
         f.write_text("content")
-        result = runner.invoke(app, [
-            "benchmark", "--text", "hello", "--file", str(f),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "benchmark",
+                "--text",
+                "hello",
+                "--file",
+                str(f),
+            ],
+        )
         assert result.exit_code == 1
         assert "not both" in result.output
 
     def test_benchmark_file_not_found(self) -> None:
         """--file pointing to missing path → error exit."""
-        result = runner.invoke(app, [
-            "benchmark", "--file", "/nonexistent/bench.pdf",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "benchmark",
+                "--file",
+                "/nonexistent/bench.pdf",
+            ],
+        )
         assert result.exit_code == 1
         assert "File not found" in result.output or "not found" in result.output
 
@@ -1474,19 +1528,28 @@ class TestBenchmarkCLI:
         """--file with unsupported extension → error exit."""
         bad = tmp_path / "bench.xyz"
         bad.write_text("content")
-        result = runner.invoke(app, [
-            "benchmark", "--file", str(bad),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "benchmark",
+                "--file",
+                str(bad),
+            ],
+        )
         assert result.exit_code == 1
         assert "Unsupported file extension" in result.output
 
     def test_benchmark_text_success(self) -> None:
         """--text with valid content runs benchmark successfully."""
-        result = runner.invoke(app, [
-            "benchmark", "--text",
-            "This is a sample benchmark text used to measure embedding "
-            "throughput for the current embed model in the RAG MCP server.",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "benchmark",
+                "--text",
+                "This is a sample benchmark text used to measure embedding "
+                "throughput for the current embed model in the RAG MCP server.",
+            ],
+        )
         assert result.exit_code == 0
         assert "Benchmark" in result.output
         assert "Model" in result.output
@@ -1494,11 +1557,15 @@ class TestBenchmarkCLI:
 
     def test_benchmark_text_json_success(self) -> None:
         """--text --json produces valid JSON with expected keys."""
-        result = runner.invoke(app, [
-            "benchmark", "--text",
-            "JSON benchmark test text for embedding throughput measurement.",
-            "--json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "benchmark",
+                "--text",
+                "JSON benchmark test text for embedding throughput measurement.",
+                "--json",
+            ],
+        )
         assert result.exit_code == 0
         # Warmup message goes to stderr (mixed into output).  JSON
         # follows on stdout.  Extract the JSON block from the first
@@ -1524,13 +1591,22 @@ class TestBenchmarkCLI:
                 raise ConnectionError("Connection refused")
 
         from llama_index.core import Settings
+
         Settings.embed_model = _FailingMockEmbedding(embed_dim=384)
 
         try:
-            result = runner.invoke(app, [
-                "benchmark", "--text",
-                "Warmup failure test text.",
-            ])
+            # The CLI callback runs ensure_runtime_setup, which would
+            # overwrite the failing mock with a real embed model. Patch it
+            # so the warmup failure under test is the one that surfaces.
+            with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"):
+                result = runner.invoke(
+                    app,
+                    [
+                        "benchmark",
+                        "--text",
+                        "Warmup failure test text.",
+                    ],
+                )
         finally:
             # Restore the original mock from conftest.
             Settings.embed_model = _MockEmb(embed_dim=384)
@@ -1547,7 +1623,7 @@ class TestWatchCLI:
 
     def test_watch_delegates_to_watcher(self) -> None:
         """watch command delegates to watcher.watch_directory and exits 0."""
-        with patch("rag_mcp.daemon.watcher.watch_directory") as mock_watch:
+        with patch("rag_mcp.daemon.runner.watch_directory") as mock_watch:
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
         assert result.exit_code == 0
         mock_watch.assert_called_once()
@@ -1559,7 +1635,7 @@ class TestWatchCLI:
     def test_watch_system_exit_propagates(self) -> None:
         """SystemExit from watcher propagates as typer.Exit with matching code."""
         with patch(
-            "rag_mcp.daemon.watcher.watch_directory",
+            "rag_mcp.daemon.runner.watch_directory",
             side_effect=SystemExit(1),
         ):
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
@@ -1575,7 +1651,8 @@ class TestListCollectionsCLI:
     def test_list_collections_empty(self) -> None:
         """Empty result shows 'No collections found' message."""
         with patch(
-            "rag_mcp.core.retrieval.list_collections", return_value=[],
+            "rag_mcp.core.retrieval.list_collections",
+            return_value=[],
         ):
             result = runner.invoke(app, ["list-collections"])
         assert result.exit_code == 0
@@ -1584,7 +1661,8 @@ class TestListCollectionsCLI:
     def test_list_collections_empty_json(self) -> None:
         """Empty result with --json outputs '[]'."""
         with patch(
-            "rag_mcp.core.retrieval.list_collections", return_value=[],
+            "rag_mcp.core.retrieval.list_collections",
+            return_value=[],
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
         assert result.exit_code == 0
@@ -1638,24 +1716,39 @@ class TestDeleteConfirmationCLI:
             "rag_mcp.core.ingestion.remove_collection",
             return_value={"status": "ok", "collection": "test_coll"},
         ) as mock_remove:
-            result = runner.invoke(app, [
-                "delete", "--collection", "test_coll", "--yes",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "delete",
+                    "--collection",
+                    "test_coll",
+                    "--yes",
+                ],
+            )
         assert result.exit_code == 0
         mock_remove.assert_called_once_with("test_coll")
         assert "deleted" in result.output
 
     def test_delete_collection_confirm_yes(self) -> None:
         """Delete --collection with Confirm.ask returning True proceeds."""
-        with patch(
-            "rag_mcp.core.ingestion.remove_collection",
-            return_value={"status": "ok", "collection": "test_coll"},
-        ) as mock_remove, patch(
-            "rich.prompt.Confirm.ask", return_value=True,
+        with (
+            patch(
+                "rag_mcp.core.ingestion.remove_collection",
+                return_value={"status": "ok", "collection": "test_coll"},
+            ) as mock_remove,
+            patch(
+                "rich.prompt.Confirm.ask",
+                return_value=True,
+            ),
         ):
-            result = runner.invoke(app, [
-                "delete", "--collection", "test_coll",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "delete",
+                    "--collection",
+                    "test_coll",
+                ],
+            )
         assert result.exit_code == 0
         mock_remove.assert_called_once_with("test_coll")
         assert "deleted" in result.output
@@ -1663,9 +1756,14 @@ class TestDeleteConfirmationCLI:
     def test_delete_collection_confirm_no(self) -> None:
         """Delete --collection with Confirm.ask returning False cancels."""
         with patch("rich.prompt.Confirm.ask", return_value=False):
-            result = runner.invoke(app, [
-                "delete", "--collection", "test_coll",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "delete",
+                    "--collection",
+                    "test_coll",
+                ],
+            )
         assert result.exit_code == 0
         assert "Cancelled" in result.output
 
@@ -1679,9 +1777,14 @@ class TestDeleteConfirmationCLI:
                 "collection": "documents",
             },
         ) as mock_remove:
-            result = runner.invoke(app, [
-                "delete", "--metadata", '{"category":"test"}',
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "delete",
+                    "--metadata",
+                    '{"category":"test"}',
+                ],
+            )
         assert result.exit_code == 0
         mock_remove.assert_called_once()
         assert "Removed" in result.output or "chunk" in result.output
@@ -1695,9 +1798,232 @@ class TestDeleteConfirmationCLI:
                 "message": "boom",
             },
         ) as mock_remove:
-            result = runner.invoke(app, [
-                "delete", "--path", "/some/file.pdf",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "delete",
+                    "--path",
+                    "/some/file.pdf",
+                ],
+            )
         assert result.exit_code == 1
         mock_remove.assert_called_once()
         assert "boom" in result.output
+
+
+# ── S: GPU acceleration detection ───────────────────────────────────────────
+
+
+class TestGpuAccelerationDetection:
+    """Tests for _detect_gpu_acceleration and the _setup_logging DEBUG branch."""
+
+    _LOGGER = "rag_mcp.transports.cli"
+
+    @staticmethod
+    def _patch_embed_model(embed_model: str = "nomic-embed-text"):
+        """Patch the composition-root summary for deterministic model lookup.
+
+        ``_detect_gpu_acceleration`` reads the resolved runtime summary when
+        no model is explicitly provided. Without this patch the test relies
+        on ambient environment state and can silently take the wrong branch.
+        """
+        return patch(
+            "rag_mcp.transports.cli.compose.runtime_summary",
+            return_value=(embed_model, 32, 2),
+        )
+
+    def test_returncode_nonzero_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A non-zero ollama ps exit logs a debug message naming the exit code."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("ollama ps exited" in r.getMessage() for r in caplog.records)
+
+    def test_metal_in_format_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A Metal runner for the embed model logs a debug message naming the model."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "metal"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any("on Metal GPU" in m and "nomic-embed-text" in m for m in msgs)
+
+    def test_gpu_in_runner_field_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """GPU in details.runner with format empty logs a debug message."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "", "runner": "cuda_gpu"},
+                        "size": "1.2 GB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("on Metal GPU" in r.getMessage() for r in caplog.records)
+
+    def test_cpu_runner_logs_warning(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A CPU runner for the embed model logs a warning naming the model and CPU."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "nomic-embed-text:latest",
+                        "details": {"format": "cpu"},
+                        "size": "512 MB",
+                    }
+                ]
+            }
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.WARNING, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any("on CPU" in m and "nomic-embed-text" in m for m in msgs)
+
+    def test_embed_model_not_in_running_models(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """The embed model absent from running models logs a debug message."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = json.dumps(
+            {"models": [{"name": "llama3:latest", "details": {"format": "metal"}}]}
+        )
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("not found in running models" in r.getMessage() for r in caplog.records)
+
+    def test_file_not_found_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """A missing ollama CLI logs a debug message without raising."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch("rag_mcp.transports.cli.subprocess.run", side_effect=FileNotFoundError()),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("ollama CLI not found" in r.getMessage() for r in caplog.records)
+
+    def test_timeout_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """An ollama ps timeout logs a debug message without raising."""
+        import logging
+        import subprocess
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch(
+                "rag_mcp.transports.cli.subprocess.run",
+                side_effect=subprocess.TimeoutExpired(cmd="ollama", timeout=5),
+            ),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("timed out" in r.getMessage() for r in caplog.records)
+
+    def test_generic_exception_logs_debug(self, caplog: pytest.CaptureFixture[str]) -> None:
+        """An unexpected exception logs a debug message containing the error."""
+        import logging
+
+        from rag_mcp.transports.cli import _detect_gpu_acceleration
+
+        with (
+            patch(
+                "rag_mcp.transports.cli.subprocess.run",
+                side_effect=RuntimeError("unexpected"),
+            ),
+            self._patch_embed_model(),
+            caplog.at_level(logging.DEBUG, logger=self._LOGGER),
+        ):
+            _detect_gpu_acceleration()
+        assert any("unexpected" in r.getMessage() for r in caplog.records)
+
+    def test_runtime_initialisation_calls_gpu_detection_at_debug(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Runtime initialisation invokes GPU detection when debug logging is enabled."""
+        import logging
+
+        from rag_mcp.transports.cli import _initialise_runtime
+
+        monkeypatch.setattr(
+            "rag_mcp.transports.cli._runtime_details_enabled",
+            True,
+        )
+        monkeypatch.setattr(
+            logging.getLogger("rag_mcp.transports.cli"),
+            "isEnabledFor",
+            lambda level: level == logging.DEBUG,
+        )
+        with (
+            patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"),
+            patch(
+                "rag_mcp.transports.cli.compose.runtime_summary",
+                return_value=("nomic-embed-text", 32, 2),
+            ),
+            patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect,
+        ):
+            _initialise_runtime()
+        mock_detect.assert_called_once_with("nomic-embed-text")

@@ -12,6 +12,23 @@ uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest --cov=rag_mcp      # Coverage
 ```
 
+## WHEN YOU WRITE
+
+### Explaining problems and errors
+
+**MUST ADHERE**
+When you hit a bug, error, or design problem, structure the response as:
+1. What's wrong — one or two plain English sentences. No jargon without a plain translation in the same sentence.
+2. What to do — a numbered list of concrete actions. Not a bullet mentioning the problem exists; an instruction I can follow.
+3. Never describe a problem without action points attached. Never make me ask "what's next" — give it upfront. If there's more than one valid fix, list the options as numbered choices, not a single buried recommendation.
+4. Assume I'm not going to ask for a plain English version. Write it that way the first time.
+5. Use British English in all except code: documentation, comments, commit messages, agent outputs, proposals, papers, and user-facing text.
+
+### IMPORTANT: TECHNICAL WRITING (STE Rules)
+
+Write technical documentation in ASD-STE100 Simplified Technical English where practical: use clear active voice, one action per instruction, short sentences (maximum 20 words for procedures), unambiguous terms, and avoid idiom, filler, and unexplained abbreviations; use the official ASD-STE100 approved dictionary when available.
+
+
 ## Architecture Invariants
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
@@ -43,14 +60,16 @@ uv run pytest --cov=rag_mcp      # Coverage
    8c. **A stale `ignore_imports` entry fails the build.** All contracts set `unmatched_ignore_imports_alerting = "error"`. When you fix a violation, delete its ignore — that failure is the signal, not a nuisance.
 9. **Codebase map cache is keyed by git commit hash.** If not a git repo, caching is disabled — map is rebuilt every call.
 10. **`DOC_SIMILARITY_THRESHOLD` default (0.85) needs calibration.** Don't change without running experiment 10.1.
-11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Removal trigger: v3.0.0 (ADR-037).
+11. **Pre-v2 flat env vars raise at startup.** `TOP_K`, `CHUNK_SIZE`, `METADATA_EXTRACTION_MODE` … are no longer read; a startup tripwire fails with the nested replacement named. Retirement lifetime is **shape-aware** (see `config/legacy.py` docstring): nested entries expire one major after the rename; flat entries persist while an upgrade path exists because pydantic cannot detect them.
+12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
+13. **Dependency floors are enforced by `tests/test_dependency_floors.py` and the `floors` CI job.** The test fails when a declared floor drifts more than one minor below its locked version (or sits above it). The `floors` job installs with `--resolution lowest-direct` and runs the fast suite. When raising a floor, update the exemption dict in the test if the gap is intentional (with a comment naming the reason). See ADR-042.
 
 ## Hard Boundaries
 
 | Type      | Rule                                                                                                                                                |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⚠️ Ask    | Cloud dependencies & API keys — local-first by default, cloud allowed as opt-in (see ADR-024). All cloud features must degrade gracefully to local. |
-| 🚫 Never  | PyTorch at runtime. ONNX Runtime only.                                                                                                              |
+| 🚫 Never  | PyTorch in the base install or on the default retrieval path. ONNX Runtime only. PyTorch behind the optional `torch` extra is ⚠️ Ask.               |
 | 🚫 Never  | Hardcoded paths or secrets. Everything via `.env`.                                                                                                  |
 | 🚫 Never  | Modifying `config.py` to depend on `ingestion.py` or `retrieval.py`.                                                                                |
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
@@ -70,6 +89,8 @@ OpenSpec (propose → implement → archive)
 3. **Implement** (`openspec-apply-change`) → work through `tasks.md` checkboxes
 4. **ADR** → `docs/adr/` once confirmed · **Archive** (`openspec-archive-change`) → `openspec/changes/archive/`
 
+**Documentation drift check**: when a default value changes, grep `docs/guides/` for the old value. This is a procedural partial, not automation — it depends on discipline and will sometimes be skipped, but it is strictly better than the previous state (nothing).
+
 **Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green.
 
 ## Release Automation
@@ -86,6 +107,12 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 
 > All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
+>
+> Coverage is measured with branch coverage (`--cov-branch`), which scores
+> 2-3 points lower than the line-only coverage these floors were originally
+> based on. The Codecov project checks are currently **informational** (not
+> CI-blocking) while the targets are recalibrated for branch measurement.
+> The `patch` check (new code coverage) remains blocking. See TDR-007.
 
 ## Detailed Documentation
 

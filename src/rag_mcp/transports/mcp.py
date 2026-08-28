@@ -21,38 +21,85 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
+from typing import Any
 
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
-from ..config import get_settings
-from ..core.ingestion import ingest_path_async, list_documents as _list_documents
-from ..core.profiles import ProfileResolver
+# The composition root owns all runtime construction. ``main()`` invokes it
+# after this module has been imported, keeping imports safe for discovery and
+# test collection.
+from .. import compose
+from ..core.ingestion import ingest_path_async
+from ..core.ingestion import list_documents as _list_documents
 from ..core.retrieval import search
-
-# Import the composition root early so the LlamaIndex global
-# ``Settings.embed_model`` is assigned before any retrieval call
-# (previously done at import time in ``config.py``; see ADR-031).
-# The composition root also owns construction of the reranker (spec:
-# all provider/pipeline instantiation happens in ``compose.py``).
-from .. import compose  # noqa: F401
+from ..core.vectordb.identity import redact_cloud_secrets, redact_secret
 
 logger = logging.getLogger(__name__)
+
+# Returned by ``_error_detail`` when settings cannot be resolved; main()
+# replaces this placeholder with the real startup reason (config and
+# provider messages never echo key material by design).
+_SETTINGS_UNRESOLVED = "(details unavailable: settings could not be resolved)"
 
 # Load .env from the working directory (project root when run via `uv run`)
 load_dotenv()
 
-# Pre-constructed reranker wired by the composition root.  Construction is
-# cheap (the ONNX session loads lazily on first rerank), and the process-wide
-# model cache preserves load-once semantics regardless of instance count.
-_reranker = compose.build_reranker()
+_reranker: Any | None = None
+_profile_resolver: Any | None = None
 
-# Phase 4: profile resolver for per-collection profile resolution.
-# Reads collection metadata tags through the vector store interface.
-_profile_resolver = compose.build_profile_resolver()
+
+def _get_reranker() -> Any:
+    """Return the process-wide reranker after server startup."""
+    global _reranker
+    if _reranker is None:
+        _reranker = compose.build_reranker()
+    return _reranker
+
+
+def _get_profile_resolver() -> Any:
+    """Return the process-wide profile resolver after server startup."""
+    global _profile_resolver
+    if _profile_resolver is None:
+        _profile_resolver = compose.build_profile_resolver()
+    return _profile_resolver
+
+
+def _error_detail(exc: Exception) -> str:
+    """Return exception text with active credentials redacted.
+
+    Chroma Cloud connection values and the OpenRouter API key are removed
+    (full value and any prefix of six or more characters).  When settings
+    themselves cannot be resolved the raw text cannot be redacted, so only
+    a placeholder is returned — the helper must never raise or leak
+    unredacted detail from a tool error path (gotcha #1).
+    """
+    try:
+        settings = compose.get_settings()
+    except Exception:
+        return _SETTINGS_UNRESOLVED
+    return redact_secret(
+        redact_cloud_secrets(
+            str(exc),
+            settings.chroma_cloud_api_key,
+            settings.chroma_cloud_tenant,
+            settings.chroma_cloud_database,
+        ),
+        settings.openrouter_api_key,
+    )
+
+
+def _error_message(exc: Exception) -> str:
+    """Format a safe error message for MCP clients."""
+    return f"{type(exc).__name__}: {_error_detail(exc)}"
+
+
+def _log_tool_error(tool: str, exc: Exception) -> None:
+    """Log a tool failure without leaking cloud connection data."""
+    logger.warning("%s error: %s: %s", tool, type(exc).__name__, _error_detail(exc))
 
 
 # ── FastMCP lifespan (forward-compatibility slot) ──────────────────────────
@@ -61,8 +108,9 @@ _profile_resolver = compose.build_profile_resolver()
 # client, vector store connection) can be added without restructuring the
 # module. See PROPOSAL §5.2 (transports/mcp.py compatibility note).
 
+
 @asynccontextmanager
-async def _noop_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
+async def _noop_lifespan(server: MCPServer) -> AsyncIterator[dict[str, Any]]:
     """Yield an empty context — no pre-loaded resources today.
 
     Replacing this with a real lifespan (e.g. one that constructs the
@@ -72,10 +120,11 @@ async def _noop_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     yield {}
 
 
-mcp = FastMCP("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
+mcp = MCPServer("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
 
 
 # ── Tool 1: Ingest ----------------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -84,7 +133,7 @@ mcp = FastMCP("rag-mcp", log_level="WARNING", lifespan=_noop_lifespan)
         "target ChromaDB collection. Supported formats: PDF, "
         "DOCX, PPTX, TXT, Markdown, HTML, CSV."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True),
 )
 async def ingest_documents(path: str, collection: str = "documents") -> dict:
     """Index documents into the RAG vector store.
@@ -93,22 +142,26 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
     MCP tool handlers).
     """
     try:
-        effective = _profile_resolver.resolve(collection)
+        effective = _get_profile_resolver().resolve(collection)
     except ValueError as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"status": "error", "message": _error_detail(exc)}
+    except Exception as exc:
+        _log_tool_error("ingest_documents setup", exc)
+        return {"status": "error", "message": _error_message(exc)}
     try:
         return await ingest_path_async(
             path, collection_name=collection, effective_settings=effective
         )
     except Exception as exc:
-        logger.warning("ingest_documents error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("ingest_documents", exc)
         return {
             "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
+            "message": _error_message(exc),
         }
 
 
 # ── Tool 2: Search ----------------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -120,7 +173,7 @@ async def ingest_documents(path: str, collection: str = "documents") -> dict:
         "collection name to scope the search and an optional "
         "metadata_filter to restrict results by metadata fields."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 async def search_documents(
     query: str,
@@ -135,17 +188,22 @@ async def search_documents(
 
     Args:
         query: Natural language search query.
-        top_k: Maximum number of chunks to return (default from config).
-        similarity_threshold: Minimum relevance score to include a
-            result. 0.0 means no filtering (default).
+        top_k: Maximum number of chunks to return. When None, the
+            selected collection profile supplies the default.
+        similarity_threshold: Minimum canonical dense similarity to include
+            without reranking. In hybrid/no-rerank mode it constrains dense
+            evidence before RRF; successful reranking uses the calibrated
+            reranker threshold transform. When None, the collection profile
+            supplies the default.
         rerank: Tri-state rerank control:
             - ``True``: force reranking (explicit opt-in)
             - ``False``: force no reranking (explicit opt-out)
             - ``None``: apply policy resolver (default)
-        hybrid: If True, fuse dense vector retrieval with sparse keyword
-            retrieval via Reciprocal Rank Fusion before reranking.
+        hybrid: Fuse dense vector retrieval with sparse keyword retrieval
+            via Reciprocal Rank Fusion. When None, the collection profile
+            supplies the default.
         collection: Name of the ChromaDB collection to search.
-        metadata_filter: Optional ChromaDB-compatible ``where`` clause.
+        metadata_filter: ChromaDB-compatible filter for dense and sparse candidates.
 
     Returns:
         On success, a list of result dicts. On failure, a single-element
@@ -153,22 +211,22 @@ async def search_documents(
     """
     try:
         try:
-            effective = _profile_resolver.resolve(collection)
+            effective = _get_profile_resolver().resolve(collection)
         except ValueError as exc:
-            return [{
-                "status": "error",
-                "error_type": "validation",
-                "message": str(exc),
-            }]
+            return [
+                {
+                    "status": "error",
+                    "error_type": "validation",
+                    "message": _error_detail(exc),
+                }
+            ]
 
-        if top_k is None and effective is not None:
+        if top_k is None:
             top_k = effective.top_k
         if similarity_threshold is None:
-            similarity_threshold = get_settings().retrieval.similarity_threshold
-        if hybrid is None and effective is not None:
+            similarity_threshold = effective.retrieval.similarity_threshold
+        if hybrid is None:
             hybrid = effective.hybrid_enabled
-        elif hybrid is None:
-            hybrid = get_settings().retrieval.hybrid_enabled
         return await asyncio.to_thread(
             search,
             query,
@@ -178,37 +236,38 @@ async def search_documents(
             hybrid=hybrid,
             collection_name=collection,
             metadata_filter=metadata_filter,
-            reranker=_reranker,
+            reranker=_get_reranker(),
             effective_settings=effective,
         )
     except ValueError as exc:
-        logger.warning("search_documents validation error: %s", exc)
-        return [{
-            "status": "error",
-            "error_type": "validation",
-            "message": str(exc),
-        }]
+        _log_tool_error("search_documents validation", exc)
+        return [
+            {
+                "status": "error",
+                "error_type": "validation",
+                "message": _error_detail(exc),
+            }
+        ]
     except Exception as exc:
         is_chroma = (
-            type(exc).__module__.startswith("chromadb")
-            or "chroma" in type(exc).__name__.lower()
+            type(exc).__module__.startswith("chromadb") or "chroma" in type(exc).__name__.lower()
         )
         if is_chroma or metadata_filter is not None:
             error_type = "retrieval"
         else:
             error_type = "internal"
-        logger.warning(
-            "search_documents %s error: %s: %s",
-            error_type, type(exc).__name__, exc,
-        )
-        return [{
-            "status": "error",
-            "error_type": error_type,
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        _log_tool_error(f"search_documents {error_type}", exc)
+        return [
+            {
+                "status": "error",
+                "error_type": error_type,
+                "message": _error_message(exc),
+            }
+        ]
 
 
 # ── Tool 3: List indexed documents ------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -216,28 +275,28 @@ async def search_documents(
         "with their source paths and chunk counts. Optionally "
         "scope to a specific ChromaDB collection."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 def list_indexed_documents(collection: str = "documents") -> list[dict]:
     """List all documents that have been indexed so far."""
     try:
         return _list_documents(collection_name=collection)
     except Exception as exc:
-        logger.warning("list_indexed_documents error: %s: %s", type(exc).__name__, exc)
-        return [{
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        _log_tool_error("list_indexed_documents", exc)
+        return [
+            {
+                "status": "error",
+                "message": _error_message(exc),
+            }
+        ]
 
 
 # ── Tool 4: List collections -------------------------------------------------
 
+
 @mcp.tool(
-    description=(
-        "List all available ChromaDB collections with their document "
-        "and chunk counts."
-    ),
-    annotations=ToolAnnotations(readOnlyHint=True),
+    description=("List all available ChromaDB collections with their document and chunk counts."),
+    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 def list_collections() -> list[dict]:
     """List all ChromaDB collections with counts."""
@@ -246,14 +305,17 @@ def list_collections() -> list[dict]:
     try:
         return _list_collections()
     except Exception as exc:
-        logger.warning("list_collections error: %s: %s", type(exc).__name__, exc)
-        return [{
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        }]
+        _log_tool_error("list_collections", exc)
+        return [
+            {
+                "status": "error",
+                "message": _error_message(exc),
+            }
+        ]
 
 
 # ── Tool 5: Delete documents -------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -264,7 +326,7 @@ def list_collections() -> list[dict]:
         "without path or metadata_filter, the collection itself is "
         "dropped). Use dry_run=true to preview without modifying data."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True),
 )
 def delete_documents(
     path: str | None = None,
@@ -278,9 +340,9 @@ def delete_documents(
     """
     from ..core.ingestion import (
         preview_delete,
-        remove_document,
         remove_by_metadata,
         remove_collection,
+        remove_document,
     )
 
     try:
@@ -302,9 +364,7 @@ def delete_documents(
                     metadata_filter=metadata_filter,
                     collection_name=collection,
                 )
-            result = remove_by_metadata(
-                metadata_filter, collection_name=collection
-            )
+            result = remove_by_metadata(metadata_filter, collection_name=collection)
             result["mode"] = "metadata"
             return result
 
@@ -314,14 +374,15 @@ def delete_documents(
         result["mode"] = "collection"
         return result
     except Exception as exc:
-        logger.warning("delete_documents error: %s: %s", type(exc).__name__, exc)
+        _log_tool_error("delete_documents", exc)
         return {
             "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
+            "message": _error_message(exc),
         }
 
 
 # ── Tool 6: Codebase map ----------------------------------------------------
+
 
 @mcp.tool(
     description=(
@@ -330,7 +391,7 @@ def delete_documents(
         "agents starting a session on an unfamiliar codebase. Results are cached "
         "per-project keyed by git commit hash. Use refresh=true to force rebuild."
     ),
-    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False),
+    annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
     """Generate a compact codebase map for the given project path.
@@ -344,11 +405,13 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
 
         return get_codebase_map_text(path=path, refresh=refresh)
     except Exception as exc:
-        logger.warning("get_codebase_map error: %s: %s", type(exc).__name__, exc)
-        return json.dumps({
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        })
+        _log_tool_error("get_codebase_map", exc)
+        return json.dumps(
+            {
+                "status": "error",
+                "message": _error_message(exc),
+            }
+        )
 
 
 # ── Tool 7: Change collection profile (Phase 4) ─────────────────────
@@ -364,7 +427,7 @@ def get_codebase_map(path: str = ".", refresh: bool = False) -> str:
         "levers apply to future ingests only. Returns a preview on first "
         "call; pass confirm=true to apply."
     ),
-    annotations=ToolAnnotations(destructiveHint=True),
+    annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True),
 )
 def change_collection_profile(
     collection: str,
@@ -380,18 +443,17 @@ def change_collection_profile(
     if profile not in ("documents", "codebase"):
         return {
             "status": "error",
-            "message": (
-                f"Invalid profile {profile!r}. Available: documents, codebase."
-            ),
+            "message": (f"Invalid profile {profile!r}. Available: documents, codebase."),
         }
 
     if not confirm:
         try:
             contract = generate_safety_contract(
-                collection, profile, resolver=_profile_resolver
+                collection, profile, resolver=_get_profile_resolver()
             )
         except Exception as exc:
-            return {"status": "error", "message": str(exc)}
+            _log_tool_error("change_collection_profile preview", exc)
+            return {"status": "error", "message": _error_detail(exc)}
         return {
             "status": "preview",
             "contract": contract,
@@ -401,7 +463,8 @@ def change_collection_profile(
     try:
         return apply_profile_change(collection, profile)
     except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+        _log_tool_error("change_collection_profile", exc)
+        return {"status": "error", "message": _error_detail(exc)}
 
 
 def main() -> None:
@@ -415,6 +478,21 @@ def main() -> None:
         stream=sys.stderr,
         force=True,
     )
+    try:
+        compose.ensure_runtime_setup()
+        _get_reranker()
+        _get_profile_resolver()
+    except (ImportError, ValueError, RuntimeError) as exc:
+        # RuntimeError carries the redacted Chroma Cloud connection
+        # failure — an explicit cloud selection never falls back to a
+        # local index, so startup must stop here.
+        detail = _error_detail(exc)
+        if detail == _SETTINGS_UNRESOLVED:
+            # The caught error IS the settings failure; its message names
+            # the offending variable and never echoes key material.
+            detail = f"{type(exc).__name__}: {exc}"
+        print(f"Error: {detail}", file=sys.stderr)
+        raise SystemExit(1) from None
     mcp.run(transport="stdio")
 
 

@@ -105,7 +105,8 @@ metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
 ```
 
 Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
-`RAG_PROFILE`, `PDF_READER`, and all credentials.
+`VECTOR_STORE`, `LANCEDB_URI`, `RAG_PROFILE`, `PDF_READER`, and all
+credentials.
 
 Use a pre-v2 name like `TOP_K` and the app refuses to start, telling you the
 replacement. It does not quietly ignore you. Full table in
@@ -152,15 +153,108 @@ configurations at once.
 | `core/retrieval/` | Search, rerank, fuse results |
 | `core/chunking/` | The chunking strategies: code, markdown, sentence, config |
 | `core/metadata/` | Work out a category and keywords for a document |
-| `core/vectordb/` | The database interface, and the ChromaDB implementation |
+| `core/vectordb/` | The database interface, LanceDB default implementation, and optional Chroma implementation |
 | `core/profiles/` | Resolve which profile a collection uses |
 | `core/providers/` | Build embedding and LLM clients |
 | `core/codebase/` | Codebase map and code graph |
 | `core/documents/` | Document similarity graph |
+| `core/community/` | Community-detection strategies for both graphs (Louvain default, Leiden optional) |
 | `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around |
 
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
+
+### `core/vectordb/` — the store boundary
+
+Two stores sit behind the `VectorStore` ABC (ADR-034): `lancedb`, the
+base-install default, and `chroma`, an explicit optional extra selected with
+`VECTOR_STORE` (ADR-049).
+
+`core/vectordb/chroma.py` is the single module that imports `chromadb` and
+the single construction site for both deployments. Local mode builds a
+`PersistentClient` over the resolved persist directory; cloud mode builds
+and validates a `CloudClient`, with a heartbeat round trip so
+authentication, network, and tenant/database mistakes surface at startup.
+Following upstream LlamaIndex's client-construction/VectorStore split, the
+constructed client is injected into `ChromaVectorStore`, which stays
+deployment-agnostic.
+
+`core/vectordb/lancedb.py` is the LanceDB implementation (ADR-046): one
+`lancedb.connect(uri)` connection backs the store, and each RAG collection
+maps to one LanceDB table. Table creation is lazy — the vector dimension
+locks on first write — and the LlamaIndex adapter is constructed with
+`mode="create"` so it can never overwrite a populated table (the adapter's
+default mode is `"overwrite"`). The adapter prints to stdout when it
+creates a table, so writes run with stdout redirected: stdout is the MCP
+protocol channel.
+
+Collection metadata records the embedding configuration that owns the
+vector space: `rag_embed_provider`, `rag_embed_model`, and
+`rag_index_identity`. Vector dimensions alone cannot prove compatibility,
+so a same-dimension model swap is rejected before any write or query.
+Stamping is read-merge-write: Chroma's `modify(metadata=...)` replaces the
+complete map, so existing profile tags are read and merged first. The
+LanceDB store keeps the same triple in each table's durable Arrow schema
+metadata, merged through pylance's `update_schema_metadata`.
+
+Supporting modules keep each store under the 500-line ceiling:
+
+- `core/vectordb/identity.py` — the `EmbeddingIdentity` type and the
+  `IdentityGuardMixin` (stamping plus write/query-path mismatch rejection)
+- `core/vectordb/paged.py` — the `PagedReadMixin` (bounded and bulk
+  collection reads, formerly `chroma_utils.py`)
+- `core/vectordb/naming.py` — deterministic experiment collection names
+  (e.g. `exp14-qasper-openrouter-qwen3-8b-liteparse-cs512-co100`)
+- `core/vectordb/lance_meta.py` — the LanceDB table-metadata seam and its
+  identity guard, reusing `identity.py`'s pure helpers, plus the metadata
+  struct evolution that grows a table's Arrow struct when later writes
+  introduce new metadata keys
+- `core/vectordb/lance_filter.py` — ChromaDB `where` dict → LanceDB filter
+  translation through the `lancedb.expr` value serialiser; operators are
+  null-aware and schema-absent fields fold to constants, preserving
+  ChromaDB missing-field semantics across backends
+- `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
+  pages plus `strip_internal_metadata`)
+- `core/vectordb/validation.py` — the fail-closed embedding write contract
+  (`validate_embedding_batch` and
+  `materialise_and_validate_node_embeddings`), shared by every backend
+- `core/vectordb/registry.py` — lazy vector-store registry mapping
+  `VECTOR_STORE` names to factories (`chroma`, `lancedb`)
+
+Every store write is fail-closed
+([ADR-051](../adr/051-fail-closed-embedding-write-contract.md)). Each
+adapter validates the complete embedding batch immediately before its
+backend mutation: `write_nodes` embeds missing nodes and validates the
+whole batch first, and `upsert_precomputed` validates caller-computed
+vectors first. A rejected batch never reaches the SDK, never persists a
+subset, and never advances the generation counter. Every failure names the
+collection, the embedding provider/model, and each affected identifier —
+direct `upsert_precomputed` callers must pass `embedding_identity` so the
+diagnostic is always available. `get_collection_dimension` discovers an
+existing collection's vector width without creating backend state (one
+stored embedding on ChromaDB; the Arrow schema width on LanceDB), so
+dimension conflicts are rejected before any write. The validator never
+normalises, truncates, or repairs vectors; norm policy is a separate
+decision.
+
+`compose.build_vector_store` resolves the configured name through the
+registry instead of branching over it. Each factory receives the resolved
+settings; the Chroma factory consumes mode, persist directory, API key,
+tenant, and database, and the LanceDB factory consumes the `LANCEDB_URI`
+parent directory. Each registry entry declares its availability metadata:
+required packages, optional extra, installation guidance, sparse capability,
+and storage-summary resolver. An unregistered `VECTOR_STORE` name fails
+startup listing the registered names. Credentials never enter
+`EffectiveSettings`, profiles, YAML defaults, or operation-level objects.
+
+`get_default_store()` returns only the instance installed by
+`compose.ensure_runtime_setup`. Before composition it raises a controlled
+error. It never imports settings or constructs a fallback store.
+
+One writer per collection is an explicit boundary. The BM25 invalidation
+counters are process-local, so evaluation workers reuse completed immutable
+indexes read-only; mutating the same collection from several processes is
+unsupported.
 
 ### `transports/` — exposes it
 
@@ -218,11 +312,28 @@ backends and retrieval stages.
 This is enforced, not just encouraged. One test fails if a dispatch module
 imports a strategy directly; another fails if it branches on strategy names.
 
+### Community strategies
+
+Community detection follows the same pattern, with one addition: the
+strategies live in `core/community/`, and both graph consumers (the codebase
+code graph and the document similarity graph) dispatch through
+`partition_graph` with an injected seed.
+
+The shared contract is flat: `list[set[Hashable]]`, every node in exactly one
+non-empty community. Algorithm-specific objects (igraph partitions, leidenalg
+results) never cross the boundary. Graphs with fewer than five nodes bypass
+partitioning entirely. No LLM is called anywhere in the pipeline, and the
+default seed of `0` keeps partitions deterministic run to run.
+
 ### A new vector database
 
-Implement `VectorStore` from `core/vectordb/base.py`, register it in
-`compose.py`. ChromaDB is confined to `core/vectordb/chroma.py` — a contract
-fails the build if `chromadb` is imported anywhere else.
+Implement `VectorStore` from `core/vectordb/base.py`, add one `register()`
+line to `core/vectordb/registry.py`, and let `compose.build_vector_store`
+resolve it by name — never a branch over the name (invariant #10).
+ChromaDB is confined to `core/vectordb/chroma.py`; LanceDB is confined to
+`core/vectordb/lancedb.py` and the filter translator
+`core/vectordb/lance_filter.py`. Contracts fail the build if either
+library is imported anywhere else.
 
 ### A new setting
 
@@ -236,6 +347,117 @@ A test checks the two agree, so they cannot drift apart.
 
 ---
 
+## Registry eligibility and audit inventory
+
+A module goes into a registry when configuration selects by name among two or
+more interchangeable implementations that share one contract. That is the
+whole rule. A single capability adapter does not need a registry just because
+it lives under `integrations/`. An ordered fallback factory does not either.
+
+Native versus optional is an availability property, independent of registry
+eligibility. A base-install implementation still registers when it belongs to
+a configured strategy family (Louvain registers next to Leiden; pypdf
+registers next to liteparse and pypdfium2). An optional adapter with no named
+peers stays an integration.
+
+### Integration inventory
+
+Every Python module under `src/rag_mcp/integrations/`, classified. A contract
+test fails when a module is missing from this table.
+
+<!-- integration-inventory:start count=11 -->
+| Module | Availability | Selector | Shared contract | Fallback owner | Disposition |
+|---|---|---|---|---|---|
+| `rag_mcp.integrations` | Native | None | Package facade | None | Facade; exports stable integration APIs only |
+| `rag_mcp.integrations.azure` | Optional `azure` extra | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry |
+| `rag_mcp.integrations.leidenalg` | Optional `community-leiden` extra | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py` | Flat partition callable | None; explicit selection fails startup | External adapter behind the community registry |
+| `rag_mcp.integrations.magika` | Optional executable | `MAGIKA_BINARY` selects the binary path, not an implementation | `FileEntry` detection results | `core/codebase/codebase_map.py` suffix detection | Capability integration; remains unregistered |
+| `rag_mcp.integrations.pdf` | Native | None | `get_pdf_reader(reader)` | None | Public facade exposing the factory |
+| `rag_mcp.integrations.pdf.factory` | Native | `PDF_READER=auto` | Reader instance with `load_data` | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers) | Registry-backed factory; `auto` stays ordered capability resolution |
+| `rag_mcp.integrations.pdf.registry` | Native | `PDF_READER` concrete values | Reader class with `load_data` | None; unknown names raise | Lazy registry for concrete PDF readers |
+| `rag_mcp.integrations.pdf.liteparse` | Base dependency (despite the stale docstring naming an extra) | `PDF_READER=liteparse` | `load_data` | `compose.resolve_pdf_reader` `auto` probe | Registered reader strategy |
+| `rag_mcp.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050) | `load_data` | `compose.resolve_pdf_reader` missing-backend error → pypdf | Registered reader strategy; configuration-owned default |
+| `rag_mcp.integrations.pdf.pypdf` | Base, via `llama-index-readers-file` | `PDF_READER=pypdf` | `load_data` | Terminal `auto` tier | Registered reader strategy |
+| `rag_mcp.integrations.pdf.pypdfium` | Optional `pdf-pypdfium2` extra | `PDF_READER=pypdfium2` | `load_data` | None | Registered reader strategy |
+<!-- integration-inventory:end -->
+
+### Strategy-family audit
+
+The same rule applied to every name-dispatched family, inside and outside
+`integrations/`:
+
+| Family | Selector | Live registry / factory | Conclusion | Follow-up |
+|---|---|---|---|---|
+| Community detection | `COMMUNITY_ALGORITHM` | `core/community/registry.py` | Registered in this change: `louvain` native, `leiden` optional via `integrations/leidenalg.py` | None |
+| PDF readers | `PDF_READER` | `integrations/pdf/registry.py` behind `integrations/pdf/factory.py` | Concrete readers registered behind the unchanged `auto` factory | None |
+| Chunking | Content-type dispatch in `core/ingestion/chunker.py`; `CHUNKING__STRATEGY_FALLBACK` (default `markdown`) | `core/chunking/registry.py` | Already a registry | None |
+| Metadata extraction | `METADATA__EXTRACTION_MODE` and provider backends | `core/metadata/registry.py` | Already a registry | None |
+| Embedding providers | `EMBED_PROVIDER` | `core/providers/embeddings/registry.py` | Already a registry | None |
+| LLM providers | `LOCAL_BACKEND` / `CLOUD_BACKEND` | `core/providers/llm/registry.py` | Already a registry | None |
+| Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/registry.py` (`bm25`) | `bm25` registered; `native` is currently a warning-to-BM25 placeholder | `openspec/changes/implement-native-sparse-backend-strategy/` |
+| Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
+| Vector store | `VECTOR_STORE` | `core/vectordb/registry.py` | `chroma` and `lancedb` registered | None |
+| Document backends | `DOCUMENT_BACKEND` | `core/ingestion/backends/registry.py` | Registered by `register-document-backend-strategies`: `local` native, `azure` optional via `integrations/azure.py`; retry and fallback owned by the orchestrator | None |
+
+Live registry contents, kept in step with the code by contract tests:
+
+<!-- registry-names:community -->
+`leiden` `louvain`
+<!-- /registry-names:community -->
+
+<!-- registry-names:pdf -->
+`liteparse` `pdf_inspector` `pypdf` `pypdfium2`
+<!-- /registry-names:pdf -->
+
+<!-- registry-names:chunking -->
+`code` `config` `sentence`
+<!-- /registry-names:chunking -->
+
+<!-- registry-names:metadata -->
+`keyword` `llamacpp` `llamaindex` `ollama` `openrouter`
+<!-- /registry-names:metadata -->
+
+<!-- registry-names:embeddings -->
+`llamacpp` `ollama` `openrouter`
+<!-- /registry-names:embeddings -->
+
+<!-- registry-names:llm -->
+`llamacpp` `ollama` `openrouter`
+<!-- /registry-names:llm -->
+
+<!-- registry-names:retrieval -->
+`bm25` `dense` `fusion` `reranker_onnx` `reranker_torch`
+<!-- /registry-names:retrieval -->
+
+<!-- registry-names:vectordb -->
+`chroma` `lancedb`
+<!-- /registry-names:vectordb -->
+
+<!-- registry-names:document-backend -->
+`azure` `local`
+<!-- /registry-names:document-backend -->
+
+### Audit conclusions
+
+- The concrete PDF readers were the one behaviour-preserving missing registry
+  family. They are now registered behind the unchanged `auto` factory.
+- Magika remains a capability adapter, not a strategy family: one configured
+  capability, no interchangeable named peers.
+- Azure and local document backends were deferred to the strict-valid follow-up
+  `openspec/changes/register-document-backend-strategies/` because fallback
+  ownership changes with registration. That change has now delivered the
+  document-backend registry: accepted `DOCUMENT_BACKEND` names are registry-
+  owned, validated at startup at the composition boundary, and the orchestrator
+  owns the retry budget plus exactly one local fallback.
+- Native sparse retrieval is deferred to
+  `openspec/changes/implement-native-sparse-backend-strategy/` because `native`
+  is currently a warning-to-BM25 placeholder and stored sparse coverage
+  matters.
+- Every other current family already uses a registry or a documented policy
+  alias or sentinel. No migration was required for this change.
+
+---
+
 ## The rules that are actually enforced
 
 These are not documentation. They fail the build.
@@ -243,9 +465,11 @@ These are not documentation. They fail the build.
 | Rule | Enforced by |
 |---|---|
 | ChromaDB only in `core/vectordb/chroma.py` | `chromadb-confined-to-vectordb` |
+| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb` |
 | `config/` never imports business logic | `config-is-leaf` |
 | `integrations/` never imports core or transports | `integrations-are-leaves` |
 | `core/` never imports transports or providers | `core-business-avoids-providers-transports` |
+| `core/community/` never imports either graph consumer | `community-strategies-independent-of-consumers` |
 | Settings models stay pure data | `settings-models-are-pure-data` |
 | Every package covered by some contract | `tests/test_contract_coverage.py` |
 | No global settings reads in core | `tests/test_no_global_settings_reads.py` |
@@ -268,10 +492,23 @@ Short version. Each links to the full reasoning.
 document loaders, chunkers and vector store adapters already exist, so we write
 pipeline logic instead of plumbing.
 
+**LanceDB** ([ADR-046](../adr/046-lancedb-vector-store-backend.md),
+[ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — the embedded
+base-install default. Each collection gets its own table and files with
+optimistic concurrency instead of ChromaDB's shared SQLite write lock.
+
 **ChromaDB** ([ADR-003](../adr/003-use-chromadb-as-vector-store.md),
-[ADR-034](../adr/034-phase-3-refactor-vectordb-abstraction.md)) — embedded, no
-server to run, persists to a folder. Behind an interface since ADR-034, so it
-can be swapped.
+[ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — an explicit
+optional backend. Install the `chroma` extra before setting `VECTOR_STORE=chroma`.
+
+Vector-store selection is runtime-swappable at the deployment boundary, but
+embedding-provider selection is **process/deployment scoped**, not
+per-collection. The composition root assigns one LlamaIndex
+`Settings.embed_model` for the process. Concurrent collections may use
+different retrieval profiles and stores, but they cannot safely select
+different embedding providers in the same server process. Run separate
+processes for different providers until an explicit per-operation embedding
+context replaces the LlamaIndex global.
 
 **MCP** ([ADR-004](../adr/004-adopt-mcp-protocol-for-server-interface.md)) —
 one server works with any MCP client, rather than a bespoke integration each
@@ -280,9 +517,11 @@ time.
 **uv** ([ADR-001](../adr/001-use-uv-as-package-manager.md)) — fast, one
 lockfile, no virtualenv juggling.
 
-**ONNX Runtime, never PyTorch**
-([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md)) — PyTorch
-is a multi-gigabyte dependency for something that only needs inference.
+**ONNX Runtime for the default reranker path**
+([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md),
+[ADR-038](../adr/038-pluggable-reranker-backend.md)) — the default install
+stays torch-free; a torch-backed reranker is available behind the `torch`
+optional extra.
 
 **qwen3-embedding:0.6b**
 ([ADR-009](../adr/009-switch-to-qwen3-embedding-0-6b.md)) — better retrieval

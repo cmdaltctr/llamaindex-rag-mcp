@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import json
 import logging
-import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ...integrations.magika import _EXCLUDED_DIRS, FileEntry
 from ..settings import get_default_effective_settings
-from ...integrations.magika import FileEntry, _EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +75,8 @@ _SUFFIX_MAP: dict[str, tuple[str, str]] = {
 }
 
 # Extensions considered binary when using suffix fallback.
+# Compact grouping is more readable for this data table.
+# fmt: off
 _BINARY_SUFFIXES: set[str] = {
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg",
     ".tiff", ".tif", ".heic", ".heif",
@@ -85,6 +86,7 @@ _BINARY_SUFFIXES: set[str] = {
     ".woff", ".woff2", ".ttf", ".otf", ".eot",
     ".pyc", ".pyo", ".class", ".jar",
 }
+# fmt: on
 
 # FileEntry and _EXCLUDED_DIRS are detection primitives owned by
 # integrations.magika (extracted in Phase 5). They are imported at the
@@ -130,23 +132,39 @@ def scan_with_magika(path: str) -> list[FileEntry]:
     Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
     from ...integrations.magika import scan_with_magika as _scan
+
     return _scan(path)
 
 
+def _classify_suffix(suffix: str) -> tuple[str, str, bool]:
+    """Map a lowercase suffix to its ``(group, label, is_text)`` triple."""
+    if suffix in _BINARY_SUFFIXES:
+        return "binary", suffix.lstrip("."), False
+    if suffix in _SUFFIX_MAP:
+        return (*_SUFFIX_MAP[suffix], True)
+    return "unknown", "unknown", True
+
+
+def _entry(path: str, suffix: str) -> FileEntry:
+    """Build one suffix-classified :class:`FileEntry`."""
+    group, label, is_text = _classify_suffix(suffix)
+    return FileEntry(path=path, group=group, label=label, is_text=is_text, suffix=suffix)
+
+
 def scan_with_suffix(path: str) -> list[FileEntry]:
-    """Scan a directory using file suffix mapping as fallback.
+    """Scan a directory — or a single file — using suffix mapping.
 
-    Uses ``Path.suffix`` to map files to group/label pairs. Files with
-    unknown extensions are classified as ``("unknown", "unknown")``.
-
-    Args:
-        path: Directory path to scan.
-
-    Returns:
-        List of ``FileEntry`` objects for each detected file.
+    Unknown extensions classify as ``("unknown", "unknown")``. A single
+    file yields one entry keyed ``"."`` (its path relative to itself),
+    which is the key ``ingest_path_async`` looks up for direct file
+    ingest. The directory walk cannot produce it: ``iterdir()`` on a
+    file raises ``NotADirectoryError``, which the walk swallows.
     """
     project_root = Path(path)
     entries: list[FileEntry] = []
+
+    if project_root.is_file():
+        return [_entry(".", project_root.suffix.lower())]
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
@@ -162,29 +180,11 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
                     continue
                 _walk(child, current_depth + 1)
             elif child.is_file():
-                suffix = child.suffix.lower()
                 try:
                     rel_path = str(child.relative_to(project_root))
                 except ValueError:
                     rel_path = str(child)
-
-                if suffix in _BINARY_SUFFIXES:
-                    group, label = "binary", suffix.lstrip(".")
-                    is_text = False
-                elif suffix in _SUFFIX_MAP:
-                    group, label = _SUFFIX_MAP[suffix]
-                    is_text = True
-                else:
-                    group, label = "unknown", "unknown"
-                    is_text = True
-
-                entries.append(FileEntry(
-                    path=rel_path,
-                    group=group,
-                    label=label,
-                    is_text=is_text,
-                    suffix=suffix,
-                ))
+                entries.append(_entry(rel_path, child.suffix.lower()))
 
     _walk(project_root, 0)
 
@@ -230,17 +230,16 @@ def detect_file_types(path: str) -> FileInventory:
         if entry.suffix in _SUFFIX_MAP:
             _, suffix_label = _SUFFIX_MAP[entry.suffix]
             if entry.label != suffix_label and entry.is_text:
-                inventory.mismatches.append(
-                    (entry.path, suffix_label, entry.label)
-                )
+                inventory.mismatches.append((entry.path, suffix_label, entry.label))
 
     # Enforce file count limit.
     if len(entries) > get_default_effective_settings().codebase_map_max_files:
         logger.warning(
             "File count %d exceeds CODEBASE_MAP_MAX_FILES=%d, truncating",
-            len(entries), get_default_effective_settings().codebase_map_max_files,
+            len(entries),
+            get_default_effective_settings().codebase_map_max_files,
         )
-        entries = entries[:get_default_effective_settings().codebase_map_max_files]
+        entries = entries[: get_default_effective_settings().codebase_map_max_files]
 
     inventory.entries = entries
     return inventory
@@ -265,8 +264,7 @@ def format_inventory(inventory: FileInventory) -> str:
     for type_key, count in sorted_types:
         # Collect representative glob patterns for this type.
         group, label = type_key.split("/", 1)
-        matching = [e for e in inventory.entries
-                    if e.group == group and e.label == label]
+        matching = [e for e in inventory.entries if e.group == group and e.label == label]
         suffixes = sorted({e.suffix for e in matching if e.suffix})
         glob_str = ", ".join(f"*{s}" for s in suffixes[:4])
         lines.append(f"- {type_key}: {count} files ({glob_str})")
@@ -285,7 +283,7 @@ def format_inventory(inventory: FileInventory) -> str:
     if inventory.mismatches:
         lines.append("")
         lines.append("### Type mismatches")
-        for path, suffix_label, magika_label in inventory.mismatches[:10]:
+        for path, _suffix_label, magika_label in inventory.mismatches[:10]:
             lines.append(f"- ⚠ MISMATCH: {path} → detected as {magika_label}")
         if len(inventory.mismatches) > 10:
             lines.append(f"- ... and {len(inventory.mismatches) - 10} more")
@@ -294,6 +292,7 @@ def format_inventory(inventory: FileInventory) -> str:
 
 
 # ── Graph assembly and map formatting (Section 5 tasks) ──────────────────
+
 
 @dataclass
 class CodebaseMap:
@@ -328,12 +327,11 @@ def build_codebase_map(path: str) -> CodebaseMap:
     Returns:
         A ``CodebaseMap`` with all components assembled.
     """
-    # File inventory
     inventory = detect_file_types(path)
 
-    # Code graph
-    code_files = [e for e in inventory.entries
-                  if e.group == "code" and e.is_text]
+    effective = get_default_effective_settings()  # boundary resolves once; detectors take it
+
+    code_files = [e for e in inventory.entries if e.group == "code" and e.is_text]
     code_communities: list[dict] = []
     hubs: list[dict] = []
 
@@ -342,7 +340,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
             from .code_graph import build_code_graph, detect_communities, detect_hubs
 
             code_graph = build_code_graph(code_files, path)
-            communities = detect_communities(code_graph)
+            communities = detect_communities(code_graph, settings=effective)
             code_communities = [
                 {
                     "label": c.label,
@@ -352,16 +350,12 @@ def build_codebase_map(path: str) -> CodebaseMap:
                 }
                 for c in communities
             ]
-            hubs = [
-                {"file": h.file, "in_degree": h.in_degree}
-                for h in detect_hubs(code_graph)
-            ]
+            hubs = [{"file": h.file, "in_degree": h.in_degree} for h in detect_hubs(code_graph)]
         except Exception as exc:
             logger.warning("Code graph construction failed: %s", exc)
 
     # Document graph
-    doc_files = [e for e in inventory.entries
-                 if e.group == "document" and e.is_text]
+    doc_files = [e for e in inventory.entries if e.group == "document" and e.is_text]
     doc_communities: list[dict] = []
     cross_links: list[dict] = []
 
@@ -387,7 +381,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
             from ..documents.doc_graph import build_document_graph, detect_document_communities
 
             doc_graph = build_document_graph(collection)
-            doc_comms = detect_document_communities(doc_graph)
+            doc_comms = detect_document_communities(doc_graph, settings=effective)
             doc_communities = [
                 {
                     "label": c.label,
@@ -408,8 +402,7 @@ def build_codebase_map(path: str) -> CodebaseMap:
             dg = build_document_graph(collection)
             links = compute_cross_links(code_graph, dg)
             cross_links = [
-                {"code": l.code, "doc": l.doc, "relation": l.relation}
-                for l in links
+                {"code": link.code, "doc": link.doc, "relation": link.relation} for link in links
             ]
         except Exception as exc:
             logger.warning("Cross-link detection failed: %s", exc)
@@ -446,25 +439,31 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
     try:
         path_obj = Path(path).expanduser().resolve()
         if not path_obj.exists():
-            return json.dumps({
-                "status": "error",
-                "message": f"Path not found: {path}",
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Path not found: {path}",
+                }
+            )
 
         if not path_obj.is_dir():
-            return json.dumps({
-                "status": "error",
-                "message": f"Path is not a directory: {path}",
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Path is not a directory: {path}",
+                }
+            )
 
         # Path boundary validation — reject paths outside the project root.
         try:
             path_obj.relative_to(Path.cwd())
         except ValueError:
-            return json.dumps({
-                "status": "error",
-                "message": f"Path resolves outside the project root: {path}",
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Path resolves outside the project root: {path}",
+                }
+            )
 
         # Check cache (unless refresh is requested)
         if not refresh:
@@ -480,10 +479,12 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
 
     except Exception as exc:
         logger.exception("get_codebase_map failed: %s: %s", type(exc).__name__, exc)
-        return json.dumps({
-            "status": "error",
-            "message": f"{type(exc).__name__}: {exc}",
-        })
+        return json.dumps(
+            {
+                "status": "error",
+                "message": f"{type(exc).__name__}: {exc}",
+            }
+        )
 
 
 # ── Re-exports ───────────────────────────────────────────────────────────
@@ -491,8 +492,6 @@ def get_codebase_map_text(path: str = ".", refresh: bool = False) -> str:
 # Re-exported so existing imports and test monkeypatch targets keep working.
 
 from .cache import (  # noqa: E402
-    _codebase_map_from_dict,
-    _codebase_map_to_dict,
     _get_git_commit_hash,
     _load_cache,
     _save_cache,

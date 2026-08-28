@@ -4,53 +4,121 @@ version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
 dependencies = [
-    "mcp[cli]>=1.0.0",
-    "llama-index>=0.11.0",
-    "llama-index-vector-stores-chroma>=0.2.0",
-    "llama-index-readers-file>=0.2.0",
-    "chromadb>=0.5.0",
-    "llama-index-embeddings-ollama>=0.2.0",
+    # mcp 2.0 + huggingface-hub 1.0 caps lifted in the major dependency
+    # upgrade cycle. mcp 2.0 rewrites the HTTP stack to httpx2;
+    # huggingface-hub 1.0 migrated from requests to httpx and removed
+    # legacy params (resume_download, force_filename, local_dir_use_symlinks)
+    # — none of which this project uses.
+    "mcp[cli]>=2.0.0",
+    # llama-index family: floors follow the tightest sibling (design D6).
+    # llama-index-llms-ollama 0.9.0 is the first to require core>=0.14.5,
+    # so the whole set moves together to stay self-consistent under
+    # chromadb 1.x. See ADR-042.
+    "llama-index>=0.14.5",
+    # Second vector-store backend (ADR-046, add-lancedb-vectordb-backend).
+    # lancedb>=0.37 pins the lancedb.expr type-safe filter builder (PR
+    # #3150); the adapter's own floor (>=0.21.1) does not guarantee it.
+    # Resolved tree pulls lancedb/pylance/pyarrow/tantivy only — no
+    # PyTorch, so the ONNX-only boundary holds. pyarrow is declared
+    # directly (the store builds upsert rows with it) and floored at
+    # the locked major: its frequent major bumps carry no semantic
+    # signal, so floor == lock keeps the floors CI honest.
+    "llama-index-vector-stores-lancedb>=0.5.0",
+    "lancedb>=0.37",
+    # Declared directly (ADR-046): lance_meta.py calls pylance's
+    # update_schema_metadata for durable table metadata, but the
+    # adapter pulls pylance with no version constraint. Floor == lock:
+    # update_schema_metadata is the verified 10.x API surface and the
+    # floors job installs with --resolution lowest-direct.
+    "pylance>=10",
+    "pyarrow>=25",
+    "llama-index-readers-file>=0.5.0",
+    "llama-index-embeddings-ollama>=0.7.0",
     "python-dotenv>=1.0.0",
     # Reranker (cross-encoder via pure ONNX Runtime — no PyTorch)
-    "onnxruntime>=1.17.0,<1.26.0",
-    "transformers>=4.40.0",
-    "huggingface-hub>=0.20.0",
+    "onnxruntime>=1.20.0",
+    "tokenizers>=0.20",
+    "huggingface-hub>=1.0.0",
     "typer>=0.25.1",
     # File watcher (cross-platform: FSEvents / inotify / ReadDirectoryChangesW)
-    "watchdog>=4.0.0",
+    "watchdog>=5.0.0",
     # Async HTTP client for Ollama metadata extraction (non-blocking)
     "httpx>=0.27.0",
     # LlamaIndex LLM integration for llamaindex metadata extraction mode
-    "llama-index-llms-ollama>=0.4.0",
+    "llama-index-llms-ollama>=0.9.0",
     "docx2txt>=0.9",
-    # PDF parser (Rust + PDFium, Apache-2.0). Default reader when installed.
-    # See ADR-020. Prebuilt wheels for macOS, Linux, Windows.
+    # PDF parser fallback (Rust + PDFium, Apache-2.0). See ADR-020.
     "liteparse>=2.0.0",
-    # Code graph: AST extraction and community detection
-    "tree-sitter>=0.21.0",
-    "tree-sitter-language-pack>=0.1.0",
-    "networkx>=3.0",
+    # PDF parser default (Rust markdown extraction, MIT). See ADR-050.
+    "pdf-inspector>=1.17.0",
+    # Code graph: AST extraction and community detection.
+    # tree-sitter-language-pack 1.12.3 fixes a silent-failure mode where
+    # get_parser() returned a vendored parser class that produced unusable
+    # trees on Python 3.14 (and broke import below 3.14). ast_extract.py
+    # wraps the call in a broad except, so the silent variant degraded
+    # every AST extraction to a logged warning. See ADR-042.
+    "tree-sitter>=0.23.0",
+    "tree-sitter-language-pack>=1.12.3",
+    "networkx>=3.2",
     "pydantic-settings>=2.14.1",
     "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
+# Quarantined Chroma backend (ADR-049, make-lancedb-default-and-isolate-chromadb).
+# chromadb 1.5.x is affected by CVE-2026-45829 with no accepted patched
+# release, so both Chroma packages moved out of the base install into this
+# opt-in extra. Floors are retained because Chroma compatibility remains
+# supported: chromadb>=1.0.0 reverts list_collections() to returning
+# Collection objects (0.6.0–0.9.x returned bare strings, breaking
+# ChromaVectorStoreAdapter.list_collections — see ADR-042).
+# Install: uv sync --extra chroma (source) / pip install "rag-mcp[chroma]".
+chroma = [
+    "chromadb>=1.0.0",
+    "llama-index-vector-stores-chroma>=0.5.0",
+]
 hybrid = [
     "rank-bm25>=0.2.2",
 ]
 pdf-pypdfium2 = [
     "pypdfium2>=4.0.0",
 ]
+# Compatibility extra for existing `uv sync --extra pdf-inspector` commands.
+# pdf-inspector is a base dependency and the configured default (ADR-050).
+pdf-inspector = [
+    "pdf-inspector>=1.17.0",
+]
+# Optional Leiden community detection (COMMUNITY_ALGORITHM=leiden).
+# Floors pair on the igraph 1.x boundary: leidenalg 0.11+ declares
+# igraph<2.0,>=1.0.0, both ship abi3 wheels for macOS (arm64/x86_64),
+# manylinux (x86_64/aarch64), and Windows x86_64. Locked footprint
+# ~4-9 MB. See ADR-044 (add-pluggable-community-detection).
+community-leiden = [
+    "leidenalg>=0.11.0",
+    "igraph>=1.0.0",
+]
 azure = [
     "azure-ai-documentintelligence>=1.0.0",
 ]
 llamacpp = [
-    "llama-index-embeddings-openai>=0.2.0",
-    "llama-index-llms-openai-like>=0.2.0",
+    "llama-index-embeddings-openai-like>=0.3.0",
+    "llama-index-llms-openai-like>=0.5.0",
 ]
 openrouter = [
-    "llama-index-embeddings-openai>=0.2.0",
-    "llama-index-llms-openai-like>=0.2.0",
+    "llama-index-embeddings-openai-like>=0.3.0",
+    "llama-index-llms-openai-like>=0.5.0",
+]
+# PyTorch-backed reranker (opt-in). Adds ~200 MB on macOS ARM, more on
+# Linux. Default backend stays ONNX; installing this does not change
+# defaults.  Pin >=5.0: v3.x uses activation_fct, the activation_fn
+# kwarg did not exist until v4.x, and v5.4+ changed activation_fn
+# persistence on predict().  See ADR-038.
+torch = [
+    "sentence-transformers>=5.0",
+    # transformers 5.0 cap lifted in the major dependency upgrade cycle
+    # (coupled with huggingface-hub 1.0 — all transformers <5 versions
+    # require huggingface-hub <1.0).
+    "transformers>=5.0.0",
 ]
 
 [project.scripts]
@@ -75,8 +143,11 @@ allow-direct-references = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Root on sys.path so tests can import experiments._lib.* (add-chroma-cloud-backend).
+pythonpath = ["."]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "chroma: requires the optional chroma extra (uv sync --extra chroma); skipped by design in the base install",
 ]
 
 # ─── Import-linter contracts (Phase 2: config/compose/DI layering) ─────
@@ -115,6 +186,7 @@ forbidden_modules = [
     "rag_mcp.core.providers.embeddings.openrouter",
     "rag_mcp.core.providers.llm.ollama",
     "rag_mcp.core.providers.llm.llamacpp",
+    "rag_mcp.core.providers.llm.openrouter",
 ]
 # Imports within core/providers/ and imports made by the composition root
 # are permitted (registries resolve concrete modules lazily via importlib,
@@ -139,6 +211,7 @@ source_modules = [
     "rag_mcp.core.profiles",
     "rag_mcp.core.codebase",
     "rag_mcp.core.documents",
+    "rag_mcp.core.community",
     "rag_mcp.daemon",
 ]
 forbidden_modules = [
@@ -151,6 +224,24 @@ ignore_imports = [
     # is core BUSINESS logic reaching for providers directly; calling
     # compose.build_profile_resolver() is the sanctioned direction.
     "rag_mcp.daemon.watcher -> rag_mcp.compose",
+    # metadata.llamaindex resolves the LLM provider registry for the cloud
+    # (OpenRouter) branch — the registry centralises construction that was
+    # previously inline.  The contract forbids business logic from importing
+    # concrete provider modules; the registry is the sanctioned indirection.
+    "rag_mcp.core.metadata.llamaindex -> rag_mcp.core.providers.llm.registry",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# Community partitioning is shared infrastructure. It must not depend on
+# either domain consumer, otherwise codebase and document graph packages
+# become coupled through the strategy layer (OpenSpec task 5.1).
+[[tool.importlinter.contracts]]
+name = "community-strategies-independent-of-consumers"
+type = "forbidden"
+source_modules = ["rag_mcp.core.community"]
+forbidden_modules = [
+    "rag_mcp.core.codebase",
+    "rag_mcp.core.documents",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -167,6 +258,21 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.chroma -> chromadb",
+    "rag_mcp.core.vectordb.chroma_cloud -> chromadb",
+]
+unmatched_ignore_imports_alerting = "error"
+
+# F2 sibling (add-lancedb-vectordb-backend): lancedb is confined to the
+# vector store implementation — the only direct import sites are the
+# store itself and the filter translator.
+[[tool.importlinter.contracts]]
+name = "lancedb-confined-to-vectordb"
+type = "forbidden"
+source_modules = ["rag_mcp"]
+forbidden_modules = ["lancedb"]
+ignore_imports = [
+    "rag_mcp.core.vectordb.lancedb -> lancedb",
+    "rag_mcp.core.vectordb.lance_filter -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -219,7 +325,6 @@ ignore_imports = [
     "rag_mcp.integrations.magika -> rag_mcp.core.settings",
     "rag_mcp.integrations.azure -> rag_mcp.core.settings",
     "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
-    "rag_mcp.integrations.pdf.factory -> rag_mcp.core.settings",
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings
@@ -241,16 +346,64 @@ source = ["rag_mcp"]
 # shims themselves (task 9.5). Every module under src/rag_mcp is now real
 # code with real consumers, so nothing is excluded from the gate.
 
+# ─── Ruff (lint + format) ────────────────────────────────────────────
+# Replaces flake8, black, isort, and bandit in one tool. The rule sets:
+#   E  pycodestyle errors (PEP 8 style)
+#   F  Pyflakes (unused imports, undefined names, redefinitions)
+#   I  isort (import ordering)
+#   UP pyupgrade (modernise syntax for the target Python version)
+#   B  flake8-bugbear (common pitfall patterns)
+#   S  flake8-bandit (security: hardcoded secrets, injection, weak crypto)
+# Gitleaks runs separately as a pre-commit hook for literal secret scanning.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = [
+    "graphify-out",
+    "chroma_db",
+    "chroma_db_test",
+    "models",
+    "experiments",
+    ".opencode",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+
+# S101 (assert) is expected in test code.
+# S108 (/tmp paths) and B017 (broad pytest.raises) are standard test patterns.
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S108", "B017", "S603", "S607"]
+# Experiment scripts are not production code: they call system tools
+# (sysctl), spawn child processes, and use bare DataFrame display.
+# E501/S311: the calibration harnesses carry long historical lines and
+# seeded pseudo-random sampling; B007/B905: pre-existing build loops.
+"experiments/*/test_*.py" = ["S101", "S108", "B017", "S603", "S607"]
+"experiments/*/run_eval.py" = ["S110", "S603", "S607", "E501", "S311"]
+"experiments/*/run_qualification.py" = ["S110", "S310", "S603", "S607"]
+"experiments/*/verify_reopen.py" = ["S603", "S607"]
+"experiments/*/analysis.py" = ["B018"]
+"experiments/*/summarise_eval.py" = ["E501"]
+"experiments/*/build_indexes.py" = ["E501", "S311", "B007", "B905"]
+"experiments/*/build_corpus.py" = ["E501", "S311"]
+
 [dependency-groups]
 dev = [
-    "huggingface-hub>=0.36.2",
     "import-linter>=2.13",
     "ipywidgets>=8.1.8",
     "jupytext>=1.19.4",
+    # matplotlib powers experiment analysis.py plots only — it is not a
+    # production dependency and must not ship with the package.
+    "matplotlib>=3.11.1",
     "openapi-spec-validator>=0.7.1",
+    "pre-commit>=4.0.0",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
+    # ruff floor raised so pre-commit (which runs ``uv run ruff``) formats
+    # identically on the floors and on the locked version. See ADR-042.
+    "ruff>=0.16.0",
 ]
 
 # ─── Semantic Release ────────────────────────────────────────────────
@@ -293,3 +446,5 @@ token = { env = "GH_TOKEN" }
 [tool.pyright]
 include = ["src", "tests", "experiments"]
 exclude = ["**/.venv", "**/__pycache__", "**/.opencode"]
+venvPath = "."
+venv = ".venv"

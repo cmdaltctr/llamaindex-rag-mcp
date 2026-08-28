@@ -5,7 +5,8 @@ PDF parser available under this project's hard constraints. This adapter
 captures bounding-box metadata on every emitted Document for future
 spatial RAG capabilities.
 
-Activated via ``[pdf-liteparse]`` extra. See ADR-020.
+LiteParse is a base dependency and the default reader selected by the
+composition root. See ADR-020.
 """
 
 from __future__ import annotations
@@ -40,11 +41,10 @@ class LiteParseReader:
         Raises:
             ImportError: If ``liteparse`` is not installed.
         """
+        from liteparse import LiteParse
         from llama_index.core import Document
 
         from ...core.settings import get_default_effective_settings
-
-        from liteparse import LiteParse
 
         defaults = get_default_effective_settings()
         parser = LiteParse(
@@ -64,18 +64,10 @@ class LiteParseReader:
             # another is >= 45%, the page has multiple columns.
             if page.text_items:
                 max_x = max(item.x + item.width for item in page.text_items)
-                has_left = any(
-                    item.x < max_x * 0.45 for item in page.text_items
-                )
-                has_right = any(
-                    item.x >= max_x * 0.45 for item in page.text_items
-                )
+                has_left = any(item.x < max_x * 0.45 for item in page.text_items)
+                has_right = any(item.x >= max_x * 0.45 for item in page.text_items)
                 if has_left and has_right:
-                    column = (
-                        "left"
-                        if page.text_items[0].x < max_x * 0.45
-                        else "right"
-                    )
+                    column = "left" if page.text_items[0].x < max_x * 0.45 else "right"
                 else:
                     column = "single"
             else:
@@ -94,16 +86,18 @@ class LiteParseReader:
                 ),
             ]
 
-            documents.append(Document(
-                text=page_text,
-                metadata={
-                    "pdf_reader": "liteparse",
-                    "page": page.page_num,
-                    "column": column,
-                    "section_bbox": json.dumps(bbox),
-                    "bbox_schema_version": 1,
-                    "file_path": str(file),
-                    "file_name": file.name,
-                },
-            ))
+            documents.append(
+                Document(
+                    text=page_text,
+                    metadata={
+                        "pdf_reader": "liteparse",
+                        "page": page.page_num,
+                        "column": column,
+                        "section_bbox": json.dumps(bbox),
+                        "bbox_schema_version": 1,
+                        "file_path": str(file),
+                        "file_name": file.name,
+                    },
+                )
+            )
         return documents

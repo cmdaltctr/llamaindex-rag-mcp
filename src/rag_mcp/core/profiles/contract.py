@@ -55,7 +55,7 @@ def generate_safety_contract(
     chunk_count = 0
     try:
         chunk_count = resolved_store.count(collection_name)
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     # Read the current profile tag.
@@ -66,7 +66,7 @@ def generate_safety_contract(
             tag = meta.get("profile")
             if isinstance(tag, str) and tag:
                 old_profile = tag
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     # Load both profiles' effective settings for comparison.
@@ -74,7 +74,7 @@ def generate_safety_contract(
     if old_profile and old_profile in ("documents", "codebase"):
         try:
             old_effective = resolved_resolver._load_effective(old_profile)
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
     try:
@@ -120,38 +120,48 @@ def _build_lever_impacts(
     impacts: list[dict[str, str]] = []
 
     # Query-time levers — apply immediately after the change.
-    impacts.append(_lever_impact(
-        "reranker_enabled",
-        old.reranker_enabled if old else None,
-        new.reranker_enabled,
-        "query-time",
-    ))
-    impacts.append(_lever_impact(
-        "top_k",
-        old.top_k if old else None,
-        new.top_k,
-        "query-time",
-    ))
-    impacts.append(_lever_impact(
-        "hybrid_enabled",
-        old.hybrid_enabled if old else None,
-        new.hybrid_enabled,
-        "query-time",
-    ))
+    impacts.append(
+        _lever_impact(
+            "reranker_enabled",
+            old.reranker_enabled if old else None,
+            new.reranker_enabled,
+            "query-time",
+        )
+    )
+    impacts.append(
+        _lever_impact(
+            "top_k",
+            old.top_k if old else None,
+            new.top_k,
+            "query-time",
+        )
+    )
+    impacts.append(
+        _lever_impact(
+            "hybrid_enabled",
+            old.hybrid_enabled if old else None,
+            new.hybrid_enabled,
+            "query-time",
+        )
+    )
 
     # Ingest-time levers — apply only to future ingests.
-    impacts.append(_lever_impact(
-        "chunk_strategy_fallback",
-        old.chunk_strategy_fallback if old else None,
-        new.chunk_strategy_fallback,
-        "ingest-time",
-    ))
-    impacts.append(_lever_impact(
-        "metadata_taxonomy_mode",
-        old.metadata_taxonomy_mode if old else None,
-        new.metadata_taxonomy_mode,
-        "ingest-time",
-    ))
+    impacts.append(
+        _lever_impact(
+            "chunk_strategy_fallback",
+            old.chunk_strategy_fallback if old else None,
+            new.chunk_strategy_fallback,
+            "ingest-time",
+        )
+    )
+    impacts.append(
+        _lever_impact(
+            "metadata_taxonomy_mode",
+            old.metadata_taxonomy_mode if old else None,
+            new.metadata_taxonomy_mode,
+            "ingest-time",
+        )
+    )
 
     return impacts
 
@@ -213,14 +223,12 @@ def apply_profile_change(
             f"Create it first by ingesting documents into it."
         )
 
-    resolved_store.update_collection_metadata(
-        collection_name, {"profile": new_profile}
-    )
+    resolved_store.update_collection_metadata(collection_name, {"profile": new_profile})
 
     chunk_count = 0
     try:
         chunk_count = resolved_store.count(collection_name)
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     return {

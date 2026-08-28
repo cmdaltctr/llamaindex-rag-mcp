@@ -23,6 +23,14 @@ Settings come from five places. Each beats the one above it:
 - Different for one collection → its profile
 - Just for this one command → an environment variable
 
+**Why the schema is Python while the values are YAML.** In short: YAML for
+data, Python for the contract. Humans edit values, so the values live in YAML
+(`defaults.yaml` and the profile bundles), while the contract (which keys
+exist, their types, which source wins) is defined once in the typed Python
+models in `config/__init__.py`. A misspelt key in YAML or an environment
+variable therefore fails at startup and lists the valid fields, instead of
+being silently ignored.
+
 ### The trap worth knowing
 
 `.env` sits **above** profiles. Put a tuning value there and it overrides every
@@ -49,7 +57,8 @@ metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
 ```
 
 Cross-cutting settings stay flat: `EMBED_MODEL`, `CHROMA_PERSIST_DIR`,
-`RAG_PROFILE`, `PDF_READER`, and every credential.
+`VECTOR_STORE`, `LANCEDB_URI`, `RAG_PROFILE`, `PDF_READER`, and every
+credential.
 
 In YAML the same thing looks like this:
 
@@ -136,8 +145,12 @@ Only these:
 
 ```bash
 # Where the vector database lives
-CHROMA_PERSIST_DIR=./chroma_db
+VECTOR_STORE=lancedb
+LANCEDB_URI=./lancedb
 COLLECTION_NAME=documents
+# Chroma only: install the `chroma` extra, set VECTOR_STORE=chroma,
+# then keep CHROMA_PERSIST_DIR pointed at its existing directory.
+CHROMA_PERSIST_DIR=./chroma_db
 
 # Which embedding model, and where to reach it
 EMBED_MODEL=qwen3-embedding:0.6b
@@ -147,6 +160,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 HF_TOKEN=...
 OPENROUTER_API_KEY=...
 AZURE_DOC_INTELLIGENCE_KEY=...
+CHROMA_CLOUD_API_KEY=...
 ```
 
 If you find yourself putting `RETRIEVAL__*` or `CHUNKING__*` in here, it
@@ -165,18 +179,121 @@ Defaults below are what ships in `defaults.yaml`.
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | Where the database is written |
 | `COLLECTION_NAME` | `documents` | Default collection |
 | `CHROMA_SCAN_PAGE_SIZE` | `10000` | Rows per page when scanning metadata |
-| `VECTOR_STORE` | `chroma` | Which store implementation |
+| `VECTOR_STORE` | `lancedb` | Store implementation: `lancedb` (base-install default) or `chroma` (optional extra). Unrecognised values fail startup listing the registered names |
+| `LANCEDB_URI` | `./lancedb` | Parent directory for LanceDB tables (`VECTOR_STORE=lancedb` only). Embedded/local only in v1 |
+| `CHROMA_MODE` | `local` | `local` or `cloud`. Explicit selection; unrecognised values fail startup |
+| `CHROMA_CLOUD_API_KEY` | — | Required when `CHROMA_MODE=cloud`. `.env` only — never in YAML, logs, or results |
+| `CHROMA_CLOUD_TENANT` | — | Optional tenant. Supplied with `CHROMA_CLOUD_DATABASE`, or both omitted |
+| `CHROMA_CLOUD_DATABASE` | — | Optional database. Supplied with `CHROMA_CLOUD_TENANT`, or both omitted |
+
+### Chroma deployment mode
+
+Chroma is an explicit optional backend. Install it with `uv sync --extra chroma`
+in a source checkout, or `pip install "rag-mcp[chroma]"` from a package. Set
+`VECTOR_STORE=chroma` before using its local or cloud modes. CVE-2026-45829
+(PYSEC-2026-311) is active for this optional dependency. Do not expose Chroma's
+Python FastAPI server through this project.
+
+`CHROMA_MODE` selects the Chroma deployment explicitly. The default mode is
+`local`, the embedded `PersistentClient`. Selecting `cloud` connects to hosted
+Chroma Cloud. API-key presence never switches storage: a missing shell
+variable cannot silently redirect a process to an empty local database.
+Unrecognised values fail settings validation.
+
+Embedding compute and vector storage are independent axes. `EMBED_PROVIDER`
+selects where embeddings run; `CHROMA_MODE` selects where vectors are stored.
+No third selector named `hybrid` exists. All four combinations are valid:
+
+| Mode | Embeddings | Vector store | Use |
+| --- | --- | --- | --- |
+| Full local | llama.cpp | local Chroma | Private/offline; strong local hardware |
+| Cloud compute, local store | OpenRouter/Fireworks | local Chroma | Fast embeddings, local single-machine index |
+| Full cloud | OpenRouter/Fireworks | Chroma Cloud | Shared indexes, parallel read cells, no SQLite lock |
+| Local compute, cloud store | llama.cpp | Chroma Cloud | Local model with a shared remote index |
+
+OpenRouter is the existing cloud-compute provider. Fireworks is a compatible
+future option that needs a separate provider registration — it is not a
+vector store.
+
+Cloud mode validates credentials at `Settings` construction:
+`CHROMA_MODE=cloud` without `CHROMA_CLOUD_API_KEY` fails startup. The
+connection is checked with a heartbeat during runtime setup, so
+authentication, network, and tenant/database mistakes surface before any
+work begins. A cloud-mode failure is actionable and never silently falls
+back to a local index. Select `CHROMA_MODE=local` deliberately if degraded
+operation is acceptable.
+
+`CHROMA_CLOUD_TENANT` and `CHROMA_CLOUD_DATABASE` are optional. Supply both
+or neither; omitting both lets the cloud client resolve them from the API
+key. The key stays in `.env` only — never in `defaults.yaml`, logs, or
+results.
+
+Collection metadata records the embedding provider, model, and index
+identity. Changing the embedding provider or model, the corpus or parser,
+the chunking configuration, or the vector dimension requires re-ingestion
+into a fresh collection. Same-dimension model swaps are rejected rather than
+silently mixing incompatible vector spaces.
+
+Embedding-provider selection applies to the whole server process. A single
+process assigns one LlamaIndex `Settings.embed_model`; per-collection profiles
+do not override it. If two collections require different embedding providers
+or models concurrently, run them in separate server processes. The current
+configuration must not be treated as concurrent per-collection provider
+swappability.
+
+Run the opt-in smoke check before using cloud storage:
+
+```bash
+uv run python scripts/chroma_cloud_smoke.py
+```
+
+The script ingests and queries a disposable collection, then deletes it. It
+never runs in CI.
+
+### LanceDB backend
+
+LanceDB is the embedded, local-first base-install default. Each RAG collection
+maps to one LanceDB table under `LANCEDB_URI`. Tables are created lazily on
+first write, which locks the vector dimension. The store keeps collection
+metadata, including profile tags and embedding identity, in durable schema
+metadata.
+
+LanceDB Cloud is out of scope. Unknown `VECTOR_STORE` values fail startup with
+the registered names listed. The BM25 hybrid path is backend-agnostic: it reads
+rows through `iter_documents` and invalidates off the generation counter.
+Native LanceDB full-text search is deferred (ADR-046).
+
+### Legacy Chroma data and rollback
+
+When the default would select LanceDB and recognised data exists in
+`CHROMA_PERSIST_DIR`, startup stops. Choose one path: install the Chroma extra
+and explicitly set `VECTOR_STORE=chroma` to keep the data, or explicitly set
+`VECTOR_STORE=lancedb` and re-ingest source files. The server never migrates,
+deletes, moves, or rewrites the Chroma directory.
+
+Switching stores requires re-ingestion. Before reverting after LanceDB
+ingestion, set and verify `VECTOR_STORE=lancedb`. Keep the pin while reverting
+so an older release cannot select Chroma and make LanceDB data appear missing.
 
 ### Providers
 
 | Variable | Default | What it does |
 |---|---|---|
-| `EMBED_PROVIDER` | `local` | `local` or `cloud` |
+| `EMBED_PROVIDER` | `local` | `local`, `cloud`, `ollama`, `llamacpp`, or `openrouter` |
 | `METADATA_LLM_PROVIDER` | `local` | `local` or `cloud`, independent of the above |
 | `LOCAL_BACKEND` | `llamacpp` | `llamacpp` or `ollama` |
 | `CLOUD_BACKEND` | `openrouter` | `openrouter` |
 | `EMBED_MODEL` | — | Model name for embeddings |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+
+An unrecognised value for any of the four provider selections above
+(`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
+`CLOUD_BACKEND`), plus `RETRIEVAL__HYBRID_SPARSE_BACKEND` and
+`DOCUMENT_BACKEND`, fails startup with a clear error naming the value
+and the accepted set.  Leading and trailing whitespace is stripped
+before validation, so `EMBED_PROVIDER=" local "` resolves to `local`.
+An empty or whitespace-only value (`SETTING=` in `.env`) is treated
+as unset and resets to the default.
 
 Optional dependencies:
 
@@ -196,7 +313,7 @@ Connection details for each: [Providers](providers.md).
 | `markdown_chunk_size` | `1024` | Larger, because Markdown splits on headings |
 | `markdown_heading_prepend` | `false` | Prepend the heading path to each chunk |
 | `markdown_min_chunk_fraction` | `0.0` | Drop chunks below this fraction of the target |
-| `strategy_fallback` | `markdown` | Strategy for file types we cannot identify. **Profile-owned** |
+| `strategy_fallback` | `markdown` | Strategy for file types we cannot identify. **Profile-owned**. Accepted values: inline `markdown`, or registered `code`, `config`, and `sentence` |
 
 Known file types always use content-type dispatch — a `.py` file gets the code
 splitter regardless of the fallback.
@@ -220,46 +337,68 @@ splitter regardless of the fallback.
 | `rerank_fetch_multiplier` | `3` | Fetch `top_k × 3` candidates before reranking |
 | `rerank_max_fetch` | `100` | Cap on that candidate pool |
 | `rerank_model` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Reranker model |
+| `rerank_backend` | `onnx` | Reranker inference backend (`onnx` or `torch`). `torch` requires `uv sync --extra torch`. See [ADR-038](../adr/038-pluggable-reranker-backend.md) |
 | `hybrid_enabled` | `false` | Combine keyword and embedding search. **Profile-owned** |
 | `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
-| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto` |
+| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto`. Unrecognised values fail startup |
 
 ### Metadata — `METADATA__*`
 
 | Field | Default | What it does |
 |---|---|---|
-| `extraction_mode` | `llamaindex` | `disabled`, `keyword`, `local`, or `llamaindex` |
+| `extraction_mode` | `llamaindex` | `disabled`, `keyword`, `local`, `llamaindex`, `ollama`, `llamacpp`, or `openrouter` |
 | `keyword_rules` | — | JSON array of custom `{pattern, category}` rules |
 | `taxonomy_mode` | `category` | `category` or `file_type`. **Profile-owned** |
-| `ollama_classify_model` | `qwen3:0.6b` | Model used for classification |
-| `ollama_classify_max_attempts` | `3` | Retries on failure |
-| `ollama_classify_timeout` | `30.0` | Seconds per attempt |
+| `ollama_classify_model` | `qwen3:0.6b` | Ollama model used for classification |
+| `classify_max_attempts` | `3` | Maximum attempts **including** the initial request (all metadata LLM backends) |
+| `classify_timeout` | `30.0` | Seconds per attempt (all metadata LLM backends) |
+| `pipeline_timeout` | `180.0` | Seconds for the llamaindex pipeline (one attempt, three extractors per chunk) |
+| `llamacpp_classify_timeout_override` | `None` | Per-provider override of `classify_timeout` for `llamacpp`. Falls back to the shared value when unset |
+| `ollama_classify_timeout_override` | `None` | Per-provider override of `classify_timeout` for `ollama`. Falls back to the shared value when unset |
+| `openrouter_classify_timeout_override` | `None` | Per-provider override of `classify_timeout` for `openrouter`. Falls back to the shared value when unset |
+| `llamacpp_pipeline_timeout_override` | `None` | Per-provider override of `pipeline_timeout` for `llamacpp`. Falls back to the shared value when unset |
+| `ollama_pipeline_timeout_override` | `None` | Per-provider override of `pipeline_timeout` for `ollama`. Falls back to the shared value when unset |
+| `openrouter_pipeline_timeout_override` | `None` | Per-provider override of `pipeline_timeout` for `openrouter`. Falls back to the shared value when unset |
 
-Set `extraction_mode=disabled` to skip classification entirely — much faster
-ingestion, no categories. Details: [Metadata extraction](metadata-extraction.md).
+Set `extraction_mode=disabled` to skip classification entirely. This avoids
+classification and category metadata. Details: [Metadata extraction](metadata-extraction.md),
+including the six per-provider timeout overrides above and how
+degradation from the configured mode is reported in the ingestion result.
 
 ### PDF reading
 
 | Variable | Default | What it does |
 |---|---|---|
-| `PDF_READER` | `auto` | `auto`, `pypdf`, `pypdfium2`, or `liteparse` |
+| `PDF_READER` | `pdf_inspector` | `auto`, `pypdf`, `pypdfium2`, `liteparse`, or `pdf_inspector` |
 | `LITEPARSE_OCR_ENABLED` | `false` | OCR for scanned PDFs |
 | `LITEPARSE_NUM_WORKERS` | — | Parallel workers |
 
-`auto` uses LiteParse if installed, otherwise pypdf. Tests pin `pypdf` for
-determinism.
+The packaged default `pdf_inspector` is a base dependency
+([ADR-050](../adr/050-configure-pdf-inspector-as-default-reader.md)).
+`auto` keeps the LiteParse → pypdfium2 → pypdf probe order. A configured
+reader that is not importable logs an error and falls back to pypdf. Tests
+pin `pypdf` for determinism.
 
 ### Document backend
 
 | Variable | Default | What it does |
 |---|---|---|
-| `DOCUMENT_BACKEND` | `local` | `local` or `azure` |
+| `DOCUMENT_BACKEND` | `local` | `local` or `azure`. Unrecognised values fail startup |
 | `AZURE_DOC_INTELLIGENCE_ENDPOINT` | — | Azure endpoint URL |
 | `AZURE_DOC_INTELLIGENCE_KEY` | — | Azure key |
 | `AZURE_DOC_INTELLIGENCE_MODEL` | `prebuilt-layout` | Azure model |
 
-Azure is opt-in and degrades to local parsing if unreachable
-([ADR-024](../adr/024-dual-deployment-modes.md)).
+Azure is opt-in ([ADR-024](../adr/024-dual-deployment-modes.md)) and
+degrades to local parsing when credentials are missing or unreachable,
+or when the optional SDK is absent. Each warning names the missing
+piece: the `AZURE_DOC_INTELLIGENCE_ENDPOINT` /
+`AZURE_DOC_INTELLIGENCE_KEY` variables, or the
+`azure-ai-documentintelligence` package with `uv sync --extra azure`.
+Azure reads `.pdf`, `.docx`, and `.doc` only; every other file type
+goes through the local backend whatever `DOCUMENT_BACKEND` is set to.
+An unrecognised `DOCUMENT_BACKEND` value (not `local` or `azure`) fails
+startup rather than silently falling back. The accepted names come from
+the document-backend registry instead of a fixed config-time list.
 
 ### Codebase map
 
@@ -273,6 +412,34 @@ Azure is opt-in and degrades to local parsing if unreachable
 
 The cache key is the git commit hash. Not a git repository means no caching —
 the map rebuilds every call.
+
+### Community detection
+
+Both graph subsystems, the codebase graph and the document similarity graph,
+use the same configured strategy and seed.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `COMMUNITY_ALGORITHM` | `louvain` | `louvain` or `leiden`. Unknown names fail startup and list the available strategies |
+| `COMMUNITY_SEED` | `0` | Seed for algorithm randomness. `0` keeps partitions deterministic |
+
+`COMMUNITY_ALGORITHM` and `COMMUNITY_SEED` are cross-cutting, so their
+environment variable names are flat. An empty value
+(`COMMUNITY_ALGORITHM=`) resets to `louvain`.
+
+There is no `auto`. Whether an optional package is installed must not change
+graph output silently, so the algorithm is always explicit.
+
+**Leiden.** `leiden` requires the optional `community-leiden` extra:
+
+```bash
+uv sync --extra community-leiden
+```
+
+Setting `COMMUNITY_ALGORITHM=leiden` without the extra fails startup with the
+installation instruction above. There is no silent fallback to `louvain`: an
+explicit algorithm selection is an operator contract. See
+[ADR-044](../adr/044-pluggable-community-detection.md).
 
 ---
 

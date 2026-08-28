@@ -1,21 +1,26 @@
 """Azure Document Intelligence reader — optional hybrid document parsing backend.
 
-When ``DOCUMENT_BACKEND=azure`` is configured in ``config.py``, this module
-provides an alternative PDF/document parser using Azure Document Intelligence.
-The Azure SDK is imported lazily at runtime — it is never a top-level import,
-so the module loads even when ``azure-ai-documentintelligence`` is not installed.
+When ``DOCUMENT_BACKEND=azure`` is configured, this module provides the
+registered ``azure`` document-backend adapter (see
+``core/ingestion/backends/registry.py``) using Azure Document
+Intelligence. The Azure SDK is imported lazily at runtime — it is never
+a top-level import, so the module loads even when
+``azure-ai-documentintelligence`` is not installed.
 
-All settings are read from ``config.py``. No cross-imports with ``retrieval.py``.
+Retry and local-fallback policy is owned by the orchestrator
+(``core/ingestion/backends/orchestrator.py``); this adapter only reads
+(design D1). Adapters receive the frozen ``EffectiveSettings`` value
+object and import no ingestion business logic (design D4).
 """
 
 from __future__ import annotations
 
 import asyncio
+import importlib
 import logging
-import time
 from pathlib import Path
 
-from ..core.settings import get_default_effective_settings
+from ..core.settings import EffectiveSettings
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +35,10 @@ class AzureDocReader:
     The Azure SDK is imported lazily — calling ``read()`` without the
     ``azure-ai-documentintelligence`` package installed raises ImportError.
 
+    Construction is explicit (ADR-037): the adapter reads no settings
+    singleton; callers — the registered ``read_documents`` adapter —
+    inject the resolved values.
+
     Attributes:
         endpoint: Azure Document Intelligence endpoint URL.
         key: Azure Document Intelligence API key.
@@ -38,9 +47,9 @@ class AzureDocReader:
 
     def __init__(
         self,
-        endpoint: str | None = None,
-        key: str | None = None,
-        model: str | None = None,
+        endpoint: str,
+        key: str,
+        model: str = "prebuilt-layout",
     ) -> None:
         """Initialise the Azure Document Intelligence reader.
 
@@ -49,14 +58,6 @@ class AzureDocReader:
             key: Azure Document Intelligence API key.
             model: Azure model ID (default: "prebuilt-layout").
         """
-        if endpoint is None or key is None or model is None:
-            defaults = get_default_effective_settings()
-            if endpoint is None:
-                endpoint = defaults.azure_doc_intelligence_endpoint
-            if key is None:
-                key = defaults.azure_doc_intelligence_key
-            if model is None:
-                model = defaults.azure_doc_intelligence_model
         self.endpoint = endpoint
         self.key = key
         self.model = model
@@ -80,7 +81,8 @@ class AzureDocReader:
             ) from exc
 
         return DocumentIntelligenceClient(
-            self.endpoint, AzureKeyCredential(self.key),
+            self.endpoint,
+            AzureKeyCredential(self.key),
         )
 
     def read(self, file_path: Path) -> list:
@@ -101,7 +103,8 @@ class AzureDocReader:
 
         with open(file_path, "rb") as f:
             poller = client.begin_analyze_document(
-                self.model, body=f,
+                self.model,
+                body=f,
             )
 
         # Wait for completion (Azure handles async polling).
@@ -160,36 +163,42 @@ def parse_azure_response(result, file_path: Path) -> list:
             # Split large tables into row groups.
             row_groups = _split_table_rows(table, group_size=50)
             for j, group_text in enumerate(row_groups):
-                documents.append(Document(
-                    text=group_text,
+                documents.append(
+                    Document(
+                        text=group_text,
+                        metadata={
+                            "file_path": str(file_path),
+                            "content_type": "table",
+                            "table_index": i,
+                            "row_group": j,
+                        },
+                    )
+                )
+        else:
+            documents.append(
+                Document(
+                    text=table_text,
                     metadata={
                         "file_path": str(file_path),
                         "content_type": "table",
                         "table_index": i,
-                        "row_group": j,
                     },
-                ))
-        else:
-            documents.append(Document(
-                text=table_text,
-                metadata={
-                    "file_path": str(file_path),
-                    "content_type": "table",
-                    "table_index": i,
-                },
-            ))
+                )
+            )
 
     # If no paragraphs or tables, try raw content.
     if not documents:
         content = getattr(result, "content", "") or ""
         if content:
-            documents.append(Document(
-                text=content,
-                metadata={
-                    "file_path": str(file_path),
-                    "content_type": "document/azure",
-                },
-            ))
+            documents.append(
+                Document(
+                    text=content,
+                    metadata={
+                        "file_path": str(file_path),
+                        "content_type": "document/azure",
+                    },
+                )
+            )
 
     return documents
 
@@ -273,77 +282,51 @@ def _split_table_rows(table, group_size: int = 50) -> list[str]:
     return groups
 
 
-async def read_with_azure_fallback(
-    file_path: Path,
-    max_retries: int = 1,
-    retry_delay: float = 5.0,
-) -> list:
-    """Read a document using Azure with graceful fallback to local readers.
-
-    Attempts Azure Document Intelligence first. On network error, retries
-    once after ``retry_delay`` seconds. On persistent failure, falls back
-    to the local reader chain (LiteParse → pypdfium2 → pypdf).
-
-    Args:
-        file_path: Path to the document file.
-        max_retries: Number of retry attempts before fallback.
-        retry_delay: Delay between retries in seconds.
-
-    Returns:
-        List of LlamaIndex ``Document`` objects.
+def require_azure_installed() -> None:
+    """Availability probe for the document-backend registry.
 
     Raises:
-        Exception: If both Azure and local readers fail.
+        ImportError: When ``azure-ai-documentintelligence`` is not
+            installed; the message carries the installation instruction.
     """
-    reader = AzureDocReader()
-
-    for attempt in range(max_retries + 1):
-        try:
-            # Run Azure read in a thread to avoid blocking the event loop.
-            documents = await asyncio.to_thread(reader.read, file_path)
-            logger.info(
-                "Azure Document Intelligence parsed %s (%d chunks)",
-                file_path.name, len(documents),
-            )
-            return documents
-        except ImportError as exc:
-            logger.warning("Azure SDK not available: %s — falling back to local", exc)
-            break
-        except Exception as exc:
-            if attempt < max_retries:
-                logger.warning(
-                    "Azure read attempt %d failed for %s: %s — retrying in %.1fs",
-                    attempt + 1, file_path.name, exc, retry_delay,
-                )
-                await asyncio.sleep(retry_delay)
-            else:
-                logger.warning(
-                    "Azure read failed for %s after %d attempts: %s — falling back to local",
-                    file_path.name, max_retries + 1, exc,
-                )
-
-    # Fallback to local reader chain.
-    return await _read_with_local_chain(file_path)
+    try:
+        importlib.import_module("azure.ai.documentintelligence")
+    except ImportError as exc:
+        raise ImportError(
+            "azure-ai-documentintelligence is not installed. Install with: uv sync --extra azure"
+        ) from exc
 
 
-async def _read_with_local_chain(file_path: Path) -> list:
-    """Read a document using the local reader chain (LiteParse → pypdfium2 → pypdf).
+async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> list:
+    """Read *file_path* through Azure Document Intelligence (registered backend).
+
+    Runs the SDK call in a worker thread so the event loop stays
+    responsive. Retry and local fallback are owned by the orchestrator,
+    NOT this adapter (design D1): exceptions propagate for the
+    orchestrator to retry or degrade.
 
     Args:
-        file_path: Path to the document file.
+        file_path: Path to the document file (PDF, DOCX, etc.).
+        settings: Injected effective settings carrying the Azure
+            endpoint, key, and model.
 
     Returns:
-        List of LlamaIndex ``Document`` objects.
+        List of LlamaIndex ``Document`` objects with paragraphs, tables,
+        and heading metadata.
+
+    Raises:
+        ImportError: If the Azure SDK is not installed.
+        Exception: If the Azure API call fails.
     """
-    from llama_index.core import SimpleDirectoryReader
-    from .pdf import get_pdf_reader
-
-    def _read_sync() -> list:
-        reader = SimpleDirectoryReader(
-            input_files=[str(file_path)],
-            filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader()},
-        )
-        return reader.load_data()
-
-    return await asyncio.to_thread(_read_sync)
+    reader = AzureDocReader(
+        endpoint=settings.azure_doc_intelligence_endpoint,
+        key=settings.azure_doc_intelligence_key,
+        model=settings.azure_doc_intelligence_model,
+    )
+    documents = await asyncio.to_thread(reader.read, file_path)
+    logger.info(
+        "Azure Document Intelligence parsed %s (%d chunks)",
+        file_path.name,
+        len(documents),
+    )
+    return documents

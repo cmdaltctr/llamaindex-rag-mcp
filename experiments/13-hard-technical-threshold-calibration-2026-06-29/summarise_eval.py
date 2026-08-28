@@ -1,156 +1,192 @@
-"""Summarise Experiment 13: HARD_TECHNICAL_THRESHOLD calibration.
+"""Summarise Experiment 13 (v2.0): threshold-policy contrasts, paired CIs.
 
-Identifies the threshold that preserves semantic reranker benefit (≥ +1pp)
-while minimising technical regression (≤ −1pp).
+Compares each policy cell (``rerank=None`` at a swept threshold) against
+the SAME-fraction reference envelope arms (``reranker_off`` floor,
+``reranker_on`` ceiling), paired by ``query_id`` on the fixed fraction
+blocks (D18): semantic-benefit contrasts (policy vs off) and
+technical-guard contrasts (policy vs on/off), split by query type, with
+paired bootstrap confidence intervals from ``_lib.stats`` (D16).
+Warm-up rows are excluded; non-complete cells are listed as invalid and
+never aggregated.  Factor levels come from ``plan.json`` (D15).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+SEED = 20260629
+PRIMARY_METRIC = "coverage_at_20"
+QUERY_TYPES = ("technical", "semantic")
+REFERENCE_ARMS = ("reranker_off", "reranker_on")
 
 
-def _evaluate_thresholds(cells: list[dict[str, Any]]) -> dict[str, Any]:
-    """Evaluate pass gates for each threshold."""
-    thresholds: dict[float, list[dict[str, Any]]] = {}
-    for cell in cells:
-        thr = cell["threshold"]
-        thresholds.setdefault(thr, []).append(cell)
+def _plan_levels(plan: dict[str, Any], name: str) -> list[Any]:
+    """Return one manipulated factor's declared levels from plan.json."""
+    for factor in plan.get("manipulated_factors", []):
+        if factor.get("name") == name:
+            return list(factor["levels"])
+    raise SystemExit(f"plan.json lacks manipulated factor {name!r}")
 
-    results: list[dict[str, Any]] = []
-    for thr in sorted(thresholds.keys()):
-        thr_cells = thresholds[thr]
-        # Aggregate across fractions
-        tech_covs = [c["metrics_technical"].get("coverage@20", 0.0) for c in thr_cells if c["n_technical"] > 0]
-        sem_covs = [c["metrics_semantic"].get("coverage@20", 0.0) for c in thr_cells if c["n_semantic"] > 0]
 
-        avg_tech = sum(tech_covs) / len(tech_covs) if tech_covs else 0.0
-        avg_sem = sum(sem_covs) / len(sem_covs) if sem_covs else 0.0
+def _measured_metric_by_query(cell: dict[str, Any], query_type: str) -> dict[str, float]:
+    """Per-query primary metric for one query type, warm-up excluded."""
+    from experiments._lib.stats import split_warmup
 
-        # Compare to baseline (threshold=0.1 as lowest, or use 0.0 fraction)
-        # For now, use the 0% technical fraction cell as semantic baseline
-        sem_baseline = 0.0
-        tech_baseline = 0.0
-        for c in thr_cells:
-            if c["tech_fraction"] == 0.0 and c["n_semantic"] > 0:
-                sem_baseline = c["metrics_semantic"].get("coverage@20", 0.0)
-            if c["tech_fraction"] == 1.0 and c["n_technical"] > 0:
-                tech_baseline = c["metrics_technical"].get("coverage@20", 0.0)
+    _, measured = split_warmup(cell["per_query"])
+    values: dict[str, float] = {}
+    for row in measured:
+        if row["metrics"].get("query_type") != query_type:
+            continue
+        value = row["metrics"].get(PRIMARY_METRIC)
+        if value is not None:
+            values[row["query_id"]] = float(value)
+    return values
 
-        sem_benefit = avg_sem - sem_baseline
-        tech_regression = sem_baseline - avg_tech  # not quite right; use direct comparison
 
-        # Simplified: check if semantic benefit ≥ 1pp and technical regression ≤ 1pp
-        sem_pass = sem_benefit >= 0.01
-        tech_pass = tech_regression <= 0.01
+def _contrast(
+    policy_cell: dict[str, Any],
+    reference_cell: dict[str, Any],
+    *,
+    fraction: Any,
+    threshold: Any,
+    query_type: str,
+    reference_arm: str,
+) -> dict[str, Any] | None:
+    """Paired bootstrap contrast of one policy cell vs one reference arm."""
+    from experiments._lib.stats import paired_bootstrap_ci
 
-        results.append({
-            "threshold": thr,
-            "avg_tech_cov20": round(avg_tech, 6),
-            "avg_sem_cov20": round(avg_sem, 6),
-            "sem_benefit": round(sem_benefit, 6),
-            "tech_regression": round(tech_regression, 6),
-            "sem_pass": sem_pass,
-            "tech_pass": tech_pass,
-            "acceptable": sem_pass and tech_pass,
-        })
-
-    # Find recommended threshold
-    acceptable = [r for r in results if r["acceptable"]]
-    recommended_thr: float | None = None
-    if acceptable:
-        recommended_thr = max(acceptable, key=lambda r: r["sem_benefit"])["threshold"]
-        rec = max(acceptable, key=lambda r: r["sem_benefit"])
-        recommendation = (
-            f"Recommended threshold: {rec['threshold']}. "
-            f"Semantic benefit={rec['sem_benefit']:.1%}, "
-            f"technical regression={rec['tech_regression']:.1%}."
-        )
-    else:
-        recommendation = (
-            "No threshold satisfies both gates. "
-            "The reranker may not be beneficial for any mixed workload. "
-            "ADR-019 is confirmed as-is."
-        )
-
-    # Check if 0.3 is in acceptable range
-    thr_03 = next((r for r in results if r["threshold"] == 0.3), None)
-    default_in_range = thr_03["acceptable"] if thr_03 else False
-
+    policy_values = _measured_metric_by_query(policy_cell, query_type)
+    reference_values = _measured_metric_by_query(reference_cell, query_type)
+    paired_ids = sorted(set(policy_values) & set(reference_values))
+    if not paired_ids:
+        return None
+    policy_series = [policy_values[qid] for qid in paired_ids]
+    reference_series = [reference_values[qid] for qid in paired_ids]
+    ci = paired_bootstrap_ci(policy_series, reference_series, seed=SEED)
     return {
-        "per_threshold": results,
-        "recommended": recommended_thr,
-        "default_in_range": default_in_range,
-        "recommendation": recommendation,
+        "fraction": fraction,
+        "threshold": threshold,
+        "query_type": query_type,
+        "comparison": f"policy_vs_{reference_arm}",
+        "n": int(ci["n"]),
+        "policy_mean": sum(policy_series) / len(policy_series),
+        "reference_mean": sum(reference_series) / len(reference_series),
+        "delta": ci["delta"],
+        "ci_low": ci["ci_low"],
+        "ci_high": ci["ci_high"],
+        "confidence": ci["confidence"],
     }
 
 
-def _write_results_md(
-    data: dict[str, Any],
-    summary: dict[str, Any],
-    path: Path,
-) -> None:
+def _write_results_md(summary: dict[str, Any], path: Path) -> None:
+    """Write a compact human-readable contrast table (results.md)."""
     lines = [
-        "# Experiment 13 Results: HARD_TECHNICAL_THRESHOLD Calibration",
+        "# Experiment 13 Results (v2.0): threshold policy vs reference envelope",
         "",
-        f"**Recommendation:** {summary['recommendation']}",
+        f"**Primary metric:** {summary['primary_metric']} (paired by query_id",
+        f"on fixed fraction blocks; bootstrap seed {summary['bootstrap_seed']})",
         "",
-        f"**Current default (0.3) in acceptable range:** {'Yes' if summary['default_in_range'] else 'No'}",
-        "",
-        "## Per-threshold summary",
-        "",
-        "| Threshold | Avg Tech Cov@20 | Avg Sem Cov@20 | Sem Benefit | Tech Regression | Acceptable? |",
-        "| ---: | ---: | ---: | ---: | ---: | :--: |",
+        "| Fraction | Threshold | Query type | Comparison | N | Policy | Reference | Delta | 95% CI |",
+        "| ---: | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
-
-    for r in summary["per_threshold"]:
+    for c in summary["contrasts"]:
         lines.append(
-            f"| {r['threshold']} | {r['avg_tech_cov20']:.4f} | {r['avg_sem_cov20']:.4f} | "
-            f"{r['sem_benefit']:+.4f} | {r['tech_regression']:+.4f} | "
-            f"{'✅' if r['acceptable'] else '❌'} |"
+            f"| {c['fraction']} | {c['threshold']} | {c['query_type']} "
+            f"| {c['comparison']} | {c['n']} | {c['policy_mean']:.4f} "
+            f"| {c['reference_mean']:.4f} | {c['delta']:+.4f} "
+            f"| [{c['ci_low']:+.4f}, {c['ci_high']:+.4f}] |"
         )
-
-    lines.extend([
-        "",
-        "## Per-threshold × per-fraction detail",
-        "",
-        "| Threshold | Fraction | N | Tech Cov@20 | Sem Cov@20 | Below min? |",
-        "| ---: | ---: | ---: | ---: | ---: | :--: |",
-    ])
-
-    for cell in data.get("cells", []):
-        m_tech = cell.get("metrics_technical", {})
-        m_sem = cell.get("metrics_semantic", {})
-        lines.append(
-            f"| {cell['threshold']} | {cell['tech_fraction']:.0%} | {cell['n_queries']} | "
-            f"{m_tech.get('coverage@20', 0):.4f} | {m_sem.get('coverage@20', 0):.4f} | "
-            f"{'⚠️' if cell.get('below_min') else ''} |"
-        )
-
-    path.write_text("\n".join(lines), encoding="utf-8")
+    if summary["invalid_cells"]:
+        lines.extend(["", "## Invalid / incomplete cells (never aggregated)", ""])
+        for cell in summary["invalid_cells"]:
+            lines.append(f"- `{cell['cell_id']}` ({cell['status']}): {cell['reason']}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=SCRIPT_DIR / "output" / "eval_results.json")
-    parser.add_argument("--output", type=Path, default=SCRIPT_DIR / "output" / "eval_results.summary.json")
+    parser.add_argument(
+        "--output", type=Path, default=SCRIPT_DIR / "output" / "eval_results.summary.json"
+    )
     parser.add_argument("--results-md", type=Path, default=SCRIPT_DIR / "output" / "results.md")
     args = parser.parse_args()
 
+    plan_path = SCRIPT_DIR / "plan.json"
+    if not plan_path.exists():
+        raise SystemExit(f"Machine-readable plan missing: {plan_path}")
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    thresholds = _plan_levels(plan, "threshold")
+    fractions = _plan_levels(plan, "fraction")
+
     data = json.loads(args.input.read_text(encoding="utf-8"))
-    summary = _evaluate_thresholds(data.get("cells", []))
+    raw_cells = data.get("cells", [])
+    cells = {c["cell_id"]: c for c in raw_cells if "cell_id" in c}
+    invalid_cells = [
+        {
+            "cell_id": c.get("cell_id", c.get("cell")),
+            "status": c.get("status"),
+            "reason": c.get("reason"),
+        }
+        for c in raw_cells
+        if c.get("status") != "complete"
+    ]
+
+    contrasts: list[dict[str, Any]] = []
+    for fraction in fractions:
+        references: dict[str, dict[str, Any]] = {}
+        for arm in REFERENCE_ARMS:
+            suffix = "off" if arm == "reranker_off" else "on"
+            reference = cells.get(f"thr_ref_frac_{fraction}__{suffix}")
+            if reference is not None and reference.get("status") == "complete":
+                references[arm] = reference
+        for threshold in thresholds:
+            policy = cells.get(f"thr_{threshold}_frac_{fraction}__policy")
+            if policy is None or policy.get("status") != "complete":
+                continue
+            for query_type in QUERY_TYPES:
+                for arm, reference in references.items():
+                    record = _contrast(
+                        policy,
+                        reference,
+                        fraction=fraction,
+                        threshold=threshold,
+                        query_type=query_type,
+                        reference_arm=arm,
+                    )
+                    if record is not None:
+                        contrasts.append(record)
+
+    summary = {
+        "experiment_id": data.get("experiment_id"),
+        "protocol_version": data.get("protocol_version"),
+        "primary_metric": PRIMARY_METRIC,
+        "bootstrap_seed": SEED,
+        "n_contrasts": len(contrasts),
+        "contrasts": contrasts,
+        "invalid_cells": invalid_cells,
+        "interpretation": (
+            "policy_vs_reranker_off > 0 preserves the reranker's benefit on "
+            "semantic queries; policy_vs_reranker_on on technical queries "
+            "quantifies how close the policy stays to the no-rerank floor "
+            "relative to the forced-rerank ceiling."
+        ),
+    }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-    _write_results_md(data, summary, args.results_md)
+    _write_results_md(summary, args.results_md)
     print(f"Summary written to {args.output}")
     print(f"Results report written to {args.results_md}")
-    print(summary["recommendation"])
+    print(f"Contrasts: {len(contrasts)}; invalid cells: {len(invalid_cells)}")
 
 
 if __name__ == "__main__":
