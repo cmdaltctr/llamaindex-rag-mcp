@@ -46,6 +46,18 @@ class _CountingMockEmbedding(MockEmbedding):
     def calls(self) -> int:
         return self._call_counter[0]
 
+    def _get_vector(self) -> list[float]:
+        # Unit-normalised so the embedding norm guard
+        # (guard-embedding-normalisation) accepts ingest through this
+        # mock: the stock constant [0.5] * dim vector has norm ~9.8.
+        # Normalising preserves the constant-vector property, so scores
+        # and rankings are unchanged.
+        import math
+
+        vector = super()._get_vector()
+        norm = math.sqrt(math.fsum(x * x for x in vector))
+        return [x / norm for x in vector] if norm else list(vector)
+
     def _get_query_embedding(self, query: str) -> list[float]:
         self._call_counter[0] += 1
         return super()._get_query_embedding(query)

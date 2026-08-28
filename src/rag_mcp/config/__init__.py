@@ -30,6 +30,7 @@ from ..core.chunking.settings import ChunkingSettings
 from ..core.ingestion.settings import IngestionSettings
 from ..core.metadata.settings import MetadataSettings
 from ..core.retrieval.settings import RetrievalSettings
+from ..core.settings import EmbeddingSettings
 
 load_dotenv()
 
@@ -122,7 +123,7 @@ class Settings(StorageValidationMixin, BaseSettings):
         case_sensitive=False,
         env_nested_delimiter="__",
         # The ROOT model stays permissive: it coexists with unrelated
-        # process environment entries (PATH, HOME, CI vars). The four
+        # process environment entries (PATH, HOME, CI vars). The five
         # subpackage models set extra="forbid", so a mistyped nested key
         # still fails loudly — see design.md D9.
         extra="ignore",
@@ -131,6 +132,7 @@ class Settings(StorageValidationMixin, BaseSettings):
     # ── Nested subpackage blocks ───────────────────────────────────
     chunking: ChunkingSettings = ChunkingSettings()
     ingestion: IngestionSettings = IngestionSettings()
+    embedding: EmbeddingSettings = EmbeddingSettings()
     retrieval: RetrievalSettings = RetrievalSettings()
     metadata: MetadataSettings = MetadataSettings()
 

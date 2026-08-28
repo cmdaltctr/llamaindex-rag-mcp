@@ -53,6 +53,7 @@ block and the field with a double underscore:
 retrieval.top_k             →  RETRIEVAL__TOP_K
 chunking.chunk_size         →  CHUNKING__CHUNK_SIZE
 ingestion.embed_batch_size  →  INGESTION__EMBED_BATCH_SIZE
+embedding.norm_tolerance    →  EMBEDDING__NORM_TOLERANCE
 metadata.extraction_mode    →  METADATA__EXTRACTION_MODE
 ```
 
@@ -324,6 +325,19 @@ splitter regardless of the fallback.
 |---|---|---|
 | `embed_concurrency` | `4` | Parallel embedding requests. Machine-specific — lower it if the backend throttles |
 | `embed_batch_size` | `100` | Documents per embedding call |
+
+### Embedding — `EMBEDDING__*`
+
+Unit-norm guard for embedding vectors (see [ADR-053](../adr/053-embedding-norm-guard.md)). Dense
+ranking treats L2 distance as cosine similarity; that is only rank-equivalent when vectors are
+unit-normalised. The guard enforces the contract: fail-closed at ingest (a bad vector aborts the
+file replacement before any write), warn-and-continue at query (results stay available, a
+`norm_guard` diagnostic appears with diagnostics enabled).
+
+| Field | Default | What it does |
+|---|---|---|
+| `norm_guard_enabled` | `true` | Verify vector norms at both boundaries. Disabling is logged at startup |
+| `norm_tolerance` | `0.001` | Maximum permitted `|norm − 1.0|`, inclusive. Must be positive |
 
 ### Retrieval — `RETRIEVAL__*`
 

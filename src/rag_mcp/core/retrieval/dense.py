@@ -12,6 +12,8 @@ from typing import Any
 
 from llama_index.core import Settings
 
+from ..norm_guard import NormCheck, check_query_vector
+
 logger = logging.getLogger(__name__)
 
 # ── Query embedding cache ──────────────────────────────────────────────
@@ -69,6 +71,12 @@ def _embed_query(query: str) -> list[float]:
     return list(_cached_query_embedding(query, model_name))
 
 
+def _embed_model_name() -> str:
+    """Return a diagnostic model name without assuming one provider shape."""
+    model = Settings.embed_model
+    return str(getattr(model, "model_name", type(model).__name__))
+
+
 def _result_source(meta: dict) -> str:
     return meta.get("file_path") or meta.get("file_name") or "unknown"
 
@@ -98,8 +106,18 @@ def _dense_query_rows(
     query: str,
     fetch_k: int,
     metadata_filter: dict | None = None,
+    *,
+    norm_guard_enabled: bool = True,
+    norm_tolerance: float = 0.001,
+    attach_norm_diagnostic: bool = False,
 ) -> list[dict]:
     """Query the vector store for dense matches and return result rows.
+
+    The query embedding passes the norm guard after the cache lookup
+    (design D4 of the guard-embedding-normalisation change): cached hits
+    cost nothing beyond the norm computation, a violation warns once per
+    process per model instead of failing, and results are returned either
+    way — a degraded answer beats an outage at the query boundary.
 
     Args:
         store: A :class:`VectorStore` instance.
@@ -107,15 +125,28 @@ def _dense_query_rows(
         query: Free-text search query.
         fetch_k: Number of candidates to fetch.
         metadata_filter: Optional store ``where`` clause.
+        norm_guard_enabled: Norm-guard switch from the injected
+            ``EffectiveSettings`` embedding block.
+        norm_tolerance: Maximum permitted ``|norm - 1.0|`` (inclusive).
+        attach_norm_diagnostic: When True (diagnostics mode), attach the
+            ``norm_guard`` state dict to every result row.
 
     Returns:
         List of result dicts with keys ``id``, ``score``, ``source``,
         ``page_label``, ``text``, ``metadata``, ``reranked``, plus the
-        additive stable lineage fields from ``LINEAGE_METADATA_KEYS``.
+        additive stable lineage fields from ``LINEAGE_METADATA_KEYS`` and,
+        in diagnostics mode with the guard enabled, ``norm_guard``.
     """
+    query_embedding = _embed_query(query)
+    norm_check: NormCheck | None = check_query_vector(
+        query_embedding,
+        model_name=_embed_model_name(),
+        enabled=norm_guard_enabled,
+        tolerance=norm_tolerance,
+    )
     raw_rows = store.query_dense(
         collection_name=collection_name,
-        query_embedding=_embed_query(query),
+        query_embedding=query_embedding,
         n_results=fetch_k,
         where=metadata_filter,
     )
@@ -136,4 +167,11 @@ def _dense_query_rows(
                 **_lineage_fields(meta),
             }
         )
+    if attach_norm_diagnostic and norm_check is not None:
+        # Additive per-row diagnostic: survives the reranker and RRF
+        # fusion (both copy rows rather than rebuilding them) so hybrid
+        # and dense paths surface the same guard state.
+        diagnostic = norm_check.as_dict()
+        for row in rows:
+            row["norm_guard"] = dict(diagnostic)
     return rows

@@ -66,7 +66,7 @@ def _make_nodes(count: int, prefix: str) -> list[TextNode]:
 def _assign_stub_embeddings(nodes: list[Any]) -> None:
     """Mirror the tail of the real ``_embed_missing_nodes``: fill vectors."""
     for node in nodes:
-        node.embedding = [0.1, 0.2]
+        node.embedding = [1.0, 0.0]  # unit vector: passes the norm guard
 
 
 def _spawn_replacement(
