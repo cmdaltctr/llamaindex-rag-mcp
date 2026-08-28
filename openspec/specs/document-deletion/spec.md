@@ -52,16 +52,30 @@ The system SHALL provide a `remove_collection(collection_name: str) -> dict` fun
 
 ### Requirement: Re-ingestion replaces old chunks (upsert semantics)
 
-When `ingest_path()` processes a file, it SHALL call `remove_document()` for that file path BEFORE reading and chunking. This ensures re-ingesting the same file replaces its old chunks rather than appending duplicates.
+When `ingest_path_async` processes a source whose `source_id` already has
+durable rows, the system SHALL retain the last searchable attempt while it
+parses, chunks, embeds, writes, and verifies the complete candidate attempt.
+Only after verification SHALL it remove stale row IDs for that `source_id`.
+Stable `chunk_id` values SHALL remain separate from attempt-specific vector-row
+IDs so an identical forced re-ingestion cannot overwrite durable rows early.
 
-#### Scenario: Re-ingest replaces chunks
-- **WHEN** `ingest_path("paper.pdf", collection_name="research")` is called on a file that was previously indexed with 8 chunks
-- **THEN** the old 8 chunks SHALL be removed before the new chunks are written
-- **THEN** the result SHALL include `"chunks_created"` (new count) and `"chunks_removed": 8`
+#### Scenario: Re-ingest replaces chunks after verification
+- **GIVEN** `paper.pdf` previously produced eight durable chunks
+- **WHEN** `ingest_path_async("paper.pdf", collection_name="research")` writes and verifies a replacement
+- **THEN** the old eight chunks SHALL remain searchable until verification succeeds
+- **AND** stale rows for that `source_id` SHALL then be removed
+- **AND** the result SHALL include the new `chunks_created` count and `"chunks_removed": 8`
 
 #### Scenario: First-time ingest has nothing to remove
-- **WHEN** `ingest_path("new_file.pdf")` is called on a file never indexed before
-- **THEN** `remove_document()` SHALL be called but return `chunks_removed: 0` (no-op)
+- **WHEN** `ingest_path_async("new_file.pdf")` processes a source whose `source_id` is absent
+- **THEN** no stale rows SHALL be selected
+- **AND** the result SHALL include `"chunks_removed": 0`
+
+#### Scenario: Failed replacement preserves durable chunks
+- **GIVEN** one source has a complete durable attempt
+- **WHEN** its candidate parse, embedding, validation, write, or verification fails
+- **THEN** the durable attempt MUST remain searchable
+- **AND** no stale-row cleanup MUST delete it
 
 ### Requirement: CLI delete subcommand
 

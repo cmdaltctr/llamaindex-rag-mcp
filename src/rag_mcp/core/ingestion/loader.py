@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+from .source_state import SOURCE_ID_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,13 @@ def list_documents(
     collection_name: str = "documents",
     store: VectorStore | None = None,
 ) -> list[dict]:
-    """Return unique source file paths and their chunk counts from the index.
+    """Return unique sources and their chunk counts from the index.
+
+    Production-ingested chunks are grouped by their stable ``source_id``
+    while the human-readable source path is retained for display. Rows
+    without lineage metadata (for example experiment precomputed rows)
+    fall back to the legacy ``file_path``/``file_name`` grouping and
+    report ``source_id: None``.
 
     Args:
         collection_name: Name of the collection to query
@@ -104,7 +111,8 @@ def list_documents(
         store: Optional injected :class:`VectorStore`.
 
     Returns:
-        List of dicts, each with: ``{"source": str, "chunks": int}``.
+        List of dicts, each with: ``{"source": str, "source_id": str | None,
+        "chunks": int}``.
     """
     resolved_store = store if store is not None else get_default_store()
 
@@ -112,11 +120,26 @@ def list_documents(
     if count == 0:
         return []
 
-    source_counts: dict[str, int] = {}
+    chunk_counts: dict[str, int] = {}
+    display_paths: dict[str, str] = {}
     for meta in resolved_store.iter_metadatas(collection_name):
         if meta is None:
             continue
-        source = meta.get("file_path") or meta.get("file_name") or "unknown"
-        source_counts[source] = source_counts.get(source, 0) + 1
+        source_id = meta.get(SOURCE_ID_KEY)
+        display = meta.get("file_path") or meta.get("file_name") or "unknown"
+        group = source_id if source_id is not None else display
+        chunk_counts[group] = chunk_counts.get(group, 0) + 1
+        if source_id is not None:
+            display_paths.setdefault(group, display)
 
-    return [{"source": src, "chunks": cnt} for src, cnt in sorted(source_counts.items())]
+    return [
+        {
+            "source": display_paths.get(group, group),
+            "source_id": group if group in display_paths else None,
+            "chunks": chunks,
+        }
+        for group, chunks in sorted(
+            chunk_counts.items(),
+            key=lambda item: display_paths.get(item[0], item[0]),
+        )
+    ]

@@ -21,6 +21,14 @@ Every result includes `score_kind`: `dense_similarity_v1` for dense search,
 successful rerank. `similarity_threshold` is never applied directly to an
 `rrf_v1` value.
 
+Every result also carries additive lineage fields: `source_id`,
+`source_version`, `chunk_id`, `source_chunk_index`, and `source_chunk_count`
+([ADR-052](../adr/052-stable-source-chunk-lineage.md)). Values are `null` for
+rows stored without lineage, such as experiment precomputed rows. The
+internal attempt-specific vector row ID is not exposed; use `chunk_id` as the
+stable per-chunk reference, and `source_id` plus `source_version` to select
+one complete source version.
+
 ## `ingest_documents`
 
 Index a file or directory into the vector store.
@@ -38,6 +46,11 @@ Show what's currently indexed.
 | ------------ | ------ | ------------- | --------------------------------------------- |
 | `collection` | string | `"documents"` | Vector-store collection to list documents from |
 
+Each row is `{"source": <path>, "source_id": <id or null>, "chunks": <count>}`.
+Chunks are grouped by `source_id`, so one indexed file appears once with its
+chunk total. Rows without lineage metadata (for example experiment
+precomputed rows) fall back to path grouping and report `source_id: null`.
+
 ## `list_collections`
 
 No parameters. Returns a list of objects with `name`, `document_count`, and `chunk_count`.
@@ -48,12 +61,15 @@ Remove documents by file path, metadata filter, or drop an entire collection.
 
 | Parameter         | Type   | Default       | Description                                                                                                            |
 | ----------------- | ------ | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `path`            | string | `null`        | Source file path whose chunks to delete                                                                                |
+| `path`            | string | `null`        | Source file path whose chunks to delete. The path is canonicalised and matched by its derived `source_id`, the same derivation ingestion uses. |
 | `metadata_filter` | dict   | `null`        | ChromaDB-compatible `where` clause to match chunks, e.g. `{"category": "uncategorised"}`                              |
 | `collection`      | string | `"documents"` | Collection to operate on. When provided alone (without `path` or `metadata_filter`), the entire collection is dropped. |
 | `dry_run`         | bool   | `false`       | Preview what would be deleted without modifying the vector store                                                       |
 
 The three deletion modes (`path`, `metadata_filter`, `collection`-only) are mutually exclusive.
+
+A `./`-prefixed path is canonicalised before matching, so `./notes/a.md` and
+its absolute form delete the same source.
 
 ## `get_codebase_map`
 

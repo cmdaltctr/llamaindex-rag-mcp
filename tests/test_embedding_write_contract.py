@@ -467,6 +467,7 @@ async def _replace(store: VectorStore, collection: str, vectors: list[list[float
     return await replace_source_nodes_async(
         _replacement_nodes(vectors),
         file_path="doc.txt",
+        source_id="src_embed_write_contract",
         content_hash="a" * 64,
         index_identity="index-identity",
         source_version="source-version",

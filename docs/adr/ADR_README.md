@@ -58,6 +58,7 @@ development of the LlamaIndex RAG MCP Server.
 | [049](./0049-lancedb-default-and-chroma-isolation.md)           | LanceDB Default and Chroma Isolation                                                         | 2026-08-21 | Accepted |
 | [050](./050-configure-pdf-inspector-as-default-reader.md)       | Configure pdf-inspector as the Default PDF Reader                                            | 2026-08-24 | Accepted |
 | [051](./051-fail-closed-embedding-write-contract.md)          | Fail-Closed Embedding Write Contract                                                         | 2026-08-28 | Proposed |
+| [052](./052-stable-source-chunk-lineage.md)                   | Stable Source and Chunk Lineage                                                              | 2026-08-28 | Proposed |
 
 ## Convention
 

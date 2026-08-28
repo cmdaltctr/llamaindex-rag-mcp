@@ -487,11 +487,28 @@ class TestGenerationCounter:
         """Writer orchestration observes one bump per store mutation."""
         from llama_index.core.schema import TextNode
 
+        from rag_mcp.core.ingestion.source_state import (
+            build_source_id,
+            stamp_source_lineage,
+        )
         from rag_mcp.core.ingestion.writer import embed_and_write_async, remove_document
 
         name = "pipeline_exactly_once"
+        # remove_document deletes by the derived source_id, so the seeded
+        # row must carry production lineage like a real pipeline write.
+        source_path = "/virtual/pipeline.txt"
+        node = TextNode(text="pipeline row", metadata={"file_path": source_path})
+        stamp_source_lineage(
+            [node],
+            file_path=source_path,
+            source_id=build_source_id(source_path),
+            content_hash="c" * 64,
+            index_identity="i" * 64,
+            source_version="v" * 64,
+            source_attempt="attempt",
+        )
         written = await embed_and_write_async(
-            [TextNode(text="pipeline row", metadata={"file_path": "pipeline.txt"})],
+            [node],
             collection_name=name,
             store=store,
             embed_concurrency=1,
@@ -499,7 +516,7 @@ class TestGenerationCounter:
         assert written == 1
         assert store.get_generation(name) == 1
 
-        result = remove_document("pipeline.txt", collection_name=name, store=store)
+        result = remove_document(source_path, collection_name=name, store=store)
         assert result["status"] == "ok"
         assert result["chunks_removed"] == 1
         assert store.get_generation(name) == 2

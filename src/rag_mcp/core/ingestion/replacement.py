@@ -1,9 +1,9 @@
 """Bounded, failure-safe replacement of one indexed source.
 
 Stage 3B (Experiment 18 evidence) narrows the global write lock to the
-mutation section only: embedding and attempt-stamping run before the lock is
-acquired, while the store write, durability verification, and stale cleanup
-stay inside it. Concurrent ingestion operations can therefore embed in
+mutation section only: lineage/attempt stamping and embedding run before the
+lock is acquired, while the store write, durability verification, and stale
+cleanup stay inside it. Concurrent ingestion operations can therefore embed in
 parallel while store mutations remain serialised. The failure-safety
 ordering from ADR-048 is unchanged — a failure before or during the locked
 section still leaves the previous searchable version intact.
@@ -26,9 +26,10 @@ from ._state import get_embed_semaphore, shutdown_requested, write_lock
 from .source_state import (
     SOURCE_ATTEMPT_KEY,
     SOURCE_CHUNK_COUNT_KEY,
+    SOURCE_ID_KEY,
     new_source_attempt,
     source_attempt_where,
-    stamp_source_attempt,
+    stamp_source_lineage,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,20 +108,23 @@ def _stale_source_ids(
     store: VectorStore,
     collection_name: str,
     *,
-    file_path: str,
+    source_id: str,
     source_attempt: str,
 ) -> list[str]:
     """Return stale row IDs for one source using a bounded store-neutral scan.
 
-    Missing ``source_attempt`` metadata is intentionally treated as stale so
-    rows written before Stage 3 can be replaced. Selection happens in Python
-    rather than a backend ``$ne`` filter because stores differ in whether a
-    missing metadata key satisfies inequality.
+    Selection is scoped to the source's stable ``source_id`` so rows for a
+    different source — including byte-identical files at other paths — are
+    never removed. Selection happens in Python rather than a backend
+    ``$ne`` filter because stores differ in whether a missing metadata key
+    satisfies inequality. Production ingestion rejects pre-lineage rows
+    before mutation, so rows without ``source_id`` cannot reach this scan
+    through the normal path.
     """
     return [
         row_id
         for row_id, _, metadata in store.iter_documents(collection_name)
-        if metadata.get("file_path") == file_path
+        if metadata.get(SOURCE_ID_KEY) == source_id
         and metadata.get(SOURCE_ATTEMPT_KEY) != source_attempt
     ]
 
@@ -129,6 +133,7 @@ async def replace_source_nodes_async(
     nodes: list[BaseNode],
     *,
     file_path: str,
+    source_id: str,
     content_hash: str,
     index_identity: str,
     source_version: str,
@@ -140,14 +145,16 @@ async def replace_source_nodes_async(
     """Embed, verify, and failure-safely replace one source version.
 
     Old rows are not deleted before the new attempt is durable. A unique
-    attempt id makes old, new, and interrupted partial writes distinguishable.
-    Once the exact attempt row count is verified, a bounded store-neutral scan
-    selects stale IDs for the same source, including legacy rows that carry no
-    attempt metadata, and deletes only those IDs.
+    attempt id makes old, new, and interrupted partial writes
+    distinguishable while stable ``chunk_id`` values reproduce across
+    attempts. Once the exact attempt row count is verified, a bounded
+    store-neutral scan selects stale IDs for the same ``source_id`` and
+    deletes only those IDs.
 
     Args:
         nodes: Parsed/chunked nodes for exactly one source file.
-        file_path: Canonical source path stored in metadata.
+        file_path: Canonical source path stored as human-readable metadata.
+        source_id: Stable logical identity derived from the canonical path.
         content_hash: SHA-256 identity of source bytes.
         index_identity: Hash of all index-shaping configuration.
         source_version: Stable hash of content plus index identity.
@@ -178,16 +185,25 @@ async def replace_source_nodes_async(
     resolved_store = _resolve_store(store)
 
     def _prepare_sync() -> float:
-        """Embed and stamp the bounded node set outside the mutation lock.
+        """Stamp lineage and embed the bounded node set outside the lock.
 
         Embedding dominates replacement wall time (Experiment 18), and the
         node list is caller-private until the store write, so this phase
-        needs no mutual exclusion. ``stamp_source_attempt`` derives the
-        attempt-scoped row IDs and excludes every source key from embed
-        text, so vectors and row identity are identical to the Stage 3A
-        in-lock ordering.
+        needs no mutual exclusion. Lineage is stamped before embedding so
+        every machine identity key is already excluded from embedding
+        text; ``stamp_source_lineage`` derives the stable chunk IDs and
+        the attempt-scoped row IDs in one coherent operation.
         """
         embedding_started = time.perf_counter()
+        stamp_source_lineage(
+            nodes,
+            file_path=file_path,
+            source_id=source_id,
+            content_hash=content_hash,
+            index_identity=index_identity,
+            source_version=source_version,
+            source_attempt=source_attempt,
+        )
         try:
             with get_embed_semaphore(embed_concurrency):
                 logger.info(
@@ -203,14 +219,6 @@ async def replace_source_nodes_async(
                 "embedding",
                 f"Embedding failed for '{file_path}': {exc}",
             ) from exc
-        stamp_source_attempt(
-            nodes,
-            file_path=file_path,
-            content_hash=content_hash,
-            index_identity=index_identity,
-            source_version=source_version,
-            source_attempt=source_attempt,
-        )
         return time.perf_counter() - embedding_started
 
     def _commit_sync(embedding_seconds: float) -> ReplaceSourceOutcome:
@@ -243,7 +251,7 @@ async def replace_source_nodes_async(
 
             verify_where = {
                 "$and": [
-                    *source_attempt_where(file_path, source_attempt)["$and"],
+                    *source_attempt_where(source_id, source_attempt)["$and"],
                     {SOURCE_CHUNK_COUNT_KEY: len(nodes)},
                 ]
             }
@@ -270,7 +278,7 @@ async def replace_source_nodes_async(
                 stale_ids = _stale_source_ids(
                     resolved_store,
                     collection_name,
-                    file_path=file_path,
+                    source_id=source_id,
                     source_attempt=source_attempt,
                 )
                 if stale_ids:

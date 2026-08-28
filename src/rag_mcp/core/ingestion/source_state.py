@@ -2,22 +2,34 @@
 
 A stored source is identified by both its byte content and every input that can
 change emitted chunks or vectors. Each replacement attempt uses a unique id so
-old and new rows can coexist until durability is verified.
+old and new rows can coexist until durability is verified. On top of that
+attempt-scoped identity, every source carries a stable ``source_id`` derived
+from its canonical path and every stored chunk a stable ``chunk_id`` derived
+from its text, ordinal, and source version, so citations and reconstruction
+survive replacement attempts.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from llama_index.core import Settings as LlamaIndexSettings
-from llama_index.core.schema import BaseNode
+from llama_index.core.schema import (
+    BaseNode,
+    MetadataMode,
+    NodeRelationship,
+    RelatedNodeInfo,
+)
 
 from ..vectordb.base import VectorStore
 
 SOURCE_CONTENT_HASH_KEY = "source_content_hash"
+SOURCE_ID_KEY = "source_id"
+CHUNK_ID_KEY = "chunk_id"
 SOURCE_INDEX_IDENTITY_KEY = "source_index_identity"
 SOURCE_VERSION_KEY = "source_version"
 SOURCE_ATTEMPT_KEY = "source_attempt"
@@ -27,6 +39,8 @@ SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 _INDEX_IDENTITY_SCHEMA = 2
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
+    SOURCE_ID_KEY,
+    CHUNK_ID_KEY,
     SOURCE_INDEX_IDENTITY_KEY,
     SOURCE_VERSION_KEY,
     SOURCE_ATTEMPT_KEY,
@@ -165,13 +179,111 @@ def new_source_attempt() -> str:
     return uuid4().hex
 
 
-def source_where(file_path: str) -> dict:
-    """Return the store-neutral filter selecting one source path."""
-    return {"file_path": file_path}
+class IncompatibleSourceLineageError(RuntimeError):
+    """Rows for a source path predate stable lineage identity.
+
+    Raised before any parse, embedding, or store mutation so the operator
+    can rebuild the affected data instead of mixing schemas.
+    """
+
+
+def canonical_source_path(path: str | Path) -> str:
+    """Return the canonical absolute source path used for identity.
+
+    This is the single path rule shared by ingestion, deletion preview, and
+    deletion so every consumer derives the same ``source_id`` for one file.
+    """
+    return str(Path(path).expanduser().resolve())
+
+
+def build_source_id(canonical_file_path: str) -> str:
+    """Return the deterministic logical identity for one canonical path.
+
+    The identifier is stable while the source is edited in place and
+    intentionally changes when the source moves or is copied to another
+    path. The collection name is not part of the formula, so one source
+    keeps its identity when indexed into multiple collections. Equal bytes
+    at different paths keep different ``source_id`` values while sharing
+    ``source_content_hash``.
+    """
+    digest = hashlib.sha256(f"file\0{canonical_file_path}".encode())
+    return f"src_{digest.hexdigest()}"
+
+
+def build_chunk_id(
+    *,
+    source_id: str,
+    source_version: str,
+    chunk_index: int,
+    text: str,
+) -> str:
+    """Return the deterministic identity of one stored chunk.
+
+    The zero-based ordinal distinguishes repeated identical text within one
+    source version, and the text hash catches changed parser or chunker
+    output at the same ordinal. The embedding payload is deliberately not
+    hashed: extracted metadata may vary without changing the identity of
+    the textual chunk, and embedding execution identity already belongs to
+    ``source_index_identity`` and the replacement attempt.
+    """
+    text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    payload = f"{source_id}\0{source_version}\0{chunk_index}\0{text_hash}"
+    return f"chk_{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"
+
+
+def build_source_row_id(source_id: str, source_attempt: str, chunk_id: str) -> str:
+    """Return the attempt-specific vector-store row ID for one chunk.
+
+    A forced re-ingestion of an identical version reproduces the same
+    ``chunk_id`` values but writes distinct row IDs, so candidate and
+    durable attempts coexist until replacement is verified. Stable chunk
+    identity must never become the store primary key.
+    """
+    payload = f"{source_id}\0{source_attempt}\0{chunk_id}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def assert_source_lineage_compatible(
+    store: VectorStore,
+    collection_name: str,
+    *,
+    file_path: str,
+    source_id: str,
+) -> None:
+    """Fail before mutation when a source path carries pre-lineage rows.
+
+    Compares rows selected by the canonical ``file_path`` with rows that
+    also carry the derived ``source_id``. Any lack or disagreement means
+    the collection mixes schemas; ingestion must stop and the operator
+    rebuild the affected data. This is an incompatibility guard, not a
+    migration path: existing rows are never inferred, upgraded, or
+    deleted here.
+    """
+    if not store.collection_exists(collection_name):
+        return
+    path_where = {"file_path": file_path}
+    path_count = store.count_where(collection_name, path_where)
+    if path_count == 0:
+        return
+    lineage_where = {"$and": [path_where, {SOURCE_ID_KEY: source_id}]}
+    lineage_count = store.count_where(collection_name, lineage_where)
+    if lineage_count != path_count:
+        raise IncompatibleSourceLineageError(
+            f"Rows for '{file_path}' predate stable source lineage: "
+            f"{path_count - lineage_count} row(s) lack or disagree on the "
+            f"derived source_id. Rebuild the affected data by deleting the "
+            f"source or collection and re-ingesting it; the existing rows "
+            f"were left unchanged."
+        )
+
+
+def source_where(source_id: str) -> dict:
+    """Return the store-neutral filter selecting one logical source."""
+    return {SOURCE_ID_KEY: source_id}
 
 
 def source_version_where(
-    file_path: str,
+    source_id: str,
     *,
     content_hash: str,
     index_identity: str,
@@ -180,7 +292,7 @@ def source_version_where(
     """Return a filter selecting rows for one exact source version."""
     return {
         "$and": [
-            {"file_path": file_path},
+            {SOURCE_ID_KEY: source_id},
             {SOURCE_CONTENT_HASH_KEY: content_hash},
             {SOURCE_INDEX_IDENTITY_KEY: index_identity},
             {SOURCE_VERSION_KEY: source_version},
@@ -188,21 +300,21 @@ def source_version_where(
     }
 
 
-def source_attempt_where(file_path: str, source_attempt: str) -> dict:
+def source_attempt_where(source_id: str, source_attempt: str) -> dict:
     """Return a filter selecting one replacement attempt for a source."""
     return {
         "$and": [
-            {"file_path": file_path},
+            {SOURCE_ID_KEY: source_id},
             {SOURCE_ATTEMPT_KEY: source_attempt},
         ]
     }
 
 
-def stale_attempts_where(file_path: str, source_attempt: str) -> dict:
+def stale_attempts_where(source_id: str, source_attempt: str) -> dict:
     """Return a filter selecting prior attempts when backend semantics permit."""
     return {
         "$and": [
-            {"file_path": file_path},
+            {SOURCE_ID_KEY: source_id},
             {SOURCE_ATTEMPT_KEY: {"$ne": source_attempt}},
         ]
     }
@@ -212,7 +324,7 @@ def is_complete_current_version(
     store: VectorStore,
     collection_name: str,
     *,
-    file_path: str,
+    source_id: str,
     content_hash: str,
     index_identity: str,
     source_version: str,
@@ -220,12 +332,12 @@ def is_complete_current_version(
     """Return whether the store contains one complete matching source version."""
     if not store.collection_exists(collection_name):
         return False, 0
-    total = store.count_where(collection_name, source_where(file_path))
+    total = store.count_where(collection_name, source_where(source_id))
     if total <= 0:
         return False, 0
 
     version_filter = source_version_where(
-        file_path,
+        source_id,
         content_hash=content_hash,
         index_identity=index_identity,
         source_version=source_version,
@@ -244,23 +356,41 @@ def is_complete_current_version(
     return complete_count == total, total
 
 
-def stamp_source_attempt(
+def stamp_source_lineage(
     nodes: list[BaseNode],
     *,
     file_path: str,
+    source_id: str,
     content_hash: str,
     index_identity: str,
     source_version: str,
     source_attempt: str,
 ) -> None:
-    """Stamp one replacement attempt and give every candidate row a unique ID."""
+    """Stamp stable lineage and one replacement attempt on candidate nodes.
+
+    Every node receives its stable ``chunk_id`` derived from the text-only
+    content, the shared source/version/attempt metadata, a zero-based
+    ordinal, and an attempt-specific row ID. The LlamaIndex ``SOURCE``
+    relationship is set to the stable ``source_id`` so source membership
+    survives replacement attempts, while ``file_path`` stays ordinary
+    human-readable metadata. Every machine identity and replacement key is
+    added to both metadata exclusion lists so identifiers never enter
+    embedding vectors or LLM-visible content.
+    """
     chunk_count = len(nodes)
     excluded = set(_SOURCE_METADATA_KEYS)
     for index, node in enumerate(nodes):
-        original_id = node.node_id
+        chunk_id = build_chunk_id(
+            source_id=source_id,
+            source_version=source_version,
+            chunk_index=index,
+            text=node.get_content(metadata_mode=MetadataMode.NONE),
+        )
         node.metadata.update(
             {
                 "file_path": file_path,
+                SOURCE_ID_KEY: source_id,
+                CHUNK_ID_KEY: chunk_id,
                 SOURCE_CONTENT_HASH_KEY: content_hash,
                 SOURCE_INDEX_IDENTITY_KEY: index_identity,
                 SOURCE_VERSION_KEY: source_version,
@@ -273,6 +403,5 @@ def stamp_source_attempt(
             set(node.excluded_embed_metadata_keys) | excluded
         )
         node.excluded_llm_metadata_keys = sorted(set(node.excluded_llm_metadata_keys) | excluded)
-        node.id_ = hashlib.sha256(
-            f"{file_path}\0{source_attempt}\0{index}\0{original_id}".encode()
-        ).hexdigest()
+        node.relationships[NodeRelationship.SOURCE] = RelatedNodeInfo(node_id=source_id)
+        node.id_ = build_source_row_id(source_id, source_attempt, chunk_id)

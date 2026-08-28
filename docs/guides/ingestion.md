@@ -55,6 +55,71 @@ provider/model, and each affected node or row identifier. Vectors are
 never normalised, truncated, or repaired — the validator reports the
 fault and stops the write. Norm policy is a separate decision.
 
+## Source and chunk lineage
+
+Every production-ingested chunk carries stable identity metadata
+([ADR-052](../adr/052-stable-source-chunk-lineage.md)). The identifiers are
+deterministic hashes: the same inputs always produce the same value.
+`core/ingestion/source_state.py` owns the formulas and stamps them after
+parsing, chunking, and metadata extraction but before embedding, so no
+identifier ever changes a vector or the text an LLM sees.
+
+### The identity hierarchy
+
+| Field                | Formula                                                                                                                                                    | Stability                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `file_path`          | canonical absolute path                                                                                                                                     | Human-readable locator for display and diagnostics                                          |
+| `source_id`          | `"src_" + SHA-256("file\0" + canonical path)`                                                                                                               | Stable while the file is edited in place; new after a move or copy; identical across collections |
+| `source_content_hash` | SHA-256 of the original file bytes                                                                                                                        | New when bytes change; shared by equal bytes at two paths                                    |
+| `source_version`     | SHA-256 of `source_content_hash` + NUL + `source_index_identity`                                                                                            | New when bytes or any index-shaping setting (parser, chunker, metadata, embedding) changes   |
+| `source_chunk_index` | zero-based ordinal within the version                                                                                                                       | Orders membership in the chunk set                                                           |
+| `source_chunk_count` | N, the chunk total for the version                                                                                                                          | Declares the size of the complete set                                                        |
+| `chunk_id`           | `"chk_" + SHA-256(source_id + NUL + source_version + NUL + decimal index + NUL + chunk text hash)`                                                          | Stable for the same text at the same ordinal in one version                                  |
+| vector row ID        | SHA-256 of `source_id` + NUL + `source_attempt` + NUL + `chunk_id`                                                                                          | Attempt-specific; never a store primary key                                                  |
+
+All digests are lower-case hexadecimal over UTF-8 input joined with NUL
+separators. `source_id` excludes the collection name, so one file indexed
+into two collections carries one identity. The vector row ID stays internal:
+a forced re-ingestion reproduces the same `chunk_id` values but writes fresh
+row IDs, so candidate and durable attempts coexist until verification
+([ADR-048](../adr/048-bounded-failure-safe-ingestion.md)). Ordinary public
+results never expose the row ID.
+
+### Ordered reconstruction
+
+One `source_id` plus one `source_version` is a complete ordered chunk set:
+
+```text
+rows    = all rows with source_id = "src_…" and source_version = "…"
+assert  every row has source_chunk_count == N and N == len(rows)
+ordered = rows sorted by source_chunk_index   # indices are 0, 1, …, N-1
+```
+
+Sorting by `source_chunk_index` rebuilds the indexed chunk sequence. This
+reconstructs the INDEXED representation only. It does not recover the
+original file bytes, PDF layout, or parser input. The source file and
+`source_content_hash` remain authoritative for the original content.
+
+### Moving or copying a file
+
+Identity follows the path. A new canonical path is a new logical source, so:
+
+1. Delete the old path from the collection.
+2. Ingest the destination path.
+
+The system does not track moves or renames. Equal bytes at two paths share
+`source_content_hash` but keep different `source_id` values; content is never
+deduplicated.
+
+### Pre-lineage rows fail before mutation
+
+If a collection holds rows for a canonical path that lack, or disagree on,
+the derived `source_id`, ingestion stops before any parse, embedding, or
+store write. The error names the path and instructs you to rebuild the
+affected data by deleting the source or collection and re-ingesting it. The
+stored rows are never migrated, upgraded, or deleted. This is a deliberate
+clean boundary: no production documents predate this change.
+
 ## PDF reader configuration
 
 The PDF parser is a pluggable factory controlled by the `PDF_READER`

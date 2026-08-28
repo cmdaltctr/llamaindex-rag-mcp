@@ -47,7 +47,7 @@ def _sparse_bm25_query(
     fetch_k: int,
     metadata_filter: dict | None = None,
 ) -> list[dict]:
-    from .dense import _result_source
+    from .dense import _lineage_fields, _result_source
 
     BM25SparseRetriever = _retrieval_get("bm25")
     rows = BM25SparseRetriever(collection_name, store=store).query(
@@ -63,6 +63,7 @@ def _sparse_bm25_query(
             "text": text,
             "metadata": dict(metadata),
             "reranked": False,
+            **_lineage_fields(metadata),
         }
         for _rank, doc_id, text, metadata in rows
     ]
