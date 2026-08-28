@@ -192,7 +192,7 @@ register(
     extra=None,
     native_sparse_probe=None,
     summary="rag_mcp.core.vectordb.summary:lancedb_storage_summary",
-    # LanceDB serialises concurrent writers across processes through
-    # file-level locking, unlike Chroma's in-process-only write lock.
-    cross_process_writes_safe=True,
+    # Cross-process concurrent writes are UNVERIFIED for both backends.
+    # No backend may claim safety without a two-process, two-collection
+    # concurrent-write experiment (add-per-collection-persist-dirs).
 )

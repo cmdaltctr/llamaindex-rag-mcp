@@ -1036,6 +1036,36 @@ class TestContentionWarning:
         assert "concurrent" in output_lower
         assert "chromadb" not in output_lower  # vector-store wording only
 
+    def test_warning_names_the_process_local_write_lock(self, macos_home, tmp_path) -> None:
+        """The warning keeps the point that separate processes do not
+        share the internal write lock."""
+        home = macos_home(tmp_path / "hw")
+        watched = tmp_path / "wl-docs"
+        watched.mkdir()
+        self._seed_existing(home, watched)
+        with (
+            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("rag_mcp.config.get_settings") as mock_settings,
+            patch("rag_mcp.core.vectordb.registry.describe") as mock_describe,
+        ):
+            mock_settings.return_value = MagicMock(vector_store="fakestore")
+            mock_describe.return_value = {"cross_process_writes_safe": False}
+            result = runner.invoke(
+                app,
+                [
+                    "install-login-watcher",
+                    "--path",
+                    str(watched),
+                    "--collection",
+                    "research",
+                    "--yes",
+                ],
+            )
+        assert result.exit_code != 0  # no --force: protected
+        assert "write lock" in result.output.lower()
+
     def test_no_warning_when_adapter_isolates_writers(self, macos_home, tmp_path) -> None:
         """LanceDB-style adapters emit no contention warning."""
         home = macos_home(tmp_path / "hk")

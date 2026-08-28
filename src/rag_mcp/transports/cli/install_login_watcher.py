@@ -31,10 +31,12 @@ def _stdin_is_interactive() -> bool:
 def _contention_warning(collection: str) -> str | None:
     """Return the duplicate-watcher warning for the active adapter.
 
-    The warning is conditional on the selected vector-store backend
-    (design risk: cross-process write isolation differs between the
-    Chroma and LanceDB adapters), so backends that serialise concurrent
-    writers emit nothing. Wording is vector-store generic.
+    The internal ingestion write lock is process-local: a watcher
+    process and any other rag-mcp process never share it.  No backend
+    currently claims cross-process write safety — any such claim needs
+    a two-process concurrent-write experiment — so the warning fires
+    for every registered backend today.  Wording is vector-store
+    neutral.
     """
     from ...config import get_settings
     from ...core.vectordb import registry as vectordb_registry
@@ -43,10 +45,11 @@ def _contention_warning(collection: str) -> str | None:
     if vectordb_registry.describe(adapter).get("cross_process_writes_safe"):
         return None
     return (
-        f"The {adapter} vector-store backend does not isolate concurrent "
-        f"writers across processes. Running this watcher alongside rag-mcp "
-        f"ingest or the MCP server on collection {collection!r} can contend "
-        "for the same index."
+        f"Separate processes do not share rag-mcp's internal write lock, "
+        f"and concurrent writes from separate processes are unverified for "
+        f"the {adapter} vector-store backend. Running this watcher alongside "
+        f"rag-mcp ingest or the MCP server can contend for collection "
+        f"{collection!r}."
     )
 
 
