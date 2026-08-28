@@ -187,6 +187,35 @@ Defaults below are what ships in `defaults.yaml`.
 | `CHROMA_CLOUD_TENANT` | — | Optional tenant. Supplied with `CHROMA_CLOUD_DATABASE`, or both omitted |
 | `CHROMA_CLOUD_DATABASE` | — | Optional database. Supplied with `CHROMA_CLOUD_TENANT`, or both omitted |
 
+### Storage layout and concurrency
+
+Three layers are often confused. Keep them separate.
+
+**Layout.** LanceDB (the base-install default) stores each collection as its
+own table directory, `{LANCEDB_URI}/{collection_name}.lance`. A collection
+name must be a non-empty single path component. Separators, control
+characters, `.`, `..`, and absolute paths are rejected. Validation runs
+before any table access touches
+disk (`core/vectordb/lance_table_name.py`). Chroma (the optional extra) keeps
+collection names as logical identifiers inside one shared persist directory
+(`CHROMA_PERSIST_DIR`). Per-collection Chroma persist directories, and Chroma
+name validation, are deferred to a future change.
+
+**Process mutation lock.** Ingestion mutations run inside one process-global
+lock (`write_lock` in `core/ingestion/_state.py`, acquired by `_commit_sync`
+in `core/ingestion/replacement.py`). The lock serialises mutations across all
+collections within one process. It is not per-collection. Other processes
+cannot see it.
+
+**Cross-process writes.** Concurrent writes from separate processes (for
+example, two stdio MCP clients) are unverified for both backends. No
+two-process concurrent-write experiment has run. Do not assume isolation from
+the `.lance` layout.
+
+The deferred Chroma scope waits for demonstrated operator demand, and any
+future contention claim needs a two-process, two-collection concurrent-write
+experiment first.
+
 ### Chroma deployment mode
 
 Chroma is an explicit optional backend. Install it with `uv sync --extra chroma`
