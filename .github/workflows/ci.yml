@@ -272,6 +272,12 @@ jobs:
       - name: Ruff format check
         run: uv run --no-sync ruff format --check .
 
+      # The existing codebase has known Pyright debt. Surface diagnostics now without
+      # turning that historical debt into a failing gate; make this blocking once paid down.
+      - name: Pyright check (advisory)
+        continue-on-error: true
+        run: npx --yes pyright@1.1.412 src
+
   codecov:
     name: Coverage (Codecov)
     runs-on: ubuntu-latest
