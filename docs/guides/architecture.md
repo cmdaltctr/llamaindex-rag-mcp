@@ -175,12 +175,12 @@ source it derives and stamps:
   identical across collections.
 - `source_content_hash` = SHA-256 of the original file bytes. There is no
   `document_hash` alias.
-- `source_version` = SHA-256 of the content hash plus
+- `source_version` = SHA-256 over `source_content_hash` + NUL +
   `source_index_identity`.
 - `chunk_id` = `"chk_" + SHA-256(source_id + NUL + source_version + NUL +
   decimal index + NUL + text hash)` over the text-only chunk content.
-- the vector row ID = SHA-256 of `source_id`, `source_attempt`, and
-  `chunk_id`. It stays attempt-specific so candidate and durable attempts
+- the vector row ID = SHA-256 over `source_id` + NUL + `source_attempt` + NUL
+  + `chunk_id`. It stays attempt-specific so candidate and durable attempts
   coexist until replacement is verified (ADR-048). A stable `chunk_id` is
   never a store primary key.
 

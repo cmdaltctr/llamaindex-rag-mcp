@@ -463,6 +463,32 @@ class TestLifecycle:
         assert result["status"] == "error"
         assert result["message"]
 
+    def test_invalid_path_returns_error_shapes_without_raising(self, lineage_store) -> None:
+        """Invalid paths use the error-result contract; nothing is deleted.
+
+        A path containing a NUL byte makes ``canonical_source_path`` raise
+        ``ValueError``. Both deletion entry points must map that to their
+        documented error dicts — the preview keeps ``dry_run: True`` and the
+        deletion keeps ``chunks_removed: 0`` — instead of letting the
+        exception escape the core layer.
+        """
+        lineage_store.create_collection(_COLLECTION)
+        bad_path = "bad\0path.txt"
+
+        preview = preview_delete(path=bad_path, collection_name=_COLLECTION, store=lineage_store)
+        assert preview["status"] == "error"
+        assert preview["dry_run"] is True
+        assert preview["mode"] == "path"
+        assert preview["would_delete"] == 0
+        assert preview["message"]
+
+        removal = remove_document(bad_path, _COLLECTION, store=lineage_store)
+        assert removal["status"] == "error"
+        assert removal["chunks_removed"] == 0
+        assert removal["message"]
+
+        assert lineage_store.count(_COLLECTION) == 0
+
     async def test_metadata_filters_select_lineage_fields(
         self, tmp_path: Path, lineage_store
     ) -> None:

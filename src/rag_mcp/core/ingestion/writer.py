@@ -131,8 +131,21 @@ def preview_delete(
     if path is not None:
         mode = "path"
         # Mirror remove_document: canonical path resolution plus the same
-        # deterministic source_id derivation production ingestion uses.
-        source_id = build_source_id(canonical_source_path(path))
+        # deterministic source_id derivation production ingestion uses. An
+        # invalid path (for example one containing a NUL byte) must use the
+        # error-result shape rather than raise or silently preview zero —
+        # an operator scripting against a dry run must see the rejection.
+        try:
+            source_id = build_source_id(canonical_source_path(path))
+        except Exception as exc:
+            return {
+                "status": "error",
+                "message": f"Invalid path for deletion preview: {exc}",
+                "dry_run": True,
+                "mode": "path",
+                "collection": collection_name,
+                "would_delete": 0,
+            }
         where = {SOURCE_ID_KEY: source_id}
     elif metadata_filter is not None:
         mode = "metadata"
@@ -191,10 +204,13 @@ def remove_document(
             "collection": collection_name,
         }
 
-    canonical = canonical_source_path(file_path)
-    source_id = build_source_id(canonical)
-    where = {SOURCE_ID_KEY: source_id}
     try:
+        # Derivation sits inside the error boundary so an invalid path
+        # (for example one containing a NUL byte) returns the documented
+        # error shape instead of raising past this function.
+        canonical = canonical_source_path(file_path)
+        source_id = build_source_id(canonical)
+        where = {SOURCE_ID_KEY: source_id}
         chunks_removed = resolved_store.count_where(collection_name, where)
         if chunks_removed > 0:
             with write_lock:
