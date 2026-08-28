@@ -295,6 +295,8 @@ async def ingest_path_async(
                 collection_name=collection_name,
                 store=store,
                 embed_concurrency=resolved_settings.ingestion.embed_concurrency,
+                norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
+                norm_tolerance=resolved_settings.embedding.norm_tolerance,
             )
             unit_timings.update(outcome.timings.as_dict())
             chunks_created_total += outcome.chunks_written
@@ -308,6 +310,15 @@ async def ingest_path_async(
                 metadata_degraded=file_metadata_degraded,
             )
             detail["source_version"] = source_version
+            if outcome.norm_band is not None:
+                # Observed embedding-vector norm band for this source —
+                # the guard's evidence trail in the ingest report (spec:
+                # "records the observed norm band"). Absent when the guard
+                # is disabled: report what ran, not what did not.
+                detail["embedding_norm_band"] = {
+                    "min": outcome.norm_band[0],
+                    "max": outcome.norm_band[1],
+                }
             unit_timings["total_seconds"] = time.perf_counter() - unit_started
             detail["timings"] = unit_timings
             detail["peak_rss_bytes"] = sample_peak_rss_bytes()

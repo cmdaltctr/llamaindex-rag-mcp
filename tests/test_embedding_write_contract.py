@@ -494,16 +494,26 @@ class TestReplacementWritePath:
     async def test_malformed_replacement_rejected_and_previous_version_intact(
         self, store: VectorStore, bad_vectors: list[list[float]]
     ) -> None:
-        """Spec: Rejected batch does not reach a backend SDK mutation (replace)."""
+        """Spec: Rejected batch does not reach a backend SDK mutation (replace).
+
+        Since the embedding norm guard (guard-embedding-normalisation),
+        these shapes are caught one stage EARLIER: an empty vector has
+        norm 0.0 and a NaN vector has norm NaN, both outside the unit-norm
+        tolerance, so the guard aborts at the attributed embedding stage
+        before the store validator ever runs. Rejection before mutation
+        and previous-version intactness — the contract's substance — are
+        unchanged; the store-level validator still guards direct
+        ``upsert_precomputed`` callers (covered above).
+        """
         await _replace(store, "replace-safe", [[1.0, 0.0], [0.0, 1.0]])
         generation = store.get_generation("replace-safe")
 
         from rag_mcp.core.ingestion.replacement import IngestionStageError
+        from rag_mcp.core.norm_guard import EmbeddingNormViolationError
 
         with pytest.raises(IngestionStageError) as excinfo:
             await _replace(store, "replace-safe", bad_vectors)
-        assert excinfo.value.stage == "store_write"
-        assert isinstance(excinfo.value.__cause__, _contract_error())
-        assert "replace-safe" in str(excinfo.value.__cause__)
+        assert excinfo.value.stage == "embedding"
+        assert isinstance(excinfo.value.__cause__, EmbeddingNormViolationError)
         assert store.count_where("replace-safe", {"file_path": "doc.txt"}) == 2
         assert store.get_generation("replace-safe") == generation

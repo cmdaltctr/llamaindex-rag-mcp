@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from llama_index.core import Settings as LlamaIndexSettings
 from llama_index.core.schema import BaseNode, MetadataMode
 
+from ..norm_guard import check_ingest_vectors
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ._state import get_embed_semaphore, shutdown_requested, write_lock
@@ -62,6 +63,10 @@ class ReplaceSourceOutcome:
     chunks_removed: int
     source_attempt: str
     timings: WriteTimings
+    # Observed (min, max) embedding-vector L2 norms for this source, or
+    # ``None`` when the embedding norm guard is disabled (design: report
+    # what ran, not what did not).
+    norm_band: tuple[float, float] | None = None
 
 
 class IngestionStageError(RuntimeError):
@@ -141,6 +146,8 @@ async def replace_source_nodes_async(
     collection_name: str = "documents",
     store: VectorStore | None = None,
     embed_concurrency: int = 2,
+    norm_guard_enabled: bool = True,
+    norm_tolerance: float = 0.001,
 ) -> ReplaceSourceOutcome:
     """Embed, verify, and failure-safely replace one source version.
 
@@ -165,6 +172,12 @@ async def replace_source_nodes_async(
             embedding. Since Stage 3B the semaphore (not the write lock)
             is the only serialiser of the embed phase; the write lock
             covers the store mutation section only.
+        norm_guard_enabled: Embedding norm-guard switch from the injected
+            ``EffectiveSettings`` embedding block. When true, every
+            storage-bound vector is verified unit-normalised within
+            ``norm_tolerance`` before any write (fail-closed; design D2 of
+            the guard-embedding-normalisation change).
+        norm_tolerance: Maximum permitted ``|norm - 1.0|`` (inclusive).
 
     Returns:
         Counts plus stage timing diagnostics for this bounded source.
@@ -184,7 +197,7 @@ async def replace_source_nodes_async(
 
     resolved_store = _resolve_store(store)
 
-    def _prepare_sync() -> float:
+    def _prepare_sync() -> tuple[float, tuple[float, float] | None]:
         """Stamp lineage and embed the bounded node set outside the lock.
 
         Embedding dominates replacement wall time (Experiment 18), and the
@@ -193,6 +206,11 @@ async def replace_source_nodes_async(
         every machine identity key is already excluded from embedding
         text; ``stamp_source_lineage`` derives the stable chunk IDs and
         the attempt-scoped row IDs in one coherent operation.
+
+        The norm guard runs after the embed step and before the write:
+        a violating vector aborts here, inside the attributed embedding
+        stage, so ``write_nodes`` never sees it and the failure-safe
+        ordering keeps the previous version searchable.
         """
         embedding_started = time.perf_counter()
         stamp_source_lineage(
@@ -212,6 +230,12 @@ async def replace_source_nodes_async(
                     _embed_model_name(),
                 )
                 _embed_missing_nodes(nodes)
+            norm_band = check_ingest_vectors(
+                [node.embedding for node in nodes if node.embedding is not None],
+                model_name=_embed_model_name(),
+                enabled=norm_guard_enabled,
+                tolerance=norm_tolerance,
+            )
         except ConnectionError:
             raise
         except Exception as exc:
@@ -219,9 +243,12 @@ async def replace_source_nodes_async(
                 "embedding",
                 f"Embedding failed for '{file_path}': {exc}",
             ) from exc
-        return time.perf_counter() - embedding_started
+        return time.perf_counter() - embedding_started, norm_band
 
-    def _commit_sync(embedding_seconds: float) -> ReplaceSourceOutcome:
+    def _commit_sync(
+        embedding_seconds: float,
+        norm_band: tuple[float, float] | None,
+    ) -> ReplaceSourceOutcome:
         """Write, verify, and clean stale rows inside the mutation lock."""
         lock_started = time.perf_counter()
         with write_lock:
@@ -235,6 +262,7 @@ async def replace_source_nodes_async(
                         embedding_seconds=embedding_seconds,
                         lock_wait_seconds=lock_wait,
                     ),
+                    norm_band=norm_band,
                 )
 
             write_started = time.perf_counter()
@@ -307,17 +335,19 @@ async def replace_source_nodes_async(
                     lock_wait_seconds=lock_wait,
                     cleanup_seconds=cleanup_seconds,
                 ),
+                norm_band=norm_band,
             )
 
-    embedding_seconds = await asyncio.to_thread(_prepare_sync)
+    embedding_seconds, norm_band = await asyncio.to_thread(_prepare_sync)
     if shutdown_requested.is_set():
         return ReplaceSourceOutcome(
             0,
             0,
             source_attempt,
             WriteTimings(embedding_seconds=embedding_seconds),
+            norm_band=norm_band,
         )
-    outcome = await asyncio.to_thread(_commit_sync, embedding_seconds)
+    outcome = await asyncio.to_thread(_commit_sync, embedding_seconds, norm_band)
     if progress_callback:
         progress_callback("embed", outcome.chunks_written, outcome.chunks_written)
     return outcome

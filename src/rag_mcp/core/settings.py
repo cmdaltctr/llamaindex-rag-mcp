@@ -52,6 +52,52 @@ class IngestionBlock(BaseModel):
     embed_batch_size: int = 100
 
 
+class EmbeddingSettings(BaseModel):
+    """Config-facing embedding norm-guard knobs (env prefix ``EMBEDDING__``).
+
+    The Settings twin of :class:`EmbeddingBlock`. Lives here — next to its
+    Block, in the pure-data settings module — rather than under
+    ``core/providers/embeddings/``: the providers package is quarantined
+    behind import-linter contracts that forbid transitive imports from
+    retrieval, vectordb, and daemon, and ``config`` composing a providers
+    submodule would leak that package across every module that imports
+    config.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Fail-closed at ingest, warn-and-continue at query. Disabling is an
+    # explicit, startup-logged operator escape hatch — never a silent
+    # default.
+    norm_guard_enabled: bool = True
+    # Observed float32 rounding band for the production model is ~1e-7;
+    # three orders of headroom catch real drift without false alarms.
+    norm_tolerance: float = Field(default=0.001, gt=0)
+
+
+class EmbeddingBlock(BaseModel):
+    """Embedding norm-guard knobs in :attr:`EffectiveSettings.embedding`.
+
+    The dense path ranks by L2 distance and converts to cosine-like
+    similarity at the store boundary — rank-equivalent to cosine only for
+    unit-normalised vectors. These knobs enforce that contract at both
+    embedding boundaries (guard-embedding-normalisation, design D3).
+    """
+
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
+    # Fail-closed at ingest, warn-and-continue at query. Disabling is an
+    # explicit, startup-logged operator escape hatch — never a silent
+    # default (compose logs the disabled state).
+    norm_guard_enabled: bool = True
+    # Observed float32 rounding band for the production model is ~1e-7;
+    # three orders of headroom catch real drift without false alarms.
+    norm_tolerance: float = Field(default=0.001, gt=0)
+
+
 class RetrievalBlock(BaseModel):
     """Retrieval knobs carried in :attr:`EffectiveSettings.retrieval`."""
 
@@ -127,6 +173,7 @@ class EffectiveSettings(BaseModel):
     # ── Nested subpackage blocks ──────────────────────────────────
     chunking: ChunkingBlock = ChunkingBlock()
     ingestion: IngestionBlock = IngestionBlock()
+    embedding: EmbeddingBlock = EmbeddingBlock()
     retrieval: RetrievalBlock = RetrievalBlock()
     metadata: MetadataBlock = MetadataBlock()
 

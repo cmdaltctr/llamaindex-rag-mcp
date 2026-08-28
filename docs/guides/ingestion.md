@@ -53,7 +53,10 @@ A rejected batch writes nothing: no rows, no collection recreation, and no
 generation change. The error names the collection, the embedding
 provider/model, and each affected node or row identifier. Vectors are
 never normalised, truncated, or repaired — the validator reports the
-fault and stops the write. Norm policy is a separate decision.
+fault and stops the write. Norm policy is enforced separately by the
+embedding norm guard ([ADR-053](../adr/053-embedding-norm-guard.md)): a
+vector outside the unit-norm tolerance aborts the file replacement at the
+embed stage, before the store validator runs.
 
 ## Source and chunk lineage
 

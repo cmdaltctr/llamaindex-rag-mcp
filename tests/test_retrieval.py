@@ -333,7 +333,19 @@ class TestThresholdScaling:
 def _fixed_dense_rows(rows: list[dict]):
     """Return a fake ``_dense_query_rows`` callable yielding fixed rows."""
 
-    def _fake(store, collection_name, query, fetch_k, metadata_filter=None):
+    # Accepts the norm-guard keyword arguments the real dense boundary
+    # receives (guard-embedding-normalisation); the fake never runs them.
+    def _fake(
+        store,
+        collection_name,
+        query,
+        fetch_k,
+        metadata_filter=None,
+        *,
+        norm_guard_enabled=True,
+        norm_tolerance=0.001,
+        attach_norm_diagnostic=False,
+    ):
         return [dict(r) for r in rows]
 
     return _fake

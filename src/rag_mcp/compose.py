@@ -66,6 +66,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     from .core.settings import (
         ChunkingBlock,
         EffectiveSettings,
+        EmbeddingBlock,
         IngestionBlock,
         MetadataBlock,
         RetrievalBlock,
@@ -80,6 +81,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     return EffectiveSettings(
         chunking=ChunkingBlock(**settings.chunking.model_dump()),
         ingestion=IngestionBlock(**settings.ingestion.model_dump()),
+        embedding=EmbeddingBlock(**settings.embedding.model_dump()),
         retrieval=RetrievalBlock(
             **{
                 **settings.retrieval.model_dump(),
@@ -374,6 +376,23 @@ def _resolve_active_strategies(settings: Settings) -> None:
     validate_document_backend(settings)
 
 
+def _log_norm_guard_state(settings: Settings) -> None:
+    """Log the embedding norm guard's disabled state at startup.
+
+    Spec (guard-embedding-normalisation): disabling the guard is an
+    explicit operator action and MUST be logged at startup — the guard is
+    the only enforcement of the unit-norm contract that makes L2 ranking
+    behave like cosine, so an operator who disables it needs the
+    consequence visible in the startup log.
+    """
+    if not settings.embedding.norm_guard_enabled:
+        logger.warning(
+            "Embedding norm guard is DISABLED (EMBEDDING__NORM_GUARD_ENABLED=false): "
+            "vector norms are not verified, so dense L2 ranking silently stops "
+            "behaving like cosine if the embedding model emits non-unit vectors."
+        )
+
+
 def ensure_runtime_setup() -> None:
     """Assign ``LlamaIndexSettings.embed_model`` and the default vector store.
 
@@ -397,6 +416,10 @@ def ensure_runtime_setup() -> None:
 
     check_legacy_env_vars()
     settings = get_settings()
+    # Disabled norm guard is an explicit operator decision: make its
+    # consequence visible in the startup log (spec: guard configuration
+    # is explicit).
+    _log_norm_guard_state(settings)
     # Fail closed on recognised legacy Chroma data when no explicit backend
     # was selected (task 4, design D6) — before any store construction so
     # ingestion/retrieval can never touch the untouched directory.

@@ -13,6 +13,7 @@ Provides:
 
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 from contextlib import asynccontextmanager
@@ -38,6 +39,23 @@ from mcp.client import Client
 # ── Constants ──────────────────────────────────────────────────────────────
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+class _UnitNormMockEmbedding(MockEmbedding):
+    """MockEmbedding normalised to emit unit-norm vectors.
+
+    The embedding norm guard (guard-embedding-normalisation) enforces the
+    unit-norm contract production providers honour; the stock mock's
+    constant ``[0.5] * dim`` vector (norm ~9.8 at dim=384) would fail the
+    guard on every ingest. Normalising preserves the constant-vector
+    property, so pairwise distances, scores, and rankings are unchanged.
+    """
+
+    def _get_vector(self) -> list[float]:
+        vector = super()._get_vector()
+        norm = math.sqrt(math.fsum(x * x for x in vector))
+        return [x / norm for x in vector] if norm else list(vector)
+
 
 # ── Session-scoped patches ─────────────────────────────────────────────────
 
@@ -165,6 +183,7 @@ def effective_settings():
     from rag_mcp.core.settings import (
         ChunkingBlock,
         EffectiveSettings,
+        EmbeddingBlock,
         IngestionBlock,
         MetadataBlock,
         RetrievalBlock,
@@ -173,6 +192,7 @@ def effective_settings():
     blocks = {
         "chunking": ChunkingBlock,
         "ingestion": IngestionBlock,
+        "embedding": EmbeddingBlock,
         "retrieval": RetrievalBlock,
         "metadata": MetadataBlock,
     }
@@ -290,8 +310,15 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
     their selected ``ollama`` registry factory is redirected to this mock.
     Provider/settings validation still runs unchanged; only the networked
     concrete embedding construction is replaced.
+
+    The mock emits UNIT-NORM vectors: the embedding norm guard
+    (guard-embedding-normalisation) fails closed on non-unit storage
+    vectors, and the stock MockEmbedding's constant ``[0.5] * dim``
+    vector has norm ~9.8 for dim=384. Normalising keeps the vector
+    constant, so every pairwise distance — and therefore every score and
+    ranking asserted elsewhere in the suite — is unchanged.
     """
-    _patch_embed_model._mock = MockEmbedding(embed_dim=384)
+    _patch_embed_model._mock = _UnitNormMockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
 
     if request.node.path.name == "test_cli.py":

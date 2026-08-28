@@ -262,8 +262,8 @@ diagnostic is always available. `get_collection_dimension` discovers an
 existing collection's vector width without creating backend state (one
 stored embedding on ChromaDB; the Arrow schema width on LanceDB), so
 dimension conflicts are rejected before any write. The validator never
-normalises, truncates, or repairs vectors; norm policy is a separate
-decision.
+normalises, truncates, or repairs vectors; norm policy is enforced
+separately by the embedding norm guard ([ADR-053](../adr/053-embedding-norm-guard.md)).
 
 `compose.build_vector_store` resolves the configured name through the
 registry instead of branching over it. Each factory receives the resolved

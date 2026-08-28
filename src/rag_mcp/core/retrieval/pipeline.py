@@ -128,6 +128,7 @@ def _hybrid_query_rows(
     settings: Any,
     metadata_filter: dict | None = None,
     dense_threshold: float = 0.0,
+    include_norm_diagnostic: bool = False,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
@@ -139,6 +140,9 @@ def _hybrid_query_rows(
             query,
             fetch_k,
             metadata_filter,
+            norm_guard_enabled=settings.embedding.norm_guard_enabled,
+            norm_tolerance=settings.embedding.norm_tolerance,
+            attach_norm_diagnostic=include_norm_diagnostic,
         )
         if backend == "native":
             _emit_mixed_coverage_warning(collection_name, store)
@@ -343,6 +347,7 @@ def search(
             resolved_settings,
             metadata_filter,
             dense_threshold,
+            include_norm_diagnostic=include_diagnostics,
         )
     else:
         results = _dense_query_rows(
@@ -351,6 +356,9 @@ def search(
             query,
             resolved_fetch_k,
             metadata_filter,
+            norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
+            norm_tolerance=resolved_settings.embedding.norm_tolerance,
+            attach_norm_diagnostic=include_diagnostics,
         )
 
     # Optional: re-score with cross-encoder reranker.

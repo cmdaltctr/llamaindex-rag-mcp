@@ -112,9 +112,25 @@ def test_torch_absent_after_full_search_subprocess() -> None:
         os.environ.setdefault("PDF_READER", "pypdf")
 
         # ── Mock embedding model (no Ollama) ──────────────────────────
+        # Normalised to unit vectors: the embedding norm guard
+        # (guard-embedding-normalisation) fails closed on non-unit
+        # storage vectors, and the stock MockEmbedding constant vector
+        # has norm ~9.8 at dim=384 — ingest would abort and the store
+        # would stay empty, so the rerank path this tripwire exists to
+        # exercise would never run. Normalising preserves the constant
+        # vector, so distances and rankings are unchanged.
+        import math
+
         from llama_index.core import Settings as LlamaIndexSettings
         from llama_index.core.embeddings import MockEmbedding
-        LlamaIndexSettings.embed_model = MockEmbedding(embed_dim=384)
+
+        class _UnitNormMockEmbedding(MockEmbedding):
+            def _get_vector(self) -> list[float]:
+                vector = super()._get_vector()
+                norm = math.sqrt(math.fsum(x * x for x in vector))
+                return [x / norm for x in vector] if norm else list(vector)
+
+        LlamaIndexSettings.embed_model = _UnitNormMockEmbedding(embed_dim=384)
 
         # ── Reset vector store singleton ──────────────────────────────
         from rag_mcp.core.vectordb import reset_default_store, set_default_store
