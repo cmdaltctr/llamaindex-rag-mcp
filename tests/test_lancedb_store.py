@@ -746,3 +746,97 @@ def test_write_nodes_widens_null_typed_doc_id_column(tmp_path: Path) -> None:
     rows = list(store.iter_documents("null_doc_id"))
     assert len(rows) == 2
     assert any("with source relationship" in text for _, text, _ in rows)
+
+
+# ── Collection-name safety at the filesystem boundary (task 1.2) ─────
+
+
+def _paths_under(root: Path) -> set[Path]:
+    """Snapshot every path under *root*, relative to it."""
+    return {p.relative_to(root) for p in root.rglob("*")}
+
+
+class TestCollectionNameSafety:
+    """Unsafe collection names fail without filesystem artefacts.
+
+    Spec scenario: an unsafe LanceDB collection name is rejected with a
+    clear error and no filesystem path is created.
+    """
+
+    _BAD_NAMES = ["", "..", "../escape", "a/b", "/abs", "."]
+
+    @staticmethod
+    def _seed(tmp_path: Path) -> LanceVectorStore:
+        """Build a store with one valid collection so the URI exists."""
+        store = LanceVectorStore(uri=str(tmp_path / "safety_lance"))
+        store.upsert_precomputed(
+            "seed",
+            ["s1"],
+            ["seed doc"],
+            [{"k": 1}],
+            [[1.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+        return store
+
+    @pytest.mark.parametrize("bad_name", _BAD_NAMES)
+    def test_unsafe_name_fails_every_store_path_without_artefacts(
+        self, tmp_path: Path, bad_name: str
+    ) -> None:
+        """Each store path rejects the name and leaves the tree untouched."""
+        store = self._seed(tmp_path)
+        before_upsert = _paths_under(tmp_path)
+        with pytest.raises(ValueError):
+            store.upsert_precomputed(
+                bad_name,
+                ["x"],
+                ["d"],
+                [{"k": 2}],
+                [[1.0, 0.0]],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
+        assert _paths_under(tmp_path) == before_upsert
+
+        before_create = _paths_under(tmp_path)
+        with pytest.raises(ValueError):
+            store.create_collection(bad_name)
+        assert _paths_under(tmp_path) == before_create
+
+        before_delete = _paths_under(tmp_path)
+        with pytest.raises(ValueError):
+            store.delete_collection(bad_name)
+        assert _paths_under(tmp_path) == before_delete
+
+        before_query = _paths_under(tmp_path)
+        with pytest.raises(ValueError):
+            store.query_dense(bad_name, [1.0, 0.0], 1)
+        assert _paths_under(tmp_path) == before_query
+
+
+# ── Native per-collection layout pin (task 2.1) ──────────────────────
+
+
+class TestNativeLayoutPin:
+    """Layout pin only; asserts nothing about concurrency."""
+
+    def test_two_collections_occupy_distinct_lance_directories(self, tmp_path: Path) -> None:
+        """Each collection is its own ``{uri}/{name}.lance`` directory."""
+        uri = tmp_path / "layout_lance"
+        store = LanceVectorStore(uri=str(uri))
+        for name in ("alpha_docs", "beta_docs"):
+            store.upsert_precomputed(
+                name,
+                ["id1"],
+                [f"{name} content"],
+                [{"k": 1}],
+                [[1.0, 0.0]],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
+        alpha = uri / "alpha_docs.lance"
+        beta = uri / "beta_docs.lance"
+        assert alpha.is_dir()
+        assert beta.is_dir()
+        assert alpha.resolve() != beta.resolve()
+        assert alpha.parent == beta.parent == uri
+        lance_entries = {p.name for p in uri.iterdir() if p.name.endswith(".lance")}
+        assert lance_entries == {"alpha_docs.lance", "beta_docs.lance"}

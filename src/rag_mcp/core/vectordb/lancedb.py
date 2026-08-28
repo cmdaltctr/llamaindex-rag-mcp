@@ -1,27 +1,25 @@
 """LanceDB implementation of the :class:`VectorStore` ABC.
 
-A second backend behind the ADR-034 abstraction (see ADR-046).  One
-``lancedb.connect(uri)`` connection backs the store; each RAG
-"collection" maps to one LanceDB table.  Writes go through a
-throwaway LlamaIndex ``LanceDBVectorStore`` adapter per table
-(mirroring how ``chroma.py`` constructs a throwaway Chroma adapter per
-collection), constructed with ``mode="create"`` so a fresh adapter can
-never overwrite a populated table (the adapter's default mode is
-``"overwrite"``).
+One ``lancedb.connect(uri)`` connection backs the store; each RAG
+"collection" maps to one LanceDB table (``{uri}/{name}.lance``) whose
+name is validated as a single safe path component before table access
+can touch disk (:func:`.lance_table_name.validate_table_name`).
+Writes go through a throwaway LlamaIndex ``LanceDBVectorStore``
+adapter per table with ``mode="create"`` so a fresh adapter can never
+overwrite a populated table (the default mode is ``"overwrite"``).
 
-Table creation is lazy: LanceDB cannot create a table without data or
-a schema, so the vector dimension is fixed on first write exactly as
-the ChromaDB dimension lock behaves.  ``create_collection`` records
-intent (a process-local set) so existence checks and listings match
-ChromaDB's create-on-demand semantics before the first write.
+Table creation is lazy: LanceDB cannot create a table without data
+or a schema, so the vector dimension is fixed on first write exactly
+as the ChromaDB dimension lock behaves.  ``create_collection``
+records intent (a process-local set) so existence checks and
+listings match ChromaDB's create-on-demand semantics.
 
 Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
-pylance's ``update_schema_metadata`` (read-merge-write); that seam and
-the identity guards live in :mod:`.lance_meta`.  The Python SDK has
-no ``update_config`` and no post-hoc ``replace_schema_metadata``; schema metadata is the durable
-key-value bag that survives reconnection and adapter writes
-(verified against lancedb 0.37.1 / pylance 10.0.0).
+pylance's ``update_schema_metadata`` (read-merge-write); that seam
+and the identity guards live in :mod:`.lance_meta`.  Schema metadata
+is the durable key-value bag that survives reconnection and adapter
+writes (verified against lancedb 0.37.1 / pylance 10.0.0).
 
 This is one of the only modules that imports ``lancedb`` directly
 (the other is ``lance_filter.py``); all pipeline code goes through
@@ -50,6 +48,7 @@ from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_fiel
 from .lance_node_schema import evolve_for_nodes
 from .lance_paged import LancePagedReadMixin, strip_internal_metadata
 from .lance_rows import rows_to_arrow, upsert_schema
+from .lance_table_name import validate_table_name
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2
 from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
 
@@ -137,6 +136,7 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         other ``ValueError`` (corrupt or incomplete ``.lance`` data)
         re-raises instead of silently reading as absent.
         """
+        validate_table_name(name)
         try:
             return self._get_connection().open_table(name)
         except ValueError as exc:
@@ -159,7 +159,7 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         vector dimension is fixed by the schema on the first write —
         the same create-on-first-write behaviour as ChromaDB.
         """
-        self._intents.add(name)
+        self._intents.add(validate_table_name(name))
 
     def collection_exists(self, name: str) -> bool:
         return name in self._intents or name in self._list_table_names()
@@ -180,7 +180,7 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._intents.discard(name)
         self._pending_metadata.pop(name, None)
         if name in self._list_table_names():
-            self._get_connection().drop_table(name)
+            self._get_connection().drop_table(validate_table_name(name))
             self.bump_generation(name)
             return
         if not was_intent:
