@@ -30,9 +30,9 @@
   - ruff clean; 8/8 import-linter contracts kept (no ingestion/retrieval
     cross-import; EmbeddingSettings lives in core/settings.py after the
     providers-quarantine discovery, see ADR-053 Decision 4).
-- [x] 3.4 Write the ADR (guard vs normalise vs metric switch, with the investigation evidence and the D17 independence argument), run `openspec validate guard-embedding-normalisation --strict`, then archive the change.
-  - ADR-053 written and accepted; validation run at PR time. Archiving is
-    left to the operator per repo convention (`/opsx-archive`).
+- [x] 3.4 Write the ADR (guard vs normalise vs metric switch, with the investigation evidence and the D17 independence argument) and run `openspec validate guard-embedding-normalisation --strict`.
+  - ADR-053 written and accepted; validation valid at PR time.
+- [ ] 3.5 Archive the change (`/opsx-archive`) after PR #70 merges.
 
 ## 4. Out-of-scope register
 

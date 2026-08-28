@@ -488,17 +488,18 @@ class TestGuardConfiguration:
     """Nested settings, validation, and the startup visibility contract."""
 
     def test_env_nesting_resolves(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """EMBEDDING__* env vars reach the embedding block."""
-        import sys
+        """EMBEDDING__* env vars reach the embedding block.
 
+        A fresh ``Settings()`` resolves environment variables at
+        construction, so the test needs no cached-singleton manipulation
+        (repo rule: never patch a settings singleton — there is nothing
+        to patch).
+        """
         monkeypatch.setenv("EMBEDDING__NORM_GUARD_ENABLED", "false")
         monkeypatch.setenv("EMBEDDING__NORM_TOLERANCE", "0.05")
-        config_mod = sys.modules.get("rag_mcp.config")
-        if config_mod is not None:
-            monkeypatch.setattr(config_mod, "_settings", None, raising=False)
-        from rag_mcp.config import get_settings
+        from rag_mcp.config import Settings
 
-        settings = get_settings()
+        settings = Settings()
         assert settings.embedding.norm_guard_enabled is False
         assert settings.embedding.norm_tolerance == 0.05
 

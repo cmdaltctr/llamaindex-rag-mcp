@@ -337,7 +337,7 @@ file replacement before any write), warn-and-continue at query (results stay ava
 | Field | Default | What it does |
 |---|---|---|
 | `norm_guard_enabled` | `true` | Verify vector norms at both boundaries. Disabling is logged at startup |
-| `norm_tolerance` | `0.001` | Maximum permitted `|norm − 1.0|`, inclusive. Must be positive |
+| `norm_tolerance` | `0.001` | Maximum permitted `abs(norm − 1.0)`, inclusive. Must be positive |
 
 ### Retrieval — `RETRIEVAL__*`
 
