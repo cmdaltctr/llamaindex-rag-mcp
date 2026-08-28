@@ -158,6 +158,11 @@ def _seed_fixtures(store: Any, corpus: dict[str, Any]) -> dict[str, dict[str, An
     freshness preflight.
     """
     expected: dict[str, dict[str, Any]] = {}
+    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+
+    fixture_identity = EmbeddingIdentity(
+        provider="fixture", model="committed-fixture-vectors"
+    )
     for fixture_id in sorted(corpus["fixtures"]):
         docs = corpus["fixtures"][fixture_id]["documents"]
         collection = f"{COLLECTION_PREFIX}{fixture_id}"
@@ -168,6 +173,7 @@ def _seed_fixtures(store: Any, corpus: dict[str, Any]) -> dict[str, dict[str, An
             documents=[d["text"] for d in docs],
             metadatas=[d["metadata"] for d in docs],
             embeddings=[d["embedding"] for d in docs],
+            embedding_identity=fixture_identity,
         )
         expected[collection] = {
             "ids": sorted(d["id"] for d in docs),

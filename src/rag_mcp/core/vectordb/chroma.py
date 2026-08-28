@@ -25,14 +25,15 @@ from typing import TYPE_CHECKING, Any
 from llama_index.core import StorageContext, VectorStoreIndex
 
 from .base import VectorStore
+from .chroma_cloud import construct_cloud_client
 from .identity import (
     EmbeddingIdentity,
     IdentityGuardMixin,
     embedding_identity_from_settings,
-    redact_cloud_secrets,
 )
 from .paged import PagedReadMixin
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
+from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
 
 if TYPE_CHECKING:
     import chromadb
@@ -159,6 +160,14 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         client = self._get_client()
         return [c.name for c in client.list_collections()]
 
+    def get_collection_dimension(self, name: str) -> int | None:
+        """Return the stored vector dimension without creating a collection."""
+        collection = self._get_collection(name)
+        if collection is None:
+            return None
+        embeddings = collection.get(limit=1, include=["embeddings"]).get("embeddings", [])
+        return len(embeddings[0]) if len(embeddings) else None
+
     # ── Document write (upsert via LlamaIndex) ─────────────────────
 
     def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
@@ -169,6 +178,20 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         embedding identity is attached, the collection's stored identity
         is stamped (legacy collections) or verified first.
         """
+        from llama_index.core import Settings
+
+        embed_model = Settings.embed_model
+        identity = self._identity or EmbeddingIdentity(
+            provider=type(embed_model).__name__,
+            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
+        )
+        materialise_and_validate_node_embeddings(
+            nodes,
+            collection_name=collection_name,
+            embedding_identity=identity,
+            existing_dimension=self.get_collection_dimension(collection_name),
+            embed_model=embed_model,
+        )
         client = self._get_client()
         collection = client.get_or_create_collection(collection_name)
         self._check_or_stamp_identity(collection)
@@ -192,6 +215,8 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         documents: list[str],
         metadatas: list[dict],
         embeddings: list[list[float]],
+        *,
+        embedding_identity: EmbeddingIdentity,
     ) -> None:
         """Upsert rows whose embeddings the caller already computed.
 
@@ -207,6 +232,13 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             metadatas: Per-row metadata dicts.
             embeddings: Caller-computed embedding vectors, one per row.
         """
+        validate_embedding_batch(
+            ids,
+            embeddings,
+            collection_name=collection_name,
+            embedding_identity=embedding_identity,
+            existing_dimension=self.get_collection_dimension(collection_name),
+        )
         client = self._get_client()
         collection = client.get_or_create_collection(collection_name)
         self._check_or_stamp_identity(collection)
@@ -351,73 +383,6 @@ def _resolve_local_persist_dir(persist_dir: str | None) -> str:
     return get_default_effective_settings().chroma_persist_dir
 
 
-def _construct_cloud_client(
-    cloud_api_key: str | None,
-    cloud_tenant: str | None,
-    cloud_database: str | None,
-) -> chromadb.api.ClientAPI:
-    """Construct and validate a ``chromadb.CloudClient``.
-
-    The client receives exactly the resolved key (plus the
-    tenant/database pair when both are supplied) and is validated with
-    a lightweight ``heartbeat()`` round trip so authentication,
-    network, and tenant/database mistakes surface at startup — never
-    mid-run.
-
-    Args:
-        cloud_api_key: Chroma Cloud API key.
-        cloud_tenant: Optional tenant identifier.
-        cloud_database: Optional database identifier.
-
-    Returns:
-        A validated cloud client.
-
-    Raises:
-        ValueError: When the key is missing, or tenant/database arrive
-            as a half pair (direct factory callers bypass Settings
-            validation, so the guard is repeated here).
-        RuntimeError: When construction or the connection check fails.
-            The message is redacted and names the relevant variables.
-    """
-    key = (cloud_api_key or "").strip()
-    if not key:
-        raise ValueError(
-            "CHROMA_MODE=cloud requires CHROMA_CLOUD_API_KEY to be set. "
-            "Add it to your .env file (see .env.example); never commit the key."
-        )
-    kwargs: dict[str, str] = {"api_key": key}
-    tenant = (cloud_tenant or "").strip()
-    database = (cloud_database or "").strip()
-    if tenant or database:
-        if not (tenant and database):
-            raise ValueError(
-                "CHROMA_CLOUD_TENANT and CHROMA_CLOUD_DATABASE must be supplied "
-                "together, or both omitted so the cloud client resolves them "
-                "from the API key."
-            )
-        kwargs["tenant"] = tenant
-        kwargs["database"] = database
-    try:
-        import chromadb
-
-        client = chromadb.CloudClient(**kwargs)
-        client.heartbeat()
-    except Exception as exc:
-        raise RuntimeError(
-            redact_cloud_secrets(
-                f"CHROMA_MODE=cloud connection check failed "
-                f"({type(exc).__name__}): {exc}. Verify CHROMA_CLOUD_API_KEY, "
-                "CHROMA_CLOUD_TENANT, and CHROMA_CLOUD_DATABASE, and network "
-                "reachability of Chroma Cloud. No local fallback is performed "
-                "after an explicit cloud selection.",
-                key,
-                tenant,
-                database,
-            )
-        ) from None
-    return client
-
-
 def build_chroma_vector_store(
     persist_dir: str | None = None,
     *,
@@ -456,7 +421,7 @@ def build_chroma_vector_store(
         RuntimeError: When the cloud connection check fails (redacted).
     """
     if mode == "cloud":
-        client = _construct_cloud_client(cloud_api_key, cloud_tenant, cloud_database)
+        client = construct_cloud_client(cloud_api_key, cloud_tenant, cloud_database)
         return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
     if mode != "local":
         raise ValueError(f"CHROMA_MODE={mode!r} is not recognised. Accepted values: local, cloud.")

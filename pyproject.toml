@@ -258,6 +258,7 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.chroma -> chromadb",
+    "rag_mcp.core.vectordb.chroma_cloud -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 

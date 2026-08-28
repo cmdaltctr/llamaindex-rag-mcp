@@ -215,8 +215,27 @@ Supporting modules keep each store under the 500-line ceiling:
   ChromaDB missing-field semantics across backends
 - `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
   pages plus `strip_internal_metadata`)
+- `core/vectordb/validation.py` — the fail-closed embedding write contract
+  (`validate_embedding_batch` and
+  `materialise_and_validate_node_embeddings`), shared by every backend
 - `core/vectordb/registry.py` — lazy vector-store registry mapping
   `VECTOR_STORE` names to factories (`chroma`, `lancedb`)
+
+Every store write is fail-closed
+([ADR-051](../adr/051-fail-closed-embedding-write-contract.md)). Each
+adapter validates the complete embedding batch immediately before its
+backend mutation: `write_nodes` embeds missing nodes and validates the
+whole batch first, and `upsert_precomputed` validates caller-computed
+vectors first. A rejected batch never reaches the SDK, never persists a
+subset, and never advances the generation counter. Every failure names the
+collection, the embedding provider/model, and each affected identifier —
+direct `upsert_precomputed` callers must pass `embedding_identity` so the
+diagnostic is always available. `get_collection_dimension` discovers an
+existing collection's vector width without creating backend state (one
+stored embedding on ChromaDB; the Arrow schema width on LanceDB), so
+dimension conflicts are rejected before any write. The validator never
+normalises, truncates, or repairs vectors; norm policy is a separate
+decision.
 
 `compose.build_vector_store` resolves the configured name through the
 registry instead of branching over it. Each factory receives the resolved

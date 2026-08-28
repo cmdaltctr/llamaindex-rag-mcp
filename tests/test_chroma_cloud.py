@@ -1061,6 +1061,7 @@ class TestUpsertPrecomputed:
             documents=["alpha text", "beta text"],
             metadatas=[{"k": 1}, {"k": 2}],
             embeddings=[[0.1, 0.2], [0.3, 0.4]],
+            embedding_identity=_embedding_identity(provider="ollama", model="model-u"),
         )
         assert store.count("upsert_probe") == 2
         metadata = store.get_collection_metadata("upsert_probe")
@@ -1079,6 +1080,7 @@ class TestUpsertPrecomputed:
             documents=["original"],
             metadatas=[{"k": 1}],
             embeddings=[[0.5, 0.5]],
+            embedding_identity=_embedding_identity(model="model-a"),
         )
         second = ChromaVectorStore(
             client=shared, embedding_identity=_embedding_identity(model="model-b")
@@ -1090,6 +1092,7 @@ class TestUpsertPrecomputed:
                 documents=["usurper"],
                 metadatas=[{"k": 2}],
                 embeddings=[[0.5, 0.5]],
+                embedding_identity=_embedding_identity(model="model-b"),
             )
         assert first.count("upsert_guard") == 1
 
@@ -1131,21 +1134,28 @@ class TestFactoryEdges:
 
 
 class TestChromaImportBoundary:
-    """core/vectordb/chroma.py stays the only production chromadb import site."""
+    """The chroma adapter modules stay the only production chromadb import sites."""
 
     def test_chroma_module_is_the_only_chromadb_import_site(self) -> None:
         """No other production module may import chromadb (spec scenario)."""
         src_root = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
-        allowed = "core/vectordb/chroma.py"
+        allowed = frozenset(
+            {
+                "core/vectordb/chroma.py",
+                # Cloud-connection helper extracted from the adapter; same
+                # boundary, one import site per concern.
+                "core/vectordb/chroma_cloud.py",
+            }
+        )
         pattern = re.compile(r"^\s*(?:import chromadb|from chromadb)", re.MULTILINE)
         offenders = sorted(
             path.relative_to(src_root).as_posix()
             for path in src_root.rglob("*.py")
             if "__pycache__" not in path.parts
-            and path.relative_to(src_root).as_posix() != allowed
+            and path.relative_to(src_root).as_posix() not in allowed
             and pattern.search(path.read_text(encoding="utf-8"))
         )
         assert offenders == [], f"unexpected chromadb import sites: {offenders}"
-        # Guard against vacuous passage: the allowed file must still import it.
-        allowed_source = (src_root / allowed).read_text(encoding="utf-8")
-        assert pattern.search(allowed_source) is not None
+        # Guard against vacuous passage: the canonical adapter must still import it.
+        adapter_source = (src_root / "core/vectordb/chroma.py").read_text(encoding="utf-8")
+        assert pattern.search(adapter_source) is not None

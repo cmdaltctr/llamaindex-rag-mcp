@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from rag_mcp.core.vectordb.base import VectorStore
+from rag_mcp.core.vectordb.identity import EmbeddingIdentity
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 
 # Task 5.1: the ChromaDB adapter import is lazy so this shared contract
@@ -31,6 +32,7 @@ from rag_mcp.core.vectordb.lancedb import LanceVectorStore
 # without the optional chroma extra. The chroma parameters skip by design
 # with a named reason and run in the chroma-extra CI job.
 _CHROMA_EXTRA = find_spec("chromadb") is not None
+_PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 
 
 def _store_class(backend: str) -> type[VectorStore]:
@@ -172,6 +174,7 @@ class TestWriteAndQuery:
             documents=["exact", "near", "far"],
             metadatas=[{"rank": 1}, {"rank": 2}, {"rank": 3}],
             embeddings=[[1.0, 0.0], [0.8, 0.2], [0.0, 1.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
 
         rows = store.query_dense("semantic_scores", [1.0, 0.0], n_results=3)
@@ -198,6 +201,7 @@ class TestWriteAndQuery:
             documents=["two units away"],
             metadatas=[{"rank": 1}],
             embeddings=[[2.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
 
         rows = store.query_dense("squared_l2_probe", [0.0, 0.0], n_results=1)
@@ -454,6 +458,7 @@ class TestGenerationCounter:
             documents=["probe"],
             metadatas=[{"k": "v"}],
             embeddings=[[0.1, 0.2]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.get_generation("precomputed") == 1
 

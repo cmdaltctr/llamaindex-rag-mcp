@@ -190,7 +190,12 @@ def main() -> None:
                 )
             embeddings = embedder.embed_batch(docs)
             store.upsert_precomputed(
-                collection_name, ids=ids, documents=docs, metadatas=metas, embeddings=embeddings
+                collection_name,
+                ids=ids,
+                documents=docs,
+                metadatas=metas,
+                embeddings=embeddings,
+                embedding_identity=storage.embedding_identity,
             )
             done = existing + min(offset + len(batch), len(rows_to_add))
             if done == len(rows) or done % max(args.batch_size * 10, 500) == 0:

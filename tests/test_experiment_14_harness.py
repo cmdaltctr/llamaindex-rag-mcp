@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import inspect
 import json
+import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
@@ -21,6 +23,8 @@ from experiments._lib.preflight import (
     PreflightError,
     assert_parser_invoked_before_embeddings,
 )
+
+from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXP14_DIR = REPO_ROOT / "experiments" / "14-liteparse-qasper-promotion-2026-06-29"
@@ -359,3 +363,201 @@ def test_parse_failure_records_zero_tokens_and_unknown_pages(
         assert doc["token_count"] == 0
         # The source page count is unknowable without a successful parse.
         assert doc["source_page_count"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tasks 3.1–3.3 (validate-embedding-write-contract): the Experiment 14
+# builder reuses the shared production validator BEFORE its destructive
+# rebuild steps (delete_collection/create_collection), so a malformed
+# embedder batch cannot destroy an existing collection or the previous
+# build's output artefacts.  Spec scenarios: "Experiment 14 receives
+# malformed embeddings" and "Experiment 14 validates before destructive
+# rebuild".  The embed stage runs for real against the two fixture PDFs
+# (pypdf, deterministic per AGENTS.md gotcha 6); the embedder, storage
+# config and store are stubbed — no network, no Ollama, no Chroma.
+# ---------------------------------------------------------------------------
+
+_HARNESS_COLLECTION = "exp14_harness_rebuild_collection"
+
+
+class _MalformedEmbedder:
+    """Stand-in for ``OllamaEmbedder`` reproducing its real failure mode.
+
+    The production embedder appends an empty vector when the provider
+    returns no embedding for a text (the ``OllamaEmbedder.embed``
+    fallback in ``build_indexes.py``); this stub returns exactly that
+    malformed batch for the last text of every call, so the whole batch
+    must be rejected atomically.
+    """
+
+    calls: list[list[str]] = []
+
+    def __init__(self, model: str, base_url: str) -> None:
+        self.model = model
+        self.base_url = base_url
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        _MalformedEmbedder.calls.append(list(texts))
+        return [[0.1, 0.2, 0.3] for _ in texts[:-1]] + [[]]
+
+
+class _RebuildRecordingStore:
+    """Fake store modelling an existing collection the builder may destroy.
+
+    Records every rebuild-seam call and mutates the modelled collection
+    state only when a destructive step actually runs, so the test can
+    prove nothing destroyed the collection.
+    """
+
+    def __init__(self, collection_name: str) -> None:
+        self.collection_name = collection_name
+        self.collections: dict[str, dict[str, object]] = {
+            collection_name: {"ids": ["row-old"], "generation": 1}
+        }
+        self.calls: list[tuple[object, ...]] = []
+
+    def snapshot(self) -> dict[str, dict[str, object]]:
+        return {name: dict(state) for name, state in self.collections.items()}
+
+    def collection_exists(self, name: str) -> bool:
+        self.calls.append(("collection_exists", name))
+        return name in self.collections
+
+    def get_collection_dimension(self, name: str) -> int | None:
+        self.calls.append(("get_collection_dimension", name))
+        return 2 if name in self.collections else None
+
+    def delete_collection(self, name: str) -> None:
+        self.calls.append(("delete_collection", name))
+        self.collections.pop(name, None)
+
+    def create_collection(self, name: str) -> None:
+        self.calls.append(("create_collection", name))
+        self.collections[name] = {}
+
+    def upsert_precomputed(
+        self,
+        collection_name: str,
+        *,
+        ids: list[str],
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, object]],
+    ) -> None:
+        self.calls.append(("upsert_precomputed", collection_name, tuple(ids)))
+
+
+def _seed_malformed_rebuild_harness(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> SimpleNamespace:
+    """Point ``main()`` at stubs: real parse, malformed embedder, fake store.
+
+    ``OUTPUT_DIR`` is redirected to a tmp directory seeded with the
+    artefacts of a previous successful build, so the regression proves
+    artefact preservation without touching the real ``output/`` tree
+    (task 3.4).
+    """
+    import experiments._lib.storage as exp_storage
+
+    tmp_output = tmp_path / "output"
+    tmp_output.mkdir(parents=True)
+    previous_build = tmp_output / "index_build_pypdf.json"
+    previous_build.write_text('{"sentinel": "previous build"}', encoding="utf-8")
+    previous_manifest = tmp_output / "preflight_manifest_pypdf.json"
+    previous_manifest.write_text('{"sentinel": "previous preflight"}', encoding="utf-8")
+    previous_chroma_dir = tmp_output / "chroma_pypdf"
+    previous_chroma_dir.mkdir()
+    index_marker = previous_chroma_dir / "existing_index.marker"
+    index_marker.write_text("previous index", encoding="utf-8")
+
+    store = _RebuildRecordingStore(_HARNESS_COLLECTION)
+    embedder = _MalformedEmbedder("nomic-embed-text", "http://localhost:11434")
+    _MalformedEmbedder.calls.clear()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["build_indexes.py", "--reader", "pypdf", "--corpus-dir", str(FIXTURES_DIR)],
+    )
+    monkeypatch.setattr(exp14, "OUTPUT_DIR", tmp_output)
+    monkeypatch.setattr(exp14, "OllamaEmbedder", _MalformedEmbedder)
+    monkeypatch.setattr(
+        exp_storage,
+        "experiment_storage_config",
+        lambda **kwargs: SimpleNamespace(
+            collection_name=_HARNESS_COLLECTION,
+            build_store=lambda: store,
+        ),
+    )
+    return SimpleNamespace(
+        embedder=embedder,
+        store=store,
+        previous_build=previous_build,
+        previous_manifest=previous_manifest,
+        previous_chroma_dir=previous_chroma_dir,
+        index_marker=index_marker,
+    )
+
+
+def test_malformed_embedder_batch_fails_before_destructive_rebuild(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Spec: malformed embeddings + validates before destructive rebuild.
+
+    The embedder returns a malformed batch (one empty vector — the
+    embedder's real no-embedding fallback).  The shared production
+    validator must reject the whole batch with
+    ``EmbeddingWriteContractError`` before ``delete_collection``,
+    ``create_collection``, or ``upsert_precomputed`` runs, so the
+    existing collection and the previous build's output artefacts
+    survive intact.
+    """
+    harness = _seed_malformed_rebuild_harness(monkeypatch, tmp_path)
+    snapshot = harness.store.snapshot()
+
+    with pytest.raises(EmbeddingWriteContractError) as excinfo:
+        exp14.main()
+
+    # The shared diagnostic names the collection and the affected row.
+    message = str(excinfo.value)
+    assert _HARNESS_COLLECTION in message
+    assert "doc2_quantum" in message
+
+    # Parser preflight and the embed stage ran BEFORE validation stopped
+    # the build: preflight is not where vector validation lives.
+    assert harness.embedder.calls, "embed stage must run before the rebuild seam"
+    assert sum(len(batch) for batch in harness.embedder.calls) == 2
+
+    # No destructive rebuild step executed.
+    kinds = [call[0] for call in harness.store.calls]
+    assert "delete_collection" not in kinds
+    assert "create_collection" not in kinds
+    assert "upsert_precomputed" not in kinds
+
+    # The existing collection and its contents are intact.
+    assert harness.store.collections == snapshot
+
+    # The previous build's output artefacts are unchanged.
+    assert harness.previous_build.read_text(encoding="utf-8") == '{"sentinel": "previous build"}'
+    assert (
+        harness.previous_manifest.read_text(encoding="utf-8")
+        == '{"sentinel": "previous preflight"}'
+    )
+    assert harness.previous_chroma_dir.is_dir()
+    assert harness.index_marker.read_text(encoding="utf-8") == "previous index"
+
+
+def test_preflight_check_accepts_no_vector_data() -> None:
+    """Task 3.3 guard: parser preflight stays separate from vector validation.
+
+    The change inserts a validation call adjacent to the rebuild seam;
+    the plausible merge is folding it into ``preflight_check``.  Preflight
+    stays parser-level: its signature accepts no embedding-vector data, so
+    it cannot own structural vector validation.  The behavioural half —
+    preflight passing before the embed stage — is pinned by the
+    embedder-called assertion in
+    ``test_malformed_embedder_batch_fails_before_destructive_rebuild``.
+    """
+    forbidden = {"vectors", "embeddings", "vector_batch", "embedding_batch"}
+    parameters = set(inspect.signature(exp14.preflight_check).parameters)
+    assert forbidden.isdisjoint(parameters)

@@ -237,7 +237,12 @@ def main() -> None:
                 ids, docs, metas, embeddings = kept_ids, kept_docs, kept_metas, kept_embs
             if ids:
                 store.upsert_precomputed(
-                    collection_name, ids=ids, documents=docs, metadatas=metas, embeddings=embeddings
+                    collection_name,
+                    ids=ids,
+                    documents=docs,
+                    metadatas=metas,
+                    embeddings=embeddings,
+                    embedding_identity=storage.embedding_identity,
                 )
     finally:
         embedder.close()

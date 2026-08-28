@@ -19,8 +19,7 @@ Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
 pylance's ``update_schema_metadata`` (read-merge-write); that seam and
 the identity guards live in :mod:`.lance_meta`.  The Python SDK has
-no ``update_config`` and no post-hoc table-level
-``replace_schema_metadata``; schema metadata is the durable
+no ``update_config`` and no post-hoc ``replace_schema_metadata``; schema metadata is the durable
 key-value bag that survives reconnection and adapter writes
 (verified against lancedb 0.37.1 / pylance 10.0.0).
 
@@ -48,13 +47,11 @@ from .base import VectorStore
 from .identity import EmbeddingIdentity, embedding_identity_from_settings
 from .lance_filter import translate_where
 from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
-from .lance_paged import (
-    INTERNAL_METADATA_KEYS,
-    LancePagedReadMixin,
-    strip_internal_metadata,
-)
+from .lance_node_schema import evolve_for_nodes
+from .lance_paged import LancePagedReadMixin, strip_internal_metadata
 from .lance_rows import rows_to_arrow, upsert_schema
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2
+from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
 
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
@@ -193,6 +190,14 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def list_collections(self) -> list[str]:
         return sorted(set(self._list_table_names()) | self._intents)
 
+    def get_collection_dimension(self, name: str) -> int | None:
+        """Return the fixed Arrow vector width without creating a table."""
+        table = self._open_table(name)
+        if table is None or "vector" not in table.schema.names:
+            return None
+        vector_type = table.schema.field("vector").type
+        return vector_type.list_size if pa.types.is_fixed_size_list(vector_type) else None
+
     # ── Document write ──────────────────────────────────────────────
 
     def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
@@ -209,6 +214,20 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         gain nulls); the adapter's internal keys are included because
         the adapter writes them into the same struct.
         """
+        from llama_index.core import Settings
+
+        embed_model = Settings.embed_model
+        identity = self._identity or EmbeddingIdentity(
+            provider=type(embed_model).__name__,
+            model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
+        )
+        materialise_and_validate_node_embeddings(
+            nodes,
+            collection_name=collection_name,
+            embedding_identity=identity,
+            existing_dimension=self.get_collection_dimension(collection_name),
+            embed_model=embed_model,
+        )
         self._check_or_stamp_identity(collection_name)
         self._widen_null_adapter_columns(collection_name)
         self._evolve_for_nodes(collection_name, nodes)
@@ -230,31 +249,8 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self.bump_generation(collection_name)
 
     def _evolve_for_nodes(self, collection_name: str, nodes: list[Any]) -> None:
-        """Grow the metadata struct to cover the batch's keys.
-
-        Collects every user metadata key across the batch plus the
-        adapter's internal keys, infers a type per key from the batch's
-        values, and evolves the table when the table already exists.
-        The first write needs no evolution: the adapter builds the
-        struct from that batch itself.
-        """
-        samples: dict[str, list[Any]] = {}
-        for node in nodes:
-            metadata = getattr(node, "metadata", None) or {}
-            for key, value in metadata.items():
-                samples.setdefault(key, []).append(value)
-        existing = self._open_table(collection_name)
-        if existing is None:
-            return
-        present = metadata_field_names(existing)
-        new_fields: dict[str, pa.DataType] = {
-            key: infer_arrow_type(values) for key, values in samples.items()
-        }
-        # The adapter writes its internal keys into the same struct; a
-        # table created by ``upsert_precomputed`` lacks them.
-        for key in INTERNAL_METADATA_KEYS - present - set(new_fields):
-            new_fields[key] = pa.string()
-        self.evolve_metadata_fields(collection_name, new_fields)
+        """Grow the metadata struct to cover the batch's keys."""
+        evolve_for_nodes(self, collection_name, nodes)
 
     def upsert_precomputed(
         self,
@@ -263,6 +259,8 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         documents: list[str],
         metadatas: list[dict],
         embeddings: list[list[float]],
+        *,
+        embedding_identity: EmbeddingIdentity,
     ) -> None:
         """Upsert rows whose embeddings the caller already computed.
 
@@ -277,9 +275,14 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         would lock a zero-dimension vector column that no later write
         could satisfy.
         """
+        validate_embedding_batch(
+            ids,
+            embeddings,
+            collection_name=collection_name,
+            embedding_identity=embedding_identity,
+            existing_dimension=self.get_collection_dimension(collection_name),
+        )
         self._check_or_stamp_identity(collection_name)
-        if not ids or not embeddings:
-            return
         table = self._open_table(collection_name)
         if table is None:
             dim = len(embeddings[0])

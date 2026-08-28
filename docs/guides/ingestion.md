@@ -34,6 +34,27 @@ Source file (PDF, DOCX, TXT, ...)
 
 Re-ingesting a file is an **upsert** — old chunks are removed before new ones are written. There is no duplication.
 
+## Embedding write contract
+
+Stage 4 is fail-closed
+([ADR-051](../adr/051-fail-closed-embedding-write-contract.md)): the store
+adapter validates the complete embedding batch before any backend
+mutation. The shared validator rejects a batch that contains:
+
+- no identifiers or no vectors (empty batch)
+- a count of identifiers that differs from the count of vectors
+- a value that is not a sized vector, or an empty vector
+- a non-numeric element (booleans are rejected)
+- a non-finite element (NaN or infinity)
+- mixed vector dimensions within one batch
+- a dimension that conflicts with the existing collection
+
+A rejected batch writes nothing: no rows, no collection recreation, and no
+generation change. The error names the collection, the embedding
+provider/model, and each affected node or row identifier. Vectors are
+never normalised, truncated, or repaired — the validator reports the
+fault and stops the write. Norm policy is a separate decision.
+
 ## PDF reader configuration
 
 The PDF parser is a pluggable factory controlled by the `PDF_READER`

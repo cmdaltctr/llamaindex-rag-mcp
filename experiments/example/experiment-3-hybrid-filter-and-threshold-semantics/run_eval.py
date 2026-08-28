@@ -118,12 +118,18 @@ def _resolve_runtime(fixture: dict[str, Any]) -> dict[str, Any]:
     store = ChromaVectorStore(client=client)
     store.create_collection(COLLECTION_NAME)
     rows = fixture["rows"]
+    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+
+    fixture_identity = EmbeddingIdentity(
+        provider="fixture", model="committed-fixture-vectors"
+    )
     store.upsert_precomputed(
         collection_name=COLLECTION_NAME,
         ids=[row["id"] for row in rows],
         documents=[row["text"] for row in rows],
         metadatas=[dict(row["metadata"]) for row in rows],
         embeddings=[list(row["vector"]) for row in rows],
+        embedding_identity=fixture_identity,
     )
 
     LlamaIndexSettings.embed_model = FixtureEmbedModel(fixture["query"]["vector"])

@@ -15,6 +15,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import Any
 
+from .identity import EmbeddingIdentity
+
 
 class VectorStore(ABC):
     """Abstract contract for a vector store backing the RAG pipeline."""
@@ -42,6 +44,14 @@ class VectorStore(ABC):
     def list_collections(self) -> list[str]:
         """Return every collection name."""
 
+    def get_collection_dimension(self, name: str) -> int | None:
+        """Return an established vector dimension without creating state.
+
+        The default keeps older third-party stores instantiable. Native
+        adapters override it when their backend exposes a durable dimension.
+        """
+        return None
+
     # Writes.
 
     @abstractmethod
@@ -55,6 +65,8 @@ class VectorStore(ABC):
         documents: list[str],
         metadatas: list[dict],
         embeddings: list[list[float]],
+        *,
+        embedding_identity: EmbeddingIdentity,
     ) -> None:
         """Upsert rows whose embeddings were computed by the caller.
 
