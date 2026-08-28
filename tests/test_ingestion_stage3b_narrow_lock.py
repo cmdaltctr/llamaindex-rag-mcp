@@ -1,16 +1,15 @@
 """Stage 3B narrow-lock regressions for the ingestion replacement path.
 
-The planned change hoists ``_embed_missing_nodes`` and
-``stamp_source_attempt`` above the process-global ``write_lock`` inside
+The Stage 3B hoist runs lineage/attempt stamping and
+``_embed_missing_nodes`` above the process-global ``write_lock`` inside
 ``replace_source_nodes_async``, while write, durability verification, and
 stale cleanup stay inside the lock.
 
-Tests 1 and 2 pin the NEW behaviour: they fail against current Stage 3A
-code, where embedding and stamping still run inside the lock. Test 3 pins
-the vector-identity invariant the reorder depends on, and passes both
-before and after the change. Test 4 pins the boundary that must not
-regress — store mutation waits for the lock — which current code already
-satisfies.
+Tests 1 and 2 pin the hoisted behaviour: embedding must proceed while the
+lock is held elsewhere. Test 3 pins the vector-identity invariant the
+order depends on, and passes under either order. Test 4 pins the boundary
+that must not regress — store mutation waits for the lock — which current
+code already satisfies.
 
 Concurrency style mirrors ``tests/test_ingestion_parallel.py``: plain
 ``threading.Thread`` workers and ``asyncio.run`` from sync tests.
@@ -36,7 +35,7 @@ from rag_mcp.core.ingestion.source_state import (
     SOURCE_INDEX_IDENTITY_KEY,
     SOURCE_VERSION_KEY,
     new_source_attempt,
-    stamp_source_attempt,
+    stamp_source_lineage,
 )
 from rag_mcp.core.vectordb import get_default_store
 from rag_mcp.core.vectordb.base import VectorStore
@@ -90,6 +89,7 @@ def _spawn_replacement(
                 replace_source_nodes_async(
                     nodes,
                     file_path=file_path,
+                    source_id=f"src_{suffix}",
                     content_hash=f"content-hash-{suffix}",
                     index_identity=f"index-identity-{suffix}",
                     source_version=f"source-version-{suffix}",
@@ -197,6 +197,7 @@ def test_concurrent_replacements_overlap_embedding(
             replace_source_nodes_async(
                 nodes_a,
                 file_path="/virtual/overlap-a.txt",
+                source_id="src_overlap_a",
                 content_hash="content-hash-overlap-a",
                 index_identity="index-identity-overlap-a",
                 source_version="source-version-overlap-a",
@@ -205,6 +206,7 @@ def test_concurrent_replacements_overlap_embedding(
             replace_source_nodes_async(
                 nodes_b,
                 file_path="/virtual/overlap-b.txt",
+                source_id="src_overlap_b",
                 content_hash="content-hash-overlap-b",
                 index_identity="index-identity-overlap-b",
                 source_version="source-version-overlap-b",
@@ -241,14 +243,16 @@ def test_source_metadata_keys_never_enter_embed_text() -> None:
     """
     nodes = _make_nodes(3, "stamp-guard")
     file_path = "/virtual/stamp-guard.txt"
+    source_id = "src_stamp_guard"
     content_hash = "aa11" * 8
     index_identity = "bb22" * 8
     source_version = "cc33" * 8
     source_attempt = new_source_attempt()
 
-    stamp_source_attempt(
+    stamp_source_lineage(
         nodes,
         file_path=file_path,
+        source_id=source_id,
         content_hash=content_hash,
         index_identity=index_identity,
         source_version=source_version,

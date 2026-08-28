@@ -73,6 +73,25 @@ def _result_source(meta: dict) -> str:
     return meta.get("file_path") or meta.get("file_name") or "unknown"
 
 
+# Stable lineage metadata read into every public result row. These are
+# plain metadata keys persisted by ingestion; retrieval reads them without
+# importing the ingestion layer (invariant: ingestion and retrieval share
+# only settings). Values are None for rows stored without lineage, such as
+# experiment precomputed rows.
+LINEAGE_METADATA_KEYS = (
+    "source_id",
+    "source_version",
+    "chunk_id",
+    "source_chunk_index",
+    "source_chunk_count",
+)
+
+
+def _lineage_fields(meta: dict) -> dict:
+    """Return additive stable lineage fields read from stored metadata."""
+    return {key: meta.get(key) for key in LINEAGE_METADATA_KEYS}
+
+
 def _dense_query_rows(
     store: Any,
     collection_name: str,
@@ -91,7 +110,8 @@ def _dense_query_rows(
 
     Returns:
         List of result dicts with keys ``id``, ``score``, ``source``,
-        ``page_label``, ``text``, ``metadata``, ``reranked``.
+        ``page_label``, ``text``, ``metadata``, ``reranked``, plus the
+        additive stable lineage fields from ``LINEAGE_METADATA_KEYS``.
     """
     raw_rows = store.query_dense(
         collection_name=collection_name,
@@ -113,6 +133,7 @@ def _dense_query_rows(
                 "text": row.get("document", ""),
                 "metadata": dict(meta),
                 "reranked": False,
+                **_lineage_fields(meta),
             }
         )
     return rows

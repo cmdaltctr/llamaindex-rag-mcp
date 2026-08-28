@@ -23,8 +23,12 @@ from .loader import SUPPORTED_EXTENSIONS, gather_supported_files, make_file_deta
 from .metrics import sample_peak_rss_bytes
 from .replacement import IngestionStageError, replace_source_nodes_async
 from .source_state import (
+    IncompatibleSourceLineageError,
+    assert_source_lineage_compatible,
     build_index_identity,
+    build_source_id,
     build_source_version,
+    canonical_source_path,
     is_complete_current_version,
 )
 
@@ -55,6 +59,8 @@ def _error_type(exc: Exception) -> str:
     """Map one per-source exception to the established public error classes."""
     if isinstance(exc, ConnectionError):
         return "connection"
+    if isinstance(exc, IncompatibleSourceLineageError):
+        return "store"
     if isinstance(exc, IngestionStageError):
         if exc.stage == "embedding":
             return "embedding"
@@ -209,6 +215,8 @@ async def ingest_path_async(
 
         try:
             detection_started = time.perf_counter()
+            canonical_file_path = canonical_source_path(file_path)
+            source_id = build_source_id(canonical_file_path)
             content_hash = await asyncio.to_thread(sha256_file, file_path)
             index_identity = build_index_identity(
                 resolved_settings,
@@ -217,11 +225,20 @@ async def ingest_path_async(
                 chunk_overlap=effective_chunk_overlap,
             )
             source_version = build_source_version(content_hash, index_identity)
+            # Reject pre-lineage rows for this path before any parse,
+            # embedding, or store mutation so schemas never mix silently.
+            await asyncio.to_thread(
+                assert_source_lineage_compatible,
+                store,
+                collection_name,
+                file_path=canonical_file_path,
+                source_id=source_id,
+            )
             unchanged, existing_chunks = await asyncio.to_thread(
                 is_complete_current_version,
                 store,
                 collection_name,
-                file_path=str(file_path),
+                source_id=source_id,
                 content_hash=content_hash,
                 index_identity=index_identity,
                 source_version=source_version,
@@ -269,7 +286,8 @@ async def ingest_path_async(
                 metadata_degraded_count += 1
             outcome = await replace_source_nodes_async(
                 nodes,
-                file_path=str(file_path),
+                file_path=canonical_file_path,
+                source_id=source_id,
                 content_hash=content_hash,
                 index_identity=index_identity,
                 source_version=source_version,

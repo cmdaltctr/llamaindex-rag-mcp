@@ -164,6 +164,34 @@ configurations at once.
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
 
+### Stable source and chunk lineage
+
+`core/ingestion/source_state.py` is the single identity seam
+([ADR-052](../adr/052-stable-source-chunk-lineage.md)). For every production
+source it derives and stamps:
+
+- `source_id` = `"src_" + SHA-256("file\0" + canonical absolute path)`.
+  Stable while the file is edited in place, new after a move or copy, and
+  identical across collections.
+- `source_content_hash` = SHA-256 of the original file bytes. There is no
+  `document_hash` alias.
+- `source_version` = SHA-256 of the content hash plus
+  `source_index_identity`.
+- `chunk_id` = `"chk_" + SHA-256(source_id + NUL + source_version + NUL +
+  decimal index + NUL + text hash)` over the text-only chunk content.
+- the vector row ID = SHA-256 of `source_id`, `source_attempt`, and
+  `chunk_id`. It stays attempt-specific so candidate and durable attempts
+  coexist until replacement is verified (ADR-048). A stable `chunk_id` is
+  never a store primary key.
+
+`pipeline.py` builds `source_id` once per source and runs a compatibility
+guard before any mutation: rows for a canonical path that lack or disagree on
+`source_id` fail ingestion with a rebuild instruction. No migration, alias,
+or dual write exists. Listing, deletion preview, and path deletion derive the
+same `source_id` through one shared path rule. Retrieval reads lineage as
+plain metadata keys (`LINEAGE_METADATA_KEYS` in
+`src/rag_mcp/core/retrieval/dense.py`) and never imports the ingestion layer.
+
 ### `core/vectordb/` — the store boundary
 
 Two stores sit behind the `VectorStore` ABC (ADR-034): `lancedb`, the

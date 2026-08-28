@@ -78,9 +78,19 @@ class TestListDocuments:
         # Force more than one scan page at page size 2.
         assert sum(created.values()) > 2
 
+        from rag_mcp.core.ingestion.source_state import build_source_id
+
         assert list_documents(collection_name="paged_docs") == [
-            {"source": resolved["a.txt"], "chunks": created["a.txt"]},
-            {"source": resolved["b.txt"], "chunks": created["b.txt"]},
+            {
+                "source": resolved["a.txt"],
+                "source_id": build_source_id(resolved["a.txt"]),
+                "chunks": created["a.txt"],
+            },
+            {
+                "source": resolved["b.txt"],
+                "source_id": build_source_id(resolved["b.txt"]),
+                "chunks": created["b.txt"],
+            },
         ]
 
 

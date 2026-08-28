@@ -378,7 +378,9 @@ async def test_generated_corpus_retains_only_one_source_node_set(
             timings=FakeTimings(),
         )
 
-    fake_store = SimpleNamespace()
+    # The lineage compatibility guard probes collection existence before
+    # any parse; an absent collection makes it a no-op for this fake store.
+    fake_store = SimpleNamespace(collection_exists=lambda name: False)
 
     monkeypatch.setattr(
         codebase_map,

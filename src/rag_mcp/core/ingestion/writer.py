@@ -19,6 +19,7 @@ from llama_index.core import Settings as LlamaIndexSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ._state import get_embed_semaphore, shutdown_requested, write_lock
+from .source_state import SOURCE_ID_KEY, build_source_id, canonical_source_path
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,10 @@ def preview_delete(
 
     if path is not None:
         mode = "path"
-        where = {"file_path": str(path)}
+        # Mirror remove_document: canonical path resolution plus the same
+        # deterministic source_id derivation production ingestion uses.
+        source_id = build_source_id(canonical_source_path(path))
+        where = {SOURCE_ID_KEY: source_id}
     elif metadata_filter is not None:
         mode = "metadata"
         where = metadata_filter
@@ -161,11 +165,15 @@ def remove_document(
 ) -> dict:
     """Remove all chunks for a source file from the vector store.
 
-    Idempotent — calling this on a file with no indexed chunks returns
-    ``chunks_removed: 0``.
+    Applies the same canonical path resolution and deterministic
+    ``source_id`` derivation as production ingestion, then deletes all
+    chunks whose ``source_id`` matches. Idempotent — calling this on a
+    file with no indexed chunks returns ``chunks_removed: 0``.
 
     Args:
-        file_path: The source file path used as ``file_path`` metadata.
+        file_path: The source file path; canonicalised before identity
+            derivation so relative or symlinked spellings select the
+            same source ingestion wrote.
         collection_name: Collection to delete from
             (default ``"documents"``).
         store: Optional injected :class:`VectorStore`.
@@ -183,7 +191,9 @@ def remove_document(
             "collection": collection_name,
         }
 
-    where = {"file_path": file_path}
+    canonical = canonical_source_path(file_path)
+    source_id = build_source_id(canonical)
+    where = {SOURCE_ID_KEY: source_id}
     try:
         chunks_removed = resolved_store.count_where(collection_name, where)
         if chunks_removed > 0:
