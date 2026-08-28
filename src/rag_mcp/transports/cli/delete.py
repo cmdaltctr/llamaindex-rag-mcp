@@ -16,7 +16,14 @@ from . import app, console
 
 def _delete_by_path(path, coll_name, dry_run, preview_delete, remove_document) -> dict:
     """Delete chunks by source file path."""
-    file_path = str(Path(path).expanduser().resolve())
+    try:
+        file_path = str(Path(path).expanduser().resolve())
+    except ValueError as exc:
+        # A path value such as one containing a NUL byte makes pathlib
+        # raise before any core call; report it like every other invalid
+        # flag value instead of crashing with a traceback.
+        console.print(f"[red]Error:[/red] Invalid --path value: {exc}")
+        raise typer.Exit(code=1) from None
     if dry_run:
         result = preview_delete(path=file_path, collection_name=coll_name)
         result["path"] = file_path
