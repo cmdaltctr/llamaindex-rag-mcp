@@ -53,6 +53,7 @@ from .lance_paged import LancePagedReadMixin, strip_internal_metadata
 from .lance_rows import rows_to_arrow, upsert_schema
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2
 from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch
+
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
 

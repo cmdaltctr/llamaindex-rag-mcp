@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from numbers import Real
-from typing import Any, Sequence
+from typing import Any
 
 from llama_index.core.schema import MetadataMode
 
@@ -135,10 +136,7 @@ def materialise_and_validate_node_embeddings(
         for (_, node), embedding in zip(missing, embeddings, strict=True):
             node.embedding = list(embedding)
 
-    vectors = [
-        [] if getattr(node, "embedding", None) is None else getattr(node, "embedding")
-        for node in nodes
-    ]
+    vectors = [[] if getattr(node, "embedding", None) is None else node.embedding for node in nodes]
     validate_embedding_batch(
         identifiers,
         vectors,

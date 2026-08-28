@@ -404,12 +404,20 @@ class TestUpsertAndMetadataEdges:
 
         with pytest.raises(EmbeddingWriteContractError):
             store.upsert_precomputed(
-                "empty", ids=[], documents=[], metadatas=[], embeddings=[],
+                "empty",
+                ids=[],
+                documents=[],
+                metadatas=[],
+                embeddings=[],
                 embedding_identity=_PRECOMPUTED_IDENTITY,
             )
         with pytest.raises(EmbeddingWriteContractError):
             store.upsert_precomputed(
-                "empty", ids=["a"], documents=["d"], metadatas=[{}], embeddings=[],
+                "empty",
+                ids=["a"],
+                documents=["d"],
+                metadatas=[{}],
+                embeddings=[],
                 embedding_identity=_PRECOMPUTED_IDENTITY,
             )
         assert not store.collection_exists("empty")
@@ -417,7 +425,11 @@ class TestUpsertAndMetadataEdges:
         # A later real write still creates the table with a usable dim.
         embedding = list(Settings.embed_model.get_query_embedding("x"))
         store.upsert_precomputed(
-            "empty", ids=["a"], documents=["d"], metadatas=[{"k": "v"}], embeddings=[embedding],
+            "empty",
+            ids=["a"],
+            documents=["d"],
+            metadatas=[{"k": "v"}],
+            embeddings=[embedding],
             embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         assert store.count("empty") == 1
@@ -571,7 +583,11 @@ class TestSchemaEvolution:
         store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
         embedding = list(Settings.embed_model.get_query_embedding("x"))
         store.upsert_precomputed(
-            "evo", ids=["1"], documents=["one"], metadatas=[{"k": "v"}], embeddings=[embedding],
+            "evo",
+            ids=["1"],
+            documents=["one"],
+            metadatas=[{"k": "v"}],
+            embeddings=[embedding],
             embedding_identity=_PRECOMPUTED_IDENTITY,
         )
         store.upsert_precomputed(

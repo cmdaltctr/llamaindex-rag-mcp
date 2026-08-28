@@ -184,9 +184,7 @@ class TestSharedValidator:
         """Spec: cardinality mismatch — more vectors than identifiers."""
         with pytest.raises(_contract_error()) as excinfo:
             _validate(["row-1"], [[1.0, 0.0], [0.0, 1.0]], collection_name="docs")
-        _assert_diagnostics(
-            str(excinfo.value), collection="docs", identifiers=["row-1"]
-        )
+        _assert_diagnostics(str(excinfo.value), collection="docs", identifiers=["row-1"])
 
     def test_empty_vector_rejected_naming_each_affected_identifier(self) -> None:
         """Spec: Empty vector from an embedding provider (each affected ID named)."""
@@ -211,9 +209,7 @@ class TestSharedValidator:
                 [[1.0, 0.0], malformed],
                 collection_name="docs",
             )
-        _assert_diagnostics(
-            str(excinfo.value), collection="docs", identifiers=["row-bad"]
-        )
+        _assert_diagnostics(str(excinfo.value), collection="docs", identifiers=["row-bad"])
 
     @pytest.mark.parametrize(
         "bad_value",
@@ -228,9 +224,7 @@ class TestSharedValidator:
                 [[1.0, 0.0], [bad_value, 1.0]],
                 collection_name="docs",
             )
-        _assert_diagnostics(
-            str(excinfo.value), collection="docs", identifiers=["row-bad"]
-        )
+        _assert_diagnostics(str(excinfo.value), collection="docs", identifiers=["row-bad"])
 
     @pytest.mark.parametrize("position", [1, 2])
     def test_non_finite_error_names_batch_position(self, position: int) -> None:
@@ -252,9 +246,7 @@ class TestSharedValidator:
                 collection_name="docs",
             )
         message = str(excinfo.value)
-        _assert_diagnostics(
-            message, collection="docs", identifiers=["row-2d", "row-3d"]
-        )
+        _assert_diagnostics(message, collection="docs", identifiers=["row-2d", "row-3d"])
         assert re.search(r"(?<!\d)2(?!\d)", message)
         assert re.search(r"(?<!\d)3(?!\d)", message)
 
@@ -279,9 +271,7 @@ class TestSharedValidator:
 class TestDimensionDiscovery:
     """The contract capability the existing-dimension rule depends on."""
 
-    def test_absent_collection_returns_none_without_backend_state(
-        self, store: VectorStore
-    ) -> None:
+    def test_absent_collection_returns_none_without_backend_state(self, store: VectorStore) -> None:
         """Discovery on an absent collection returns None and creates nothing."""
         assert store.get_collection_dimension("never-created") is None
         assert store.collection_exists("never-created") is False
@@ -317,9 +307,7 @@ class TestDirectPrecomputedWrites:
             )
         assert store.collection_exists("direct-diag") is False
 
-    def test_invalid_batch_rejected_before_collection_creation(
-        self, store: VectorStore
-    ) -> None:
+    def test_invalid_batch_rejected_before_collection_creation(self, store: VectorStore) -> None:
         """Spec: Rejected batch does not reach a backend SDK mutation (fresh)."""
         with pytest.raises(_contract_error()):
             _upsert(
@@ -370,9 +358,7 @@ class TestDirectPrecomputedWrites:
         assert store.count("direct-dimconflict") == 1
         assert store.get_generation("direct-dimconflict") == generation
 
-    def test_atomicity_mixed_valid_invalid_persists_nothing(
-        self, store: VectorStore
-    ) -> None:
+    def test_atomicity_mixed_valid_invalid_persists_nothing(self, store: VectorStore) -> None:
         """Spec: Valid and invalid candidates share a batch (task 1.3)."""
         with pytest.raises(_contract_error()):
             _upsert(
@@ -399,9 +385,7 @@ class TestIngestionWritePath:
         monkeypatch.setattr(
             Settings,
             "embed_model",
-            _CannedBatchEmbedding(
-                embed_dim=2, batch_vectors=[[1.0, 0.0], [0.0, 1.0]]
-            ),
+            _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], [0.0, 1.0]]),
         )
         from rag_mcp.core.ingestion.writer import embed_and_write_async
 
@@ -450,9 +434,7 @@ class TestIngestionWritePath:
         monkeypatch.setattr(
             Settings,
             "embed_model",
-            _CannedBatchEmbedding(
-                embed_dim=2, batch_vectors=[[1.0, 0.0], []]
-            ),
+            _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], []]),
         )
         from rag_mcp.core.ingestion.writer import embed_and_write_async
 
@@ -479,9 +461,7 @@ def _replacement_nodes(vectors: list[list[float]]) -> list[BaseNode]:
     return nodes
 
 
-async def _replace(
-    store: VectorStore, collection: str, vectors: list[list[float]]
-):
+async def _replace(store: VectorStore, collection: str, vectors: list[list[float]]):
     from rag_mcp.core.ingestion.replacement import replace_source_nodes_async
 
     return await replace_source_nodes_async(

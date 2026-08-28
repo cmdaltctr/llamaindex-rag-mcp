@@ -25,12 +25,12 @@ from typing import TYPE_CHECKING, Any
 from llama_index.core import StorageContext, VectorStoreIndex
 
 from .base import VectorStore
+from .chroma_cloud import construct_cloud_client
 from .identity import (
     EmbeddingIdentity,
     IdentityGuardMixin,
     embedding_identity_from_settings,
 )
-from .chroma_cloud import construct_cloud_client
 from .paged import PagedReadMixin
 from .score import DENSE_SCORE_KIND, canonical_score_from_l2, require_l2_metric
 from .validation import materialise_and_validate_node_embeddings, validate_embedding_batch

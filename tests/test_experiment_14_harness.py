@@ -23,6 +23,7 @@ from experiments._lib.preflight import (
     PreflightError,
     assert_parser_invoked_before_embeddings,
 )
+
 from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -537,10 +538,7 @@ def test_malformed_embedder_batch_fails_before_destructive_rebuild(
     assert harness.store.collections == snapshot
 
     # The previous build's output artefacts are unchanged.
-    assert (
-        harness.previous_build.read_text(encoding="utf-8")
-        == '{"sentinel": "previous build"}'
-    )
+    assert harness.previous_build.read_text(encoding="utf-8") == '{"sentinel": "previous build"}'
     assert (
         harness.previous_manifest.read_text(encoding="utf-8")
         == '{"sentinel": "previous preflight"}'
