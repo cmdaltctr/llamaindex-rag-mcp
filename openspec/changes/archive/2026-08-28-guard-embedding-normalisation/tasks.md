@@ -32,7 +32,7 @@
     providers-quarantine discovery, see ADR-053 Decision 4).
 - [x] 3.4 Write the ADR (guard vs normalise vs metric switch, with the investigation evidence and the D17 independence argument) and run `openspec validate guard-embedding-normalisation --strict`.
   - ADR-053 written and accepted; validation valid at PR time.
-- [ ] 3.5 Archive the change (`/opsx-archive`) after PR #70 merges.
+- [x] 3.5 Archive the change (`/opsx-archive`) after PR #70 merges.
 
 ## 4. Out-of-scope register
 
