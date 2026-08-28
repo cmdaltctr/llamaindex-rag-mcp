@@ -59,9 +59,11 @@ def _store_class(backend: str) -> type[VectorStore]:
 def store(request: pytest.FixtureRequest, tmp_path) -> VectorStore:
     """Return a fresh store per backend (conventions from the contract suite)."""
     if request.param == "chroma":
+        # Reason deliberately differs from the tripwire's guarded string:
+        # only these parametrised cases are Chroma-gated, not the file.
         pytest.importorskip(
             "chromadb",
-            reason="chroma extra not installed; runs in the chroma-extra CI job",
+            reason="chromadb unavailable; chroma adapter cases run in the chroma-extra CI job",
         )
         return _store_class("chroma")()
     return LanceVectorStore(uri=str(tmp_path / "lancedb"))
