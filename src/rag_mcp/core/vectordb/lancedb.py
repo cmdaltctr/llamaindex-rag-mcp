@@ -19,8 +19,7 @@ Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
 pylance's ``update_schema_metadata`` (read-merge-write); that seam and
 the identity guards live in :mod:`.lance_meta`.  The Python SDK has
-no ``update_config`` and no post-hoc table-level
-``replace_schema_metadata``; schema metadata is the durable
+no ``update_config`` and no post-hoc ``replace_schema_metadata``; schema metadata is the durable
 key-value bag that survives reconnection and adapter writes
 (verified against lancedb 0.37.1 / pylance 10.0.0).
 
