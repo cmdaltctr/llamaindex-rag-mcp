@@ -149,6 +149,33 @@ a separate OpenSpec change and a new decision review.
 | Construct a LanceDB fallback in `get_default_store()` | It creates a second composition root and hides missing composition. |
 | Warn for recognised legacy data | An operator can mistakenly open an empty LanceDB store and assume old data was migrated. |
 
+## Addendum (2026-08-29): Three Further Chroma CVEs Accepted Under the Same Quarantine
+
+A security audit run during `add-per-collection-persist-dirs` (PR #71)
+surfaced three further advisories against the locked `chromadb` 1.5.9:
+
+| Advisory | Component affected |
+| --- | --- |
+| CVE-2026-45830 | Server collection lookup permits cross-tenant access |
+| CVE-2026-45831 | Server RBAC omits resource-scope checks |
+| CVE-2026-45833 | Authenticated server-side code injection |
+
+**Decision.** All three join CVE-2026-45829 as accepted
+unreachable-component exceptions under the same owner disposition and
+quarantine. The rationale is unchanged and structural: every advisory
+lives in Chroma's HTTP server components, which this project never
+starts — the supported clients are the embedded `PersistentClient`
+(local) and Chroma Cloud. Exposure remains opt-in only: the extra
+never enters a base install (`tests/test_clean_base_tripwire.py`
+proves the clean base), and `docs/guides/configuration.md` forbids
+exposing Chroma's FastAPI server.
+
+**Review.** The existing expiry (2026-11-22, or the first D10 trigger)
+and the patch-reconsideration triggers apply to all four advisories. A
+patched `chromadb` release clears them through the normal dependency
+bump; no separate decision is required unless quarantine itself is
+reconsidered.
+
 ## References
 
 - OpenSpec: `openspec/changes/make-lancedb-default-and-isolate-chromadb/`
