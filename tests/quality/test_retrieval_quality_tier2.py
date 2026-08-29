@@ -65,9 +65,7 @@ def _ollama_identity() -> tuple[str, str]:
     if not isinstance(models, list):
         pytest.fail("Ollama did not report an installed model list")
     matches = [
-        model
-        for model in models
-        if isinstance(model, dict) and model.get("name") == MODEL_TAG
+        model for model in models if isinstance(model, dict) and model.get("name") == MODEL_TAG
     ]
     if len(matches) != 1:
         pytest.fail(f"Ollama must expose exactly one {MODEL_TAG!r} model")
@@ -172,8 +170,7 @@ async def test_tier2_quality_floors_and_identity(tmp_path) -> None:
         "runner_architecture",
     ):
         assert expected[field] == identity[field], (
-            f"tier2 {field} mismatch: baseline={expected[field]!r}, "
-            f"actual={identity[field]!r}"
+            f"tier2 {field} mismatch: baseline={expected[field]!r}, actual={identity[field]!r}"
         )
     assert baseline["corpus_id"] == identity["corpus_id"]
     assert baseline["query_set_id"] == identity["query_set_id"]

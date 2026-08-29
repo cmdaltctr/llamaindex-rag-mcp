@@ -76,8 +76,7 @@ def validate_baseline(
     for field, actual in (("corpus_id", corpus_id), ("query_set_id", query_set_id)):
         if baseline.get(field) != actual:
             raise ValueError(
-                f"baseline {field} does not match fixtures; "
-                "run an explicit baseline measurement"
+                f"baseline {field} does not match fixtures; run an explicit baseline measurement"
             )
 
     for tier, required in (("tier1", require_tier1), ("tier2", require_tier2)):

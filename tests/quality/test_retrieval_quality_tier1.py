@@ -40,10 +40,7 @@ _EMBEDDING_ID = "deterministic-fake-v1"
 
 def _token_features(text: str) -> list[str]:
     tokens = _TOKEN_RE.findall(text.casefold())
-    return tokens + [
-        f"{left}:{right}"
-        for left, right in zip(tokens, tokens[1:], strict=False)
-    ]
+    return tokens + [f"{left}:{right}" for left, right in zip(tokens, tokens[1:], strict=False)]
 
 
 def _stable_vector(text: str) -> list[float]:
@@ -87,9 +84,7 @@ class ControlledQualityStore:
             }
             for path in sorted(CORPUS_DIR.glob("*.txt"))
         ]
-        self.embeddings = {
-            row["id"]: _stable_vector(str(row["document"])) for row in self.rows
-        }
+        self.embeddings = {row["id"]: _stable_vector(str(row["document"])) for row in self.rows}
 
     @property
     def cache_identity(self) -> object:
@@ -168,9 +163,7 @@ def _search(
     *,
     similarity_threshold: float = 0.0,
 ) -> list[dict[str, Any]]:
-    LlamaIndexSettings.embed_model = DeterministicFakeEmbedding(
-        embed_dim=_DIMENSION
-    )
+    LlamaIndexSettings.embed_model = DeterministicFakeEmbedding(embed_dim=_DIMENSION)
     _cached_query_embedding.cache_clear()
     return search(
         query=query,
@@ -236,21 +229,20 @@ def test_production_score_fusion_threshold_and_ranking() -> None:
     )
 
     overlap = next(
-        row
-        for row in results
-        if row["dense_rank"] is not None and row["sparse_rank"] is not None
+        row for row in results if row["dense_rank"] is not None and row["sparse_rank"] is not None
     )
-    expected_fused = 1.0 / (60 + overlap["dense_rank"]) + 1.0 / (
-        60 + overlap["sparse_rank"]
-    )
+    expected_fused = 1.0 / (60 + overlap["dense_rank"]) + 1.0 / (60 + overlap["sparse_rank"])
     assert overlap["fused_score"] == pytest.approx(expected_fused)
     assert overlap["score"] == pytest.approx(expected_fused)
     assert overlap["dense_score_kind"] == DENSE_SCORE_KIND
 
-    assert _search(
-        load_golden_queries()[0]["query"],
-        similarity_threshold=1.000001,
-    ) == []
+    assert (
+        _search(
+            load_golden_queries()[0]["query"],
+            similarity_threshold=1.000001,
+        )
+        == []
+    )
 
 
 def test_controlled_threshold_perturbation_reduces_quality() -> None:

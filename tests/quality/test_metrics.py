@@ -81,9 +81,10 @@ def test_fixed_fixtures_are_complete_and_deterministic() -> None:
 
     source_names = {path.name for path in paths}
     source_ids = {
-        path.read_text(encoding="utf-8").splitlines()[0].removeprefix(
-            "Source identifier: "
-        ).removesuffix(".")
+        path.read_text(encoding="utf-8")
+        .splitlines()[0]
+        .removeprefix("Source identifier: ")
+        .removesuffix(".")
         for path in paths
     }
     assert len(source_names) == len(source_ids) == 20
