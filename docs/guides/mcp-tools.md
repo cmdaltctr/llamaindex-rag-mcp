@@ -15,6 +15,11 @@ Semantic similarity search over indexed documents.
 | `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
 | `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                              |
 | `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                              |
+| `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                        |
+
+When `diagnostics` is `true`, results also preserve every diagnostic field
+produced by core retrieval. The transport does not define or rename these
+fields.
 
 Every result includes `score_kind`: `dense_similarity_v1` for dense search,
 `rrf_v1` for non-reranked hybrid fusion, or `reranker_sigmoid_v1` after a
