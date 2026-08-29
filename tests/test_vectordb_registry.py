@@ -248,3 +248,20 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
 def test_import_detector_expands_aliases(source: str, expected: set[str]) -> None:
     """Negative controls: alias imports of concrete modules are caught."""
     assert _module_level_concrete_imports(source) == expected
+
+
+# ── Cross-process write-safety metadata (storage-layout spec) ────────
+
+
+@pytest.mark.parametrize("name", ["chroma", "lancedb"])
+def test_no_backend_claims_cross_process_write_safety(name: str) -> None:
+    """No backend may claim ``cross_process_writes_safe``.
+
+    The collection-storage-layout contract states that a cross-process
+    write-safety claim requires a two-process concurrent-write
+    experiment; none exists for either backend, so ``describe(name)``
+    must report ``False`` for both.
+    """
+    from rag_mcp.core.vectordb import registry
+
+    assert registry.describe(name)["cross_process_writes_safe"] is False

@@ -284,6 +284,21 @@ counters are process-local, so evaluation workers reuse completed immutable
 indexes read-only; mutating the same collection from several processes is
 unsupported.
 
+**Layout and concurrency contract.** Each LanceDB collection is one table
+directory, `{LANCEDB_URI}/{collection_name}.lance`. A regression test pins
+this layout against a real temporary store (`TestNativeLayoutPin`); it
+asserts layout only and says nothing about concurrency. Collection names are
+validated as non-empty single path components at the adapter's table-access
+boundary (`core/vectordb/lance_table_name.py`); Chroma name validation stays
+deferred with the per-directory scope. Three layers stay distinct: the
+process-global ingestion mutation lock (`write_lock` in
+`core/ingestion/_state.py`) serialises mutations across all collections
+within one process; the physical `.lance` layout; and cross-process write
+safety, which is unverified for both backends. No registration in
+`core/vectordb/registry.py` sets `cross_process_writes_safe`. Operator
+detail: [Configuration](configuration.md#storage-layout-and-concurrency);
+specification: `openspec/changes/add-per-collection-persist-dirs/`.
+
 ### `transports/` — exposes it
 
 - `transports/mcp.py` — the MCP server, seven tools, over stdio
@@ -522,8 +537,10 @@ pipeline logic instead of plumbing.
 
 **LanceDB** ([ADR-046](../adr/046-lancedb-vector-store-backend.md),
 [ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — the embedded
-base-install default. Each collection gets its own table and files with
-optimistic concurrency instead of ChromaDB's shared SQLite write lock.
+base-install default. Each collection gets its own table and files rather than
+sharing one SQLite file, as Chroma does. That is a layout fact, not a write
+safety claim: cross-process write safety is unverified (see the layout and
+concurrency contract in the `core/vectordb/` section).
 
 **ChromaDB** ([ADR-003](../adr/003-use-chromadb-as-vector-store.md),
 [ADR-049](../adr/0049-lancedb-default-and-chroma-isolation.md)) — an explicit
