@@ -6,6 +6,10 @@
       `include_diagnostics=diagnostics` on every MCP search call.
 - [ ] 1.3 Preserve the existing exception envelope and
       `ToolAnnotations(read_only_hint=True, destructive_hint=False)` unchanged.
+- [ ] 1.4 Keep `src/rag_mcp/transports/mcp.py` at or below 500 lines. The
+      file is exactly 500 lines today, so compress the `search_documents`
+      docstring to free the lines tasks 1.1 and 1.2 add. Verify with
+      `tests/test_file_size_ceiling.py`.
 
 ## 2. CLI diagnostics passthrough
 
@@ -48,6 +52,7 @@
       transport computes, renames, nor removes diagnostic fields.
 - [ ] 5.2 Run `uv run pytest tests/test_mcp_tools.py tests/test_cli.py
       tests/test_retrieval.py tests/test_rerank_policy.py
+      tests/test_file_size_ceiling.py
       --cov=rag_mcp.transports.mcp --cov-report=term-missing
       --cov-fail-under=95`, then run
       `openspec validate "search-diagnostics-passthrough-1" --type change

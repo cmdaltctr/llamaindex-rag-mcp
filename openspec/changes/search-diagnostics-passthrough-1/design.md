@@ -113,6 +113,14 @@ the search operation gains an optional, default-off diagnostics parameter.
 Recording this gap prevents the future transport from silently omitting a
 capability available through MCP and CLI.
 
+### D7. `mcp.py` is at the 500-line ceiling
+
+`src/rag_mcp/transports/mcp.py` is exactly 500 lines.
+`tests/test_file_size_ceiling.py` fails any file over that limit. Tasks 1.1
+and 1.2 add lines to this file, so the change frees the same number of lines
+inside it by compressing the `search_documents` docstring. A package split of
+`transports/mcp.py` stays out of scope; it would deserve its own change.
+
 ## Risks / Trade-offs
 
 - **Enabled responses can be larger.** → Keep both public controls default-off
@@ -128,7 +136,8 @@ capability available through MCP and CLI.
 
 ## Migration Plan
 
-1. Add the MCP parameter and pass it to core retrieval.
+1. Free the needed lines in `mcp.py` per D7, then add the MCP parameter and
+   pass it to core retrieval.
 2. Add the CLI flag and pass it to core retrieval.
 3. Update exact-call tests for the explicit default.
 4. Add enabled and disabled transport tests.
