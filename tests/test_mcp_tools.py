@@ -40,6 +40,18 @@ async def test_list_tools_discovers_all_seven(mcp_server) -> None:
         }
 
 
+async def test_search_documents_annotations_remain_read_only(mcp_server) -> None:
+    """Diagnostics do not change the search tool's safety annotations."""
+    async with connected_client(mcp_server) as client:
+        result = await client.list_tools()
+
+    tool = next(item for item in result.tools if item.name == "search_documents")
+    assert tool.annotations is not None
+    annotations = tool.annotations.model_dump(by_alias=True)
+    assert annotations["readOnlyHint"] is True
+    assert annotations["destructiveHint"] is False
+
+
 # ── ingest_documents ───────────────────────────────────────────────────────
 
 
@@ -127,6 +139,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         hybrid=False,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
+        include_diagnostics=False,
         reranker=ANY,
         effective_settings=ANY,
     )
@@ -163,9 +176,53 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         hybrid=_gs().retrieval.hybrid_enabled,
         collection_name="documents",
         metadata_filter=None,
+        include_diagnostics=False,
         reranker=ANY,
         effective_settings=ANY,
     )
+
+
+@pytest.mark.parametrize(
+    ("arguments", "expected_flag"),
+    [
+        ({"diagnostics": True}, True),
+        ({"diagnostics": False}, False),
+        ({}, False),
+    ],
+    ids=["enabled", "explicitly-disabled", "omitted"],
+)
+async def test_search_documents_diagnostics_passthrough(
+    mcp_server,
+    arguments: dict,
+    expected_flag: bool,
+) -> None:
+    """MCP diagnostics map directly to core retrieval and preserve its output."""
+    observed: list[bool] = []
+
+    def _search(*args, **kwargs):
+        observed.append(kwargs["include_diagnostics"])
+        item = {
+            "score": 0.9,
+            "source": "fixture.txt",
+            "text": "fixture text",
+            "reranked": False,
+        }
+        if kwargs["include_diagnostics"]:
+            item.update({"dense_rank": 1, "fused_rank": 1, "sparse_backend": "bm25"})
+        return [item]
+
+    with patch("rag_mcp.transports.mcp.search", side_effect=_search):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {"query": "fixture", **arguments},
+            )
+
+    data = _extract_result(result)
+    assert observed == [expected_flag]
+    assert ("dense_rank" in data[0]) is expected_flag
+    assert ("fused_rank" in data[0]) is expected_flag
+    assert ("sparse_backend" in data[0]) is expected_flag
 
 
 # ── list_indexed_documents ─────────────────────────────────────────────────
@@ -754,6 +811,7 @@ async def test_search_documents_validation_error_envelope(
                 "search_documents",
                 {
                     "query": "anything",
+                    "diagnostics": True,
                     "metadata_filter": {"category": {"$bogus": "x"}},
                 },
             )

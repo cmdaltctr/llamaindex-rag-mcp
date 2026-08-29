@@ -32,6 +32,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `--threshold`, `-t` | `search` | Minimum similarity score |
 | `--rerank` | `search` | Re-score with cross-encoder reranker |
 | `--hybrid` | `search` | Fuse dense vector search with sparse BM25 via RRF |
+| `--diagnostics` | `search` | Include core-produced retrieval diagnostics. Disabled by default. |
 | `--debounce`, `-d` | `watch` | Debounce interval in seconds (default: 2) |
 | `--verbose`, `-v` | `watch` | Enable DEBUG-level logging |
 | `--dry-run` | `delete` | Preview deletion without modifying the selected vector store |
@@ -79,7 +80,13 @@ rag-mcp search "What fixes MCP-1138?" --hybrid
 
 # JSON output
 rag-mcp search "climate change" --json
+
+# JSON output with retrieval diagnostics for debugging
+rag-mcp search "climate change" --diagnostics --json
 ```
+
+The `--diagnostics` flag changes JSON output only. The human-readable table
+keeps the existing Score, Source, Page, and Text columns.
 
 > Search-time metadata filtering is available via the `search_documents` MCP tool. The CLI supports metadata filters for deletion via `rag-mcp delete --metadata`.
 

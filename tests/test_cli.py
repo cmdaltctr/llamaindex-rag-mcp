@@ -336,6 +336,7 @@ class TestSearchCLI:
         assert "--threshold" in output
         assert "--rerank" in output
         assert "--hybrid" in output
+        assert "--diagnostics" in output
         assert "--json" in output
 
 
@@ -615,6 +616,7 @@ class TestSearchErrorHandling:
             rerank=False,
             collection_name="cli_coll",
             hybrid=False,
+            include_diagnostics=False,
             effective_settings=ANY,
         )
 
@@ -644,8 +646,76 @@ class TestSearchErrorHandling:
             rerank=None,
             collection_name="documents",
             hybrid=False,
+            include_diagnostics=False,
             effective_settings=ANY,
         )
+
+    @pytest.mark.parametrize("enabled", [True, False], ids=["enabled", "disabled"])
+    def test_search_cli_diagnostics_json_passthrough(self, enabled: bool) -> None:
+        """CLI diagnostics reach core retrieval and preserve its JSON fields."""
+        observed: list[bool] = []
+
+        def _search(*args, **kwargs):
+            observed.append(kwargs["include_diagnostics"])
+            item = {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+            }
+            if kwargs["include_diagnostics"]:
+                item.update(
+                    {
+                        "dense_rank": 1,
+                        "sparse_rank": 2,
+                        "fused_rank": 1,
+                        "rerank_reason": "disabled",
+                        "threshold_score_kind": "dense_similarity_v1",
+                        "sparse_backend": "bm25",
+                    }
+                )
+            return [item]
+
+        arguments = ["search", "cli query"]
+        if enabled:
+            arguments.append("--diagnostics")
+        arguments.append("--json")
+
+        with patch("rag_mcp.core.retrieval.search", side_effect=_search):
+            result = runner.invoke(app, arguments)
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert observed == [enabled]
+        assert ("dense_rank" in data[0]) is enabled
+        assert ("sparse_rank" in data[0]) is enabled
+        assert ("sparse_backend" in data[0]) is enabled
+
+    def test_search_cli_diagnostics_keep_rich_columns_unchanged(self) -> None:
+        """Human-readable diagnostics do not add columns to the result table."""
+        result_payload = [
+            {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+                "dense_rank": 1,
+                "sparse_rank": 2,
+            }
+        ]
+
+        with patch("rag_mcp.core.retrieval.search", return_value=result_payload):
+            result = runner.invoke(app, ["search", "cli query", "--diagnostics"])
+
+        assert result.exit_code == 0
+        output = _strip_ansi(result.output)
+        assert "Score" in output
+        assert "Source" in output
+        assert "Text" in output
+        assert "Dense rank" not in output
+        assert "Sparse rank" not in output
 
     def test_search_cli_hybrid_flag_passes_true(self) -> None:
         """``rag-mcp search --hybrid`` delegates with ``hybrid=True``."""
