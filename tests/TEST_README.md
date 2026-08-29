@@ -266,8 +266,11 @@ uv run pytest tests/quality/test_retrieval_quality_tier2.py -m slow --tb=short -
 
 For baseline work, run the Tier 2 command at least three times and preserve each
 printed `TIER2_MEASUREMENT` record. Use a second architecture when available.
-The test fails, rather than skips, when Ollama or any recorded identity is
-absent or mismatched.
+The test fails, rather than skips, when Ollama is absent, the model tag or
+recorded digest differs, a fixture identity differs, or the baseline is invalid
+or still pending. The Ollama version, OS, and architecture are recorded as
+measurement evidence; the nightly job runs a different pinned Ollama build on a
+different platform, and the floor margin absorbs that ranking variation.
 
 This gate detects regressions in dense score conversion, reciprocal rank
 fusion, threshold handling, and final ranking over the small fixed corpus. It

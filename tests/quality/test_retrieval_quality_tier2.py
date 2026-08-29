@@ -162,15 +162,19 @@ async def test_tier2_quality_floors_and_identity(tmp_path) -> None:
     baseline = load_baseline()
     validate_baseline(baseline, require_tier1=False, require_tier2=True)
     expected = baseline["tier2"]
-    for field in (
-        "model_tag",
-        "model_digest",
-        "ollama_version",
-        "runner_os",
-        "runner_architecture",
-    ):
+    # The model identity binds the baseline: a silently repointed tag or a
+    # different build under the same tag fails before metric comparison.
+    for field in ("model_tag", "model_digest"):
         assert expected[field] == identity[field], (
             f"tier2 {field} mismatch: baseline={expected[field]!r}, actual={identity[field]!r}"
+        )
+    # Ollama version, OS, and architecture are recorded evidence, not pass
+    # conditions: the nightly job runs a different pinned Ollama build on a
+    # different OS and architecture, and the floor margin (TDR-016) exists
+    # to absorb exactly that cross-platform ranking variation.
+    for field in ("ollama_version", "runner_os", "runner_architecture"):
+        assert isinstance(expected[field], str) and expected[field], (
+            f"tier2 baseline {field} must record its measurement evidence"
         )
     assert baseline["corpus_id"] == identity["corpus_id"]
     assert baseline["query_set_id"] == identity["query_set_id"]
