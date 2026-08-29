@@ -237,3 +237,43 @@ see what stderr says.
 - [`AGENTS.md`](../AGENTS.md) — non-obvious rules, hard boundaries, and architecture invariants
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — overall contribution loop
 - [`pyproject.toml`](../pyproject.toml) — pytest configuration, markers, asyncio mode
+
+
+## Retrieval quality gate
+
+The committed synthetic corpus has two deliberately narrow regression tiers.
+
+Tier 1 is deterministic and needs no Ollama service. Run its metric and
+slow-marked production-path cases with:
+
+```bash
+uv run pytest tests/quality/test_metrics.py tests/quality/test_retrieval_quality_tier1.py -m slow --tb=short -q -s
+```
+
+Confirm the ordinary selector collects no slow quality case with:
+
+```bash
+uv run pytest tests/quality -m "not slow" --collect-only -q
+```
+
+Tier 2 requires a running Ollama service with the exact
+`qwen3-embedding:0.6b` tag already pulled:
+
+```bash
+ollama pull qwen3-embedding:0.6b
+uv run pytest tests/quality/test_retrieval_quality_tier2.py -m slow --tb=short -q -s
+```
+
+For baseline work, run the Tier 2 command at least three times and preserve each
+printed `TIER2_MEASUREMENT` record. Use a second architecture when available.
+The test fails, rather than skips, when Ollama is absent, the model tag or
+recorded digest differs, a fixture identity differs, or the baseline is invalid
+or still pending. The Ollama version, OS, and architecture are recorded as
+measurement evidence; the nightly job runs a different pinned Ollama build on a
+different platform, and the floor margin absorbs that ranking variation.
+
+This gate detects regressions in dense score conversion, reciprocal rank
+fusion, threshold handling, and final ranking over the small fixed corpus. It
+does not establish broad embedding quality or detect subtle model drift; those
+questions still require the experiments process and production-representative
+corpora.

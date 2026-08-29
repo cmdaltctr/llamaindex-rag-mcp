@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "corpus_id": "3816594db32bac14040ef76e38208b2e54cfb008d016fe4917aca50c52c8e643",
+  "query_set_id": "c5f445bf369ab8063ec807d75ed07b5ffde5ce1f428df3549fcc13f06f6801b8",
+  "tier1": {
+    "embedding_id": "deterministic-fake-v1",
+    "measurement_date": "2026-08-29",
+    "measured": {
+      "recall@10": 1,
+      "mrr@10": 1
+    },
+    "floor": {
+      "recall@10": 1,
+      "mrr@10": 1
+    }
+  },
+  "tier2": {
+    "model_tag": "qwen3-embedding:0.6b",
+    "model_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+    "ollama_version": "0.32.13",
+    "runner_os": "Darwin",
+    "runner_architecture": "arm64",
+    "measurement_date": "2026-08-29",
+    "measured": {
+      "recall@10": 1,
+      "mrr@10": 1
+    },
+    "floor": {
+      "recall@10": 0.97,
+      "mrr@10": 0.97
+    }
+  }
+}

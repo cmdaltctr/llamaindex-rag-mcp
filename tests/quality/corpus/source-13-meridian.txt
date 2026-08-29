@@ -1,0 +1,3 @@
+Source identifier: source-13-meridian.
+Meridian School runs its statistics club in room B214 on Wednesdays.
+Members analyse rainfall tables with R and Python.
