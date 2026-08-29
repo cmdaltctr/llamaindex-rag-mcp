@@ -181,6 +181,7 @@ async def search_documents(
     similarity_threshold: float | None = None,
     rerank: bool | None = None,
     hybrid: bool | None = None,
+    diagnostics: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
 ) -> list[dict]:
@@ -188,20 +189,13 @@ async def search_documents(
 
     Args:
         query: Natural language search query.
-        top_k: Maximum number of chunks to return. When None, the
-            selected collection profile supplies the default.
-        similarity_threshold: Minimum canonical dense similarity to include
-            without reranking. In hybrid/no-rerank mode it constrains dense
-            evidence before RRF; successful reranking uses the calibrated
-            reranker threshold transform. When None, the collection profile
-            supplies the default.
-        rerank: Tri-state rerank control:
-            - ``True``: force reranking (explicit opt-in)
-            - ``False``: force no reranking (explicit opt-out)
-            - ``None``: apply policy resolver (default)
-        hybrid: Fuse dense vector retrieval with sparse keyword retrieval
-            via Reciprocal Rank Fusion. When None, the collection profile
-            supplies the default.
+        top_k: Maximum chunks to return. ``None`` uses the profile default.
+        similarity_threshold: Minimum canonical dense similarity. ``None``
+            uses the profile default and preserves core threshold semantics.
+        rerank: ``True`` forces reranking, ``False`` disables it, and
+            ``None`` applies the default policy.
+        hybrid: Fuse dense and sparse retrieval. ``None`` uses the profile default.
+        diagnostics: Include core-produced retrieval diagnostics when true.
         collection: Name of the ChromaDB collection to search.
         metadata_filter: ChromaDB-compatible filter for dense and sparse candidates.
 
@@ -236,6 +230,7 @@ async def search_documents(
             hybrid=hybrid,
             collection_name=collection,
             metadata_filter=metadata_filter,
+            include_diagnostics=diagnostics,
             reranker=_get_reranker(),
             effective_settings=effective,
         )

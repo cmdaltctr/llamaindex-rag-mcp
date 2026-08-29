@@ -38,6 +38,11 @@ def search(
         "-c",
         help="ChromaDB collection to search.",
     ),
+    diagnostics: bool = typer.Option(
+        False,
+        "--diagnostics",
+        help="Include core-produced retrieval diagnostics.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
     """Search indexed documents for semantically relevant chunks."""
@@ -63,6 +68,7 @@ def search(
                 rerank=rerank,
                 hybrid=hybrid,
                 collection_name=collection,
+                include_diagnostics=diagnostics,
                 effective_settings=effective,
             )
     except ConnectionError as exc:
