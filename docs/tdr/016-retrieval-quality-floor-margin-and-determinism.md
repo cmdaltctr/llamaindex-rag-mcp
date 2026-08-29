@@ -39,12 +39,13 @@ Use Recall@10 and MRR@10 from the Experiment 19 metric semantics:
 
 | Tier | Run | OS / architecture | Recall@10 | MRR@10 |
 | --- | --- | --- | --- | --- |
-| 1 | GitHub Actions baseline | ubuntu-latest / x86_64 | Pending first Tier 1 run | Pending first Tier 1 run |
+| 1 | GitHub Actions baseline | ubuntu-latest / x86_64 | 1.000000 | 1.000000 |
 | 2 | Repetition 1 | Pending local runtime | Pending | Pending |
 | 2 | Repetition 2 | Pending local runtime | Pending | Pending |
 | 2 | Repetition 3 | Pending local runtime | Pending | Pending |
 
-The Tier 2 model digest and Ollama version are also pending the real runs. Once
+Tier 1 uses the exact 1.000000 measurements as its deterministic floors. The
+Tier 2 model digest and Ollama version are pending the real runs. Once
 measured, update this table and the baseline in the same commit. If two
 architectures are available, record both and state whether their per-query
 ranks agree before selecting the 0.02 or 0.03 margin.

@@ -30,7 +30,7 @@
       retrieval path through injected settings and stores without Ollama.
 - [x] 2.4 Mark all Tier 1 quality cases `slow`. Verify they are deselected by
       `pytest -m "not slow"` and run through a targeted command.
-- [ ] 2.5 Make Tier 1 compare Recall@10 and MRR@10 with exact deterministic
+- [x] 2.5 Make Tier 1 compare Recall@10 and MRR@10 with exact deterministic
       floors. Print measured baseline, floor, and actual values on failure.
 - [x] 2.6 Perturb one controlled fusion or threshold input. Confirm Tier 1 fails
       for the intended metric, then restore the fixture.

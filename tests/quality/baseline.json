@@ -4,9 +4,15 @@
   "query_set_id": "c5f445bf369ab8063ec807d75ed07b5ffde5ce1f428df3549fcc13f06f6801b8",
   "tier1": {
     "embedding_id": "deterministic-fake-v1",
-    "measurement_date": null,
-    "measured": null,
-    "floor": null
+    "measurement_date": "2026-08-29",
+    "measured": {
+      "recall@10": 1,
+      "mrr@10": 1
+    },
+    "floor": {
+      "recall@10": 1,
+      "mrr@10": 1
+    }
   },
   "tier2": {
     "model_tag": "qwen3-embedding:0.6b",

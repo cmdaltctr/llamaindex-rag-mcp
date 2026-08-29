@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import pytest
-
 from tests.quality import metrics
 from tests.quality.metrics import _recall_mrr
 from tests.quality.runner import (
     CORPUS_DIR,
     QUALITY_DIR,
-    fixture_identities,
     assert_metric_floors,
+    fixture_identities,
     load_baseline,
     load_golden_queries,
     validate_baseline,

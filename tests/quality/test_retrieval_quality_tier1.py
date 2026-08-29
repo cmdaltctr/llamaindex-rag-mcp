@@ -6,20 +6,12 @@ import hashlib
 import json
 import math
 import re
-from pathlib import Path
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import pytest
 from llama_index.core import Settings as LlamaIndexSettings
 from llama_index.core.embeddings import MockEmbedding
-
-from rag_mcp.core.retrieval import search
-from rag_mcp.core.retrieval.dense import _cached_query_embedding
-from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
-from rag_mcp.core.vectordb.score import (
-    DENSE_SCORE_KIND,
-    canonical_score_from_l2,
-)
 from tests.quality.runner import (
     CORPUS_DIR,
     assert_metric_floors,
@@ -28,6 +20,14 @@ from tests.quality.runner import (
     measure_rows,
     measurement_record,
     validate_baseline,
+)
+
+from rag_mcp.core.retrieval import search
+from rag_mcp.core.retrieval.dense import _cached_query_embedding
+from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+from rag_mcp.core.vectordb.score import (
+    DENSE_SCORE_KIND,
+    canonical_score_from_l2,
 )
 
 pytestmark = pytest.mark.slow
@@ -40,7 +40,10 @@ _EMBEDDING_ID = "deterministic-fake-v1"
 
 def _token_features(text: str) -> list[str]:
     tokens = _TOKEN_RE.findall(text.casefold())
-    return tokens + [f"{left}:{right}" for left, right in zip(tokens, tokens[1:])]
+    return tokens + [
+        f"{left}:{right}"
+        for left, right in zip(tokens, tokens[1:], strict=False)
+    ]
 
 
 def _stable_vector(text: str) -> list[float]:
@@ -127,6 +130,7 @@ class ControlledQualityStore:
                     for left, right in zip(
                         query_embedding,
                         self.embeddings[str(row["id"])],
+                        strict=True,
                     )
                 )
             )

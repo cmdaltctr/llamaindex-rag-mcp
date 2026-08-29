@@ -10,17 +10,6 @@ from typing import Any
 
 import pytest
 from llama_index.core import Settings as LlamaIndexSettings
-
-from rag_mcp.compose import (
-    build_embed_model,
-    build_vector_store,
-    settings_to_effective,
-)
-from rag_mcp.config import Settings
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
-from rag_mcp.core.retrieval.dense import _cached_query_embedding
-from rag_mcp.core.vectordb import set_default_store
 from tests.quality.runner import (
     CORPUS_DIR,
     assert_metric_floors,
@@ -32,6 +21,17 @@ from tests.quality.runner import (
     validate_baseline,
 )
 
+from rag_mcp.compose import (
+    build_embed_model,
+    build_vector_store,
+    settings_to_effective,
+)
+from rag_mcp.config import Settings
+from rag_mcp.core.ingestion import ingest_path_async
+from rag_mcp.core.retrieval import search
+from rag_mcp.core.retrieval.dense import _cached_query_embedding
+from rag_mcp.core.vectordb import set_default_store
+
 pytestmark = pytest.mark.slow
 
 MODEL_TAG = "qwen3-embedding:0.6b"
@@ -42,7 +42,7 @@ _COLLECTION = "quality_tier2"
 def _ollama_json(path: str) -> dict[str, Any]:
     """Read one required Ollama API response or fail the gate."""
     try:
-        with urllib.request.urlopen(
+        with urllib.request.urlopen(  # noqa: S310 -- fixed loopback URL
             f"{OLLAMA_BASE_URL}{path}",
             timeout=10,
         ) as response:
