@@ -106,8 +106,15 @@
 
 ## 7. Post-merge schedule verification
 
-- [ ] 7.1 After the workflow exists on the default branch, run Tier 2 through
+- [x] 7.1 After the workflow exists on the default branch, run Tier 2 through
       `workflow_dispatch`. Record the run URL and confirm expected-versus-actual
-      metrics appear in its output.
+      metrics appear in its output. Verified 2026-08-29: dispatched on the
+      merged integration head `v3` at
+      https://github.com/cmdaltctr/llamaindex-rag-mcp/actions/runs/33280036117.
+      SUCCESS on Linux / x86_64 with Ollama 0.33.2; Recall@10 = 1.000000 and
+      MRR@10 = 1.000000 with every expected source at rank 1, and the resolved
+      model digest matched the darwin/arm64 measurements exactly.
 - [ ] 7.2 Confirm the next scheduled event starts Tier 2 only. If GitHub has
       disabled the schedule, re-enable it and record the recovery in TDR-016.
+      Open: GitHub fires scheduled workflows only from the default branch
+      (`main`), so the nightly cron stays dormant until `v3` merges to `main`.

@@ -129,6 +129,21 @@ variation. The first post-merge `workflow_dispatch` (task 7.1) must therefore
 pass when metrics meet their floors; treat any digest mismatch it reveals as a
 model-movement investigation, not a baseline refresh.
 
+## Post-merge Dispatch Evidence (2026-08-29)
+
+The first `workflow_dispatch` Tier 2 run executed on the merged integration
+head `v3` and completed successfully:
+https://github.com/cmdaltctr/llamaindex-rag-mcp/actions/runs/33280036117.
+Linux / x86_64 with Ollama 0.33.2 measured Recall@10 = 1.000000 and
+MRR@10 = 1.000000, with every expected source at rank 1. The resolved model
+digest matched `ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d`
+exactly, so tag+digest binding absorbed the cross-platform change as designed
+(task 7.1).
+
+Task 7.2 remains open: GitHub fires scheduled workflows only from the default
+branch (`main`), so the nightly cron stays dormant until `v3` merges to
+`main`. Confirm then that the scheduled event starts Tier 2 only.
+
 ## Revisit Triggers
 
 Re-evaluate this decision when the production embedding model changes, Ollama
