@@ -525,3 +525,154 @@ class TestHybridNativePipeline:
         )
         assert results
         assert all(row["metadata"].get("category") == "sport" for row in results)
+
+
+# ── Dispatch-seam coverage: warning state, legacy scan, registry errors ──
+
+
+class _FakeCoverageStore:
+    """Minimal store exposing only the FTS coverage signal."""
+
+    def __init__(self, stats: dict | None) -> None:
+        self._stats = stats
+        self.calls = 0
+
+    def native_sparse_coverage(self, collection_name: str) -> dict | None:
+        self.calls += 1
+        if isinstance(self._stats, Exception):
+            raise self._stats
+        return self._stats
+
+
+class _FakeLegacyStore:
+    """Sparse-vector-era store: no coverage method, paged metadata scan."""
+
+    def __init__(self, metadatas: list[dict | None] | Exception) -> None:
+        self._metadatas = metadatas
+
+    def iter_metadatas(self, collection_name: str, page_size=None):
+        if isinstance(self._metadatas, Exception):
+            raise self._metadatas
+        yield from self._metadatas
+
+
+class TestMixedCoverageWarningState:
+    """The one-shot warning state machine in sparse_dispatch."""
+
+    def test_fts_partial_coverage_warns_once(self, caplog) -> None:
+        import logging
+
+        from rag_mcp.core.retrieval.sparse_dispatch import (
+            _emit_mixed_coverage_warning,
+            reset_warning_state,
+        )
+
+        reset_warning_state()
+        store = _FakeCoverageStore({"indexed": 2, "unindexed": 1, "total": 3})
+        with caplog.at_level(logging.WARNING):
+            _emit_mixed_coverage_warning("cov", store)  # type: ignore[arg-type]
+            _emit_mixed_coverage_warning("cov", store)  # type: ignore[arg-type]
+        warnings_seen = [r for r in caplog.records if "mixed full-text coverage" in r.message]
+        assert len(warnings_seen) == 1
+
+    def test_fts_full_or_absent_coverage_stays_silent(self, caplog) -> None:
+        import logging
+
+        from rag_mcp.core.retrieval.sparse_dispatch import (
+            _emit_mixed_coverage_warning,
+            reset_warning_state,
+        )
+
+        reset_warning_state()
+        with caplog.at_level(logging.WARNING):
+            _emit_mixed_coverage_warning(
+                "full", _FakeCoverageStore({"indexed": 3, "unindexed": 0, "total": 3})
+            )  # type: ignore[arg-type]
+            _emit_mixed_coverage_warning("absent", _FakeCoverageStore(None))  # type: ignore[arg-type]
+        assert not [r for r in caplog.records if "mixed" in r.message]
+
+    def test_coverage_probe_failure_stays_silent(self, caplog) -> None:
+        import logging
+
+        from rag_mcp.core.retrieval.sparse_dispatch import (
+            _emit_mixed_coverage_warning,
+            reset_warning_state,
+        )
+
+        reset_warning_state()
+        with caplog.at_level(logging.WARNING):
+            _emit_mixed_coverage_warning("boom", _FakeCoverageStore(RuntimeError("x")))  # type: ignore[arg-type]
+        assert not caplog.records
+
+    def test_legacy_paged_scan_warns_once(self, caplog) -> None:
+        """Stores without the coverage signal keep the Chroma-era scan."""
+        import logging
+
+        from rag_mcp.core.retrieval.sparse_dispatch import (
+            _emit_mixed_coverage_warning,
+            reset_warning_state,
+        )
+
+        reset_warning_state()
+        store = _FakeLegacyStore([{"has_sparse_vector": True}, {"has_sparse_vector": True}, {}])
+        with caplog.at_level(logging.WARNING):
+            _emit_mixed_coverage_warning("legacy", store)  # type: ignore[arg-type]
+            _emit_mixed_coverage_warning("legacy", store)  # type: ignore[arg-type]
+        legacy_warnings = [r for r in caplog.records if "sparse vectors" in r.message]
+        assert len(legacy_warnings) == 1
+        assert "2/3" in legacy_warnings[0].message
+
+    def test_legacy_scan_failure_stays_silent(self, caplog) -> None:
+        import logging
+
+        from rag_mcp.core.retrieval.sparse_dispatch import (
+            _emit_mixed_coverage_warning,
+            reset_warning_state,
+        )
+
+        reset_warning_state()
+        with caplog.at_level(logging.WARNING):
+            _emit_mixed_coverage_warning("scan-boom", _FakeLegacyStore(RuntimeError("scan died")))  # type: ignore[arg-type]
+        assert not [r for r in caplog.records if "sparse" in r.message]
+
+
+class TestSparseRegistryErrors:
+    """The registry's failure modes list names and preserve causes."""
+
+    def test_unknown_name_lists_available(self) -> None:
+        import pytest as _pytest
+
+        from rag_mcp.core.retrieval import sparse_registry
+
+        with _pytest.raises(KeyError, match="Available"):
+            sparse_registry.get("tantivy")
+
+    def test_broken_import_string_raises_import_error(self) -> None:
+        import pytest as _pytest
+
+        from rag_mcp.core.retrieval import sparse_registry
+
+        sparse_registry.register("__broken__", "rag_mpp.nonexistent_module:Thing")
+        try:
+            with _pytest.raises(ImportError, match="could not be imported"):
+                sparse_registry.get("__broken__")
+        finally:
+            sparse_registry._registry.pop("__broken__", None)
+            sparse_registry._cache.pop("__broken__", None)
+
+
+class TestNativeRetrieverEdges:
+    """Edge branches of the retrieval-level native backend."""
+
+    def test_zero_top_n_returns_empty(self, tmp_path) -> None:
+        from rag_mcp.core.retrieval.native_sparse import NativeSparseRetriever
+
+        store = _lance_store(tmp_path)
+        assert NativeSparseRetriever("docs", store=store).query("anything", 0) == []
+
+    def test_default_store_resolution(self) -> None:
+        from rag_mcp.core.retrieval.native_sparse import NativeSparseRetriever
+        from rag_mcp.core.vectordb import get_default_store
+
+        retriever = NativeSparseRetriever("documents")
+        assert retriever._get_store() is get_default_store()
