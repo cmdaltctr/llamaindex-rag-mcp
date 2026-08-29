@@ -73,7 +73,7 @@
       nightly event starts Tier 2 without starting unrelated CI jobs.
 - [x] 4.7 Add CI comments with the same scope statement as the runner docstring.
       State that subtle model drift still requires experiments.
-- [ ] 4.8 Inspect `tests/test_clean_base_tripwire.py`. Update pinned collection
+- [x] 4.8 Inspect `tests/test_clean_base_tripwire.py`. Update pinned collection
       counts only when the new slow tests change its verified manifest.
 
 ## 5. Decision record and operator guidance
@@ -92,11 +92,11 @@
 
 ## 6. Final verification
 
-- [ ] 6.1 Run `uv run pytest tests/quality/test_metrics.py
+- [x] 6.1 Run `uv run pytest tests/quality/test_metrics.py
       tests/quality/test_retrieval_quality_tier1.py -m slow --tb=short -q`.
 - [ ] 6.2 With the pinned Ollama model available, run `uv run pytest
       tests/quality/test_retrieval_quality_tier2.py -m slow --tb=short -q`.
-- [ ] 6.3 Run the ordinary selector against the quality directory and confirm
+- [x] 6.3 Run the ordinary selector against the quality directory and confirm
       no slow quality case executes: `uv run pytest tests/quality -m "not slow"
       --collect-only -q`.
 - [ ] 6.4 Validate the workflow syntax and event conditions. Confirm both
