@@ -22,6 +22,7 @@ chroma_db/
 chroma_db_test/
 
 # Experiment-generated ChromaDB directories (per-run artefacts)
+experiments/**/lancedb/
 experiments/**/chroma_*/
 experiments/**/chroma_md_*/
 experiments/**/chroma_overlap_*/

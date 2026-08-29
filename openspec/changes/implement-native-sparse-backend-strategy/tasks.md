@@ -36,9 +36,9 @@
 
 ## 4. Calibration and Compatibility
 
-- [ ] 4.1 Compare BM25 and native quality, latency, determinism, and memory on representative corpora. D17 (archived Stage 6, complete) shows hybrid beats dense with reranking disabled; it does not prove native FTS beats BM25 — this experiment is the evidence for that question.
-- [ ] 4.2 Test existing (no FTS index), fully covered, and mixed-coverage collections.
-- [ ] 4.3 Confirm base and lowest-direct installations need no new dependency.
+- [x] 4.1 Compare BM25 and native quality, latency, determinism, and memory on representative corpora. D17 (archived Stage 6, complete) shows hybrid beats dense with reranking disabled; it does not prove native FTS beats BM25 — this experiment is the evidence for that question.
+- [x] 4.2 Test existing (no FTS index), fully covered, and mixed-coverage collections.
+- [x] 4.3 Confirm base and lowest-direct installations need no new dependency.
 
 ## 5. Validation and Documentation
 

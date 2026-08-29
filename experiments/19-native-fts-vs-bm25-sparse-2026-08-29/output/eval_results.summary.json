@@ -1,0 +1,122 @@
+{
+  "bm25": {
+    "cell": "bm25",
+    "sparse_only": {
+      "recall@5": 0.85,
+      "recall@10": 0.85,
+      "mrr@10": 0.7917,
+      "by_category@10": {
+        "mixed": {
+          "recall": 1.0,
+          "mrr": 1.0
+        },
+        "rare-term": {
+          "recall": 0.8889,
+          "mrr": 0.8889
+        },
+        "semantic": {
+          "recall": 0.6667,
+          "mrr": 0.4722
+        }
+      },
+      "cold_first_query_s": 0.3223
+    },
+    "hybrid": {
+      "recall@5": 0.95,
+      "recall@10": 0.95,
+      "mrr@10": 0.95,
+      "by_category@10": {
+        "mixed": {
+          "recall": 1.0,
+          "mrr": 1.0
+        },
+        "rare-term": {
+          "recall": 0.8889,
+          "mrr": 0.8889
+        },
+        "semantic": {
+          "recall": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    "latency": {
+      "warm_p50_s": 0.0,
+      "warm_p95_s": 0.0001,
+      "cold_total_s": 0.325
+    },
+    "determinism_mismatches": 0,
+    "memory": {
+      "tracemalloc_cold_peak_mb": 2.39,
+      "peak_rss_mb": 283.84
+    }
+  },
+  "native": {
+    "cell": "native",
+    "sparse_only": {
+      "recall@5": 0.8,
+      "recall@10": 0.85,
+      "mrr@10": 0.7738,
+      "by_category@10": {
+        "mixed": {
+          "recall": 1.0,
+          "mrr": 1.0
+        },
+        "rare-term": {
+          "recall": 0.8889,
+          "mrr": 0.8889
+        },
+        "semantic": {
+          "recall": 0.6667,
+          "mrr": 0.4127
+        }
+      },
+      "cold_first_query_s": 0.0297
+    },
+    "hybrid": {
+      "recall@5": 0.95,
+      "recall@10": 0.95,
+      "mrr@10": 0.95,
+      "by_category@10": {
+        "mixed": {
+          "recall": 1.0,
+          "mrr": 1.0
+        },
+        "rare-term": {
+          "recall": 0.8889,
+          "mrr": 0.8889
+        },
+        "semantic": {
+          "recall": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    "latency": {
+      "warm_p50_s": 0.0057,
+      "warm_p95_s": 0.0178,
+      "cold_total_s": 0.227
+    },
+    "determinism_mismatches": 0,
+    "memory": {
+      "tracemalloc_cold_peak_mb": 2.36,
+      "peak_rss_mb": 262.88
+    }
+  },
+  "comparison": {
+    "sparse_recall@10_delta_pp": 0.0,
+    "warm_p50_latency_ratio_native_over_bm25": 138.7,
+    "peak_rss_delta_pct": -7.4
+  },
+  "gates": {
+    "G1_quality_floor_-2pp": true,
+    "G2_determinism_zero_mismatches": true,
+    "G3_latency_within_10x": false,
+    "G4_memory_within_10pct": true
+  },
+  "promotion": {
+    "quality_win_ge_2pp": false,
+    "all_gates_pass": false,
+    "decision": "KEEP bm25 DEFAULT"
+  }
+}

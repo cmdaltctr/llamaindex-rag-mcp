@@ -1,0 +1,429 @@
+{
+  "packs": {
+    "exp1-fixtures": {
+      "status": "ok",
+      "files_indexed": 5,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 10,
+      "chunks_removed": 0,
+      "collection": "exp19",
+      "file_details": [
+        {
+          "file": "sample.md",
+          "status": "indexed",
+          "chunks": 6,
+          "source_version": "7f4f52a3acb0371caaea61e77638fa0829ef5f3df4eeece014fda782b1894f64",
+          "embedding_norm_band": {
+            "min": 0.999999772637185,
+            "max": 0.9999999859340221
+          },
+          "timings": {
+            "change_detection_seconds": 0.004288042080588639,
+            "parse_chunk_seconds": 0.1271895410027355,
+            "embedding_seconds": 3.6616003749659285,
+            "store_write_seconds": 0.2389518750132993,
+            "lock_wait_seconds": 9.170034900307655e-07,
+            "cleanup_seconds": 0.09855774999596179,
+            "total_seconds": 4.136755667044781
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "javascript.txt",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "f011a9e59cbb363875a98c403d394d9b7bd22b12b512b678b3faf4e1af1daa22",
+          "embedding_norm_band": {
+            "min": 0.9999998702868824,
+            "max": 0.9999998702868824
+          },
+          "timings": {
+            "change_detection_seconds": 0.007358583039604127,
+            "parse_chunk_seconds": 0.002021041000261903,
+            "embedding_seconds": 0.2621285419445485,
+            "store_write_seconds": 0.014227833016775548,
+            "lock_wait_seconds": 1.0420335456728935e-06,
+            "cleanup_seconds": 0.007894249982200563,
+            "total_seconds": 0.29636887495871633
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "python.txt",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "a199fc68ce4db4c0187348d62c1cb7f529febeb7cba5b0ba48b4ebad02898ed7",
+          "embedding_norm_band": {
+            "min": 1.0000002806119859,
+            "max": 1.0000002806119859
+          },
+          "timings": {
+            "change_detection_seconds": 0.006781375035643578,
+            "parse_chunk_seconds": 0.0010391249088570476,
+            "embedding_seconds": 0.2779517089948058,
+            "store_write_seconds": 0.013577000005170703,
+            "lock_wait_seconds": 8.75093974173069e-07,
+            "cleanup_seconds": 0.0053505830001086,
+            "total_seconds": 0.3135022500064224
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "sample.txt",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "7e4bd544caff2006ad5dfb3fd75168cef3ad249ad909fe25c36d7231c10266af",
+          "embedding_norm_band": {
+            "min": 1.0000000341565993,
+            "max": 1.0000000341565993
+          },
+          "timings": {
+            "change_detection_seconds": 0.006939540966413915,
+            "parse_chunk_seconds": 0.001168042072094977,
+            "embedding_seconds": 0.23808920907322317,
+            "store_write_seconds": 0.033310417085886,
+            "lock_wait_seconds": 2.624932676553726e-06,
+            "cleanup_seconds": 0.04013658408075571,
+            "total_seconds": 0.32255037501454353
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "doc1_climate.pdf",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "d8ff5083fe27db493aae06557c3f08f00a144a2e3fb9d5d0ef0af11a7bf6095e",
+          "embedding_norm_band": {
+            "min": 1.0000001199045996,
+            "max": 1.0000001199045996
+          },
+          "timings": {
+            "change_detection_seconds": 0.014159833081066608,
+            "parse_chunk_seconds": 0.0065198749070987105,
+            "embedding_seconds": 0.4965277910232544,
+            "store_write_seconds": 0.024686707998625934,
+            "lock_wait_seconds": 9.170034900307655e-07,
+            "cleanup_seconds": 0.004201042000204325,
+            "total_seconds": 0.5488724580500275
+          },
+          "peak_rss_bytes": 281509888
+        }
+      ],
+      "metadata_degraded": 0,
+      "timings": {
+        "change_detection_seconds": 0.03952737420331687,
+        "parse_chunk_seconds": 0.13793762389104813,
+        "embedding_seconds": 4.93629762600176,
+        "store_write_seconds": 0.3247538331197575,
+        "lock_wait_seconds": 6.37606717646122e-06,
+        "cleanup_seconds": 0.15614020905923098,
+        "total_seconds": 5.624340791953728
+      },
+      "peak_rss_bytes": 281509888
+    },
+    "rare-term-pack": {
+      "status": "ok",
+      "files_indexed": 8,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 38,
+      "chunks_removed": 0,
+      "collection": "exp19",
+      "file_details": [
+        {
+          "file": "eu-2016-679-gdpr-summary.md",
+          "status": "indexed",
+          "chunks": 6,
+          "source_version": "d7cd4ac5cf39c93f40441d6af8c242f85d7aeaa830be3ad1794c09b59bf91e1d",
+          "embedding_norm_band": {
+            "min": 0.9999997764810425,
+            "max": 1.0000002818471312
+          },
+          "timings": {
+            "change_detection_seconds": 0.011338667012751102,
+            "parse_chunk_seconds": 0.002745124977082014,
+            "embedding_seconds": 0.5579072079854086,
+            "store_write_seconds": 0.019889624905772507,
+            "lock_wait_seconds": 8.329516276717186e-07,
+            "cleanup_seconds": 0.005144291906617582,
+            "total_seconds": 0.6000339579768479
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "econnrefused-troubleshooting.md",
+          "status": "indexed",
+          "chunks": 4,
+          "source_version": "3b957428ac9261c0810bbc246492c9980d83dcc808974caa15f0918eb853a103",
+          "embedding_norm_band": {
+            "min": 0.999999452792343,
+            "max": 1.0000001039095332
+          },
+          "timings": {
+            "change_detection_seconds": 0.007346166996285319,
+            "parse_chunk_seconds": 0.0022969170240685344,
+            "embedding_seconds": 0.4707419580081478,
+            "store_write_seconds": 0.012849583057686687,
+            "lock_wait_seconds": 6.249174475669861e-07,
+            "cleanup_seconds": 0.005227541900239885,
+            "total_seconds": 0.5011499170213938
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "xk-2034b-product-spec.md",
+          "status": "indexed",
+          "chunks": 5,
+          "source_version": "b3470ba3921080d1e6857892f4f2acaa4c243dc08e2f00fccccd031bae7c3ee4",
+          "embedding_norm_band": {
+            "min": 0.9999998768425759,
+            "max": 1.0000002708026068
+          },
+          "timings": {
+            "change_detection_seconds": 0.00549862498883158,
+            "parse_chunk_seconds": 0.0023307499941438437,
+            "embedding_seconds": 0.47884579200763255,
+            "store_write_seconds": 0.01293858396820724,
+            "lock_wait_seconds": 1.2919772416353226e-06,
+            "cleanup_seconds": 0.006365249981172383,
+            "total_seconds": 0.5086589580168948
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "42-usc-1983-summary.md",
+          "status": "indexed",
+          "chunks": 6,
+          "source_version": "a12dce6c5dfcf1c361fb93ef1fff703b2ada94a1ea728d638315e55847910f5e",
+          "embedding_norm_band": {
+            "min": 0.9999997627036809,
+            "max": 1.0000000679199084
+          },
+          "timings": {
+            "change_detection_seconds": 0.005640458082780242,
+            "parse_chunk_seconds": 0.002472582971677184,
+            "embedding_seconds": 0.4809006249997765,
+            "store_write_seconds": 0.012923124944791198,
+            "lock_wait_seconds": 5.00003807246685e-07,
+            "cleanup_seconds": 0.007751457975246012,
+            "total_seconds": 0.5125451249768957
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "numpy-fft-readme.md",
+          "status": "indexed",
+          "chunks": 4,
+          "source_version": "4f15d6581b93bcead798a23d5a8be479cd954bf4f372036d4347fc393fccfda0",
+          "embedding_norm_band": {
+            "min": 0.99999985756564,
+            "max": 1.0000004386314039
+          },
+          "timings": {
+            "change_detection_seconds": 0.005260000005364418,
+            "parse_chunk_seconds": 0.0018241660436615348,
+            "embedding_seconds": 0.4589950420195237,
+            "store_write_seconds": 0.012614042032510042,
+            "lock_wait_seconds": 8.33999365568161e-07,
+            "cleanup_seconds": 0.0057250839890912175,
+            "total_seconds": 0.48695379099808633
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "torch-layernorm-notes.md",
+          "status": "indexed",
+          "chunks": 4,
+          "source_version": "051e7c2b140a05564fcb8246509807a14a1adc7873523ea83f54b0a09267cd24",
+          "embedding_norm_band": {
+            "min": 0.9999998135848959,
+            "max": 1.0000002677758006
+          },
+          "timings": {
+            "change_detection_seconds": 0.005569542059674859,
+            "parse_chunk_seconds": 0.002160249976441264,
+            "embedding_seconds": 0.46778145793359727,
+            "store_write_seconds": 0.01312770799268037,
+            "lock_wait_seconds": 5.420297384262085e-07,
+            "cleanup_seconds": 0.0063712080009281635,
+            "total_seconds": 0.49778041697572917
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "brca1-research-note.md",
+          "status": "indexed",
+          "chunks": 5,
+          "source_version": "7bc91cdc6d05f1ac81bb368c3629806710b017c170e693a8189131e10d1e8dc0",
+          "embedding_norm_band": {
+            "min": 0.9999999504372554,
+            "max": 1.0000002714185945
+          },
+          "timings": {
+            "change_detection_seconds": 0.00599820795468986,
+            "parse_chunk_seconds": 0.0020932500483468175,
+            "embedding_seconds": 0.4442969999508932,
+            "store_write_seconds": 0.012379250023514032,
+            "lock_wait_seconds": 6.669433787465096e-07,
+            "cleanup_seconds": 0.00706470909062773,
+            "total_seconds": 0.47505370806902647
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "mcp-1138-error-codes.md",
+          "status": "indexed",
+          "chunks": 4,
+          "source_version": "4d8469c81a491768a63ddb2bf41fa5f29f69355d5a46220671d74e6f0eb4d0ee",
+          "embedding_norm_band": {
+            "min": 0.999999880346297,
+            "max": 1.0000002106040247
+          },
+          "timings": {
+            "change_detection_seconds": 0.007033166009932756,
+            "parse_chunk_seconds": 0.0018544589402154088,
+            "embedding_seconds": 0.3719299159711227,
+            "store_write_seconds": 0.012649915996007621,
+            "lock_wait_seconds": 8.749775588512421e-07,
+            "cleanup_seconds": 0.008687000023201108,
+            "total_seconds": 0.4054050409467891
+          },
+          "peak_rss_bytes": 281509888
+        }
+      ],
+      "metadata_degraded": 0,
+      "timings": {
+        "change_detection_seconds": 0.05368483311031014,
+        "parse_chunk_seconds": 0.0177774999756366,
+        "embedding_seconds": 3.7313989988761023,
+        "store_write_seconds": 0.1093718329211697,
+        "lock_wait_seconds": 6.167800165712833e-06,
+        "cleanup_seconds": 0.05233654286712408,
+        "total_seconds": 3.990959500079043
+      },
+      "peak_rss_bytes": 281509888
+    },
+    "semantic-pack": {
+      "status": "ok",
+      "files_indexed": 5,
+      "files_skipped_unchanged": 0,
+      "chunks_created": 5,
+      "chunks_removed": 0,
+      "collection": "exp19",
+      "file_details": [
+        {
+          "file": "plate-tectonics.md",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "62df9afa858916bfd6b0b725ff1008de84606b87f4f0c296250a34397daf03ab",
+          "embedding_norm_band": {
+            "min": 1.0000003370217745,
+            "max": 1.0000003370217745
+          },
+          "timings": {
+            "change_detection_seconds": 0.006019041989929974,
+            "parse_chunk_seconds": 0.0013313749805092812,
+            "embedding_seconds": 0.37986762495711446,
+            "store_write_seconds": 0.009724540985189378,
+            "lock_wait_seconds": 5.830079317092896e-07,
+            "cleanup_seconds": 0.008020416018553078,
+            "total_seconds": 0.408179874997586
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "gdp-economics.md",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "f80f26cb22bda4a5c0974dc26971d2cd68e86339f4a835775d3984e58899e782",
+          "embedding_norm_band": {
+            "min": 1.000000134640454,
+            "max": 1.000000134640454
+          },
+          "timings": {
+            "change_detection_seconds": 0.0059404580388218164,
+            "parse_chunk_seconds": 0.001393333077430725,
+            "embedding_seconds": 0.31512129202019423,
+            "store_write_seconds": 0.010258583002723753,
+            "lock_wait_seconds": 7.50063918530941e-07,
+            "cleanup_seconds": 0.010158875025808811,
+            "total_seconds": 0.34626479202415794
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "transformers.md",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "3d101e7135b8cec84fdc0787b0cb234eddeb2719a35e35d867e15f4e2be7fd90",
+          "embedding_norm_band": {
+            "min": 0.9999998519445384,
+            "max": 0.9999998519445384
+          },
+          "timings": {
+            "change_detection_seconds": 0.006591291981749237,
+            "parse_chunk_seconds": 0.001206416985951364,
+            "embedding_seconds": 0.28613616595976055,
+            "store_write_seconds": 0.010520332958549261,
+            "lock_wait_seconds": 7.919734343886375e-07,
+            "cleanup_seconds": 0.009427541983313859,
+            "total_seconds": 0.31707099999766797
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "electric-vehicles.md",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "db440c368a22089fc57d03c8fa190855dc1fa16a14334972a891cef555e0be5b",
+          "embedding_norm_band": {
+            "min": 1.0000001051610443,
+            "max": 1.0000001051610443
+          },
+          "timings": {
+            "change_detection_seconds": 0.005942500079981983,
+            "parse_chunk_seconds": 0.0012145000509917736,
+            "embedding_seconds": 0.3287669999990612,
+            "store_write_seconds": 0.009433542029000819,
+            "lock_wait_seconds": 6.670597940683365e-07,
+            "cleanup_seconds": 0.010224750032648444,
+            "total_seconds": 0.36024212499614805
+          },
+          "peak_rss_bytes": 281509888
+        },
+        {
+          "file": "photosynthesis.md",
+          "status": "indexed",
+          "chunks": 1,
+          "source_version": "d594abc702cb3784c7878fb1c084f077617c22499d7f1ce063e8e60d225f2eba",
+          "embedding_norm_band": {
+            "min": 0.9999999720801456,
+            "max": 0.9999999720801456
+          },
+          "timings": {
+            "change_detection_seconds": 0.006211832980625331,
+            "parse_chunk_seconds": 0.0013313749805092812,
+            "embedding_seconds": 0.3065446250839159,
+            "store_write_seconds": 0.012381958891637623,
+            "lock_wait_seconds": 3.7497375160455704e-07,
+            "cleanup_seconds": 0.009542582905851305,
+            "total_seconds": 0.3392992919543758
+          },
+          "peak_rss_bytes": 281509888
+        }
+      ],
+      "metadata_degraded": 0,
+      "timings": {
+        "change_detection_seconds": 0.03070512507110834,
+        "parse_chunk_seconds": 0.006477000075392425,
+        "embedding_seconds": 1.6164367080200464,
+        "store_write_seconds": 0.052318957867100835,
+        "lock_wait_seconds": 3.1670788303017616e-06,
+        "cleanup_seconds": 0.0473741659661755,
+        "total_seconds": 1.7731500410009176
+      },
+      "peak_rss_bytes": 281509888
+    }
+  },
+  "chunk_count": 53,
+  "elapsed_s": 11.39
+}
