@@ -43,7 +43,6 @@ __all__ = [
     "EmbeddingIdentity",
     "build_chroma_vector_store",
     "build_vector_store_from_settings",
-    "detect_native_sparse_capability",
 ]
 
 logger = logging.getLogger(__name__)
@@ -429,23 +428,6 @@ def build_chroma_vector_store(
 
     client = chromadb.PersistentClient(path=_resolve_local_persist_dir(persist_dir))
     return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
-
-
-def detect_native_sparse_capability() -> bool:
-    """Return whether the ChromaDB runtime can serve native sparse queries.
-
-    Conservative: this project uses ``PersistentClient``, where native
-    sparse retrieval is unavailable, so ``False`` keeps the default on
-    BM25. Dynamic (``hasattr`` on the class) so a future ChromaDB
-    release with ``query_sparse`` on ``PersistentClient`` flips it;
-    imports ``chromadb`` lazily so a Chroma-free process gets ``False``.
-    """
-    try:
-        import chromadb
-
-        return hasattr(chromadb.PersistentClient, "query_sparse")
-    except Exception:
-        return False
 
 
 def build_vector_store_from_settings(settings: Any) -> ChromaVectorStore:

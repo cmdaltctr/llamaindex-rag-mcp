@@ -189,35 +189,36 @@ class TestDefaultStoreHolder:
 class TestCapabilityProbes:
     """The probes moved out of config in task 7.10."""
 
-    def _settings(self, backend: str):
+    def _settings(self, backend: str, vector_store: str = "lancedb"):
         from rag_mcp.config import Settings
         from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-        # The probe path applies to the Chroma backend, which advertises
-        # native sparse (task 3.3): capability follows the SELECTED store.
+        # Store-neutral route (task 3.2,
+        # implement-native-sparse-backend-strategy): capability follows
+        # the SELECTED store's registry metadata plus a real probe.
         return Settings(
             _env_file=None,
-            vector_store="chroma",
+            vector_store=vector_store,
             retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
         )
 
     def test_bm25_needs_no_probe(self, monkeypatch) -> None:
         """An explicit bm25 selection short-circuits before probing."""
         import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
+        import rag_mcp.core.vectordb.lance_fts as lance_fts
 
         def _boom():  # pragma: no cover - must not run
             raise AssertionError("probe ran for an explicit bm25 selection")
 
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", _boom)
+        monkeypatch.setattr(lance_fts, "probe_native_fts", _boom)
         assert compose.resolve_sparse_backend(self._settings("bm25")) == "bm25"
 
     @pytest.mark.parametrize("available, expected", [(True, "native"), (False, "bm25")])
     def test_auto_follows_the_probe(self, monkeypatch, available, expected) -> None:
         import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
+        import rag_mcp.core.vectordb.lance_fts as lance_fts
 
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: available)
+        monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: available)
         assert compose.resolve_sparse_backend(self._settings("auto")) == expected
 
     def test_pdf_reader_explicit_value_is_returned(self) -> None:

@@ -15,24 +15,24 @@
 
 - [x] 1.1 Add regression tests proving the current native placeholder delegates to BM25.
   > Already satisfied at v3: `test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only` (tests/test_hybrid_retrieval.py:988) pins the placeholder warning-and-delegate behaviour against `_native_sparse_query` in `core/retrieval/pipeline.py`.
-- [ ] 1.2 Define the vector-store native sparse query capability and unsupported response.
+- [x] 1.2 Define the vector-store native sparse query capability and unsupported response.
 - [x] 1.3 Pin current BM25, RRF, mixed-coverage warning, and public result shapes.
   > Already satisfied at v3 by tests/test_hybrid_retrieval.py: BM25 ranking/caching/filtering (tests at lines 229–453), RRF worked examples (178–213), mixed-coverage one-shot warning and paged metadata scan (882, 939, 1054), public shape stripping and experiment diagnostics (779, 833). Extend only where the corrected delta adds new behaviour.
 
 ## 2. Native Sparse Implementation (LanceDB native FTS)
 
-- [ ] 2.1 Implement native sparse writes/queries in the LanceDB adapter over a native FTS index on the `text` column (not `documents`; the schema in `core/vectordb/lance_rows.py` stores text as `text`), with additive, explicitly triggered index creation. Land adapter code in a focused seam module.
-- [ ] 2.2 Preserve existing collections without FTS indexes and mixed-coverage diagnostics restated for indexed vs unindexed rows.
-- [ ] 2.3 Add native sparse result normalisation to the shared query contract.
-- [ ] 2.4 Implement the FTS lifecycle as its own behaviour per design decision 4: initial creation; stale marking and refresh after writes, replacements, and deletions; freshness diagnostics distinct from indexed-versus-unindexed coverage; rejection of stale native results; failure and fallback diagnostics. Do NOT use the process-local store generation counter as durable FTS-index maintenance — it remains a BM25 cache-invalidation mechanism only (PR #63 semantics unchanged).
+- [x] 2.1 Implement native sparse writes/queries in the LanceDB adapter over a native FTS index on the `text` column (not `documents`; the schema in `core/vectordb/lance_rows.py` stores text as `text`), with additive, explicitly triggered index creation. Land adapter code in a focused seam module.
+- [x] 2.2 Preserve existing collections without FTS indexes and mixed-coverage diagnostics restated for indexed vs unindexed rows.
+- [x] 2.3 Add native sparse result normalisation to the shared query contract.
+- [x] 2.4 Implement the FTS lifecycle as its own behaviour per design decision 4: initial creation; stale marking and refresh after writes, replacements, and deletions; freshness diagnostics distinct from indexed-versus-unindexed coverage; rejection of stale native results; failure and fallback diagnostics. Do NOT use the process-local store generation counter as durable FTS-index maintenance — it remains a BM25 cache-invalidation mechanism only (PR #63 semantics unchanged).
 
 ## 3. Registry and Resolution
 
-- [ ] 3.1 Add a lazy registry for concrete `bm25` and `native` sparse backends.
-- [ ] 3.2 Keep `auto` in the composition root and resolve it to a registered concrete name through the selected store's registry metadata plus a real native-FTS probe, replacing the Chroma-specific `detect_native_sparse_capability` route.
-- [ ] 3.3 Route the hybrid pipeline through the registry without inline backend branching.
-- [ ] 3.4 Preserve explicit warning-to-BM25 fallback and report the backend that ran through the existing effective-backend diagnostic surface (do not duplicate PR #63's diagnostics requirement).
-- [ ] 3.5 Move accepted sparse-backend name validation from the hard-coded settings tuple (`config/__init__.py` already rejects unknown `RETRIEVAL__HYBRID_SPARSE_BACKEND` values against `("auto", "native", "bm25")`) to composition-boundary validation backed by the concrete registry. Keep `auto` as a separately accepted policy name and list it with the registered concrete names on failure. `config/` must not import the runtime registry (leaf invariant; `community_algorithm` precedent).
+- [x] 3.1 Add a lazy registry for concrete `bm25` and `native` sparse backends.
+- [x] 3.2 Keep `auto` in the composition root and resolve it to a registered concrete name through the selected store's registry metadata plus a real native-FTS probe, replacing the Chroma-specific `detect_native_sparse_capability` route.
+- [x] 3.3 Route the hybrid pipeline through the registry without inline backend branching.
+- [x] 3.4 Preserve explicit warning-to-BM25 fallback and report the backend that ran through the existing effective-backend diagnostic surface (do not duplicate PR #63's diagnostics requirement).
+- [x] 3.5 Move accepted sparse-backend name validation from the hard-coded settings tuple (`config/__init__.py` already rejects unknown `RETRIEVAL__HYBRID_SPARSE_BACKEND` values against `("auto", "native", "bm25")`) to composition-boundary validation backed by the concrete registry. Keep `auto` as a separately accepted policy name and list it with the registered concrete names on failure. `config/` must not import the runtime registry (leaf invariant; `community_algorithm` precedent).
 
 ## 4. Calibration and Compatibility
 

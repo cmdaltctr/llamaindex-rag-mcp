@@ -264,7 +264,8 @@ unmatched_ignore_imports_alerting = "error"
 
 # F2 sibling (add-lancedb-vectordb-backend): lancedb is confined to the
 # vector store implementation — the only direct import sites are the
-# store itself and the filter translator.
+# store itself, the filter translator, and the native-FTS seam
+# (implement-native-sparse-backend-strategy, task 2.1).
 [[tool.importlinter.contracts]]
 name = "lancedb-confined-to-vectordb"
 type = "forbidden"
@@ -273,6 +274,7 @@ forbidden_modules = ["lancedb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.lancedb -> lancedb",
     "rag_mcp.core.vectordb.lance_filter -> lancedb",
+    "rag_mcp.core.vectordb.lance_fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 

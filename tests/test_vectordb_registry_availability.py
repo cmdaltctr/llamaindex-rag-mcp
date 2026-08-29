@@ -148,8 +148,11 @@ def test_broken_backend_preserves_cause(monkeypatch: pytest.MonkeyPatch, tmp_pat
 def test_registry_entries_declare_metadata() -> None:
     """Built-in entries declare import paths, requirements, extras, and probes.
 
-    Spec: vector-store-registry — availability SHALL be registry metadata;
-    the sparse capability probe is entry metadata (None for lancedb).
+    Spec: vector-store-registry — availability SHALL be registry
+    metadata.  Rewritten for task 3.2
+    (implement-native-sparse-backend-strategy): the sparse capability
+    probe is a real import string on lancedb (resolved lazily by the
+    composition root) and ``None`` on the quarantined chroma extra.
     """
     chroma = registry.describe("chroma")
     assert chroma["requires"]["chromadb"] == "chromadb"
@@ -157,12 +160,19 @@ def test_registry_entries_declare_metadata() -> None:
         chroma["requires"]["llama_index.vector_stores.chroma"] == "llama-index-vector-stores-chroma"
     )
     assert chroma["extra"] == "chroma"
-    assert chroma["native_sparse_probe"]
+    assert chroma["native_sparse_probe"] is None
 
     lancedb = registry.describe("lancedb")
     assert lancedb["extra"] is None
     assert lancedb["requires"]["lancedb"] == "lancedb"
-    assert lancedb["native_sparse_probe"] is None
+    probe_spec = lancedb["native_sparse_probe"]
+    assert isinstance(probe_spec, str) and ":" in probe_spec
+    # The declared probe resolves and answers on the locked runtime.
+    import importlib
+
+    module_path, attr = probe_spec.split(":")
+    probe = getattr(importlib.import_module(module_path), attr)
+    assert probe() is True
 
 
 def test_dispatch_has_no_store_name_branch() -> None:
@@ -204,23 +214,31 @@ def test_sparse_capability_follows_selected_store(
 ) -> None:
     """Sparse capability follows the SELECTED store, not the installed extras.
 
-    Spec: vector-store-registry, scenarios 'LanceDB selected while Chroma
-    extra is installed' and 'Chroma-only native mode is requested for
-    LanceDB'.
+    Spec: vector-store-registry, scenarios 'LanceDB selected while
+    Chroma extra is installed' and 'Chroma-only native mode is
+    requested for LanceDB'.  Rewritten for task 3.2
+    (implement-native-sparse-backend-strategy): lancedb now advertises
+    a real native-FTS probe, so selection resolves through it without
+    ever touching chromadb.
     """
-    # (a) lancedb + auto resolves bm25 even though chromadb is importable
-    # in this environment — selection, not installation, decides.
+    # (a) lancedb + auto resolves through the lancedb-owned probe even
+    # though chromadb is importable in this environment — selection,
+    # not installation, decides.
+    _scrub_chroma_from_sys_modules(monkeypatch)
     auto_settings = Settings(
         vector_store="lancedb",
         retrieval={"hybrid_sparse_backend": "auto"},
     )
-    assert resolve_sparse_backend(auto_settings) == "bm25"
+    assert resolve_sparse_backend(auto_settings) == "native"
+    assert _chroma_modules_loaded() == []
 
-    # (b) lancedb + native falls back to bm25 with a warning and never
-    # probes Chroma: scrub every chroma module, resolve, assert none
-    # reappeared.
+    # (b) lancedb + native with a failing probe falls back to bm25 with
+    # a warning and never loads chromadb.
     _scrub_chroma_from_sys_modules(monkeypatch)
     assert _chroma_modules_loaded() == []
+    import rag_mcp.core.vectordb.lance_fts as lance_fts
+
+    monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
     native_settings = Settings(
         vector_store="lancedb",
         retrieval={"hybrid_sparse_backend": "native"},

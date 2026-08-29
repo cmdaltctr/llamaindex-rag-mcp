@@ -21,9 +21,9 @@ and the identity guards live in :mod:`.lance_meta`.  Schema metadata
 is the durable key-value bag that survives reconnection and adapter
 writes (verified against lancedb 0.37.1 / pylance 10.0.0).
 
-This is one of the only modules that imports ``lancedb`` directly
-(the other is ``lance_filter.py``); all pipeline code goes through
-the ABC.
+This is one of the few modules that imports ``lancedb`` directly
+(alongside ``lance_filter.py`` and ``lance_fts.py``); all pipeline
+code goes through the ABC.
 """
 
 from __future__ import annotations
@@ -44,6 +44,7 @@ from llama_index.vector_stores.lancedb import (
 from .base import VectorStore
 from .identity import EmbeddingIdentity, embedding_identity_from_settings
 from .lance_filter import translate_where
+from .lance_fts import LanceFTSMixin
 from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
 from .lance_node_schema import evolve_for_nodes
 from .lance_paged import LancePagedReadMixin, strip_internal_metadata
@@ -55,7 +56,7 @@ from .validation import materialise_and_validate_node_embeddings, validate_embed
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
 
-class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore):
+class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMixin, VectorStore):
     """LanceDB-backed vector store (embedded, local-first).
 
     Wraps a lazily constructed ``lancedb.DBConnection``.  Owns a
@@ -230,7 +231,9 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         )
         self._check_or_stamp_identity(collection_name)
         self._widen_null_adapter_columns(collection_name)
-        self._evolve_for_nodes(collection_name, nodes)
+        # Grow the metadata struct to cover the batch's keys before the
+        # adapter write (old rows gain nulls for the new keys).
+        evolve_for_nodes(self, collection_name, nodes)
         connection = self._get_connection()
         with redirect_stdout(io.StringIO()):
             vector_store = _LlamaLanceVectorStore(
@@ -247,10 +250,6 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
         self._intents.discard(collection_name)
         self._flush_after_write(collection_name)
         self.bump_generation(collection_name)
-
-    def _evolve_for_nodes(self, collection_name: str, nodes: list[Any]) -> None:
-        """Grow the metadata struct to cover the batch's keys."""
-        evolve_for_nodes(self, collection_name, nodes)
 
     def upsert_precomputed(
         self,

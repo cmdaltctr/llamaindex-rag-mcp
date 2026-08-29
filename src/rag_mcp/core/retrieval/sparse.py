@@ -165,18 +165,6 @@ class _CachedBM25:
     rows: list[_ChunkRow]
 
 
-def _detect_native_sparse_capability() -> bool:
-    """Delegate to the vectordb module's capability probe.
-
-    Kept as a thin wrapper so existing imports from
-    ``config.resolve_sparse_backend`` continue to resolve without
-    touching ChromaDB directly in this module.
-    """
-    from ..vectordb.chroma import detect_native_sparse_capability
-
-    return detect_native_sparse_capability()
-
-
 class BM25SparseRetriever:
     """Generation-aware BM25 retriever for one collection."""
 

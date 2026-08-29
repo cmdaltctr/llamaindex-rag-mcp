@@ -182,7 +182,10 @@ register(
         "Supported default: lancedb. Install Chroma with "
         'uv sync --extra chroma (source checkout) or pip install "rag-mcp[chroma]" (packaged).'
     ),
-    native_sparse_probe=True,
+    # Native sparse is out of scope while the runtime is quarantined
+    # behind the chroma extra (ADR-049); a later Chroma adapter could
+    # register a real probe here without pipeline changes.
+    native_sparse_probe=None,
     summary="rag_mcp.core.vectordb.summary:chroma_storage_summary",
 )
 register(
@@ -190,7 +193,12 @@ register(
     "rag_mcp.core.vectordb.lancedb:build_vector_store_from_settings",
     requires={"lancedb": "lancedb"},
     extra=None,
-    native_sparse_probe=None,
+    # Real native-FTS capability probe (task 3.2,
+    # implement-native-sparse-backend-strategy): the composition root
+    # resolves this import string lazily and asks the installed runtime
+    # whether the pinned FTS surface is present — replacing the
+    # Chroma-specific detect_native_sparse_capability route.
+    native_sparse_probe="rag_mcp.core.vectordb.lance_fts:probe_native_fts",
     summary="rag_mcp.core.vectordb.summary:lancedb_storage_summary",
     # Cross-process concurrent writes are UNVERIFIED for both backends.
     # No backend may claim safety without a two-process, two-collection

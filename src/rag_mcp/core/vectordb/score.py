@@ -13,6 +13,16 @@ import math
 DENSE_SCORE_KIND = "dense_similarity_v1"
 """Higher-is-better bounded similarity derived monotonically from L2 distance."""
 
+NATIVE_SPARSE_SCORE_KIND = "native_fts_v1"
+"""Higher-is-better engine-native full-text sparse score.
+
+The canonical claim is deliberately narrow: scores rank matches within
+one query against one engine. Raw scales are not comparable across
+engines (LanceDB FTS vs any in-process BM25) and are not bounded —
+only rank order is consumed downstream (RRF), exactly as the hybrid
+design requires. Adapters pass the engine's native score through
+unchanged; no distance-style transform applies."""
+
 
 def require_l2_metric(metric: object, *, backend: str, setting: str) -> None:
     """Fail clearly when an adapter is configured for a non-L2 metric."""
