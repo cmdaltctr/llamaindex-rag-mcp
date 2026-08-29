@@ -141,8 +141,9 @@ lifecycle separately from the BM25 cache machinery.**
   (proposal, design decisions 1–5, feasibility-notes.md, tasks)
 - Locked-version FTS contract: `tests/test_lancedb_native_fts_contract.py`
 - Adapter seam: `src/rag_mcp/core/vectordb/lance_fts.py`
-- Registry + dispatch: `core/retrieval/sparse_registry.py`,
-  `core/retrieval/sparse_dispatch.py`, `core/retrieval/native_sparse.py`
+- Registry + dispatch: `src/rag_mcp/core/retrieval/sparse_registry.py`,
+  `src/rag_mcp/core/retrieval/sparse_dispatch.py`,
+  `src/rag_mcp/core/retrieval/native_sparse.py`
 - Composition resolution: `src/rag_mcp/capabilities.py`
   (`resolve_sparse_backend`, `validate_sparse_backend`)
 - Calibration evidence: `experiments/19-native-fts-vs-bm25-sparse-2026-08-29/`

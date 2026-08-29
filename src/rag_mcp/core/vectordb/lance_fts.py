@@ -132,6 +132,7 @@ class LanceFTSMixin:
 
     # Supplied by the concrete store.
     _open_table: Callable[[str], Any]
+    _guard_query_identity: Callable[[str], None]
 
     def query_native_sparse(
         self,
@@ -143,8 +144,11 @@ class LanceFTSMixin:
         """Return canonical higher-is-better native FTS result rows.
 
         Guard order mirrors :meth:`~LanceVectorStore.query_dense`: an
-        absent collection reads as empty; lifecycle maintenance (index
-        creation, refresh) happens only when the table exists.
+        absent collection reads as empty, the embedding-identity guard
+        runs before any lifecycle work (a store whose identity
+        conflicts with the collection must not query it OR mutate it
+        by creating/refreshing an FTS index), and lifecycle
+        maintenance happens only when the table exists.
 
         Args:
             collection_name: Collection (table) to query.
@@ -160,13 +164,15 @@ class LanceFTSMixin:
             fields (``id``, ``document``, ``metadata``).
 
         Raises:
-            Exception: On index-creation, refresh, or query failure —
-                the retrieval layer catches, warns, and falls back to
-                BM25 (spec: "Native fails safely at query time").
+            Exception: On identity conflict, index-creation, refresh,
+                or query failure — the retrieval layer catches, warns,
+                and falls back to BM25 (spec: "Native fails safely at
+                query time").
         """
         table = self._open_table(collection_name)
         if table is None:
             return []
+        self._guard_query_identity(collection_name)
         ensure_fts_index(table)
         stats = fts_index_stats(table)
         if stats is not None and stats[1] > 0:

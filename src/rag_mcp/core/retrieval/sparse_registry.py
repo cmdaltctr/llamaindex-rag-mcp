@@ -40,6 +40,13 @@ def register(name: str, import_path: str) -> None:
 def get(name: str) -> Callable[..., Any]:
     """Resolve and cache the backend class for *name*.
 
+    Args:
+        name: The concrete backend name (e.g. ``"bm25"``, ``"native"``).
+
+    Returns:
+        The registered backend class, imported on first use and
+        cached afterwards.
+
     Raises:
         KeyError: If *name* is not registered (lists available names).
         ImportError: If the strategy module cannot be imported.
@@ -61,7 +68,12 @@ def get(name: str) -> Callable[..., Any]:
 
 
 def available() -> list[str]:
-    """Return the sorted list of registered concrete backend names."""
+    """Return the sorted list of registered concrete backend names.
+
+    Returns:
+        Sorted names of every registered concrete backend (``auto``
+        is never included — it is an unregistered policy).
+    """
     return sorted(_registry)
 
 

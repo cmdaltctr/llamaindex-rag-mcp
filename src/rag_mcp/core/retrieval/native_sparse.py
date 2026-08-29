@@ -17,7 +17,10 @@ boundary (design decision 3), not inside the strategy.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..vectordb.base import VectorStore
 
 
 class NativeSparseRetriever:
@@ -65,7 +68,7 @@ class NativeSparseRetriever:
             for rank, row in enumerate(rows[:top_n], start=1)
         ]
 
-    def _get_store(self):
+    def _get_store(self) -> VectorStore:
         if self._store is not None:
             return self._store
         from ..vectordb import get_default_store

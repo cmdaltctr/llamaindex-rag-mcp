@@ -178,6 +178,7 @@ def run_cell(cell: str) -> None:
         },
     }
     out = EXP_DIR / "output/cells" / f"{cell}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(payload, indent=2))
     tmp.replace(out)

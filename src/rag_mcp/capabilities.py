@@ -134,6 +134,15 @@ def validate_sparse_backend(settings: Settings) -> None:
     accepted policy name; the failure message lists it alongside the
     registered concrete names.  Resolving the registered callable
     also fails fast on a bad import string.
+
+    Args:
+        settings: Resolved settings carrying the configured
+            ``retrieval.hybrid_sparse_backend`` name.
+
+    Raises:
+        ValueError: When the configured name is neither ``auto`` nor
+            registered in the concrete sparse-backend registry (the
+            error lists both).
     """
     from .core.retrieval import sparse_registry
 

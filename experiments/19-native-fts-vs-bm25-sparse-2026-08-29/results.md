@@ -26,13 +26,13 @@ Per category (sparse-only Recall@10):
 | Recall@10 | 0.950 | 0.950 |
 | MRR@10 | 0.950 | 0.950 |
 
-## Latency (sparse query, seconds)
+## Latency (sparse query, milliseconds)
 
 | Phase | BM25 | Native |
 | --- | --- | --- |
-| Cold first query | 0.3223 | 0.0297 |
-| Warm p50 | 0.0 | 0.0057 |
-| Warm p95 | 0.0001 | 0.0178 |
+| Cold first query | 322.343 ms | 29.654 ms |
+| Warm p50 | 0.041 ms | 5.689 ms |
+| Warm p95 | 0.067 ms | 17.78 ms |
 
 Native/BM25 warm p50 ratio: **138.7×**
 

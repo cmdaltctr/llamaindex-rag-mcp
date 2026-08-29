@@ -76,8 +76,8 @@ Ground truth: Experiment 9's `ground-truth.json` (20 queries:
   warm p50. Exceeding it records a FAIL against promotion but does
   not fail the change (the default stays `bm25` regardless).
 - **G4 (memory budget):** native cell peak RSS ≤ BM25 cell peak RSS
-  (BM25 retains the tokenised corpus in-process; native's index is
-  on-disk). A small overhead is tolerated: ≤ +10%.
+  × 1.10 (BM25 retains the tokenised corpus in-process; native's index
+  is on-disk — a ≤10% overhead is the tolerated ceiling).
 
 ## Promotion rule (pre-registered)
 

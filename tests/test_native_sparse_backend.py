@@ -497,6 +497,7 @@ class TestHybridNativePipeline:
                 rerank=False,
                 hybrid=True,
                 store=store,
+                collection_name="docs",
                 effective_settings=_native_settings(effective_settings, backend="bm25"),
             )
         assert not [r for r in caplog.records if "mixed full-text coverage" in r.message]
@@ -676,3 +677,35 @@ class TestNativeRetrieverEdges:
 
         retriever = NativeSparseRetriever("documents")
         assert retriever._get_store() is get_default_store()
+
+    def test_identity_conflict_rejects_before_fts_mutation(self, tmp_path) -> None:
+        """A conflicting EmbeddingIdentity cannot query OR index the collection.
+
+        Mirrors the dense-path guard order: the identity check runs
+        after the absent-table check and before any lifecycle work, so
+        a mismatched store cannot create an FTS index on a collection
+        it does not own.
+        """
+        from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+        from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+
+        uri = str(tmp_path / "identity-guard")
+        writer = LanceVectorStore(
+            uri=uri, embedding_identity=EmbeddingIdentity(provider="p1", model="m1")
+        )
+        writer.upsert_precomputed(
+            "docs",
+            ["a"],
+            ["zephyr identity probe"],
+            [{"category": "science"}],
+            [[0.5, 0.5, 0.5, 0.5]],
+            embedding_identity=EmbeddingIdentity(provider="p1", model="m1"),
+        )
+
+        intruder = LanceVectorStore(
+            uri=uri, embedding_identity=EmbeddingIdentity(provider="p2", model="m2")
+        )
+        with pytest.raises(ValueError, match="(?i)identity|mismatch|embedding"):
+            intruder.query_native_sparse("docs", "zephyr", 5)
+        # No FTS index was created by the rejected query.
+        assert intruder.native_sparse_coverage("docs") is None
