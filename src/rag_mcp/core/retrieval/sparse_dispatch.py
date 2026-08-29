@@ -29,6 +29,7 @@ Design decisions pinned here:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from ..vectordb.base import VectorStore
 
@@ -110,10 +111,12 @@ def _emit_mixed_coverage_warning(collection_name: str, store: VectorStore) -> No
     """
     if collection_name in _warned_collections:
         return
-    coverage_fn = getattr(store, "native_sparse_coverage", None)
-    if callable(coverage_fn):
+    coverage_fn: Callable[[str], dict | None] | None = getattr(
+        store, "native_sparse_coverage", None
+    )
+    if coverage_fn is not None:
         try:
-            stats: dict | None = coverage_fn(collection_name)
+            stats = coverage_fn(collection_name)
         except Exception:
             return
         if stats is not None and 0 < stats["indexed"] < stats["total"]:

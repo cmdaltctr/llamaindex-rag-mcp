@@ -94,3 +94,49 @@ If the reranker model fails to load (no internet for first download, corrupt cac
 - `rerank_backend` — the backend that performed the re-scoring (`"onnx"` or `"torch"`), which may differ from the settings value when the torch extra is missing and the helper fell back to ONNX
 
 So a broken reranker is distinguishable from a policy-driven skip without grepping logs, and the active backend is observable alongside it (ADR-029 deferred item 2).
+
+## Sparse retrieval backends (hybrid search)
+
+Hybrid search fuses two rankings: dense embedding similarity and a sparse keyword ranking. The sparse stage runs exactly one registered backend, chosen by `RETRIEVAL__HYBRID_SPARSE_BACKEND`:
+
+| Backend | What it runs | Notes |
+|---------|--------------|-------|
+| `bm25` (default) | In-process BM25, cached per store and collection, invalidated on every mutation | Base install, backend-agnostic |
+| `native` | LanceDB native full-text search over the stored `text` column | LanceDB only |
+
+The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`rag_mcp.core.vectordb.lance_fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
+
+Scores are not comparable across backends. Native rows carry `score_kind` `native_fts_v1`, the engine's raw higher-is-better score. Only rank order feeds RRF, so the scale difference never affects fusion.
+
+### Why the default stays `bm25`
+
+Experiment 19 (`experiments/19-native-fts-vs-bm25-sparse-2026-08-29/`) is the standing calibration evidence:
+
+| Metric | BM25 | Native |
+|--------|------|--------|
+| Sparse Recall@10 (warm) | 0.850 | 0.850 |
+| Ordering mismatches | 0 | 0 |
+| Peak RSS | baseline | −7.4% |
+| Warm p50 latency | baseline | 138.7× slower |
+| Cold first query | baseline | 10.8× faster |
+
+At the 53-chunk corpus the experiment measured, native warm latency is far above BM25's for the same retrieval quality. The pre-registered decision keeps `bm25` as the default. Revisit only with a larger, more representative corpus or changed pass gates.
+
+### Fallback and diagnostics
+
+Selecting `native` on a store without the capability logs a WARNING at composition and falls back to `bm25`. At query time, a native failure (index creation, refresh, or query) emits a one-shot WARNING per collection and serves BM25 results through the same contract. With `include_diagnostics=True`, each result carries `sparse_backend`: the backend that actually ran. Fallback results are never labelled `native`.
+
+### FTS lifecycle (LanceDB)
+
+The native path owns one full-text-search index per collection. The contract lives in `core/vectordb/lance_fts.py` and is pinned by `tests/test_lancedb_native_fts_contract.py`:
+
+- **Creation** is additive and triggered on the first native query, indexing existing rows synchronously. A collection without an index keeps working through every other operation.
+- **Staleness** is a durable property: writes by any process show as `num_unindexed_rows > 0` in `list_indices()` statistics. The process-local generation counter is not used for this; it invalidates the BM25 cache only.
+- **Refresh** (`table.optimize()`) runs before serving a native query when the statistics show lag. Engine queries are fresh-by-construction regardless: unindexed rows are scanned and deletions are tombstoned.
+- **Mixed coverage** (`0 < indexed < total`) emits a one-shot WARNING naming the collection with a remediation hint. Coverage is reported separately from freshness via `native_sparse_coverage()`.
+
+The BM25 path never emits these warnings; it indexes every chunk it sees.
+
+### Migration
+
+Existing collections need no re-ingestion: the first native query creates the FTS index additively and indexes existing rows synchronously. FTS indexes add per-collection disk footprint. To roll back, set `RETRIEVAL__HYBRID_SPARSE_BACKEND=bm25`; stored data and any FTS indexes are left untouched. An unused index is inert.

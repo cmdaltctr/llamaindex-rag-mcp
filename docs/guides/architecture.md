@@ -243,6 +243,9 @@ Supporting modules keep each store under the 500-line ceiling:
   ChromaDB missing-field semantics across backends
 - `core/vectordb/lance_paged.py` — the LanceDB paged-read mixin (scanner
   pages plus `strip_internal_metadata`)
+- `core/vectordb/lance_fts.py` — the native full-text-search seam: additive
+  FTS index lifecycle, native sparse queries, coverage diagnostics, and the
+  capability probe
 - `core/vectordb/validation.py` — the fail-closed embedding write contract
   (`validate_embedding_batch` and
   `materialise_and_validate_node_embeddings`), shared by every backend
@@ -323,7 +326,8 @@ transports/mcp.py        works out which profile this collection uses
 core/retrieval/pipeline  resolves settings ONCE here, at the boundary.
       │                  Everything below gets them as an argument.
       ├─→ dense.py       embedding search
-      ├─→ sparse.py      BM25 keyword search (if hybrid is on)
+      ├─→ sparse_dispatch.py sparse backend: bm25 (sparse.py) or
+      │                      native (native_sparse.py); if hybrid is on
       ├─→ fusion.py      merge the two rankings
       ├─→ policy.py      decide whether to rerank
       └─→ reranker.py    re-score with the cross-encoder
@@ -437,7 +441,7 @@ The same rule applied to every name-dispatched family, inside and outside
 | Metadata extraction | `METADATA__EXTRACTION_MODE` and provider backends | `core/metadata/registry.py` | Already a registry | None |
 | Embedding providers | `EMBED_PROVIDER` | `core/providers/embeddings/registry.py` | Already a registry | None |
 | LLM providers | `LOCAL_BACKEND` / `CLOUD_BACKEND` | `core/providers/llm/registry.py` | Already a registry | None |
-| Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/registry.py` (`bm25`) | `bm25` registered; `native` is currently a warning-to-BM25 placeholder | `openspec/changes/implement-native-sparse-backend-strategy/` |
+| Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/sparse_registry.py` (`bm25`, `native`) | Both concrete backends registered; `auto` stays an unregistered policy resolved at the composition boundary | None |
 | Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
 | Vector store | `VECTOR_STORE` | `core/vectordb/registry.py` | `chroma` and `lancedb` registered | None |
 | Document backends | `DOCUMENT_BACKEND` | `core/ingestion/backends/registry.py` | Registered by `register-document-backend-strategies`: `local` native, `azure` optional via `integrations/azure.py`; retry and fallback owned by the orchestrator | None |
@@ -472,6 +476,10 @@ Live registry contents, kept in step with the code by contract tests:
 `bm25` `dense` `fusion` `reranker_onnx` `reranker_torch`
 <!-- /registry-names:retrieval -->
 
+<!-- registry-names:sparse-backend -->
+`bm25` `native`
+<!-- /registry-names:sparse-backend -->
+
 <!-- registry-names:vectordb -->
 `chroma` `lancedb`
 <!-- /registry-names:vectordb -->
@@ -492,10 +500,10 @@ Live registry contents, kept in step with the code by contract tests:
   document-backend registry: accepted `DOCUMENT_BACKEND` names are registry-
   owned, validated at startup at the composition boundary, and the orchestrator
   owns the retry budget plus exactly one local fallback.
-- Native sparse retrieval is deferred to
-  `openspec/changes/implement-native-sparse-backend-strategy/` because `native`
-  is currently a warning-to-BM25 placeholder and stored sparse coverage
-  matters.
+- Native sparse retrieval is implemented: `bm25` and `native` are registered
+  in `core/retrieval/sparse_registry.py`, the LanceDB FTS lifecycle lives in
+  `core/vectordb/lance_fts.py`, and `auto` resolves at the composition
+  boundary through the store capability probe.
 - Every other current family already uses a registry or a documented policy
   alias or sentinel. No migration was required for this change.
 

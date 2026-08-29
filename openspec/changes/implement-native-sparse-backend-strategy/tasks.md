@@ -42,6 +42,6 @@
 
 ## 5. Validation and Documentation
 
-- [ ] 5.1 Document registered sparse backends, `auto` policy, fallback, the FTS lifecycle contract, and migration advice.
-- [ ] 5.2 Run strict OpenSpec validation, targeted retrieval/store tests, Ruff, Pyright, and import-linter.
+- [x] 5.1 Document registered sparse backends, `auto` policy, fallback, the FTS lifecycle contract, and migration advice.
+- [x] 5.2 Run strict OpenSpec validation, targeted retrieval/store tests, Ruff, Pyright, and import-linter.
 - [ ] 5.3 Ask for approval, then run the full fast suite with branch coverage.

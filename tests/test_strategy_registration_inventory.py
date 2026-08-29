@@ -35,6 +35,7 @@ from rag_mcp.core.metadata import registry as metadata_registry
 from rag_mcp.core.providers.embeddings import registry as embed_registry
 from rag_mcp.core.providers.llm import registry as llm_registry
 from rag_mcp.core.retrieval import registry as retrieval_registry
+from rag_mcp.core.retrieval import sparse_registry
 from rag_mcp.core.vectordb import registry as vectordb_registry
 from rag_mcp.integrations.pdf import registry as pdf_registry
 
@@ -54,6 +55,10 @@ INVENTORY_COLUMNS = (
 )
 
 #: Marker kind → live registry module whose ``available()`` is audited.
+#: ``sparse-backend`` joined with ``implement-native-sparse-backend-strategy``
+#: (task 3.1): the concrete sparse backends are registry-owned and audited
+#: like every other strategy family; ``auto`` is deliberately unregistered
+#: (a composition-root policy, like PDF's ``auto``).
 REGISTRY_KINDS: dict[str, ModuleType] = {
     "community": community_registry,
     "pdf": pdf_registry,
@@ -62,6 +67,7 @@ REGISTRY_KINDS: dict[str, ModuleType] = {
     "embeddings": embed_registry,
     "llm": llm_registry,
     "retrieval": retrieval_registry,
+    "sparse-backend": sparse_registry,
     "vectordb": vectordb_registry,
     "document-backend": docbackend_registry,
 }
@@ -69,7 +75,10 @@ REGISTRY_KINDS: dict[str, ModuleType] = {
 #: Behaviour-changing migrations the audit defers to follow-up changes.
 #: ``register-document-backend-strategies`` was delivered and left this
 #: list: the document-backend registry is now live and audited above.
-STRICT_VALID_FOLLOW_UPS = ("implement-native-sparse-backend-strategy",)
+#: ``implement-native-sparse-backend-strategy`` was likewise delivered:
+#: the sparse-backend registry is live and audited above, so the list
+#: is now empty.
+STRICT_VALID_FOLLOW_UPS: tuple[str, ...] = ()
 
 # Audited contract constants from the architecture.md strategy-family
 # audit. The PDF set is the concrete ``PDF_READER`` values Settings
@@ -303,12 +312,16 @@ def test_integration_inventory_rows_have_six_non_empty_cells() -> None:
 
 
 def test_audit_names_strict_valid_follow_up_changes() -> None:
-    """The audit SHALL name both deferred follow-ups; both dirs exist.
+    """The audit SHALL name its deferred follow-ups; their dirs exist.
 
-    The audit defers document backends and native sparse retrieval to
-    strict-valid follow-up changes rather than expanding this change
-    silently (spec scenario "Audit finds a behaviour-changing
-    migration").
+    The audit defers behaviour-changing migrations to strict-valid
+    follow-up changes rather than expanding silently (spec scenario
+    "Audit finds a behaviour-changing migration"). Both historical
+    deferrals — ``register-document-backend-strategies`` and
+    ``implement-native-sparse-backend-strategy`` — have been delivered:
+    their registries are live and audited above, so the deferral list
+    is empty. A future deferral adds its change name here AND names it
+    in the audit section; this test then enforces both.
     """
     section = _audit_section()
     for name in STRICT_VALID_FOLLOW_UPS:
