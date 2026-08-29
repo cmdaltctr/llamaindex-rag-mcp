@@ -21,7 +21,7 @@
 ## 4. Validation
 
 - [x] 4.1 Run `openspec validate add-per-collection-persist-dirs --strict`, targeted store tests, Ruff, and `uv run lint-imports`.
-- [ ] 4.2 Ask for approval, then run the full fast suite with branch coverage at the repository floors.
+- [x] 4.2 Ask for approval, then run the full fast suite with branch coverage at the repository floors.
 
 ## Deferred (not tasks of this change)
 
