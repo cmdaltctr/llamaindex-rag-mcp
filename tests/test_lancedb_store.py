@@ -765,6 +765,21 @@ class TestCollectionNameSafety:
 
     _BAD_NAMES = ["", "..", "../escape", "a/b", "/abs", "."]
 
+    def test_invalid_delete_rejects_before_store_listing(self, tmp_path: Path) -> None:
+        """An invalid delete is refused before any table listing touches disk.
+
+        Regression pin for the review finding that ``delete_collection``
+        listed tables before validating, surfacing the generic
+        missing-collection error instead of boundary rejection.
+        """
+        from unittest.mock import patch
+
+        store = LanceVectorStore(uri=str(tmp_path / "boundary_lance"))
+        with patch.object(store, "_list_table_names") as mock_list:
+            with pytest.raises(ValueError, match="Invalid LanceDB collection name"):
+                store.delete_collection("../escape")
+        mock_list.assert_not_called()
+
     @staticmethod
     def _seed(tmp_path: Path) -> LanceVectorStore:
         """Build a store with one valid collection so the URI exists."""

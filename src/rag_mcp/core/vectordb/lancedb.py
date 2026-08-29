@@ -167,20 +167,20 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, VectorStore
     def delete_collection(self, name: str) -> None:
         """Drop the table and any recorded intent for *name*.
 
-        The generation counter advances on every successful drop —
-        including intent-only deletions — so a cached BM25 index built
-        over the collection is invalidated even when the store is
-        called directly, without the ingestion writer's bump
-        (the ``VectorStore`` contract's collection-drop rule).
+        The generation counter advances on every successful drop,
+        including intent-only deletions, so a cached BM25 index is
+        invalidated even when the store is called directly, without
+        the ingestion writer's bump (the ABC's collection-drop rule).
 
         Raises:
-            ValueError: If the collection does not exist.
+            ValueError: If the name is invalid or the collection is absent.
         """
+        name = validate_table_name(name)
         was_intent = name in self._intents
         self._intents.discard(name)
         self._pending_metadata.pop(name, None)
         if name in self._list_table_names():
-            self._get_connection().drop_table(validate_table_name(name))
+            self._get_connection().drop_table(name)
             self.bump_generation(name)
             return
         if not was_intent:
