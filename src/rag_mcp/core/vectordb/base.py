@@ -89,6 +89,34 @@ class VectorStore(ABC):
     ) -> list[dict]:
         """Return canonical higher-is-better dense result rows."""
 
+    def query_native_sparse(
+        self,
+        collection_name: str,
+        query: str,
+        n_results: int,
+        where: dict | None = None,
+    ) -> list[dict]:
+        """Return canonical higher-is-better native sparse (FTS) result rows.
+
+        The capability method for store-native full-text sparse queries
+        (design decision 1, ``implement-native-sparse-backend-strategy``).
+        Result rows mirror :meth:`query_dense`'s canonical shape:
+        ``id``, ``document``, ``metadata``, ``score`` and ``score_kind``,
+        with ``score`` being the engine's native higher-is-better
+        sparse score (``native_fts_v1``).
+
+        Stores without a native sparse engine fail honestly through
+        this explicit unsupported response instead of returning an
+        empty ranking that would read upstream as "no matches" — the
+        retrieval layer treats this exception as capability absence
+        and falls back to BM25 with a visible warning.
+
+        Raises:
+            NotImplementedError: When the store cannot issue native
+                sparse queries.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support native sparse queries")
+
     # Reads.
 
     @abstractmethod

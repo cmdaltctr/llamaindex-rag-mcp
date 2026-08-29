@@ -1,0 +1,1356 @@
+{
+  "cell": "native",
+  "chunk_count": 53,
+  "top_k": 10,
+  "sparse": {
+    "cold": {
+      "rows": [
+        {
+          "query": "Where was the Colosseum built?",
+          "category": "rare-term",
+          "expected_source": "sample.md",
+          "doc_ids": [
+            "71e48a01c8e530a5927360bc632e1f85135006c451e2def8e05da4e8b3aa3526",
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md"
+          ]
+        },
+        {
+          "query": "What is the resolution for the MCP-1138 build error?",
+          "category": "rare-term",
+          "expected_source": "mcp-1138-error-codes.md",
+          "doc_ids": [
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "557a8a620f2d54d7a9a3043c88837b580b04730c98c5b764ca1d55305ed8734c",
+            "9ea5924d2491c32ef1ae5ab6ae0e9e8a84897ecc51162501841ed22a5fcb4a42",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md"
+          ]
+        },
+        {
+          "query": "How does numpy.fft.rfft2 differ from fft2?",
+          "category": "rare-term",
+          "expected_source": "numpy-fft-readme.md",
+          "doc_ids": [
+            "e6c9e314cfe43a269c9c9ae3de664836bfb6e099bb9c24b93938181ba2bba987",
+            "a258431157bd57650996d111e9681cc62a917d9df034fd94b902383a294542aa",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "b944ddb345109faa85955016fe9ddce7e67d61fce1d12123321ecf0528303e5c",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "7f97258ce03f16639384b255b20679c991b0845d0dbd2cd87faeebecc1340552",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md"
+          ]
+        },
+        {
+          "query": "What is the BRCA1 protein's role in homologous recombination repair?",
+          "category": "rare-term",
+          "expected_source": "brca1-research-note.md",
+          "doc_ids": [
+            "ef6ae3039965013080e100a193febe1bc8de690b32c76455445325c66d231eff",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "4e54395012a91b8f11f7b1ba33021421a74d472a4fbbc5d273c723c8c310b834",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md"
+          ]
+        },
+        {
+          "query": "What does 42 U.S.C. \u00a7 1983 allow plaintiffs to sue state actors for?",
+          "category": "rare-term",
+          "expected_source": "42-usc-1983-summary.md",
+          "doc_ids": [
+            "3e1a19e937bd590e65597266683fc7d9242153fb7b70c6847c705edceb05251a",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c5314b1c43e047b25ba627761f13cfdb9e1cae7c2e6661d85f6760321dec5b1d",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "7ea0bad52be77788a77da03747ee2fad55dc7e8adb4cd681d44308120cc80c24",
+            "a7169b41c068f59f92d59e7ede9fbca05bc1d131e1bf36dbf27651a4c7c9f033",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md"
+          ]
+        },
+        {
+          "query": "What does the ECONNREFUSED error code mean in Node.js?",
+          "category": "rare-term",
+          "expected_source": "econnrefused-troubleshooting.md",
+          "doc_ids": [
+            "9ea5924d2491c32ef1ae5ab6ae0e9e8a84897ecc51162501841ed22a5fcb4a42",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "f0b360c3833b75b1ceb4c71be78602ed66c6fee27bcd222d2711da8f275c6d9f"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+          ]
+        },
+        {
+          "query": "What is the I\u00b2C address of the SCD41 element on the XK-2034b sensor module?",
+          "category": "rare-term",
+          "expected_source": "xk-2034b-product-spec.md",
+          "doc_ids": [
+            "557a8a620f2d54d7a9a3043c88837b580b04730c98c5b764ca1d55305ed8734c",
+            "483be6772d1ef743fd04e55524e6e5c954c04bfb31f498402c2c0e3eb4b87d84",
+            "2c92e7826e94c9ae9f5e8f3e515e5aa33fece13f953e222b5187bde0c990a900",
+            "4720a07b477220eafc841b73dd4e61e25fbd0162c1ff50780903191577654901",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "e488b1b745f987d520894bef5228e8442682ee4bd0083f0b6421658312ebba36",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "Under EU Reg. 2016/679, what is the maximum administrative fine for the most serious infringements?",
+          "category": "rare-term",
+          "expected_source": "eu-2016-679-gdpr-summary.md",
+          "doc_ids": [
+            "418c7af91b53c34a419f0b5e085efca3109db7248ce2a23fb615f253aceddf05",
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "7fb14abfed20c73498b4abadd0168d69b3f014d3ce923d8cb458b4f17108f664",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "9e7b919110466bfb760e3de871fd2cc5d4f1c9497ae088263a063b6b272f2887",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md"
+          ]
+        },
+        {
+          "query": "What is the designated remedy for ZZQJ-9097?",
+          "category": "rare-term",
+          "expected_source": "zzqj-9097-runbook.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "What innovation lets GPT-class systems handle long-range word ties efficiently?",
+          "category": "semantic",
+          "expected_source": "transformers.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md"
+          ]
+        },
+        {
+          "query": "What scientific framework explains earthquakes, mountain building, and the slow movement of continents?",
+          "category": "semantic",
+          "expected_source": "plate-tectonics.md",
+          "doc_ids": [
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "How do statisticians measure the total economic output of a country?",
+          "category": "semantic",
+          "expected_source": "gdp-economics.md",
+          "doc_ids": [
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "418c7af91b53c34a419f0b5e085efca3109db7248ce2a23fb615f253aceddf05",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "e6c9e314cfe43a269c9c9ae3de664836bfb6e099bb9c24b93938181ba2bba987",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "a258431157bd57650996d111e9681cc62a917d9df034fd94b902383a294542aa",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "What kind of car uses a rechargeable cell stack instead of liquid fuel?",
+          "category": "semantic",
+          "expected_source": "electric-vehicles.md",
+          "doc_ids": [
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+          ]
+        },
+        {
+          "query": "How do green plants manufacture sugar from atmospheric gases using sunlight?",
+          "category": "semantic",
+          "expected_source": "photosynthesis.md",
+          "doc_ids": [
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "Which city is celebrated for a wrought-iron landmark?",
+          "category": "semantic",
+          "expected_source": "sample.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "Tell me about Python data science libraries",
+          "category": "mixed",
+          "expected_source": "python.txt",
+          "doc_ids": [
+            "7f97258ce03f16639384b255b20679c991b0845d0dbd2cd87faeebecc1340552",
+            "f0b360c3833b75b1ceb4c71be78602ed66c6fee27bcd222d2711da8f275c6d9f",
+            "7fb14abfed20c73498b4abadd0168d69b3f014d3ce923d8cb458b4f17108f664",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "b944ddb345109faa85955016fe9ddce7e67d61fce1d12123321ecf0528303e5c",
+            "9e7b919110466bfb760e3de871fd2cc5d4f1c9497ae088263a063b6b272f2887",
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "e488b1b745f987d520894bef5228e8442682ee4bd0083f0b6421658312ebba36",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md"
+          ]
+        },
+        {
+          "query": "What is JavaScript used for on the server?",
+          "category": "mixed",
+          "expected_source": "javascript.txt",
+          "doc_ids": [
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "How does qualified immunity affect Section 1983 lawsuits against police officers?",
+          "category": "mixed",
+          "expected_source": "42-usc-1983-summary.md",
+          "doc_ids": [
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "7ea0bad52be77788a77da03747ee2fad55dc7e8adb4cd681d44308120cc80c24",
+            "a7169b41c068f59f92d59e7ede9fbca05bc1d131e1bf36dbf27651a4c7c9f033",
+            "3e1a19e937bd590e65597266683fc7d9242153fb7b70c6847c705edceb05251a",
+            "c5314b1c43e047b25ba627761f13cfdb9e1cae7c2e6661d85f6760321dec5b1d",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "What is the relationship between BRCA1 deficiency and PARP inhibitors?",
+          "category": "mixed",
+          "expected_source": "brca1-research-note.md",
+          "doc_ids": [
+            "4e54395012a91b8f11f7b1ba33021421a74d472a4fbbc5d273c723c8c310b834",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "ef6ae3039965013080e100a193febe1bc8de690b32c76455445325c66d231eff",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "What troubleshooting steps fix a partial git submodule checkout?",
+          "category": "mixed",
+          "expected_source": "mcp-1138-error-codes.md",
+          "doc_ids": [
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        }
+      ],
+      "timings_s": [
+        0.029654167010448873,
+        0.011675957939587533,
+        0.012491667061112821,
+        0.010491790948435664,
+        0.010618999949656427,
+        0.010637792060151696,
+        0.01152654190082103,
+        0.00916483299806714,
+        0.007673250045627356,
+        0.010552834020927548,
+        0.013195207924582064,
+        0.009704708005301654,
+        0.012017040979117155,
+        0.010449999943375587,
+        0.005692417034879327,
+        0.009994167019613087,
+        0.01099362492095679,
+        0.012957667000591755,
+        0.009037624928168952,
+        0.008434416959062219
+      ]
+    },
+    "warm": {
+      "rows": [
+        {
+          "query": "Where was the Colosseum built?",
+          "category": "rare-term",
+          "expected_source": "sample.md",
+          "doc_ids": [
+            "71e48a01c8e530a5927360bc632e1f85135006c451e2def8e05da4e8b3aa3526",
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md"
+          ]
+        },
+        {
+          "query": "What is the resolution for the MCP-1138 build error?",
+          "category": "rare-term",
+          "expected_source": "mcp-1138-error-codes.md",
+          "doc_ids": [
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "557a8a620f2d54d7a9a3043c88837b580b04730c98c5b764ca1d55305ed8734c",
+            "9ea5924d2491c32ef1ae5ab6ae0e9e8a84897ecc51162501841ed22a5fcb4a42",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md"
+          ]
+        },
+        {
+          "query": "How does numpy.fft.rfft2 differ from fft2?",
+          "category": "rare-term",
+          "expected_source": "numpy-fft-readme.md",
+          "doc_ids": [
+            "e6c9e314cfe43a269c9c9ae3de664836bfb6e099bb9c24b93938181ba2bba987",
+            "a258431157bd57650996d111e9681cc62a917d9df034fd94b902383a294542aa",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "b944ddb345109faa85955016fe9ddce7e67d61fce1d12123321ecf0528303e5c",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "7f97258ce03f16639384b255b20679c991b0845d0dbd2cd87faeebecc1340552",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md"
+          ]
+        },
+        {
+          "query": "What is the BRCA1 protein's role in homologous recombination repair?",
+          "category": "rare-term",
+          "expected_source": "brca1-research-note.md",
+          "doc_ids": [
+            "ef6ae3039965013080e100a193febe1bc8de690b32c76455445325c66d231eff",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "4e54395012a91b8f11f7b1ba33021421a74d472a4fbbc5d273c723c8c310b834",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md"
+          ]
+        },
+        {
+          "query": "What does 42 U.S.C. \u00a7 1983 allow plaintiffs to sue state actors for?",
+          "category": "rare-term",
+          "expected_source": "42-usc-1983-summary.md",
+          "doc_ids": [
+            "3e1a19e937bd590e65597266683fc7d9242153fb7b70c6847c705edceb05251a",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c5314b1c43e047b25ba627761f13cfdb9e1cae7c2e6661d85f6760321dec5b1d",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "7ea0bad52be77788a77da03747ee2fad55dc7e8adb4cd681d44308120cc80c24",
+            "a7169b41c068f59f92d59e7ede9fbca05bc1d131e1bf36dbf27651a4c7c9f033",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md"
+          ]
+        },
+        {
+          "query": "What does the ECONNREFUSED error code mean in Node.js?",
+          "category": "rare-term",
+          "expected_source": "econnrefused-troubleshooting.md",
+          "doc_ids": [
+            "9ea5924d2491c32ef1ae5ab6ae0e9e8a84897ecc51162501841ed22a5fcb4a42",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "f0b360c3833b75b1ceb4c71be78602ed66c6fee27bcd222d2711da8f275c6d9f"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+          ]
+        },
+        {
+          "query": "What is the I\u00b2C address of the SCD41 element on the XK-2034b sensor module?",
+          "category": "rare-term",
+          "expected_source": "xk-2034b-product-spec.md",
+          "doc_ids": [
+            "557a8a620f2d54d7a9a3043c88837b580b04730c98c5b764ca1d55305ed8734c",
+            "483be6772d1ef743fd04e55524e6e5c954c04bfb31f498402c2c0e3eb4b87d84",
+            "2c92e7826e94c9ae9f5e8f3e515e5aa33fece13f953e222b5187bde0c990a900",
+            "4720a07b477220eafc841b73dd4e61e25fbd0162c1ff50780903191577654901",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "e488b1b745f987d520894bef5228e8442682ee4bd0083f0b6421658312ebba36",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "Under EU Reg. 2016/679, what is the maximum administrative fine for the most serious infringements?",
+          "category": "rare-term",
+          "expected_source": "eu-2016-679-gdpr-summary.md",
+          "doc_ids": [
+            "418c7af91b53c34a419f0b5e085efca3109db7248ce2a23fb615f253aceddf05",
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "7fb14abfed20c73498b4abadd0168d69b3f014d3ce923d8cb458b4f17108f664",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "9e7b919110466bfb760e3de871fd2cc5d4f1c9497ae088263a063b6b272f2887",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md"
+          ]
+        },
+        {
+          "query": "What is the designated remedy for ZZQJ-9097?",
+          "category": "rare-term",
+          "expected_source": "zzqj-9097-runbook.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "What innovation lets GPT-class systems handle long-range word ties efficiently?",
+          "category": "semantic",
+          "expected_source": "transformers.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "296db78c38368f5ff4c1b117524466f64d240772f391f95ed0f2965c4f761ccc",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md"
+          ]
+        },
+        {
+          "query": "What scientific framework explains earthquakes, mountain building, and the slow movement of continents?",
+          "category": "semantic",
+          "expected_source": "plate-tectonics.md",
+          "doc_ids": [
+            "550097ed2094fc7c982bc51ef0989a771963d555e4f7faec86019c01cd407de9",
+            "2b84baa5d1011f10279432c3602ad0ad1e41603426d9ec89c933dced36bca50d",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "How do statisticians measure the total economic output of a country?",
+          "category": "semantic",
+          "expected_source": "gdp-economics.md",
+          "doc_ids": [
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "418c7af91b53c34a419f0b5e085efca3109db7248ce2a23fb615f253aceddf05",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "e6c9e314cfe43a269c9c9ae3de664836bfb6e099bb9c24b93938181ba2bba987",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "a258431157bd57650996d111e9681cc62a917d9df034fd94b902383a294542aa",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "What kind of car uses a rechargeable cell stack instead of liquid fuel?",
+          "category": "semantic",
+          "expected_source": "electric-vehicles.md",
+          "doc_ids": [
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b",
+            "aaa420a018b703277401d9f7da1a30f062e7702dc5c5a64d5d4a53634bcaf83d",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+          ]
+        },
+        {
+          "query": "How do green plants manufacture sugar from atmospheric gases using sunlight?",
+          "category": "semantic",
+          "expected_source": "photosynthesis.md",
+          "doc_ids": [
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "Which city is celebrated for a wrought-iron landmark?",
+          "category": "semantic",
+          "expected_source": "sample.md",
+          "doc_ids": [
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "Tell me about Python data science libraries",
+          "category": "mixed",
+          "expected_source": "python.txt",
+          "doc_ids": [
+            "7f97258ce03f16639384b255b20679c991b0845d0dbd2cd87faeebecc1340552",
+            "f0b360c3833b75b1ceb4c71be78602ed66c6fee27bcd222d2711da8f275c6d9f",
+            "7fb14abfed20c73498b4abadd0168d69b3f014d3ce923d8cb458b4f17108f664",
+            "8ed643fb4a969994549ba21adb7132daf3fbbf942d94bcd209b56ee3c2f55541",
+            "b944ddb345109faa85955016fe9ddce7e67d61fce1d12123321ecf0528303e5c",
+            "9e7b919110466bfb760e3de871fd2cc5d4f1c9497ae088263a063b6b272f2887",
+            "e6df5b795b4e1144d16930aaff14139f88833b3ede30c85f09633229dac32e5e",
+            "e488b1b745f987d520894bef5228e8442682ee4bd0083f0b6421658312ebba36",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md"
+          ]
+        },
+        {
+          "query": "What is JavaScript used for on the server?",
+          "category": "mixed",
+          "expected_source": "javascript.txt",
+          "doc_ids": [
+            "6bf1a7abd8b7928e69d59877313aa30298082bb98da1a14b115d2938dc69d769",
+            "41bdd0ea072d153f5bec87fdc629841aae7997ed612a342a8e8d5391fa347485",
+            "82ee9c4b1e085faef0aa796d9eba9d340ade3af7097433e69c0c1c0e7b745267",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "af988aa89d134554d2ae71e217cf0b27e020950536780200df1a4f1d23bbad0d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "How does qualified immunity affect Section 1983 lawsuits against police officers?",
+          "category": "mixed",
+          "expected_source": "42-usc-1983-summary.md",
+          "doc_ids": [
+            "3429b0be968d9b844e71406f813ba2b21f09eec5e8616740b7d77b1733563a01",
+            "7ea0bad52be77788a77da03747ee2fad55dc7e8adb4cd681d44308120cc80c24",
+            "a7169b41c068f59f92d59e7ede9fbca05bc1d131e1bf36dbf27651a4c7c9f033",
+            "3e1a19e937bd590e65597266683fc7d9242153fb7b70c6847c705edceb05251a",
+            "c5314b1c43e047b25ba627761f13cfdb9e1cae7c2e6661d85f6760321dec5b1d",
+            "65390da9541f21c3131e582b3599c895f620181ab951b254f3201f962835e72d",
+            "b9f66ca97eb29dd310ccdff291d49b92e76bdccc7d0efd6e3c31d9bcebee708b"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md"
+          ]
+        },
+        {
+          "query": "What is the relationship between BRCA1 deficiency and PARP inhibitors?",
+          "category": "mixed",
+          "expected_source": "brca1-research-note.md",
+          "doc_ids": [
+            "4e54395012a91b8f11f7b1ba33021421a74d472a4fbbc5d273c723c8c310b834",
+            "ce7ad7b566f0bea92baf013b86f383f0570fa97eabf6df66ea4c8eaa8f956ffc",
+            "ef6ae3039965013080e100a193febe1bc8de690b32c76455445325c66d231eff",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "c7d2ef8333a60e34c094ddf532efc62808cbb378cf4a8828b909f59a818651c2",
+            "0769d58ef63ed014a63cf8455087cc3c228c9b0e134d0b7d37c8571c80b065d7",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        },
+        {
+          "query": "What troubleshooting steps fix a partial git submodule checkout?",
+          "category": "mixed",
+          "expected_source": "mcp-1138-error-codes.md",
+          "doc_ids": [
+            "f7e435878ea03f2faa37b3bd94b7db885c2a8cc6a77bdafb11a919214446c773",
+            "cfcf1cfc3d934d9ccec8971d9f0780ee0ffd8e592ba4196cec534812ba3d6f9b",
+            "80a65cac484d1973fc29466fc62de73a9d2e884fcd47d68dea46b052599bfd61",
+            "282e5e4af6e4d521ee90dd4cd2e5edbc5f14562e04821fbd1ba3ba4fa9d8d3d0",
+            "ea00fc32f1d11031db66925ba3eb38f4b3ef2b5bc3c8b37c3d38698e9660a731",
+            "c7fc16805107616b34c0155659a48b440ca03beaae8503952254cdc3ee48a8fa",
+            "3d4e4807f3030128dbc59c37bf677fc35724790b19794e4791b2da014bb5915c"
+          ],
+          "sources": [
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+            "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+          ]
+        }
+      ],
+      "timings_s": [
+        0.0046634579775854945,
+        0.005826584063470364,
+        0.005588707979768515,
+        0.0042961250292137265,
+        0.007245625020004809,
+        0.005789041984826326,
+        0.005858625052496791,
+        0.00510770792607218,
+        0.004292667028494179,
+        0.006084415945224464,
+        0.004900540923699737,
+        0.007008500047959387,
+        0.006476542097516358,
+        0.005956624983809888,
+        0.004270499921403825,
+        0.004862042027525604,
+        0.017780124908313155,
+        0.004565540933981538,
+        0.0054582919692620635,
+        0.006193374982103705
+      ]
+    },
+    "determinism_mismatches": 0
+  },
+  "hybrid": {
+    "rows": [
+      {
+        "query": "Where was the Colosseum built?",
+        "category": "rare-term",
+        "expected_source": "sample.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt"
+        ]
+      },
+      {
+        "query": "What is the resolution for the MCP-1138 build error?",
+        "category": "rare-term",
+        "expected_source": "mcp-1138-error-codes.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md"
+        ]
+      },
+      {
+        "query": "How does numpy.fft.rfft2 differ from fft2?",
+        "category": "rare-term",
+        "expected_source": "numpy-fft-readme.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+        ]
+      },
+      {
+        "query": "What is the BRCA1 protein's role in homologous recombination repair?",
+        "category": "rare-term",
+        "expected_source": "brca1-research-note.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md"
+        ]
+      },
+      {
+        "query": "What does 42 U.S.C. \u00a7 1983 allow plaintiffs to sue state actors for?",
+        "category": "rare-term",
+        "expected_source": "42-usc-1983-summary.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md"
+        ]
+      },
+      {
+        "query": "What does the ECONNREFUSED error code mean in Node.js?",
+        "category": "rare-term",
+        "expected_source": "econnrefused-troubleshooting.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md"
+        ]
+      },
+      {
+        "query": "What is the I\u00b2C address of the SCD41 element on the XK-2034b sensor module?",
+        "category": "rare-term",
+        "expected_source": "xk-2034b-product-spec.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md"
+        ]
+      },
+      {
+        "query": "Under EU Reg. 2016/679, what is the maximum administrative fine for the most serious infringements?",
+        "category": "rare-term",
+        "expected_source": "eu-2016-679-gdpr-summary.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md"
+        ]
+      },
+      {
+        "query": "What is the designated remedy for ZZQJ-9097?",
+        "category": "rare-term",
+        "expected_source": "zzqj-9097-runbook.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md"
+        ]
+      },
+      {
+        "query": "What innovation lets GPT-class systems handle long-range word ties efficiently?",
+        "category": "semantic",
+        "expected_source": "transformers.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md"
+        ]
+      },
+      {
+        "query": "What scientific framework explains earthquakes, mountain building, and the slow movement of continents?",
+        "category": "semantic",
+        "expected_source": "plate-tectonics.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/plate-tectonics.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/doc1_climate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md"
+        ]
+      },
+      {
+        "query": "How do statisticians measure the total economic output of a country?",
+        "category": "semantic",
+        "expected_source": "gdp-economics.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/gdp-economics.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md"
+        ]
+      },
+      {
+        "query": "What kind of car uses a rechargeable cell stack instead of liquid fuel?",
+        "category": "semantic",
+        "expected_source": "electric-vehicles.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md"
+        ]
+      },
+      {
+        "query": "How do green plants manufacture sugar from atmospheric gases using sunlight?",
+        "category": "semantic",
+        "expected_source": "photosynthesis.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/doc1_climate.pdf",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md"
+        ]
+      },
+      {
+        "query": "Which city is celebrated for a wrought-iron landmark?",
+        "category": "semantic",
+        "expected_source": "sample.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt"
+        ]
+      },
+      {
+        "query": "Tell me about Python data science libraries",
+        "category": "mixed",
+        "expected_source": "python.txt",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/python.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/torch-layernorm-notes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md"
+        ]
+      },
+      {
+        "query": "What is JavaScript used for on the server?",
+        "category": "mixed",
+        "expected_source": "javascript.txt",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/javascript.txt",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/numpy-fft-readme.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/econnrefused-troubleshooting.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md"
+        ]
+      },
+      {
+        "query": "How does qualified immunity affect Section 1983 lawsuits against police officers?",
+        "category": "mixed",
+        "expected_source": "42-usc-1983-summary.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/42-usc-1983-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/electric-vehicles.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md"
+        ]
+      },
+      {
+        "query": "What is the relationship between BRCA1 deficiency and PARP inhibitors?",
+        "category": "mixed",
+        "expected_source": "brca1-research-note.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/eu-2016-679-gdpr-summary.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md"
+        ]
+      },
+      {
+        "query": "What troubleshooting steps fix a partial git submodule checkout?",
+        "category": "mixed",
+        "expected_source": "mcp-1138-error-codes.md",
+        "sources": [
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/mcp-1138-error-codes.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/brca1-research-note.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/rare-term-pack/xk-2034b-product-spec.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/photosynthesis.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/exp1-fixtures/sample.md",
+          "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-implement-native-sparse-backend-strategy/experiments/9-hybrid-retrieval-2026-05-27/corpus/semantic-pack/transformers.md"
+        ]
+      }
+    ]
+  },
+  "memory": {
+    "tracemalloc_cold_peak_mb": 2.36,
+    "peak_rss_mb": 262.88
+  }
+}

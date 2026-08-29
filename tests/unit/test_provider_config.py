@@ -315,12 +315,16 @@ def test_unknown_local_backend_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 # NOTE: DOCUMENT_BACKEND is deliberately absent — unknown values no longer
 # raise at Settings; validation moved to capabilities.validate_document_backend
 # (register-document-backend-strategies task 2.4). Dedicated tests live below.
+# RETRIEVAL__HYBRID_SPARSE_BACKEND is deliberately absent for the same
+# reason: validation moved to capabilities.validate_sparse_backend (task
+# 3.5, implement-native-sparse-backend-strategy); the §6.10 whitespace
+# idiom stays in Settings and dedicated composition-boundary tests live
+# in tests/test_compose.py.
 _PROVIDER_FIELDS: list[tuple[str, str, str, str]] = [
     ("EMBED_PROVIDER", "embed_provider", "local", "ollama"),
     ("METADATA_LLM_PROVIDER", "metadata_llm_provider", "local", "cloud"),
     ("LOCAL_BACKEND", "local_backend", "llamacpp", "ollama"),
     ("CLOUD_BACKEND", "cloud_backend", "openrouter", "openrouter"),
-    ("RETRIEVAL__HYBRID_SPARSE_BACKEND", "retrieval.hybrid_sparse_backend", "bm25", "native"),
 ]
 
 
@@ -463,6 +467,45 @@ def test_unknown_document_backend_defers_to_compose_validation(
     assert "DOCUMENT_BACKEND" in message
     assert "totally-bogus" in message
     assert "local" in message and "azure" in message
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [("   ", "bm25"), ("  native  ", "native"), ("", "bm25")],
+)
+def test_sparse_backend_whitespace_idiom_stays_in_settings(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    """§6.10 survives the registry-ownership move: strip and reset (task 3.5)."""
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("RETRIEVAL__HYBRID_SPARSE_BACKEND", raw)
+    settings = Settings(_env_file=None)
+    assert settings.retrieval.hybrid_sparse_backend == expected
+
+
+def test_unknown_sparse_backend_defers_to_compose_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A bogus backend constructs at Settings and fails at the startup gate.
+
+    Spec scenario "Unknown concrete backend is configured": startup
+    SHALL fail and list the registered sparse backend names (``auto``
+    plus the concrete registry). Validation lives in
+    ``capabilities.validate_sparse_backend`` (task 3.5).
+    """
+    from rag_mcp.capabilities import validate_sparse_backend
+    from rag_mcp.config import Settings
+
+    monkeypatch.setenv("RETRIEVAL__HYBRID_SPARSE_BACKEND", "totally-bogus")
+    settings = Settings(_env_file=None)
+    with pytest.raises(ValueError) as excinfo:
+        validate_sparse_backend(settings)
+    message = str(excinfo.value)
+    assert "RETRIEVAL__HYBRID_SPARSE_BACKEND" in message
+    assert "totally-bogus" in message
+    # auto (the policy name) plus both registered concrete backends.
+    assert "auto" in message and "bm25" in message and "native" in message
 
 
 def test_rag_profile_unknown_falls_back_to_documents(

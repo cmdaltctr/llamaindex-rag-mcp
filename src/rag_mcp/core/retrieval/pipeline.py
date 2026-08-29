@@ -18,10 +18,14 @@ from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ..vectordb.score import DENSE_SCORE_KIND
 from .registry import get as _retrieval_get
+from .sparse_dispatch import (  # noqa: F401  (re-exported for callers/tests)
+    _native_sparse_query,
+    _sparse_bm25_query,
+    _warned_collections,
+    _warned_native_fallback_collections,
+)
 
 logger = logging.getLogger(__name__)
-_warned_collections: set[str] = set()
-_warned_native_fallback_collections: set[str] = set()
 RERANK_SCORE_KIND = "reranker_sigmoid_v1"
 
 
@@ -40,85 +44,6 @@ def _selected_sparse_backend(settings: Any) -> str:
     return settings.retrieval.hybrid_sparse_backend
 
 
-def _sparse_bm25_query(
-    collection_name: str,
-    store: VectorStore,
-    query: str,
-    fetch_k: int,
-    metadata_filter: dict | None = None,
-) -> list[dict]:
-    from .dense import _lineage_fields, _result_source
-
-    BM25SparseRetriever = _retrieval_get("bm25")
-    rows = BM25SparseRetriever(collection_name, store=store).query(
-        query,
-        fetch_k,
-        metadata_filter=metadata_filter,
-    )
-    return [
-        {
-            "id": doc_id,
-            "source": _result_source(metadata),
-            "page_label": metadata.get("page_label"),
-            "text": text,
-            "metadata": dict(metadata),
-            "reranked": False,
-            **_lineage_fields(metadata),
-        }
-        for _rank, doc_id, text, metadata in rows
-    ]
-
-
-def _emit_mixed_coverage_warning(collection_name: str, store: VectorStore) -> None:
-    if collection_name in _warned_collections:
-        return
-    total = 0
-    covered = 0
-    try:
-        for meta in store.iter_metadatas(collection_name):
-            total += 1
-            if isinstance(meta, dict) and meta.get("has_sparse_vector"):
-                covered += 1
-    except Exception:
-        return
-    if 0 < covered < total:
-        _warned_collections.add(collection_name)
-        logger.warning(
-            "Hybrid native sparse retrieval on collection '%s' has mixed "
-            "coverage: %d/%d chunks have sparse vectors. Re-ingest the "
-            "collection for full hybrid coverage.",
-            collection_name,
-            covered,
-            total,
-        )
-
-
-def _native_sparse_query(
-    collection_name: str,
-    store: VectorStore,
-    query: str,
-    fetch_k: int,
-    metadata_filter: dict | None = None,
-) -> list[dict]:
-    """Return sparse results for native mode, falling back safely in v1."""
-    if collection_name not in _warned_native_fallback_collections:
-        _warned_native_fallback_collections.add(collection_name)
-        logger.warning(
-            "Native ChromaDB sparse retrieval is selected for collection '%s', "
-            "but this runtime cannot issue a native sparse query. Falling "
-            "back to the BM25 sparse retriever so hybrid retrieval does not "
-            "silently degrade to dense-only results.",
-            collection_name,
-        )
-    return _sparse_bm25_query(
-        collection_name,
-        store,
-        query,
-        fetch_k,
-        metadata_filter,
-    )
-
-
 def _hybrid_query_rows(
     store: VectorStore,
     collection_name: str,
@@ -129,9 +54,14 @@ def _hybrid_query_rows(
     metadata_filter: dict | None = None,
     dense_threshold: float = 0.0,
     include_norm_diagnostic: bool = False,
+    sparse_report: dict | None = None,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
+    # Registry-routed sparse dispatch (task 3.3): both runners execute
+    # through the sparse-backend registry; only the native policy adds
+    # the coverage warning and the BM25 fallback net, inside its runner.
+    sparse_runner = _native_sparse_query if backend == "native" else _sparse_bm25_query
     with ThreadPoolExecutor(max_workers=2) as executor:
         dense_future = executor.submit(
             _dense_query_rows,
@@ -144,25 +74,15 @@ def _hybrid_query_rows(
             norm_tolerance=settings.embedding.norm_tolerance,
             attach_norm_diagnostic=include_norm_diagnostic,
         )
-        if backend == "native":
-            _emit_mixed_coverage_warning(collection_name, store)
-            sparse_future = executor.submit(
-                _native_sparse_query,
-                collection_name,
-                store,
-                query,
-                fetch_k,
-                metadata_filter,
-            )
-        else:
-            sparse_future = executor.submit(
-                _sparse_bm25_query,
-                collection_name,
-                store,
-                query,
-                fetch_k,
-                metadata_filter,
-            )
+        sparse_future = executor.submit(
+            sparse_runner,
+            collection_name,
+            store,
+            query,
+            fetch_k,
+            metadata_filter,
+            sparse_report,
+        )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
 
@@ -336,6 +256,7 @@ def search(
     )
 
     _dense_query_rows = _retrieval_get("dense")
+    sparse_report: dict = {}
     if hybrid:
         dense_threshold = similarity_threshold if not effective_rerank else 0.0
         results = _hybrid_query_rows(
@@ -348,6 +269,7 @@ def search(
             metadata_filter,
             dense_threshold,
             include_norm_diagnostic=include_diagnostics,
+            sparse_report=sparse_report,
         )
     else:
         results = _dense_query_rows(
@@ -410,6 +332,7 @@ def search(
             resolved_settings,
             metadata_filter,
             similarity_threshold,
+            sparse_report=sparse_report,
         )
 
     threshold_score_kind = RERANK_SCORE_KIND if rerank_succeeded else DENSE_SCORE_KIND
@@ -431,6 +354,15 @@ def search(
             # item 2, now landed).
             if active_backend is not None:
                 r["rerank_backend"] = active_backend
+        # Report the sparse backend that actually ran for hybrid queries
+        # (task 3.4): a native request that fell back reports ``bm25``,
+        # never native (spec: "SHALL NOT label the resulting sparse
+        # ranking as native").
+        if hybrid and sparse_report:
+            backend_ran = sparse_report.get("sparse_backend")
+            if backend_ran is not None:
+                for r in results:
+                    r["sparse_backend"] = backend_ran
 
     if not include_diagnostics:
         results = [_strip_internal_result_fields(r) for r in results]

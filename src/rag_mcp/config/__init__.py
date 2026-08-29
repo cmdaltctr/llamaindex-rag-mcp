@@ -256,11 +256,18 @@ class Settings(StorageValidationMixin, BaseSettings):
         )
         _validate_provider_value(self, "local_backend", ("llamacpp", "ollama"), "LOCAL_BACKEND")
         _validate_provider_value(self, "cloud_backend", ("openrouter",), "CLOUD_BACKEND")
-        _validate_provider_value(
+        # Sparse backend names are registry-owned: compose validates
+        # RETRIEVAL__HYBRID_SPARSE_BACKEND against the concrete
+        # sparse-backend registry at startup and fails listing ``auto``
+        # plus the registered names (task 3.5,
+        # implement-native-sparse-backend-strategy; document_backend
+        # precedent).  Only the §6.10 whitespace idiom stays here:
+        # strip padding and reset an empty value to the declared
+        # default.
+        object.__setattr__(
             self.retrieval,
             "hybrid_sparse_backend",
-            ("auto", "native", "bm25"),
-            "RETRIEVAL__HYBRID_SPARSE_BACKEND",
+            self.retrieval.hybrid_sparse_backend.strip() or "bm25",
         )
         _validate_provider_value(
             self.retrieval,

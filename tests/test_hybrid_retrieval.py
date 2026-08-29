@@ -1085,77 +1085,102 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     assert not [r.message for r in caplog.records if "bm25_no_warn" in r.message]
 
 
-def test_detect_native_sparse_capability_is_conservative() -> None:
-    """Current PersistentClient runtime should not auto-select native sparse."""
-    from rag_mcp.core.retrieval.sparse import _detect_native_sparse_capability
-
-    assert _detect_native_sparse_capability() is False
-
-
 def test_sparse_backend_auto_falls_back_to_bm25_when_unsupported(monkeypatch) -> None:
-    """Capability detection controls auto backend selection."""
+    """Capability detection controls auto backend selection.
+
+    Store-neutral resolution (task 3.2,
+    implement-native-sparse-backend-strategy): ``auto`` resolves through
+    the selected store's registry metadata plus a real native-FTS
+    probe. A store that declares no native sparse capability (the
+    quarantined Chroma extra) resolves ``auto`` to ``bm25`` without
+    emitting the explicit-native fallback warning.
+    """
     import rag_mcp.compose as compose
-    import rag_mcp.core.retrieval.sparse as sparse
     from rag_mcp.config import Settings
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-    # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data. The
-    # probe path applies to the Chroma backend (task 3.3) — capability
-    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
         vector_store="chroma",
         retrieval=RetrievalSettings(hybrid_sparse_backend="auto"),
     )
-    monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
 
     assert compose.resolve_sparse_backend(settings) == "bm25"
 
 
 def test_sparse_backend_auto_selects_native_when_supported(monkeypatch) -> None:
-    """If native sparse support is detected, auto selects native."""
+    """If native sparse support is detected, auto selects native.
+
+    The lancedb registry entry carries the real native-FTS probe; on
+    the locked runtime (lancedb 0.37.1) it reports availability.
+    """
     import rag_mcp.compose as compose
-    import rag_mcp.core.retrieval.sparse as sparse
     from rag_mcp.config import Settings
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-    # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data. The
-    # probe path applies to the Chroma backend (task 3.3) — capability
-    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
-        vector_store="chroma",
+        vector_store="lancedb",
         retrieval=RetrievalSettings(hybrid_sparse_backend="auto"),
     )
-    monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
 
     assert compose.resolve_sparse_backend(settings) == "native"
+
+
+def test_sparse_backend_auto_respects_a_failing_probe(monkeypatch) -> None:
+    """A probe that reports unavailability resolves auto to bm25."""
+    import rag_mcp.compose as compose
+    import rag_mcp.core.vectordb.lance_fts as lance_fts
+    from rag_mcp.config import Settings
+    from rag_mcp.core.retrieval.settings import RetrievalSettings
+
+    settings = Settings(
+        _env_file=None,
+        vector_store="lancedb",
+        retrieval=RetrievalSettings(hybrid_sparse_backend="auto"),
+    )
+    monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
+
+    assert compose.resolve_sparse_backend(settings) == "bm25"
 
 
 def test_sparse_backend_explicit_native_falls_back_to_bm25(monkeypatch, caplog) -> None:
     """Explicit native override falls back gracefully with a warning."""
     import rag_mcp.compose as compose
-    import rag_mcp.core.retrieval.sparse as sparse
     from rag_mcp.config import Settings
     from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-    # The capability probe moved from config to compose (task 7.10): asking
-    # the runtime a question is construction work, not settings data. The
-    # probe path applies to the Chroma backend (task 3.3) — capability
-    # follows the SELECTED store.
     settings = Settings(
         _env_file=None,
         vector_store="chroma",
         retrieval=RetrievalSettings(hybrid_sparse_backend="native"),
     )
-    monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
 
     with caplog.at_level(logging.WARNING):
         assert compose.resolve_sparse_backend(settings) == "bm25"
 
     assert any("Falling back to bm25" in record.message for record in caplog.records)
+
+
+def test_sparse_backend_unknown_name_fails_listing_registered_names() -> None:
+    """An unregistered concrete name fails listing auto plus the registry.
+
+    Composition-boundary validation (task 3.5): the accepted set is
+    registry-owned, ``auto`` stays a separately accepted policy name,
+    and the error lists it alongside the registered concrete names.
+    """
+    import rag_mcp.compose as compose
+    from rag_mcp.config import Settings
+    from rag_mcp.core.retrieval.settings import RetrievalSettings
+
+    settings = Settings(
+        _env_file=None,
+        vector_store="lancedb",
+        retrieval=RetrievalSettings(hybrid_sparse_backend="tantivy"),
+    )
+
+    with pytest.raises(ValueError, match="tantivy"):
+        compose.resolve_sparse_backend(settings)
 
 
 @requires_chroma

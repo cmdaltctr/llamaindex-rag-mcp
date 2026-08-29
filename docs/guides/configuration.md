@@ -291,7 +291,8 @@ metadata.
 LanceDB Cloud is out of scope. Unknown `VECTOR_STORE` values fail startup with
 the registered names listed. The BM25 hybrid path is backend-agnostic: it reads
 rows through `iter_documents` and invalidates off the generation counter.
-Native LanceDB full-text search is deferred (ADR-046).
+Native LanceDB full-text search is implemented as the `native` sparse backend
+(see [Reranker](reranker.md#sparse-retrieval-backends-hybrid-search)).
 
 ### Legacy Chroma data and rollback
 
@@ -318,10 +319,14 @@ so an older release cannot select Chroma and make LanceDB data appear missing.
 
 An unrecognised value for any of the four provider selections above
 (`EMBED_PROVIDER`, `METADATA_LLM_PROVIDER`, `LOCAL_BACKEND`,
-`CLOUD_BACKEND`), plus `RETRIEVAL__HYBRID_SPARSE_BACKEND` and
-`DOCUMENT_BACKEND`, fails startup with a clear error naming the value
-and the accepted set.  Leading and trailing whitespace is stripped
-before validation, so `EMBED_PROVIDER=" local "` resolves to `local`.
+`CLOUD_BACKEND`), plus `DOCUMENT_BACKEND`, fails startup with a clear
+error naming the value and the accepted set.
+`RETRIEVAL__HYBRID_SPARSE_BACKEND` fails startup the same way, but its
+accepted names are registry-owned and validated at the composition
+boundary (`capabilities.validate_sparse_backend`): an unknown concrete
+name is rejected, listing `auto` plus the registered sparse backends.
+Leading and trailing whitespace is stripped before validation, so
+`EMBED_PROVIDER=" local "` resolves to `local`.
 An empty or whitespace-only value (`SETTING=` in `.env`) is treated
 as unset and resets to the default.
 
@@ -383,7 +388,7 @@ file replacement before any write), warn-and-continue at query (results stay ava
 | `rerank_backend` | `onnx` | Reranker inference backend (`onnx` or `torch`). `torch` requires `uv sync --extra torch`. See [ADR-038](../adr/038-pluggable-reranker-backend.md) |
 | `hybrid_enabled` | `false` | Combine keyword and embedding search. **Profile-owned** |
 | `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
-| `hybrid_sparse_backend` | `bm25` | `bm25`, `native`, or `auto`. Unrecognised values fail startup |
+| `hybrid_sparse_backend` | `bm25` | Sparse backend for hybrid search: `bm25`, `native`, or `auto`. Registry-owned validation at the composition boundary; unknown names fail startup listing `auto` plus the registered backends. See [Reranker](reranker.md#sparse-retrieval-backends-hybrid-search) |
 
 ### Metadata — `METADATA__*`
 

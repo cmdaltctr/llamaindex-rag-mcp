@@ -90,36 +90,31 @@ def validate_document_backend(settings: Settings) -> None:
 
 
 def resolve_sparse_backend(settings: Settings) -> str:
-    """Resolve the configured sparse backend to ``bm25`` or ``native``.
+    """Resolve the configured sparse backend to a concrete registered name.
 
-    The native-sparse capability belongs to the SELECTED store, not to
-    whichever optional packages happen to be installed (design D5, task
-    3.3): ``auto`` resolves through the selected store's registry
-    metadata, and an explicit ``native`` under a store without native
-    sparse falls back to BM25 with a warning — without probing Chroma.
+    Store-neutral capability resolution (task 3.2,
+    ``implement-native-sparse-backend-strategy``): ``auto`` and
+    explicit ``native`` resolve through the selected store's registry
+    metadata plus a REAL native-FTS probe (an import string resolved
+    lazily), replacing the Chroma-specific
+    ``detect_native_sparse_capability`` route.  Unknown concrete names
+    fail here listing ``auto`` plus the registered names (task 3.5).
+
+    Args:
+        settings: Resolved settings.
+
+    Returns:
+        The concrete backend name: ``"native"`` or ``"bm25"``.
     """
+    validate_sparse_backend(settings)
     backend = settings.retrieval.hybrid_sparse_backend
     if backend == "bm25":
         return "bm25"
-
-    from .core.vectordb import registry as vectordb_registry
-
-    # Registry metadata answers "does this store advertise native sparse?"
-    # (None for lancedb, truthy for chroma) — selection, not installation,
-    # decides the route. For stores that advertise native, the installed
-    # runtime probe is the final arbiter (auto and explicit native alike).
-    native_available = False
-    if bool(vectordb_registry.describe(settings.vector_store)["native_sparse_probe"]):
-        from .core.retrieval.sparse import _detect_native_sparse_capability
-
-        native_available = _detect_native_sparse_capability()
-
+    native_available = _native_sparse_available(settings)
     if backend == "auto":
         return "native" if native_available else "bm25"
-
     if native_available:
         return "native"
-
     logger.warning(
         "HYBRID_SPARSE_BACKEND=native was requested, but the selected "
         "vector store %r does not expose native sparse retrieval. "
@@ -127,6 +122,69 @@ def resolve_sparse_backend(settings: Settings) -> str:
         settings.vector_store,
     )
     return "bm25"
+
+
+def validate_sparse_backend(settings: Settings) -> None:
+    """Validate the sparse backend name against the concrete registry.
+
+    Registry-owned name validation at the composition boundary (task
+    3.5): ``config/`` keeps only the §6.10 whitespace idiom and must
+    not duplicate registry knowledge (leaf invariant,
+    ``community_algorithm`` precedent).  ``auto`` stays a separately
+    accepted policy name; the failure message lists it alongside the
+    registered concrete names.  Resolving the registered callable
+    also fails fast on a bad import string.
+
+    Args:
+        settings: Resolved settings carrying the configured
+            ``retrieval.hybrid_sparse_backend`` name.
+
+    Raises:
+        ValueError: When the configured name is neither ``auto`` nor
+            registered in the concrete sparse-backend registry (the
+            error lists both).
+    """
+    from .core.retrieval import sparse_registry
+
+    name = settings.retrieval.hybrid_sparse_backend
+    if name == "auto":
+        return
+    if name not in sparse_registry.available():
+        raise ValueError(
+            f"RETRIEVAL__HYBRID_SPARSE_BACKEND={name!r} is not a registered "
+            "sparse backend. Available: "
+            f"{', '.join(['auto', *sparse_registry.available()])}."
+        )
+    sparse_registry.get(name)
+
+
+def _native_sparse_available(settings: Settings) -> bool:
+    """Probe the SELECTED store for real native sparse capability.
+
+    The vector-store registry's ``native_sparse_probe`` metadata is an
+    import string (``"module:attr"``) pointing at the store's real
+    probe, or ``None`` when the store declares no native sparse
+    capability (the quarantined Chroma extra).  Selection, not
+    installation, decides the route.
+    """
+    import importlib
+
+    from .core.vectordb import registry as vectordb_registry
+
+    probe_spec = vectordb_registry.describe(settings.vector_store)["native_sparse_probe"]
+    if not probe_spec:
+        return False
+    module_path, attr = probe_spec.split(":")
+    try:
+        probe = getattr(importlib.import_module(module_path), attr)
+    except Exception:  # noqa: BLE001 - import drift means unavailable
+        logger.debug("Native sparse probe %r could not be imported", probe_spec)
+        return False
+    try:
+        return bool(probe())
+    except Exception:  # noqa: BLE001 - a failing probe is an unavailable one
+        logger.debug("Native sparse probe %r raised; treating as unavailable", probe_spec)
+        return False
 
 
 def resolve_pdf_reader(settings: Settings) -> str:

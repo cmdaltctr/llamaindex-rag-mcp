@@ -303,27 +303,32 @@ def test_get_embed_endpoint_openrouter() -> None:
 
 
 class TestResolveSparseBackendNative:
-    """The explicit 'native' backend path with capability probing."""
+    """The explicit 'native' backend path with store-neutral probing.
+
+    Route rewritten for task 3.2
+    (implement-native-sparse-backend-strategy): capability follows the
+    SELECTED store's registry metadata plus a real native-FTS probe —
+    the lancedb entry carries the probe; the quarantined chroma extra
+    declares none.
+    """
 
     @staticmethod
-    def _settings(backend: str):
+    def _settings(backend: str, vector_store: str = "lancedb"):
         from rag_mcp.config import Settings
         from rag_mcp.core.retrieval.settings import RetrievalSettings
 
-        # The probe path applies to the Chroma backend, which advertises
-        # native sparse (task 3.3): capability follows the SELECTED store.
         return Settings(
             _env_file=None,
-            vector_store="chroma",
+            vector_store=vector_store,
             retrieval=RetrievalSettings(hybrid_sparse_backend=backend),
         )
 
     def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A native request with the probe passing returns native."""
         import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
+        import rag_mcp.core.vectordb.lance_fts as lance_fts
 
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: True)
+        monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: True)
         assert compose.resolve_sparse_backend(self._settings("native")) == "native"
 
     def test_native_with_probe_false_falls_back_to_bm25(
@@ -335,13 +340,33 @@ class TestResolveSparseBackendNative:
         import logging
 
         import rag_mcp.compose as compose
-        import rag_mcp.core.retrieval.sparse as sparse
+        import rag_mcp.core.vectordb.lance_fts as lance_fts
 
-        monkeypatch.setattr(sparse, "_detect_native_sparse_capability", lambda: False)
+        monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
         with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
             result = compose.resolve_sparse_backend(self._settings("native"))
         assert result == "bm25"
         assert any("native" in r.message and "bm25" in r.message for r in caplog.records)
+
+    def test_native_on_store_without_capability_falls_back(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Explicit native under a store declaring no probe warns and falls back."""
+        import logging
+
+        import rag_mcp.compose as compose
+
+        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+            result = compose.resolve_sparse_backend(self._settings("native", vector_store="chroma"))
+        assert result == "bm25"
+        assert any("Falling back to bm25" in r.message for r in caplog.records)
+
+    def test_unknown_name_fails_listing_names(self, caplog: pytest.LogCaptureFixture) -> None:
+        """An unregistered concrete name raises listing auto plus the registry."""
+        import rag_mcp.compose as compose
+
+        with pytest.raises(ValueError, match="Available: auto, bm25, native"):
+            compose.resolve_sparse_backend(self._settings("tantivy"))
 
 
 # ── resolve_pdf_reader (import probing) ─────────────────────────────────────

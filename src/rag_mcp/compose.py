@@ -22,6 +22,7 @@ from .capabilities import (  # noqa: F401  (re-exported for existing callers/tes
     resolve_pdf_reader,
     resolve_sparse_backend,
     validate_document_backend,
+    validate_sparse_backend,
 )
 from .config import Settings, _resolve_effective_embed_provider, get_settings
 from .core.providers.embeddings import registry as embed_registry
@@ -374,6 +375,11 @@ def _resolve_active_strategies(settings: Settings) -> None:
     # degrades to local in settings_to_effective rather than failing here
     # (cloud opt-in, ADR-024) — unlike community strategies, which fail.
     validate_document_backend(settings)
+    # Sparse backends validate the same way (task 3.5,
+    # implement-native-sparse-backend-strategy): unknown concrete names
+    # fail startup listing ``auto`` plus the registered names, backed by
+    # the concrete sparse-backend registry.
+    validate_sparse_backend(settings)
 
 
 def _log_norm_guard_state(settings: Settings) -> None:

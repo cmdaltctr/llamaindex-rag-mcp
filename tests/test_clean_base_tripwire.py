@@ -34,7 +34,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 1870  # Includes document-backend registry + orchestrator pins,
+_BASE_EXECUTED = 1930  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -42,12 +42,16 @@ _BASE_EXECUTED = 1870  # Includes document-backend registry + orchestrator pins,
 # harness regressions (validate-embedding-write-contract, ebc934b); the
 # stable source/chunk lineage suites (add-stable-source-chunk-lineage);
 # the CLI invalid-path regression (fix/cli-delete-invalid-path); the
-# embedding norm-guard suite (guard-embedding-normalisation); and the
+# embedding norm-guard suite (guard-embedding-normalisation); the
 # LanceDB path-component validation, layout-pin, registry honesty, and
-# watcher write-lock suites (add-per-collection-persist-dirs).
-_BASE_SKIPPED = 99  # self-ignored run: base skips incl. chroma-gated files,
+# watcher write-lock suites (add-per-collection-persist-dirs); and the
+# native sparse capability, FTS adapter lifecycle, locked-version
+# contract, sparse-backend registry/composition validation, and hybrid
+# native pipeline suites (implement-native-sparse-backend-strategy).
+_BASE_SKIPPED = 100  # self-ignored run: base skips incl. chroma-gated files,
 # the chroma-parametrised cases of the embedding-write-contract suite,
-# and the +1 SDK-conditional backend probe.
+# the +1 SDK-conditional backend probe, and the +1 chroma honesty case
+# in the native sparse capability suite.
 _BASE_DESELECTED = 14  # -m "not slow" deselection
 _CHROMA_GATED_FILES = frozenset(
     {
@@ -57,6 +61,7 @@ _CHROMA_GATED_FILES = frozenset(
         "test_hybrid_retrieval.py",
         "test_lancedb_store.py",
         "test_metadata_extractor.py",
+        "test_native_sparse_backend.py",
         "test_vectordb_contract.py",
     }
 )
