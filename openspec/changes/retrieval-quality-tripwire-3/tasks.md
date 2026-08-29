@@ -46,12 +46,12 @@
       conditions.
 - [x] 3.4 Record the resolved model digest, Ollama version, operating system,
       architecture, corpus hash, and query-set hash with each measurement.
-- [ ] 3.5 Run at least three repeated Tier 2 measurements. Use a second
+- [x] 3.5 Run at least three repeated Tier 2 measurements. Use a second
       available architecture when possible and preserve the per-query ranks.
-- [ ] 3.6 Select each Tier 2 floor between 0.02 and 0.03 below its measured
+- [x] 3.6 Select each Tier 2 floor between 0.02 and 0.03 below its measured
       Recall@10 or MRR value. Use the larger margin when only one architecture
       is available.
-- [ ] 3.7 Create `tests/quality/baseline.json` with schema version, fixture
+- [x] 3.7 Create `tests/quality/baseline.json` with schema version, fixture
       identities, both tiers' measurements and floors, the model tag, digest,
       and measurement dates.
 - [x] 3.8 Add baseline-schema and identity tests. Confirm failures show the
@@ -69,7 +69,7 @@
       only the targeted Tier 2 quality file.
 - [x] 4.5 Set `continue-on-error: false` on both jobs. Use strict shell handling
       and remove every skip or failure-suppression path.
-- [ ] 4.6 Add schedule exclusions to each existing non-quality job. Confirm a
+- [x] 4.6 Add schedule exclusions to each existing non-quality job. Confirm a
       nightly event starts Tier 2 without starting unrelated CI jobs.
 - [x] 4.7 Add CI comments with the same scope statement as the runner docstring.
       State that subtle model drift still requires experiments.
@@ -81,7 +81,7 @@
 - [x] 5.1 Create
       `docs/tdr/016-retrieval-quality-floor-margin-and-determinism.md` from the
       repository template.
-- [ ] 5.2 Record repeated metric values, machine details, the chosen margin,
+- [x] 5.2 Record repeated metric values, machine details, the chosen margin,
       model tag and digest handling, baseline regeneration, and revisit triggers
       in TDR-016.
 - [x] 5.3 Add TDR-016 to `docs/tdr/README.md` with its final status and date.
@@ -94,14 +94,14 @@
 
 - [x] 6.1 Run `uv run pytest tests/quality/test_metrics.py
       tests/quality/test_retrieval_quality_tier1.py -m slow --tb=short -q`.
-- [ ] 6.2 With the pinned Ollama model available, run `uv run pytest
+- [x] 6.2 With the pinned Ollama model available, run `uv run pytest
       tests/quality/test_retrieval_quality_tier2.py -m slow --tb=short -q`.
 - [x] 6.3 Run the ordinary selector against the quality directory and confirm
       no slow quality case executes: `uv run pytest tests/quality -m "not slow"
       --collect-only -q`.
-- [ ] 6.4 Validate the workflow syntax and event conditions. Confirm both
+- [x] 6.4 Validate the workflow syntax and event conditions. Confirm both
       quality jobs remain blocking and scheduled runs exclude unrelated jobs.
-- [ ] 6.5 Run `openspec validate "retrieval-quality-tripwire-3" --type change
+- [x] 6.5 Run `openspec validate "retrieval-quality-tripwire-3" --type change
       --strict` and resolve every reported error.
 
 ## 7. Post-merge schedule verification

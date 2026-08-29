@@ -98,6 +98,27 @@ ranks agree before selecting the 0.02 or 0.03 margin.
 4. Update the baseline and this record in one reviewed commit. Do not loosen a
    floor until the ranking change is understood.
 
+## Local Measurement Evidence (2026-08-29)
+
+Three repeated Tier 2 measurements on one machine, all identical:
+
+- Machine: Darwin, arm64; Ollama 0.32.13.
+- Model: `qwen3-embedding:0.6b`, digest
+  `ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d`.
+- Runs 1-3: `recall@10 = 1.000000`, `mrr@10 = 1.000000`. Per-query ranks
+  preserved in each `TIER2_MEASUREMENT` record.
+- Margin: measured values sit at the ceiling, so the floor uses the larger
+  single-architecture margin of 0.03: `floor = 0.97` for both metrics.
+- Full logs: `TIER2_MEASUREMENT` lines captured per run during local
+  verification of task 6.2.
+
+The committed Tier 2 identity is bound to the measuring machine. The nightly
+job runs on `ubuntu-latest`, so the first post-merge `workflow_dispatch`
+(task 7.1) is expected to fail the identity assertion. Capture the runner's
+`TIER2_MEASUREMENT`, refresh the Tier 2 identity and floors in
+`tests/quality/baseline.json` in one reviewed commit, and record the run URL
+here. Do not loosen a floor without the runner's repeated measurements.
+
 ## Revisit Triggers
 
 Re-evaluate this decision when the production embedding model changes, Ollama
