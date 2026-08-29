@@ -9,7 +9,7 @@
 > `add-per-collection-persist-dirs` (shared `compose.py` / adapter
 > files).
 
-- [ ] 0.1 Write a pre-implementation contract/feasibility test against the locked `lancedb` 0.37.1 / `pylance` 10.0.0 covering: native FTS on the `text` column (index configuration and `"fts"` search), metadata filtering combined with FTS, returned row/result shape, score semantics, refresh/freshness behaviour after writes, partial index coverage (indexed vs unindexed rows), and fallback signalling to BM25. This test pins the API surface so a dependency bump that changes it fails loudly.
+- [x] 0.1 Write a pre-implementation contract/feasibility test against the locked `lancedb` 0.37.1 / `pylance` 10.0.0 covering: native FTS on the `text` column (index configuration and `"fts"` search), metadata filtering combined with FTS, returned row/result shape, score semantics, refresh/freshness behaviour after writes, partial index coverage (indexed vs unindexed rows), and fallback signalling to BM25. This test pins the API surface so a dependency bump that changes it fails loudly.
 
 ## 1. Baseline and Capability Contract
 
