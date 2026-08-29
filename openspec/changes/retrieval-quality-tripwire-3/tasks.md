@@ -1,50 +1,50 @@
 ## 1. Quality metric and fixed fixtures
 
-- [ ] 1.1 Create `tests/quality/metrics.py`. Copy `_recall_mrr` and its source
+- [x] 1.1 Create `tests/quality/metrics.py`. Copy `_recall_mrr` and its source
       matching behaviour from Experiment 19. Add a provenance comment with the
       exact source path.
-- [ ] 1.2 Add `tests/quality/test_metrics.py` with cases for rank one, rank two,
+- [x] 1.2 Add `tests/quality/test_metrics.py` with cases for rank one, rank two,
       misses, multiple expected sources, and empty input. Confirm a deliberate
       algorithm break makes the tests fail, then revert it.
-- [ ] 1.3 Ensure every quality module imports only test-owned helpers and
+- [x] 1.3 Ensure every quality module imports only test-owned helpers and
       supported `rag_mcp` modules. Add a guard that rejects imports from
       `experiments/`.
-- [ ] 1.4 Add 20 original source documents under `tests/quality/corpus/`. Give
+- [x] 1.4 Add 20 original source documents under `tests/quality/corpus/`. Give
       each document a stable identifier and one distinct planted fact.
-- [ ] 1.5 Add `tests/quality/golden_queries.json` with 12 queries. Map every
+- [x] 1.5 Add `tests/quality/golden_queries.json` with 12 queries. Map every
       query to its correct source document or source set.
-- [ ] 1.6 Add fixture validation for unique source identifiers, valid mappings,
+- [x] 1.6 Add fixture validation for unique source identifiers, valid mappings,
       the required document and query counts, and deterministic corpus and query
       hashes.
-- [ ] 1.7 Add a quality-runner module docstring. State the guarded regression
+- [x] 1.7 Add a quality-runner module docstring. State the guarded regression
       classes and the limits of this small corpus.
 
 ## 2. Tier 1 deterministic pull-request gate
 
-- [ ] 2.1 Implement a test-only deterministic embedder with stable BLAKE2b
+- [x] 2.1 Implement a test-only deterministic embedder with stable BLAKE2b
       token hashing and unit-normalised vectors. Do not use Python's salted
       `hash()` or a constant-vector mock.
-- [ ] 2.2 Build controlled dense and sparse rows that exercise score conversion,
+- [x] 2.2 Build controlled dense and sparse rows that exercise score conversion,
       reciprocal rank fusion, threshold transformation, and final ranking.
-- [ ] 2.3 Add `tests/quality/test_retrieval_quality_tier1.py`. Run the production
+- [x] 2.3 Add `tests/quality/test_retrieval_quality_tier1.py`. Run the production
       retrieval path through injected settings and stores without Ollama.
-- [ ] 2.4 Mark all Tier 1 quality cases `slow`. Verify they are deselected by
+- [x] 2.4 Mark all Tier 1 quality cases `slow`. Verify they are deselected by
       `pytest -m "not slow"` and run through a targeted command.
 - [ ] 2.5 Make Tier 1 compare Recall@10 and MRR@10 with exact deterministic
       floors. Print measured baseline, floor, and actual values on failure.
-- [ ] 2.6 Perturb one controlled fusion or threshold input. Confirm Tier 1 fails
+- [x] 2.6 Perturb one controlled fusion or threshold input. Confirm Tier 1 fails
       for the intended metric, then restore the fixture.
 
 ## 3. Tier 2 Ollama gate and baseline measurement
 
-- [ ] 3.1 Add `tests/quality/test_retrieval_quality_tier2.py`. Ingest the fixed
+- [x] 3.1 Add `tests/quality/test_retrieval_quality_tier2.py`. Ingest the fixed
       source files through normal chunking and retrieval with Ollama.
-- [ ] 3.2 Pin `qwen3-embedding:0.6b` as the Tier 2 reference tag. Keep production
+- [x] 3.2 Pin `qwen3-embedding:0.6b` as the Tier 2 reference tag. Keep production
       embedding defaults unchanged.
-- [ ] 3.3 Fail Tier 2 when Ollama is absent, the model tag or digest differs, a
+- [x] 3.3 Fail Tier 2 when Ollama is absent, the model tag or digest differs, a
       fixture identity differs, or baseline JSON is invalid. Do not skip these
       conditions.
-- [ ] 3.4 Record the resolved model digest, Ollama version, operating system,
+- [x] 3.4 Record the resolved model digest, Ollama version, operating system,
       architecture, corpus hash, and query-set hash with each measurement.
 - [ ] 3.5 Run at least three repeated Tier 2 measurements. Use a second
       available architecture when possible and preserve the per-query ranks.
@@ -54,40 +54,40 @@
 - [ ] 3.7 Create `tests/quality/baseline.json` with schema version, fixture
       identities, both tiers' measurements and floors, the model tag, digest,
       and measurement dates.
-- [ ] 3.8 Add baseline-schema and identity tests. Confirm failures show the
+- [x] 3.8 Add baseline-schema and identity tests. Confirm failures show the
       measured baseline, required floor, and actual result.
 
 ## 4. Blocking CI jobs
 
-- [ ] 4.1 Add a dedicated Tier 1 job to `.github/workflows/ci.yml`. Run the
+- [x] 4.1 Add a dedicated Tier 1 job to `.github/workflows/ci.yml`. Run the
       targeted slow-marked Tier 1 file on pull-request and push events.
-- [ ] 4.2 Add nightly cron `23 3 * * *` to the CI workflow. Preserve the current
+- [x] 4.2 Add nightly cron `23 3 * * *` to the CI workflow. Preserve the current
       `workflow_dispatch`, push, and pull-request triggers.
-- [ ] 4.3 Add a dedicated Tier 2 `ubuntu-latest` job. Limit it to schedule and
+- [x] 4.3 Add a dedicated Tier 2 `ubuntu-latest` job. Limit it to schedule and
       `workflow_dispatch` events.
-- [ ] 4.4 Install and start Ollama in Tier 2. Pull the pinned model tag and run
+- [x] 4.4 Install and start Ollama in Tier 2. Pull the pinned model tag and run
       only the targeted Tier 2 quality file.
-- [ ] 4.5 Set `continue-on-error: false` on both jobs. Use strict shell handling
+- [x] 4.5 Set `continue-on-error: false` on both jobs. Use strict shell handling
       and remove every skip or failure-suppression path.
 - [ ] 4.6 Add schedule exclusions to each existing non-quality job. Confirm a
       nightly event starts Tier 2 without starting unrelated CI jobs.
-- [ ] 4.7 Add CI comments with the same scope statement as the runner docstring.
+- [x] 4.7 Add CI comments with the same scope statement as the runner docstring.
       State that subtle model drift still requires experiments.
 - [ ] 4.8 Inspect `tests/test_clean_base_tripwire.py`. Update pinned collection
       counts only when the new slow tests change its verified manifest.
 
 ## 5. Decision record and operator guidance
 
-- [ ] 5.1 Create
+- [x] 5.1 Create
       `docs/tdr/016-retrieval-quality-floor-margin-and-determinism.md` from the
       repository template.
 - [ ] 5.2 Record repeated metric values, machine details, the chosen margin,
       model tag and digest handling, baseline regeneration, and revisit triggers
       in TDR-016.
-- [ ] 5.3 Add TDR-016 to `docs/tdr/README.md` with its final status and date.
-- [ ] 5.4 Document the targeted Tier 1 and Tier 2 commands in
+- [x] 5.3 Add TDR-016 to `docs/tdr/README.md` with its final status and date.
+- [x] 5.4 Document the targeted Tier 1 and Tier 2 commands in
       `tests/TEST_README.md`. Include the gate's detection boundary.
-- [ ] 5.5 Confirm all corpus, query, metric, baseline, and runner assets live
+- [x] 5.5 Confirm all corpus, query, metric, baseline, and runner assets live
       under `tests/`. Do not create an `experiments/` directory.
 
 ## 6. Final verification

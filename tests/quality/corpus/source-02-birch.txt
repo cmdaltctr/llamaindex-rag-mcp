@@ -1,0 +1,3 @@
+Source identifier: source-02-birch.
+Birch Archive stores meteor records in vault Cobalt-9 at fourteen degrees Celsius.
+A paper seal is checked before the vault closes.

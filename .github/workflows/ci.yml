@@ -2,6 +2,8 @@ name: CI
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "23 3 * * *"
   push:
     branches: [main, v3]
   pull_request:
@@ -9,6 +11,7 @@ on:
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -82,6 +85,111 @@ jobs:
           fi
           uv run --no-sync pytest -m "slow" --tb=short -q
 
+  # This small synthetic corpus guards dense score conversion, RRF,
+  # threshold handling, and final ranking. Subtle embedding-model drift
+  # still requires the broader experiments process.
+  retrieval-quality-tier1:
+    name: Retrieval quality (Tier 1)
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
+        run: uv sync --frozen
+
+      - name: Confirm slow quality cases are excluded ordinarily
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest tests/quality -m "not slow" --collect-only -q
+
+      - name: Run quality metric unit tests
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest tests/quality/test_metrics.py --tb=short -q
+
+      - name: Run deterministic Tier 1 gate
+        env:
+          PDF_READER: pypdf
+          EMBED_PROVIDER: local
+          LOCAL_BACKEND: ollama
+          EMBED_MODEL: nomic-embed-text
+          OLLAMA_BASE_URL: http://localhost:11434
+          METADATA_LLM_PROVIDER: local
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest tests/quality/test_metrics.py tests/quality/test_retrieval_quality_tier1.py -m slow --tb=short -q -s
+
+  # This runs the same narrow production path with the pinned real model.
+  # It does not detect subtle model drift; use experiments for that work.
+  retrieval-quality-tier2:
+    name: Retrieval quality (Tier 2)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39
+
+      - name: Install dependencies
+        env:
+          UV_LINK_MODE: copy
+        run: uv sync --frozen
+
+      - name: Install pinned Ollama
+        run: |
+          set -euo pipefail
+          curl -fsSL https://github.com/ollama/ollama/releases/download/v0.33.2/install.sh -o /tmp/install-ollama.sh
+          echo "25f64b810b947145095956533e1bdf56eacea2673c55a7e586be4515fc882c9f  /tmp/install-ollama.sh" | sha256sum --check --strict
+          OLLAMA_VERSION=0.33.2 sh /tmp/install-ollama.sh
+
+      - name: Start Ollama and pull reference model
+        run: |
+          set -euo pipefail
+          ollama serve > /tmp/ollama.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:11434/api/version > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              cat /tmp/ollama.log
+              exit 1
+            fi
+            sleep 1
+          done
+          ollama pull qwen3-embedding:0.6b
+
+      - name: Run real-Ollama Tier 2 gate
+        run: |
+          set -euo pipefail
+          uv run --no-sync pytest tests/quality/test_retrieval_quality_tier2.py -m slow --tb=short -q -s
+
   # ── Floor-resolution CI job (ADR-042) ────────────────────────────────
   # Installs at the declared lower bounds (--resolution lowest-direct) and
   # runs the fast test suite. This converts the floors in pyproject.toml
@@ -95,6 +203,7 @@ jobs:
   # excluded here because it has its own dedicated job below (ADR-038) and
   # must never enter the default install path.
   floors:
+    if: github.event_name != 'schedule'
     name: Floor resolution${{ matrix.extra && format(' ({0})', matrix.extra) || '' }}
     runs-on: ubuntu-latest
     permissions:
@@ -165,6 +274,7 @@ jobs:
   # Optional Leiden must install and pass its focused graph contracts on
   # every supported CPython version. Both packages use abi3 wheels.
   community-leiden-extra:
+    if: github.event_name != 'schedule'
     name: Leiden extra (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
     permissions:
@@ -205,6 +315,7 @@ jobs:
   # with || echo. This job installs the torch extra and runs the
   # torch-backend and cross-backend contract tests without suppression.
   torch-extra:
+    if: github.event_name != 'schedule'
     name: Torch backend tests
     # The full-suite codecov job is the sole coverage upload. This narrow
     # optional-backend suite would otherwise replace the aggregate report.
@@ -241,6 +352,7 @@ jobs:
         run: uv run --no-sync pytest -m "slow" -k "torch or backend_contract" --tb=short -v
 
   lint:
+    if: github.event_name != 'schedule'
     name: Lint (Ruff)
     runs-on: ubuntu-latest
     permissions:
@@ -279,6 +391,7 @@ jobs:
         run: npx --yes pyright@1.1.412 src
 
   codecov:
+    if: github.event_name != 'schedule'
     name: Coverage (Codecov)
     runs-on: ubuntu-latest
     permissions:
@@ -344,6 +457,7 @@ jobs:
   # slice, and inverts the skip assertion: nothing may skip with the
   # "chroma extra not installed" reason.
   chroma-extra:
+    if: github.event_name != 'schedule'
     name: Chroma extra tests
     runs-on: ubuntu-latest
     permissions:

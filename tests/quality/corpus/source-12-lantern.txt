@@ -1,0 +1,3 @@
+Source identifier: source-12-lantern.
+Lantern Museum lights the moon gallery with twelve amber LEDs.
+The lights dim automatically ten minutes before closing.

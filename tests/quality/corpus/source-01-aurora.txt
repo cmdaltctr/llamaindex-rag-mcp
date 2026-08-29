@@ -1,0 +1,3 @@
+Source identifier: source-01-aurora.
+Aurora Station calibrates polar cameras every Tuesday with copper prism A17.
+The station records the completed calibration in a teal ledger.

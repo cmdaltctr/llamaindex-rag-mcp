@@ -1,0 +1,87 @@
+[
+  {
+    "id": "q01",
+    "query": "Which station calibrates polar cameras on Tuesday with copper prism A17?",
+    "expected_sources": [
+      "source-01-aurora.txt"
+    ]
+  },
+  {
+    "id": "q02",
+    "query": "Where are meteor records kept at fourteen degrees in vault Cobalt-9?",
+    "expected_sources": [
+      "source-02-birch.txt"
+    ]
+  },
+  {
+    "id": "q03",
+    "query": "What material neutralises solvent Kappa-42?",
+    "expected_sources": [
+      "source-03-cedar.txt"
+    ]
+  },
+  {
+    "id": "q04",
+    "query": "Which observatory maps comet Nereid with a 2.4 metre mirror?",
+    "expected_sources": [
+      "source-04-delta.txt"
+    ]
+  },
+  {
+    "id": "q05",
+    "query": "When are saffron beds irrigated with recycled rainwater?",
+    "expected_sources": [
+      "source-05-ember.txt"
+    ]
+  },
+  {
+    "id": "q06",
+    "query": "Which locker holds vaccine lot VX-81 at minus seventy degrees?",
+    "expected_sources": [
+      "source-06-fjord.txt"
+    ]
+  },
+  {
+    "id": "q07",
+    "query": "What paste is used to polish turbine blades?",
+    "expected_sources": [
+      "source-07-granite.txt"
+    ]
+  },
+  {
+    "id": "q08",
+    "query": "On which day can borrowers take the brass astrolabe?",
+    "expected_sources": [
+      "source-08-harbour.txt"
+    ]
+  },
+  {
+    "id": "q09",
+    "query": "How long does the rye starter ferment in the blue crock?",
+    "expected_sources": [
+      "source-09-indigo.txt"
+    ]
+  },
+  {
+    "id": "q10",
+    "query": "Through which gate is parcel JP-440 routed?",
+    "expected_sources": [
+      "source-10-juniper.txt"
+    ]
+  },
+  {
+    "id": "q11",
+    "query": "Which room hosts the Wednesday statistics club using R and Python?",
+    "expected_sources": [
+      "source-13-meridian.txt"
+    ]
+  },
+  {
+    "id": "q12",
+    "query": "Which sources describe a Friday astrolabe activity or a Wednesday statistics activity?",
+    "expected_sources": [
+      "source-08-harbour.txt",
+      "source-13-meridian.txt"
+    ]
+  }
+]

@@ -1,0 +1,3 @@
+Source identifier: source-20-umber.
+Umber Radio transmits its beacon on 7.42 megahertz at midnight.
+The operator logs signal strength after every transmission.
