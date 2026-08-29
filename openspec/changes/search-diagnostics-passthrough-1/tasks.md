@@ -50,10 +50,11 @@
 
 - [x] 5.1 Review the diff for pure transport passthrough. Confirm neither
       transport computes, renames, nor removes diagnostic fields.
-- [ ] 5.2 Run `uv run pytest tests/test_mcp_tools.py tests/test_cli.py
-      tests/test_retrieval.py tests/test_rerank_policy.py
-      tests/test_file_size_ceiling.py
+- [x] 5.2 Run the full fast suite with module coverage:
+      `LOCAL_BACKEND=ollama uv run pytest -m "not slow"
       --cov=rag_mcp.transports.mcp --cov-report=term-missing
       --cov-fail-under=95`, then run
       `openspec validate "search-diagnostics-passthrough-1" --type change
-      --strict`.
+      --strict`. Verified: 1942 passed, 100 skipped, `transports/mcp.py`
+      at 96%. The targeted file list alone reaches only 79% because other
+      test files exercise the remaining handlers.
