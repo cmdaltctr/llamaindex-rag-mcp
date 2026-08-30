@@ -31,17 +31,17 @@
 
 ## 3. Expose the field through CLI and MCP listing
 
-- [ ] 3.1 Add an `Orphaned` column to the CLI's human-readable list table. Map
+- [x] 3.1 Add an `Orphaned` column to the CLI's human-readable list table. Map
       values to `Yes`, `No`, and `Unknown`.
-- [ ] 3.2 Update the CLI list help and docstring. State that status means
+- [x] 3.2 Update the CLI list help and docstring. State that status means
       “missing on this machine”.
-- [ ] 3.3 Preserve direct CLI JSON serialisation. Assert booleans and `null`
+- [x] 3.3 Preserve direct CLI JSON serialisation. Assert booleans and `null`
       pass through without conversion.
-- [ ] 3.4 Keep `list_indexed_documents` as a thin MCP pass-through. Update its
+- [x] 3.4 Keep `list_indexed_documents` as a thin MCP pass-through. Update its
       description and docstring for the additive field and local meaning.
-- [ ] 3.5 Extend `tests/test_cli.py` for the new column, human labels, and JSON
+- [x] 3.5 Extend `tests/test_cli.py` for the new column, human labels, and JSON
       values.
-- [ ] 3.6 Extend `tests/test_mcp_tools.py` to assert the MCP listing returns
+- [x] 3.6 Extend `tests/test_mcp_tools.py` to assert the MCP listing returns
       `orphaned` unchanged with all existing row keys.
 
 ## 4. Document visibility and manual cleanup

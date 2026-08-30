@@ -242,6 +242,21 @@ async def test_list_after_ingest_returns_nonempty(mcp_server, fixtures_dir: Path
         assert "chunks" in first
 
 
+async def test_list_passes_through_orphaned_values(mcp_server) -> None:
+    """MCP listing preserves orphaned values and every existing row key."""
+    rows = [
+        {"source": "gone.txt", "source_id": "gone", "chunks": 1, "orphaned": True},
+        {"source": "present.txt", "source_id": "present", "chunks": 2, "orphaned": False},
+        {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
+    ]
+
+    with patch("rag_mcp.transports.mcp._list_documents", return_value=rows):
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool("list_indexed_documents", {})
+
+    assert _extract_result(result) == rows
+
+
 # ── Parameter validation ───────────────────────────────────────────────────
 
 
