@@ -1,17 +1,17 @@
 ## 1. Pin the core listing contract
 
-- [ ] 1.1 Add focused `list_documents()` tests with a fake `VectorStore` passed
+- [x] 1.1 Add focused `list_documents()` tests with a fake `VectorStore` passed
       through `store=`. Implement `count()` and `iter_metadatas()` on the fake.
-- [ ] 1.2 Use `tmp_path` for one existing absolute path and one missing absolute
+- [x] 1.2 Use `tmp_path` for one existing absolute path and one missing absolute
       path. Assert `orphaned` is `False` and `True`, respectively.
-- [ ] 1.3 Add legacy metadata with basename-only `file_name` and no source
+- [x] 1.3 Add legacy metadata with basename-only `file_name` and no source
       metadata. Assert both listing rows report `orphaned is None`.
-- [ ] 1.4 Prove a non-absolute source never reaches the existence check. Include a
+- [x] 1.4 Prove a non-absolute source never reaches the existence check. Include a
       same-named file in the process working directory.
-- [ ] 1.5 Update existing exact listing-shape assertions in
+- [x] 1.5 Update existing exact listing-shape assertions in
       `tests/test_ingestion.py` and `tests/test_lineage_store_contract.py` for
       the additive field.
-- [ ] 1.6 Run the focused core tests before implementation. Confirm the new
+- [x] 1.6 Run the focused core tests before implementation. Confirm the new
       assertions fail for the missing field.
 
 ## 2. Add machine-local orphan classification
