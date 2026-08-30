@@ -86,9 +86,16 @@ Two autouse fixtures in `tests/test_mcp_tools.py`. No production change.
    it takes strong references to the root handlers and records the level.
    At module teardown, after all function-scoped teardowns have restored
    state, it fails if the handler list is not the same objects in the same
-   order, if any surviving handler holds a closed stream, or if the root
-   level drifted. It also fires if the restore fixture is removed or
-   bypassed, for example by import-time logging configuration.
+   order, if any handler that was alive at module setup is closed or holds
+   a closed stream at teardown, or if the root level drifted. The dead
+   handler check (`_holds_dead_stream`) tests both the `_closed` flag —
+   `FileHandler.close()` nulls the stream, so the flag is the only
+   evidence — and the stream's own closed flag, which is the capsys leak
+   shape. Handlers already dead at module start are exempt: pytest itself
+   can leave closed `LogCaptureHandler` objects on root between modules,
+   and that pre-existing contamination is outside this guard's scope. The
+   guard also fires if the restore fixture is removed or bypassed, for
+   example by import-time logging configuration.
 
 Two design choices avoid false positives under pytest capture:
 
@@ -105,17 +112,22 @@ Two design choices avoid false positives under pytest capture:
   logging-plugin handler objects stable across a whole module run, so
   plugin churn cannot false-positive the check.
 
-One counted regression test pins the sheltering behaviour
-(`test_force_basic_config_shelters_existing_root_handlers`): it attaches a
+Two counted regression tests pin the behaviour:
+`test_force_basic_config_shelters_existing_root_handlers` attaches a
 mode-`w` `FileHandler` to the root logger, calls `basicConfig(force=True)`,
-and asserts the handler survived unclosed. The clean-base tripwire moves to
-`_BASE_EXECUTED=1951`.
+and asserts the handler survived unclosed;
+`test_leak_guard_detects_closed_handlers` asserts the dead-handler
+predicate catches a closed `FileHandler` (stream nulled) and a handler
+holding a closed stream, while passing a live handler. The clean-base
+tripwire moves to `_BASE_EXECUTED=1952`.
 
 Mutation verification: disabling `_restore_root_logging` made the guard
 fail with `StreamHandler holds closed stream` plus handler-set drift.
-Neutralising the sheltering detach made the counted regression fail with
-`force=True closed a pre-existing root handler`. Re-enabled, the module is
-green under default capture, `-s`, and `--log-file`.
+Neutralising the sheltering detach made the sheltering regression fail
+with `force=True closed a pre-existing root handler`. Neutralising the
+`_closed` flag check made the detection regression fail. Re-enabled, the
+module is green under default capture, `-s`, and `--log-file`, and the
+full suite is green after `tests/test_cli.py`.
 
 ### Why no production change
 
@@ -135,8 +147,8 @@ semantics.
   configuration or a removed restore fixture.
 - File logging survives the module: under `--log-file`, records written
   after `tests/test_mcp_tools.py` still reach the log file.
-- One counted regression test added; the tripwire manifest is bumped to
-  match (`_BASE_EXECUTED=1951`).
+- Two counted regression tests added; the tripwire manifest is bumped to
+  match (`_BASE_EXECUTED=1952`).
 
 ### Negative
 
@@ -147,9 +159,11 @@ semantics.
 
 ### Neutral
 
-- Verification results: module alone 43 passed, 5 skipped; ordered pair
-  44 passed, 5 skipped; ordered pair under `-s` and under `--log-file`
-  both 44 passed, 5 skipped; minimal pair passes; CLI test alone passes.
+- Verification results: module alone 44 passed, 5 skipped; ordered pair
+  45 passed, 5 skipped; ordered pair under `-s` and under `--log-file`
+  both 45 passed, 5 skipped; module after `tests/test_cli.py` 168 passed;
+  full fast suite 1957 passed, 100 skipped, 18 deselected; minimal pair
+  passes; CLI test alone passes.
 
 ## Alternatives Considered
 

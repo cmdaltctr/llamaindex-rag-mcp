@@ -13,14 +13,14 @@ are shortened: `<worktree>` is the change worktree, `<uv-dir>` the uv home.
 
 Canonical failing command (default capture, exit 1):
 
-```
+```shell
 LOCAL_BACKEND=ollama uv run pytest tests/test_mcp_tools.py \
   "tests/test_cli.py::TestIngestCLI::test_ingest_json_output"
 ```
 
 Result tail:
 
-```
+```text
 FAILED tests/test_cli.py::TestIngestCLI::test_ingest_json_output
 json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 ```
@@ -29,7 +29,7 @@ The CLI test's local shows `result.output` begins with the logging error
 report and ends with the valid JSON document (pytest truncates the middle of
 the repr):
 
-```
+```text
 s = '--- Logging error ---\nTraceback (most recent call last):\n
   File "<uv-dir>/python/cpython-3.12.1...p_seconds":
   0.002881124964915216,\n    "total_seconds": 0.017136290902271867\n  },
@@ -244,7 +244,7 @@ Step 3 — pair each candidate with the CLI JSON test:
 
 Minimal reproducing pair (exit 1):
 
-```
+```shell
 LOCAL_BACKEND=ollama uv run pytest \
   "tests/test_mcp_tools.py::test_main_reports_runtime_setup_error" \
   "tests/test_cli.py::TestIngestCLI::test_ingest_json_output"
@@ -255,7 +255,7 @@ Pinned test: **`tests/test_mcp_tools.py::test_main_reports_runtime_setup_error`*
 
 Installing call path:
 
-```
+```text
 test_main_reports_runtime_setup_error            tests/test_mcp_tools.py:647
   └─ from rag_mcp.transports.mcp import main     tests/test_mcp_tools.py:657
   └─ main()                                      tests/test_mcp_tools.py:659
@@ -297,7 +297,7 @@ at session start beyond pytest's own).
 Snapshot evidence (after the CLI test in the minimal pair, and from the
 pinned test's teardown):
 
-```
+```text
 HANDLER logging.StreamHandler lvl=0 stream=<_io.TextIOWrapper encoding='UTF-8'>
   closed=True is_cur_sys_stderr=False is_dunder=False
 ```

@@ -11,6 +11,7 @@ Tests cover:
 from __future__ import annotations
 
 import inspect
+import io
 import json
 import logging
 from collections.abc import Iterator
@@ -65,6 +66,21 @@ def _restore_root_logging(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     logging.root.setLevel(level_before)
 
 
+def _holds_dead_stream(handler: logging.Handler) -> bool:
+    """True when ``handler`` is closed or holds a closed stream.
+
+    ``FileHandler.close()`` sets ``stream`` to ``None`` and ``_closed`` to
+    ``True`` (Python 3.11+), so a closed file handler is only visible
+    through the flag; a handler whose stream was closed externally — the
+    capsys leak shape — keeps a non-``None`` stream whose ``closed`` flag
+    is set. Check both.
+    """
+    if getattr(handler, "_closed", False):
+        return True
+    stream = getattr(handler, "stream", None)
+    return stream is not None and getattr(stream, "closed", False)
+
+
 @pytest.fixture(autouse=True, scope="module")
 def _root_logging_leak_guard() -> Iterator[None]:
     """Fail the module when root logging is not exactly as it was found.
@@ -85,18 +101,30 @@ def _root_logging_leak_guard() -> Iterator[None]:
       confirmed this pytest version keeps its logging-plugin handler
       objects stable across a whole module run, so plugin churn cannot
       false-positive this check.)
-    - **Closed state.** No surviving handler may hold a closed stream: a
-      handler reattached after ``force=True`` closed it is dead and either
-      raises during later emits — the demonstrated leak shape behind the
+    - **Closed state.** No handler that was alive at module setup may be
+      closed or hold a closed stream at teardown: a handler reattached
+      after ``force=True`` closed it is dead and either raises during
+      later emits — the demonstrated leak shape behind the
       ``--- Logging error ---`` banner — or, for a mode-``w``
-      ``FileHandler``, silently drops records. Stream identity against the
-      current ``sys.stderr`` is deliberately not checked: pytest's global
-      capture also swaps ``sys.stderr``, so identity comparisons
-      false-positive there.
+      ``FileHandler``, silently drops records. ``_holds_dead_stream``
+      checks both shapes: ``FileHandler.close()`` nulls the stream and
+      only sets ``_closed``, while the capsys leak closes the stream under
+      a live-looking handler. Handlers that are already dead when the
+      module starts are exempt: they are earlier modules' contamination
+      (pytest itself leaves closed ``LogCaptureHandler`` objects on root),
+      outside this guard's scope. Stream identity against the current
+      ``sys.stderr`` is deliberately not checked: pytest's global capture
+      also swaps ``sys.stderr``, so identity comparisons false-positive
+      there.
     - **Root level.** ``basicConfig`` may change it; it must be restored.
     """
     baseline_handlers = logging.root.handlers[:]
     baseline_level = logging.root.level
+    # Handlers that are already dead at module start are pre-existing
+    # contamination from earlier modules (pytest itself can leave closed
+    # LogCaptureHandler objects on root); this guard covers only what THIS
+    # module kills, so record them as exempt.
+    baseline_dead = [h for h in baseline_handlers if _holds_dead_stream(h)]
     yield
     failures: list[str] = []
     if logging.root.handlers != baseline_handlers:
@@ -106,9 +134,11 @@ def _root_logging_leak_guard() -> Iterator[None]:
             f"after={[type(h).__name__ for h in logging.root.handlers]}"
         )
     for handler in logging.root.handlers:
-        stream = getattr(handler, "stream", None)
-        if stream is not None and getattr(stream, "closed", False):
-            failures.append(f"{type(handler).__name__} holds closed stream {stream!r}")
+        if _holds_dead_stream(handler) and handler not in baseline_dead:
+            failures.append(
+                f"{type(handler).__name__} is closed or holds a closed stream "
+                f"(stream={getattr(handler, 'stream', None)!r})"
+            )
     if logging.root.level != baseline_level:
         failures.append(f"root level drifted: baseline={baseline_level} after={logging.root.level}")
     if failures:
@@ -779,6 +809,25 @@ def test_force_basic_config_shelters_existing_root_handlers(tmp_path: Path) -> N
     finally:
         logging.root.removeHandler(probe)
         probe.close()
+
+
+def test_leak_guard_detects_closed_handlers(tmp_path: Path) -> None:
+    """The guard's dead-handler check must catch closed ``FileHandler`` objects.
+
+    ``FileHandler.close()`` nulls the stream, so a ``stream.closed`` check
+    alone cannot see a reattached closed handler — the shape the guard sees
+    when a ``force=True`` close is not sheltered.
+    """
+    closed_file = logging.FileHandler(tmp_path / "closed.log", mode="w")
+    closed_file.close()
+    assert _holds_dead_stream(closed_file)
+
+    dead_stream = logging.StreamHandler(io.StringIO())
+    dead_stream.stream.close()
+    assert _holds_dead_stream(dead_stream)
+
+    live = logging.StreamHandler(io.StringIO())
+    assert not _holds_dead_stream(live)
 
 
 def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
