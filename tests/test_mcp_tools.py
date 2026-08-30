@@ -15,6 +15,7 @@ import json
 import logging
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 from unittest.mock import ANY, patch
 
 import pytest
@@ -26,28 +27,47 @@ from conftest import connected_client
 
 
 @pytest.fixture(autouse=True)
-def _restore_root_logging() -> Iterator[None]:
+def _restore_root_logging(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Restore root logging configuration after each test in this module.
 
     Tests below exercise ``main()`` paths that call the real
-    ``logging.basicConfig(..., stream=sys.stderr, force=True)``. The handler
-    this installs is bound to pytest's capture replacement for ``sys.stderr``,
-    and ``force=True`` also discards pytest's own root handlers. Without
-    restoration the dead handler survives this module, and any later module
-    that emits a log record gets a ``--- Logging error ---`` banner printed
-    into captured output. See
-    openspec/changes/fix-test-isolation-mcp-cli-order and its TDR.
+    ``logging.basicConfig(..., stream=sys.stderr, force=True)``. Two side
+    effects must be undone:
+
+    - ``force=True`` *closes* every handler attached to the root logger
+      before installing its own, so reattaching a snapshot alone would
+      restore dead objects (pytest's own root ``_FileHandler`` would keep
+      dropping records for the rest of the session). The
+      ``logging.basicConfig`` wrapper below therefore detaches the current
+      handlers before delegating, keeping the originals unclosed for
+      teardown to reattach.
+    - The handler ``basicConfig`` installs is bound to pytest's capture
+      replacement for ``sys.stderr``, which capsys closes after the test;
+      teardown closes it instead of leaving it for later modules.
+
+    See openspec/changes/fix-test-isolation-mcp-cli-order and TDR-017.
     """
     handlers_before = logging.root.handlers[:]
     level_before = logging.root.level
+    real_basic_config = logging.basicConfig
+
+    def _sheltering_basic_config(**kwargs: Any) -> None:
+        if kwargs.get("force"):
+            logging.root.handlers.clear()
+        real_basic_config(**kwargs)
+
+    monkeypatch.setattr(logging, "basicConfig", _sheltering_basic_config)
     yield
+    for handler in logging.root.handlers[:]:
+        if handler not in handlers_before:
+            handler.close()
     logging.root.handlers[:] = handlers_before
     logging.root.setLevel(level_before)
 
 
 @pytest.fixture(autouse=True, scope="module")
 def _root_logging_leak_guard() -> Iterator[None]:
-    """Fail the module when a dead or foreign root handler survives it.
+    """Fail the module when root logging is not exactly as it was found.
 
     Function-scoped teardowns run before module-scoped ones, so by the time
     this guard's teardown runs, ``_restore_root_logging`` has already undone
@@ -55,41 +75,42 @@ def _root_logging_leak_guard() -> Iterator[None]:
     effect on root logging, so it also fires if the restore fixture is ever
     removed or bypassed (for example by import-time logging configuration).
 
-    Two checks, chosen to be sensitive to the demonstrated leak without
-    false positives under pytest capture:
+    Three checks:
 
-    - **Closed stream.** ``logging.basicConfig(..., force=True)`` in
-      ``main()`` binds a ``StreamHandler`` to pytest's per-test stderr
-      replacement, which capsys teardown closes; that dead handler is the
-      demonstrated leak shape behind the ``--- Logging error ---`` banner.
-      Stream identity against the current ``sys.stderr`` is deliberately
-      not checked: pytest's global capture also swaps ``sys.stderr``, so
-      identity comparisons false-positive there, whereas the closed flag
-      is false-positive-free because pytest's own handlers hold either no
-      stream (``NullHandler``) or ``stream = None`` once ``force=True`` has
-      called their ``FileHandler.close``.
-    - **Handler-set drift.** A surviving handler whose class/level was not
-      in the module setup baseline (or a baseline entry that vanished)
-      indicates a leak the closed flag cannot see, such as a handler bound
-      to pytest's fd-capture temp file, which pytest does not close
-      promptly. Class/level matching is used instead of object identity
-      because CPython id reuse made identity snapshots unreliable during
-      diagnosis (see the change notes).
-
-    This is a fixture-only guard: no counted test is added, so the
-    clean-base tripwire manifest is unaffected.
+    - **Handler identity.** The root handler list must hold the same
+      objects, in the same order, as at module setup. The baseline holds
+      strong references, so CPython cannot reuse those ids and the
+      comparison is exact — it catches a same-class, same-level handler
+      replacement, which class-name matching would miss. (A probe
+      confirmed this pytest version keeps its logging-plugin handler
+      objects stable across a whole module run, so plugin churn cannot
+      false-positive this check.)
+    - **Closed state.** No surviving handler may hold a closed stream: a
+      handler reattached after ``force=True`` closed it is dead and either
+      raises during later emits — the demonstrated leak shape behind the
+      ``--- Logging error ---`` banner — or, for a mode-``w``
+      ``FileHandler``, silently drops records. Stream identity against the
+      current ``sys.stderr`` is deliberately not checked: pytest's global
+      capture also swaps ``sys.stderr``, so identity comparisons
+      false-positive there.
+    - **Root level.** ``basicConfig`` may change it; it must be restored.
     """
-    baseline = sorted((type(h).__name__, h.level) for h in logging.root.handlers)
+    baseline_handlers = logging.root.handlers[:]
+    baseline_level = logging.root.level
     yield
-    handlers_now = logging.root.handlers[:]
     failures: list[str] = []
-    for handler in handlers_now:
+    if logging.root.handlers != baseline_handlers:
+        failures.append(
+            "root handler set drifted: "
+            f"baseline={[type(h).__name__ for h in baseline_handlers]} "
+            f"after={[type(h).__name__ for h in logging.root.handlers]}"
+        )
+    for handler in logging.root.handlers:
         stream = getattr(handler, "stream", None)
         if stream is not None and getattr(stream, "closed", False):
             failures.append(f"{type(handler).__name__} holds closed stream {stream!r}")
-    drift = sorted((type(h).__name__, h.level) for h in handlers_now)
-    if drift != baseline:
-        failures.append(f"root handler set drifted: baseline={baseline} after={drift}")
+    if logging.root.level != baseline_level:
+        failures.append(f"root level drifted: baseline={baseline_level} after={logging.root.level}")
     if failures:
         pytest.fail(
             "tests/test_mcp_tools.py left root logging contaminated "
@@ -738,6 +759,26 @@ def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) ->
 
     assert "Error: EMBED_PROVIDER='invalid'" in capsys.readouterr().err
     mock_run.assert_not_called()
+
+
+def test_force_basic_config_shelters_existing_root_handlers(tmp_path: Path) -> None:
+    """``force=True`` during a test must not close pre-existing root handlers.
+
+    ``logging.basicConfig(force=True)`` closes every attached root handler
+    before installing its own, so the restore fixture shelters the current
+    handlers by detaching them around the real call. A mode-``w``
+    ``FileHandler`` stands in for pytest's own root ``_FileHandler``: when
+    that handler is closed instead of sheltered, it silently drops every
+    later file-log record for the rest of the session.
+    """
+    probe = logging.FileHandler(tmp_path / "probe.log", mode="w")
+    logging.root.addHandler(probe)
+    try:
+        logging.basicConfig(level=logging.WARNING, force=True)
+        assert probe.stream is not None, "force=True closed a pre-existing root handler"
+    finally:
+        logging.root.removeHandler(probe)
+        probe.close()
 
 
 def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:

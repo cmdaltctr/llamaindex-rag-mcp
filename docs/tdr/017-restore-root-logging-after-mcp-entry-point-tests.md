@@ -53,6 +53,15 @@ CPython `id()` reuse made the full-file snapshot look like one handler
 "flipping" closed; the stream repr change proved that a second `force=True`
 call installed a second handler.
 
+Post-implementation review exposed a second side effect of the same call:
+`force=True` *closes* every handler attached to the root logger, it does not
+merely remove them. The first version of the restore fixture reattached the
+original handler objects after each test, but by then they were closed —
+pytest's own root `_FileHandler` (mode `w`) stayed attached with
+`stream=None` and silently dropped every later file-log record for the rest
+of the session. Restoration must therefore prevent the close, not just undo
+the removal.
+
 Production logging is not implicated. Both configuration sites are
 deliberate once-per-process entry-point behaviour:
 
@@ -67,15 +76,19 @@ deliberate once-per-process entry-point behaviour:
 Two autouse fixtures in `tests/test_mcp_tools.py`. No production change.
 
 1. **`_restore_root_logging`** (function-scoped, autouse). Snapshots
-   `logging.root.handlers` and level at setup; restores both at teardown.
-   The fixture restores state. Output filtering in the CLI test stays out
-   of scope.
+   `logging.root.handlers` and level at setup. During the test a
+   monkeypatched `logging.basicConfig` wrapper detaches the current root
+   handlers before delegating whenever `force=True` is requested, so the
+   originals are never closed. Teardown closes only handlers the test
+   added, then reattaches the original handlers and level. The fixture
+   restores state; it never filters output.
 2. **`_root_logging_leak_guard`** (module-scoped, autouse). At module setup
-   it snapshots the root handler class/level multiset. At module teardown,
-   after all function-scoped teardowns have restored state, it fails if any
-   surviving root handler holds a closed stream, or if the handler multiset
-   drifted from baseline. It also fires if the restore fixture is removed
-   or bypassed, for example by import-time logging configuration.
+   it takes strong references to the root handlers and records the level.
+   At module teardown, after all function-scoped teardowns have restored
+   state, it fails if the handler list is not the same objects in the same
+   order, if any surviving handler holds a closed stream, or if the root
+   level drifted. It also fires if the restore fixture is removed or
+   bypassed, for example by import-time logging configuration.
 
 Two design choices avoid false positives under pytest capture:
 
@@ -83,15 +96,26 @@ Two design choices avoid false positives under pytest capture:
   also swaps `sys.stderr`, so identity comparison false-positives. pytest's
   own handlers hold `stream=None` once `force=True` has closed them, so the
   closed flag stays silent for them.
-- Class/level multiset instead of object identity. CPython id reuse made
-  identity snapshots unreliable during diagnosis.
+- Object identity with held references. The guard keeps strong references
+  to the baseline handlers, so CPython cannot reuse their ids and the
+  comparison is exact — it catches a same-class, same-level replacement,
+  which class-name matching missed. Diagnosis-time id instability came from
+  comparing ids of unreferenced handlers across snapshots, not from
+  identity itself. A probe confirmed this pytest version keeps its
+  logging-plugin handler objects stable across a whole module run, so
+  plugin churn cannot false-positive the check.
 
-The guard is fixture-only. It adds no counted test, so the clean-base
-tripwire (`_BASE_EXECUTED=1950`) is unchanged.
+One counted regression test pins the sheltering behaviour
+(`test_force_basic_config_shelters_existing_root_handlers`): it attaches a
+mode-`w` `FileHandler` to the root logger, calls `basicConfig(force=True)`,
+and asserts the handler survived unclosed. The clean-base tripwire moves to
+`_BASE_EXECUTED=1951`.
 
 Mutation verification: disabling `_restore_root_logging` made the guard
 fail with `StreamHandler holds closed stream` plus handler-set drift.
-Re-enabled, the module is green.
+Neutralising the sheltering detach made the counted regression fail with
+`force=True closed a pre-existing root handler`. Re-enabled, the module is
+green under default capture, `-s`, and `--log-file`.
 
 ### Why no production change
 
@@ -109,7 +133,10 @@ semantics.
 - The canonical order pair passes. The leak is removed at its source.
 - The guard fails loudly if the leak returns, including via import-time
   configuration or a removed restore fixture.
-- No counted test added; the tripwire manifest is untouched.
+- File logging survives the module: under `--log-file`, records written
+  after `tests/test_mcp_tools.py` still reach the log file.
+- One counted regression test added; the tripwire manifest is bumped to
+  match (`_BASE_EXECUTED=1951`).
 
 ### Negative
 
@@ -120,8 +147,9 @@ semantics.
 
 ### Neutral
 
-- Verification results: module alone 42 passed, 5 skipped; ordered pair
-  43 passed, 5 skipped; minimal pair passes; CLI test alone passes.
+- Verification results: module alone 43 passed, 5 skipped; ordered pair
+  44 passed, 5 skipped; ordered pair under `-s` and under `--log-file`
+  both 44 passed, 5 skipped; minimal pair passes; CLI test alone passes.
 
 ## Alternatives Considered
 
@@ -130,7 +158,7 @@ semantics.
 | Change the production `basicConfig` calls | Both sites are deliberate once-per-process entry-point configuration; changing them alters production behaviour to suit tests. |
 | Filter `--- Logging error ---` from `result.output` in the CLI test | Hides the leak class instead of removing it. The guard would never fire. |
 | Stub `logging.basicConfig` in all `main()` tests | Hides real entry-point behaviour the tests exist to exercise. The fd-capture co-leaker would survive. |
-| Guard by handler or `sys.stderr` object identity | CPython id reuse and pytest global capture make identity unreliable. Both approaches false-positive. |
+| Guard by `sys.stderr` stream identity | Pytest global capture also swaps `sys.stderr`, so stream identity false-positives. Handler identity with held references is used instead. |
 | Add a pair-level test in a new file | Adds a counted test and shifts the clean-base tripwire manifest (`_BASE_EXECUTED`). |
 
 ## How to Recognise / Handle This Again

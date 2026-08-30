@@ -5,6 +5,10 @@ Environment: pytest 9.1.1, Python 3.12.10 (uv cpython), macOS darwin, default
 capture (fd+sys). Scratch instrumentation lived in `/tmp` only; no repo file
 was modified for this diagnosis.
 
+Line numbers for `tests/test_mcp_tools.py` refer to base commit `8f9305b`;
+the fix adds lines near the file start and shifts them. Local absolute paths
+are shortened: `<worktree>` is the change worktree, `<uv-dir>` the uv home.
+
 ## 1.1 Failing output
 
 Canonical failing command (default capture, exit 1):
@@ -27,7 +31,7 @@ the repr):
 
 ```
 s = '--- Logging error ---\nTraceback (most recent call last):\n
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.1...p_seconds":
+  File "<uv-dir>/python/cpython-3.12.1...p_seconds":
   0.002881124964915216,\n    "total_seconds": 0.017136290902271867\n  },
 \n  "peak_rss_bytes": 754417664\n}\n'
 ```
@@ -46,133 +50,133 @@ prepends itself to `result.output`:
 ```text
 --- Logging error ---
 Traceback (most recent call last):
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/logging/__init__.py", line 1163, in emit
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/logging/__init__.py", line 1163, in emit
     stream.write(msg + self.terminator)
 ValueError: I/O operation on closed file.
 Call stack:
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/bin/pytest", line 10, in <module>
+  File "<worktree>/.venv/bin/pytest", line 10, in <module>
     sys.exit(_console_main())
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 253, in _console_main
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 253, in _console_main
     code = _main(prog=_get_prog_name(sys.argv))
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 229, in _main
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 229, in _main
     ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
     res = hook_impl.function(*args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/main.py", line 377, in pytest_cmdline_main
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/main.py", line 377, in pytest_cmdline_main
     return wrap_session(config, _main)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/main.py", line 330, in wrap_session
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/main.py", line 330, in wrap_session
     session.exitstatus = doit(config, session) or 0
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/main.py", line 384, in _main
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/main.py", line 384, in _main
     config.hook.pytest_runtestloop(session=session)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
     res = hook_impl.function(*args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/main.py", line 408, in pytest_runtestloop
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/main.py", line 408, in pytest_runtestloop
     item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
     res = hook_impl.function(*args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 118, in pytest_runtest_protocol
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 118, in pytest_runtest_protocol
     runtestprotocol(item, nextitem=nextitem)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 139, in runtestprotocol
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 139, in runtestprotocol
     reports.append(call_and_report(item, "call", log))
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 249, in call_and_report
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 249, in call_and_report
     call = CallInfo.from_call(
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 361, in from_call
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 361, in from_call
     result: TResult | None = func()
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 250, in <lambda>
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 250, in <lambda>
     lambda: runtest_hook(item=item, **kwds),
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
     res = hook_impl.function(*args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
     item.runtest()
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py", line 569, in runtest
+  File "<worktree>/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py", line 569, in runtest
     super().runtest()
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1707, in runtest
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1707, in runtest
     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  File "<worktree>/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
     res = hook_impl.function(*args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+  File "<worktree>/.venv/lib/python3.12/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
     result = testfunction(**testargs)
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py", line 905, in inner
+  File "<worktree>/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py", line 905, in inner
     runner.run(coro, context=context)
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 118, in run
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 118, in run
     return self._loop.run_until_complete(task)
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
     self.run_forever()
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
     self._run_once()
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
     handle._run()
-  File "/Users/aizat/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/events.py", line 88, in _run
+  File "<uv-dir>/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/asyncio/events.py", line 88, in _run
     self._context.run(self._callback, *self._args)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/tests/test_mcp_tools.py", line 750, in test_search_documents_returns_filter_matches
+  File "<worktree>/tests/test_mcp_tools.py", line 750, in test_search_documents_returns_filter_matches
     await client.call_tool(
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 812, in call_tool
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 812, in call_tool
     result = await self._drive_input_required(await retry(input_responses, request_state), retry)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 799, in retry
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 799, in retry
     return await self.session.call_tool(
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 1048, in call_tool
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 1048, in call_tool
     result = await self.send_request(
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/shared/direct_dispatcher.py", line 149, in send_raw_request
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/shared/direct_dispatcher.py", line 149, in send_raw_request
     return await self._peer._dispatch_request(method, params, opts)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/shared/direct_dispatcher.py", line 266, in _dispatch_request
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/shared/direct_dispatcher.py", line 266, in _dispatch_request
     return await self._on_request(dctx, method, params)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 863, in handle
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 863, in handle
     return await serve_one(
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 836, in serve_one
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 836, in serve_one
     return await runner.on_request(dctx, method, params)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 230, in _on_request
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 230, in _on_request
     result = _dump_result(await call(ctx))
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/_otel.py", line 44, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/_otel.py", line 44, in __call__
     result = await call_next(ctx)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/request_state.py", line 361, in __call__
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/request_state.py", line 361, in __call__
     result = await call_next(ctx)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 217, in _inner
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/runner.py", line 217, in _inner
     result = await entry.handler(ctx, typed_params)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 420, in _handle_call_tool
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 420, in _handle_call_tool
     return await self.call_tool(params.name, params.arguments or {}, context)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 504, in call_tool
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 504, in call_tool
     return await self._tool_manager.call_tool(name, arguments, context, convert_result=True)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/tool_manager.py", line 87, in call_tool
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/tool_manager.py", line 87, in call_tool
     return await tool.run(arguments, context, convert_result=convert_result)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 152, in run
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 152, in run
     result = await self.fn_metadata.call_fn_with_arg_validation(
 ```
 ```text
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/utilities/func_metadata.py", line 106, in call_fn_with_arg_validation
+  File "<worktree>/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/utilities/func_metadata.py", line 106, in call_fn_with_arg_validation
     return await fn(**arguments_parsed_dict)
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/src/rag_mcp/transports/mcp.py", line 152, in ingest_documents
+  File "<worktree>/src/rag_mcp/transports/mcp.py", line 152, in ingest_documents
     return await ingest_path_async(
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/src/rag_mcp/core/ingestion/pipeline.py", line 168, in ingest_path_async
+  File "<worktree>/src/rag_mcp/core/ingestion/pipeline.py", line 168, in ingest_path_async
     inventory = detect_file_types(str(path_obj))
-  File "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-feat-fix-test-isolation-mcp-cli-order/src/rag_mcp/core/codebase/codebase_map.py", line 218, in detect_file_types
+  File "<worktree>/src/rag_mcp/core/codebase/codebase_map.py", line 218, in detect_file_types
     logger.warning("Magika CLI not installed; using suffix-based detection")
 Message: 'Magika CLI not installed; using suffix-based detection'
 Arguments: ()
