@@ -46,13 +46,13 @@
 
 ## 4. Document visibility and manual cleanup
 
-- [ ] 4.1 Update the `list` section in `docs/guides/cli-reference.md`. Explain
+- [x] 4.1 Update the `list` section in `docs/guides/cli-reference.md`. Explain
       the column, tri-state values, and machine-local meaning.
-- [ ] 4.2 Update `docs/guides/mcp-tools.md` with the additive `orphaned` field
+- [x] 4.2 Update `docs/guides/mcp-tools.md` with the additive `orphaned` field
       and its `true`, `false`, and `null` states.
-- [ ] 4.3 Link orphan discovery to existing preview and deletion commands.
+- [x] 4.3 Link orphan discovery to existing preview and deletion commands.
       State that listing never deletes indexed chunks.
-- [ ] 4.4 Confirm documentation does not claim global source absence, move
+- [x] 4.4 Confirm documentation does not claim global source absence, move
       tracking, automatic cleanup, or identity preservation across moves.
 
 ## 5. Final verification

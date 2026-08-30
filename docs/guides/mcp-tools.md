@@ -51,10 +51,21 @@ Show what's currently indexed.
 | ------------ | ------ | ------------- | --------------------------------------------- |
 | `collection` | string | `"documents"` | Vector-store collection to list documents from |
 
-Each row is `{"source": <path>, "source_id": <id or null>, "chunks": <count>}`.
+Each row is `{"source": <path>, "source_id": <id or null>, "chunks": <count>, "orphaned": <true, false, or null>}`.
 Chunks are grouped by `source_id`, so one indexed file appears once with its
 chunk total. Rows without lineage metadata (for example experiment
 precomputed rows) fall back to path grouping and report `source_id: null`.
+
+The `orphaned` field is machine-local:
+
+- `true`: The absolute source path is missing on this machine.
+- `false`: The absolute source path exists on this machine.
+- `null`: The row has no absolute path that this machine can check.
+
+This field does not prove that a source is missing elsewhere. An index can
+contain paths created on another machine. Listing is read-only and never
+deletes indexed chunks. Use [`delete_documents`](#delete_documents) with
+`dry_run: true` to preview manual cleanup before explicit deletion.
 
 ## `list_collections`
 
