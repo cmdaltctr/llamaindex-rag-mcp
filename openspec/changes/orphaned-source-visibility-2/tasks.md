@@ -16,17 +16,17 @@
 
 ## 2. Add machine-local orphan classification
 
-- [ ] 2.1 Extend `core/ingestion/loader.py::list_documents()` with an
+- [x] 2.1 Extend `core/ingestion/loader.py::list_documents()` with an
       `orphaned: bool | None` value on every returned row.
-- [ ] 2.2 Classify each grouped source once. Check existence only after the host
+- [x] 2.2 Classify each grouped source once. Check existence only after the host
       runtime confirms the source is absolute.
-- [ ] 2.3 Return `None` for basenames, relative paths, `"unknown"`, and foreign
+- [x] 2.3 Return `None` for basenames, relative paths, `"unknown"`, and foreign
       path syntax that is not absolute locally.
-- [ ] 2.4 Update the function docstring and return-shape description. State that
+- [x] 2.4 Update the function docstring and return-shape description. State that
       orphaned means “missing on this machine”.
-- [ ] 2.5 Keep grouping, `source_id`, chunk counts, and empty-store behaviour
+- [x] 2.5 Keep grouping, `source_id`, chunk counts, and empty-store behaviour
       unchanged. Add no store mutation.
-- [ ] 2.6 Confirm `src/rag_mcp/core/ingestion/loader.py` remains below the
+- [x] 2.6 Confirm `src/rag_mcp/core/ingestion/loader.py` remains below the
       repository's 500-line ceiling.
 
 ## 3. Expose the field through CLI and MCP listing

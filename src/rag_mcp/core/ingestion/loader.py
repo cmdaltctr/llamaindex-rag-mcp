@@ -93,11 +93,19 @@ def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
     return files, skipped
 
 
+def _is_orphaned(source: str) -> bool | None:
+    """Return whether an indexed source is missing on this machine."""
+    path = Path(source)
+    if not path.is_absolute():
+        return None
+    return not path.exists()
+
+
 def list_documents(
     collection_name: str = "documents",
     store: VectorStore | None = None,
 ) -> list[dict]:
-    """Return unique sources and their chunk counts from the index.
+    """Return unique sources, chunk counts, and machine-local orphan status.
 
     Production-ingested chunks are grouped by their stable ``source_id``
     while the human-readable source path is retained for display. Rows
@@ -112,7 +120,8 @@ def list_documents(
 
     Returns:
         List of dicts, each with: ``{"source": str, "source_id": str | None,
-        "chunks": int}``.
+        "chunks": int, "orphaned": bool | None}``. ``orphaned`` means
+        missing on this machine and is ``None`` without a local absolute path.
     """
     resolved_store = store if store is not None else get_default_store()
 
@@ -132,14 +141,18 @@ def list_documents(
         if source_id is not None:
             display_paths.setdefault(group, display)
 
-    return [
-        {
-            "source": display_paths.get(group, group),
-            "source_id": group if group in display_paths else None,
-            "chunks": chunks,
-        }
-        for group, chunks in sorted(
-            chunk_counts.items(),
-            key=lambda item: display_paths.get(item[0], item[0]),
+    documents: list[dict] = []
+    for group, chunks in sorted(
+        chunk_counts.items(),
+        key=lambda item: display_paths.get(item[0], item[0]),
+    ):
+        source = display_paths.get(group, group)
+        documents.append(
+            {
+                "source": source,
+                "source_id": group if group in display_paths else None,
+                "chunks": chunks,
+                "orphaned": _is_orphaned(source),
+            }
         )
-    ]
+    return documents
