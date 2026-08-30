@@ -42,6 +42,7 @@ architecture), see the [ADR index](../adr/).
 | 014 | [Experiment-validity framework: runtime manifests, preflight aborts, and cell agreement](014-experiment-validity-framework.md)            | Accepted | 2026-08-19 |
 | 015 | [Correct native squared L2 at the vector-store boundaries](015-correct-native-squared-l2-at-vector-store-boundaries.md)                   | Accepted | 2026-08-19 |
 | 016 | [Pin retrieval-quality floors to identity-bound measurements](016-retrieval-quality-floor-margin-and-determinism.md)                         | Proposed | 2026-08-29 |
+| 017 | [Restore root logging state after MCP entry-point tests](017-restore-root-logging-after-mcp-entry-point-tests.md) | Accepted | 2026-08-30 |
 
 ## Status values
 

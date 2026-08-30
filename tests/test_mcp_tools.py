@@ -13,6 +13,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import ANY, patch
 
@@ -20,6 +21,83 @@ import pytest
 from mcp.types import TextContent
 
 from conftest import connected_client
+
+# ── Logging isolation ──────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _restore_root_logging() -> Iterator[None]:
+    """Restore root logging configuration after each test in this module.
+
+    Tests below exercise ``main()`` paths that call the real
+    ``logging.basicConfig(..., stream=sys.stderr, force=True)``. The handler
+    this installs is bound to pytest's capture replacement for ``sys.stderr``,
+    and ``force=True`` also discards pytest's own root handlers. Without
+    restoration the dead handler survives this module, and any later module
+    that emits a log record gets a ``--- Logging error ---`` banner printed
+    into captured output. See
+    openspec/changes/fix-test-isolation-mcp-cli-order and its TDR.
+    """
+    handlers_before = logging.root.handlers[:]
+    level_before = logging.root.level
+    yield
+    logging.root.handlers[:] = handlers_before
+    logging.root.setLevel(level_before)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _root_logging_leak_guard() -> Iterator[None]:
+    """Fail the module when a dead or foreign root handler survives it.
+
+    Function-scoped teardowns run before module-scoped ones, so by the time
+    this guard's teardown runs, ``_restore_root_logging`` has already undone
+    each test's logging changes. The guard then checks the module's *net*
+    effect on root logging, so it also fires if the restore fixture is ever
+    removed or bypassed (for example by import-time logging configuration).
+
+    Two checks, chosen to be sensitive to the demonstrated leak without
+    false positives under pytest capture:
+
+    - **Closed stream.** ``logging.basicConfig(..., force=True)`` in
+      ``main()`` binds a ``StreamHandler`` to pytest's per-test stderr
+      replacement, which capsys teardown closes; that dead handler is the
+      demonstrated leak shape behind the ``--- Logging error ---`` banner.
+      Stream identity against the current ``sys.stderr`` is deliberately
+      not checked: pytest's global capture also swaps ``sys.stderr``, so
+      identity comparisons false-positive there, whereas the closed flag
+      is false-positive-free because pytest's own handlers hold either no
+      stream (``NullHandler``) or ``stream = None`` once ``force=True`` has
+      called their ``FileHandler.close``.
+    - **Handler-set drift.** A surviving handler whose class/level was not
+      in the module setup baseline (or a baseline entry that vanished)
+      indicates a leak the closed flag cannot see, such as a handler bound
+      to pytest's fd-capture temp file, which pytest does not close
+      promptly. Class/level matching is used instead of object identity
+      because CPython id reuse made identity snapshots unreliable during
+      diagnosis (see the change notes).
+
+    This is a fixture-only guard: no counted test is added, so the
+    clean-base tripwire manifest is unaffected.
+    """
+    baseline = sorted((type(h).__name__, h.level) for h in logging.root.handlers)
+    yield
+    handlers_now = logging.root.handlers[:]
+    failures: list[str] = []
+    for handler in handlers_now:
+        stream = getattr(handler, "stream", None)
+        if stream is not None and getattr(stream, "closed", False):
+            failures.append(f"{type(handler).__name__} holds closed stream {stream!r}")
+    drift = sorted((type(h).__name__, h.level) for h in handlers_now)
+    if drift != baseline:
+        failures.append(f"root handler set drifted: baseline={baseline} after={drift}")
+    if failures:
+        pytest.fail(
+            "tests/test_mcp_tools.py left root logging contaminated "
+            "(regression guard, openspec change fix-test-isolation-mcp-cli-order): "
+            + "; ".join(failures),
+            pytrace=False,
+        )
+
 
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
