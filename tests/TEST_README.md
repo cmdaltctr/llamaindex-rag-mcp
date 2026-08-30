@@ -24,6 +24,10 @@ uv run pytest tests/test_reranker.py -v
 
 # Single test by name
 uv run pytest tests/test_reranker.py::TestSigmoidScoring::test_sigmoid_zero -v
+
+# Order-pair isolation check. Verifies tests/test_mcp_tools.py leaves no
+# stale root logging handler that would contaminate CLI JSON output.
+LOCAL_BACKEND=ollama uv run pytest tests/test_mcp_tools.py "tests/test_cli.py::TestIngestCLI::test_ingest_json_output"
 ```
 
 The fast suite uses mock embeddings and an in-memory ChromaDB client —
