@@ -103,6 +103,17 @@ rag-mcp list --collection research
 rag-mcp list --json
 ```
 
+The human table includes an `Orphaned` column:
+
+- `Yes`: The absolute source path is missing on this machine.
+- `No`: The absolute source path exists on this machine.
+- `Unknown`: The row has no absolute path that this machine can check.
+
+The JSON output preserves these states as `true`, `false`, and `null`.
+This status describes only the current machine. It does not prove that a source
+is missing elsewhere. Listing is read-only and never deletes indexed chunks.
+Use the [delete command](#delete) with `--dry-run` to preview manual cleanup.
+
 ### list-collections
 
 ```bash

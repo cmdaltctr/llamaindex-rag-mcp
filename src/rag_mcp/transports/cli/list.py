@@ -23,7 +23,7 @@ def list_cmd(
     ),
     json_output: bool = typer.Option(False, "--json", help="Output results as JSON."),
 ) -> None:
-    """List all indexed documents with their chunk counts."""
+    """List indexed documents and show sources missing on this machine."""
     from ...core.ingestion import list_documents
 
     docs = list_documents(collection_name=collection)
@@ -42,13 +42,16 @@ def list_cmd(
     table = Table(title="Indexed Documents")
     table.add_column("Source", style="green")
     table.add_column("Chunks", style="cyan", justify="right")
+    table.add_column("Orphaned", style="yellow")
 
     total_chunks = 0
     for doc in docs:
         source = _sanitise_display_name(doc["source"])
         chunks = doc["chunks"]
         total_chunks += chunks
-        table.add_row(source, str(chunks))
+        orphaned = doc["orphaned"]
+        orphaned_label = "Yes" if orphaned is True else "No" if orphaned is False else "Unknown"
+        table.add_row(source, str(chunks), orphaned_label)
 
     console.print(table)
     console.print(f"\n[bold]{len(docs)} document(s), {total_chunks} chunk(s) total.[/bold]")

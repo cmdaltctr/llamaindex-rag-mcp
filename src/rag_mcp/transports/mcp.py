@@ -266,14 +266,14 @@ async def search_documents(
 
 @mcp.tool(
     description=(
-        "List all documents currently indexed in the RAG store, "
-        "with their source paths and chunk counts. Optionally "
-        "scope to a specific ChromaDB collection."
+        "List all documents currently indexed in the RAG store, with source "
+        "paths, chunk counts, and tri-state orphaned status. Orphaned means "
+        "missing on this machine. Optionally scope to a specific collection."
     ),
     annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
 def list_indexed_documents(collection: str = "documents") -> list[dict]:
-    """List all documents that have been indexed so far."""
+    """List indexed documents and machine-local orphaned status."""
     try:
         return _list_documents(collection_name=collection)
     except Exception as exc:

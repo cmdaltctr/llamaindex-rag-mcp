@@ -380,6 +380,44 @@ class TestListCLI:
         assert "Source" in result.output
         assert "Chunks" in result.output
 
+    def test_list_rich_table_shows_all_orphaned_states(self) -> None:
+        """Human list output maps tri-state orphan values to clear labels."""
+        rows = [
+            {"source": "gone.txt", "source_id": "gone", "chunks": 1, "orphaned": True},
+            {"source": "present.txt", "source_id": "present", "chunks": 2, "orphaned": False},
+            {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
+        ]
+
+        with patch("rag_mcp.core.ingestion.list_documents", return_value=rows):
+            result = runner.invoke(app, ["list"])
+
+        assert result.exit_code == 0
+        assert "Orphaned" in result.output
+        assert "Yes" in result.output
+        assert "No" in result.output
+        assert "Unknown" in result.output
+
+    def test_list_json_preserves_orphaned_values(self) -> None:
+        """JSON list output preserves booleans, null, and existing row keys."""
+        rows = [
+            {"source": "gone.txt", "source_id": "gone", "chunks": 1, "orphaned": True},
+            {"source": "present.txt", "source_id": "present", "chunks": 2, "orphaned": False},
+            {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
+        ]
+
+        with patch("rag_mcp.core.ingestion.list_documents", return_value=rows):
+            result = runner.invoke(app, ["list", "--json"])
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == rows
+
+    def test_list_help_defines_machine_local_orphan_status(self) -> None:
+        """List help states that orphan status is machine-local."""
+        result = runner.invoke(app, ["list", "--help"])
+
+        assert result.exit_code == 0
+        assert "missing on this machine" in _strip_ansi(result.output)
+
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_list_shows_total(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """List output includes document and chunk total summary."""

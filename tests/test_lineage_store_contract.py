@@ -375,7 +375,8 @@ class TestLifecycle:
         rows = list_documents(_COLLECTION, store=lineage_store)
         assert len(rows) == 1
         row = rows[0]
-        assert set(row) == {"source", "source_id", "chunks"}
+        assert set(row) == {"source", "source_id", "chunks", "orphaned"}
+        assert row["orphaned"] is False
         assert row["source"] == str(source)
         assert row["source_id"] == _expected_source_id(str(source))
         assert row["chunks"] >= 2

@@ -85,11 +85,13 @@ class TestListDocuments:
                 "source": resolved["a.txt"],
                 "source_id": build_source_id(resolved["a.txt"]),
                 "chunks": created["a.txt"],
+                "orphaned": False,
             },
             {
                 "source": resolved["b.txt"],
                 "source_id": build_source_id(resolved["b.txt"]),
                 "chunks": created["b.txt"],
+                "orphaned": False,
             },
         ]
 
