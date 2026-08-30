@@ -50,9 +50,7 @@ def list_cmd(
         chunks = doc["chunks"]
         total_chunks += chunks
         orphaned = doc["orphaned"]
-        orphaned_label = (
-            "Yes" if orphaned is True else "No" if orphaned is False else "Unknown"
-        )
+        orphaned_label = "Yes" if orphaned is True else "No" if orphaned is False else "Unknown"
         table.add_row(source, str(chunks), orphaned_label)
 
     console.print(table)
