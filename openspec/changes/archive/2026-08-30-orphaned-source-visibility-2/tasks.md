@@ -57,12 +57,15 @@
 
 ## 5. Final verification
 
-- [ ] 5.1 Run `uv run pytest tests/test_ingestion.py
+- [x] 5.1 Run `uv run pytest tests/test_ingestion.py
       tests/test_lineage_store_contract.py tests/test_cli.py
       tests/test_mcp_tools.py tests/test_file_size_ceiling.py -v`.
-- [ ] 5.2 Run Ruff against the changed Python files and tests. Fix only findings
-      introduced by this change.
-- [ ] 5.3 Confirm listing remains read-only and the canonical-path `source_id`
-      formula is unchanged.
-- [ ] 5.4 Run `openspec validate "orphaned-source-visibility-2" --type change
-      --strict` and require a successful result.
+      Verified 2026-08-30 on `616cc86`: 231 passed, 5 skipped, 0 failed.
+- [x] 5.2 Run Ruff against the changed Python files and tests. Fix only findings
+      introduced by this change. Verified: `ruff check` over all nine changed
+      Python files reports all checks passed.
+- [x] 5.3 Confirm listing remains read-only and the canonical-path `source_id`
+      formula is unchanged. Verified: the PR #76 diff contains no changed line
+      mentioning `source_id` and no added write-path calls.
+- [x] 5.4 Run `openspec validate "orphaned-source-visibility-2" --type change
+      --strict` and require a successful result. Verified: valid.
