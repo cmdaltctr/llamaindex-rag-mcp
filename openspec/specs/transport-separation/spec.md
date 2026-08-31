@@ -123,6 +123,27 @@ response, and error schemas and the destructive-operation preview/confirm
 contract. The folder SHALL contain NO runtime HTTP code; the REST
 implementation is a separate follow-up change.
 
+The contract SHALL describe the surface the shipped transports actually
+expose. Every parameter accepted by an MCP search operation, every key present
+in a core listing result, and every key present in a core search result SHALL
+appear in the corresponding request or response schema. Validity of the
+document is necessary but not sufficient: a well-formed document that omits an
+implemented field does not satisfy this requirement.
+
+A field that appears only when diagnostics are enabled SHALL be declared and
+SHALL NOT be marked required. A field present on every response SHALL be
+declared and required.
+
+Declared defaults SHALL match the implementation exactly. A parameter with no
+implementation default SHALL be declared required without a default. A
+parameter whose default is resolved from the collection profile SHALL declare
+no default, and its description SHALL NOT assert a concrete one.
+
+Conformance SHALL be enforced by an automated check that derives the
+implemented surface from the code rather than from a maintained list, so a
+future field addition fails the check by default instead of relying on an
+author remembering the contract.
+
 #### Scenario: Contract covers the core operations
 
 - **WHEN** `openapi.yaml` is inspected
@@ -182,7 +203,62 @@ implementation is a separate follow-up change.
 - **WHEN** CI runs
 - **THEN** an OpenAPI validation step MUST pass against `openapi.yaml`
 
----
+#### Scenario: Search request schema covers every optional search parameter
+
+- **WHEN** the search request schema is compared against the MCP
+  `search_documents` operation
+- **THEN** every optional parameter that operation accepts MUST be declared
+  in the schema, including the diagnostics control
+- **AND** each declared parameter MUST carry the same default as the
+  operation
+
+#### Scenario: Document listing schema covers every listing result key
+
+- **WHEN** the document-listing response schema is compared against the keys
+  a core document listing returns
+- **THEN** every returned key MUST be declared, including the stable source
+  identifier and the tri-state orphan status
+- **AND** a key whose value may be absent MUST be declared as nullable
+
+#### Scenario: Search result schema covers every default result key
+
+- **WHEN** the search-result response schema is compared against the keys a
+  core search result carries without diagnostics
+- **THEN** every returned key MUST be declared and required, including the
+  per-chunk metadata mapping and every lineage field
+
+#### Scenario: Search result schema covers diagnostic keys as optional
+
+- **WHEN** the search-result response schema is compared against the keys a
+  core search result carries with diagnostics enabled
+- **THEN** every additional key MUST be declared
+- **AND** each MUST be declared as not required, because it is absent from a
+  default response
+
+#### Scenario: A parameter default disagrees with the implementation
+
+- **WHEN** a declared default differs from the implementation default
+- **THEN** the conformance check MUST fail
+- **AND** a parameter whose implementation default is resolved from the
+  collection profile MUST fail the check if the contract declares any default
+  for it
+
+#### Scenario: An implemented field is missing from the contract
+
+- **WHEN** the conformance check runs
+- **AND** the implemented surface exposes a field the contract does not
+  declare
+- **THEN** the check MUST fail
+- **AND** the failure MUST name the missing field and the schema expected to
+  carry it
+
+#### Scenario: A new field is added to an implemented surface
+
+- **GIVEN** the contract and the implementation currently agree
+- **WHEN** a field is added to a search parameter list or a listing result
+- **AND** `openapi.yaml` is not updated in the same change
+- **THEN** the conformance check MUST fail without any edit to the check
+  itself
 
 ### Requirement: Agent-facing documentation reflects the final tree
 
