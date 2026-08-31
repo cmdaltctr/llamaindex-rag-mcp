@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import time
 from typing import Any
 
 from llama_index.core import Settings
@@ -110,6 +111,7 @@ def _dense_query_rows(
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
     attach_norm_diagnostic: bool = False,
+    timing_report: dict | None = None,
 ) -> list[dict]:
     """Query the vector store for dense matches and return result rows.
 
@@ -130,6 +132,11 @@ def _dense_query_rows(
         norm_tolerance: Maximum permitted ``|norm - 1.0|`` (inclusive).
         attach_norm_diagnostic: When True (diagnostics mode), attach the
             ``norm_guard`` state dict to every result row.
+        timing_report: Optional dict to accumulate per-stage wall-clock
+            durations into. When supplied, ``embedding_seconds`` and
+            ``dense_seconds`` are accumulated (design D4/D5 of
+            complete-observable-surface). Timing is taken unconditionally
+            so the measured path matches production.
 
     Returns:
         List of result dicts with keys ``id``, ``score``, ``source``,
@@ -137,19 +144,27 @@ def _dense_query_rows(
         additive stable lineage fields from ``LINEAGE_METADATA_KEYS`` and,
         in diagnostics mode with the guard enabled, ``norm_guard``.
     """
+    t0 = time.perf_counter()
     query_embedding = _embed_query(query)
+    t1 = time.perf_counter()
+    if timing_report is not None:
+        timing_report["embedding_seconds"] = timing_report.get("embedding_seconds", 0.0) + (t1 - t0)
     norm_check: NormCheck | None = check_query_vector(
         query_embedding,
         model_name=_embed_model_name(),
         enabled=norm_guard_enabled,
         tolerance=norm_tolerance,
     )
+    t2 = time.perf_counter()
     raw_rows = store.query_dense(
         collection_name=collection_name,
         query_embedding=query_embedding,
         n_results=fetch_k,
         where=metadata_filter,
     )
+    t3 = time.perf_counter()
+    if timing_report is not None:
+        timing_report["dense_seconds"] = timing_report.get("dense_seconds", 0.0) + (t3 - t2)
 
     rows: list[dict] = []
     for row in raw_rows:

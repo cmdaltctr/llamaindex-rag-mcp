@@ -4,39 +4,39 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 
 ## Subcommands
 
-| Command | Description |
-|---------|-------------|
-| `rag-mcp` | Start the MCP stdio server |
-| `rag-mcp ingest <path>` | Index a file or directory into the vector store |
-| `rag-mcp search <query>` | Search indexed documents for semantically relevant chunks |
-| `rag-mcp list` | Show indexed documents with chunk counts |
-| `rag-mcp list-collections` | Show all collections in the selected vector store with document and chunk counts |
-| `rag-mcp watch <dir>` | Watch a directory for new/changed documents and auto-ingest them |
-| `rag-mcp install-login-watcher` | Install a macOS LaunchAgent that runs the document watcher at login |
-| `rag-mcp delete` | Delete documents by file path, metadata filter, or drop a collection |
-| `rag-mcp benchmark` | Benchmark embedding throughput without vector-store writes |
-| `rag-mcp --version` | Show version |
-| `rag-mcp --help` | Show help |
-| `rag-mcp --install-completion` | Install shell tab completion |
+| Command                         | Description                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `rag-mcp`                       | Start the MCP stdio server                                                       |
+| `rag-mcp ingest <path>`         | Index a file or directory into the vector store                                  |
+| `rag-mcp search <query>`        | Search indexed documents for semantically relevant chunks                        |
+| `rag-mcp list`                  | Show indexed documents with chunk counts                                         |
+| `rag-mcp list-collections`      | Show all collections in the selected vector store with document and chunk counts |
+| `rag-mcp watch <dir>`           | Watch a directory for new/changed documents and auto-ingest them                 |
+| `rag-mcp install-login-watcher` | Install a macOS LaunchAgent that runs the document watcher at login              |
+| `rag-mcp delete`                | Delete documents by file path, metadata filter, or drop a collection             |
+| `rag-mcp benchmark`             | Benchmark embedding throughput without vector-store writes                       |
+| `rag-mcp --version`             | Show version                                                                     |
+| `rag-mcp --help`                | Show help                                                                        |
+| `rag-mcp --install-completion`  | Install shell tab completion                                                     |
 
 ## Common flags
 
-| Flag | Applies to | Description |
-|------|-----------|-------------|
-| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete` | Collection name in the selected vector store (default `"documents"`) |
-| `--json` | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON |
-| `--chunk-size` | `ingest` | Override chunk size (characters) |
-| `--chunk-overlap` | `ingest` | Override chunk overlap (characters) |
-| `--report`, `-r` | `ingest` | Write ingestion report to a file |
-| `--top-k`, `-k` | `search` | Max results to return |
-| `--threshold`, `-t` | `search` | Minimum similarity score |
-| `--rerank` | `search` | Re-score with cross-encoder reranker |
-| `--hybrid` | `search` | Fuse dense vector search with sparse BM25 via RRF |
-| `--diagnostics` | `search` | Include core-produced retrieval diagnostics. Disabled by default. |
-| `--debounce`, `-d` | `watch` | Debounce interval in seconds (default: 2) |
-| `--verbose`, `-v` | `watch` | Enable DEBUG-level logging |
-| `--dry-run` | `delete` | Preview deletion without modifying the selected vector store |
-| `--yes`, `-y` | `delete` | Skip confirmation prompt for collection deletion |
+| Flag                 | Applies to                                               | Description                                                          |
+| -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
+| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`            | Collection name in the selected vector store (default `"documents"`) |
+| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON                                               |
+| `--chunk-size`       | `ingest`                                                 | Override chunk size (characters)                                     |
+| `--chunk-overlap`    | `ingest`                                                 | Override chunk overlap (characters)                                  |
+| `--report`, `-r`     | `ingest`                                                 | Write ingestion report to a file                                     |
+| `--top-k`, `-k`      | `search`                                                 | Max results to return                                                |
+| `--threshold`, `-t`  | `search`                                                 | Minimum similarity score                                             |
+| `--rerank`           | `search`                                                 | Re-score with cross-encoder reranker                                 |
+| `--hybrid`           | `search`                                                 | Fuse dense vector search with sparse BM25 via RRF                    |
+| `--diagnostics`      | `search`                                                 | Include core-produced retrieval diagnostics. Disabled by default.    |
+| `--debounce`, `-d`   | `watch`                                                  | Debounce interval in seconds (default: 2)                            |
+| `--verbose`, `-v`    | `watch`                                                  | Enable DEBUG-level logging                                           |
+| `--dry-run`          | `delete`                                                 | Preview deletion without modifying the selected vector store         |
+| `--yes`, `-y`        | `delete`                                                 | Skip confirmation prompt for collection deletion                     |
 
 ## Examples
 
@@ -87,6 +87,14 @@ rag-mcp search "climate change" --diagnostics --json
 
 The `--diagnostics` flag changes JSON output only. The human-readable table
 keeps the existing Score, Source, Page, and Text columns.
+
+With `--diagnostics --json`, each result row carries a `timings` mapping of
+per-stage retrieval wall-clock durations in seconds: `embedding_seconds`,
+`dense_seconds`, `sparse_seconds` (hybrid only), `fusion_seconds` (hybrid
+only), and `rerank_seconds` (when reranking ran). A stage that did not run is
+absent — absence means "did not execute", never "took zero time". No total
+duration is emitted. Dense and sparse stages run concurrently in hybrid mode,
+so their durations overlap; do not sum them to get wall time.
 
 > Search-time metadata filtering is available via the `search_documents` MCP tool. The CLI supports metadata filters for deletion via `rag-mcp delete --metadata`.
 

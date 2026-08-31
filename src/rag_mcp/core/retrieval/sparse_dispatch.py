@@ -29,6 +29,7 @@ Design decisions pinned here:
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable
 
 from ..vectordb.base import VectorStore
@@ -55,6 +56,8 @@ def _sparse_query_rows(
     fetch_k: int,
     backend: str = "bm25",
     metadata_filter: dict | None = None,
+    *,
+    timing_report: dict | None = None,
 ) -> list[dict]:
     """Run one registered sparse backend and normalise to pipeline rows.
 
@@ -62,16 +65,26 @@ def _sparse_query_rows(
     backend returns ``(rank, doc_id, text, metadata)`` tuples through
     one interface resolved from the sparse-backend registry, and this
     converts them into the row shape the fusion stage consumes.
+
+    Args:
+        timing_report: Optional dict to accumulate ``sparse_seconds``
+            into. A failed query (exception before completion) does not
+            record a duration, so the fallback path's successful query
+            is the only one timed (design D5).
     """
     from . import sparse_registry as _sparse_registry
     from .dense import _lineage_fields, _result_source
 
     Retriever = _sparse_registry.get(backend)
+    t0 = time.perf_counter()
     rows = Retriever(collection_name, store=store).query(
         query,
         fetch_k,
         metadata_filter=metadata_filter,
     )
+    t1 = time.perf_counter()
+    if timing_report is not None:
+        timing_report["sparse_seconds"] = timing_report.get("sparse_seconds", 0.0) + (t1 - t0)
     return [
         {
             "id": doc_id,
@@ -93,9 +106,19 @@ def _sparse_bm25_query(
     fetch_k: int,
     metadata_filter: dict | None = None,
     report: dict | None = None,
+    *,
+    timing_report: dict | None = None,
 ) -> list[dict]:
     """Run the registered BM25 backend (the fallback target)."""
-    rows = _sparse_query_rows(collection_name, store, query, fetch_k, "bm25", metadata_filter)
+    rows = _sparse_query_rows(
+        collection_name,
+        store,
+        query,
+        fetch_k,
+        "bm25",
+        metadata_filter,
+        timing_report=timing_report,
+    )
     if report is not None:
         report["sparse_backend"] = "bm25"
     return rows
@@ -160,6 +183,8 @@ def _native_sparse_query(
     fetch_k: int,
     metadata_filter: dict | None = None,
     report: dict | None = None,
+    *,
+    timing_report: dict | None = None,
 ) -> list[dict]:
     """Run the native policy: coverage warning, native attempt, fallback.
 
@@ -173,7 +198,15 @@ def _native_sparse_query(
     """
     _emit_mixed_coverage_warning(collection_name, store)
     try:
-        rows = _sparse_query_rows(collection_name, store, query, fetch_k, "native", metadata_filter)
+        rows = _sparse_query_rows(
+            collection_name,
+            store,
+            query,
+            fetch_k,
+            "native",
+            metadata_filter,
+            timing_report=timing_report,
+        )
     except Exception as exc:
         if collection_name not in _warned_native_fallback_collections:
             _warned_native_fallback_collections.add(collection_name)
@@ -186,7 +219,14 @@ def _native_sparse_query(
                 type(exc).__name__,
                 exc,
             )
-        rows = _sparse_bm25_query(collection_name, store, query, fetch_k, metadata_filter)
+        rows = _sparse_bm25_query(
+            collection_name,
+            store,
+            query,
+            fetch_k,
+            metadata_filter,
+            timing_report=timing_report,
+        )
         if report is not None:
             report["sparse_backend"] = "bm25"
         return rows

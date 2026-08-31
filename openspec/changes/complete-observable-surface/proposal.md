@@ -111,6 +111,9 @@ None. Both threads extend existing capabilities.
   cached-embedding boundary, so a cache hit is visibly cheap.
 - New test module for the OpenAPI conformance check.
 - Extensions to the existing retrieval diagnostics tests.
+- `tests/test_clean_base_tripwire.py` and `tests/test_retrieval.py` —
+  executed-count bump (1963→1986) and a fake-signature update for the new
+  `timing_report` parameter.
 
 **Not affected**
 

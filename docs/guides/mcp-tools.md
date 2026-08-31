@@ -6,20 +6,38 @@ Seven tools are exposed over the MCP protocol. All parameters are optional excep
 
 Semantic similarity search over indexed documents.
 
-| Parameter              | Type   | Default       | Description                                                                                                                                                                                   |
-| ---------------------- | ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `query`                | string | _(required)_  | Natural language search query                                                                                                                                                                 |
-| `top_k`                | int    | `10`          | Maximum number of chunks to return                                                                                                                                                            |
-| `similarity_threshold` | float  | `0.0`         | Minimum canonical dense similarity (0.0 = no filtering). Hybrid/no-rerank applies it to dense evidence before RRF; successful reranking uses the calibrated 30× transform.                    |
+| Parameter              | Type   | Default       | Description                                                                                                                                                                                              |
+| ---------------------- | ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `query`                | string | _(required)_  | Natural language search query                                                                                                                                                                            |
+| `top_k`                | int    | `10`          | Maximum number of chunks to return                                                                                                                                                                       |
+| `similarity_threshold` | float  | `0.0`         | Minimum canonical dense similarity (0.0 = no filtering). Hybrid/no-rerank applies it to dense evidence before RRF; successful reranking uses the calibrated 30× transform.                               |
 | `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RETRIEVAL__RERANK_ENABLED` config                                                |
 | `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
-| `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                              |
-| `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                              |
-| `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                        |
+| `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                                        |
+| `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                                             |
+| `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                                            |
 
 When `diagnostics` is `true`, results also preserve every diagnostic field
 produced by core retrieval. The transport does not define or rename these
 fields.
+
+When `diagnostics` is `true`, each result row also carries a `timings` mapping
+of per-stage retrieval wall-clock durations in seconds:
+
+| Key                 | Stage                | Present when                           |
+| ------------------- | -------------------- | -------------------------------------- |
+| `embedding_seconds` | Query embedding      | Always (every search embeds the query) |
+| `dense_seconds`     | Dense vector search  | Always                                 |
+| `sparse_seconds`    | Sparse (BM25) search | Hybrid queries only                    |
+| `fusion_seconds`    | RRF fusion           | Hybrid queries only                    |
+| `rerank_seconds`    | Cross-encoder rerank | Reranking ran (success or failure)     |
+
+A stage that did not run is absent from the mapping. Absence means "did not
+execute", never "took zero time". No total duration is emitted.
+
+Dense and sparse stages run concurrently in hybrid mode, so their durations
+overlap. Do not sum `dense_seconds` and `sparse_seconds` to get wall time.
+Compare each stage independently.
 
 Every result includes `score_kind`: `dense_similarity_v1` for dense search,
 `rrf_v1` for non-reranked hybrid fusion, or `reranker_sigmoid_v1` after a
@@ -38,17 +56,17 @@ one complete source version.
 
 Index a file or directory into the vector store.
 
-| Parameter    | Type   | Default       | Description                               |
-| ------------ | ------ | ------------- | ----------------------------------------- |
-| `path`       | string | _(required)_  | Path to a file or directory to ingest     |
+| Parameter    | Type   | Default       | Description                                   |
+| ------------ | ------ | ------------- | --------------------------------------------- |
+| `path`       | string | _(required)_  | Path to a file or directory to ingest         |
 | `collection` | string | `"documents"` | Vector-store collection to store documents in |
 
 ## `list_indexed_documents`
 
 Show what's currently indexed.
 
-| Parameter    | Type   | Default       | Description                                   |
-| ------------ | ------ | ------------- | --------------------------------------------- |
+| Parameter    | Type   | Default       | Description                                    |
+| ------------ | ------ | ------------- | ---------------------------------------------- |
 | `collection` | string | `"documents"` | Vector-store collection to list documents from |
 
 Each row is `{"source": <path>, "source_id": <id or null>, "chunks": <count>, "orphaned": <true, false, or null>}`.
@@ -75,12 +93,12 @@ No parameters. Returns a list of objects with `name`, `document_count`, and `chu
 
 Remove documents by file path, metadata filter, or drop an entire collection.
 
-| Parameter         | Type   | Default       | Description                                                                                                            |
-| ----------------- | ------ | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Parameter         | Type   | Default       | Description                                                                                                                                    |
+| ----------------- | ------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `path`            | string | `null`        | Source file path whose chunks to delete. The path is canonicalised and matched by its derived `source_id`, the same derivation ingestion uses. |
-| `metadata_filter` | dict   | `null`        | ChromaDB-compatible `where` clause to match chunks, e.g. `{"category": "uncategorised"}`                              |
-| `collection`      | string | `"documents"` | Collection to operate on. When provided alone (without `path` or `metadata_filter`), the entire collection is dropped. |
-| `dry_run`         | bool   | `false`       | Preview what would be deleted without modifying the vector store                                                       |
+| `metadata_filter` | dict   | `null`        | ChromaDB-compatible `where` clause to match chunks, e.g. `{"category": "uncategorised"}`                                                       |
+| `collection`      | string | `"documents"` | Collection to operate on. When provided alone (without `path` or `metadata_filter`), the entire collection is dropped.                         |
+| `dry_run`         | bool   | `false`       | Preview what would be deleted without modifying the vector store                                                                               |
 
 The three deletion modes (`path`, `metadata_filter`, `collection`-only) are mutually exclusive.
 
@@ -107,11 +125,11 @@ Results are cached per-project keyed by git commit hash in `.opencode/codebase-g
 Switch a collection between the `documents` and `codebase` profiles. This
 changes retrieval behaviour only — no chunks are re-chunked or re-embedded.
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `collection` | string | _(required)_ | Collection to change |
-| `profile` | string | _(required)_ | `documents` or `codebase` |
-| `confirm` | bool | `false` | Apply the change. When `false`, returns a preview instead |
+| Parameter    | Type   | Default      | Description                                               |
+| ------------ | ------ | ------------ | --------------------------------------------------------- |
+| `collection` | string | _(required)_ | Collection to change                                      |
+| `profile`    | string | _(required)_ | `documents` or `codebase`                                 |
+| `confirm`    | bool   | `false`      | Apply the change. When `false`, returns a preview instead |
 
 Called without `confirm`, it returns a preview describing what would change:
 which levers move, whether each applies immediately or only to future ingests,

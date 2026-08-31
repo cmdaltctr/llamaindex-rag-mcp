@@ -7,10 +7,10 @@ follow-up OpenSpec change.
 
 ## What's Here
 
-| File | Purpose |
-|------|---------|
-| `openapi.yaml` | OpenAPI 3.1 contract — the HTTP shape's source of truth |
-| `README.md` | This file — design rationale and implementation boundary |
+| File           | Purpose                                                  |
+| -------------- | -------------------------------------------------------- |
+| `openapi.yaml` | OpenAPI 3.1 contract — the HTTP shape's source of truth  |
+| `README.md`    | This file — design rationale and implementation boundary |
 
 **No `.py` files.** The folder contains zero runtime HTTP code.
 
@@ -32,15 +32,15 @@ follow-up OpenSpec change.
 
 ## Core Operation Mapping
 
-| Core operation | MCP tool | REST endpoint |
-|---|---|---|
-| Ingest path | `ingest_documents` | `POST /v1/ingestions` |
-| Search collection | `search_documents` | `POST /v1/collections/{collection}/search` |
-| List documents | `list_indexed_documents` | `GET /v1/collections/{collection}/documents` |
-| List collections | `list_collections` | `GET /v1/collections` |
-| Delete documents | `delete_documents` | `DELETE /v1/collections/{collection}/documents` |
-| Generate codebase map | `get_codebase_map` | `POST /v1/codebase-maps` |
-| Change collection profile | `change_collection_profile` | `PATCH /v1/collections/{collection}/profile` |
+| Core operation            | MCP tool                    | REST endpoint                                   |
+| ------------------------- | --------------------------- | ----------------------------------------------- |
+| Ingest path               | `ingest_documents`          | `POST /v1/ingestions`                           |
+| Search collection         | `search_documents`          | `POST /v1/collections/{collection}/search`      |
+| List documents            | `list_indexed_documents`    | `GET /v1/collections/{collection}/documents`    |
+| List collections          | `list_collections`          | `GET /v1/collections`                           |
+| Delete documents          | `delete_documents`          | `DELETE /v1/collections/{collection}/documents` |
+| Generate codebase map     | `get_codebase_map`          | `POST /v1/codebase-maps`                        |
+| Change collection profile | `change_collection_profile` | `PATCH /v1/collections/{collection}/profile`    |
 
 ## Long-Running Operations
 
@@ -69,3 +69,13 @@ When the REST implementation lands (separate OpenSpec change):
    business logic in the transport layer.
 3. **CI validation must keep passing.** The OpenAPI validation step
    added in this phase runs on every push.
+
+## Conformance Checking
+
+The OpenAPI contract is conformance-checked against the implementation by
+`tests/test_openapi_conformance.py`. The test derives search parameters from
+`inspect.signature(rag_mcp.transports.mcp.search_documents)`, derives
+listing and result keys by calling the core operations against stub stores,
+and asserts every derived field is declared in the relevant schema with the
+correct required/default semantics. A future field addition fails the build
+until the contract is updated in the same change.

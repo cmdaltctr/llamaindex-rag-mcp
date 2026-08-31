@@ -34,7 +34,6 @@ servers:
 security:
   - bearerAuth: []
 
-
 paths:
   # ── Ingest ───────────────────────────────────────────────────────────
   /ingestions:
@@ -51,20 +50,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngestRequest'
+              $ref: "#/components/schemas/IngestRequest"
       responses:
-        '202':
+        "202":
           description: Ingestion job accepted and queued
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Job'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── Search ───────────────────────────────────────────────────────────
   /collections/{collection}/search:
@@ -76,29 +75,28 @@ paths:
         relevance scores. Optionally re-scores with a cross-encoder
         reranker, fuses with sparse BM25 retrieval, or filters by metadata.
       parameters:
-        - $ref: '#/components/parameters/CollectionName'
+        - $ref: "#/components/parameters/CollectionName"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchRequest'
+              $ref: "#/components/schemas/SearchRequest"
       responses:
-        '200':
+        "200":
           description: Search results
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SearchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
+                  $ref: "#/components/schemas/SearchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── List documents ───────────────────────────────────────────────────
   /collections/{collection}/documents:
@@ -109,20 +107,20 @@ paths:
         Returns all documents currently indexed in the specified
         collection, with their source paths and chunk counts.
       parameters:
-        - $ref: '#/components/parameters/CollectionName'
+        - $ref: "#/components/parameters/CollectionName"
       responses:
-        '200':
+        "200":
           description: Document list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/DocumentInfo'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                  $ref: "#/components/schemas/DocumentInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       operationId: deleteDocuments
       summary: Delete documents from a collection
@@ -131,26 +129,26 @@ paths:
         the entire collection. Use dry_run=true to preview without
         modifying data.
       parameters:
-        - $ref: '#/components/parameters/CollectionName'
+        - $ref: "#/components/parameters/CollectionName"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteRequest'
+              $ref: "#/components/schemas/DeleteRequest"
       responses:
-        '200':
+        "200":
           description: Deletion result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: "#/components/schemas/DeleteResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── List collections ─────────────────────────────────────────────────
   /collections:
@@ -159,19 +157,18 @@ paths:
       summary: List all ChromaDB collections
       description: Returns all collections with document and chunk counts.
       responses:
-        '200':
+        "200":
           description: Collection list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CollectionInfo'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
+                  $ref: "#/components/schemas/CollectionInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── Codebase map ─────────────────────────────────────────────────────
   /codebase-maps:
@@ -188,20 +185,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CodebaseMapRequest'
+              $ref: "#/components/schemas/CodebaseMapRequest"
       responses:
-        '202':
+        "202":
           description: Codebase map job accepted and queued
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Job'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── Change collection profile ────────────────────────────────────────
   /collections/{collection}/profile:
@@ -218,15 +215,15 @@ paths:
         impact details and `confirm_required: true`. A request with
         `confirm: true` applies the change.
       parameters:
-        - $ref: '#/components/parameters/CollectionName'
+        - $ref: "#/components/parameters/CollectionName"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProfileChangeRequest'
+              $ref: "#/components/schemas/ProfileChangeRequest"
       responses:
-        '200':
+        "200":
           description: >
             Preview response (when confirm=false) or applied change
             confirmation (when confirm=true).
@@ -234,18 +231,18 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/ProfilePreview'
-                  - $ref: '#/components/schemas/ProfileChangeResult'
-        '400':
+                  - $ref: "#/components/schemas/ProfilePreview"
+                  - $ref: "#/components/schemas/ProfileChangeResult"
+        "400":
           description: Invalid profile name or bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   # ── Job polling ──────────────────────────────────────────────────────
   /jobs/{jobId}:
@@ -263,21 +260,20 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Job status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Job'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
+                $ref: "#/components/schemas/Job"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
           description: Job not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: "#/components/schemas/Error"
 
 components:
   securitySchemes:
@@ -304,19 +300,19 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid authentication
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     InternalError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
 
   schemas:
     # ── Error envelope (matches MCP error-dict shape) ──────────────────
@@ -362,27 +358,40 @@ components:
         top_k:
           type: integer
           minimum: 1
-          description: Maximum results to return (default from profile/config)
+          description: >
+            Maximum results to return. Resolved from the collection profile
+            when omitted.
         similarity_threshold:
           type: number
           minimum: 0.0
           maximum: 1.0
           description: >
-            Minimum canonical dense similarity (default 0.0 — no filtering).
-            Hybrid/no-rerank applies it to dense evidence before RRF;
-            successful reranking uses the calibrated reranker transform.
+            Minimum canonical dense similarity. Resolved from the collection
+            profile when omitted. Hybrid/no-rerank applies it to dense
+            evidence before RRF; successful reranking uses the calibrated
+            reranker transform.
         rerank:
           type:
             - boolean
             - "null"
           description: >
-            Tri-state: true (force on), false (force off), null (policy default)
+            Tri-state rerank control: true (force on), false (force off),
+            null (resolved from the collection profile when omitted).
         hybrid:
           type:
             - boolean
             - "null"
           description: >
-            Fuse dense + sparse (BM25 + RRF). Null = profile default.
+            Fuse dense + sparse (BM25 + RRF). Resolved from the collection
+            profile when omitted.
+        diagnostics:
+          type: boolean
+          default: false
+          description: >
+            When true, include core-produced retrieval diagnostics in each
+            result row (rank diagnostics, rerank reason, sparse backend,
+            per-stage timings, etc.). Diagnostics-only fields are optional
+            on the response schema.
         metadata_filter:
           type:
             - object
@@ -392,6 +401,19 @@ components:
 
     SearchResult:
       type: object
+      required:
+        - score
+        - score_kind
+        - source
+        - page_label
+        - text
+        - reranked
+        - metadata
+        - source_id
+        - source_version
+        - chunk_id
+        - source_chunk_index
+        - source_chunk_count
       properties:
         score:
           type: number
@@ -409,6 +431,116 @@ components:
           type: string
         reranked:
           type: boolean
+        metadata:
+          type: object
+          description: >
+            The full stored metadata mapping for the chunk, including
+            file path, page label, and any extraction-produced fields.
+          additionalProperties: true
+        source_id:
+          type:
+            - string
+            - "null"
+          description: >
+            Stable source identity derived from the canonical source path.
+            Absent (null) for legacy rows stored without lineage metadata.
+        source_version:
+          type:
+            - string
+            - "null"
+          description: >
+            Content version stamp of the source at ingest time. Absent
+            (null) for legacy rows.
+        chunk_id:
+          type:
+            - string
+            - "null"
+          description: >
+            Stable chunk identity within the source. Absent (null) for
+            legacy rows.
+        source_chunk_index:
+          type:
+            - integer
+            - "null"
+          description: >
+            Zero-based ordinal of this chunk within its source. Absent
+            (null) for legacy rows.
+        source_chunk_count:
+          type:
+            - integer
+            - "null"
+          description: >
+            Total chunk count of the source at ingest time. Absent (null)
+            for legacy rows.
+        # ── Diagnostics-only fields (present when diagnostics=true) ──────
+        id:
+          type: string
+          description: Internal row identifier (diagnostics only).
+        fused_score:
+          type: number
+          format: float
+          description: RRF fused score (diagnostics only, hybrid queries).
+        dense_score:
+          type: number
+          format: float
+          description: Canonical dense similarity score (diagnostics only).
+        dense_score_kind:
+          type: string
+          description: Score kind of the dense evidence (diagnostics only).
+        dense_rank:
+          type:
+            - integer
+            - "null"
+          description: Rank in the dense ranking (diagnostics only, hybrid).
+        sparse_rank:
+          type:
+            - integer
+            - "null"
+          description: Rank in the sparse ranking (diagnostics only, hybrid).
+        fused_rank:
+          type:
+            - integer
+            - "null"
+          description: Rank after RRF fusion (diagnostics only, hybrid).
+        rerank_reason:
+          type: string
+          description: >
+            Policy or failure reason explaining the rerank decision
+            (diagnostics only).
+        threshold_score_kind:
+          type: string
+          description: >
+            Score semantics used for threshold evaluation (diagnostics only).
+        rerank_backend:
+          type: string
+          description: >
+            Backend that actually served the rerank (e.g. onnx, torch).
+            Present only when the reranker ran (diagnostics only).
+        sparse_backend:
+          type: string
+          description: >
+            Sparse backend that actually served the hybrid query (e.g.
+            bm25, native). Present only for hybrid queries (diagnostics only).
+        norm_guard:
+          type: object
+          description: >
+            Embedding norm-guard state dict. Present only when the norm
+            guard is enabled (diagnostics only).
+          additionalProperties: true
+        timings:
+          type: object
+          description: >
+            Per-stage retrieval wall-clock durations in seconds, attached
+            to each result row when diagnostics are enabled. Keys are
+            stage names (``embedding_seconds``, ``dense_seconds``,
+            ``sparse_seconds``, ``fusion_seconds``, ``rerank_seconds``).
+            A stage that did not run is absent — absence means "did not
+            execute", never "took zero time". Per-stage durations do not
+            sum to wall time in hybrid mode because dense and sparse run
+            concurrently. No total is emitted (diagnostics only).
+          additionalProperties:
+            type: number
+            format: float
 
     # ── Document info ──────────────────────────────────────────────────
     DocumentInfo:
@@ -416,8 +548,25 @@ components:
       properties:
         source:
           type: string
+        source_id:
+          type:
+            - string
+            - "null"
+          description: >
+            Stable identity derived from the canonical source path. Absent
+            (null) for legacy rows grouped by display path.
         chunks:
           type: integer
+        orphaned:
+          type:
+            - boolean
+            - "null"
+          description: >
+            Tri-state machine-local orphan status: true (source file missing
+            on this machine), false (source file present), null (cannot
+            determine — the source path is not an absolute path on this
+            machine). This is machine-local, not a global property of the
+            document.
 
     # ── Collection info ────────────────────────────────────────────────
     CollectionInfo:

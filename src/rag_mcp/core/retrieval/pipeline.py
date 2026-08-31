@@ -10,6 +10,7 @@ part of Phase 1; rewired through the vector store ABC in Phase 3.
 from __future__ import annotations
 
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -55,6 +56,8 @@ def _hybrid_query_rows(
     dense_threshold: float = 0.0,
     include_norm_diagnostic: bool = False,
     sparse_report: dict | None = None,
+    *,
+    timing_report: dict | None = None,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
@@ -73,6 +76,7 @@ def _hybrid_query_rows(
             norm_guard_enabled=settings.embedding.norm_guard_enabled,
             norm_tolerance=settings.embedding.norm_tolerance,
             attach_norm_diagnostic=include_norm_diagnostic,
+            timing_report=timing_report,
         )
         sparse_future = executor.submit(
             sparse_runner,
@@ -82,6 +86,7 @@ def _hybrid_query_rows(
             fetch_k,
             metadata_filter,
             sparse_report,
+            timing_report=timing_report,
         )
         dense_rows = dense_future.result()
         sparse_rows = sparse_future.result()
@@ -95,7 +100,12 @@ def _hybrid_query_rows(
         eligible_ids = {str(row["id"]) for row in dense_rows}
         sparse_rows = [row for row in sparse_rows if str(row["id"]) in eligible_ids]
 
-    return _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)[:fetch_k]
+    t0 = time.perf_counter()
+    fused = _retrieval_get("fusion")(dense_rows, sparse_rows, k=rrf_k)
+    t1 = time.perf_counter()
+    if timing_report is not None:
+        timing_report["fusion_seconds"] = timing_report.get("fusion_seconds", 0.0) + (t1 - t0)
+    return fused[:fetch_k]
 
 
 def _strip_internal_result_fields(result: dict) -> dict:
@@ -255,6 +265,14 @@ def search(
         fetch_k_override=fetch_k,
     )
 
+    # Per-stage timing dict (complete-observable-surface Thread B).
+    # Created unconditionally so the measured path is the same path
+    # production runs; only attached to result rows when diagnostics
+    # are enabled (design: measurement-only, report under the flag).
+    # Durations accumulate per stage across every execution (design D5),
+    # so the failed-rerank re-query path sums both hybrid executions.
+    timing_report: dict = {}
+
     _dense_query_rows = _retrieval_get("dense")
     sparse_report: dict = {}
     if hybrid:
@@ -270,6 +288,7 @@ def search(
             dense_threshold,
             include_norm_diagnostic=include_diagnostics,
             sparse_report=sparse_report,
+            timing_report=timing_report,
         )
     else:
         results = _dense_query_rows(
@@ -281,6 +300,7 @@ def search(
             norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
             norm_tolerance=resolved_settings.embedding.norm_tolerance,
             attach_norm_diagnostic=include_diagnostics,
+            timing_report=timing_report,
         )
 
     # Optional: re-score with cross-encoder reranker.
@@ -290,7 +310,10 @@ def search(
             from .backend import build_reranker_from_settings
 
             reranker = build_reranker_from_settings(resolved_settings)
+        t0 = time.perf_counter()
         results = reranker.rerank(query, results, top_k=top_k)
+        t1 = time.perf_counter()
+        timing_report["rerank_seconds"] = timing_report.get("rerank_seconds", 0.0) + (t1 - t0)
         # Record which backend actually ran (may differ from the settings
         # value when the torch extra is missing and the helper fell back
         # to ONNX).
@@ -333,6 +356,7 @@ def search(
             metadata_filter,
             similarity_threshold,
             sparse_report=sparse_report,
+            timing_report=timing_report,
         )
 
     threshold_score_kind = RERANK_SCORE_KIND if rerank_succeeded else DENSE_SCORE_KIND
@@ -354,6 +378,11 @@ def search(
             # item 2, now landed).
             if active_backend is not None:
                 r["rerank_backend"] = active_backend
+            # Per-stage timing (complete-observable-surface Thread B).
+            # A copy is attached to each row so callers cannot mutate the
+            # shared report. Stages that did not run are absent from the
+            # dict (design D3); no total is emitted (design D2).
+            r["timings"] = dict(timing_report)
         # Report the sparse backend that actually ran for hybrid queries
         # (task 3.4): a native request that fell back reports ``bm25``,
         # never native (spec: "SHALL NOT label the resulting sparse
