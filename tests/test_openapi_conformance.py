@@ -16,7 +16,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import yaml
@@ -117,8 +117,12 @@ class _StubListingStore:
 def _derive_listing_keys() -> set[str]:
     """Return the set of keys a core ``list_documents`` result row carries."""
     from rag_mcp.core.ingestion.loader import list_documents
+    from rag_mcp.core.vectordb.base import VectorStore
 
-    rows = list_documents("documents", store=_StubListingStore())
+    # Duck-typed stub (same seam as test_orphaned_source_visibility.py);
+    # cast because VectorStore is an ABC the stub intentionally partial-fills.
+    store = cast(VectorStore, _StubListingStore())
+    rows = list_documents("documents", store=store)
     if not rows:
         return set()
     return set(rows[0].keys())
@@ -203,7 +207,7 @@ class _StubReranker:
 
 
 @pytest.fixture(autouse=True)
-def _clear_retrieval_caches() -> None:
+def _clear_retrieval_caches() -> Iterator[None]:
     """Clear the embedding LRU and BM25 caches for deterministic derivation."""
     from rag_mcp.core.retrieval.dense import _cached_query_embedding
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever

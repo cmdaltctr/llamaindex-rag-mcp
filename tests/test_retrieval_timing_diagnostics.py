@@ -108,7 +108,7 @@ class _FailingReranker:
 
 
 @pytest.fixture(autouse=True)
-def _clear_retrieval_caches() -> None:
+def _clear_retrieval_caches() -> Iterator[None]:
     """Clear the embedding LRU and BM25 caches for deterministic tests."""
     from rag_mcp.core.retrieval.dense import _cached_query_embedding
     from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
