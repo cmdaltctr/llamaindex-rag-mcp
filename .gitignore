@@ -21,6 +21,9 @@ build/
 chroma_db/
 chroma_db_test/
 
+# Default LANCEDB_URI runtime store (root-level; experiments have their own rule)
+/lancedb/
+
 # Experiment-generated ChromaDB directories (per-run artefacts)
 experiments/**/lancedb/
 experiments/**/chroma_*/
