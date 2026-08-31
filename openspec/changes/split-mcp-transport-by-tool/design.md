@@ -7,8 +7,14 @@ ends with:
 ```python
 # Importing these modules registers their ``@app.command()`` decorators.
 from . import (  # noqa: E402,F401
-    benchmark, delete, ingest, install_login_watcher,
-    list, profile, search, watch,
+    benchmark,
+    delete,
+    ingest,
+    install_login_watcher,
+    list,
+    profile,
+    search,
+    watch,
 )
 ```
 
