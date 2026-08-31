@@ -112,12 +112,12 @@ objects injected, settings read from the singleton at call time.
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-|--------|------------------|
-| **Full constructor injection of a `Settings` object into every pipeline entry point** | Every call site, MCP tool signature, and test would need to thread a `Settings` argument; the singleton is value-stable for consumers and the knobs are read-only, so the churn outweighed the testability gain. |
-| **Keep import-time/definition-time default snapshots** | Inconsistent with `top_k`/`similarity_threshold` (call-time) and silently ignored post-import patches — the exact class of subtle breakage the Phase 2 review flagged. |
-| **Remove the `CrossEncoderReranker()` fallback from `search()`** | Direct library callers (experiments, scripts) would need to construct and pass a reranker themselves; the process-wide cache makes the fallback behaviourally identical, so keeping it costs nothing. Deferred to a later phase. |
-| **Leave `rag_mcp.config.Settings` shadowing the legacy name with no shim** | Breaks the documented compat guarantee for experiment/third-party code with no `DeprecationWarning` — fixed by re-exporting the LlamaIndex global from `rag_mcp.ingestion` instead. |
+| Option                                                                                | Rejected Because                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Full constructor injection of a `Settings` object into every pipeline entry point** | Every call site, MCP tool signature, and test would need to thread a `Settings` argument; the singleton is value-stable for consumers and the knobs are read-only, so the churn outweighed the testability gain.                 |
+| **Keep import-time/definition-time default snapshots**                                | Inconsistent with `top_k`/`similarity_threshold` (call-time) and silently ignored post-import patches — the exact class of subtle breakage the Phase 2 review flagged.                                                           |
+| **Remove the `CrossEncoderReranker()` fallback from `search()`**                      | Direct library callers (experiments, scripts) would need to construct and pass a reranker themselves; the process-wide cache makes the fallback behaviourally identical, so keeping it costs nothing. Deferred to a later phase. |
+| **Leave `rag_mcp.config.Settings` shadowing the legacy name with no shim**            | Breaks the documented compat guarantee for experiment/third-party code with no `DeprecationWarning` — fixed by re-exporting the LlamaIndex global from `rag_mcp.ingestion` instead.                                              |
 
 ## References
 
@@ -145,7 +145,7 @@ objects injected, settings read from the singleton at call time.
 
 2. **The References section cited `src/rag_mcp/server.py`** as the file
    wiring `compose.build_reranker()` into `search_documents()`. Phase 5 moved
-   that to `transports/mcp.py`; `server.py` no longer exists.
+   that to `transports/mcp/`; `server.py` no longer exists.
 
 The Consequences section's disclosure — that settings were still read from a
 mutable process-wide singleton rather than passed in — was accurate and

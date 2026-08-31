@@ -3,7 +3,7 @@
 This is the map. If you are trying to work out where something lives, or why a
 change you made had no effect, start here.
 
-For *why* a particular technology was chosen, see [Technology choices](#technology-choices)
+For _why_ a particular technology was chosen, see [Technology choices](#technology-choices)
 at the end. For the full reasoning behind any of it, see [`docs/adr/`](../adr/).
 
 The principle that shapes everything: **it runs on your machine**. Cloud
@@ -68,12 +68,12 @@ Settings can come from five places. Each beats the one above it:
 
 ### Which one should you use?
 
-| You want to change | Put it in |
-|---|---|
-| A sensible default for everyone | `defaults.yaml` |
-| A token, a URL, a path on your machine | `.env` |
-| How *one collection* behaves | its profile YAML |
-| Something for a single command | an environment variable |
+| You want to change                     | Put it in               |
+| -------------------------------------- | ----------------------- |
+| A sensible default for everyone        | `defaults.yaml`         |
+| A token, a URL, a path on your machine | `.env`                  |
+| How _one collection_ behaves           | its profile YAML        |
+| Something for a single command         | an environment variable |
 
 **The trap.** `.env` beats profiles. Put `RETRIEVAL__TOP_K=5` in `.env` and
 every profile returns 5 results regardless of what its YAML says. Profiles stop
@@ -147,19 +147,19 @@ configurations at once.
 
 ### `core/` — does the work
 
-| Folder | Job |
-|---|---|
-| `core/ingestion/` | Read files, chunk them, write to the store |
-| `core/retrieval/` | Search, rerank, fuse results |
-| `core/chunking/` | The chunking strategies: code, markdown, sentence, config |
-| `core/metadata/` | Work out a category and keywords for a document |
-| `core/vectordb/` | The database interface, LanceDB default implementation, and optional Chroma implementation |
-| `core/profiles/` | Resolve which profile a collection uses |
-| `core/providers/` | Build embedding and LLM clients |
-| `core/codebase/` | Codebase map and code graph |
-| `core/documents/` | Document similarity graph |
-| `core/community/` | Community-detection strategies for both graphs (Louvain default, Leiden optional) |
-| `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around |
+| Folder             | Job                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| `core/ingestion/`  | Read files, chunk them, write to the store                                                 |
+| `core/retrieval/`  | Search, rerank, fuse results                                                               |
+| `core/chunking/`   | The chunking strategies: code, markdown, sentence, config                                  |
+| `core/metadata/`   | Work out a category and keywords for a document                                            |
+| `core/vectordb/`   | The database interface, LanceDB default implementation, and optional Chroma implementation |
+| `core/profiles/`   | Resolve which profile a collection uses                                                    |
+| `core/providers/`  | Build embedding and LLM clients                                                            |
+| `core/codebase/`   | Codebase map and code graph                                                                |
+| `core/documents/`  | Document similarity graph                                                                  |
+| `core/community/`  | Community-detection strategies for both graphs (Louvain default, Leiden optional)          |
+| `core/settings.py` | `EffectiveSettings` — the frozen settings object passed around                             |
 
 `core/ingestion/` and `core/retrieval/` do not import each other. They share
 only settings.
@@ -181,8 +181,8 @@ source it derives and stamps:
   decimal index + NUL + text hash)` over the text-only chunk content.
 - the vector row ID = SHA-256 over `source_id` + NUL + `source_attempt` + NUL
   + `chunk_id`. It stays attempt-specific so candidate and durable attempts
-  coexist until replacement is verified (ADR-048). A stable `chunk_id` is
-  never a store primary key.
+    coexist until replacement is verified (ADR-048). A stable `chunk_id` is
+    never a store primary key.
 
 `pipeline.py` builds `source_id` once per source and runs a compatibility
 guard before any mutation: rows for a canonical path that lack or disagree on
@@ -304,7 +304,7 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 
 ### `transports/` — exposes it
 
-- `transports/mcp.py` — the MCP server, seven tools, over stdio
+- `transports/mcp/` — the MCP server, seven tools, over stdio (split by tool)
 - `transports/cli/` — the `rag-mcp` command, one file per command group
 - `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
   deliberately: the contract is published before anything implements it.
@@ -320,7 +320,7 @@ the answer.
 MCP client asks for a search
       │
       ▼
-transports/mcp.py        works out which profile this collection uses
+transports/mcp/          works out which profile this collection uses
       │                  → EffectiveSettings (frozen)
       ▼
 core/retrieval/pipeline  resolves settings ONCE here, at the boundary.
@@ -413,19 +413,21 @@ Every Python module under `src/rag_mcp/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
 <!-- integration-inventory:start count=11 -->
-| Module | Availability | Selector | Shared contract | Fallback owner | Disposition |
-|---|---|---|---|---|---|
-| `rag_mcp.integrations` | Native | None | Package facade | None | Facade; exports stable integration APIs only |
-| `rag_mcp.integrations.azure` | Optional `azure` extra | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry |
-| `rag_mcp.integrations.leidenalg` | Optional `community-leiden` extra | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py` | Flat partition callable | None; explicit selection fails startup | External adapter behind the community registry |
-| `rag_mcp.integrations.magika` | Optional executable | `MAGIKA_BINARY` selects the binary path, not an implementation | `FileEntry` detection results | `core/codebase/codebase_map.py` suffix detection | Capability integration; remains unregistered |
-| `rag_mcp.integrations.pdf` | Native | None | `get_pdf_reader(reader)` | None | Public facade exposing the factory |
-| `rag_mcp.integrations.pdf.factory` | Native | `PDF_READER=auto` | Reader instance with `load_data` | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers) | Registry-backed factory; `auto` stays ordered capability resolution |
-| `rag_mcp.integrations.pdf.registry` | Native | `PDF_READER` concrete values | Reader class with `load_data` | None; unknown names raise | Lazy registry for concrete PDF readers |
-| `rag_mcp.integrations.pdf.liteparse` | Base dependency (despite the stale docstring naming an extra) | `PDF_READER=liteparse` | `load_data` | `compose.resolve_pdf_reader` `auto` probe | Registered reader strategy |
-| `rag_mcp.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050) | `load_data` | `compose.resolve_pdf_reader` missing-backend error → pypdf | Registered reader strategy; configuration-owned default |
-| `rag_mcp.integrations.pdf.pypdf` | Base, via `llama-index-readers-file` | `PDF_READER=pypdf` | `load_data` | Terminal `auto` tier | Registered reader strategy |
-| `rag_mcp.integrations.pdf.pypdfium` | Optional `pdf-pypdfium2` extra | `PDF_READER=pypdfium2` | `load_data` | None | Registered reader strategy |
+
+| Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
+| ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `rag_mcp.integrations`                   | Native                                                         | None                                                                | Package facade                                | None                                                                              | Facade; exports stable integration APIs only                        |
+| `rag_mcp.integrations.azure`             | Optional `azure` extra                                         | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry            |
+| `rag_mcp.integrations.leidenalg`         | Optional `community-leiden` extra                              | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py`      | Flat partition callable                       | None; explicit selection fails startup                                            | External adapter behind the community registry                      |
+| `rag_mcp.integrations.magika`            | Optional executable                                            | `MAGIKA_BINARY` selects the binary path, not an implementation      | `FileEntry` detection results                 | `core/codebase/codebase_map.py` suffix detection                                  | Capability integration; remains unregistered                        |
+| `rag_mcp.integrations.pdf`               | Native                                                         | None                                                                | `get_pdf_reader(reader)`                      | None                                                                              | Public facade exposing the factory                                  |
+| `rag_mcp.integrations.pdf.factory`       | Native                                                         | `PDF_READER=auto`                                                   | Reader instance with `load_data`              | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers)   | Registry-backed factory; `auto` stays ordered capability resolution |
+| `rag_mcp.integrations.pdf.registry`      | Native                                                         | `PDF_READER` concrete values                                        | Reader class with `load_data`                 | None; unknown names raise                                                         | Lazy registry for concrete PDF readers                              |
+| `rag_mcp.integrations.pdf.liteparse`     | Base dependency (despite the stale docstring naming an extra)  | `PDF_READER=liteparse`                                              | `load_data`                                   | `compose.resolve_pdf_reader` `auto` probe                                         | Registered reader strategy                                          |
+| `rag_mcp.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050)              | `load_data`                                   | `compose.resolve_pdf_reader` missing-backend error → pypdf                        | Registered reader strategy; configuration-owned default             |
+| `rag_mcp.integrations.pdf.pypdf`         | Base, via `llama-index-readers-file`                           | `PDF_READER=pypdf`                                                  | `load_data`                                   | Terminal `auto` tier                                                              | Registered reader strategy                                          |
+| `rag_mcp.integrations.pdf.pypdfium`      | Optional `pdf-pypdfium2` extra                                 | `PDF_READER=pypdfium2`                                              | `load_data`                                   | None                                                                              | Registered reader strategy                                          |
+
 <!-- integration-inventory:end -->
 
 ### Strategy-family audit
@@ -433,59 +435,79 @@ test fails when a module is missing from this table.
 The same rule applied to every name-dispatched family, inside and outside
 `integrations/`:
 
-| Family | Selector | Live registry / factory | Conclusion | Follow-up |
-|---|---|---|---|---|
-| Community detection | `COMMUNITY_ALGORITHM` | `core/community/registry.py` | Registered in this change: `louvain` native, `leiden` optional via `integrations/leidenalg.py` | None |
-| PDF readers | `PDF_READER` | `integrations/pdf/registry.py` behind `integrations/pdf/factory.py` | Concrete readers registered behind the unchanged `auto` factory | None |
-| Chunking | Content-type dispatch in `core/ingestion/chunker.py`; `CHUNKING__STRATEGY_FALLBACK` (default `markdown`) | `core/chunking/registry.py` | Already a registry | None |
-| Metadata extraction | `METADATA__EXTRACTION_MODE` and provider backends | `core/metadata/registry.py` | Already a registry | None |
-| Embedding providers | `EMBED_PROVIDER` | `core/providers/embeddings/registry.py` | Already a registry | None |
-| LLM providers | `LOCAL_BACKEND` / `CLOUD_BACKEND` | `core/providers/llm/registry.py` | Already a registry | None |
-| Sparse retrieval | `RETRIEVAL__HYBRID_SPARSE_BACKEND` | `core/retrieval/sparse_registry.py` (`bm25`, `native`) | Both concrete backends registered; `auto` stays an unregistered policy resolved at the composition boundary | None |
-| Reranking | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py` | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`) | Already registered strategies | None |
-| Vector store | `VECTOR_STORE` | `core/vectordb/registry.py` | `chroma` and `lancedb` registered | None |
-| Document backends | `DOCUMENT_BACKEND` | `core/ingestion/backends/registry.py` | Registered by `register-document-backend-strategies`: `local` native, `azure` optional via `integrations/azure.py`; retry and fallback owned by the orchestrator | None |
+| Family              | Selector                                                                                                 | Live registry / factory                                             | Conclusion                                                                                                                                                       | Follow-up |
+| ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Community detection | `COMMUNITY_ALGORITHM`                                                                                    | `core/community/registry.py`                                        | Registered in this change: `louvain` native, `leiden` optional via `integrations/leidenalg.py`                                                                   | None      |
+| PDF readers         | `PDF_READER`                                                                                             | `integrations/pdf/registry.py` behind `integrations/pdf/factory.py` | Concrete readers registered behind the unchanged `auto` factory                                                                                                  | None      |
+| Chunking            | Content-type dispatch in `core/ingestion/chunker.py`; `CHUNKING__STRATEGY_FALLBACK` (default `markdown`) | `core/chunking/registry.py`                                         | Already a registry                                                                                                                                               | None      |
+| Metadata extraction | `METADATA__EXTRACTION_MODE` and provider backends                                                        | `core/metadata/registry.py`                                         | Already a registry                                                                                                                                               | None      |
+| Embedding providers | `EMBED_PROVIDER`                                                                                         | `core/providers/embeddings/registry.py`                             | Already a registry                                                                                                                                               | None      |
+| LLM providers       | `LOCAL_BACKEND` / `CLOUD_BACKEND`                                                                        | `core/providers/llm/registry.py`                                    | Already a registry                                                                                                                                               | None      |
+| Sparse retrieval    | `RETRIEVAL__HYBRID_SPARSE_BACKEND`                                                                       | `core/retrieval/sparse_registry.py` (`bm25`, `native`)              | Both concrete backends registered; `auto` stays an unregistered policy resolved at the composition boundary                                                      | None      |
+| Reranking           | `RETRIEVAL__RERANK_BACKEND`, resolved by `core/retrieval/backend.py`                                     | `core/retrieval/registry.py` (`reranker_onnx`, `reranker_torch`)    | Already registered strategies                                                                                                                                    | None      |
+| Vector store        | `VECTOR_STORE`                                                                                           | `core/vectordb/registry.py`                                         | `chroma` and `lancedb` registered                                                                                                                                | None      |
+| Document backends   | `DOCUMENT_BACKEND`                                                                                       | `core/ingestion/backends/registry.py`                               | Registered by `register-document-backend-strategies`: `local` native, `azure` optional via `integrations/azure.py`; retry and fallback owned by the orchestrator | None      |
 
 Live registry contents, kept in step with the code by contract tests:
 
 <!-- registry-names:community -->
+
 `leiden` `louvain`
+
 <!-- /registry-names:community -->
 
 <!-- registry-names:pdf -->
+
 `liteparse` `pdf_inspector` `pypdf` `pypdfium2`
+
 <!-- /registry-names:pdf -->
 
 <!-- registry-names:chunking -->
+
 `code` `config` `sentence`
+
 <!-- /registry-names:chunking -->
 
 <!-- registry-names:metadata -->
+
 `keyword` `llamacpp` `llamaindex` `ollama` `openrouter`
+
 <!-- /registry-names:metadata -->
 
 <!-- registry-names:embeddings -->
+
 `llamacpp` `ollama` `openrouter`
+
 <!-- /registry-names:embeddings -->
 
 <!-- registry-names:llm -->
+
 `llamacpp` `ollama` `openrouter`
+
 <!-- /registry-names:llm -->
 
 <!-- registry-names:retrieval -->
+
 `bm25` `dense` `fusion` `reranker_onnx` `reranker_torch`
+
 <!-- /registry-names:retrieval -->
 
 <!-- registry-names:sparse-backend -->
+
 `bm25` `native`
+
 <!-- /registry-names:sparse-backend -->
 
 <!-- registry-names:vectordb -->
+
 `chroma` `lancedb`
+
 <!-- /registry-names:vectordb -->
 
 <!-- registry-names:document-backend -->
+
 `azure` `local`
+
 <!-- /registry-names:document-backend -->
 
 ### Audit conclusions
@@ -513,23 +535,23 @@ Live registry contents, kept in step with the code by contract tests:
 
 These are not documentation. They fail the build.
 
-| Rule | Enforced by |
-|---|---|
-| ChromaDB only in `core/vectordb/chroma.py` | `chromadb-confined-to-vectordb` |
-| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb` |
-| `config/` never imports business logic | `config-is-leaf` |
-| `integrations/` never imports core or transports | `integrations-are-leaves` |
-| `core/` never imports transports or providers | `core-business-avoids-providers-transports` |
-| `core/community/` never imports either graph consumer | `community-strategies-independent-of-consumers` |
-| Settings models stay pure data | `settings-models-are-pure-data` |
-| Every package covered by some contract | `tests/test_contract_coverage.py` |
-| No global settings reads in core | `tests/test_no_global_settings_reads.py` |
-| No file over 500 lines | `tests/test_file_size_ceiling.py` |
-| Dispatch goes through registries | `tests/test_no_module_level_strategy_imports.py` |
+| Rule                                                               | Enforced by                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------ |
+| ChromaDB only in `core/vectordb/chroma.py`                         | `chromadb-confined-to-vectordb`                  |
+| LanceDB only in `core/vectordb/` (`lancedb.py`, `lance_filter.py`) | `lancedb-confined-to-vectordb`                   |
+| `config/` never imports business logic                             | `config-is-leaf`                                 |
+| `integrations/` never imports core or transports                   | `integrations-are-leaves`                        |
+| `core/` never imports transports or providers                      | `core-business-avoids-providers-transports`      |
+| `core/community/` never imports either graph consumer              | `community-strategies-independent-of-consumers`  |
+| Settings models stay pure data                                     | `settings-models-are-pure-data`                  |
+| Every package covered by some contract                             | `tests/test_contract_coverage.py`                |
+| No global settings reads in core                                   | `tests/test_no_global_settings_reads.py`         |
+| No file over 500 lines                                             | `tests/test_file_size_ceiling.py`                |
+| Dispatch goes through registries                                   | `tests/test_no_module_level_strategy_imports.py` |
 
 Run them with `uv run lint-imports` and `uv run pytest -m "not slow"`.
 
-One detail worth knowing: the contracts fail when a *suppression* becomes
+One detail worth knowing: the contracts fail when a _suppression_ becomes
 unnecessary. Fix a violation, forget to delete its exception, and the build
 tells you. That is deliberate — see [ADR-037](../adr/037-architecture-v2-conformance.md).
 
@@ -583,7 +605,7 @@ quality than nomic-embed-text, at a size that still runs locally.
 **Cross-encoder reranker, off by default**
 ([ADR-005](../adr/005-cross-encoder-reranker-with-onnx-runtime.md),
 [ADR-019](../adr/019-reranker-disabled-for-technical-workloads.md)) —
-Experiment 10 found it *hurt* results on code-heavy content by 19–27%. The
+Experiment 10 found it _hurt_ results on code-heavy content by 19–27%. The
 `documents` profile turns it back on, because it does help on prose.
 
 **Deterministic graphs, no LLM**
@@ -596,13 +618,13 @@ similarity. Same input, same output, every time.
 
 ## Where to go next
 
-| You want to | Read |
-|---|---|
-| Get it running | [Getting started](getting-started.md) |
-| Change a setting | [Configuration](configuration.md) |
-| Use the CLI | [CLI reference](cli-reference.md) |
-| Connect an MCP client | [MCP client setup](mcp-client-setup.md) |
-| Understand ingestion | [Ingestion](ingestion.md) |
-| Understand reranking | [Reranker](reranker.md) |
-| Write tests | [Testing](testing.md) |
-| Know why a decision was made | [`docs/adr/`](../adr/) |
+| You want to                  | Read                                    |
+| ---------------------------- | --------------------------------------- |
+| Get it running               | [Getting started](getting-started.md)   |
+| Change a setting             | [Configuration](configuration.md)       |
+| Use the CLI                  | [CLI reference](cli-reference.md)       |
+| Connect an MCP client        | [MCP client setup](mcp-client-setup.md) |
+| Understand ingestion         | [Ingestion](ingestion.md)               |
+| Understand reranking         | [Reranker](reranker.md)                 |
+| Write tests                  | [Testing](testing.md)                   |
+| Know why a decision was made | [`docs/adr/`](../adr/)                  |

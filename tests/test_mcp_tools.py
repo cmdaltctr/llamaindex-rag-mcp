@@ -196,7 +196,7 @@ async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path
 async def test_ingest_documents_returns_lazy_setup_error(mcp_server) -> None:
     """Lazy profile-resolver construction errors return an MCP error result."""
     with patch(
-        "rag_mcp.transports.mcp._get_profile_resolver",
+        "rag_mcp.transports.mcp.ingest._get_profile_resolver",
         side_effect=ImportError("missing optional dependency"),
     ):
         async with connected_client(mcp_server) as client:
@@ -245,7 +245,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
     assert inspect.iscoroutinefunction(server.search_documents)
 
-    with patch("rag_mcp.transports.mcp.search", return_value=expected) as mock_search:
+    with patch("rag_mcp.transports.mcp.search.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -288,7 +288,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         }
     ]
 
-    with patch("rag_mcp.transports.mcp.search", return_value=expected) as mock_search:
+    with patch("rag_mcp.transports.mcp.search.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -340,7 +340,7 @@ async def test_search_documents_diagnostics_passthrough(
             item.update({"dense_rank": 1, "fused_rank": 1, "sparse_backend": "bm25"})
         return [item]
 
-    with patch("rag_mcp.transports.mcp.search", side_effect=_search):
+    with patch("rag_mcp.transports.mcp.search.search", side_effect=_search):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -379,7 +379,7 @@ async def test_list_passes_through_orphaned_values(mcp_server) -> None:
         {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
     ]
 
-    with patch("rag_mcp.transports.mcp._list_documents", return_value=rows):
+    with patch("rag_mcp.transports.mcp.list._list_documents", return_value=rows):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool("list_indexed_documents", {})
 
@@ -887,7 +887,7 @@ async def test_search_documents_metadata_filter_passed_through(
     ]
 
     with patch(
-        "rag_mcp.transports.mcp.search",
+        "rag_mcp.transports.mcp.search.search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -962,7 +962,7 @@ async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
     expected: list[dict] = []
 
     with patch(
-        "rag_mcp.transports.mcp.search",
+        "rag_mcp.transports.mcp.search.search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -988,7 +988,7 @@ async def test_search_documents_validation_error_envelope(
     def _raise_value_error(*args, **kwargs):
         raise ValueError("Invalid where clause: unsupported operator $bogus")
 
-    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_value_error):
+    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_value_error):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1025,7 +1025,7 @@ async def test_search_documents_retrieval_error_envelope(
     def _raise_chroma(*args, **kwargs):
         raise fake_chroma("collection 'x' is corrupt")
 
-    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_chroma):
+    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_chroma):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1049,7 +1049,7 @@ async def test_search_documents_internal_error_envelope(
     def _raise_unexpected(*args, **kwargs):
         raise KeyError("missing config key 'foo'")
 
-    with patch("rag_mcp.transports.mcp.search", side_effect=_raise_unexpected):
+    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_unexpected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1085,7 +1085,7 @@ async def test_search_documents_success_has_no_status_key(
         },
     ]
 
-    with patch("rag_mcp.transports.mcp.search", return_value=expected):
+    with patch("rag_mcp.transports.mcp.search.search", return_value=expected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1174,7 +1174,7 @@ async def _ingest_failure_result(
         ):
             ensure_runtime_setup()
             with patch(
-                "rag_mcp.transports.mcp.ingest_path_async",
+                "rag_mcp.transports.mcp.ingest.ingest_path_async",
                 side_effect=RuntimeError(leaked_text),
             ):
                 async with connected_client(mcp_server) as client:
@@ -1302,3 +1302,42 @@ def test_main_settings_failure_prints_reason(
     err = capsys.readouterr().err
     assert "EMBED_PROVIDER='bogus' is not an accepted value" in err
     assert mcp_mod._SETTINGS_UNRESOLVED not in err
+
+
+# ── Package re-export ──────────────────────────────────────────────────────
+
+
+def test_all_handlers_importable_from_package_root() -> None:
+    """Every handler is importable from the package root and is the same
+    callable the server registered.
+
+    This guards against the bottom import block using module-only imports
+    (``from . import search``) which register the decorator but do not bind
+    the handler name on the package, breaking
+    ``from rag_mcp.transports.mcp import search_documents``.
+    """
+    import rag_mcp.transports.mcp as pkg
+
+    handler_names = [
+        "ingest_documents",
+        "search_documents",
+        "list_indexed_documents",
+        "list_collections",
+        "delete_documents",
+        "get_codebase_map",
+        "change_collection_profile",
+    ]
+
+    # Each name must be importable from the package root.
+    for name in handler_names:
+        assert hasattr(pkg, name), f"{name} not re-exported from package root"
+
+    # Each must be the same object the server registered.
+    mgr = getattr(pkg.mcp, "_tool_manager", None) or getattr(pkg.mcp, "tool_manager", None)
+    registry = getattr(mgr, "_tools", None) or getattr(mgr, "tools", None) or {}
+    for name in handler_names:
+        registered = registry[name]
+        fn = getattr(registered, "fn", None) or registered
+        assert getattr(pkg, name) is fn, (
+            f"{name} on package root is not the same object the server registered"
+        )

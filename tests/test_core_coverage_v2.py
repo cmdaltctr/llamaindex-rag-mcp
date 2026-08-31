@@ -150,8 +150,8 @@ class TestMcpHandlersNeverRaise:
     ) -> None:
         """A core-layer exception becomes an error result, never a raise."""
         targets = {
-            "search_documents": "rag_mcp.transports.mcp.search",
-            "list_indexed_documents": "rag_mcp.transports.mcp._list_documents",
+            "search_documents": "rag_mcp.transports.mcp.search.search",
+            "list_indexed_documents": "rag_mcp.transports.mcp.list._list_documents",
             "get_codebase_map": ("rag_mcp.core.codebase.codebase_map.get_codebase_map_text"),
         }
         with patch(targets[tool], side_effect=RuntimeError("boom")):

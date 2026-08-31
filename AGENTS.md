@@ -18,6 +18,7 @@ uv run pytest --cov=rag_mcp      # Coverage
 
 **MUST ADHERE**
 When you hit a bug, error, or design problem, structure the response as:
+
 1. What's wrong — one or two plain English sentences. No jargon without a plain translation in the same sentence.
 2. What to do — a numbered list of concrete actions. Not a bullet mentioning the problem exists; an instruction I can follow.
 3. Never describe a problem without action points attached. Never make me ask "what's next" — give it upfront. If there's more than one valid fix, list the options as numbered choices, not a single buried recommendation.
@@ -28,14 +29,13 @@ When you hit a bug, error, or design problem, structure the response as:
 
 Write technical documentation in ASD-STE100 Simplified Technical English where practical: use clear active voice, one action per instruction, short sentences (maximum 20 words for procedures), unambiguous terms, and avoid idiom, filler, and unexplained abbreviations; use the official ASD-STE100 approved dictionary when available.
 
-
 ## Architecture Invariants
 
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
 1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader).
 2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/rag_mcp/` holds only `__init__.py` and `compose.py` at the top level.
-3. **Transports are thin wrappers** — `transports/mcp.py` (MCP server), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
+3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
 6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
@@ -47,7 +47,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 
 ## Critical Gotchas (silent breakage if violated)
 
-1. **Never raise from MCP tool handlers.** Return `{"status": "error", "message": "..."}`. Every handler in `transports/mcp.py` wraps its body in try/except — keep this uniform when adding new tools.
+1. **Never raise from MCP tool handlers.** Return `{"status": "error", "message": "..."}`. Every handler in `transports/mcp/` wraps its body in try/except — keep this uniform when adding new tools.
 2. **The reranker is a DI plain class with a process-wide model cache** (ADR-031, Phase 2). Tests MUST call `reset_model_cache()` in setup/teardown — it replaced the old `CrossEncoderReranker._instance = None` hook.
 3. **The ÷30 threshold scaling is empirically calibrated.** Don't change without re-running `experiments/1-reranker-threshold-calibration-2026-05-12/`.
 4. **The reranker no longer imports `dotenv` independently** — settings are injected via the composition root (Phase 2, ADR-031). The old circular-import workaround (gotcha #4 pre-Phase-2) is gone; don't reintroduce it.

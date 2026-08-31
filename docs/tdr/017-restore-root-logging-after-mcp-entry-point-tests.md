@@ -29,7 +29,7 @@ The causal chain:
 1. `tests/test_mcp_tools.py::test_main_reports_runtime_setup_error` calls
    the production `main()`.
 2. `main()` runs `logging.basicConfig(..., stream=sys.stderr, force=True)`
-   (`src/rag_mcp/transports/mcp.py:469-474`). At that moment `sys.stderr`
+   (`src/rag_mcp/transports/mcp/__init__.py:125-131`; was `transports/mcp.py:469-474` at diagnosis time). At that moment `sys.stderr`
    is the `capsys` replacement stream. `force=True` also removes pytest's
    two root handlers.
 3. `capsys` teardown closes the replacement stream. The
@@ -65,7 +65,7 @@ the removal.
 Production logging is not implicated. Both configuration sites are
 deliberate once-per-process entry-point behaviour:
 
-- `transports/mcp.py` `main()` forces root logging to `sys.stderr` so the
+- `transports/mcp/__init__.py` `main()` forces root logging to `sys.stderr` so the
   stdio protocol channel (stdout) stays clean.
 - `transports/cli/__init__.py` `_setup_logging()` installs the RichHandler
   with `force=True`; `run_cli()` is its only caller, the console-script
@@ -218,7 +218,7 @@ LOCAL_BACKEND=ollama uv run pytest tests/test_mcp_tools.py \
   and the full diagnosis in `notes.md`.
 - `tests/test_mcp_tools.py` — "Logging isolation" fixtures:
   `_restore_root_logging`, `_root_logging_leak_guard`.
-- `src/rag_mcp/transports/mcp.py:469-474` — the installing `basicConfig`
+- `src/rag_mcp/transports/mcp/__init__.py:125-131` — the installing `basicConfig`
   call in `main()`.
 - `src/rag_mcp/transports/cli/__init__.py` — `_setup_logging()`, the
   second `force=True` site.

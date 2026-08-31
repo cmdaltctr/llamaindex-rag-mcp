@@ -145,7 +145,7 @@ class TestIngestResponsiveness:
                 }
             ]
 
-        monkeypatch.setattr("rag_mcp.transports.mcp.search", slow_search)
+        monkeypatch.setattr("rag_mcp.transports.mcp.search.search", slow_search)
 
         search_task = asyncio.create_task(search_documents("slow"))
         await asyncio.sleep(0.05)

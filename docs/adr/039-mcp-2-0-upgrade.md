@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-12
 **Status:** Accepted
-**Scopes:** ADR-036 (Phase 5 transport separation — the `transports/mcp.py` thin-wrapper invariant is preserved; only the SDK class name and field casing change)
+**Scopes:** ADR-036 (Phase 5 transport separation — the `transports/mcp/` thin-wrapper invariant is preserved; only the SDK class name and field casing change)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -25,8 +25,8 @@ headline changes that touch this project:
    (`readOnlyHint`→`read_only_hint`, `destructiveHint`→`destructive_hint`)
    and `CallToolResult` fields (`isError`→`is_error`,
    `structuredContent`→`structured_content`). Pydantic aliases keep the
-   old camelCase *constructors* working at runtime, but attribute
-   *access* on returned objects is snake_case only.
+   old camelCase _constructors_ working at runtime, but attribute
+   _access_ on returned objects is snake_case only.
 3. **`create_connected_server_and_client_session` removed** from
    `mcp.shared.memory`. Replaced by the high-level `mcp.client.Client`,
    which accepts an `MCPServer` instance directly and handles the
@@ -52,7 +52,7 @@ headline changes that touch this project:
 Lift the `mcp[cli]<2` cap and migrate to the v2 API surface. The change
 is mechanical and confined to one transport module plus two test files.
 
-### Source changes (`src/rag_mcp/transports/mcp.py`)
+### Source changes (`src/rag_mcp/transports/mcp/`)
 
 - `from mcp.server.fastmcp import FastMCP` →
   `from mcp.server.mcpserver import MCPServer`
@@ -72,8 +72,8 @@ logic moved into or out of the transport.
 ### Test changes
 
 - `tests/conftest.py`: `from mcp.shared.memory import
-  create_connected_server_and_client_session` → `from mcp.client import
-  Client`. The `connected_client` async context manager becomes
+create_connected_server_and_client_session` → `from mcp.client import
+Client`. The `connected_client` async context manager becomes
   `async with Client(mcp_server) as client: yield client` — a near
   drop-in. `Client` negotiates the 2026-07-28 protocol era by default;
   none of our tests drive server-initiated `ctx.elicit()`,
@@ -118,7 +118,7 @@ logic moved into or out of the transport.
   `httpx2`/`httpcore2` added (net dependency count roughly flat).
 - **Watch:** if a future test needs server-initiated sampling, elicitation,
   or roots via the in-memory `Client`, pin `Client(server, mode="legacy",
-  ...callbacks...)` or port the handler to a resolver dependency — the
+...callbacks...)` or port the handler to a resolver dependency — the
   modern era raises `NoBackChannelError` for server-initiated requests.
 - **Watch:** `filterwarnings = ["error"]` (if ever enabled) would turn
   `mcp.MCPDeprecationWarning` from deprecated SDK methods into exceptions

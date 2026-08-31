@@ -155,12 +155,14 @@ def test_mcp_search_documents_signature_exposes_hybrid_opt_in() -> None:
 
 async def test_mcp_search_documents_passes_hybrid_through(monkeypatch) -> None:
     """MCP calls must forward ``hybrid`` unchanged to retrieval.search."""
-    import rag_mcp.transports.mcp as server
+    import rag_mcp.transports.mcp.search as search_mod
 
     mock_search = MagicMock(return_value=[])
-    monkeypatch.setattr(server, "search", mock_search)
+    monkeypatch.setattr(search_mod, "search", mock_search)
 
-    await server.search_documents("needle", hybrid=True, rerank=False)
+    from rag_mcp.transports.mcp import search_documents
+
+    await search_documents("needle", hybrid=True, rerank=False)
 
     mock_search.assert_called_once()
     assert mock_search.call_args.kwargs["hybrid"] is True
