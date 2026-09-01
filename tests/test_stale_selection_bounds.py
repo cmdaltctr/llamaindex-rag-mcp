@@ -7,8 +7,11 @@ Stage 1 of the OpenSpec change
 row in the collection, in Python, for each replaced source — inside the
 global write lock. This test pins the post-fix behaviour (stage 6): the
 row reads performed to select stale rows must be proportional to the
-replaced source's own row count, not the collection total. It is
-EXPECTED TO FAIL until the store-filtered selection lands.
+replaced source's own row count, not the collection total. It was
+written red against the unfiltered ``iter_documents`` seam; design D6
+routes selection through the store-neutral filtered read
+(``iter_filtered_documents``, task 2.7), so the spy watches that seam
+and additionally proves the unfiltered scan is no longer used at all.
 """
 
 from __future__ import annotations
@@ -54,9 +57,9 @@ async def test_stale_selection_reads_rows_proportional_to_the_replaced_source(
 
     GIVEN a collection holding several multi-chunk sources
     WHEN one source is replaced with new content
-    THEN the number of rows read through ``iter_documents`` to select
-    stale rows is proportional to that source's row count
-    AND is not proportional to the collection total.
+    THEN the number of rows read through ``iter_filtered_documents`` to
+    select stale rows is proportional to that source's row count
+    AND the unfiltered ``iter_documents`` scan is not used at all.
     """
     from rag_mcp.core.vectordb import get_default_store
 
@@ -79,15 +82,22 @@ async def test_stale_selection_reads_rows_proportional_to_the_replaced_source(
     target_file = many_source_collection[0]
     target_file.write_text(_file_text(0, revised=True))
 
-    reads = {"rows": 0}
+    reads = {"rows": 0, "unfiltered_rows": 0}
+    original_filtered = store.iter_filtered_documents
     original_iter_documents = store.iter_documents
 
     def _counting_iter_documents(collection_name, page_size=None):
         for row in original_iter_documents(collection_name, page_size):
+            reads["unfiltered_rows"] += 1
+            yield row
+
+    def _counting_filtered(collection_name, where, page_size=None):
+        for row in original_filtered(collection_name, where, page_size):
             reads["rows"] += 1
             yield row
 
     monkeypatch.setattr(store, "iter_documents", _counting_iter_documents)
+    monkeypatch.setattr(store, "iter_filtered_documents", _counting_filtered)
 
     result = await ingest_path_async(str(target_file))
 
@@ -97,6 +107,10 @@ async def test_stale_selection_reads_rows_proportional_to_the_replaced_source(
         f"rows to be removed, got {result['chunks_removed']}."
     )
     assert reads["rows"] > 0, "precondition failed: no rows were read at all"
+    assert reads["unfiltered_rows"] == 0, (
+        "stale selection must not use the unfiltered iter_documents scan; "
+        f"it read {reads['unfiltered_rows']} row(s) of the collection."
+    )
 
     # Bound: the filtered read may see the source's old-attempt rows plus
     # its new-attempt rows, with headroom, but never a scan of the whole

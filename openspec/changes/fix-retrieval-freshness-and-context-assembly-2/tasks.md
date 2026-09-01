@@ -112,20 +112,20 @@ is split during review. No re-ingest is required by anything here.
 
 ## 6. Watcher move handling and bounded stale selection
 
-- [ ] 6.1 Make `_do_delete` return an explicit result and add `on_moved` to
+- [x] 6.1 Make `_do_delete` return an explicit result and add `on_moved` to
   `DocumentIngestHandler`: schedule destination ingest only after old-path
   cleanup succeeds; on failure report and retry/defer rather than forking.
-- [ ] 6.2 Confirm the existing traversal guard rejects a destination outside
+- [x] 6.2 Confirm the existing traversal guard rejects a destination outside
   the watch root, leaving the delete applied.
-- [ ] 6.3 Clear the moved path's hash-cache entry so a later re-creation at the
+- [x] 6.3 Clear the moved path's hash-cache entry so a later re-creation at the
   old path is not skipped as unchanged.
-- [ ] 6.4 Verify 1.3 passes and all move scenarios are covered, including a
+- [x] 6.4 Verify 1.3 passes and all move scenarios are covered, including a
   deletion failure that must not ingest the destination.
-- [ ] 6.5 Rewrite `_stale_source_ids` to read only rows matching
+- [x] 6.5 Rewrite `_stale_source_ids` to read only rows matching
   `{source_id: S}` through the new store-neutral filtered read, keeping the Python-side
   `source_attempt` comparison and its existing comment about missing-key
   inequality.
-- [ ] 6.6 Verify 1.4 passes and the five Stage-3 failure-path tests still pass.
+- [x] 6.6 Verify 1.4 passes and the five Stage-3 failure-path tests still pass.
 
 ## 7. Contract and gate
 

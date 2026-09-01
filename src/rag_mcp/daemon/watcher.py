@@ -1,10 +1,12 @@
 """File system watcher for automatic document ingestion.
 
-Monitors a directory tree for new and modified documents and
-auto-ingests them into the ChromaDB index using ``ingest_path_async()``
-via ``asyncio.run()``.  Includes SHA-256 content-hash deduplication,
-per-file debouncing, ingestion throttling, consecutive-error detection,
-and graceful shutdown on SIGINT.
+Monitors a directory tree for created, modified, deleted and moved
+documents and auto-ingests them into the vector store using
+``ingest_path_async()`` via ``asyncio.run()``.  Includes SHA-256
+content-hash deduplication, per-file debouncing, ingestion throttling,
+consecutive-error detection, and graceful shutdown on SIGINT.
+Move (rename) events are handled as delete-then-ingest by
+:class:`MoveHandlingMixin <rag_mcp.daemon.move_handling.MoveHandlingMixin>`.
 
 The watcher runs as a standalone CLI process (``rag-mcp watch``), not
 inside the MCP server loop.  All ingestion is dispatched through
@@ -29,6 +31,7 @@ from watchdog.events import PatternMatchingEventHandler
 
 from ..core.ingestion.loader import SUPPORTED_EXTENSIONS
 from ._shared import _sha256_file
+from .move_handling import MoveHandlingMixin
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +75,7 @@ def resolve_watch_extensions(collection_name: str = "documents") -> set[str]:
         return set(SUPPORTED_EXTENSIONS)
 
 
-class DocumentIngestHandler(PatternMatchingEventHandler):
+class DocumentIngestHandler(MoveHandlingMixin, PatternMatchingEventHandler):
     """Watchdog event handler that auto-ingests documents on change.
 
     Attributes:
@@ -149,68 +152,16 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
     def on_deleted(self, event) -> None:  # type: ignore[override]
         """Remove vectors when a supported file is deleted.
 
-        Cancels any pending ingest timer for the deleted file, clears
-        the hash cache entry, and removes the file's chunks from
-        ChromaDB.  Deletion is immediate (no debouncing) — the
-        ``on_deleted`` event fires only once per file deletion.
+        Delegates to ``_do_delete`` (provided by
+        :class:`MoveHandlingMixin`), which cancels any pending ingest
+        timer for the deleted file, clears the hash cache entry, and
+        removes the file's chunks from the store.  Deletion is immediate
+        (no debouncing) — the ``on_deleted`` event fires only once per
+        file deletion.
         """
+        # The explicit result is intentionally unused here: a standalone
+        # delete has no follow-up step to gate on it (unlike on_moved).
         self._do_delete(event.src_path)
-
-    # ── Deletion handler ────────────────────────────────────────────────
-
-    def _do_delete(self, file_path: str) -> None:
-        """Delete vectors for a file path and clean up pending state.
-
-        Cancels any pending ingest timer, clears the hash cache entry,
-        and calls ``remove_document()`` on the ChromaDB collection.
-        Idempotent — safe to call even if the file was never ingested.
-        """
-        if self._shutdown_requested.is_set():
-            return
-
-        # Cancel any pending ingest timer for this file
-        with self._state_lock:
-            old_timer = self._timers.pop(file_path, None)
-            if old_timer is not None:
-                old_timer.cancel()
-                logger.debug(
-                    "Cancelled pending ingest timer for deleted file: %s",
-                    file_path,
-                )
-
-        # Clear hash cache entry
-        with self._state_lock:
-            old_hash = self._hash_cache.pop(file_path, None)
-            if old_hash is not None:
-                logger.debug(
-                    "Cleared hash cache for deleted file: %s",
-                    file_path,
-                )
-
-        # Remove vectors from ChromaDB
-        try:
-            from ..core.ingestion import remove_document
-
-            result = remove_document(file_path, collection_name=self._collection_name)
-            if result.get("status") == "ok":
-                removed = result.get("chunks_removed", 0)
-                logger.info(
-                    "Auto-removed %s — %d chunk(s) deleted",
-                    Path(file_path).name,
-                    removed,
-                )
-            else:
-                logger.warning(
-                    "Failed to remove deleted file %s: %s",
-                    file_path,
-                    result.get("message", "unknown error"),
-                )
-        except Exception as exc:
-            logger.warning(
-                "Failed to remove deleted file %s: %s",
-                file_path,
-                exc,
-            )
 
     # ── Debounce scheduling ──────────────────────────────────────────────
 
