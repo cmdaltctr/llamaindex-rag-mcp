@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-09-01
+goal: Add an optional grounded answer tool with deterministic citations, without
+  changing search()
