@@ -5,17 +5,17 @@ is split during review. No re-ingest is required by anything here.
 
 ## 1. Red-first coverage for the current defects
 
-- [ ] 1.1 Add unit and subprocess tests using long-lived Lance store handles:
+- [x] 1.1 Add unit and subprocess tests using long-lived Lance store handles:
   build a BM25 cache in reader B, then have writer A perform an ordinary
   mutation, an overwrite rebuild, and a delete/recreate reaching the same
   numeric version. Assert B observes a different token and its next hybrid
   query reflects the new rows without restarting. Confirm they FAIL today.
-- [ ] 1.2 Add a test asserting that two adjacent chunks returned by one search
+- [x] 1.2 Add a test asserting that two adjacent chunks returned by one search
   do not repeat the overlap text. Confirm it FAILS today.
-- [ ] 1.3 Add a watcher test for a rename inside the watch tree asserting the
+- [x] 1.3 Add a watcher test for a rename inside the watch tree asserting the
   old path's chunks are gone and the new path's are present. Confirm it FAILS
   today.
-- [ ] 1.4 Add a test asserting stale selection reads a bounded number of rows
+- [x] 1.4 Add a test asserting stale selection reads a bounded number of rows
   (spy on `iter_documents`) when replacing one source in a many-source
   collection. Confirm it FAILS today.
 
