@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-09-01
+goal: PLACEHOLDER — scaffold only. HTTP runtime, auth, tenancy, streaming.
+  Deferred until the GCP deployment target is chosen.
