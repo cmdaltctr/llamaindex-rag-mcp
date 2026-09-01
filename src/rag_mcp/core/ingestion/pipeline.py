@@ -17,6 +17,7 @@ from typing import Any
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ._state import shutdown_requested
+from .backends.orchestrator import resolve_declared_text_format
 from .chunker import read_and_chunk_file_async
 from .hashing import sha256_file
 from .loader import SUPPORTED_EXTENSIONS, gather_supported_files, make_file_detail
@@ -218,11 +219,17 @@ async def ingest_path_async(
             canonical_file_path = canonical_source_path(file_path)
             source_id = build_source_id(canonical_file_path)
             content_hash = await asyncio.to_thread(sha256_file, file_path)
+            # Resolve the declared parser text format BEFORE the unchanged
+            # check (design D3): the declaration decides Markdown routing,
+            # so it belongs in the identity. The later BackendRead carries
+            # the same resolution and verifies agreement inside the read.
+            parser_text_format = resolve_declared_text_format(file_path, settings=resolved_settings)
             index_identity = build_index_identity(
                 resolved_settings,
                 content_type=content_type,
                 chunk_size=effective_chunk_size,
                 chunk_overlap=effective_chunk_overlap,
+                text_format=parser_text_format,
             )
             source_version = build_source_version(content_hash, index_identity)
             # Reject pre-lineage rows for this path before any parse,

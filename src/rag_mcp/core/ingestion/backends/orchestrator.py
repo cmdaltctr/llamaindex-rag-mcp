@@ -56,10 +56,52 @@ class BackendRead(NamedTuple):
         structured: Whether the documents are pre-structured (cloud
             parsers returning paragraphs/tables); drives the chunker's
             post-processing choice.
+        text_format: The declared emitted-text format of the backend whose
+            semantics apply (``"plain"``/``"markdown"``); drives Markdown
+            routing in the chunker. This VERIFIES the pre-resolved value
+            the pipeline folds into ``source_index_identity`` — it is not
+            where identity first learns it (design D3).
     """
 
     documents: list[Any]
     structured: bool
+    text_format: str
+
+
+def _declared_text_format(
+    meta: dict[str, Any],
+    file_path: Path,
+    settings: EffectiveSettings,
+) -> str:
+    """Return the declared text format for *file_path* under *meta*.
+
+    A static declaration is definitive. The ``local`` chain's dynamic
+    ``None`` declaration resolves from the configured PDF reader for
+    ``.pdf`` files (the reader registry owns the format) and ``plain``
+    for everything else.
+    """
+    declared = meta["text_format"]
+    if declared is not None:
+        return declared
+    if file_path.suffix.lower() == ".pdf":
+        from rag_mcp.integrations.pdf.factory import declared_text_format
+
+        return declared_text_format(settings.pdf_reader)
+    return "plain"
+
+
+def resolve_declared_text_format(file_path: Path, *, settings: EffectiveSettings) -> str:
+    """Resolve the declared emitted-text format for *file_path* pre-read.
+
+    THE shared pre-read resolver (design D3): the ingestion pipeline calls
+    it before the unchanged check so ``parser.text_format`` participates
+    in ``source_index_identity``, and ``read_document`` verifies its own
+    stamped ``BackendRead.text_format`` against the same resolution. It
+    applies the suffix gate, so a gated file reports the fallback
+    backend's declaration exactly as the read will.
+    """
+    _, meta = _select(file_path, settings.document_backend)
+    return _declared_text_format(meta, file_path, settings)
 
 
 def _select(file_path: Path, name: str) -> tuple[str, dict[str, Any]]:
@@ -89,6 +131,45 @@ def _select(file_path: Path, name: str) -> tuple[str, dict[str, Any]]:
     return name, meta
 
 
+def _verify_text_format(
+    stamped: str,
+    *,
+    file_path: Path,
+    settings: EffectiveSettings,
+    degraded: bool,
+) -> None:
+    """Verify the stamped format agrees with the pre-read resolver (D3).
+
+    Clean and runtime-fallback reads MUST agree with the pre-read
+    resolver — a divergence there is a wiring bug and fails loudly. A
+    wholesale degradation (missing optional dependency) legitimately
+    substitutes the fallback backend's declaration, so it warns instead:
+    the read still succeeded, only the identity-era declaration moved.
+
+    Raises:
+        RuntimeError: When the stamped format disagrees with the resolver
+            and no wholesale degradation explains the difference.
+    """
+    expected = resolve_declared_text_format(file_path, settings=settings)
+    if stamped == expected:
+        return
+    if degraded:
+        logger.warning(
+            "Backend text format %r for %s differs from the pre-resolved "
+            "%r because the selected backend was unavailable and the read "
+            "degraded wholesale to the fallback backend.",
+            stamped,
+            file_path.name,
+            expected,
+        )
+        return
+    raise RuntimeError(
+        f"BackendRead.text_format {stamped!r} disagrees with the "
+        f"pre-resolved parser.text_format {expected!r} for "
+        f"{file_path.name} (design D3)."
+    )
+
+
 async def read_document(file_path: Path, *, settings: EffectiveSettings) -> BackendRead:
     """Read *file_path* through the configured document backend.
 
@@ -98,8 +179,9 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
             selects the registered backend name.
 
     Returns:
-        A :class:`BackendRead` carrying the parsed documents and the
-        structured flag of the backend whose semantics apply.
+        A :class:`BackendRead` carrying the parsed documents, the
+        structured flag, and the declared text format of the backend
+        whose semantics apply.
 
     Raises:
         KeyError: Unknown backend name (lists the registered names).
@@ -113,13 +195,17 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
     if fallback_name is None:
         # Base-install path: one attempt, exceptions propagate.
         documents = await reader(file_path, settings=settings)
-        return BackendRead(documents, meta["structured_output"])
+        text_format = _declared_text_format(meta, file_path, settings)
+        _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=False)
+        return BackendRead(documents, meta["structured_output"], text_format)
 
     unavailable = False
     for attempt in range(MAX_RETRIES + 1):
         try:
             documents = await reader(file_path, settings=settings)
-            return BackendRead(documents, meta["structured_output"])
+            text_format = _declared_text_format(meta, file_path, settings)
+            _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=False)
+            return BackendRead(documents, meta["structured_output"], text_format)
         except ImportError as exc:
             # The backend cannot run in this install (missing optional
             # dependency): skip the retry budget and degrade wholesale.
@@ -156,5 +242,14 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
     fallback_reader: DocumentBackend = get(fallback_name)
     documents = await fallback_reader(file_path, settings=settings)
     if unavailable:
-        return BackendRead(documents, describe(fallback_name)["structured_output"])
-    return BackendRead(documents, meta["structured_output"])
+        # Wholesale degradation: the FALLBACK's semantics apply, including
+        # its (possibly dynamic) text format.
+        fallback_meta = describe(fallback_name)
+        text_format = _declared_text_format(fallback_meta, file_path, settings)
+        _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=True)
+        return BackendRead(documents, fallback_meta["structured_output"], text_format)
+    # Runtime fallback keeps the SELECTED entry's semantics: the fallback
+    # is a read substitution, not a reconfiguration (design D3).
+    text_format = _declared_text_format(meta, file_path, settings)
+    _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=False)
+    return BackendRead(documents, meta["structured_output"], text_format)

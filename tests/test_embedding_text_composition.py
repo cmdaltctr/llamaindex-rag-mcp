@@ -205,21 +205,18 @@ class TestExclusionSetConstant:
 class TestExclusionSetParticipatesInIdentity:
     """Task 1.6 — exclusion-set changes must invalidate source identity.
 
-    Stage A covers the mechanism half: the canonicalisation
-    ``build_index_identity`` uses (sorted-key JSON, SHA-256) is sensitive to
-    the exclusion set, so folding ``EXCLUDED_EMBED_METADATA_KEYS`` into the
-    identity payload (group 3, tasks 3.1-3.2) invalidates precisely when
-    the set changes. The identity-level and reprocess-not-skip assertions
-    land with group 3 and are pinned by the skipped test below.
+    Stage A pinned the canonicalisation sensitivity; group 3 (tasks 3.1-3.2)
+    folds ``EXCLUDED_EMBED_METADATA_KEYS`` into the identity payload, so
+    the identity-level acceptance below is live. The ingest-level half
+    (reprocess, not ``skipped_unchanged``) lives in
+    ``tests/test_ingestion_stage3.py``.
     """
 
     @staticmethod
     def _fingerprint(keys) -> str:
         """Canonicalise a key set exactly as the identity payload does."""
         return hashlib.sha256(
-            json.dumps(
-                sorted(keys), separators=(",", ":"), ensure_ascii=True
-            ).encode("utf-8")
+            json.dumps(sorted(keys), separators=(",", ":"), ensure_ascii=True).encode("utf-8")
         ).hexdigest()
 
     def test_fingerprint_is_sensitive_to_the_exclusion_set(self) -> None:
@@ -239,34 +236,22 @@ class TestExclusionSetParticipatesInIdentity:
         from rag_mcp.core.ingestion.source_state import build_index_identity
 
         settings = effective_settings()
-        first = build_index_identity(
-            settings, content_type=None, chunk_size=512, chunk_overlap=50
-        )
-        second = build_index_identity(
-            settings, content_type=None, chunk_size=512, chunk_overlap=50
-        )
+        first = build_index_identity(settings, content_type=None, chunk_size=512, chunk_overlap=50)
+        second = build_index_identity(settings, content_type=None, chunk_size=512, chunk_overlap=50)
         assert first == second
 
     def test_changing_the_exclusion_set_changes_source_index_identity(
         self, effective_settings, monkeypatch
     ) -> None:
-        """Stage B (group 3): identity absorbs the exclusion set.
+        """Group 3 (tasks 3.1-3.2): identity absorbs the exclusion set.
 
-        Once task 3.2 folds ``EXCLUDED_EMBED_METADATA_KEYS`` into the
-        identity payload, an otherwise byte-identical source under an
-        unchanged everything-else must get a NEW ``source_index_identity``
-        (so ``is_complete_current_version`` reports it not-current and the
+        With ``EXCLUDED_EMBED_METADATA_KEYS`` folded into the identity
+        payload, an otherwise byte-identical source under an unchanged
+        everything-else gets a NEW ``source_index_identity`` (so
+        ``is_complete_current_version`` reports it not-current and the
         source is reprocessed rather than reported
-        ``skipped_unchanged``). Remove this skip when group 3 lands.
+        ``skipped_unchanged``).
         """
-        import pytest
-
-        pytest.skip(
-            "Stage B (group 3, tasks 3.1-3.2): build_index_identity does not "
-            "yet fold EXCLUDED_EMBED_METADATA_KEYS into its payload. Remove "
-            "this skip when the identity change lands; the assertion body "
-            "below is the stage-B acceptance."
-        )
         import rag_mcp.core.ingestion.source_state as source_state
         from rag_mcp.core.ingestion.source_state import (
             EXCLUDED_EMBED_METADATA_KEYS,
@@ -274,14 +259,8 @@ class TestExclusionSetParticipatesInIdentity:
         )
 
         settings = effective_settings()
-        before = build_index_identity(
-            settings, content_type=None, chunk_size=512, chunk_overlap=50
-        )
+        before = build_index_identity(settings, content_type=None, chunk_size=512, chunk_overlap=50)
         reduced = tuple(k for k in EXCLUDED_EMBED_METADATA_KEYS if k != "page_count")
         monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", reduced)
-        after = build_index_identity(
-            settings, content_type=None, chunk_size=512, chunk_overlap=50
-        )
-        assert after != before, (
-            "source_index_identity ignored the embedding-text exclusion set"
-        )
+        after = build_index_identity(settings, content_type=None, chunk_size=512, chunk_overlap=50)
+        assert after != before, "source_index_identity ignored the embedding-text exclusion set"

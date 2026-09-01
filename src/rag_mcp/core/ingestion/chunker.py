@@ -103,14 +103,18 @@ async def read_and_chunk_file_async(
     # (paragraphs/tables) that split directly, while the local chain
     # feeds file-level metadata extraction below.
     backend_read = await read_document(file_path, settings=resolved)
+    # Text counts as Markdown when the source file has extension `.md`, OR
+    # when the reader that produced it declares its emitted text format as
+    # `markdown` (spec markdown-aware-chunking; design D3). Routing follows
+    # the declaration, never the source extension alone, so reader-produced
+    # Markdown keeps its heading structure.
+    is_markdown = file_path.suffix.lower() == ".md" or backend_read.text_format == "markdown"
     if backend_read.structured:
         documents = backend_read.documents
         if content_type:
             for doc in documents:
                 doc.metadata.setdefault("content_type", content_type)
-        effective_chunk_size = (
-            markdown_chunk_size if file_path.suffix.lower() == ".md" else chunk_size
-        )
+        effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
         splitter = SentenceSplitter(
             chunk_size=effective_chunk_size,
             chunk_overlap=chunk_overlap,
@@ -142,7 +146,6 @@ async def read_and_chunk_file_async(
         _label = content_type.partition("/")[2] or content_type
         doc_metadata["category"] = _label
 
-    is_markdown = file_path.suffix.lower() == ".md"
     effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
 
     from ..chunking.sentence import _split_documents_sync

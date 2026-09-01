@@ -11,7 +11,7 @@ implementation, because every defect here is currently invisible to the suite.
   the three date keys. Confirm it FAILS today.
 - [x] 1.2 Add a test asserting the same chunk's EMBED text still contains
   `file_name`, `category`, `keywords`, `summary` when present.
-- [ ] 1.3 Add a test asserting that a `.pdf` read by a markdown-declaring
+- [x] 1.3 Add a test asserting that a `.pdf` read by a markdown-declaring
   reader produces chunks carrying `header_path`. Confirm it FAILS today.
 - [ ] 1.4 Add tests asserting `liteparse` and `pypdfium2` emit
   `page_label`. Confirm both FAIL today.
@@ -19,7 +19,7 @@ implementation, because every defect here is currently invisible to the suite.
   `ingest_path_async` under the `codebase` profile **without patching
   `gather_supported_files`**, asserting `effective_strategy == "code"`.
   Confirm it FAILS today.
-- [ ] 1.6 Add a test asserting that changing the exclusion set changes
+- [x] 1.6 Add a test asserting that changing the exclusion set changes
   `source_index_identity` and that an otherwise identical source is
   reprocessed rather than skipped.
 
@@ -41,36 +41,36 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 3. Index identity
 
-- [ ] 3.1 Bump `_INDEX_IDENTITY_SCHEMA` 2 → 3.
-- [ ] 3.2 Add `embedding_text.excluded_keys` (sorted list) to the identity
+- [x] 3.1 Bump `_INDEX_IDENTITY_SCHEMA` 2 → 3.
+- [x] 3.2 Add `embedding_text.excluded_keys` (sorted list) to the identity
   payload.
-- [ ] 3.3 Resolve the effective reader and `parser.text_format` before the
+- [x] 3.3 Resolve the effective reader and `parser.text_format` before the
   unchanged check, add that value to the identity payload, and assert the
   later `BackendRead.text_format` agrees. Cover direct `auto` callers.
-- [ ] 3.4 Verify 1.6 passes and the existing change-detection tests still pass.
+- [x] 3.4 Verify 1.6 passes and the existing change-detection tests still pass.
 
 ## 4. Reader text-format declaration
 
-- [ ] 4.1 Extend `integrations/pdf/registry.py` `register()` with required
+- [x] 4.1 Extend `integrations/pdf/registry.py` `register()` with required
   `text_format` and `page_provenance` metadata and a `describe(name)` accessor
   mirroring the document-backend registry.
-- [ ] 4.2 Declare `markdown` for `pdf_inspector`; `plain` for `liteparse`,
+- [x] 4.2 Declare `markdown` for `pdf_inspector`; `plain` for `liteparse`,
   `pypdf`, `pypdfium2`.
-- [ ] 4.3 Make registration fail when `text_format` is omitted.
-- [ ] 4.4 Add the same field to `core/ingestion/backends/registry.py` so the
+- [x] 4.3 Make registration fail when `text_format` is omitted.
+- [x] 4.4 Add the same field to `core/ingestion/backends/registry.py` so the
   document backends declare it too (`local` → resolved from the PDF reader for
   PDFs, `plain` otherwise; `azure` → `plain`, it already sets `structured`).
-- [ ] 4.5 Carry the resolved format on `BackendRead` alongside `structured`.
+- [x] 4.5 Carry the resolved format on `BackendRead` alongside `structured`.
 
 ## 5. Markdown routing by declared format
 
-- [ ] 5.1 Replace `is_markdown = file_path.suffix.lower() == ".md"` in
+- [x] 5.1 Replace `is_markdown = file_path.suffix.lower() == ".md"` in
   `core/ingestion/chunker.py` with a check on the source suffix **or** the
   `BackendRead` declared format.
-- [ ] 5.2 Ensure the Markdown chunk-size budget and the three post-processing
+- [x] 5.2 Ensure the Markdown chunk-size budget and the three post-processing
   hooks apply on the reader-produced path identically to the `.md` path.
-- [ ] 5.3 Verify 1.3 passes.
-- [ ] 5.4 Confirm `.txt` and plain-reader `.pdf` chunk counts are byte-for-byte
+- [x] 5.3 Verify 1.3 passes.
+- [x] 5.4 Confirm `.txt` and plain-reader `.pdf` chunk counts are byte-for-byte
   unchanged (guards the "Plain-format reader output is unchanged" scenario).
 
 ## 6. Page provenance

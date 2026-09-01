@@ -24,6 +24,13 @@ dispatch table; retry and fallback POLICY lives in
     ``True`` when the backend returns pre-structured documents
     (paragraphs/tables) the chunker splits directly, without file-level
     metadata extraction.
+``text_format``
+    Declared emitted-text format (``"plain"``/``"markdown"``) used for
+    Markdown routing (spec pdf-reader: readers declare their emitted text
+    format). A STATIC value is definitive (``azure`` emits plain). ``None``
+    marks a DYNAMIC declaration resolved at read time from the configured
+    PDF reader for ``.pdf`` files and ``plain`` otherwise (the ``local``
+    chain delegates to the reader registry).
 
 Adding a backend = one new adapter module + one ``register()`` call at
 the bottom of this module.
@@ -49,6 +56,7 @@ def register(
     fallback: str | None = None,
     document_suffixes: frozenset[str] | None = None,
     structured_output: bool = False,
+    text_format: str | None = None,
 ) -> None:
     """Register a document backend under its configured name.
 
@@ -66,6 +74,8 @@ def register(
             handles every type.
         structured_output: Whether the backend returns pre-structured
             documents the chunker splits directly.
+        text_format: Static declared text format; ``None`` for a dynamic
+            declaration resolved from the PDF reader (see module docstring).
     """
     _registry[name] = import_path
     _availability[name] = availability_path
@@ -74,6 +84,7 @@ def register(
         "fallback": fallback,
         "document_suffixes": document_suffixes,
         "structured_output": structured_output,
+        "text_format": text_format,
     }
 
 
@@ -91,6 +102,7 @@ def describe(name: str) -> dict[str, Any]:
         "fallback": meta.get("fallback"),
         "document_suffixes": meta.get("document_suffixes"),
         "structured_output": meta.get("structured_output"),
+        "text_format": meta.get("text_format"),
     }
 
 
@@ -145,8 +157,11 @@ def verify_available(name: str) -> None:
 
 # ── Built-in backend registrations ──────────────────────────────────
 # Local is native (LlamaIndex readers plus the PDF factory) and stays
-# the default.  Azure is the optional cloud path (ADR-024 cloud opt-in);
-# its SDK import stays inside the adapter, never at module load.
+# the default. Its text format is DYNAMIC: resolved from the configured
+# PDF reader for PDFs, plain otherwise (see the module docstring and the
+# orchestrator's pre-read resolver). Azure is the optional cloud path
+# (ADR-024 cloud opt-in); its SDK import stays inside the adapter, never
+# at module load, and it emits plain text (it already sets structured).
 register("local", "rag_mcp.core.ingestion.backends.local:read_documents")
 register(
     "azure",
@@ -155,4 +170,5 @@ register(
     fallback="local",
     document_suffixes=frozenset({".pdf", ".docx", ".doc"}),
     structured_output=True,
+    text_format="plain",
 )

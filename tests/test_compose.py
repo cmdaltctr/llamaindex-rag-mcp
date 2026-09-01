@@ -584,6 +584,8 @@ class TestResolvePdfReader:
 
         saved_registry = dict(pdf_registry._registry)
         saved_probe_modules = dict(pdf_registry._probe_modules)
+        saved_text_formats = dict(pdf_registry._text_formats)
+        saved_page_provenance = dict(pdf_registry._page_provenance)
         saved_cache = dict(pdf_registry._cache)
         try:
             yield pdf_registry
@@ -592,6 +594,10 @@ class TestResolvePdfReader:
             pdf_registry._registry.update(saved_registry)
             pdf_registry._probe_modules.clear()
             pdf_registry._probe_modules.update(saved_probe_modules)
+            pdf_registry._text_formats.clear()
+            pdf_registry._text_formats.update(saved_text_formats)
+            pdf_registry._page_provenance.clear()
+            pdf_registry._page_provenance.update(saved_page_provenance)
             pdf_registry._cache.clear()
             pdf_registry._cache.update(saved_cache)
 
@@ -637,7 +643,10 @@ class TestResolvePdfReader:
         monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
 
         pdf_registry_sandbox.register(
-            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
+            "resolvetest_reader",
+            "resolvetest_pdf_probe:ResolveTestReader",
+            text_format="plain",
+            page_provenance=True,
         )
 
         settings = Settings(_env_file=None)
@@ -672,7 +681,12 @@ class TestResolvePdfReader:
         monkeypatch.setitem(sys.modules, "resolvetest_ghost", SimpleNamespace())
         monkeypatch.delitem(sys.modules, "resolvetest_missing_probe", raising=False)
 
-        pdf_registry_sandbox.register("resolvetest_ghost", "resolvetest_missing_probe:GhostReader")
+        pdf_registry_sandbox.register(
+            "resolvetest_ghost",
+            "resolvetest_missing_probe:GhostReader",
+            text_format="plain",
+            page_provenance=True,
+        )
 
         settings = Settings(_env_file=None)
         object.__setattr__(settings, "pdf_reader", "resolvetest_ghost")
@@ -705,7 +719,10 @@ class TestResolvePdfReader:
         probe = types.ModuleType("resolvetest_pdf_probe")
         monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
         pdf_registry_sandbox.register(
-            "resolvetest_reader", "resolvetest_pdf_probe:ResolveTestReader"
+            "resolvetest_reader",
+            "resolvetest_pdf_probe:ResolveTestReader",
+            text_format="plain",
+            page_provenance=True,
         )
         settings = Settings(_env_file=None, pdf_reader="auto")
 

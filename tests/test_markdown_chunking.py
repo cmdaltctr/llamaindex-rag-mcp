@@ -128,8 +128,8 @@ async def test_markdown_long_section_is_split(
 async def test_non_markdown_uses_default_splitter(sample_txt: Path) -> None:
     """A `.txt` file SHALL chunk via the existing SentenceSplitter only.
 
-    We assert that the chunk count for a plain text file is identical
-    to what a bare SentenceSplitter (no Markdown branch) would produce.
+    Task 5.4 strengthens the pin from chunk count to byte-for-byte
+    content: the Markdown branch must not affect non-Markdown files.
     """
     from llama_index.core import SimpleDirectoryReader
     from llama_index.core.node_parser import SentenceSplitter
@@ -153,6 +153,139 @@ async def test_non_markdown_uses_default_splitter(sample_txt: Path) -> None:
         f"SentenceSplitter baseline ({len(baseline)}). The Markdown branch "
         "must not affect non-`.md` files."
     )
+    assert [_node_text(n) for n in nodes] == [_node_text(b) for b in baseline], (
+        "Non-Markdown chunk content drifted from the bare SentenceSplitter "
+        "baseline; the reader-format routing must leave plain files untouched"
+    )
+
+
+@pytest.mark.asyncio
+async def test_plain_reader_pdf_chunks_are_byte_for_byte_unchanged(
+    fixtures_dir: Path,
+    effective_settings,
+) -> None:
+    """Task 5.4 — a `.pdf` read by a plain-declaring reader is unchanged.
+
+    Guards the narrowed "Non-Markdown files are unchanged" scenario: a
+    plain-reader `.pdf` keeps the default splitter behaviour, matching a
+    bare SentenceSplitter over the same documents byte-for-byte.
+    """
+    from llama_index.core import SimpleDirectoryReader
+    from llama_index.core.node_parser import SentenceSplitter
+
+    from rag_mcp.integrations.pdf import get_pdf_reader
+
+    pdf = fixtures_dir / "smoke_text.pdf"
+    settings = effective_settings(pdf_reader="pypdf", extraction_mode="disabled")
+
+    reader = SimpleDirectoryReader(
+        input_files=[str(pdf)],
+        filename_as_id=True,
+        file_extractor={".pdf": get_pdf_reader(settings.pdf_reader)},
+    )
+    documents = reader.load_data()
+    baseline = SentenceSplitter(
+        chunk_size=settings.chunking.chunk_size,
+        chunk_overlap=settings.chunking.chunk_overlap,
+    ).get_nodes_from_documents(documents)
+
+    nodes = await read_and_chunk_file_async(pdf, settings=settings)
+
+    assert nodes, "a plain-reader PDF must still produce chunks"
+    assert len(nodes) == len(baseline)
+    assert [_node_text(n) for n in nodes] == [_node_text(b) for b in baseline]
+
+
+# ── 1.3: reader-declared Markdown routes the heading-aware path ────────
+
+
+@pytest.mark.asyncio
+async def test_markdown_declaring_pdf_reader_produces_header_path(
+    fixtures_dir: Path,
+    effective_settings,
+) -> None:
+    """A `.pdf` read by a markdown-declaring reader yields heading-aware chunks.
+
+    Task 1.3 (red-first, fix-embedding-and-structure-fidelity-1): the
+    chunker routes on the reader's declared text format, not on the
+    `.md` suffix alone, so `pdf_inspector` output keeps its heading
+    structure and every chunk carries `header_path`.
+    """
+    settings = effective_settings(
+        pdf_reader="pdf_inspector",
+        extraction_mode="disabled",
+    )
+    nodes = await read_and_chunk_file_async(
+        fixtures_dir / "pdf_markdown_syntax.pdf", settings=settings
+    )
+
+    assert nodes, "a markdown-declaring reader must still produce chunks"
+    for node in nodes:
+        assert node.metadata.get("header_path"), (
+            "Reader-produced Markdown must carry header_path after heading-aware chunking"
+        )
+
+
+@pytest.mark.asyncio
+async def test_reader_produced_markdown_honours_the_markdown_budget(
+    fixtures_dir: Path,
+    effective_settings,
+) -> None:
+    """Task 5.2 — CHUNKING__MARKDOWN_CHUNK_SIZE caps reader-produced Markdown.
+
+    Same acceptance as the `.md` path (``test_markdown_long_section_is_split``):
+    the budget applies identically on the reader-produced path.
+    """
+    settings = effective_settings(
+        pdf_reader="pdf_inspector",
+        extraction_mode="disabled",
+        markdown_chunk_size=128,
+    )
+    nodes = await read_and_chunk_file_async(
+        fixtures_dir / "pdf_markdown_syntax.pdf",
+        chunk_overlap=10,
+        settings=settings,
+    )
+
+    assert len(nodes) > 1, "the markdown budget must split reader-produced sections"
+    # Tokens ≈ 4 chars on average for English; a generous tolerance so
+    # this checks that the splitter engaged, not tokeniser arithmetic.
+    char_cap = int(128 * 4 * 1.5)
+    for node in nodes:
+        assert len(_node_text(node)) <= char_cap, (
+            f"Chunk length {len(_node_text(node))} exceeds the soft cap "
+            f"({char_cap} chars); the markdown budget is not applied to "
+            "reader-produced Markdown"
+        )
+
+
+@pytest.mark.asyncio
+async def test_reader_produced_markdown_honours_heading_prepend(
+    fixtures_dir: Path,
+    effective_settings,
+) -> None:
+    """Task 5.2 — apply_heading_prepend applies on the reader-produced path.
+
+    Spec scenario "Reader-produced Markdown honours the recovery knobs":
+    the three post-processing hooks apply with the same configured
+    behaviour they have for `.md` files. ``ensure_heading_metadata`` is
+    covered by the header_path assertions in the 1.3 test above.
+    """
+    settings = effective_settings(
+        pdf_reader="pdf_inspector",
+        extraction_mode="disabled",
+        markdown_heading_prepend=True,
+    )
+    nodes = await read_and_chunk_file_async(
+        fixtures_dir / "pdf_markdown_syntax.pdf", settings=settings
+    )
+
+    assert nodes
+    for node in nodes:
+        assert _node_text(node).startswith("[/"), (
+            "Heading-prepend mode must prefix reader-produced chunks with "
+            "the header path, exactly as for `.md` files"
+        )
 
 
 # ── 1.7: Markdown without headings still produces non-empty chunks ────────

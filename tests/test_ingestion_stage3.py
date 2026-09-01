@@ -146,6 +146,38 @@ async def test_index_identity_change_forces_reprocessing(
 
 
 @pytest.mark.asyncio
+async def test_exclusion_set_change_forces_reprocessing(
+    tmp_path: Path,
+    stage3_store,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Task 1.6/3.4 — a changed embedding-text exclusion set invalidates skips.
+
+    The exclusion set participates in ``source_index_identity`` (design
+    D6): changing which metadata keys are embedded must re-chunk, re-embed,
+    and replace a byte-identical source rather than report it
+    ``skipped_unchanged``. The identity-level half lives in
+    ``tests/test_embedding_text_composition.py``.
+    """
+    from rag_mcp.core.ingestion import source_state
+
+    source = tmp_path / "exclusion-set.txt"
+    source.write_text("exclusion-set sensitive content " * 100, encoding="utf-8")
+    first = await ingest_path_async(str(source), collection_name=_COLLECTION)
+    assert first["status"] == "ok"
+    assert first["files_indexed"] == 1
+
+    reduced = tuple(k for k in source_state.EXCLUDED_EMBED_METADATA_KEYS if k != "page_count")
+    monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", reduced)
+    second = await ingest_path_async(str(source), collection_name=_COLLECTION)
+
+    assert second["status"] == "ok"
+    assert second["files_indexed"] == 1
+    assert second["files_skipped_unchanged"] == 0
+    assert second["chunks_removed"] == first["chunks_created"]
+
+
+@pytest.mark.asyncio
 async def test_chunk_setting_change_forces_reprocessing(
     tmp_path: Path,
     stage3_store,

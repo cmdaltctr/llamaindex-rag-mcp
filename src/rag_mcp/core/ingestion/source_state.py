@@ -36,7 +36,7 @@ SOURCE_ATTEMPT_KEY = "source_attempt"
 SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
-_INDEX_IDENTITY_SCHEMA = 2
+_INDEX_IDENTITY_SCHEMA = 3
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
     SOURCE_ID_KEY,
@@ -147,12 +147,16 @@ def build_index_identity(
     content_type: str | None,
     chunk_size: int,
     chunk_overlap: int,
+    text_format: str | None = None,
 ) -> str:
     """Hash the complete index-shaping configuration for one source.
 
     The payload is deliberately conservative. Parser selectors are included
     even when a file type may not use every selector, because unnecessary
     reprocessing is safer than incorrectly reusing stale chunks or vectors.
+    ``text_format`` is the reader's DECLARED emitted-text format resolved
+    before the read (design D3/D6): it decides Markdown routing, so a
+    declaration change must invalidate exactly like a chunk-size change.
     """
     configured_provider, configured_model = _configured_embedding(settings)
     payload = {
@@ -162,8 +166,16 @@ def build_index_identity(
             "configured_provider": configured_provider,
             "configured_model": configured_model,
         },
+        "embedding_text": {
+            # Read at call time, never frozen at import: the exclusion set
+            # is the declared embedding-text contract, and changing it must
+            # invalidate identity precisely (D6). A module-global lookup
+            # keeps monkeypatched/test-time overrides observable.
+            "excluded_keys": sorted(EXCLUDED_EMBED_METADATA_KEYS),
+        },
         "parser": {
             "content_type": content_type,
+            "text_format": text_format,
             "document_backend": settings.document_backend,
             "pdf_reader": settings.pdf_reader,
             "liteparse_num_workers": settings.liteparse_num_workers,
