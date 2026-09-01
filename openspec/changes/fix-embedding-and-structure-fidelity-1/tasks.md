@@ -5,11 +5,11 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 1. Red-first coverage for the current defects
 
-- [ ] 1.1 Add a test asserting that a `pdf_inspector`-parsed chunk's
+- [x] 1.1 Add a test asserting that a `pdf_inspector`-parsed chunk's
   `MetadataMode.EMBED` text contains none of `pdf_reader`, `pdf_type`,
   `pdf_confidence`, `page_count`, `file_path`, `file_type`, `file_size`, or
   the three date keys. Confirm it FAILS today.
-- [ ] 1.2 Add a test asserting the same chunk's EMBED text still contains
+- [x] 1.2 Add a test asserting the same chunk's EMBED text still contains
   `file_name`, `category`, `keywords`, `summary` when present.
 - [ ] 1.3 Add a test asserting that a `.pdf` read by a markdown-declaring
   reader produces chunks carrying `header_path`. Confirm it FAILS today.
@@ -25,19 +25,19 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 2. Embedding-text composition
 
-- [ ] 2.1 Define `EXCLUDED_EMBED_METADATA_KEYS` in
+- [x] 2.1 Define `EXCLUDED_EMBED_METADATA_KEYS` in
   `core/ingestion/source_state.py` next to `_SOURCE_METADATA_KEYS`, covering
   parser telemetry (`pdf_reader`, `pdf_type`, `pdf_confidence`, `page_count`,
   `page`, `page_label`, `column`, `section_bbox`, `bbox_schema_version`) and
   filesystem bookkeeping (`file_path`, `file_type`, `file_size`,
   `creation_date`, `last_modified_date`, `last_accessed_date`).
-- [ ] 2.2 Union it into both exclusion lists inside `stamp_source_lineage`,
+- [x] 2.2 Union it into both exclusion lists inside `stamp_source_lineage`,
   preserving any keys the reader already excluded.
-- [ ] 2.3 Explicitly do NOT exclude `file_name`, `header_path`, `category`,
+- [x] 2.3 Explicitly do NOT exclude `file_name`, `header_path`, `category`,
   `keywords`, `summary`, `document_title`, `content_type`. Add a comment
   naming D2 so the inversion of the LlamaIndex default is not "fixed" later
   by someone reading the upstream docstring.
-- [ ] 2.4 Verify 1.1 and 1.2 now pass.
+- [x] 2.4 Verify 1.1 and 1.2 now pass.
 
 ## 3. Index identity
 

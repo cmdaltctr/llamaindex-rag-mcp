@@ -48,6 +48,61 @@ _SOURCE_METADATA_KEYS = (
     SOURCE_CHUNK_INDEX_KEY,
 )
 
+#: Metadata keys excluded from embedding text and LLM-visible text on every
+#: ingest path — the declared embedding-text contract (spec capability
+#: ``embedding-text-composition``, design D1). A key belongs here when its
+#: value is machine identity, parser telemetry, or filesystem bookkeeping:
+#: constant within a document and carrying no retrievable meaning. A key
+#: carrying topical signal a query could plausibly match belongs in
+#: ``_RETAINED_EMBED_METADATA_KEYS`` instead.
+EXCLUDED_EMBED_METADATA_KEYS = (
+    # Parser telemetry — diagnostics about how a file was parsed, constant
+    # across every chunk of a document (``pdf_inspector`` emits the first
+    # four; page/layout keys cover the other readers).
+    "pdf_reader",
+    "pdf_type",
+    "pdf_confidence",
+    "page_count",
+    "page",
+    "page_label",
+    "column",
+    "section_bbox",
+    "bbox_schema_version",
+    # Filesystem bookkeeping — machine-specific paths and timestamps that
+    # differ between the machine that ingested and any other.
+    "file_path",
+    "file_type",
+    "file_size",
+    "creation_date",
+    "last_modified_date",
+    "last_accessed_date",
+)
+
+#: Metadata keys that MUST stay in embedding text (design D2). This
+#: deliberately INVERTS the LlamaIndex default: ``SimpleDirectoryReader``
+#: excludes ``file_name`` and keeps ``file_path`` as "extreme important
+#: context". For this project that default is backwards — ``file_path`` is
+#: a machine-specific absolute path that is constant within a document and
+#: pure deployment noise between machines, while ``file_name`` carries
+#: genuine topical signal ("Kalai et al. - 2025 - Why Language Models
+#: Hallucinate.pdf" is useful query-matching text). ``stamp_source_lineage``
+#: removes these keys from reader-set exclusion lists so the declared
+#: contract wins over the upstream default. Do NOT "fix" this back to the
+#: LlamaIndex behaviour. The same reasoning keeps structure and extraction
+#: output — ``header_path``, ``category``, ``keywords``, ``summary``,
+#: ``document_title``, ``content_type`` — embedded: each carries signal a
+#: query could plausibly match. Exclusion removes nothing from stored
+#: metadata or retrieval results; ``source`` still comes from ``file_path``.
+_RETAINED_EMBED_METADATA_KEYS = (
+    "file_name",
+    "header_path",
+    "category",
+    "keywords",
+    "summary",
+    "document_title",
+    "content_type",
+)
+
 
 def _configured_embedding(settings: Any) -> tuple[str, str]:
     """Return the configured provider/model selectors for diagnostics."""
@@ -373,12 +428,18 @@ def stamp_source_lineage(
     ordinal, and an attempt-specific row ID. The LlamaIndex ``SOURCE``
     relationship is set to the stable ``source_id`` so source membership
     survives replacement attempts, while ``file_path`` stays ordinary
-    human-readable metadata. Every machine identity and replacement key is
-    added to both metadata exclusion lists so identifiers never enter
-    embedding vectors or LLM-visible content.
+    human-readable metadata. Every machine identity and replacement key,
+    plus the declared embedding-text exclusion set
+    (``EXCLUDED_EMBED_METADATA_KEYS``), is added to both metadata exclusion
+    lists so identifiers, parser telemetry, and filesystem bookkeeping never
+    enter embedding vectors or LLM-visible content. Keys the reader already
+    excluded stay excluded (set union) — except the retained keys of design
+    D2, which are removed from reader-set exclusion lists so the declared
+    contract, not the LlamaIndex default, decides what is embedded.
     """
     chunk_count = len(nodes)
-    excluded = set(_SOURCE_METADATA_KEYS)
+    excluded = set(_SOURCE_METADATA_KEYS) | set(EXCLUDED_EMBED_METADATA_KEYS)
+    retained = set(_RETAINED_EMBED_METADATA_KEYS)
     for index, node in enumerate(nodes):
         chunk_id = build_chunk_id(
             source_id=source_id,
@@ -400,8 +461,10 @@ def stamp_source_lineage(
             }
         )
         node.excluded_embed_metadata_keys = sorted(
-            set(node.excluded_embed_metadata_keys) | excluded
+            (set(node.excluded_embed_metadata_keys) | excluded) - retained
         )
-        node.excluded_llm_metadata_keys = sorted(set(node.excluded_llm_metadata_keys) | excluded)
+        node.excluded_llm_metadata_keys = sorted(
+            (set(node.excluded_llm_metadata_keys) | excluded) - retained
+        )
         node.relationships[NodeRelationship.SOURCE] = RelatedNodeInfo(node_id=source_id)
         node.id_ = build_source_row_id(source_id, source_attempt, chunk_id)
