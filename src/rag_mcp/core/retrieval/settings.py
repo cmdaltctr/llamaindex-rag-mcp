@@ -78,4 +78,10 @@ class RetrievalSettings(BaseModel):
     hybrid_rrf_k: int = 60
 
     # Sparse backend: "bm25" (in-process), "native" (ChromaDB), "auto".
+    # The default stays "bm25" on purpose. Experiment 19
+    # (experiments/19-native-fts-vs-bm25-sparse-2026-08-29) found native
+    # FTS failed the latency gate at 138.7× BM25's warm p50. The
+    # fix-retrieval-freshness change repairs BM25's cross-process cache
+    # invalidation instead. Do not "fix" this default to "auto" without
+    # new latency evidence.
     hybrid_sparse_backend: str = "bm25"

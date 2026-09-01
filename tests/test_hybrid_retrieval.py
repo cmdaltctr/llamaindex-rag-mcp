@@ -342,7 +342,15 @@ def test_remove_document_generation_rebuild_excludes_deleted_chunk() -> None:
     store.bump_generation("delete_rebuild")
 
     assert retriever.query("raredelete", top_n=5) == []
-    assert BM25SparseRetriever._cache[(store, "delete_rebuild")].generation == 1
+    # Task 3.2 of fix-retrieval-freshness: the cache stores the tagged
+    # validity token, not the bare generation, so mode transitions
+    # (durable <-> process-local fallback) can never compare equal.
+    from rag_mcp.core.retrieval.sparse import _LOCAL_TOKEN_PREFIX
+
+    assert (
+        BM25SparseRetriever._cache[(store, "delete_rebuild")].validity_token
+        == f"{_LOCAL_TOKEN_PREFIX}:1"
+    )
 
 
 def test_bm25_cache_namespaces_same_collection_by_store() -> None:

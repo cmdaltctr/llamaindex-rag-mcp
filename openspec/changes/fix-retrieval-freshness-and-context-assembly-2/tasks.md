@@ -50,20 +50,20 @@ is split during review. No re-ingest is required by anything here.
 
 ## 3. BM25 invalidation
 
-- [ ] 3.1 Change `_get_or_build_index` to resolve an explicitly tagged
+- [x] 3.1 Change `_get_or_build_index` to resolve an explicitly tagged
   validity token: durable `(epoch, version)` when `get_data_version(c)` is
   available, else tagged local `store.get_generation(c)`. A transition between
   modes MUST compare unequal.
-- [ ] 3.2 Store the token on `_CachedBM25` in place of the bare generation.
-- [ ] 3.3 Warn once per collection per process when falling back to the
+- [x] 3.2 Store the token on `_CachedBM25` in place of the bare generation.
+- [x] 3.3 Warn once per collection per process when falling back to the
   process-local counter, naming the reduced guarantee.
-- [ ] 3.4 Read the validity token before fetching BM25 rows and again before
+- [x] 3.4 Read the validity token before fetching BM25 rows and again before
   publishing the cache. Publish only when the tagged tokens match; otherwise
   discard and retry within a bounded policy. Test a separate-process mutation
   and recreation during the build.
-- [ ] 3.5 Verify 1.1 passes. Verify the existing store-isolation and
+- [x] 3.5 Verify 1.1 passes. Verify the existing store-isolation and
   invalidate-on-mutation tests still pass unchanged.
-- [ ] 3.6 Confirm no change to the default sparse backend. Add a comment in
+- [x] 3.6 Confirm no change to the default sparse backend. Add a comment in
   `core/retrieval/settings.py` pointing at Experiment 19 so the `bm25` default
   is not "fixed" to `auto` by a future reader of the audit.
 
