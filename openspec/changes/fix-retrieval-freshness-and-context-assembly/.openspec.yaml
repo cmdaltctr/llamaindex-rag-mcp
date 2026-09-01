@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-09-01
+goal: Make sparse retrieval see cross-process writes and give retrieval a
+  lineage-based context assembly stage (the docstore equivalent)
