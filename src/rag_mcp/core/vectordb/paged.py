@@ -56,6 +56,63 @@ class PagedReadMixin:
                 break
             offset += len(metadatas)
 
+    def iter_filtered_documents(
+        self,
+        collection_name: str,
+        where: dict,
+        page_size: int | None = None,
+    ) -> Iterator[tuple[str, str, dict]]:
+        """Yield ``(id, text, metadata)`` rows matching *where*, filter pushed down.
+
+        ``where`` is handed straight to ChromaDB's ``get`` so the
+        server filters before paging — the bounded-read contract the
+        lineage navigator and source-scoped stale selection depend on.
+
+        Args:
+            collection_name: Collection to read.
+            where: ChromaDB-style filter dict; empty filters are
+                rejected because an unfiltered scan is what
+                ``iter_documents`` is for.
+            page_size: Optional page size for bounded batches.
+
+        Yields:
+            ``(id, text, metadata)`` tuples for matching rows;
+            nothing for an absent collection or no matches.
+
+        Raises:
+            ValueError: When *where* is empty.
+        """
+        if not where:
+            raise ValueError(
+                f"iter_filtered_documents on {collection_name!r} requires a "
+                "non-empty where filter; use iter_documents for unfiltered scans."
+            )
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return
+
+        effective_page_size = self._resolve_page_size(page_size)
+        offset = 0
+        while True:
+            batch = collection.get(
+                include=["documents", "metadatas"],
+                where=where,
+                limit=effective_page_size,
+                offset=offset,
+            )
+            ids = batch.get("ids") or []
+            docs = batch.get("documents") or []
+            metas = batch.get("metadatas") or []
+            if not ids:
+                break
+            for idx, doc_id in enumerate(ids):
+                metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
+                text = docs[idx] if idx < len(docs) and docs[idx] is not None else ""
+                yield (str(doc_id), str(text), dict(metadata))
+            if len(ids) < effective_page_size:
+                break
+            offset += len(ids)
+
     def fetch_all(
         self,
         collection_name: str,

@@ -62,6 +62,15 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     ChromaDB's native dimension-mismatch error.  An attached
     :class:`EmbeddingIdentity` additionally rejects a same-dimension
     model swap before any query or write (see :mod:`.identity`).
+
+    ``get_data_version`` deliberately stays on the ABC default of
+    ``None``: ChromaDB exposes no durable, cross-process collection
+    version — no commit counter or dataset identity a second process
+    could observe — and returning the process-local generation counter
+    under a durable name would break the explicit-unavailability
+    contract (``vectordb-abstraction`` spec, unsupported-backends
+    scenario).  Callers fall back to the local counter with the
+    reduced guarantee stated in their own contract.
     """
 
     def __init__(

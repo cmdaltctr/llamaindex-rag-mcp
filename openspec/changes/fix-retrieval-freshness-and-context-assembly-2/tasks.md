@@ -21,30 +21,30 @@ is split during review. No re-ingest is required by anything here.
 
 ## 2. Durable data version
 
-- [ ] 2.1 Add `get_data_version(collection_name) -> str | None` to
+- [x] 2.1 Add `get_data_version(collection_name) -> str | None` to
   `core/vectordb/base.py` with a default returning `None`.
-- [ ] 2.2 Add an `omrg_dataset_epoch` UUID to current Lance table schema
+- [x] 2.2 Add an `omrg_dataset_epoch` UUID to current Lance table schema
   metadata through the existing metadata/mixin seam. Create a new epoch for
   table creation, delete/recreate and every `mode="overwrite"` rebuild;
   preserve it for ordinary writes. Do not use version history, timestamps,
   tags, row counts or a sidecar marker. Keep `lancedb.py` at most 500 lines.
-- [ ] 2.3 Leave `ChromaVectorStore` on the default `None` and document why in
+- [x] 2.3 Leave `ChromaVectorStore` on the default `None` and document why in
   the adapter docstring.
-- [ ] 2.4 Add the method to the differential store-contract test suite so
+- [x] 2.4 Add the method to the differential store-contract test suite so
   every registered store is checked.
-- [ ] 2.5 Implement the Lance token as a tagged durable value containing
+- [x] 2.5 Implement the Lance token as a tagged durable value containing
   `(omrg_dataset_epoch, table.version)`. Confirm ordinary write, upsert,
   delete-where and delete-ids preserve the epoch and change the version;
   confirm overwrite and delete/recreate replace the epoch even when the
   numeric version collides. Prove a long-lived reader observes the new epoch
   after a separate-process refresh/reopen; if it cannot, stop rather than add
   a TTL workaround.
-- [ ] 2.6 For an existing Lance table without an epoch, return `None` on reads;
+- [x] 2.6 For an existing Lance table without an epoch, return `None` on reads;
   under the existing write lock, install an epoch before its next
   OMRG-controlled row mutation. Confirm cleanup/optimisation preserves the
   current epoch and that an external recreation without the marker returns
   `None` rather than inheriting a cached identity.
-- [ ] 2.7 Add a store-neutral filtered row-read method to the ABC and both
+- [x] 2.7 Add a store-neutral filtered row-read method to the ABC and both
   adapters, with differential tests for equality filters, absence and no
   matches. Push filtering into each backend.
 

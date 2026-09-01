@@ -91,6 +91,7 @@ class TestABCCompliance:
             "query_dense",
             "iter_metadatas",
             "iter_documents",
+            "iter_filtered_documents",
             "count",
             "count_where",
             "delete_where",
@@ -98,6 +99,7 @@ class TestABCCompliance:
             "update_collection_metadata",
             "bump_generation",
             "get_generation",
+            "get_data_version",
         }
         implemented = set(_store_class(backend).__abstractmethods__)
         assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
@@ -527,6 +529,135 @@ class TestGenerationCounter:
         store.bump_generation("b")
         assert store.get_generation("a") == 2
         assert store.get_generation("b") == 1
+
+
+# ── Durable data version (fix-retrieval-freshness stage 2) ────────────
+
+
+class TestDataVersionCapability:
+    """Differential contract for the durable data-version capability.
+
+    LanceDB returns a tagged ``(omrg_dataset_epoch, table.version)``
+    token; ChromaDB has no durable cross-process collection version,
+    so it stays on the ABC default and reports ``None`` explicitly
+    rather than repackaging the process-local generation counter.
+    """
+
+    def test_absent_collection_reports_absence(self, store: VectorStore) -> None:
+        assert store.get_data_version("never_created") is None
+
+    def test_stable_between_reads_without_mutation(self, store: VectorStore) -> None:
+        store.upsert_precomputed(
+            "dv_stable",
+            ids=["a"],
+            documents=["row"],
+            metadatas=[{"k": "v"}],
+            embeddings=[[1.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+        assert store.get_data_version("dv_stable") == store.get_data_version("dv_stable")
+
+    def test_backend_capability_semantics(self, store: VectorStore) -> None:
+        """Lance advances a token on mutation; Chroma reports ``None``."""
+        store.upsert_precomputed(
+            "dv_mutation",
+            ids=["a"],
+            documents=["row"],
+            metadatas=[{"k": "v"}],
+            embeddings=[[1.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+        if isinstance(store, LanceVectorStore):
+            before = store.get_data_version("dv_mutation")
+            assert before is not None
+            assert before.startswith("lancedb-durable-v1:")
+            store.upsert_precomputed(
+                "dv_mutation",
+                ids=["b"],
+                documents=["second"],
+                metadatas=[{"k": "w"}],
+                embeddings=[[1.0, 0.0]],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
+            assert store.get_data_version("dv_mutation") != before
+        else:
+            # No durable version available: the capability must be
+            # reported unavailable, never the local generation counter.
+            assert store.get_data_version("dv_mutation") is None
+
+
+# ── Filtered row reads (fix-retrieval-freshness stage 2) ─────────────
+
+
+class TestFilteredDocuments:
+    """Differential contract for bounded filtered row reads."""
+
+    @staticmethod
+    def _seed(store: VectorStore, collection: str = "filtered_docs") -> None:
+        """Write three lineage-tagged rows across two sources."""
+        store.upsert_precomputed(
+            collection,
+            ids=["s1c0", "s1c1", "s2c0"],
+            documents=["source one first", "source one second", "source two first"],
+            metadatas=[
+                {"source_id": "s1", "source_chunk_index": 0, "source_chunk_count": 2},
+                {"source_id": "s1", "source_chunk_index": 1, "source_chunk_count": 2},
+                {"source_id": "s2", "source_chunk_index": 0, "source_chunk_count": 1},
+            ],
+            embeddings=[[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+
+    def test_equality_filter_returns_source_rows_with_lineage(self, store: VectorStore) -> None:
+        self._seed(store)
+        rows = list(store.iter_filtered_documents("filtered_docs", {"source_id": "s1"}))
+        assert sorted(row[0] for row in rows) == ["s1c0", "s1c1"]
+        for _row_id, text, metadata in rows:
+            assert metadata["source_id"] == "s1"
+            assert metadata["source_chunk_count"] == 2
+            assert text.startswith("source one")
+
+    def test_compound_equality_filter_ands_keys(self, store: VectorStore) -> None:
+        self._seed(store)
+        rows = list(
+            store.iter_filtered_documents(
+                "filtered_docs", {"source_id": "s1", "source_chunk_index": 1}
+            )
+        )
+        assert [row[0] for row in rows] == ["s1c1"]
+
+    def test_absent_collection_yields_nothing(self, store: VectorStore) -> None:
+        assert list(store.iter_filtered_documents("nope", {"source_id": "s1"})) == []
+
+    def test_no_matches_yields_nothing(self, store: VectorStore) -> None:
+        self._seed(store)
+        assert list(store.iter_filtered_documents("filtered_docs", {"source_id": "absent"})) == []
+
+    def test_empty_filter_rejected(self, store: VectorStore) -> None:
+        """An empty where must raise, never scan the whole collection."""
+        self._seed(store)
+        with pytest.raises(ValueError, match="non-empty where"):
+            list(store.iter_filtered_documents("filtered_docs", {}))
+
+    def test_filter_is_pushed_into_each_backend(self) -> None:
+        """Both adapters must hand the filter to the backend engine.
+
+        Mirrors ``test_lance_query_pins_l2_instead_of_relying_on_default``:
+        the pushdown is a structural property, so pin it in the source
+        rather than hoping a behavioural test catches a Python-side
+        full scan.
+        """
+        import inspect
+
+        from rag_mcp.core.vectordb.lance_paged import LancePagedReadMixin
+        from rag_mcp.core.vectordb.paged import PagedReadMixin
+
+        lance_source = inspect.getsource(LancePagedReadMixin.iter_filtered_documents)
+        assert "translate_where" in lance_source
+        assert "filter=filter_sql" in lance_source
+
+        chroma_source = inspect.getsource(PagedReadMixin.iter_filtered_documents)
+        assert "where=where" in chroma_source
 
 
 # ── Dimension locking (spec MUST scenario) ────────────────────────────

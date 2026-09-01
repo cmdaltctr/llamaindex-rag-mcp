@@ -14,7 +14,11 @@ identical across backends.
 The concrete store supplies ``_identity``, ``_pending_metadata``,
 ``_open_table`` and ``_get_connection``; this module owns the
 read-merge-write and mismatch-rejection logic, plus the metadata
-struct evolution below.
+struct evolution below.  The store also supplies the dataset-epoch
+helpers from :mod:`.lance_epoch` (``ensure_dataset_epoch`` and
+``fresh_epoch_metadata``): every ``mode="overwrite"`` rebuild in
+this module bakes a freshly minted epoch into the rewritten schema,
+so one epoch always identifies one incarnation of the dataset.
 
 LanceDB fixes the Arrow ``metadata`` struct on the first write, and
 pylance 10 has no nested ``add_columns`` (dotted paths are rejected
@@ -43,9 +47,16 @@ from .identity import (
     identities_match,
 )
 
+#: Schema-metadata key holding the OMRG-owned dataset epoch UUID
+#: (see :mod:`.lance_epoch`).  Defined at this seam so both modules
+#: share one constant without a circular import.
+OMRG_EPOCH_KEY = "omrg_dataset_epoch"
+
 __all__ = [
     "LanceTableMetadataMixin",
+    "OMRG_EPOCH_KEY",
     "infer_arrow_type",
+    "read_dataset_epoch",
     "read_table_metadata",
 ]
 
@@ -88,6 +99,27 @@ def read_table_metadata(table: Any) -> dict[str, Any]:
         except (ValueError, TypeError):
             decoded[name] = text
     return decoded
+
+
+def read_dataset_epoch(table: Any) -> str | None:
+    """Return the dataset epoch stored in a table's schema metadata.
+
+    Lives here (not in :mod:`.lance_epoch`) so the epoch read shares
+    this module's tolerant decode and the import direction stays
+    one-way: ``lance_epoch`` imports from this seam, never the
+    reverse.  Duck-typed calls (``self.ensure_dataset_epoch``,
+    ``self.fresh_epoch_metadata``) need no import at all.
+
+    Args:
+        table: An open LanceDB table handle.
+
+    Returns:
+        The epoch UUID string, or ``None`` when the table carries no
+        epoch (absent, legacy, or externally recreated unmarked).
+    """
+    metadata = read_table_metadata(table)
+    epoch = metadata.get(OMRG_EPOCH_KEY)
+    return str(epoch) if epoch is not None else None
 
 
 def metadata_field_names(table: Any) -> set[str]:
@@ -142,6 +174,8 @@ class LanceTableMetadataMixin:
     _pending_metadata: dict[str, dict[str, str]]
     _open_table: Callable[[str], Any]
     _get_connection: Callable[[], Any]
+    ensure_dataset_epoch: Callable[[str], None]
+    fresh_epoch_metadata: Callable[[], dict[str, str]]
 
     def _read_table_metadata(self, table: Any) -> dict[str, Any]:
         """Return the table's metadata bag with types restored."""
@@ -202,8 +236,12 @@ class LanceTableMetadataMixin:
 
         Legacy tables without a stored identity are stamped after the
         write creates/extends the table (see ``_flush_after_write``).
+        The pre-write half of the rule also installs a dataset epoch
+        on an existing unmarked table, so the next OMRG-controlled
+        mutation marks it *before* its rows change.
         """
         self._reject_conflicting_identity(collection_name)
+        self.ensure_dataset_epoch(collection_name)
 
     def _guard_query_identity(self, collection_name: str) -> None:
         """Query-path rule: reject mismatches before the query is issued.
@@ -218,7 +256,12 @@ class LanceTableMetadataMixin:
 
         Applies the identity.py read-merge-write rule: existing keys
         such as profile tags are preserved because the merge happens
-        server-side in ``update_schema_metadata``.
+        server-side in ``update_schema_metadata``.  A table that still
+        carries no dataset epoch — one the write just created, or a
+        legacy table the row mutation already marked — mints one here:
+        table creation is exactly when a new epoch is written, and the
+        guarded metadata write keeps ordinary writes on epoched tables
+        version-stable.
         """
         updates: dict[str, str] = {}
         pending = self._pending_metadata.pop(collection_name, None)
@@ -230,6 +273,9 @@ class LanceTableMetadataMixin:
             updates[IDENTITY_MODEL_KEY] = json.dumps(identity.model)
             if identity.index_identity is not None:
                 updates[IDENTITY_INDEX_KEY] = json.dumps(identity.index_identity)
+        table = self._open_table(collection_name)
+        if table is not None and read_dataset_epoch(table) is None:
+            updates.update(self.fresh_epoch_metadata())
         if updates:
             self._write_table_metadata(collection_name, updates)
 
@@ -249,7 +295,9 @@ class LanceTableMetadataMixin:
         "key absent" state), and written back with
         ``create_table(mode="overwrite")``.  The schema metadata bag
         (identity triple, profile tags) is carried across the rewrite,
-        and the table's version history restarts at the new write.
+        the table's version history restarts at the new write, and a
+        freshly minted dataset epoch replaces the previous one — an
+        overwrite rebuild is a new incarnation of the dataset.
 
         Args:
             collection_name: Table to evolve.
@@ -315,7 +363,10 @@ class LanceTableMetadataMixin:
                 (pa.field(_METADATA_COLUMN, expanded) if field.name == _METADATA_COLUMN else field)
                 for field in arrow.schema
             ],
-            metadata=arrow.schema.metadata,
+            metadata={
+                **decode_schema_metadata_entries(arrow.schema.metadata or {}),
+                **self.fresh_epoch_metadata(),
+            },
         )
         self._get_connection().create_table(
             collection_name, arrow.cast(new_schema), mode="overwrite"
@@ -340,7 +391,9 @@ class LanceTableMetadataMixin:
         :meth:`evolve_metadata_fields`, the table is rebuilt with the
         column re-typed as string. A Null-typed column holds only nulls,
         so the re-type is lossless. The schema metadata bag (identity
-        triple, profile tags) is carried across the rewrite.
+        triple, profile tags) is carried across the rewrite, and a
+        freshly minted dataset epoch replaces the previous one, as in
+        :meth:`evolve_metadata_fields`.
         """
         table = self._open_table(collection_name)
         if table is None:
@@ -361,7 +414,10 @@ class LanceTableMetadataMixin:
                 (pa.field(field.name, pa.string()) if field.name in widen else field)
                 for field in arrow.schema
             ],
-            metadata=arrow.schema.metadata,
+            metadata={
+                **decode_schema_metadata_entries(arrow.schema.metadata or {}),
+                **self.fresh_epoch_metadata(),
+            },
         )
         self._get_connection().create_table(
             collection_name, arrow.cast(new_schema), mode="overwrite"

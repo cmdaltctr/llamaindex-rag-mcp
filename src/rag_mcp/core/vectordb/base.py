@@ -143,6 +143,42 @@ class VectorStore(ABC):
     ) -> Iterator[tuple[str, str, dict]]:
         """Yield ``(id, text, metadata)`` rows using bounded pages."""
 
+    def iter_filtered_documents(
+        self,
+        collection_name: str,
+        where: dict,
+        page_size: int | None = None,
+    ) -> Iterator[tuple[str, str, dict]]:
+        """Yield ``(id, text, metadata)`` rows matching metadata equality filters.
+
+        The store-neutral filtered row-read operation used by lineage
+        navigation and source-scoped stale selection.  Implementations
+        MUST push *where* into the backend rather than materialising the
+        whole collection in Python, and MUST preserve each row's
+        persisted metadata verbatim.
+
+        An empty *where* is rejected: an unfiltered read would silently
+        scan the collection, which is exactly the cost this operation
+        exists to avoid.  Callers wanting an unbounded scan use
+        :meth:`iter_documents`.
+
+        Args:
+            collection_name: Collection to read.
+            where: ChromaDB-style filter dict; the supported scope is
+                metadata equality (compound keys AND together).
+            page_size: Optional backend page size for bounded batches.
+
+        Yields:
+            ``(id, text, metadata)`` tuples for matching rows; nothing
+            for an absent collection or a filter with no matches.
+
+        Raises:
+            ValueError: When *where* is empty.
+            NotImplementedError: When the store does not implement the
+                operation.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support filtered row reads")
+
     # Counts.
 
     @abstractmethod
@@ -193,3 +229,35 @@ class VectorStore(ABC):
     @abstractmethod
     def get_generation(self, collection_name: str) -> int:
         """Return the collection generation, defaulting to zero."""
+
+    # Durable data version.
+
+    def get_data_version(self, collection_name: str) -> str | None:
+        """Return a durable collection data-version token, or ``None``.
+
+        The token is opaque and tagged.  When a store supports the
+        capability it SHALL change whenever the collection's rows or
+        dataset identity change — including overwrite-based schema
+        evolution and recreation — and it SHALL be observable by any
+        process reading the same underlying data.  A numeric version
+        whose history can restart is not sufficient alone, which is why
+        durable implementations combine a persistent dataset identity
+        with the backend commit counter.
+
+        Returning ``None`` reports the capability as unavailable: an
+        absent collection, or a backend that offers no durable version.
+        Stores on such backends MUST NOT return the process-local
+        generation counter (from :meth:`get_generation`) under this
+        durable name; callers fall back to it themselves with the
+        reduced guarantee stated in their own contract.
+
+        Reads through this method MUST NOT mutate the collection.
+
+        Args:
+            collection_name: Collection to version.
+
+        Returns:
+            The opaque durable token, or ``None`` when unavailable or
+            the collection is absent.
+        """
+        return None
