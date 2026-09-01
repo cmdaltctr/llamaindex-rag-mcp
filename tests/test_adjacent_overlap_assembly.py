@@ -76,12 +76,18 @@ async def test_adjacent_overlap_chunks_do_not_repeat_sentences(
 
     # Precondition: the result set really does contain adjacent chunks
     # from the same source version, so the assertion below cannot pass
-    # vacuously.
+    # vacuously. Assembly (stage 5) merges adjacent chunks into one row,
+    # so adjacency is now observable either as two rows with consecutive
+    # indices or as one merged row carrying several constituent
+    # ``chunk_ids`` (its ``source_chunk_index`` reports the lowest only).
     flat = sorted(
         row["source_chunk_index"] for row in results if row.get("source_chunk_index") is not None
     )
-    assert any(second - first == 1 for first, second in zip(flat, flat[1:], strict=False)), (
-        f"precondition failed: no adjacent chunk pair in {flat}"
+    adjacent_rows = any(second - first == 1 for first, second in zip(flat, flat[1:], strict=False))
+    merged_counts = [len(row.get("chunk_ids", [])) for row in results]
+    assert adjacent_rows or any(count > 1 for count in merged_counts), (
+        f"precondition failed: no adjacent chunk pair in {flat}; "
+        f"merged constituent counts {merged_counts}"
     )
 
     occurrences: dict[str, int] = {}

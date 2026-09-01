@@ -711,6 +711,7 @@ class TestSearchErrorHandling:
             rerank=False,
             collection_name="cli_coll",
             hybrid=False,
+            expand_window=0,
             include_diagnostics=False,
             effective_settings=ANY,
         )
@@ -741,9 +742,50 @@ class TestSearchErrorHandling:
             rerank=None,
             collection_name="documents",
             hybrid=False,
+            expand_window=0,
             include_diagnostics=False,
             effective_settings=ANY,
         )
+
+    def test_search_cli_expand_window_passthrough(self) -> None:
+        """--expand-window reaches core retrieval unchanged (task 5.7)."""
+        result_payload = [
+            {
+                "score": 0.8,
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "CLI result",
+                "reranked": False,
+            }
+        ]
+
+        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
+            result = runner.invoke(app, ["search", "cli query", "--expand-window", "2", "--json"])
+
+        assert result.exit_code == 0
+        _, kwargs = mock_search.call_args
+        assert kwargs["expand_window"] == 2
+
+    def test_search_cli_table_renders_scoreless_expanded_row(self) -> None:
+        """Expansion-only rows carry no score; the table shows a dash."""
+        result_payload = [
+            {
+                "source": "cli.txt",
+                "page_label": None,
+                "text": "expanded context without a retrieval score",
+                "reranked": False,
+            }
+        ]
+
+        with (
+            patch("rag_mcp.core.retrieval.search", return_value=result_payload),
+            patch("rag_mcp.transports.cli.search._print_ollama_error") as mock_ollama,
+        ):
+            result = runner.invoke(app, ["search", "cli query"])
+
+        assert result.exit_code == 0, result.output
+        mock_ollama.assert_not_called()
+        assert "expanded context" in result.output
 
     @pytest.mark.parametrize("enabled", [True, False], ids=["enabled", "disabled"])
     def test_search_cli_diagnostics_json_passthrough(self, enabled: bool) -> None:

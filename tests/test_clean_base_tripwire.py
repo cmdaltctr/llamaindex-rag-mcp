@@ -34,7 +34,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 2060  # Includes document-backend registry + orchestrator pins,
+_BASE_EXECUTED = 2170  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -56,6 +56,12 @@ _BASE_EXECUTED = 2060  # Includes document-backend registry + orchestrator pins,
 # embedding-text composition, reader text-format, page-provenance, and
 # profile-scoped-extension suites
 # (fix-embedding-and-structure-fidelity-1).
+# Re-baselined at fix-retrieval-freshness-and-context-assembly-2 stage 5:
+# the count had drifted behind stages 1-4 (masked by the stage-1 red
+# tests failing the subprocess returncode gate first) and now also
+# includes the stage-1 red suites, stages 2-4 (durable data version,
+# BM25 invalidation, lineage navigation) and the stage-5 context-assembly
+# suite (38 cases) plus MCP/CLI expand-window passthrough (3 cases).
 _BASE_SKIPPED = 100  # self-ignored run: base skips incl. chroma-gated files,
 # the chroma-parametrised cases of the embedding-write-contract suite,
 # the +1 SDK-conditional backend probe, and the +1 chroma honesty case

@@ -83,30 +83,30 @@ is split during review. No re-ingest is required by anything here.
 
 ## 5. Context assembly
 
-- [ ] 5.1 Create `core/retrieval/assembly.py` with
+- [x] 5.1 Create `core/retrieval/assembly.py` with
   `assemble(rows, *, chunk_overlap, expand_window, store, collection)`.
-- [ ] 5.2 Implement contiguity-driven, lossless merging: remove only the
+- [x] 5.2 Implement contiguity-driven, lossless merging: remove only the
   longest exact suffix/prefix match within the configured token budget, else
   concatenate without deletion. Carry constituent `chunk_id` values, lowest
   `source_chunk_index`, best score and that constituent's `score_kind`; test
   repeated phrases, heading prepends, whitespace differences and no match.
-- [ ] 5.3 Implement bounded, opt-in neighbour expansion using group 4; mark
+- [x] 5.3 Implement bounded, opt-in neighbour expansion using group 4; mark
   expanded rows and give them no retrieval score.
-- [ ] 5.4 Compose expansion with merging (expanded neighbours of a retrieved
+- [x] 5.4 Compose expansion with merging (expanded neighbours of a retrieved
   chunk merge into it).
-- [ ] 5.5 Guarantee no chunk's unique text is lost, and that retrieved rows are
+- [x] 5.5 Guarantee no chunk's unique text is lost, and that retrieved rows are
   never dropped to honour `top_k` after expansion.
-- [ ] 5.6 Call `assemble` from `pipeline.py` once, after truncation, before
+- [x] 5.6 Call `assemble` from `pipeline.py` once, after truncation, before
   diagnostics attachment.
-- [ ] 5.7 Add an `expand_window` parameter to `search()`, defaulting to 0, and
+- [x] 5.7 Add an `expand_window` parameter to `search()`, defaulting to 0, and
   surface it on the MCP tool and the CLI.
-- [ ] 5.8 Add `assembly_seconds` to the timing report; add merge/expansion
+- [x] 5.8 Add `assembly_seconds` to the timing report; add merge/expansion
   markers to diagnostics rows only.
-- [ ] 5.9 Extend `_strip_internal_result_fields` so assembly-internal fields
+- [x] 5.9 Extend `_strip_internal_result_fields` so assembly-internal fields
   are stripped from public results.
-- [ ] 5.10 Verify 1.2 passes and every `retrieval-context-assembly` scenario
+- [x] 5.10 Verify 1.2 passes and every `retrieval-context-assembly` scenario
   is covered.
-- [ ] 5.11 Confirm `pipeline.py` and `lancedb.py` stay at or below the
+- [x] 5.11 Confirm `pipeline.py` and `lancedb.py` stay at or below the
   500-line ceiling; use cohesive existing/new mixins rather than adding
   methods directly to the already-full adapter.
 

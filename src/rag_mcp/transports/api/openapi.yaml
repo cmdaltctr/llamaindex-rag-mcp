@@ -384,6 +384,15 @@ components:
           description: >
             Fuse dense + sparse (BM25 + RRF). Resolved from the collection
             profile when omitted.
+        expand_window:
+          type: integer
+          minimum: 0
+          default: 0
+          description: >
+            Neighbours added per side of each retrieved chunk during
+            context assembly (0 = no expansion, the default). Expanded
+            neighbours merge into the retrieved chunk under the assembly
+            merging rules and never displace retrieved rows.
         diagnostics:
           type: boolean
           default: false
@@ -525,6 +534,23 @@ components:
           description: >
             Sparse backend that actually served the hybrid query (e.g.
             bm25, native). Present only for hybrid queries (diagnostics only).
+        assembly_merged:
+          type: boolean
+          description: >
+            Whether the assembly stage merged this row from multiple
+            adjacent chunks (diagnostics only).
+        assembly_chunk_count:
+          type: integer
+          minimum: 1
+          description: >
+            Number of constituent chunks this row was assembled from
+            (diagnostics only; 1 for unmerged rows).
+        assembly_expanded:
+          type: boolean
+          description: >
+            Whether the row was added purely by neighbour expansion and
+            was never ranked — such rows carry no retrieval score
+            (diagnostics only).
         norm_guard:
           type: object
           description: >
@@ -537,7 +563,8 @@ components:
             Per-stage retrieval wall-clock durations in seconds, attached
             to each result row when diagnostics are enabled. Keys are
             stage names (``embedding_seconds``, ``dense_seconds``,
-            ``sparse_seconds``, ``fusion_seconds``, ``rerank_seconds``).
+            ``sparse_seconds``, ``fusion_seconds``, ``rerank_seconds``,
+            ``assembly_seconds``).
             A stage that did not run is absent — absence means "did not
             execute", never "took zero time". Per-stage durations do not
             sum to wall time in hybrid mode because dense and sparse run
