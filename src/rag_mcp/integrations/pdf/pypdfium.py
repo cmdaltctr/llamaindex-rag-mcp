@@ -52,6 +52,13 @@ class PyPDFium2Reader:
                         metadata={
                             "pdf_reader": "pypdfium2",
                             "page": i + 1,
+                            # String page label matching pypdf's format:
+                            # the 1-based page number as a string. This is
+                            # the key retrieval reads (spec pdf-reader:
+                            # "Page provenance is honest per reader") —
+                            # pypdfium2 emits one document per page, so it
+                            # always knows the label.
+                            "page_label": str(i + 1),
                             "file_path": str(file),
                             "file_name": file.name,
                         },

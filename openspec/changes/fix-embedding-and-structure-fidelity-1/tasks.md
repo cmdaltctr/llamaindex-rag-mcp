@@ -13,9 +13,9 @@ implementation, because every defect here is currently invisible to the suite.
   `file_name`, `category`, `keywords`, `summary` when present.
 - [x] 1.3 Add a test asserting that a `.pdf` read by a markdown-declaring
   reader produces chunks carrying `header_path`. Confirm it FAILS today.
-- [ ] 1.4 Add tests asserting `liteparse` and `pypdfium2` emit
+- [x] 1.4 Add tests asserting `liteparse` and `pypdfium2` emit
   `page_label`. Confirm both FAIL today.
-- [ ] 1.5 Add a test that ingests a real `.py` file through
+- [x] 1.5 Add a test that ingests a real `.py` file through
   `ingest_path_async` under the `codebase` profile **without patching
   `gather_supported_files`**, asserting `effective_strategy == "code"`.
   Confirm it FAILS today.
@@ -75,27 +75,27 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 6. Page provenance
 
-- [ ] 6.1 Emit `page_label` (string) alongside `page` in both
+- [x] 6.1 Emit `page_label` (string) alongside `page` in both
   `integrations/pdf/liteparse.py` and `integrations/pdf/pypdfium.py`.
-- [ ] 6.2 Verify 1.4 passes for both direct readers and the `auto` chain.
-- [ ] 6.3 Make `page_label` optional (not required) in
+- [x] 6.2 Verify 1.4 passes for both direct readers and the `auto` chain.
+- [x] 6.3 Make `page_label` optional (not required) in
   `transports/api/openapi.yaml` `SearchResult`.
-- [ ] 6.4 Hide the CLI Page column when every row's `page_label` is empty
+- [x] 6.4 Hide the CLI Page column when every row's `page_label` is empty
   (`transports/cli/search.py`).
-- [ ] 6.5 Update `docs/guides/pdf-reader.md` (or the reader section of the
+- [x] 6.5 Update `docs/guides/pdf-reader.md` (or the reader section of the
   configuration guide) with the per-reader page-provenance matrix, and test
   that `registry.describe()` exposes the same capability.
 
 ## 7. Profile-scoped ingestible extensions
 
-- [ ] 7.1 Add `ingest_extensions` to the chunking or ingestion settings block
+- [x] 7.1 Add `ingest_extensions` to the chunking or ingestion settings block
   with the current seven as the default.
-- [ ] 7.2 Add source extensions to `config/profiles/codebase.yaml`.
-- [ ] 7.3 Thread the resolved set into `gather_supported_files` instead of
+- [x] 7.2 Add source extensions to `config/profiles/codebase.yaml`.
+- [x] 7.3 Thread the resolved set into `gather_supported_files` instead of
   reading the module constant; keep the constant as the default value.
-- [ ] 7.4 Build the watcher's patterns from the resolved set so watch and
+- [x] 7.4 Build the watcher's patterns from the resolved set so watch and
   manual ingest cannot diverge.
-- [ ] 7.5 Verify 1.5 passes, and that a `documents`-profile ingest of the same
+- [x] 7.5 Verify 1.5 passes, and that a `documents`-profile ingest of the same
   directory still reports the source files as `skipped`.
 
 ## 8. Re-measure the quality gate

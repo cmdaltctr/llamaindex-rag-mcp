@@ -96,14 +96,22 @@ def search(
     table = Table(title="Search Results")
     table.add_column("Score", style="cyan", justify="right")
     table.add_column("Source", style="green")
-    table.add_column("Page", style="dim")
+    # Page provenance is honest per reader (spec pdf-reader): rows from
+    # readers without page boundaries carry no label, so the column is
+    # hidden when no row has one rather than showing an empty column.
+    show_pages = any(r.get("page_label") for r in results)
+    if show_pages:
+        table.add_column("Page", style="dim")
     table.add_column("Text", max_width=60)
 
     for r in results:
         score = f"{r['score']:.4f}"
         source = _sanitise_display_name(r.get("source", "unknown"))
-        page = str(r.get("page_label") or "")
         text = r.get("text", "")[:100].replace("\n", " ")
-        table.add_row(score, source, page, text)
+        if show_pages:
+            page = str(r.get("page_label") or "")
+            table.add_row(score, source, page, text)
+        else:
+            table.add_row(score, source, text)
 
     console.print(table)

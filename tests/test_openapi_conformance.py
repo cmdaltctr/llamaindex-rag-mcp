@@ -36,6 +36,14 @@ _OPENAPI_PATH = (
 # from the SearchRequest conformance check for structural reasons.
 _PATH_PARAMETER_EXCLUSIONS: frozenset[str] = frozenset({"collection"})
 
+# Result fields that appear on every response but are contractually
+# OPTIONAL (fix-embedding-and-structure-fidelity-1, spec pdf-reader:
+# "Page provenance is honest per reader"). ``page_label`` is null for
+# readers that cannot observe page boundaries — ``pdf_inspector`` emits
+# one document per file — so the contract must not require the field
+# (design D5: absent, never fabricated).
+_OPTIONAL_RESULT_FIELDS: frozenset[str] = frozenset({"page_label"})
+
 # Parameters whose ``None`` Python default means "resolve from the collection
 # profile" (design D7 rule 3a). ``inspect.signature`` cannot distinguish
 # rule 3a from 3b on its own, so this small semantic set is maintained.
@@ -331,7 +339,7 @@ class TestSearchResultConformance:
         default_keys, _ = _derive_result_keys()
 
         not_declared = sorted(default_keys - set(props))
-        not_required = sorted(default_keys - required)
+        not_required = sorted((default_keys - required) - _OPTIONAL_RESULT_FIELDS)
 
         assert not not_declared, (
             f"SearchResult.properties is missing field(s): {not_declared}. "
@@ -339,7 +347,9 @@ class TestSearchResultConformance:
         )
         assert not not_required, (
             f"SearchResult.required is missing field(s): {not_required}. "
-            f"These fields appear on every response and must be required."
+            f"These fields appear on every response and must be required "
+            f"(unless listed in _OPTIONAL_RESULT_FIELDS, the maintained "
+            f"set of contractually optional fields)."
         )
 
     def test_every_diagnostic_key_is_declared_and_not_required(self) -> None:

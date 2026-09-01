@@ -359,6 +359,7 @@ splitter regardless of the fallback.
 |---|---|---|
 | `embed_concurrency` | `4` | Parallel embedding requests. Machine-specific — lower it if the backend throttles |
 | `embed_batch_size` | `100` | Documents per embedding call |
+| `ingest_extensions` | the seven document extensions | File extensions ingestion collects. **Profile-owned** — the `codebase` profile adds source extensions. Env form is comma-separated (`.py,.ts`) or a JSON array string |
 
 ### Embedding — `EMBEDDING__*`
 
@@ -426,6 +427,20 @@ The packaged default `pdf_inspector` is a base dependency
 `auto` keeps the LiteParse → pypdfium2 → pypdf probe order. A configured
 reader that is not importable logs an error and falls back to pypdf. Tests
 pin `pypdf` for determinism.
+
+Each reader declares the text format it emits and whether it provides
+page-level provenance. Downstream consumers route on the declared format
+instead of the file extension, and search results carry `page_label` only
+when the reader can observe pages. The registry descriptor
+(`registry.describe(name)`) exposes the same matrix — the table below and
+the registry must stay in agreement (a guard test enforces this).
+
+| Reader | Declared text format | Page provenance |
+| --- | --- | --- |
+| `pdf_inspector` | `markdown` | No — one document per file; `page_count` in metadata instead |
+| `liteparse` | `plain` | Yes — string `page_label` alongside the integer `page` |
+| `pypdf` | `plain` | Yes |
+| `pypdfium2` | `plain` | Yes |
 
 ### Document backend
 

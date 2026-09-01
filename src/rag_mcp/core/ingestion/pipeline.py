@@ -20,7 +20,7 @@ from ._state import shutdown_requested
 from .backends.orchestrator import resolve_declared_text_format
 from .chunker import read_and_chunk_file_async
 from .hashing import sha256_file
-from .loader import SUPPORTED_EXTENSIONS, gather_supported_files, make_file_detail
+from .loader import gather_supported_files, make_file_detail
 from .metrics import sample_peak_rss_bytes
 from .replacement import IngestionStageError, replace_source_nodes_async
 from .source_state import (
@@ -120,13 +120,19 @@ async def ingest_path_async(
             "metadata_degraded": 0,
         }
 
-    if path_obj.is_file() and path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
+    # Resolve settings BEFORE the extension gate: the ingestible set is
+    # profile-scoped (design D4), so a codebase-profile ingest admits
+    # source extensions a documents-profile ingest rejects.
+    resolved_settings = resolve_effective_settings(effective_settings)
+    resolved_extensions = set(resolved_settings.ingestion.ingest_extensions)
+
+    if path_obj.is_file() and path_obj.suffix.lower() not in resolved_extensions:
         return {
             "status": "error",
             "error_type": "file",
             "message": (
                 f"Unsupported file extension: {path_obj.suffix}. "
-                f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+                f"Supported: {', '.join(sorted(resolved_extensions))}"
             ),
             "file_details": [],
             "collection": collection_name,
@@ -134,7 +140,6 @@ async def ingest_path_async(
             "metadata_degraded": 0,
         }
 
-    resolved_settings = resolve_effective_settings(effective_settings)
     effective_chunk_size = (
         chunk_size if chunk_size is not None else resolved_settings.chunking.chunk_size
     )
@@ -142,7 +147,9 @@ async def ingest_path_async(
         chunk_overlap if chunk_overlap is not None else resolved_settings.chunking.chunk_overlap
     )
 
-    files_to_index, skipped_details = gather_supported_files(path_obj)
+    files_to_index, skipped_details = gather_supported_files(
+        path_obj, extensions=resolved_extensions
+    )
     if not files_to_index:
         return {
             "status": "ok",
@@ -317,6 +324,14 @@ async def ingest_path_async(
                 metadata_degraded=file_metadata_degraded,
             )
             detail["source_version"] = source_version
+            # Effective chunking strategy, when the result carries one
+            # (CodeChunkResult): makes the AST-aware code path observable
+            # per file (spec type-aware-ingestion: "files with a
+            # tree-sitter mapping SHALL be chunked by the AST-aware code
+            # strategy") instead of only through stored metadata.
+            effective_strategy = getattr(nodes, "chunk_strategy_effective", None)
+            if effective_strategy is not None:
+                detail["effective_strategy"] = effective_strategy
             if outcome.norm_band is not None:
                 # Observed embedding-vector norm band for this source —
                 # the guard's evidence trail in the ingest report (spec:

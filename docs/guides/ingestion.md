@@ -186,6 +186,15 @@ long parse never blocks the MCP event loop.
 
 For directories, the server recursively finds all supported files.
 
+The set is the **documents-profile default**. It is profile-scoped, not a
+global constant: the `codebase` profile collects the seven above plus
+source extensions for the languages the AST extractor maps to tree-sitter
+grammars (`.py`, `.ts`, `.go`, and more — see `config/profiles/codebase.yaml`),
+so those files reach the AST-aware code chunker. Override per machine with
+`INGESTION__INGEST_EXTENSIONS` (comma-separated). Binary files are skipped
+under every profile — content-type detection rejects them even when the
+extension is admitted.
+
 ## Embedding models
 
 Set `EMBED_MODEL` in `.env` to any Ollama embedding model:

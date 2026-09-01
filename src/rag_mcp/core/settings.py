@@ -51,6 +51,23 @@ class IngestionBlock(BaseModel):
     embed_concurrency: int = 2
     embed_batch_size: int = 100
 
+    # File extensions ingestion collects (design D4 of
+    # fix-embedding-and-structure-fidelity-1: profile-scoped). The default
+    # repeats DEFAULT_INGEST_EXTENSIONS from core/ingestion/settings.py —
+    # the pure-data import-linter contract forbids importing it here, so
+    # both models must stay in sync (mirroring the MetadataBlock/
+    # MetadataSettings timeout convention). Values arriving here are
+    # already normalised by IngestionSettings or the profile overlay.
+    ingest_extensions: tuple[str, ...] = (
+        ".pdf",
+        ".docx",
+        ".pptx",
+        ".txt",
+        ".md",
+        ".html",
+        ".csv",
+    )
+
 
 class EmbeddingSettings(BaseModel):
     """Config-facing embedding norm-guard knobs (env prefix ``EMBEDDING__``).

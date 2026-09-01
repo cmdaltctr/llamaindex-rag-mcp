@@ -9,18 +9,25 @@ vector store ABC in Phase 3.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+from .settings import DEFAULT_INGEST_EXTENSIONS
 from .source_state import SOURCE_ID_KEY
 
 logger = logging.getLogger(__name__)
 
 
-# File extensions the ingestion pipeline accepts.
-# Relocated from config.py (task 7.11): static data, not a setting.
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt", ".md", ".html", ".csv"}
+# File extensions the ingestion pipeline accepts — the DEFAULT value of
+# the profile-scoped ``ingestion.ingest_extensions`` setting (design D4:
+# the set resolves from the active profile, not from this global). Kept as
+# a module constant for callers without resolved settings (the watcher's
+# fallback, historical imports) and as ``gather_supported_files``'s
+# default argument. Derives from the settings-model default so the two
+# cannot drift.
+SUPPORTED_EXTENSIONS = set(DEFAULT_INGEST_EXTENSIONS)
 
 
 def make_file_detail(
@@ -54,11 +61,18 @@ def make_file_detail(
     return detail
 
 
-def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
+def gather_supported_files(
+    path_obj: Path,
+    extensions: Iterable[str] = SUPPORTED_EXTENSIONS,
+) -> tuple[list[Path], list[dict]]:
     """Discover supported files and identify skipped (unsupported) files.
 
     Args:
         path_obj: A file or directory path.
+        extensions: The resolved ingestible extension set (design D4).
+            Callers with settings MUST pass
+            ``resolved.ingestion.ingest_extensions``; the module constant
+            default serves only callers without resolved settings.
 
     Returns:
         Tuple of (supported files, skipped file details).
@@ -67,12 +81,13 @@ def gather_supported_files(path_obj: Path) -> tuple[list[Path], list[dict]]:
     """
     files: list[Path] = []
     skipped: list[dict] = []
+    extension_set = set(extensions)
 
     if path_obj.is_file():
-        if path_obj.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if path_obj.suffix.lower() in extension_set:
             files.append(path_obj)
     else:
-        for ext in SUPPORTED_EXTENSIONS:
+        for ext in sorted(extension_set):
             files.extend(path_obj.rglob(f"*{ext}"))
 
         # Discover all files in the directory and identify unsupported ones.
