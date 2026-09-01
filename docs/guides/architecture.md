@@ -282,10 +282,15 @@ startup listing the registered names. Credentials never enter
 `compose.ensure_runtime_setup`. Before composition it raises a controlled
 error. It never imports settings or constructs a fallback store.
 
-One writer per collection is an explicit boundary. The BM25 invalidation
-counters are process-local, so evaluation workers reuse completed immutable
-indexes read-only; mutating the same collection from several processes is
-unsupported.
+One writer per collection is an explicit boundary. BM25 cache validity uses
+the store's durable data version where one exists
+([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)), so
+a mutation by another process — the watch daemon writing while the MCP
+server serves — invalidates the cache without inter-process signalling.
+Where no durable version exists, the process-local generation counter
+applies and same-process mutations are the only ones the cache sees;
+evaluation workers reuse completed immutable indexes read-only either way.
+Cross-process write safety of the underlying stores remains unverified.
 
 **Layout and concurrency contract.** Each LanceDB collection is one table
 directory, `{LANCEDB_URI}/{collection_name}.lance`. A regression test pins

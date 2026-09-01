@@ -290,7 +290,9 @@ metadata.
 
 LanceDB Cloud is out of scope. Unknown `VECTOR_STORE` values fail startup with
 the registered names listed. The BM25 hybrid path is backend-agnostic: it reads
-rows through `iter_documents` and invalidates off the generation counter.
+rows through `iter_documents` and invalidates off the store's durable data
+version where one exists, else the process-local generation counter
+([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)).
 Native LanceDB full-text search is implemented as the `native` sparse backend
 (see [Reranker](reranker.md#sparse-retrieval-backends-hybrid-search)).
 

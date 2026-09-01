@@ -140,10 +140,10 @@ is split during review. No re-ingest is required by anything here.
 
 ## 8. Documentation
 
-- [ ] 8.1 Document the assembly stage in `docs/guides/mcp-tools.md`, stating
+- [x] 8.1 Document the assembly stage in `docs/guides/mcp-tools.md`, stating
   what callers now get: overlap removed by default, expansion available, and
   that the client still owns final context budgeting.
-- [ ] 8.2 Update `AGENTS.md` gotcha list: BM25 cache validity is now durable
+- [x] 8.2 Update `AGENTS.md` gotcha list: BM25 cache validity is now durable
   where the store supports it.
-- [ ] 8.3 Write ADR: "Lineage navigation replaces a document store" recording
+- [x] 8.3 Write ADR: "Lineage navigation replaces a document store" recording
   D1, D2 and D3, and pointing at the change-detection D2 precedent.

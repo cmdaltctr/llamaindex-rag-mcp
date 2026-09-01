@@ -32,6 +32,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `--threshold`, `-t`  | `search`                                                 | Minimum similarity score                                             |
 | `--rerank`           | `search`                                                 | Re-score with cross-encoder reranker                                 |
 | `--hybrid`           | `search`                                                 | Fuse dense vector search with sparse BM25 via RRF                    |
+| `--expand-window`    | `search`                                                 | Neighbours added per side of each chunk during context assembly      |
 | `--diagnostics`      | `search`                                                 | Include core-produced retrieval diagnostics. Disabled by default.    |
 | `--debounce`, `-d`   | `watch`                                                  | Debounce interval in seconds (default: 2)                            |
 | `--verbose`, `-v`    | `watch`                                                  | Enable DEBUG-level logging                                           |
