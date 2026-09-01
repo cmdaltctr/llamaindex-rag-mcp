@@ -1,3 +1,0 @@
-Scaffold only. See proposal.md.
-Blocked on: GCP deployment target selection.
-Sequence: land changes 1-4 and re-run the audit first.
