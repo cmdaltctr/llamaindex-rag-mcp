@@ -8,14 +8,17 @@ without producing uncapped oversized chunks.
 
 ### Requirement: Markdown files use heading-aware chunking with a size cap
 
-The system SHALL chunk files with extension `.md` using a heading-aware node
-parser chained with a sentence splitter capped at `CHUNKING__MARKDOWN_CHUNK_SIZE`.
+The system SHALL chunk Markdown text using a heading-aware node parser chained
+with a sentence splitter capped at `CHUNKING__MARKDOWN_CHUNK_SIZE`. Text
+counts as Markdown when the source file has extension `.md`, **or** when the
+reader that produced it declares its emitted text format as `markdown`.
 Heading boundaries SHALL be respected wherever the heading-bounded section is
 at most `CHUNKING__MARKDOWN_CHUNK_SIZE` characters; sections longer than
-`CHUNKING__MARKDOWN_CHUNK_SIZE` SHALL be further split by the sentence splitter so that
-no produced chunk exceeds `CHUNKING__MARKDOWN_CHUNK_SIZE` within the splitter's
-tokenisation tolerance. Non-Markdown files SHALL retain the existing splitter
-behaviour and global `CHUNKING__CHUNK_SIZE` default.
+`CHUNKING__MARKDOWN_CHUNK_SIZE` SHALL be further split by the sentence splitter
+so that no produced chunk exceeds `CHUNKING__MARKDOWN_CHUNK_SIZE` within the
+splitter's tokenisation tolerance. Text from readers declaring `plain` SHALL
+retain the existing splitter behaviour and global `CHUNKING__CHUNK_SIZE`
+default.
 
 #### Scenario: Markdown headings remain intact when sections fit
 
@@ -33,10 +36,19 @@ behaviour and global `CHUNKING__CHUNK_SIZE` default.
 
 #### Scenario: Non-Markdown files are unchanged
 
-- **GIVEN** a `.txt` or `.pdf` file
+- **GIVEN** a `.txt` file, or a `.pdf` read by a reader declaring `plain`
 - **WHEN** the file is ingested
 - **THEN** chunking SHALL use the existing default splitter
 - **THEN** the chunk count and content SHALL match the previous default behaviour for the same file
+- **THEN** no `header_path` SHALL be fabricated
+
+#### Scenario: Markdown-format reader output uses the heading-aware path
+
+- **GIVEN** a `.pdf` read by a reader declaring its emitted text format as `markdown`
+- **WHEN** the file is ingested
+- **THEN** the heading-aware node parser SHALL run before sentence splitting
+- **THEN** the emitted chunks SHALL carry `header_path`
+- **THEN** the `CHUNKING__MARKDOWN_CHUNK_SIZE` budget SHALL apply
 
 #### Scenario: Markdown without headings still chunks
 
@@ -44,6 +56,14 @@ behaviour and global `CHUNKING__CHUNK_SIZE` default.
 - **WHEN** the file is ingested
 - **THEN** chunking SHALL still produce non-empty chunks
 - **THEN** ingestion SHALL succeed without raising
+
+#### Scenario: Reader-produced Markdown honours the recovery knobs
+
+- **GIVEN** reader-produced Markdown text
+- **WHEN** the file is ingested
+- **THEN** `ensure_heading_metadata`, `apply_heading_prepend` and
+  `drop_small_markdown_chunks` SHALL apply with the same configured behaviour
+  they have for `.md` files
 
 ### Requirement: Markdown files support configurable Markdown-only recovery knobs
 
