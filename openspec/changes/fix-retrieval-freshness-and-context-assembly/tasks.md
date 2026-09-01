@@ -5,10 +5,11 @@ is split during review. No re-ingest is required by anything here.
 
 ## 1. Red-first coverage for the current defects
 
-- [ ] 1.1 Add a unit test using two `LanceVectorStore` handles and a separate
-  subprocess test over one database: build a BM25 cache in reader B, mutate in
-  writer A, and assert B's next hybrid query returns the new rows. Confirm the
-  subprocess case FAILS today.
+- [ ] 1.1 Add unit and subprocess tests using long-lived Lance store handles:
+  build a BM25 cache in reader B, then have writer A perform an ordinary
+  mutation, an overwrite rebuild, and a delete/recreate reaching the same
+  numeric version. Assert B observes a different token and its next hybrid
+  query reflects the new rows without restarting. Confirm they FAIL today.
 - [ ] 1.2 Add a test asserting that two adjacent chunks returned by one search
   do not repeat the overlap text. Confirm it FAILS today.
 - [ ] 1.3 Add a watcher test for a rename inside the watch tree asserting the
@@ -22,34 +23,47 @@ is split during review. No re-ingest is required by anything here.
 
 - [ ] 2.1 Add `get_data_version(collection_name) -> str | None` to
   `core/vectordb/base.py` with a default returning `None`.
-- [ ] 2.2 Qualify a rewrite-safe LanceDB token: prove a dataset identity or
-  epoch is stable across ordinary commits and changes on schema overwrite,
-  delete/recreate and a second-process refresh; combine it with
-  `table.version`. If the installed API exposes no such identity, stop and
-  revise D1 to a failure-safe durable marker or backend default—do not ship
-  `str(table.version)` alone. Put the implementation behind the existing
-  Lance metadata/mixin seam so `lancedb.py` remains at most 500 lines.
+- [ ] 2.2 Add an `omrg_dataset_epoch` UUID to current Lance table schema
+  metadata through the existing metadata/mixin seam. Create a new epoch for
+  table creation, delete/recreate and every `mode="overwrite"` rebuild;
+  preserve it for ordinary writes. Do not use version history, timestamps,
+  tags, row counts or a sidecar marker. Keep `lancedb.py` at most 500 lines.
 - [ ] 2.3 Leave `ChromaVectorStore` on the default `None` and document why in
   the adapter docstring.
 - [ ] 2.4 Add the method to the differential store-contract test suite so
   every registered store is checked.
-- [ ] 2.5 Confirm the token changes after write, upsert, delete-where,
-  delete-ids, schema-evolution overwrite and delete/recreate; confirm it is
-  stable without mutation and visible after a separate process refresh.
-- [ ] 2.6 Add a store-neutral filtered row-read method to the ABC and both
+- [ ] 2.5 Implement the Lance token as a tagged durable value containing
+  `(omrg_dataset_epoch, table.version)`. Confirm ordinary write, upsert,
+  delete-where and delete-ids preserve the epoch and change the version;
+  confirm overwrite and delete/recreate replace the epoch even when the
+  numeric version collides. Prove a long-lived reader observes the new epoch
+  after a separate-process refresh/reopen; if it cannot, stop rather than add
+  a TTL workaround.
+- [ ] 2.6 For an existing Lance table without an epoch, return `None` on reads;
+  under the existing write lock, install an epoch before its next
+  OMRG-controlled row mutation. Confirm cleanup/optimisation preserves the
+  current epoch and that an external recreation without the marker returns
+  `None` rather than inheriting a cached identity.
+- [ ] 2.7 Add a store-neutral filtered row-read method to the ABC and both
   adapters, with differential tests for equality filters, absence and no
   matches. Push filtering into each backend.
 
 ## 3. BM25 invalidation
 
-- [ ] 3.1 Change `_get_or_build_index` to resolve a validity token:
-  `store.get_data_version(c)` when not `None`, else `store.get_generation(c)`.
+- [ ] 3.1 Change `_get_or_build_index` to resolve an explicitly tagged
+  validity token: durable `(epoch, version)` when `get_data_version(c)` is
+  available, else tagged local `store.get_generation(c)`. A transition between
+  modes MUST compare unequal.
 - [ ] 3.2 Store the token on `_CachedBM25` in place of the bare generation.
 - [ ] 3.3 Warn once per collection per process when falling back to the
   process-local counter, naming the reduced guarantee.
-- [ ] 3.4 Verify 1.1 passes. Verify the existing store-isolation and
+- [ ] 3.4 Read the validity token before fetching BM25 rows and again before
+  publishing the cache. Publish only when the tagged tokens match; otherwise
+  discard and retry within a bounded policy. Test a separate-process mutation
+  and recreation during the build.
+- [ ] 3.5 Verify 1.1 passes. Verify the existing store-isolation and
   invalidate-on-mutation tests still pass unchanged.
-- [ ] 3.5 Confirm no change to the default sparse backend. Add a comment in
+- [ ] 3.6 Confirm no change to the default sparse backend. Add a comment in
   `core/retrieval/settings.py` pointing at Experiment 19 so the `bm25` default
   is not "fixed" to `auto` by a future reader of the audit.
 

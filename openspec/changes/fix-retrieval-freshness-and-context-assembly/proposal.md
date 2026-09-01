@@ -59,11 +59,14 @@ ingestion blocked.
 ## What Changes
 
 - Sparse-cache invalidation moves from the process-local counter to a durable,
-  cross-process data token supplied by the vector store. For LanceDB the token
-  MUST combine a rewrite-safe dataset identity/epoch with the table version;
-  numeric `table.version` alone is insufficient because overwrite-based schema
-  evolution restarts version history. BM25 stays the
-  default backend, keeping Experiment 19's latency result intact.
+  cross-process data token supplied by the vector store. LanceDB uses
+  `(omrg_dataset_epoch, table.version)`: an OMRG-owned random epoch stored in
+  current table schema metadata plus the backend version. Ordinary mutations
+  preserve the epoch and advance the version; creation, recreation and every
+  overwrite-based rebuild replace the epoch. Numeric `table.version` alone is
+  insufficient because version history restarts, while history-derived genesis
+  timestamps are unsafe under pruning. BM25 stays the default backend, keeping
+  Experiment 19's latency result intact.
 - A new **chunk-lineage navigation** capability provides, from stored metadata
   alone, what a document store would have provided from node relationships:
   fetch a chunk's neighbours, fetch a source's ordered chunk set, reconstruct
@@ -103,8 +106,9 @@ synthesis (separate change), any change to ranking or scoring.
 
 ## Impact
 
-- **No re-ingest required.** Nothing here changes stored vectors or stored
-  metadata.
+- **No re-ingest required.** Stored vectors and row metadata are unchanged.
+  LanceDB tables gain one schema-metadata epoch when first created or next
+  mutated; this is cache identity, not indexed content.
 - Result-shape change: merged rows carry the union of their constituents'
   lineage and a marker naming what was merged. Callers that ignore unknown
   keys are unaffected; the strict OpenAPI `SearchResult` gains optional fields.

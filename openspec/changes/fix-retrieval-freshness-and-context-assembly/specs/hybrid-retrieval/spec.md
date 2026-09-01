@@ -10,7 +10,13 @@ invalidates the cache. Where the store exposes no durable version, the
 process-local generation counter SHALL be used and the reduced guarantee
 (same-process mutations only) SHALL be logged once per collection.
 
-The store SHALL continue to own its collection generation counter and SHALL increment it exactly once for every successful mutation that can change sparse-visible rows. The sparse retriever SHALL compare the current validity token against the cached one on every hybrid query and lazily rebuild only the affected store/collection namespace when it changes.
+The store SHALL continue to own its collection generation counter and SHALL increment it exactly once for every successful mutation that can change sparse-visible rows. The sparse retriever SHALL compare the current tagged validity token against the cached one on every hybrid query and lazily rebuild only the affected store/collection namespace when it changes.
+
+A BM25 rebuild SHALL read the validity token before fetching rows and again
+before publishing the cache. It SHALL publish only when both durable tokens are
+equal, or when both tagged local-fallback tokens are equal. If they differ, the
+unstable build SHALL be discarded and retried within a bounded policy rather
+than cached.
 
 The default sparse backend remains BM25. Experiment 19 pre-registered the
 comparison against native FTS and recorded native failing the latency gate at
@@ -67,6 +73,24 @@ switching away from it.
 - **WHEN** the server process serves the next hybrid query
 - **THEN** the BM25 index SHALL be rebuilt before the query is served
 - **THEN** the rebuilt index SHALL include the newly ingested chunks
+
+#### Scenario: Mutation during a BM25 build is not cached
+
+- **GIVEN** a BM25 rebuild has read its starting validity token
+- **WHEN** another process mutates or recreates the collection before the
+  rebuild is published
+- **THEN** the ending validity token MUST differ
+- **AND** the partial or stale build MUST NOT be installed in the cache
+- **AND** retry behaviour MUST be bounded
+
+#### Scenario: Durable capability transition invalidates fallback cache
+
+- **GIVEN** a BM25 cache built while a pre-existing Lance table had no epoch
+  and used a tagged local-generation token
+- **WHEN** a writer installs an epoch and completes a mutation
+- **THEN** the next hybrid query MUST compare a tagged durable token
+- **AND** MUST rebuild rather than treating its numeric members as equal to the
+  old fallback token
 
 #### Scenario: A store without a durable version states its limit
 

@@ -9,6 +9,12 @@ dataset identity change, including overwrite-based schema evolution and
 recreation, and SHALL be observable by any process reading the same underlying
 data. A numeric version whose history can restart is not sufficient alone.
 
+For LanceDB, the token SHALL combine an OMRG-owned random dataset epoch stored
+in current table schema metadata with `table.version`. Ordinary row mutations
+SHALL preserve the epoch. Table creation, recreation and every overwrite-based
+rebuild SHALL replace it. Version-history timestamps and row counts SHALL NOT
+be used as substitutes.
+
 This is distinct from the existing process-local generation counter, which
 remains the mechanism for same-process invalidation. A store whose backend
 offers no durable version SHALL say so explicitly rather than returning the
@@ -30,6 +36,32 @@ process-local counter under a durable name.
   inter-process signalling
 - **AND** B's process-local generation counter MAY remain unchanged
 
+#### Scenario: Overwrite and recreation cannot collide
+
+- **GIVEN** a cached Lance token containing epoch E and numeric version v
+- **WHEN** schema evolution rebuilds the table with overwrite, or the table is
+  deleted and recreated, and its numeric version later equals v
+- **THEN** the rebuilt table MUST carry a new epoch distinct from E
+- **AND** the complete durable token MUST differ from the cached token
+
+#### Scenario: Cleanup does not erase identity
+
+- **GIVEN** a Lance table carrying an OMRG dataset epoch
+- **WHEN** old versions are pruned through cleanup or optimisation
+- **THEN** the current table MUST retain the same epoch
+- **AND** the next ordinary mutation MUST still change the complete token
+
+#### Scenario: Existing table acquires identity on its next write
+
+- **GIVEN** a pre-existing Lance table without an OMRG dataset epoch
+- **WHEN** it is read without mutation
+- **THEN** the durable-version capability MUST report unavailable and MUST NOT
+  mutate the table
+- **WHEN** an OMRG-controlled writer next mutates it under the write lock
+- **THEN** the writer MUST install an epoch before the row mutation
+- **AND** readers MUST treat the change from local fallback to durable token as
+  cache invalidation
+
 #### Scenario: Version is stable without mutation
 
 - **GIVEN** a collection with no mutation between two reads
@@ -41,6 +73,13 @@ process-local counter under a durable name.
 - **WHEN** the durable version of a collection that does not exist is
   requested
 - **THEN** the store SHALL report absence rather than raising
+
+#### Scenario: Long-lived readers observe recreation
+
+- **GIVEN** process A holds an open Lance store and has observed token T
+- **WHEN** process B rebuilds or recreates that collection with a new epoch
+- **THEN** A's next data-version read MUST observe a token different from T
+- **AND** A MUST NOT require a process restart
 
 #### Scenario: Unsupported backends are explicit
 
