@@ -15,11 +15,50 @@ import logging
 from typing import Any
 
 from .registry import available as _available_readers
+from .registry import describe as _describe_reader
 from .registry import get as _get_reader
 
 logger = logging.getLogger(__name__)
 
 _pdf_reader_logged: set[str] = set()
+
+
+def resolve_reader_name(reader: str) -> str:
+    """Return the concrete reader name for *reader*, resolving ``auto``.
+
+    This is the pre-read resolver direct callers share with the composition
+    root (design D3): ``auto`` keeps the established LiteParse → pypdfium2 →
+    pypdf capability policy, so a caller that bypassed ``compose`` and left
+    the selector at ``auto`` resolves the same concrete reader the
+    composition root would have baked in.
+
+    Args:
+        reader: Reader name from the injected settings — a concrete name or
+            ``auto``.
+
+    Returns:
+        The concrete registered reader name.
+    """
+    if reader == "auto":
+        return _resolve_auto()
+    return reader
+
+
+def declared_text_format(reader: str) -> str:
+    """Return the declared text format for a possibly-``auto`` selector.
+
+    Args:
+        reader: Reader name from the injected settings — a concrete name or
+            ``auto``.
+
+    Returns:
+        ``"plain"`` or ``"markdown"`` as declared by the resolved reader.
+
+    Raises:
+        KeyError: If the resolved name is not registered (lists available
+            names).
+    """
+    return _describe_reader(resolve_reader_name(reader))["text_format"]
 
 
 def get_pdf_reader(reader: str) -> Any:
@@ -48,7 +87,7 @@ def get_pdf_reader(reader: str) -> Any:
         # reaches here when settings were built directly (tests, or a caller
         # bypassing the composition root). Resolve it the same way compose
         # would rather than failing.
-        reader = _resolve_auto()
+        reader = resolve_reader_name(reader)
 
     if reader not in _pdf_reader_logged:
         logger.info("PDF reader backend: %s", reader)

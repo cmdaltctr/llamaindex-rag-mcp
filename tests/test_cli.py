@@ -327,6 +327,63 @@ class TestSearchCLI:
         assert "Source" in result.output
         assert "Text" in result.output
 
+    def test_search_table_hides_page_column_without_labels(self) -> None:
+        """No row carries a page label: the Page column is hidden (task 6.4).
+
+        Rows from readers without page boundaries (pdf_inspector) carry a
+        null page_label. Rendering an always-empty column promises page
+        provenance the reader cannot deliver, so the column is dropped.
+        """
+        payload = [
+            {
+                "score": 0.8,
+                "source": "doc.pdf",
+                "page_label": None,
+                "text": "whole-file markdown, no page",
+                "reranked": False,
+            },
+            {
+                "score": 0.7,
+                "source": "notes.txt",
+                "page_label": None,
+                "text": "plain text has no pages either",
+                "reranked": False,
+            },
+        ]
+        with patch("rag_mcp.core.retrieval.search", return_value=payload):
+            result = runner.invoke(app, ["search", "whole file query"])
+
+        assert result.exit_code == 0
+        output = _strip_ansi(result.output)
+        assert "Score" in output
+        assert "Page" not in output
+
+    def test_search_table_shows_page_column_with_labels(self) -> None:
+        """At least one row carries a page label: the Page column shows."""
+        payload = [
+            {
+                "score": 0.9,
+                "source": "paged.pdf",
+                "page_label": "3",
+                "text": "a page-aware reader produced this",
+                "reranked": False,
+            },
+            {
+                "score": 0.6,
+                "source": "notes.txt",
+                "page_label": None,
+                "text": "mixed provenance result set",
+                "reranked": False,
+            },
+        ]
+        with patch("rag_mcp.core.retrieval.search", return_value=payload):
+            result = runner.invoke(app, ["search", "paged query"])
+
+        assert result.exit_code == 0
+        output = _strip_ansi(result.output)
+        assert "Page" in output
+        assert "3" in output
+
     def test_search_help(self) -> None:
         """--help lists all options."""
         result = runner.invoke(app, ["search", "--help"])

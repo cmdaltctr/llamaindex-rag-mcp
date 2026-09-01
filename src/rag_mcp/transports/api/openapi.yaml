@@ -405,7 +405,6 @@ components:
         - score
         - score_kind
         - source
-        - page_label
         - text
         - reranked
         - metadata
@@ -427,6 +426,11 @@ components:
           type:
             - string
             - "null"
+          description: >
+            Page label when the configured reader observes page boundaries.
+            Optional by contract (design D5): readers that return one
+            document per file (pdf_inspector) genuinely cannot know the
+            page, so the field is null there rather than fabricated.
         text:
           type: string
         reranked:

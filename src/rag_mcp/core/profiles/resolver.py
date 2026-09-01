@@ -34,6 +34,7 @@ import os
 from typing import Any
 
 from ...config import _load_profile_bundle
+from ..ingestion.settings import parse_extension_set
 from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
@@ -85,6 +86,7 @@ def _bundle_to_effective(
     retrieval = bundle.get("retrieval", {}) or {}
     chunking = bundle.get("chunking", {}) or {}
     metadata = bundle.get("metadata", {}) or {}
+    ingestion = bundle.get("ingestion", {}) or {}
 
     raw_top_k = os.environ.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
     try:
@@ -126,13 +128,25 @@ def _bundle_to_effective(
     if base is None:
         base = EffectiveSettings()
 
+    # The ingestible extension set is profile-scoped (design D4): the
+    # bundle value (a YAML list), the env override (comma-separated or a
+    # JSON array string), or the server-default base set — in that order.
+    resolved_extensions = parse_extension_set(
+        os.environ.get(
+            "INGESTION__INGEST_EXTENSIONS",
+            ingestion.get("ingest_extensions", base.ingestion.ingest_extensions),
+        )
+    )
+
     return base.model_copy(
         update={
             "profile_name": profile_name,
             "chunking": base.chunking.model_copy(
                 update={"strategy_fallback": chunk_strategy_fallback}
             ),
-            "ingestion": base.ingestion,
+            "ingestion": base.ingestion.model_copy(
+                update={"ingest_extensions": resolved_extensions}
+            ),
             "retrieval": base.retrieval.model_copy(
                 update={
                     "top_k": top_k,

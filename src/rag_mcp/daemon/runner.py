@@ -23,8 +23,8 @@ from watchdog.observers import Observer
 from .watcher import (
     DEFAULT_DEBOUNCE_SECONDS,
     MIN_DEBOUNCE_SECONDS,
-    SUPPORTED_EXTENSIONS,
     DocumentIngestHandler,
+    resolve_watch_extensions,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,11 +84,16 @@ def watch_directory(
         logging.getLogger("rag_mcp.daemon").setLevel(logging.DEBUG)
         logging.getLogger("rag_mcp.daemon.watcher").setLevel(logging.DEBUG)
 
-    # Create handler and observer
+    # Create handler and observer. The watch patterns come from the
+    # collection's resolved profile extension set (design D4) so watch and
+    # manual ingest cannot diverge: a codebase-profile collection watches
+    # source extensions too.
+    extensions = resolve_watch_extensions(collection_name)
     handler = DocumentIngestHandler(
         debounce_seconds=debounce,
         watch_root=watch_path,
         collection_name=collection_name,
+        extensions=extensions,
     )
     observer = Observer()
     observer.schedule(handler, str(watch_path), recursive=True)
@@ -120,7 +125,7 @@ def watch_directory(
     console.print(
         f"  [dim]Collection: {collection_name} | "
         f"Debounce: {debounce}s | "
-        f"Extensions: {', '.join(sorted(SUPPORTED_EXTENSIONS))}[/dim]"
+        f"Extensions: {', '.join(sorted(extensions))}[/dim]"
     )
 
     try:

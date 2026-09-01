@@ -123,6 +123,40 @@ affected data by deleting the source or collection and re-ingesting it. The
 stored rows are never migrated, upgraded, or deleted. This is a deliberate
 clean boundary: no production documents predate this change.
 
+## Upgrading to this release
+
+This release changes two things every stored vector depends on:
+
+1. The embedding-text contract
+   ([ADR-055](../adr/055-embedding-text-is-a-declared-contract.md)). Parser
+telemetry and filesystem bookkeeping no longer enter embedding text.
+2. Index identity schema 3. The identity now records the exclusion set and
+   the reader's declared text format.
+
+Both changes alter `source_index_identity`. The result is one full re-ingest.
+
+### What you will see
+
+- Every previously ingested source re-processes on the next corpus ingest.
+- `files_skipped_unchanged` drops to zero on the first run after upgrade.
+  Later runs resume normal incremental skipping.
+- Search results are unchanged in shape. No tool or CLI call changes.
+
+### Interrupted re-ingests resume
+
+The re-ingest is per source, not one atomic collection rebuild. An
+interrupted run may leave old-era and new-era sources in one collection.
+This is safe. The next run re-processes each old-era source; it does not
+skip it. Each replacement stays failure-safe per source
+([ADR-048](../adr/048-bounded-failure-safe-ingestion.md)).
+
+### Rows the lineage guard rejects
+
+Pre-lineage rows, or rows from an incompatible mixed state, still fail
+`assert_source_lineage_compatible()` before any mutation. Those rows keep
+the explicit delete-and-rebuild path described above. This release neither
+weakens nor replaces that guard.
+
 ## PDF reader configuration
 
 The PDF parser is a pluggable factory controlled by the `PDF_READER`
@@ -185,6 +219,15 @@ long parse never blocks the MCP event loop.
 `.pdf` `.docx` `.pptx` `.txt` `.md` `.html` `.csv`
 
 For directories, the server recursively finds all supported files.
+
+The set is the **documents-profile default**. It is profile-scoped, not a
+global constant: the `codebase` profile collects the seven above plus
+source extensions for the languages the AST extractor maps to tree-sitter
+grammars (`.py`, `.ts`, `.go`, and more — see `config/profiles/codebase.yaml`),
+so those files reach the AST-aware code chunker. Override per machine with
+`INGESTION__INGEST_EXTENSIONS` (comma-separated). Binary files are skipped
+under every profile — content-type detection rejects them even when the
+extension is admitted.
 
 ## Embedding models
 

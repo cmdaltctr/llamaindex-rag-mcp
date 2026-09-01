@@ -92,6 +92,12 @@ class LiteParseReader:
                     metadata={
                         "pdf_reader": "liteparse",
                         "page": page.page_num,
+                        # String page label matching pypdf's format: the
+                        # 1-based page number as a string. This is the key
+                        # retrieval reads (spec pdf-reader: "Page provenance
+                        # is honest per reader") — liteparse observes page
+                        # boundaries, so it says so.
+                        "page_label": str(page.page_num),
                         "column": column,
                         "section_bbox": json.dumps(bbox),
                         "bbox_schema_version": 1,

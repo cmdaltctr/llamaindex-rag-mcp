@@ -221,13 +221,13 @@ def pdf_registry_sandbox():
     """
     from rag_mcp.integrations.pdf import registry as pdf_registry
 
-    saved_registry = dict(pdf_registry._registry)
-    saved_cache = dict(pdf_registry._cache)
+    state_attrs = ("_registry", "_probe_modules", "_text_formats", "_page_provenance", "_cache")
+    saved = {attr: dict(getattr(pdf_registry, attr)) for attr in state_attrs}
     yield pdf_registry
-    pdf_registry._registry.clear()
-    pdf_registry._registry.update(saved_registry)
-    pdf_registry._cache.clear()
-    pdf_registry._cache.update(saved_cache)
+    for attr in state_attrs:
+        mapping = getattr(pdf_registry, attr)
+        mapping.clear()
+        mapping.update(saved[attr])
 
 
 def _reader_settings(name: str):
@@ -250,7 +250,7 @@ def test_registered_alias_resolves_via_registry_metadata(pdf_registry_sandbox, m
     """
     import rag_mcp.compose as compose
 
-    pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH)
+    pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH, text_format="plain", page_provenance=True)
     # Poison the name: `import enterprise_pdf` raises ImportError, while
     # the registry-owned path rag_mcp.integrations.pdf.pypdf imports fine.
     monkeypatch.setitem(sys.modules, _ALIAS, None)
@@ -276,7 +276,7 @@ def test_alias_with_missing_registry_module_falls_back_to_pypdf_with_error(
 
     import rag_mcp.compose as compose
 
-    pdf_registry_sandbox.register(_GHOST, _GHOST_PATH)
+    pdf_registry_sandbox.register(_GHOST, _GHOST_PATH, text_format="plain", page_provenance=True)
     monkeypatch.setitem(sys.modules, _GHOST, types.ModuleType(_GHOST))
 
     with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
@@ -298,7 +298,7 @@ def test_factory_dispatches_registered_alias_via_registry_metadata(
     """
     from rag_mcp.integrations.pdf.pypdf import PyPDFReader
 
-    pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH)
+    pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH, text_format="plain", page_provenance=True)
     monkeypatch.setitem(sys.modules, _ALIAS, None)
 
     reader = get_pdf_reader(_ALIAS)

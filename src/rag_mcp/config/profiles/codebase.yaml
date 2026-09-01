@@ -11,7 +11,7 @@
 # Bind a collection to this profile:
 #   metadata={"profile": "codebase"}
 #
-# NEVER put API keys, tokens, or secrets in this file.
+# NEVER Put API keys, tokens, or secrets in this file.
 
 # Retrieval: speed-first for coding agents in the loop.
 retrieval:
@@ -26,3 +26,49 @@ chunking:
 # Metadata taxonomy: file-type classification via Magika.
 metadata:
   taxonomy_mode: file_type
+
+# Ingestible extensions (fix-embedding-and-structure-fidelity-1, design
+# D4): the document seven PLUS source extensions for the languages the
+# AST extractor maps to tree-sitter grammars
+# (core/codebase/ast_extract.py, MAGIKA_LABEL_TO_TREESITTER). Without
+# this the chunking.strategy_fallback above is unreachable: source files
+# are never collected, so the AST-aware path cannot run. Override with
+# INGESTION__INGEST_EXTENSIONS when a narrower or wider set is needed.
+ingestion:
+  ingest_extensions:
+    # Document formats (the global default set).
+    - .pdf
+    - .docx
+    - .pptx
+    - .txt
+    - .md
+    - .html
+    - .csv
+    # Source languages with tree-sitter mappings.
+    - .py
+    - .js
+    - .jsx
+    - .ts
+    - .tsx
+    - .java
+    - .c
+    - .h
+    - .cpp
+    - .cc
+    - .hpp
+    - .cs
+    - .go
+    - .rs
+    - .rb
+    - .php
+    - .swift
+    - .kt
+    - .scala
+    - .css
+    - .sql
+    - .sh
+    - .bash
+    - .yaml
+    - .yml
+    - .toml
+    - .json

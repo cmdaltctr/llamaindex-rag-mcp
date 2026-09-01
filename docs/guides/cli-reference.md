@@ -86,7 +86,9 @@ rag-mcp search "climate change" --diagnostics --json
 ```
 
 The `--diagnostics` flag changes JSON output only. The human-readable table
-keeps the existing Score, Source, Page, and Text columns.
+keeps the existing Score, Source, and Text columns. The Page column appears
+only when at least one result row carries a `page_label`; readers without
+page boundaries show no column rather than an empty one.
 
 With `--diagnostics --json`, each result row carries a `timings` mapping of
 per-stage retrieval wall-clock durations in seconds: `embedding_seconds`,

@@ -49,9 +49,14 @@ def test_factory_resolves_pdf_inspector_reader():
     assert callable(reader.load_data)
 
 
-def test_adapter_module_imports_pdf_inspector_lazily():
+def test_adapter_module_imports_pdf_inspector_lazily(monkeypatch):
     """Importing the adapter module must not import the optional package."""
-    sys.modules.pop("pdf_inspector", None)
+    # delitem (not a bare pop) so teardown restores the module: a permanent
+    # eviction leaves the cached ``pdf_inspector.pdf_inspector`` submodule
+    # parentless, and the next real import half-initialises with a
+    # NameError inside the package ``__init__`` (surfaced when an
+    # earlier-running test exercises the real reader).
+    monkeypatch.delitem(sys.modules, "pdf_inspector", raising=False)
 
     importlib.import_module("rag_mcp.integrations.pdf.pdf_inspector")
 

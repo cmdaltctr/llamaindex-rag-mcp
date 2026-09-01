@@ -22,6 +22,7 @@ import asyncio
 import logging
 import threading
 import time
+from collections.abc import Iterable
 from pathlib import Path
 
 from watchdog.events import PatternMatchingEventHandler
@@ -38,6 +39,37 @@ MAX_CONCURRENT_INGESTS = 2
 CONSECUTIVE_ERROR_THRESHOLD = 5
 MAX_SHUTDOWN_SECONDS = 30
 MAX_HASH_CACHE_ENTRIES = 50_000
+
+
+def resolve_watch_extensions(collection_name: str = "documents") -> set[str]:
+    """Resolve the watch pattern set from the collection's profile.
+
+    Watch and manual ingest MUST NOT diverge (design D4): both read the
+    same profile-scoped ``ingestion.ingest_extensions`` set. A failing
+    profile resolution (bad tag, unreadable bundle) falls back to the
+    module constant default with a warning rather than refusing to
+    watch — the ingest dispatch itself still resolves per call.
+
+    Args:
+        collection_name: The collection auto-ingested files route into.
+
+    Returns:
+        The resolved extension set to build watchdog patterns from.
+    """
+    try:
+        from .. import compose
+
+        effective = compose.build_profile_resolver().resolve(collection_name)
+        return set(effective.ingestion.ingest_extensions)
+    except Exception as exc:  # noqa: BLE001 - any resolution failure degrades
+        logger.warning(
+            "Could not resolve the extension set for collection %r (%s); "
+            "watching the default set %s",
+            collection_name,
+            exc,
+            sorted(SUPPORTED_EXTENSIONS),
+        )
+        return set(SUPPORTED_EXTENSIONS)
 
 
 class DocumentIngestHandler(PatternMatchingEventHandler):
@@ -58,9 +90,16 @@ class DocumentIngestHandler(PatternMatchingEventHandler):
         max_concurrent: int = MAX_CONCURRENT_INGESTS,
         watch_root: Path | None = None,
         collection_name: str = "documents",
+        extensions: Iterable[str] | None = None,
     ) -> None:
-        # Build patterns from SUPPORTED_EXTENSIONS (e.g. ["*.pdf", "*.docx", ...])
-        patterns = [f"*{ext}" for ext in SUPPORTED_EXTENSIONS]
+        # Build patterns from the RESOLVED extension set (design D4) so
+        # watch and manual ingest cannot diverge: callers pass the
+        # collection profile's set (see resolve_watch_extensions); the
+        # module constant is only the fallback for callers without one.
+        resolved_extensions = (
+            set(extensions) if extensions is not None else set(SUPPORTED_EXTENSIONS)
+        )
+        patterns = [f"*{ext}" for ext in sorted(resolved_extensions)]
 
         # Ignore hidden files, temp files, and .git directories
         ignore_patterns = [

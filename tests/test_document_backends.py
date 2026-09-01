@@ -223,18 +223,22 @@ class TestDocumentBackendRegistry:
         assert self._registry().available() == ["azure", "local"]
 
     def test_describe_azure_metadata(self) -> None:
-        """Azure declares its probe, fallback, suffixes, and structured flag."""
+        """Azure declares its probe, fallback, suffixes, structured, format."""
         meta = self._registry().describe("azure")
         assert set(meta) == {
             "availability_path",
             "fallback",
             "document_suffixes",
             "structured_output",
+            "text_format",
         }
         assert meta["availability_path"] == ("rag_mcp.integrations.azure:require_azure_installed")
         assert meta["fallback"] == "local"
         assert meta["document_suffixes"] == frozenset({".pdf", ".docx", ".doc"})
         assert meta["structured_output"] is True
+        # Static declaration (fix-embedding-and-structure-fidelity-1 task 4.4):
+        # azure emits plain text alongside its structured output.
+        assert meta["text_format"] == "plain"
 
     def test_describe_local_metadata(self) -> None:
         """Local declares no probe, no fallback, no suffix gate, unstructured."""
@@ -243,6 +247,9 @@ class TestDocumentBackendRegistry:
         assert meta["fallback"] is None
         assert meta["document_suffixes"] is None
         assert meta["structured_output"] is False
+        # Dynamic declaration: resolved from the PDF reader for PDFs, plain
+        # otherwise — the orchestrator's pre-read resolver owns the lookup.
+        assert meta["text_format"] is None
 
     def test_describe_unknown_lists_names(self) -> None:
         """An unknown name raises KeyError listing every registered name."""

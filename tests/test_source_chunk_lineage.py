@@ -299,16 +299,25 @@ class TestLineageStamping:
 
 
 class TestMetadataExclusions:
-    """Task 1.4: lineage stamping never changes embedding or LLM text."""
+    """Lineage stamping keeps machine keys out of model text.
 
-    def test_stamping_leaves_model_text_unchanged(self, tmp_path: Path) -> None:
-        """Spec: EMBED and LLM content survive stamping; lineage stays in metadata."""
+    Updated by fix-embedding-and-structure-fidelity-1: stamping no longer
+    leaves model text byte-identical — it is the single owner of the
+    embedding-text exclusion contract (design D1), so it now also removes
+    the declared noise keys (``file_path`` and siblings) and restores the
+    retained keys (``file_name``, design D2) that the LlamaIndex reader
+    default excludes. What must never change: lineage keys stay out of
+    model text, and the chunk's own text survives stamping.
+    """
+
+    def test_stamping_keeps_lineage_out_and_applies_declared_exclusions(
+        self, tmp_path: Path
+    ) -> None:
+        """Spec: lineage stays in metadata; declared noise drops; file_name stays."""
         ss = _source_state()
         file_path = str(tmp_path / "excluded.txt")
         nodes = _five_nodes(file_path)[:1]
         node = nodes[0]
-        embed_before = node.get_content(metadata_mode=MetadataMode.EMBED)
-        llm_before = node.get_content(metadata_mode=MetadataMode.LLM)
 
         ss.stamp_source_lineage(
             nodes,
@@ -320,22 +329,33 @@ class TestMetadataExclusions:
             source_attempt="attempt-9",
         )
 
-        assert node.get_content(metadata_mode=MetadataMode.EMBED) == embed_before
-        assert node.get_content(metadata_mode=MetadataMode.LLM) == llm_before
+        embed_after = node.get_content(metadata_mode=MetadataMode.EMBED)
+        llm_after = node.get_content(metadata_mode=MetadataMode.LLM)
         for key in _LINEAGE_KEYS:
             assert key in node.metadata
-        llm_after = node.get_content(metadata_mode=MetadataMode.LLM)
-        # The rendered field must be absent. A bare value check is not
-        # meaningful for short values such as a single-digit chunk index,
-        # which can appear inside the fixture path itself.
-        for key in _LINEAGE_KEYS:
-            assert f"{key}:" not in llm_after
+        # The chunk's own text survives stamping in both modes.
+        assert "chunk number 0 text" in embed_after
+        assert "chunk number 0 text" in llm_after
+        # The rendered lineage field must be absent. A bare value check is
+        # not meaningful for short values such as a single-digit chunk
+        # index, which can appear inside the fixture path itself.
+        for text in (embed_after, llm_after):
+            for key in _LINEAGE_KEYS:
+                assert f"{key}:" not in text
         # Distinctive long values (prefixed ids, 64-char digests, the
-        # attempt token) must not leak into LLM-visible content either.
+        # attempt token) must not leak into model-visible content either.
         for key in _LINEAGE_KEYS:
             value = str(node.metadata[key])
             if len(value) >= 8:
+                assert value not in embed_after
                 assert value not in llm_after
+        # Declared filesystem bookkeeping drops out of model text...
+        for text in (embed_after, llm_after):
+            assert "file_path:" not in text
+        # ...while file_name is retained (design D2 inverts the LlamaIndex
+        # default that excludes file_name and keeps file_path).
+        assert "file_name: excluded.txt" in embed_after
+        assert "file_name: excluded.txt" in llm_after
 
 
 # ── The pre-mutation incompatibility guard ───────────────────────────────
