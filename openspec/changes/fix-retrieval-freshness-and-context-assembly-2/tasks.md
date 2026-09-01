@@ -69,16 +69,16 @@ is split during review. No re-ingest is required by anything here.
 
 ## 4. Lineage navigation (the docstore equivalent)
 
-- [ ] 4.1 Create `core/retrieval/lineage.py` with `is_adjacent(a, b)`,
+- [x] 4.1 Create `core/retrieval/lineage.py` with `is_adjacent(a, b)`,
   `neighbours(rows, store, collection, window)` and
   `span(store, collection, source_id, source_version, start, end)`.
-- [ ] 4.2 Key adjacency on `(source_id, source_version)` and consecutive
+- [x] 4.2 Key adjacency on `(source_id, source_version)` and consecutive
   `source_chunk_index`; clamp to `[0, source_chunk_count)`.
-- [ ] 4.3 Treat rows lacking lineage as inert — skip, never raise.
-- [ ] 4.4 Read through the new store-neutral filtered row-read contract,
+- [x] 4.3 Treat rows lacking lineage as inert — skip, never raise.
+- [x] 4.4 Read through the new store-neutral filtered row-read contract,
   bounded by the requested window; never scan the collection and never import
   a concrete adapter from retrieval.
-- [ ] 4.5 Unit tests for all `chunk-lineage-navigation` scenarios, including
+- [x] 4.5 Unit tests for all `chunk-lineage-navigation` scenarios, including
   the cross-source and cross-version negative cases.
 
 ## 5. Context assembly
