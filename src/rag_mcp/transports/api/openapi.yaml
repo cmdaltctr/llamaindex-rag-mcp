@@ -426,9 +426,15 @@ components:
         score:
           type: number
           format: float
+          description: >
+            Relevance score. Absent on rows added purely by neighbour
+            expansion (``expand_window`` > 0), which were never ranked.
         score_kind:
           type: string
           enum: [dense_similarity_v1, rrf_v1, reranker_sigmoid_v1]
+          description: >
+            Score semantics for ``score``. Absent on rows added purely by
+            neighbour expansion, which carry no retrieval score.
         source:
           type: string
         page_label:
@@ -485,6 +491,19 @@ components:
           description: >
             Total chunk count of the source at ingest time. Absent (null)
             for legacy rows.
+        chunk_ids:
+          type: array
+          items:
+            type: string
+          description: >
+            The ``chunk_id`` of every constituent chunk of an assembled
+            row, in ascending ``source_chunk_index`` order. Present only
+            on rows the assembly stage merged from multiple adjacent
+            chunks; unmerged rows keep the plain ``chunk_id`` key and gain
+            nothing. Each listed id is a stable per-chunk reference that
+            resolves to exactly one stored chunk, so citations remain
+            verifiable after merging. Optional by contract: absent means
+            the row is a single chunk.
         # ── Diagnostics-only fields (present when diagnostics=true) ──────
         id:
           type: string

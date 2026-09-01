@@ -129,14 +129,14 @@ is split during review. No re-ingest is required by anything here.
 
 ## 7. Contract and gate
 
-- [ ] 7.1 Add the optional merge/expansion fields to `SearchResult` in
+- [x] 7.1 Add the optional merge/expansion fields to `SearchResult` in
   `transports/api/openapi.yaml`.
-- [ ] 7.2 Re-run Tier 1; re-run Tier 2 against real Ollama; commit the
+- [x] 7.2 Re-run Tier 1; re-run Tier 2 against real Ollama; commit the
   re-measured baseline. Recall MUST NOT regress — merged text is a superset,
   so a regression means the merge is wrong, not the floor.
-- [ ] 7.3 `uv run pytest -m "not slow" --cov=rag_mcp` — green, floors held.
-- [ ] 7.4 `uv run lint-imports` — clean, no stale ignores.
-- [ ] 7.5 `openspec validate fix-retrieval-freshness-and-context-assembly-2 --strict`.
+- [x] 7.3 `uv run pytest -m "not slow" --cov=rag_mcp` — green, floors held.
+- [x] 7.4 `uv run lint-imports` — clean, no stale ignores.
+- [x] 7.5 `openspec validate fix-retrieval-freshness-and-context-assembly-2 --strict`.
 
 ## 8. Documentation
 
