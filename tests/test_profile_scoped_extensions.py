@@ -63,13 +63,7 @@ def _source_dir(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (src / "main.go").write_text(
-        "package main\n"
-        "\n"
-        "import \"fmt\"\n"
-        "\n"
-        "func main() {\n"
-        "\tfmt.Println(\"hello\")\n"
-        "}\n",
+        'package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("hello")\n}\n',
         encoding="utf-8",
     )
     (src / "notes.md").write_text("# Notes\n\nA markdown document.\n", encoding="utf-8")
@@ -339,9 +333,7 @@ class TestExtensionSetChangeDetection:
         (src / "app.py").write_text("def greet():\n    return 'hi'\n", encoding="utf-8")
 
         narrow = effective_settings(extraction_mode="disabled", ingest_extensions=(".md",))
-        wide = effective_settings(
-            extraction_mode="disabled", ingest_extensions=(".md", ".py")
-        )
+        wide = effective_settings(extraction_mode="disabled", ingest_extensions=(".md", ".py"))
 
         first = await ingest_path_async(
             str(src), collection_name="change_detect", effective_settings=narrow
@@ -351,8 +343,7 @@ class TestExtensionSetChangeDetection:
             "notes.md"
         }
         assert any(
-            d["file"] == "app.py" and d.get("status") == "skipped"
-            for d in first["file_details"]
+            d["file"] == "app.py" and d.get("status") == "skipped" for d in first["file_details"]
         )
 
         second = await ingest_path_async(
@@ -522,9 +513,7 @@ class TestWatcherPatterns:
 
         def _fake_builder():
             def _resolve(collection_name: str):
-                return SimpleNamespace(
-                    ingestion=SimpleNamespace(ingest_extensions=(".py", ".ts"))
-                )
+                return SimpleNamespace(ingestion=SimpleNamespace(ingest_extensions=(".py", ".ts")))
 
             return SimpleNamespace(resolve=_resolve)
 
