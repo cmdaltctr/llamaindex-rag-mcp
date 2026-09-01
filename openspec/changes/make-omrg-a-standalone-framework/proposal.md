@@ -12,20 +12,22 @@ The architecture already reflects that, and it is enforced rather than
 intended: `core/` never imports `transports/`, import-linter proves it in CI,
 `lancedb` and `chromadb` are confined to their adapters, every strategy
 resolves through a registry, and the CLI, the MCP server, the watcher daemon
-and 1,993 tests all drive `core/` directly. That is the expensive half of
+and the test suite drives `core/` directly. That is the expensive half of
 being a framework and it is done.
 
 The packaging is what has not caught up.
 
-**There is no public API.** `src/rag_mcp/__init__.py` contains a docstring and
-a version string. It exports nothing. A library user's entry point today is:
+**There is no operational public API.** `src/rag_mcp/__init__.py` contains a
+docstring and an importable version string, but exports no engine or
+operation. A library user's entry point today is:
 import `compose`, call `ensure_runtime_setup()`, then call `search()` with
 eight keyword arguments.
 
 **Composition is a process-global side effect.** `ensure_runtime_setup()`
-mutates four process-wide things — LlamaIndex's global `embed_model`, the
-default vector store, the default `EffectiveSettings`, and a
-`_runtime_setup_done` flag. That is a correct server startup sequence and a
+installs three process defaults and a setup flag — LlamaIndex's global
+`embed_model`, the default vector store, the default `EffectiveSettings`, and
+`_runtime_setup_done` — after first-call settings resolution also initialises
+the config cache. That is a correct server startup sequence and a
 hostile library API. Two engines cannot coexist in one process, and a caller
 cannot construct one from settings they hold in hand rather than in the
 environment.
@@ -58,17 +60,22 @@ cost a line in `pyproject.toml` and a mechanical import rewrite.
   `src/rag_mcp/` becomes `src/omrg/`. No compatibility shim, following the
   project's own precedent: the v1 top-level shims were deleted outright in
   v2.0.0 rather than carried.
-- `omrg/__init__.py` becomes a real public API: the operations a library user
-  needs, exported by name, with everything else remaining private.
+- `omrg/__init__.py` becomes a real public API centred on `Engine`,
+  `EffectiveSettings` and stable result types. Ingest, search and answer are
+  explicit Engine methods; no module-level default engine is introduced.
 - A new engine object owns composition. Constructing one resolves providers,
   the store and settings **for that engine**, mutating no process-global
   state. Two engines with different configurations coexist in one process.
 - Embedding-provider selection becomes engine-scoped rather than
-  process-scoped, retiring ADR-047 decision 7 and unblocking per-collection
-  provider selection.
+  process-scoped, retiring ADR-047 decision 7. Different engines may target
+  different collections/providers; profile-driven routing within one Engine
+  remains a separate decision.
 - `ensure_runtime_setup()` remains, reimplemented as the server startup path
-  that builds the default engine from the environment. Existing transports
-  keep working unchanged.
+  that delegates environment resolution to the composition root and installs
+  a default engine. Existing transports keep working. The Python import break
+  has no shim, while the old `rag-mcp` console/LaunchAgent surface is migrated
+  or retained as a one-major deprecated console alias so installed watchers
+  do not die or duplicate.
 - `__version__` is single-sourced from installed package metadata, so it
   cannot drift again.
 
@@ -104,8 +111,10 @@ changes here; this is a surface and lifetime change, not a pipeline change.
 - Code: every module under `src/`, every test import, the import-linter
   contract module names, `pyproject.toml` (name, scripts, semantic-release,
   coverage paths, contracts), and all documentation.
-- Docs: `AGENTS.md`, `README.md`, every guide, and the ADR/TDR corpus's module
-  references.
+- Live docs/config: `AGENTS.md`, `README.md`, guides, CI, Codecov,
+  CodeRabbit, lockfile and release metadata. Released changelogs, ADR/TDR
+  decisions and archived OpenSpec remain historical records; new migration
+  notes link old and new paths without rewriting provenance.
 - Risk concentration: the rename is mechanical but touches roughly every file.
   It should land as its own commit, separate from the behavioural changes in
   this change, so a bisect can distinguish them.

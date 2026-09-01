@@ -52,10 +52,12 @@ capability is additive.
   vector store already are, using the provider registry that already serves
   metadata extraction. No new import edge, no new dependency, no new
   architectural layer.
-- Where the MCP client advertises sampling capability, the tool SHALL be able
-  to obtain the completion from the **client's** model rather than a
-  server-side one, so a user with no local LLM configured still gets grounded
-  answers on the model they already pay for.
+- Where the MCP client supports model requests, the preferred path SHALL use
+  the current protocol's multi-round-trip request (MRTR) mechanism
+  (`InputRequiredResult` / a `Sample` resolver), rather than the deprecated
+  server-initiated `ctx.session.create_message()` back-channel. A negotiated
+  legacy session MAY use the old API only as an explicitly labelled
+  compatibility path.
 
 Not in scope: multi-turn conversation or chat memory, agentic or multi-step
 retrieval, query transformation, streaming responses, tool-calling inside the
@@ -81,9 +83,10 @@ under the existing versioned-contract requirement for the same reason.
 
 - **Purely additive.** No stored data changes, no re-ingest, no change to
   `search()` results, no change to any existing tool's shape.
-- Cost and latency: this is the first query-time LLM call in the project.
-  Today a query costs one embedding call plus a vector search; an answer adds
-  one completion over the retrieved context. That must be stated plainly in
+- Cost and latency: this is the first query-time answer-generation path in the
+  project. Today a query costs one embedding call plus retrieval; an answer
+  adds one or more async completion rounds because `COMPACT` may refine when
+  the evidence does not fit one prompt. That must be stated plainly in
   the tool description and the docs so a caller chooses knowingly.
 - Code: new `core/answer/`, `compose.build_answer_llm`, new
   `transports/mcp/answer.py`, new `transports/cli/answer.py`,
@@ -91,6 +94,9 @@ under the existing versioned-contract requirement for the same reason.
 - Configuration: a new settings block for the answer LLM and prompt limits.
   Every value defaults to something that works with the existing local-first
   provider configuration.
-- Dependencies: none. `get_response_synthesizer`, `CitationQueryEngine` and
-  `BaseRetriever` are already installed with `llama-index-core`, and the LLM
-  provider registry already builds Ollama, llama.cpp and OpenRouter clients.
+- Dependencies: none. `get_response_synthesizer`, `BaseRetriever`,
+  `NodeWithScore` and async `asynthesize()` are already installed with
+  `llama-index-core`. The direct synthesiser path MUST preserve the project's
+  chunk identities; `CitationQueryEngine` is not used because its default
+  re-chunking would make those identities non-authoritative. Existing provider
+  builders need a backwards-compatible answer-model override.

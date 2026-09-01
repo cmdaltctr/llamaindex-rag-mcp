@@ -5,9 +5,10 @@ is split during review. No re-ingest is required by anything here.
 
 ## 1. Red-first coverage for the current defects
 
-- [ ] 1.1 Add a test using two `LanceVectorStore` instances over one database:
-  build a BM25 cache on instance B, mutate through instance A, assert B's next
-  hybrid query returns the new rows. Confirm it FAILS today.
+- [ ] 1.1 Add a unit test using two `LanceVectorStore` handles and a separate
+  subprocess test over one database: build a BM25 cache in reader B, mutate in
+  writer A, and assert B's next hybrid query returns the new rows. Confirm the
+  subprocess case FAILS today.
 - [ ] 1.2 Add a test asserting that two adjacent chunks returned by one search
   do not repeat the overlap text. Confirm it FAILS today.
 - [ ] 1.3 Add a watcher test for a rename inside the watch tree asserting the
@@ -21,14 +22,23 @@ is split during review. No re-ingest is required by anything here.
 
 - [ ] 2.1 Add `get_data_version(collection_name) -> str | None` to
   `core/vectordb/base.py` with a default returning `None`.
-- [ ] 2.2 Implement it in `LanceVectorStore` as `str(table.version)`; return
-  `None` for an absent table.
+- [ ] 2.2 Qualify a rewrite-safe LanceDB token: prove a dataset identity or
+  epoch is stable across ordinary commits and changes on schema overwrite,
+  delete/recreate and a second-process refresh; combine it with
+  `table.version`. If the installed API exposes no such identity, stop and
+  revise D1 to a failure-safe durable marker or backend default—do not ship
+  `str(table.version)` alone. Put the implementation behind the existing
+  Lance metadata/mixin seam so `lancedb.py` remains at most 500 lines.
 - [ ] 2.3 Leave `ChromaVectorStore` on the default `None` and document why in
   the adapter docstring.
 - [ ] 2.4 Add the method to the differential store-contract test suite so
   every registered store is checked.
-- [ ] 2.5 Confirm the version advances after write, upsert, delete-where and
-  delete-ids, and is stable without mutation.
+- [ ] 2.5 Confirm the token changes after write, upsert, delete-where,
+  delete-ids, schema-evolution overwrite and delete/recreate; confirm it is
+  stable without mutation and visible after a separate process refresh.
+- [ ] 2.6 Add a store-neutral filtered row-read method to the ABC and both
+  adapters, with differential tests for equality filters, absence and no
+  matches. Push filtering into each backend.
 
 ## 3. BM25 invalidation
 
@@ -51,8 +61,9 @@ is split during review. No re-ingest is required by anything here.
 - [ ] 4.2 Key adjacency on `(source_id, source_version)` and consecutive
   `source_chunk_index`; clamp to `[0, source_chunk_count)`.
 - [ ] 4.3 Treat rows lacking lineage as inert — skip, never raise.
-- [ ] 4.4 Read through the store's metadata-filter contract, bounded by the
-  requested window; never scan the collection.
+- [ ] 4.4 Read through the new store-neutral filtered row-read contract,
+  bounded by the requested window; never scan the collection and never import
+  a concrete adapter from retrieval.
 - [ ] 4.5 Unit tests for all `chunk-lineage-navigation` scenarios, including
   the cross-source and cross-version negative cases.
 
@@ -60,9 +71,11 @@ is split during review. No re-ingest is required by anything here.
 
 - [ ] 5.1 Create `core/retrieval/assembly.py` with
   `assemble(rows, *, chunk_overlap, expand_window, store, collection)`.
-- [ ] 5.2 Implement contiguity-driven merging: union the text with the
-  configured overlap present once; carry constituent `chunk_id` values, lowest
-  `source_chunk_index`, best score and that constituent's `score_kind`.
+- [ ] 5.2 Implement contiguity-driven, lossless merging: remove only the
+  longest exact suffix/prefix match within the configured token budget, else
+  concatenate without deletion. Carry constituent `chunk_id` values, lowest
+  `source_chunk_index`, best score and that constituent's `score_kind`; test
+  repeated phrases, heading prepends, whitespace differences and no match.
 - [ ] 5.3 Implement bounded, opt-in neighbour expansion using group 4; mark
   expanded rows and give them no retrieval score.
 - [ ] 5.4 Compose expansion with merging (expanded neighbours of a retrieved
@@ -79,19 +92,23 @@ is split during review. No re-ingest is required by anything here.
   are stripped from public results.
 - [ ] 5.10 Verify 1.2 passes and every `retrieval-context-assembly` scenario
   is covered.
-- [ ] 5.11 Confirm `pipeline.py` stays under the 500-line ceiling.
+- [ ] 5.11 Confirm `pipeline.py` and `lancedb.py` stay at or below the
+  500-line ceiling; use cohesive existing/new mixins rather than adding
+  methods directly to the already-full adapter.
 
 ## 6. Watcher move handling and bounded stale selection
 
-- [ ] 6.1 Add `on_moved` to `DocumentIngestHandler`: `_do_delete(src_path)`
-  then `_schedule_ingest(dest_path)`.
+- [ ] 6.1 Make `_do_delete` return an explicit result and add `on_moved` to
+  `DocumentIngestHandler`: schedule destination ingest only after old-path
+  cleanup succeeds; on failure report and retry/defer rather than forking.
 - [ ] 6.2 Confirm the existing traversal guard rejects a destination outside
   the watch root, leaving the delete applied.
 - [ ] 6.3 Clear the moved path's hash-cache entry so a later re-creation at the
   old path is not skipped as unchanged.
-- [ ] 6.4 Verify 1.3 passes and all four move scenarios are covered.
+- [ ] 6.4 Verify 1.3 passes and all move scenarios are covered, including a
+  deletion failure that must not ingest the destination.
 - [ ] 6.5 Rewrite `_stale_source_ids` to read only rows matching
-  `{source_id: S}` through the store filter, keeping the Python-side
+  `{source_id: S}` through the new store-neutral filtered read, keeping the Python-side
   `source_attempt` comparison and its existing comment about missing-key
   inequality.
 - [ ] 6.6 Verify 1.4 passes and the five Stage-3 failure-path tests still pass.

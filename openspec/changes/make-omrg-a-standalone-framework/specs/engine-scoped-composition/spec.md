@@ -2,9 +2,12 @@
 
 ### Requirement: An engine owns its own composition
 
-The system SHALL provide an engine object that resolves its providers, vector
-store and effective settings at construction, and holds them for its own
-lifetime. Constructing an engine SHALL NOT mutate process-global state.
+The system SHALL provide an engine object constructed from explicit
+`EffectiveSettings`, owning its vector store, embedder, reranker and profile
+resolver for its own lifetime. Environment resolution SHALL use a factory that
+delegates to the composition root. Optional answer completion SHALL be
+resolved lazily when `answer()` is used. Constructing an engine SHALL NOT
+mutate process-global state.
 
 #### Scenario: Construction from explicit settings
 
@@ -15,10 +18,10 @@ lifetime. Constructing an engine SHALL NOT mutate process-global state.
 
 #### Scenario: Construction from the environment
 
-- **WHEN** an engine is constructed without explicit settings
-- **THEN** it SHALL resolve settings through the established precedence rules
-- **AND** the result SHALL be equivalent to the settings the server startup
-  path would produce
+- **WHEN** `Engine.from_environment()` is called
+- **THEN** it SHALL delegate to the composition-root environment factory
+- **AND** the composition root SHALL remain the sole production caller of
+  `get_settings()`
 
 #### Scenario: No process-global mutation
 
@@ -28,15 +31,17 @@ lifetime. Constructing an engine SHALL NOT mutate process-global state.
 
 #### Scenario: Construction failures are actionable
 
-- **WHEN** a provider, store or model cannot be constructed
+- **WHEN** a required provider, store or model cannot be constructed
 - **THEN** construction SHALL fail with an error naming the offending setting
 - **AND** the engine SHALL NOT be left partially initialised
 
 ### Requirement: Engines are isolated from one another
 
 Two engines constructed in one process with different configurations SHALL
-operate independently. Neither SHALL observe the other's providers, store
-handles, caches or settings.
+operate independently. Neither SHALL observe the other's mutable providers,
+store handles, derivative caches or settings. Immutable model artefacts MAY be
+shared through the existing keyed process cache when lifetime ownership is
+reference-safe.
 
 #### Scenario: Two engines, two configurations
 
@@ -54,8 +59,10 @@ handles, caches or settings.
 #### Scenario: Disposal releases resources
 
 - **WHEN** an engine is disposed
-- **THEN** the store handles and model sessions it owns SHALL be released
-- **AND** other engines SHALL be unaffected
+- **THEN** its owned store handle and derivative caches SHALL be released
+- **AND** shared model artefacts SHALL remain available while another engine
+  references them
+- **AND** other engines SHALL remain functional
 
 ### Requirement: Embedding-provider selection is engine scoped
 
@@ -88,12 +95,13 @@ model. The engine SHALL NOT depend on that global for its own operations.
 - **THEN** the existing embedding-identity guard SHALL reject the operation
 - **AND** the rejection SHALL name the mismatch
 
-#### Scenario: Per-collection provider selection is unblocked
+#### Scenario: Different engines may target different providers
 
-- **WHEN** a collection profile declares an embedding provider
-- **THEN** the resolved engine for that collection MAY honour it
-- **AND** the documented "unsupported" boundary for concurrent per-collection
-  providers SHALL no longer apply
+- **GIVEN** two collections requiring different embedding providers
+- **WHEN** the caller constructs one explicitly configured Engine for each
+- **THEN** both SHALL operate concurrently in one process
+- **AND** profile-driven provider routing inside one Engine SHALL remain out of
+  scope
 
 ### Requirement: The server startup path is one caller of the engine
 
@@ -109,10 +117,20 @@ transports.
 - **AND** its externally observable behaviour SHALL be unchanged by this
   change
 
+#### Scenario: Optional answering is lazy
+
+- **GIVEN** an Engine whose retrieval dependencies are available but whose
+  answer provider or optional extra is absent
+- **WHEN** the Engine is constructed and `search()` is used
+- **THEN** construction and search MUST succeed
+- **AND** the actionable failure MUST occur only if `answer()` is used
+
 #### Scenario: The process default is a convenience, not a requirement
 
 - **WHEN** a caller constructs and uses an engine directly
 - **THEN** it SHALL work without the process default having been installed
+- **AND** a full ingest/search path SHALL remain correct when the LlamaIndex
+  global embedder is a throwing sentinel
 
 #### Scenario: Startup remains fail-fast
 

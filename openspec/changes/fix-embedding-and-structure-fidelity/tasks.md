@@ -13,8 +13,8 @@ implementation, because every defect here is currently invisible to the suite.
   `file_name`, `category`, `keywords`, `summary` when present.
 - [ ] 1.3 Add a test asserting that a `.pdf` read by a markdown-declaring
   reader produces chunks carrying `header_path`. Confirm it FAILS today.
-- [ ] 1.4 Add a test asserting `liteparse` emits `page_label`. Confirm it
-  FAILS today.
+- [ ] 1.4 Add tests asserting `liteparse` and `pypdfium2` emit
+  `page_label`. Confirm both FAIL today.
 - [ ] 1.5 Add a test that ingests a real `.py` file through
   `ingest_path_async` under the `codebase` profile **without patching
   `gather_supported_files`**, asserting `effective_strategy == "code"`.
@@ -44,14 +44,16 @@ implementation, because every defect here is currently invisible to the suite.
 - [ ] 3.1 Bump `_INDEX_IDENTITY_SCHEMA` 2 → 3.
 - [ ] 3.2 Add `embedding_text.excluded_keys` (sorted list) to the identity
   payload.
-- [ ] 3.3 Add `parser.text_format` to the identity payload.
+- [ ] 3.3 Resolve the effective reader and `parser.text_format` before the
+  unchanged check, add that value to the identity payload, and assert the
+  later `BackendRead.text_format` agrees. Cover direct `auto` callers.
 - [ ] 3.4 Verify 1.6 passes and the existing change-detection tests still pass.
 
 ## 4. Reader text-format declaration
 
-- [ ] 4.1 Extend `integrations/pdf/registry.py` `register()` with a required
-  `text_format` argument and a `describe(name)` accessor mirroring the
-  document-backend registry.
+- [ ] 4.1 Extend `integrations/pdf/registry.py` `register()` with required
+  `text_format` and `page_provenance` metadata and a `describe(name)` accessor
+  mirroring the document-backend registry.
 - [ ] 4.2 Declare `markdown` for `pdf_inspector`; `plain` for `liteparse`,
   `pypdf`, `pypdfium2`.
 - [ ] 4.3 Make registration fail when `text_format` is omitted.
@@ -73,15 +75,16 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 6. Page provenance
 
-- [ ] 6.1 Emit `page_label` (string) alongside `page` in
-  `integrations/pdf/liteparse.py`.
-- [ ] 6.2 Verify 1.4 passes.
+- [ ] 6.1 Emit `page_label` (string) alongside `page` in both
+  `integrations/pdf/liteparse.py` and `integrations/pdf/pypdfium.py`.
+- [ ] 6.2 Verify 1.4 passes for both direct readers and the `auto` chain.
 - [ ] 6.3 Make `page_label` optional (not required) in
   `transports/api/openapi.yaml` `SearchResult`.
 - [ ] 6.4 Hide the CLI Page column when every row's `page_label` is empty
   (`transports/cli/search.py`).
 - [ ] 6.5 Update `docs/guides/pdf-reader.md` (or the reader section of the
-  configuration guide) with the per-reader page-provenance matrix.
+  configuration guide) with the per-reader page-provenance matrix, and test
+  that `registry.describe()` exposes the same capability.
 
 ## 7. Profile-scoped ingestible extensions
 
@@ -114,6 +117,8 @@ implementation, because every defect here is currently invisible to the suite.
 - [ ] 9.4 Update `AGENTS.md` gotcha #8 to name the new content-format routing
   rule alongside the existing `content_type` precedence note.
 - [ ] 9.5 Add a CHANGELOG entry stating plainly that this release requires a
-  re-ingest and why.
+  re-ingest and why; document resumable mixed-era behaviour for compatible v3
+  rows and the explicit delete/rebuild path for rows rejected by the lineage
+  compatibility guard.
 - [ ] 9.6 Write ADR: "Embedding text is a declared contract" recording D1, D2
   and D6.

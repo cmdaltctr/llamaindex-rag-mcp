@@ -53,6 +53,15 @@ The system SHALL NOT depend on the model to emit correct identifiers.
   metadata filter
 - **THEN** exactly the corresponding stored chunk SHALL be retrieved
 
+#### Scenario: A substantive answer needs a valid citation
+
+- **GIVEN** the model returns a non-empty answer with no valid supplied source
+  ordinal
+- **WHEN** the result is assembled
+- **THEN** the result MUST be marked as generation-unverified or error
+- **AND** MUST NOT be represented as a grounded answer
+- **AND** the supplied evidence MUST still be returned
+
 #### Scenario: Model-invented identifiers are not trusted
 
 - **GIVEN** a model response referring to a source number outside the supplied
@@ -138,48 +147,67 @@ provider module.
 - **AND** SHALL NOT silently fall back to returning chunks as though they were
   an answer
 
-### Requirement: Client-side sampling is preferred where available
+### Requirement: Modern client model requests use multi-round trips where available
 
-Where the calling MCP client advertises sampling capability, the tool SHALL be
-able to obtain the completion from the client's model instead of a
-server-side one. The choice SHALL be explicit and reported.
+Where the calling MCP client advertises model-request capability, the tool
+SHALL prefer the current protocol's multi-round-trip request mechanism and
+SHALL report the selected completion source. It SHALL NOT use deprecated
+server-initiated sampling on a modern session. A negotiated legacy session MAY
+use the older path as a labelled compatibility mode.
 
-#### Scenario: Client sampling is used when advertised
+#### Scenario: Modern client sampling uses MRTR
 
-- **GIVEN** an MCP client advertising sampling capability
-- **AND** the server is configured to prefer client sampling
+- **GIVEN** a modern MCP client advertising the required model-request
+  capability
+- **AND** the server is configured to prefer the client model
 - **WHEN** the answering tool runs
-- **THEN** the completion SHALL be requested from the client
+- **THEN** completion SHALL be requested through an MRTR `Sample` resolver or
+  `InputRequiredResult`
 - **AND** no server-side language-model call SHALL be made
+- **AND** deprecated `ctx.session.create_message()` SHALL NOT be called
+
+#### Scenario: Legacy sampling is explicitly negotiated
+
+- **GIVEN** an older negotiated MCP session that supports the legacy sampling
+  back-channel
+- **WHEN** compatibility sampling is selected
+- **THEN** the result SHALL identify the legacy completion source
+- **AND** the legacy API SHALL never be attempted merely because modern MRTR
+  is unavailable
 
 #### Scenario: Falls back to the configured server model
 
-- **GIVEN** a client that does not advertise sampling capability
+- **GIVEN** a client without an applicable model-request path
 - **WHEN** the answering tool runs
-- **THEN** the configured server-side model SHALL be used if one is available
-- **AND** the result SHALL report which was used
+- **THEN** the configured server-side model SHALL be resolved lazily and used
+  if available
+- **AND** the result SHALL report which source was used
 
 #### Scenario: Neither available
 
-- **GIVEN** a client without sampling capability and no configured server model
+- **GIVEN** a client without an applicable model-request path and no configured
+  server model
 - **WHEN** the answering tool runs
 - **THEN** an actionable error naming both options SHALL be returned
 - **AND** the tool SHALL NOT raise
 
 ### Requirement: The cost of answering is disclosed
 
-Answering adds the project's first query-time language-model call. The tool
-description and the operation's documentation SHALL state that, so a caller
-chooses knowingly between chunks and an answer.
+Answering adds the project's first query-time generation path and may make one
+or more completion calls when COMPACT refinement is needed. The tool
+description and operation documentation SHALL state that, so a caller chooses
+knowingly between chunks and an answer.
 
 #### Scenario: Tool description states the cost
 
 - **WHEN** the answering tool is advertised over MCP
-- **THEN** its description SHALL state that it performs a language-model call
+- **THEN** its description SHALL state that it performs one or more
+  language-model completion calls
 - **AND** SHALL name the cheaper chunk-returning tool as the alternative
 
 #### Scenario: Timing is reported
 
 - **WHEN** diagnostics are enabled
-- **THEN** the result SHALL report retrieval and generation durations
-  separately
+- **THEN** core SHALL report retrieval and generation durations separately
+- **AND** the MCP and CLI results SHALL surface those diagnostics
+- **AND** the completion-call count SHALL be reported when available

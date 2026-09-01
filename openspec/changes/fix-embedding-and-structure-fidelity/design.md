@@ -95,8 +95,12 @@ re-run as an experiment rather than forced through.
 ### D3: Readers declare a text format; the chunker routes on the declaration
 
 Add `text_format: Literal["plain", "markdown"]` to the PDF reader registry
-metadata and thread the producing reader's declaration through `BackendRead`
-alongside the existing `structured` flag.
+metadata. Resolve the selected reader and its declaration before
+`build_index_identity()` performs the unchanged check, then thread that same
+resolved value through `BackendRead` alongside the existing `structured`
+flag. `BackendRead` is verification of the pre-resolved value, not the first
+place the identity learns it; direct callers that leave the selector at
+`auto` must use the same pre-read resolver as composition.
 
 Alternatives considered:
 
@@ -132,12 +136,14 @@ Alternatives considered:
 The watcher builds its patterns from the same resolved set so watch and manual
 ingest cannot diverge.
 
-### D5: Page provenance — fix `liteparse`, tell the truth about the rest
+### D5: Page provenance — fix page-aware adapters, tell the truth about the rest
 
-`liteparse` already knows the page number; emitting `page_label` next to
-`page` is one line. `pdf_inspector` genuinely cannot know it — it returns one
-document for the whole file — so the contract stops requiring the field
-rather than the reader inventing one.
+`liteparse` and `pypdfium2` already know the page number; both emit
+`page_label` next to `page`. `pypdf` already supplies it. `pdf_inspector`
+genuinely cannot know it — it returns one document for the whole file — so
+the contract stops requiring the field rather than the reader inventing one.
+The registry exposes a `page_provenance` capability so this support is
+machine-discoverable as well as documented.
 
 Making `pdf_inspector` page-aware is out of scope here: it would mean either
 parsing twice or changing what the upstream library returns. If page citation
@@ -158,6 +164,14 @@ Bumping the schema version alone would force a one-time global reprocess,
 which is correct and desirable here: every stored vector predates the fix.
 Including the actual key list means future changes to the set invalidate
 precisely, without another schema bump.
+
+This identity is per source row, not LanceDB's collection embedding identity.
+A corpus rebuild is therefore incremental and resumable rather than atomic:
+lineage-compatible old-era sources are never considered current, while
+pre-lineage or incompatible mixed rows continue to fail through
+`assert_source_lineage_compatible()` and require explicit deletion. The
+change neither weakens that guard nor changes `lance_meta.py`'s provider/model
+mismatch rejection.
 
 ## Risks
 

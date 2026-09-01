@@ -31,11 +31,12 @@ default to `auto` contradicted that evidence and is withdrawn here.
 **2. There is no context-assembly stage at all.** `search()` ends at
 `results.sort(...)`, `results[:top_k]`, and a field strip. No de-duplication,
 no near-duplicate removal, no neighbour or parent expansion, no ordering
-strategy, no token budgeting. With `chunking.chunk_overlap=100`, adjacent
-chunks are returned as separate results carrying up to 100 tokens of identical
-text. Measured on a three-result search: **19.7% of the returned characters
-were text the caller had already been given** (6,776 → 5,444 after trimming).
-That waste grows with `top_k`.
+strategy, no token budgeting. With `chunking.chunk_overlap=100`, adjacent chunks are returned as separate
+results and may repeat splitter-produced overlap. An audit snapshot observed
+substantial duplicate text, but it did not record a reproducible corpus,
+query and command, so this proposal does not use the unverified 19.7% figure
+as acceptance evidence. The statically verified defect is the absent assembly
+stage and duplicated adjacent content.
 
 This is the gap that looks like "we should have used a docstore". We should
 not — see below — but the *capability* a docstore provides is genuinely
@@ -58,7 +59,10 @@ ingestion blocked.
 ## What Changes
 
 - Sparse-cache invalidation moves from the process-local counter to a durable,
-  cross-process data version supplied by the vector store. BM25 stays the
+  cross-process data token supplied by the vector store. For LanceDB the token
+  MUST combine a rewrite-safe dataset identity/epoch with the table version;
+  numeric `table.version` alone is insufficient because overwrite-based schema
+  evolution restarts version history. BM25 stays the
   default backend, keeping Experiment 19's latency result intact.
 - A new **chunk-lineage navigation** capability provides, from stored metadata
   alone, what a document store would have provided from node relationships:

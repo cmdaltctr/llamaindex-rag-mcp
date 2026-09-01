@@ -2,16 +2,20 @@
 
 ### Requirement: The package exposes a public API
 
-The package SHALL export, from its top-level `__init__`, the surface a library
-consumer needs to ingest, retrieve and answer without importing private
-modules. Everything not exported SHALL be treated as internal and free to
+The package SHALL export, from its top-level `__init__`, `Engine`,
+`EffectiveSettings`, stable public result/error types and `__version__`. A
+library consumer SHALL ingest, retrieve and answer through explicit Engine
+methods without importing private modules or creating an implicit module-level
+engine. Everything not exported SHALL be treated as internal and free to
 change without a major version.
 
 #### Scenario: Core operations are importable from the top level
 
 - **WHEN** a consumer imports the package
-- **THEN** the engine type, the effective-settings type, and the ingest,
-  search and answer operations SHALL be importable by name from the top level
+- **THEN** the engine type, effective-settings type and stable result/error
+  types SHALL be importable by name from the top level
+- **AND** ingest, search and answer SHALL be documented Engine methods, with
+  ingestion and answering async
 - **AND** none of them SHALL require importing a module whose name begins with
   an underscore or that lives under an internal subpackage
 
@@ -64,6 +68,15 @@ rather than carried forward, and this change lands on the v3 breaking branch.
 - **THEN** they SHALL resolve into the `omrg` package
 - **AND** the MCP server, CLI and watcher SHALL behave exactly as before the
   rename
+
+#### Scenario: Installed watchers survive the command rename
+
+- **GIVEN** a legacy LaunchAgent whose label starts `com.rag-mcp.watch.` and
+  whose ProgramArguments contain an absolute `rag-mcp` executable
+- **WHEN** the v3 command surface is installed or its watcher installer runs
+- **THEN** the legacy plist MUST be discovered and migrated, or the deprecated
+  console alias MUST continue to resolve for one major
+- **AND** no duplicate watcher MUST be installed under a new label
 
 #### Scenario: Stored data survives the rename
 

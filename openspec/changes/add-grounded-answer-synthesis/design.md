@@ -21,9 +21,10 @@ Verified against `v3` at `c9d2906`.
 - `get_response_synthesizer`, `ResponseMode`, `CitationQueryEngine`,
   `BaseRetriever` and `NodeWithScore` all import successfully under the
   project's pinned `llama-index-core 0.14.23`. Verified.
-- The installed MCP SDK exposes `ServerSession.create_message` and
-  `Context.session`, so client-side sampling is available without a new
-  dependency.
+- The project accepts `mcp>=2.0.0`. Current protocol sessions use
+  multi-round-trip requests (MRTR) for model interaction; direct
+  `Context.session.create_message()` is deprecated for protocol 2026-07-28
+  and newer, so it is not a valid primary design seam.
 - A retriever adapter over `search()` plus `CitationQueryEngine` was built and
   run during the audit; source nodes carried `chunk_id`, `source_id` and
   `source_chunk_index` through to the answer.
@@ -49,9 +50,12 @@ Verified against `v3` at `c9d2906`.
 
 ### D1: The LLM is injected, so no import-contract change is needed
 
-`answer()` takes `llm=` as a parameter. `compose.build_answer_llm()`
-constructs it through the existing provider registry; `transports/mcp` and
-`transports/cli` obtain it the way they already obtain the reranker.
+`answer()` takes an injected asynchronous completion/LLM seam.
+`compose.build_answer_llm()` constructs the server-side implementation through
+the existing provider registry; every registered builder accepts a
+backwards-compatible answer-model override rather than silently reusing the
+metadata-classification model. `transports/mcp` and `transports/cli` inject the
+completion source the way they already inject the reranker.
 
 This is the whole reason the change costs nothing architecturally. The
 alternative — importing the provider registry from `core/answer/` — would need
@@ -92,7 +96,10 @@ context assembly all still run exactly as they do for a plain search.
 ### D4: `CompactAndRefine` is the response mode
 
 `ResponseMode.COMPACT` packs retrieved chunks into as few LLM calls as the
-context window allows and refines across them. It is the mode that degrades
+context window allows and may refine across multiple async calls. The core
+uses `use_async=True` and `asynthesize()` through an injected async adapter;
+the result reports the completion-call count when available. Client MRTR must
+bound and resume those rounds rather than pretending COMPACT is one call. It is the mode that degrades
 most gracefully as `top_k` grows, and it does not require a hierarchy the
 project does not have (`tree_summarize` builds one).
 
@@ -107,9 +114,11 @@ Alternatives considered:
 ### D5: Citations are built from lineage, then intersected with the answer
 
 The system numbers the supplied chunks, gives the model those numbers, and
-returns the mapping. Model output is used only to know *which* supplied
-sources it leaned on; it is never the origin of an identifier. A number the
-model invents outside the supplied range is discarded rather than resolved.
+returns the mapping. Model output is used only to know *which* supplied sources it leaned on; it
+is never the origin of an identifier. A number the model invents outside the
+supplied range is discarded rather than resolved. A substantive answer with
+no valid in-range citation is not returned as grounded: the operation reports
+a generation-unverified failure and still returns the evidence.
 
 Upstream's `CITATION_QA_TEMPLATE` is the starting point for the prompt: it
 already instructs "answer based solely on the provided sources", "every answer
@@ -117,22 +126,25 @@ should include at least one source citation", and "if none of the sources are
 helpful, you should indicate that". Adapting it costs nothing and it is
 better-tested prose than a fresh attempt.
 
-### D6: Client sampling is preferred, server-side model is the fallback
+### D6: Modern MCP model requests use MRTR; the server model is fallback
 
-For MCP callers, `ctx.session.create_message()` asks the *client's* model. The
-server keeps ownership of the prompt, the evidence and the citation mapping —
-only the completion is delegated. This means a user with no local LLM
-configured still gets grounded answers, on a model they already have, at no
-server-side inference cost.
+For modern MCP sessions, the tool uses the Python SDK's multi-round-trip
+request pattern: a `Sample` resolver or `InputRequiredResult` carries the
+server-owned prompt and receives the client completion when the client
+advertises the capability. The core still owns retrieval, evidence numbering,
+prompt construction, validation and citation mapping. A thin transport adapter
+turns each resolved client completion into the injected async completion seam.
 
-Preference order is explicit and reported in the result: client sampling when
-advertised and enabled, else the configured server-side model, else an
-actionable error naming both options. It never silently returns chunks
-labelled as an answer.
+`ctx.session.create_message()` is deprecated on protocol 2026-07-28 and newer
+and raises when no legacy back-channel exists. It MAY be retained only behind
+negotiated legacy-session detection and tests; it MUST NOT be the preferred
+path or be attempted speculatively on a modern session.
 
-The CLI and HTTP transports have no client model, so they always use the
-server-side path. This is why D1's injection matters: one core operation, two
-completion sources, no branching inside `core/`.
+Preference order is explicit and reported: modern client MRTR when advertised
+and enabled, negotiated legacy sampling only for an older session, else the
+lazy configured server-side model, else an actionable error. COMPACT refinement
+rounds are bounded and each round follows the same mechanism. The CLI and HTTP
+transports have no client model and use the server-side path.
 
 ### D7: No-evidence short-circuits before the model call
 
@@ -141,6 +153,14 @@ without calling the model. This is both cheaper and safer: a model handed an
 empty context is at its most likely to answer from parametric memory, which is
 exactly the failure this capability exists to prevent.
 
+### D8: Hot files and import enforcement are explicit
+
+`core/answer` is added to the import-linter contract's `source_modules` while
+adding no provider ignore. `compose.py` and `config/__init__.py` are already
+near the 500-line ceiling; cohesive helpers are extracted before adding the
+builder/settings work. Diagnostics are produced in core and surfaced by both
+MCP and CLI. CLI JSON follows the repository rule and remains on stderr.
+
 ## Risks
 
 | Risk | Mitigation |
@@ -148,5 +168,5 @@ exactly the failure this capability exists to prevent.
 | Users assume answering replaces searching and pay for a model call per query | Answering is a separate tool whose description names the cost and points at `search_documents`; nothing changes the default |
 | A weak local model produces poor answers and the retrieval work gets blamed | Retrieval and generation failures are separately attributed, retrieved chunks are always returned, and diagnostics time the two stages separately |
 | Prompt injection from ingested document content | The prompt is constructed by the system with a fixed instruction block; retrieved text is presented as quoted sources. This does not eliminate the risk — it is inherent to RAG — and it is stated in the docs rather than claimed solved |
-| Client sampling behaves differently across MCP clients | The result reports which completion source ran, so a behavioural difference is attributable rather than mysterious |
+| MCP clients implement different protocol eras and MRTR capabilities | Negotiate the modern MRTR path, test legacy sampling separately, bound refinement rounds, and report the completion source and call count |
 | The synthesis path drifts from `search()` behaviour over time | Answering has no retrieval code of its own; it calls `search()`. A drift would require someone to add a second retrieval path, which review should reject |

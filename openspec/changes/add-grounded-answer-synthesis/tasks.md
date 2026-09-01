@@ -13,8 +13,12 @@ embeddings and assembled context.
   (operation does not exist).
 - [ ] 1.3 Add a test asserting every `chunk_id` in a returned citation list
   re-fetches exactly one stored chunk by metadata filter.
-- [ ] 1.4 Add a test asserting a model failure after successful retrieval is
-  attributed to generation and still returns the retrieved chunks.
+- [ ] 1.4 Add tests for generation failure and for missing, malformed,
+  duplicate and out-of-range citations; successful retrieval evidence must be
+  retained and a substantive uncited answer must not be labelled grounded.
+- [ ] 1.5 Add protocol-era tests for modern MRTR, negotiated legacy sampling,
+  server fallback and neither available; add retrieval-failure, merged
+  constituent and diagnostics tests.
 
 ## 2. Core operation
 
@@ -25,31 +29,41 @@ embeddings and assembled context.
   `source`, `source_chunk_index` and score in node metadata.
 - [ ] 2.3 Add `core/answer/prompt.py` holding the grounded-answer instruction
   block, adapted from upstream's `CITATION_QA_TEMPLATE`. British English.
-- [ ] 2.4 Add `core/answer/pipeline.py` with
-  `answer(query, *, llm, collection_name, effective_settings, store, ...)`
-  using `get_response_synthesizer(response_mode=COMPACT)`.
+- [ ] 2.4 Add an async `core/answer/pipeline.py` with an injected async
+  completion/LLM seam, using
+  `get_response_synthesizer(response_mode=COMPACT, use_async=True)` and
+  `asynthesize()`. Bound refinement rounds and report their count.
 - [ ] 2.5 Short-circuit before any model call when retrieval returns nothing.
-- [ ] 2.6 Build the citation mapping from supplied chunks; discard any source
-  number the model emits outside the supplied range.
+- [ ] 2.6 Build the citation mapping from supplied chunks; discard malformed,
+  duplicate and out-of-range source numbers. A substantive answer with no
+  valid supplied citation returns generation-unverified/error, never a
+  grounded success.
 - [ ] 2.7 Report every constituent `chunk_id` when context assembly merged
   rows.
 - [ ] 2.8 Attribute failures to `retrieval` or `generation`; always return the
   retrieved chunks on a generation failure.
-- [ ] 2.9 Confirm no file exceeds the 500-line ceiling.
+- [ ] 2.9 Produce retrieval/generation timings in core and confirm no file
+  exceeds the 500-line ceiling; split cohesive helpers before editing the
+  already-hot `compose.py` and `config/__init__.py`.
 
 ## 3. Composition root
 
 - [ ] 3.1 Add `compose.build_answer_llm(settings)` resolving through
-  `core/providers/llm/registry.py`.
-- [ ] 3.2 Return `None` (not an exception) when no answer provider is
-  configured, so the caller can produce the actionable error.
+  `core/providers/llm/registry.py`; extend every registered builder with a
+  backwards-compatible answer-model override so it does not reuse a metadata
+  classifier model accidentally.
+- [ ] 3.2 Return `None` (not an exception) when answering is disabled or no
+  usable provider/model is configured, and resolve it lazily so retrieval-only
+  startup remains usable.
 - [ ] 3.3 Add an answer settings block: provider selection, model, timeout,
   and the client-sampling preference flag. Every value defaults to something
   that works with the existing local-first configuration.
 - [ ] 3.4 Validate the configured answer provider at startup through
   `_resolve_active_strategies`, failing fast on a bad name.
-- [ ] 3.5 Confirm `uv run lint-imports` passes with **no new ignore entry**.
-  If one is needed, D1 has been violated — fix the injection instead.
+- [ ] 3.5 Add `rag_mcp.core.answer` to
+  `core-business-avoids-providers-transports.source_modules`, then confirm
+  `uv run lint-imports` passes with **no new ignore entry**. If an ignore is
+  needed, D1 has been violated — fix the injection instead.
 
 ## 4. MCP transport
 
@@ -58,11 +72,15 @@ embeddings and assembled context.
 - [ ] 4.2 Description states plainly that the tool performs a language-model
   call and names `search_documents` as the cheaper alternative.
 - [ ] 4.3 Never raise: return `{"status": "error", ...}` per gotcha #1.
-- [ ] 4.4 Detect client sampling capability; when advertised and enabled,
-  obtain the completion via `ctx.session.create_message()`.
-- [ ] 4.5 Fall back to the injected server-side model; report which ran.
+- [ ] 4.4 Implement the modern MCP path with a `Sample` resolver or
+  `InputRequiredResult` MRTR, adapting the resolved response to the injected
+  async completion seam. Bound and test COMPACT refinement rounds.
+- [ ] 4.5 Keep `ctx.session.create_message()` only for a negotiated legacy
+  session; prove a modern session never calls it. Fall back lazily to the
+  injected server-side model and report which path ran.
 - [ ] 4.6 Return an actionable error naming both options when neither is
-  available.
+  available; surface retrieval/generation timings and completion count when
+  diagnostics are requested.
 - [ ] 4.7 Register the handler in the package's bottom import block.
 
 ## 5. CLI transport
@@ -70,8 +88,8 @@ embeddings and assembled context.
 - [ ] 5.1 Add `transports/cli/answer.py` with `rag-mcp answer "<question>"`,
   supporting `--collection`, `--top-k`, `--hybrid/--no-hybrid`,
   `--rerank/--no-rerank`, `--diagnostics`, `--json`.
-- [ ] 5.2 Print the answer, then the numbered sources with file, chunk id and
-  score. Output to stderr per gotcha #5; `--json` to stdout.
+- [ ] 5.2 Print the answer, then numbered sources with file, chunk id and
+  score. Keep both human and `--json` output on stderr per gotcha #5.
 - [ ] 5.3 Actionable message when no answer provider is configured.
 
 ## 6. Contract

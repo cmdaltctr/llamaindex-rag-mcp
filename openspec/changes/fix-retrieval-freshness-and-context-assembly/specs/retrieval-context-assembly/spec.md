@@ -23,9 +23,11 @@ reshaped, and it SHALL NOT re-rank, re-score, or drop evidence.
 ### Requirement: Overlapping adjacent chunks are merged, not returned twice
 
 When two returned chunks are adjacent in the same source and the same source
-version, the assembly stage SHALL emit one row whose text contains the union
-of their content with the chunker's overlap present once, rather than two rows
-repeating the overlap.
+version, the assembly stage SHALL emit one row. It SHALL remove only a longest
+exact suffix/prefix text match bounded by the configured overlap token budget;
+when no exact match exists it SHALL concatenate without deletion. It SHALL
+never infer a character boundary from the numeric token budget or use fuzzy
+matching.
 
 #### Scenario: Adjacent chunks are merged
 
@@ -35,6 +37,24 @@ repeating the overlap.
 - **THEN** one merged row SHALL be emitted
 - **AND** its text SHALL contain each source sentence once
 - **AND** its character length SHALL be less than the sum of the two inputs
+  only when a non-empty exact boundary match was removed
+
+#### Scenario: No exact boundary match loses no text
+
+- **GIVEN** adjacent chunks with no exact suffix/prefix text match within the
+  overlap budget
+- **WHEN** assembly runs
+- **THEN** the chunks SHALL be concatenated without deleting text
+- **AND** every unique character sequence from both inputs SHALL remain
+
+#### Scenario: Repeated text is deterministic
+
+- **GIVEN** adjacent chunks containing repeated phrases at more than one
+  possible boundary
+- **WHEN** assembly runs
+- **THEN** the longest exact suffix/prefix match within the token budget SHALL
+  be removed once
+- **AND** no non-boundary occurrence SHALL be removed
 
 #### Scenario: Non-adjacent chunks are not merged
 

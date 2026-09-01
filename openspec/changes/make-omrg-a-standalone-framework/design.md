@@ -67,15 +67,18 @@ rename commit must change paths, never content beyond the import lines.
 ### D2: `Engine` is a constructed object; the module-level API is a thin wrapper
 
 ```
-omrg.Engine(settings=None)      # resolves env when settings is None
-engine.ingest(path, collection=...)
+omrg.Engine(effective_settings)          # explicit, no environment read
+omrg.Engine.from_environment()            # delegates to compose
+await engine.ingest(path, collection=...)
 engine.search(query, collection=..., ...)
-engine.answer(question, collection=...)   # after change 3
+await engine.answer(question, collection=...)  # completion resolved lazily
 engine.close()
 ```
 
-The engine holds the resolved settings, the vector store, the embedder, the
-reranker, the profile resolver and the answer LLM. It is the thing that
+The engine holds caller-supplied `EffectiveSettings`, the vector store, the
+embedder, the reranker and the profile resolver. Optional answer completion is
+resolved or injected lazily when `answer()` is used, so retrieval-only
+consumers do not fail on an unused optional capability. It is the thing that
 `compose` builds today, made explicit and given a lifetime.
 
 Alternatives considered:
@@ -87,9 +90,11 @@ Alternatives considered:
 - *A `Settings`-carrying context manager instead of an object* — hides the
   lifetime rather than naming it, and makes two concurrent engines awkward.
 
-`close()` is explicit rather than relying on garbage collection: LanceDB
-connections and ONNX sessions are real resources, and the BM25 cache holds
-strong references to store instances (noted in ADR-047).
+`close()` releases only resources the engine owns. Engine-specific sparse and
+query caches are isolated; immutable model artefacts may use the existing
+keyed process cache and are reference-counted or left open while another
+engine uses them. The store lifecycle is explicit so closing engine A cannot
+invalidate engine B.
 
 ### D3: The embedder is injected through the seams that read the global today
 
@@ -102,11 +107,11 @@ Each becomes a parameter supplied by the engine:
 | `ingestion/replacement.py::_embed_missing_nodes` | reads the global | takes `embed_model` |
 | `vectordb/*.py::write_nodes` | reads the global | takes `embed_model` |
 
-The LlamaIndex global is still assigned by the server startup path, because
-LlamaIndex internals used elsewhere (the metadata `IngestionPipeline`, the
-`VectorStoreIndex` adapter) consult it. The difference is that `core/` no
-longer *depends* on it: an engine passes its own embedder explicitly, so two
-engines produce correct vectors regardless of what the global happens to hold.
+The LlamaIndex global may still be assigned by the legacy server startup path,
+but every operation reachable through a directly constructed Engine must pass
+its embedder through all LlamaIndex internals it uses or avoid the
+global-dependent adapter. A full-path sentinel test sets the global to a
+throwing model and interleaves two engines; construction alone is not proof.
 
 This is the load-bearing decision of the change. Without it, "engine-scoped
 embedding" is a claim the runtime cannot honour, and ADR-047 decision 7 stands.
@@ -118,18 +123,21 @@ engine-owned one so two engines with same-named models cannot share entries.
 ### D4: `_runtime_embedding_identity()` fingerprints the injected embedder
 
 It currently inspects `LlamaIndexSettings.embed_model`. It takes the engine's
-embedder instead. Same fields, same hash shape, no change to
-`_INDEX_IDENTITY_SCHEMA` — the value is identical for a single-engine process,
-so existing collections do not reprocess as a result of this change.
+embedder instead. Same fields, same hash shape, and no change to
+`_INDEX_IDENTITY_SCHEMA`: preserve the schema version delivered by change 1.
+The value is identical for a single-engine process, so existing collections do
+not reprocess a second time.
 
 This is deliberate: change 1 already forces a reprocess for its own reasons.
 This change must not force a second one.
 
 ### D5: `ensure_runtime_setup()` is reimplemented, not removed
 
-It becomes: build the default engine from the environment, install it as the
-process default, assign the LlamaIndex global for the library internals that
-still need it. The MCP server, CLI and watcher keep calling it and keep
+It becomes: the composition root remains the sole production caller of
+`get_settings()`, builds an Engine from resolved `EffectiveSettings`, installs
+it as the process default, and assigns the LlamaIndex global only for the
+legacy transport startup path. `Engine.from_environment()` delegates to that
+composition-root factory rather than calling config itself. The MCP server, CLI and watcher keep calling it and keep
 working unchanged.
 
 Removing it would turn a surface change into a transport change across three
@@ -142,14 +150,26 @@ than *the* composition mechanism, is the whole point.
 distribution version. No second update site for semantic-release, and the
 1.8.0-versus-2.2.0 drift becomes unrepresentable.
 
-### D7: No shim, and the break is stated loudly
+### D7: No Python import shim; migrate the installed command surface
 
-`rag_mcp` disappears. The project's own precedent is clean breaks on majors,
-this lands on the breaking branch, and a shim for a package with no external
-consumers would be dead code from the day it shipped.
+`rag_mcp` disappears as a Python import. The break is declared as a major and
+ships with a migration guide. That does not justify breaking already-installed
+LaunchAgents: preserve discovery of `com.rag-mcp.watch.*` plists and their log
+paths, rewrite absolute ProgramArguments during upgrade, or retain `rag-mcp`
+as a deprecated console alias for one major. A console alias is not a Python
+import shim.
 
 The CHANGELOG entry and release notes must say plainly: the import path
 changed, the distribution changed, stored data did not.
+
+### D8: Mechanical coverage includes repository controls
+
+The content-neutral rename covers `.github/workflows`, `codecov.yml`,
+`.coderabbit.yaml`, `.env.example`, contribution docs, lockfile regeneration,
+coverage paths and every import-linter string. The stale-reference gate uses a
+curated live-surface allowlist; it does not rewrite history. Implement change 4
+only from the integrated changes 1–3 HEAD, and keep `lancedb.py` within 500
+lines after change 2's adapter seam.
 
 ## Risks
 
@@ -160,4 +180,4 @@ changed, the distribution changed, stored data did not.
 | An `Engine` API invites a second, divergent code path | The engine builds the same objects `compose` builds today; `ensure_runtime_setup` becomes a caller of it, so there is one construction path, not two |
 | Injected embedder missed at one seam, leaving a hidden global read | Add a test that constructs two engines with distinguishable embedders and asserts each collection's vectors came from the right one — it fails if any seam still reads the global |
 | Two engines exhaust memory (two stores, two ONNX sessions) | `close()` is explicit; the reranker's model cache is already keyed by `(backend, model_id)` and shared safely |
-| Docs and ADRs reference `rag_mcp` in dozens of places | The existing `test_docs_references.py` gate covers documentation drift; extend it to fail on `rag_mcp` after the rename |
+| Live and historical records reference `rag_mcp` | Gate active code/config/docs only; preserve released changelogs, ADR/TDR decisions and archived OpenSpec as historical provenance, with a migration guide for current users |

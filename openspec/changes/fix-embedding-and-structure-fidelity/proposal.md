@@ -75,8 +75,9 @@ corpus is built costs one re-ingest; doing it after costs a full rebuild.
   on that declaration instead of the file suffix, so parser-produced markdown
   reaches the heading-aware pipeline regardless of the source file's
   extension.
-- `liteparse` emits `page_label` alongside `page`, giving two of four readers
-  real page provenance.
+- `liteparse` and `pypdfium2` emit `page_label` alongside `page`, giving three
+  of four readers real page provenance; the auto chain is page-aware whenever
+  it selects a reader that observes page boundaries.
 - The OpenAPI contract and the CLI stop promising a page number that the
   configured reader cannot produce.
 - Source-code extensions become admissible for ingestion under the `codebase`
@@ -99,8 +100,9 @@ not a fix).
 
 ### Modified Capabilities
 
-- `pdf-reader`: readers declare their emitted text format; `liteparse` emits
-  `page_label`; the page-provenance matrix per reader becomes explicit.
+- `pdf-reader`: readers declare emitted text format and page-provenance
+  capability; `liteparse` and `pypdfium2` emit `page_label`; the matrix per
+  reader becomes explicit.
 - `markdown-aware-chunking`: the heading-aware path is selected by declared
   text format, not by file suffix.
 - `type-aware-ingestion`: the ingestible extension set is profile-scoped so
@@ -114,10 +116,13 @@ requirement, tracked by the new `embedding-text-composition` capability.
 
 ## Impact
 
-- **Requires a full re-ingest.** Vectors written before this change were
-  embedded under a different text composition. `source_index_identity`
-  changes, so existing collections re-process on next ingest rather than
-  silently serving stale chunks — the mechanism already built for this.
+- **Requires a full re-ingest.** For lineage-compatible v3 rows,
+  `source_index_identity` changes and each source re-processes on the next
+  corpus ingest; an interrupted run may temporarily contain old and new
+  source eras, and the next run MUST resume rather than skip an old-era
+  source. Pre-lineage or already-mixed rows rejected by
+  `assert_source_lineage_compatible()` still require the documented explicit
+  delete/rebuild path.
 - Code: `core/ingestion/source_state.py`, `core/ingestion/chunker.py`,
   `core/ingestion/loader.py`, `core/ingestion/backends/`,
   `integrations/pdf/{registry,liteparse,pdf_inspector,pypdf,pypdfium}.py`,

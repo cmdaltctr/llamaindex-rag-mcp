@@ -47,38 +47,48 @@ Verified against `v3` at `c9d2906`.
 
 ## Decisions
 
-### D1: Cache validity uses a durable data version, with the counter as fallback
+### D1: Cache validity uses a rewrite-safe durable token, with the counter as fallback
 
 Add `get_data_version(collection) -> str | None` to the `VectorStore` ABC.
-LanceDB returns `str(table.version)`; Chroma returns `None` (its Python client
-exposes no durable version), and callers fall back to the process-local
-counter with a one-shot warning naming the reduced guarantee.
+The contract is a stable opaque token, not a numeric counter. LanceDB MUST
+combine its current table version with a durable dataset identity or epoch
+that changes when overwrite-based schema evolution, deletion or recreation
+restarts version history. A qualification test must first prove which LanceDB
+identifier survives ordinary commits and changes on rewrite; if the installed
+version exposes no such identifier, implementation pauses and the design
+switches to a failure-safe durable invalidation marker before BM25 is changed.
+`str(table.version)` by itself is explicitly rejected.
 
-The BM25 cache key becomes `(cache_identity, collection)` with validity token
-`data_version if data_version is not None else generation`.
+Chroma returns `None` where it cannot meet that guarantee. Callers fall back
+to the process-local counter with a one-shot warning naming the reduced
+guarantee. The BM25 cache key remains `(cache_identity, collection)` and the
+cached validity value is the opaque durable token when available.
 
 Alternatives considered:
 
 - *Row-count probe* — cheap, but a delete-plus-insert of equal size is
   invisible. Silent staleness is exactly the bug being fixed.
+- *Numeric Lance table version alone* — ordinary commits advance it, but
+  overwrite-based schema evolution restarts the history and can collide with
+  an old cached value.
 - *A file watch on the database directory* — a second moving part, and
   LanceDB's on-disk layout is not a contract.
-- *Switch the default to native FTS* — this was the audit's original
-  suggestion and it is withdrawn. Experiment 19 pre-registered the comparison
-  and native failed gate G3 at 138.7× BM25's warm p50, with a +0.00 pp quality
-  delta. Fixing invalidation keeps BM25's latency advantage and fixes
-  correctness; switching would trade a 138× latency regression for a bug fix
-  that costs ten lines.
+- *Switch the default to native FTS* — Experiment 19 rejected that default on
+  the measured platform. If no rewrite-safe token can be qualified, reopening
+  the backend-default decision is safer than shipping a token known to
+  collide.
 
-Keeping the process-local counter is deliberate: it is still the correct and
-cheapest signal for same-process mutation, and it is what the existing
-"advances exactly once per mutation" contract is written against.
+Keeping the process-local counter is deliberate for unsupported stores, but it
+does not satisfy the cross-process guarantee.
 
 ### D2: The docstore equivalent is a lineage navigator, not a document store
 
 `core/retrieval/lineage.py` provides `neighbours(rows, window)`,
 `span(source_id, start, end)` and `is_adjacent(a, b)` over the metadata
-ingestion already persists, using the existing metadata-filter contract.
+ingestion already persists. The `VectorStore` ABC gains one minimal filtered
+row-read operation implemented by both adapters; lineage navigation and stale
+selection use that store-neutral seam, never a retrieval-to-ingestion import
+or a backend-specific branch.
 
 Why not adopt LlamaIndex's `PrevNextNodePostprocessor` or
 `AutoMergingRetriever` directly: both take a `BaseDocumentStore` as a required
@@ -106,9 +116,12 @@ chunks from two versions of a document are never treated as neighbours.
 
 ### D3: Merging is contiguity-driven, not similarity-driven
 
-Two rows merge when they are adjacent in the same source version. The overlap
-removed is the chunker's configured `chunk_overlap`, which is known exactly —
-no fuzzy matching, no similarity threshold, no tuning knob.
+Two rows merge when they are adjacent in the same source version. Because
+`chunk_overlap` is a token budget rather than a stored character boundary, the
+merge removes only the longest exact suffix/prefix text match whose tokenised
+size is within that budget. If there is no exact match, it concatenates without
+removal. It never trims a configured number of characters and never uses fuzzy
+matching, so unique text cannot be lost.
 
 Merging is on by default because returning the same sentence twice is never
 what a caller wanted, and the merged row is a strict superset of each input's
@@ -137,8 +150,10 @@ also keeps that invariant satisfiable.
 
 ### D5: `on_moved` is delete-then-ingest, reusing both existing paths
 
-`on_moved` calls the existing `_do_delete(src_path)` and then the existing
-`_schedule_ingest(dest_path)`. No new ingestion or deletion logic. The
+`on_moved` reuses the existing delete and ingest paths, but deletion must
+return an explicit success result. The destination ingest is scheduled only
+after old-path cleanup succeeds; a failed cleanup is retried/reported and does
+not silently fork the source under two path-derived identities. The
 existing symlink-traversal guard already runs inside `_do_ingest`, so a move
 whose destination resolves outside the watch root is rejected there.
 
@@ -149,7 +164,7 @@ outcome.
 
 ### D6: Stale selection is store-filtered, then attempt-compared in Python
 
-Select with `count_where`/a scoped read on `{source_id: S}`, then compare
+Select with the new filtered row-read operation on `{source_id: S}`, then compare
 `source_attempt` in Python. This preserves the original reason for the Python
 comparison — backends disagree on whether a missing metadata key satisfies
 `$ne` — while bounding the read to one source's rows.
@@ -160,6 +175,6 @@ comparison — backends disagree on whether a missing metadata key satisfies
 | --- | --- |
 | Merging changes returned text and moves quality-gate numbers | Re-measure Tier 1 and Tier 2; merged text is a superset of constituent content, so Recall must not fall. If it does, the merge implementation is wrong, not the floor |
 | A caller parses result rows positionally and breaks on merged rows | Result rows are dicts with additive keys; merged rows add keys rather than removing them. The OpenAPI `SearchResult` gains optional fields only |
-| `table.version` semantics change in a future LanceDB | The version read is behind the ABC and covered by the differential store-contract tests; a change surfaces there, not in retrieval |
+| LanceDB's durable identity semantics differ from the qualification result | Cross-process, schema-overwrite and recreate tests gate BM25 use of the token; unsupported versions return `None` rather than guessing |
 | Chroma users silently keep the old behaviour | The fallback logs once per collection naming the reduced guarantee, so it is visible rather than assumed |
 | Expansion inflates context and costs the caller tokens | Off by default, bounded by window, and reported in diagnostics |

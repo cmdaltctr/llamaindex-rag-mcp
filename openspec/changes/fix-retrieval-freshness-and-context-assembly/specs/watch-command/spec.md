@@ -55,3 +55,17 @@ source's content SHALL be indexed exactly once, under its current path.
 - **WHEN** it is moved
 - **THEN** the removal step SHALL report zero chunks removed
 - **AND** SHALL NOT raise
+
+
+### Requirement: A move does not fork the index after cleanup failure
+
+Destination ingestion SHALL be conditional on successful cleanup of the old
+path. A failed cleanup SHALL be reported and retried or left pending; it SHALL
+NOT be treated as success.
+
+#### Scenario: Old-path cleanup fails
+
+- **GIVEN** a watched file indexed at path A
+- **WHEN** it is moved to path B and deletion of A fails
+- **THEN** B SHALL NOT be ingested as though the move completed
+- **AND** the failure SHALL be observable and eligible for retry

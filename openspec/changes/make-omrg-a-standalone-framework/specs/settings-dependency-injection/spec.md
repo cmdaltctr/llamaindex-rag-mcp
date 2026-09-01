@@ -7,15 +7,14 @@ time. `config` SHALL expose `get_settings()` and SHALL NOT expose a
 module-level `settings` object.
 
 `get_settings()` SHALL remain the environment-and-file resolution path, and
-its production call sites SHALL be limited to the composition root and the
-engine's own environment-resolving constructor. An engine constructed from
-caller-supplied settings SHALL NOT call it at all.
+its production call sites SHALL remain limited to the composition root.
+`Engine.from_environment()` SHALL delegate to that root rather than calling
+`get_settings()` itself. An engine constructed from caller-supplied settings
+SHALL NOT call it at all.
 
-This narrows the previous rule, which named `compose.py` as the sole caller.
-That was correct when the composition root was the only way to build a
-runtime; with an engine that can be constructed from explicit settings, the
-invariant that matters is that resolution happens in exactly one layer and
-never in `core/`.
+This preserves the existing sole-caller rule while adding an explicit Engine
+factory over it; direct Engine construction accepts already-resolved
+`EffectiveSettings` and never reads config.
 
 #### Scenario: Import does not resolve settings
 
@@ -27,8 +26,7 @@ never in `core/`.
 #### Scenario: Single call site
 
 - **WHEN** the codebase is searched for `get_settings()`
-- **THEN** production call sites MUST be confined to the composition root and
-  the engine's environment-resolving construction path
+- **THEN** the composition root MUST remain the sole production call site
 - **AND** no module under `core/` or `integrations/` MUST call it
 
 #### Scenario: Explicit settings bypass resolution entirely

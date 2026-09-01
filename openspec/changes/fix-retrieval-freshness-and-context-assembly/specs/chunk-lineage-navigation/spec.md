@@ -4,8 +4,7 @@
 
 The system SHALL provide neighbour, span and ordered-set lookup for stored
 chunks using only metadata already persisted by ingestion — `source_id`,
-`source_chunk_index` and `source_chunk_count` — and the store's existing
-metadata-filter contract.
+`source_chunk_index` and `source_chunk_count` — and the vector store's bounded filtered row-read contract.
 
 This is the project's equivalent of a document store's
 `PREVIOUS`/`NEXT` node relationships. It is deliberately not a document
