@@ -110,15 +110,15 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 9. Validation and documentation
 
-- [ ] 9.1 `uv run pytest -m "not slow" --cov=rag_mcp` — all green, coverage
+- [x] 9.1 `uv run pytest -m "not slow" --cov=rag_mcp` — all green, coverage
   floors held.
-- [ ] 9.2 `uv run lint-imports` — no contract violations, no stale ignores.
-- [ ] 9.3 `openspec validate fix-embedding-and-structure-fidelity-1 --strict`.
-- [ ] 9.4 Update `AGENTS.md` gotcha #8 to name the new content-format routing
+- [x] 9.2 `uv run lint-imports` — no contract violations, no stale ignores.
+- [x] 9.3 `openspec validate fix-embedding-and-structure-fidelity-1 --strict`.
+- [x] 9.4 Update `AGENTS.md` gotcha #8 to name the new content-format routing
   rule alongside the existing `content_type` precedence note.
-- [ ] 9.5 Add a CHANGELOG entry stating plainly that this release requires a
+- [x] 9.5 Add a CHANGELOG entry stating plainly that this release requires a
   re-ingest and why; document resumable mixed-era behaviour for compatible v3
   rows and the explicit delete/rebuild path for rows rejected by the lineage
   compatibility guard.
-- [ ] 9.6 Write ADR: "Embedding text is a declared contract" recording D1, D2
+- [x] 9.6 Write ADR: "Embedding text is a declared contract" recording D1, D2
   and D6.

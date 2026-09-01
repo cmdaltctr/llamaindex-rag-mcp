@@ -34,7 +34,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 1988  # Includes document-backend registry + orchestrator pins,
+_BASE_EXECUTED = 2060  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -52,7 +52,10 @@ _BASE_EXECUTED = 1988  # Includes document-backend registry + orchestrator pins,
 # four transport orphaned-source visibility cases; plus 13 fast
 # retrieval-quality metric, fixture, and baseline-schema cases;
 # plus the force-basicConfig sheltering and closed-FileHandler detection
-# regressions (fix-test-isolation-mcp-cli-order).
+# regressions (fix-test-isolation-mcp-cli-order); plus the
+# embedding-text composition, reader text-format, page-provenance, and
+# profile-scoped-extension suites
+# (fix-embedding-and-structure-fidelity-1).
 _BASE_SKIPPED = 100  # self-ignored run: base skips incl. chroma-gated files,
 # the chroma-parametrised cases of the embedding-write-contract suite,
 # the +1 SDK-conditional backend probe, and the +1 chroma honesty case
