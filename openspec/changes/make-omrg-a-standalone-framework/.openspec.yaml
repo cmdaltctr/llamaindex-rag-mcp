@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-09-01
+goal: Turn the project into a usable Python framework named omrg, with MCP as
+  one transport among several
