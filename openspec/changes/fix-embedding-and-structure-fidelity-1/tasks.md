@@ -100,12 +100,12 @@ implementation, because every defect here is currently invisible to the suite.
 
 ## 8. Re-measure the quality gate
 
-- [ ] 8.1 Re-run Tier 1 and confirm it still passes at its floors.
-- [ ] 8.2 Re-run Tier 2 against real Ollama and record the new measurement.
-- [ ] 8.3 If Recall@10 or MRR@10 regressed below the committed floor, revert
+- [x] 8.1 Re-run Tier 1 and confirm it still passes at its floors.
+- [x] 8.2 Re-run Tier 2 against real Ollama and record the new measurement.
+- [x] 8.3 If Recall@10 or MRR@10 regressed below the committed floor, revert
   D2 (`file_path` exclusion) and re-open it as an experiment. Do not lower the
   floor to fit.
-- [ ] 8.4 Commit the re-measured baseline with the updated fixture-identity
+- [x] 8.4 Commit the re-measured baseline with the updated fixture-identity
   hashes.
 
 ## 9. Validation and documentation
