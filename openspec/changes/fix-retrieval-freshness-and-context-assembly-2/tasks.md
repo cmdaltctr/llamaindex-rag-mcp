@@ -1,4 +1,4 @@
-# Tasks: fix-retrieval-freshness-and-context-assembly
+# Tasks: fix-retrieval-freshness-and-context-assembly-2
 
 Groups 1–3 are independent of groups 4–6 and can land separately if the change
 is split during review. No re-ingest is required by anything here.
@@ -136,7 +136,7 @@ is split during review. No re-ingest is required by anything here.
   so a regression means the merge is wrong, not the floor.
 - [ ] 7.3 `uv run pytest -m "not slow" --cov=rag_mcp` — green, floors held.
 - [ ] 7.4 `uv run lint-imports` — clean, no stale ignores.
-- [ ] 7.5 `openspec validate fix-retrieval-freshness-and-context-assembly --strict`.
+- [ ] 7.5 `openspec validate fix-retrieval-freshness-and-context-assembly-2 --strict`.
 
 ## 8. Documentation
 

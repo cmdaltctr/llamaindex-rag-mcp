@@ -1,4 +1,4 @@
-# Design: add-grounded-answer-synthesis
+# Design: add-grounded-answer-synthesis-3
 
 ## Context
 

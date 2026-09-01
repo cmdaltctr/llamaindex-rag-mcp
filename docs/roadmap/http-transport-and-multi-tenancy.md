@@ -86,11 +86,11 @@ all of those surfaces.
 
 ## Prerequisites and order
 
-1. `fix-retrieval-freshness-and-context-assembly` is a hard prerequisite for
+1. `fix-retrieval-freshness-and-context-assembly-2` is a hard prerequisite for
    multi-process BM25 correctness, subject to qualifying its durable token.
-2. `add-grounded-answer-synthesis` is required only if the first HTTP release
+2. `add-grounded-answer-synthesis-3` is required only if the first HTTP release
    exposes an answer endpoint; raw retrieval does not depend on it.
-3. `make-omrg-a-standalone-framework` should land before the runtime so the
+3. `make-omrg-a-standalone-framework-4` should land before the runtime so the
    server composes the public Engine rather than adding another private startup
    path.
 4. Re-enter `openspec/changes/` only after the decisions above are recorded

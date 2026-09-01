@@ -1,4 +1,4 @@
-# Tasks: add-grounded-answer-synthesis
+# Tasks: add-grounded-answer-synthesis-3
 
 Purely additive. Nothing here changes `search()`, stored data, or any existing
 tool's shape. Land after the two fix changes so answers are built on corrected
@@ -111,7 +111,7 @@ embeddings and assembled context.
 
 - [ ] 8.1 `uv run pytest -m "not slow" --cov=rag_mcp` — green, floors held.
 - [ ] 8.2 `uv run lint-imports` — clean, no new ignores.
-- [ ] 8.3 `openspec validate add-grounded-answer-synthesis --strict`.
+- [ ] 8.3 `openspec validate add-grounded-answer-synthesis-3 --strict`.
 - [ ] 8.4 Document the tool in `docs/guides/mcp-tools.md`, including the cost
   statement and the prompt-injection caveat.
 - [ ] 8.5 Document the CLI command in `docs/guides/cli-reference.md`.

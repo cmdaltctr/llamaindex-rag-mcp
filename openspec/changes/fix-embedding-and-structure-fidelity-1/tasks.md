@@ -1,4 +1,4 @@
-# Tasks: fix-embedding-and-structure-fidelity
+# Tasks: fix-embedding-and-structure-fidelity-1
 
 Order matters. Group 1 is red-first: write the failing assertions before the
 implementation, because every defect here is currently invisible to the suite.
@@ -113,7 +113,7 @@ implementation, because every defect here is currently invisible to the suite.
 - [ ] 9.1 `uv run pytest -m "not slow" --cov=rag_mcp` — all green, coverage
   floors held.
 - [ ] 9.2 `uv run lint-imports` — no contract violations, no stale ignores.
-- [ ] 9.3 `openspec validate fix-embedding-and-structure-fidelity --strict`.
+- [ ] 9.3 `openspec validate fix-embedding-and-structure-fidelity-1 --strict`.
 - [ ] 9.4 Update `AGENTS.md` gotcha #8 to name the new content-format routing
   rule alongside the existing `content_type` precedence note.
 - [ ] 9.5 Add a CHANGELOG entry stating plainly that this release requires a

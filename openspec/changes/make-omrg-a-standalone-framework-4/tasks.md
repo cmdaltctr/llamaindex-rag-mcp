@@ -1,4 +1,4 @@
-# Tasks: make-omrg-a-standalone-framework
+# Tasks: make-omrg-a-standalone-framework-4
 
 Land after changes 1–3. Group 1 is a content-neutral rename and must be its
 own commit. Groups 2–5 are the behavioural work.
@@ -121,7 +121,7 @@ own commit. Groups 2–5 are the behavioural work.
 - [ ] 7.3 Re-run Tier 1 and Tier 2 quality gates; results MUST be unchanged,
   since no retrieval behaviour changed. A difference means an embedder seam
   was wired wrongly.
-- [ ] 7.4 `openspec validate make-omrg-a-standalone-framework --strict`.
+- [ ] 7.4 `openspec validate make-omrg-a-standalone-framework-4 --strict`.
 - [ ] 7.5 Extend `test_docs_references.py` with a curated live-surface gate for
   stale `rag_mcp` paths. Exclude released changelogs, ADR/TDR history and
   `openspec/changes/archive/**`; do not rewrite historical provenance.
