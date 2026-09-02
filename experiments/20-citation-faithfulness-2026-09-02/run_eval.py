@@ -26,6 +26,12 @@ JSON candidates are scanned from the end, and one stricter retry is
 allowed before a verdict is recorded as unparseable (reported as its
 own failure rate, never silently counted as either class).
 
+Timeout resilience: a read timeout on a judge call gets one full retry
+after a short backoff; a second timeout records the triple as
+unparseable, and three consecutive such triples abort the run with the
+checkpoint saved. That streak means the setup is broken (Ollama dead or
+the model too slow for ANSWER__TIMEOUT), not momentarily busy.
+
 Outputs (atomic .tmp -> rename):
 - output/eval_results_checkpoint.json  per-triple resumable checkpoint
 - output/eval_results.json             final payload with cell aggregates
@@ -34,6 +40,7 @@ Outputs (atomic .tmp -> rename):
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import re
 import statistics
@@ -42,6 +49,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import httpx
 from dotenv import load_dotenv
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -88,6 +96,16 @@ _STOPWORDS = frozenset(
 
 #: Verdict thresholds swept for the lexical cell (protocol 20A).
 DEFAULT_THRESHOLDS = [round(0.1 * step, 1) for step in range(1, 10)]
+
+#: Timeout-resilience knobs (runner robustness patch, 2026-09-02).
+#: A read timeout on one judge call gets one full retry after a short
+#: backoff (transient machine load self-heals). Double exhaustion records
+#: the triple as unparseable; three CONSECUTIVE such triples abort the
+#: run because grinding on would burn 2x timeout per remaining triple
+#: producing garbage rows.
+_TIMEOUT_EXC: tuple[type[Exception], ...] = (httpx.TimeoutException, asyncio.TimeoutError)
+_TIMEOUT_RETRY_BACKOFF_SECONDS = 5.0
+_TIMEOUT_ABORT_STREAK = 3
 
 #: Judge prompt v1 (protocol 20B: "protocol-only, no answer context").
 #: Instruction hierarchy: rules first, untrusted claim/evidence last,
@@ -261,6 +279,50 @@ async def _judge_triple(llm: Any, claim: str, evidence: str, *, attempts: int) -
     }
 
 
+async def _judge_triple_guarded(
+    llm: Any, triple: dict[str, Any], *, attempts: int
+) -> dict[str, Any]:
+    """Judge one triple with timeout resilience.
+
+    Wraps :func:`_judge_triple`: a read timeout on the LLM call gets one
+    full retry after a short backoff (transient load self-heals). If the
+    retry also times out, the triple is recorded with verdict ``None``
+    (the unparseable category, same as unparseable JSON) plus
+    ``timeout_exhausted: True`` so the caller can abort on streaks.
+
+    Hard errors (e.g. connection refused, Ollama not running) are NOT
+    caught: they fail fast, which is the correct signal for a dead setup.
+    """
+    triple_id = triple["id"]
+    started = time.perf_counter()
+    for call_attempt in (1, 2):
+        try:
+            return await _judge_triple(llm, triple["claim"], triple["evidence"], attempts=attempts)
+        except _TIMEOUT_EXC:
+            if call_attempt == 1:
+                print(
+                    f"    {triple_id}: LLM call timed out; retrying once after "
+                    f"{_TIMEOUT_RETRY_BACKOFF_SECONDS:.0f}s backoff",
+                    flush=True,
+                )
+                await asyncio.sleep(_TIMEOUT_RETRY_BACKOFF_SECONDS)
+            else:
+                print(f"    {triple_id}: timed out twice; recording as unparseable", flush=True)
+    latency_ms = (time.perf_counter() - started) * 1000
+    prompt = JUDGE_PROMPT_TEMPLATE.format(claim=triple["claim"], evidence=triple["evidence"])
+    return {
+        "latency_ms": round(latency_ms, 2),
+        "attempts": 2,
+        "prompt_chars": len(prompt),
+        "reply_chars": 0,
+        "est_tokens": round(len(prompt) / 4),
+        "verdict": None,
+        "reason": "LLM call timed out on both attempts",
+        "reply_excerpt": "",
+        "timeout_exhausted": True,
+    }
+
+
 # ── Cell runners ─────────────────────────────────────────────────────
 
 
@@ -290,16 +352,30 @@ async def _run_judge_cell(
     attempts: int,
     checkpoint_path: Path,
     payload_ref: dict[str, Any],
-    completed_ids: set[str],
 ) -> dict[str, Any]:
-    """Judge every triple with per-triple checkpointing and resume."""
+    """Judge every triple with per-triple checkpointing and resume.
+
+    Resume is PER METHOD: only rows already recorded for THIS method's
+    cell are skipped.  (A global id set would let the lexical cell's
+    rows suppress every judge triple — the bug the first 20B launch
+    exposed.)
+
+    Three consecutive double-timeout triples abort the run with the
+    checkpoint saved: that streak is systemic failure, not a blip
+    (see ``_judge_triple_guarded``).
+    """
     llm, model_name = _build_judge(model_override)
     print(f"  judge model: {model_name} (temperature pinned to 0)", flush=True)
+    completed_ids = {row["id"] for row in _cell_rows(payload_ref, method)}
+    if completed_ids:
+        print(f"  resuming: {len(completed_ids)} triples already judged", flush=True)
     rows: list[dict[str, Any]] = []
+    timeout_streak = 0
     for index, triple in enumerate(triples, start=1):
         if triple["id"] in completed_ids:
             continue
-        base = await _judge_triple(llm, triple["claim"], triple["evidence"], attempts=attempts)
+        base = await _judge_triple_guarded(llm, triple, attempts=attempts)
+        timeout_streak = timeout_streak + 1 if base.get("timeout_exhausted") else 0
         rows.append(
             {
                 "id": triple["id"],
@@ -308,13 +384,21 @@ async def _run_judge_cell(
                 **base,
             }
         )
-        completed_ids.add(triple["id"])
+        if timeout_streak >= _TIMEOUT_ABORT_STREAK:
+            _merge_partial_cell(payload_ref, method, model_name, rows)
+            _save_checkpoint(checkpoint_path, payload_ref)
+            raise SystemExit(
+                f"{_TIMEOUT_ABORT_STREAK} consecutive triples timed out on both "
+                f"attempts (last: {triple['id']}); partial checkpoint saved to "
+                f"{checkpoint_path}. Looks systemic: check `ollama ps`, machine "
+                "load, or raise ANSWER__TIMEOUT before resuming."
+            )
         if index % 10 == 0 or index == len(triples):
             print(f"    judged {index}/{len(triples)}", flush=True)
-            _merge_partial_cell(payload_ref, method, rows)
+            _merge_partial_cell(payload_ref, method, model_name, rows)
             rows = []
             _save_checkpoint(checkpoint_path, payload_ref)
-    _merge_partial_cell(payload_ref, method, rows)
+    _merge_partial_cell(payload_ref, method, model_name, rows)
     _save_checkpoint(checkpoint_path, payload_ref)
     return _cell_rows(payload_ref, method)
 
@@ -613,7 +697,6 @@ async def main() -> None:
                 attempts=max(1, args.judge_attempts),
                 checkpoint_path=checkpoint_path,
                 payload_ref=payload,
-                completed_ids=completed_ids,
             )
 
     summaries = [_aggregate_cell(cell, args.thresholds) for cell in payload["cells"]]
@@ -648,6 +731,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())
