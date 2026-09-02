@@ -18,6 +18,7 @@ from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
 from ..vectordb.score import DENSE_SCORE_KIND
+from .assembly import ASSEMBLY_INTERNAL_FIELDS, assemble, promote_assembly_diagnostics
 from .registry import get as _retrieval_get
 from .sparse_dispatch import (  # noqa: F401  (re-exported for callers/tests)
     _native_sparse_query,
@@ -119,6 +120,9 @@ def _strip_internal_result_fields(result: dict) -> dict:
         "dense_rank",
         "sparse_rank",
         "fused_rank",
+        # Assembly-internal markers (task 5.9): merged/expansion state is
+        # diagnostics-only, so the public result shape stays stable.
+        *ASSEMBLY_INTERNAL_FIELDS,
     ):
         public.pop(key, None)
     return public
@@ -130,6 +134,7 @@ def search(
     similarity_threshold: float | None = None,
     rerank: bool | None = None,
     hybrid: bool | None = None,
+    expand_window: int = 0,
     collection_name: str = "documents",
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
@@ -162,6 +167,11 @@ def search(
             sparse rankings via Reciprocal Rank Fusion before reranking.
             When ``None``, the profile's ``hybrid_enabled`` applies if
             ``effective_settings`` is provided, else ``settings.hybrid_enabled``.
+        expand_window: Neighbours added per side of each retrieved chunk
+            during context assembly (default 0 = no expansion).  Expansion
+            is opt-in because it adds evidence the ranker did not select;
+            expanded neighbours merge into the retrieved chunk under the
+            assembly merging rules and never displace retrieved rows.
         collection_name: Name of the collection to search
             (default ``"documents"`` for backward compatibility).
         metadata_filter: Optional store ``where`` clause to filter
@@ -367,8 +377,27 @@ def search(
     results.sort(key=lambda r: r["score"], reverse=True)
     results = results[:top_k]
 
+    # Context assembly (task 5.6): the single stage that reshapes returned
+    # evidence — overlap merging plus opt-in neighbour expansion — runs
+    # exactly once, after truncation so retrieved rows are never dropped to
+    # honour ``top_k``, and before diagnostics attachment. It never
+    # re-ranks or re-scores.
+    t0 = time.perf_counter()
+    results = assemble(
+        results,
+        chunk_overlap=resolved_settings.chunking.chunk_overlap,
+        expand_window=expand_window,
+        store=resolved_store,
+        collection=collection_name,
+    )
+    t1 = time.perf_counter()
+    timing_report["assembly_seconds"] = timing_report.get("assembly_seconds", 0.0) + (t1 - t0)
+
     # Attach policy diagnostics when requested.
     if include_diagnostics:
+        # Assembly markers (task 5.8): report what the assembly stage did —
+        # merges, constituent counts and expansion — under the flag only.
+        promote_assembly_diagnostics(results)
         for r in results:
             r["rerank_reason"] = rerank_reason
             r["threshold_score_kind"] = threshold_score_kind

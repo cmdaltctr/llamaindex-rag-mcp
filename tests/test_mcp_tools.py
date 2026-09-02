@@ -266,6 +266,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
         similarity_threshold=0.25,
         rerank=True,
         hybrid=False,
+        expand_window=0,
         collection_name="mcp_shape_coll",
         metadata_filter=None,
         include_diagnostics=False,
@@ -303,6 +304,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         similarity_threshold=_gs().retrieval.similarity_threshold,
         rerank=None,
         hybrid=_gs().retrieval.hybrid_enabled,
+        expand_window=0,
         collection_name="documents",
         metadata_filter=None,
         include_diagnostics=False,
@@ -955,6 +957,36 @@ async def test_search_documents_returns_filter_matches(
         open_data = _extract_result(result_open)
         assert isinstance(open_data, list)
         assert len(open_data) > 0
+
+
+async def test_search_documents_expand_window_passthrough(
+    mcp_server,
+) -> None:
+    """expand_window must reach retrieval.search unchanged (task 5.7)."""
+    expected = [
+        {
+            "score": 0.9,
+            "source": "fixture.txt",
+            "page_label": None,
+            "text": "fixture text",
+            "reranked": False,
+        }
+    ]
+
+    with patch(
+        "rag_mcp.transports.mcp.search.search",
+        return_value=expected,
+    ) as mock_search:
+        async with connected_client(mcp_server) as client:
+            result = await client.call_tool(
+                "search_documents",
+                {"query": "fixture", "expand_window": 2},
+            )
+
+    data = _extract_result(result)
+    assert data == expected
+    _, kwargs = mock_search.call_args
+    assert kwargs["expand_window"] == 2
 
 
 async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:

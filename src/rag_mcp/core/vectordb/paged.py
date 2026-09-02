@@ -14,6 +14,26 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _chroma_where(where: dict) -> dict:
+    """Translate a store-neutral equality filter into ChromaDB ``where`` form.
+
+    ChromaDB accepts a single ``{key: value}`` dict as shorthand for one
+    equality condition, but rejects multi-key dicts outright ("Expected
+    where to have exactly one operator"). The store-neutral filtered-read
+    contract passes plain equality dicts, so compound filters are wrapped
+    in ``{"$and": [...]}`` with one clause per key, preserving key order.
+
+    Args:
+        where: Non-empty dict of metadata equality conditions.
+
+    Returns:
+        A ChromaDB-valid ``where`` clause for the same conditions.
+    """
+    if len(where) == 1:
+        return dict(where)
+    return {"$and": [{key: value} for key, value in where.items()]}
+
+
 class PagedReadMixin:
     """Bounded-page reads plus stable-ID deletion over Chroma collections."""
 
@@ -55,6 +75,66 @@ class PagedReadMixin:
             if len(metadatas) < effective_page_size:
                 break
             offset += len(metadatas)
+
+    def iter_filtered_documents(
+        self,
+        collection_name: str,
+        where: dict,
+        page_size: int | None = None,
+    ) -> Iterator[tuple[str, str, dict]]:
+        """Yield ``(id, text, metadata)`` rows matching *where*, filter pushed down.
+
+        ``where`` is a store-neutral equality dict translated to
+        ChromaDB's ``where`` form (multi-key dicts wrapped in
+        ``{"$and": [...]}``) so the server filters before paging —
+        the bounded-read contract the lineage navigator and
+        source-scoped stale selection depend on.
+
+        Args:
+            collection_name: Collection to read.
+            where: Non-empty dict of metadata equality conditions;
+                empty filters are rejected because an unfiltered scan
+                is what ``iter_documents`` is for.
+            page_size: Optional page size for bounded batches.
+
+        Yields:
+            ``(id, text, metadata)`` tuples for matching rows;
+            nothing for an absent collection or no matches.
+
+        Raises:
+            ValueError: When *where* is empty.
+        """
+        if not where:
+            raise ValueError(
+                f"iter_filtered_documents on {collection_name!r} requires a "
+                "non-empty where filter; use iter_documents for unfiltered scans."
+            )
+        chroma_where = _chroma_where(where)
+        collection = self._get_collection(collection_name)
+        if collection is None:
+            return
+
+        effective_page_size = self._resolve_page_size(page_size)
+        offset = 0
+        while True:
+            batch = collection.get(
+                include=["documents", "metadatas"],
+                where=chroma_where,
+                limit=effective_page_size,
+                offset=offset,
+            )
+            ids = batch.get("ids") or []
+            docs = batch.get("documents") or []
+            metas = batch.get("metadatas") or []
+            if not ids:
+                break
+            for idx, doc_id in enumerate(ids):
+                metadata = metas[idx] if idx < len(metas) and isinstance(metas[idx], dict) else {}
+                text = docs[idx] if idx < len(docs) and docs[idx] is not None else ""
+                yield (str(doc_id), str(text), dict(metadata))
+            if len(ids) < effective_page_size:
+                break
+            offset += len(ids)
 
     def fetch_all(
         self,

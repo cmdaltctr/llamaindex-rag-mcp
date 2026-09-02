@@ -25,7 +25,10 @@ from . import (
         "cross-encoder reranker for better precision, or filter by "
         "a minimum similarity threshold. Accepts an optional "
         "collection name to scope the search and an optional "
-        "metadata_filter to restrict results by metadata fields."
+        "metadata_filter to restrict results by metadata fields. "
+        "Adjacent chunks of one document are merged so splitter overlap "
+        "is not returned twice; expand_window adds each chunk's "
+        "neighbours to the merged context when requested."
     ),
     annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
@@ -35,6 +38,7 @@ async def search_documents(
     similarity_threshold: float | None = None,
     rerank: bool | None = None,
     hybrid: bool | None = None,
+    expand_window: int = 0,
     diagnostics: bool = False,
     collection: str = "documents",
     metadata_filter: dict | None = None,
@@ -57,6 +61,10 @@ async def search_documents(
         hybrid: Fuse dense vector retrieval with sparse keyword retrieval
             via Reciprocal Rank Fusion. When None, the collection profile
             supplies the default.
+        expand_window: Neighbours added per side of each retrieved chunk
+            during context assembly (0 = no expansion). Expanded
+            neighbours merge into the retrieved chunk and never displace
+            retrieved rows.
         diagnostics: Include core-produced retrieval diagnostics when true.
         collection: Name of the ChromaDB collection to search.
         metadata_filter: ChromaDB-compatible filter for dense and sparse candidates.
@@ -90,6 +98,7 @@ async def search_documents(
             similarity_threshold=similarity_threshold,
             rerank=rerank,
             hybrid=hybrid,
+            expand_window=expand_window,
             collection_name=collection,
             metadata_filter=metadata_filter,
             include_diagnostics=diagnostics,

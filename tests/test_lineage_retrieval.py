@@ -81,20 +81,28 @@ class _StubReranker:
 
 
 async def test_dense_results_expose_lineage_and_hide_row_id(tmp_path: Path) -> None:
-    """Spec: dense results carry stable lineage without the vector-row id."""
+    """Spec: dense results carry stable lineage without the vector-row id.
+
+    Context assembly (fix-retrieval-freshness-and-context-assembly-2)
+    merges adjacent chunks of one source into single rows by default, so
+    the constituent coverage is read through ``chunk_ids`` on merged rows:
+    every stored chunk of the source is still represented exactly once.
+    """
     source = await _ingest_lineage_source(tmp_path)
     expected_sid = _expected_source_id(str(source))
 
     results = search("quantum foxes", hybrid=False, rerank=False, **_search_kwargs())
 
     assert results
-    assert len(results) >= 2
+    represented: list[str] = []
     for result in results:
         _assert_lineage(result)
         assert result["source_id"] == expected_sid
-    assert len({result["chunk_id"] for result in results}) == len(results)
-    assert sorted(result["source_chunk_index"] for result in results) == list(range(len(results)))
-    assert all(result["source_chunk_count"] == len(results) for result in results)
+        represented.extend(result.get("chunk_ids", [result["chunk_id"]]))
+    assert len(set(represented)) == len(represented), "a chunk was returned twice"
+    assert len(represented) >= 2, "the source must produce multiple represented chunks"
+    assert all(result["source_chunk_count"] == len(represented) for result in results)
+    assert results[0]["source_chunk_index"] == 0
 
 
 async def test_hybrid_bm25_results_expose_identical_lineage(tmp_path: Path) -> None:

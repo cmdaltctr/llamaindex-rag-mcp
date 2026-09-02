@@ -32,6 +32,12 @@ def search(
         "--hybrid/--no-hybrid",
         help="Fuse dense vector search with sparse BM25 retrieval via RRF.",
     ),
+    expand_window: int = typer.Option(
+        0,
+        "--expand-window",
+        min=0,
+        help="Neighbours added per side of each chunk during context assembly.",
+    ),
     collection: str = typer.Option(
         "documents",
         "--collection",
@@ -67,6 +73,7 @@ def search(
                 similarity_threshold=threshold,
                 rerank=rerank,
                 hybrid=hybrid,
+                expand_window=expand_window,
                 collection_name=collection,
                 include_diagnostics=diagnostics,
                 effective_settings=effective,
@@ -105,7 +112,9 @@ def search(
     table.add_column("Text", max_width=60)
 
     for r in results:
-        score = f"{r['score']:.4f}"
+        # Rows added purely by neighbour expansion carry no retrieval
+        # score (they were never ranked), so the column shows a dash.
+        score = f"{r['score']:.4f}" if r.get("score") is not None else "-"
         source = _sanitise_display_name(r.get("source", "unknown"))
         text = r.get("text", "")[:100].replace("\n", " ")
         if show_pages:

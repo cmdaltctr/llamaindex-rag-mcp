@@ -116,21 +116,28 @@ def _stale_source_ids(
     source_id: str,
     source_attempt: str,
 ) -> list[str]:
-    """Return stale row IDs for one source using a bounded store-neutral scan.
+    """Return stale row IDs for one source using a source-scoped read.
 
-    Selection is scoped to the source's stable ``source_id`` so rows for a
-    different source — including byte-identical files at other paths — are
-    never removed. Selection happens in Python rather than a backend
-    ``$ne`` filter because stores differ in whether a missing metadata key
-    satisfies inequality. Production ingestion rejects pre-lineage rows
-    before mutation, so rows without ``source_id`` cannot reach this scan
-    through the normal path.
+    Selection reads only rows whose ``source_id`` matches through the
+    store-neutral filtered row-read contract, so the work performed is
+    proportional to the source's own row count, never the collection's
+    (the old full-collection scan held the global write lock for
+    O(collection size) per replaced file).
+
+    The ``source_attempt`` comparison stays in Python rather than a
+    backend ``$ne`` filter because stores differ in whether a missing
+    metadata key satisfies inequality — only a Python comparison treats
+    rows lacking the attempt key uniformly across backends. Production
+    ingestion rejects pre-lineage rows before mutation, so rows without
+    ``source_id`` cannot reach this scan through the normal path.
     """
     return [
         row_id
-        for row_id, _, metadata in store.iter_documents(collection_name)
-        if metadata.get(SOURCE_ID_KEY) == source_id
-        and metadata.get(SOURCE_ATTEMPT_KEY) != source_attempt
+        for row_id, _text, metadata in store.iter_filtered_documents(
+            collection_name,
+            {SOURCE_ID_KEY: source_id},
+        )
+        if metadata.get(SOURCE_ATTEMPT_KEY) != source_attempt
     ]
 
 

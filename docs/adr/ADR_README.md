@@ -62,6 +62,7 @@ development of the LlamaIndex RAG MCP Server.
 | [053](./053-embedding-norm-guard.md)                          | Embedding Norm Guard                                                                         | 2026-08-28 | Accepted |
 | [054](./054-native-sparse-backend-lancedb-fts.md)             | Native Sparse Backend over LanceDB FTS                                                       | 2026-08-29 | Accepted |
 | [055](./055-embedding-text-is-a-declared-contract.md)         | Embedding Text Is a Declared Contract                                                         | 2026-09-01 | Accepted |
+| [056](./056-lineage-navigation-replaces-a-document-store.md)   | Lineage Navigation Replaces a Document Store                                                 | 2026-09-02 | Accepted |
 
 ## Convention
 

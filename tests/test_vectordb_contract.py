@@ -26,6 +26,7 @@ import pytest
 from rag_mcp.core.vectordb.base import VectorStore
 from rag_mcp.core.vectordb.identity import EmbeddingIdentity
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from rag_mcp.core.vectordb.paged import PagedReadMixin
 
 # Task 5.1: the ChromaDB adapter import is lazy so this shared contract
 # module collects (and runs every LanceDB parameter) in the base install
@@ -91,6 +92,7 @@ class TestABCCompliance:
             "query_dense",
             "iter_metadatas",
             "iter_documents",
+            "iter_filtered_documents",
             "count",
             "count_where",
             "delete_where",
@@ -98,6 +100,7 @@ class TestABCCompliance:
             "update_collection_metadata",
             "bump_generation",
             "get_generation",
+            "get_data_version",
         }
         implemented = set(_store_class(backend).__abstractmethods__)
         assert implemented == set(), f"Unimplemented abstract methods: {implemented}"
@@ -529,6 +532,136 @@ class TestGenerationCounter:
         assert store.get_generation("b") == 1
 
 
+# ── Durable data version (fix-retrieval-freshness stage 2) ────────────
+
+
+class TestDataVersionCapability:
+    """Differential contract for the durable data-version capability.
+
+    LanceDB returns a tagged ``(omrg_dataset_epoch, table.version)``
+    token; ChromaDB has no durable cross-process collection version,
+    so it stays on the ABC default and reports ``None`` explicitly
+    rather than repackaging the process-local generation counter.
+    """
+
+    def test_absent_collection_reports_absence(self, store: VectorStore) -> None:
+        assert store.get_data_version("never_created") is None
+
+    def test_stable_between_reads_without_mutation(self, store: VectorStore) -> None:
+        store.upsert_precomputed(
+            "dv_stable",
+            ids=["a"],
+            documents=["row"],
+            metadatas=[{"k": "v"}],
+            embeddings=[[1.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+        assert store.get_data_version("dv_stable") == store.get_data_version("dv_stable")
+
+    def test_backend_capability_semantics(self, store: VectorStore) -> None:
+        """Lance advances a token on mutation; Chroma reports ``None``."""
+        store.upsert_precomputed(
+            "dv_mutation",
+            ids=["a"],
+            documents=["row"],
+            metadatas=[{"k": "v"}],
+            embeddings=[[1.0, 0.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+        if isinstance(store, LanceVectorStore):
+            before = store.get_data_version("dv_mutation")
+            assert before is not None
+            assert before.startswith("lancedb-durable-v1:")
+            store.upsert_precomputed(
+                "dv_mutation",
+                ids=["b"],
+                documents=["second"],
+                metadatas=[{"k": "w"}],
+                embeddings=[[1.0, 0.0]],
+                embedding_identity=_PRECOMPUTED_IDENTITY,
+            )
+            assert store.get_data_version("dv_mutation") != before
+        else:
+            # No durable version available: the capability must be
+            # reported unavailable, never the local generation counter.
+            assert store.get_data_version("dv_mutation") is None
+
+
+# ── Filtered row reads (fix-retrieval-freshness stage 2) ─────────────
+
+
+class TestFilteredDocuments:
+    """Differential contract for bounded filtered row reads."""
+
+    @staticmethod
+    def _seed(store: VectorStore, collection: str = "filtered_docs") -> None:
+        """Write three lineage-tagged rows across two sources."""
+        store.upsert_precomputed(
+            collection,
+            ids=["s1c0", "s1c1", "s2c0"],
+            documents=["source one first", "source one second", "source two first"],
+            metadatas=[
+                {"source_id": "s1", "source_chunk_index": 0, "source_chunk_count": 2},
+                {"source_id": "s1", "source_chunk_index": 1, "source_chunk_count": 2},
+                {"source_id": "s2", "source_chunk_index": 0, "source_chunk_count": 1},
+            ],
+            embeddings=[[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+            embedding_identity=_PRECOMPUTED_IDENTITY,
+        )
+
+    def test_equality_filter_returns_source_rows_with_lineage(self, store: VectorStore) -> None:
+        self._seed(store)
+        rows = list(store.iter_filtered_documents("filtered_docs", {"source_id": "s1"}))
+        assert sorted(row[0] for row in rows) == ["s1c0", "s1c1"]
+        for _row_id, text, metadata in rows:
+            assert metadata["source_id"] == "s1"
+            assert metadata["source_chunk_count"] == 2
+            assert text.startswith("source one")
+
+    def test_compound_equality_filter_ands_keys(self, store: VectorStore) -> None:
+        self._seed(store)
+        rows = list(
+            store.iter_filtered_documents(
+                "filtered_docs", {"source_id": "s1", "source_chunk_index": 1}
+            )
+        )
+        assert [row[0] for row in rows] == ["s1c1"]
+
+    def test_absent_collection_yields_nothing(self, store: VectorStore) -> None:
+        assert list(store.iter_filtered_documents("nope", {"source_id": "s1"})) == []
+
+    def test_no_matches_yields_nothing(self, store: VectorStore) -> None:
+        self._seed(store)
+        assert list(store.iter_filtered_documents("filtered_docs", {"source_id": "absent"})) == []
+
+    def test_empty_filter_rejected(self, store: VectorStore) -> None:
+        """An empty where must raise, never scan the whole collection."""
+        self._seed(store)
+        with pytest.raises(ValueError, match="non-empty where"):
+            list(store.iter_filtered_documents("filtered_docs", {}))
+
+    def test_filter_is_pushed_into_each_backend(self) -> None:
+        """Both adapters must hand the filter to the backend engine.
+
+        Mirrors ``test_lance_query_pins_l2_instead_of_relying_on_default``:
+        the pushdown is a structural property, so pin it in the source
+        rather than hoping a behavioural test catches a Python-side
+        full scan.
+        """
+        import inspect
+
+        from rag_mcp.core.vectordb.lance_paged import LancePagedReadMixin
+        from rag_mcp.core.vectordb.paged import PagedReadMixin
+
+        lance_source = inspect.getsource(LancePagedReadMixin.iter_filtered_documents)
+        assert "translate_where" in lance_source
+        assert "filter=filter_sql" in lance_source
+
+        chroma_source = inspect.getsource(PagedReadMixin.iter_filtered_documents)
+        assert "_chroma_where(where)" in chroma_source
+        assert "where=chroma_where" in chroma_source
+
+
 # ── Dimension locking (spec MUST scenario) ────────────────────────────
 
 
@@ -581,3 +714,87 @@ class TestMissingCollection:
 
     def test_query_dense_missing_empty(self, store: VectorStore) -> None:
         assert store.query_dense("nope", [0.0] * 384, 5) == []
+
+
+# ── ChromaDB where-clause translation ────────────────────────────────
+# CI evidence (PR #80): chromadb rejects multi-key equality dicts
+# ("Expected where to have exactly one operator"), so the store-neutral
+# filter must be wrapped in {"$and": [...]}. These tests pin the
+# translation against a duck-typed collection handle and run in the
+# base install — no chromadb required (ADR-049 keeps it quarantined).
+
+
+class _WhereCapturingCollection:
+    """Duck-typed Chroma collection recording the where clause it received."""
+
+    def __init__(self, rows: list[tuple[str, str, dict]]) -> None:
+        self._rows = rows
+        self.seen_where: list[dict] = []
+
+    def get(self, where: dict, include: list, limit: int, offset: int) -> dict:
+        self.seen_where.append(dict(where))
+        matched = [
+            (row_id, text, meta)
+            for row_id, text, meta in self._rows
+            if all(meta.get(k) == v for k, v in where.items())
+            or (
+                "$and" in where
+                and all(meta.get(k) == v for clause in where["$and"] for k, v in clause.items())
+            )
+        ][offset : offset + limit]
+        return {
+            "ids": [row[0] for row in matched],
+            "documents": [row[1] for row in matched],
+            "metadatas": [row[2] for row in matched],
+        }
+
+
+class _StubPagedStore(PagedReadMixin):
+    """Minimal host satisfying the mixin's supplied-attribute contract."""
+
+    def __init__(self, collection: _WhereCapturingCollection) -> None:
+        self._collection = collection
+
+    def _get_collection(self, name: str):  # noqa: ANN202 - duck-typed host
+        return self._collection
+
+    def _default_page_size(self) -> int:
+        return 100
+
+    def bump_generation(self, name: str) -> None:
+        pass
+
+
+class TestChromaWhereTranslation:
+    ROWS = [
+        ("c0", "alpha", {"source_id": "s1", "source_chunk_index": 0}),
+        ("c1", "beta", {"source_id": "s1", "source_chunk_index": 1}),
+        ("c2", "gamma", {"source_id": "s2", "source_chunk_index": 1}),
+    ]
+
+    def test_single_key_filter_passes_through_unchanged(self) -> None:
+        collection = _WhereCapturingCollection(self.ROWS)
+        store = _StubPagedStore(collection)
+        rows = list(store.iter_filtered_documents("docs", {"source_id": "s1"}))
+        assert collection.seen_where == [{"source_id": "s1"}]
+        assert [row[0] for row in rows] == ["c0", "c1"]
+
+    def test_compound_filter_is_wrapped_in_and(self) -> None:
+        collection = _WhereCapturingCollection(self.ROWS)
+        store = _StubPagedStore(collection)
+        rows = list(
+            store.iter_filtered_documents("docs", {"source_id": "s1", "source_chunk_index": 1})
+        )
+        assert collection.seen_where == [{"$and": [{"source_id": "s1"}, {"source_chunk_index": 1}]}]
+        assert [row[0] for row in rows] == ["c1"]
+
+    def test_compound_filter_key_order_is_preserved(self) -> None:
+        from rag_mcp.core.vectordb.paged import _chroma_where
+
+        where = _chroma_where({"b": 2, "a": 1})
+        assert where == {"$and": [{"b": 2}, {"a": 1}]}
+
+    def test_empty_filter_still_rejected(self) -> None:
+        store = _StubPagedStore(_WhereCapturingCollection(self.ROWS))
+        with pytest.raises(ValueError, match="non-empty where filter"):
+            list(store.iter_filtered_documents("docs", {}))

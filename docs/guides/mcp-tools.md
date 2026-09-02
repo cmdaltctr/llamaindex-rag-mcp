@@ -13,6 +13,7 @@ Semantic similarity search over indexed documents.
 | `similarity_threshold` | float  | `0.0`         | Minimum canonical dense similarity (0.0 = no filtering). Hybrid/no-rerank applies it to dense evidence before RRF; successful reranking uses the calibrated 30× transform.                               |
 | `rerank`               | bool   | `null`        | Tri-state: `true` forces reranking, `false` disables, `null` (default) applies policy resolver based on query type and `RETRIEVAL__RERANK_ENABLED` config                                                |
 | `hybrid`               | bool   | `false`       | Fuse dense vector search with sparse BM25 results via RRF before optional reranking. Defaults to `RETRIEVAL__HYBRID_ENABLED` env var. Use for rare terms, exact identifiers, citations, and error codes. |
+| `expand_window`        | int    | `0`           | Neighbours added per side of each retrieved chunk during context assembly. Expanded neighbours merge into the retrieved chunk. Retrieved rows are never displaced. |
 | `collection`           | string | `"documents"` | Vector-store collection to search                                                                                                                                                                        |
 | `metadata_filter`      | dict   | `null`        | ChromaDB-compatible `where` clause, e.g. `{"category": "AI"}`. It constrains both dense and sparse candidates before fusion.                                                                             |
 | `diagnostics`          | bool   | `false`       | Include core-produced ranking, policy, threshold, reranker, and sparse-backend diagnostics. Keep disabled for lean responses.                                                                            |
@@ -31,6 +32,7 @@ of per-stage retrieval wall-clock durations in seconds:
 | `sparse_seconds`    | Sparse (BM25) search | Hybrid queries only                    |
 | `fusion_seconds`    | RRF fusion           | Hybrid queries only                    |
 | `rerank_seconds`    | Cross-encoder rerank | Reranking ran (success or failure)     |
+| `assembly_seconds`  | Context assembly     | Always (every search assembles results) |
 
 A stage that did not run is absent from the mapping. Absence means "did not
 execute", never "took zero time". No total duration is emitted.
@@ -39,10 +41,43 @@ Dense and sparse stages run concurrently in hybrid mode, so their durations
 overlap. Do not sum `dense_seconds` and `sparse_seconds` to get wall time.
 Compare each stage independently.
 
-Every result includes `score_kind`: `dense_similarity_v1` for dense search,
+Every ranked result includes `score_kind`: `dense_similarity_v1` for dense search,
 `rrf_v1` for non-reranked hybrid fusion, or `reranker_sigmoid_v1` after a
 successful rerank. `similarity_threshold` is never applied directly to an
 `rrf_v1` value.
+
+### Context assembly
+
+Every search runs an assembly stage between final ranking and return
+([ADR-056](../adr/056-lineage-navigation-replaces-a-document-store.md)). The
+stage reshapes returned evidence. It never re-ranks, re-scores, or drops
+evidence.
+
+**Overlap is removed by default.** Adjacent chunks of one source version
+merge into one row. Only the longest exact suffix/prefix match within the
+configured `chunk_overlap` budget is removed. When no exact match fits, the
+texts concatenate without deletion. A merged row's text is a superset of each
+constituent's unique content, so no evidence is lost.
+
+A merged row carries a `chunk_ids` array. It lists the `chunk_id` of every
+constituent chunk in ascending order. Its `source_chunk_index` is the lowest
+constituent index. Its `score` is the best constituent score. Use any listed
+`chunk_id` as a citation; each resolves to exactly one stored chunk. Unmerged
+rows keep the plain `chunk_id` key and gain nothing.
+
+**Neighbour expansion is opt-in.** Set `expand_window` above zero to add each
+retrieved chunk's neighbours to its context. Expansion is bounded by the
+window. Expanded neighbours merge into the retrieved chunk under the merging
+rules above. Retrieved rows are never dropped to honour `top_k` after
+expansion. Rows added purely by expansion were never ranked, so they carry no
+`score` and no `score_kind`.
+
+**The client still owns final context budgeting.** Assembly removes duplicate
+text and can add requested neighbours. It does not truncate to a token limit.
+Count tokens on the returned text before you send it to a model.
+
+When `diagnostics` is `true`, each row also reports `assembly_merged`,
+`assembly_chunk_count`, and `assembly_expanded`.
 
 Every result also carries additive lineage fields: `source_id`,
 `source_version`, `chunk_id`, `source_chunk_index`, and `source_chunk_count`

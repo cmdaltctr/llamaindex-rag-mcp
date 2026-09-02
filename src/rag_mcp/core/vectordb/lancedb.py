@@ -43,6 +43,7 @@ from llama_index.vector_stores.lancedb import (
 
 from .base import VectorStore
 from .identity import EmbeddingIdentity, embedding_identity_from_settings
+from .lance_epoch import LanceDatasetEpochMixin
 from .lance_filter import translate_where
 from .lance_fts import LanceFTSMixin
 from .lance_meta import LanceTableMetadataMixin, infer_arrow_type, metadata_field_names
@@ -56,7 +57,9 @@ from .validation import materialise_and_validate_node_embeddings, validate_embed
 __all__ = ["LanceVectorStore", "build_vector_store_from_settings"]
 
 
-class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMixin, VectorStore):
+class LanceVectorStore(
+    LanceDatasetEpochMixin, LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMixin, VectorStore
+):
     """LanceDB-backed vector store (embedded, local-first).
 
     Wraps a lazily constructed ``lancedb.DBConnection``.  Owns a
@@ -94,13 +97,11 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMix
         self._uri = uri
         self._connection = connection
         self._identity = embedding_identity
-        # Process-local generation counters (BM25 cache invalidation) —
-        # the same contract the ChromaDB store owns.
+        # Process-local generation counters (BM25 cache invalidation).
         self._generations: dict[str, int] = {}
         # Collections created via create_collection but not yet written.
         self._intents: set[str] = set()
-        # Metadata parked for intent-only collections, flushed into the
-        # table's schema metadata on first write.
+        # Metadata parked for intent-only collections; flushed on first write.
         self._pending_metadata: dict[str, dict[str, str]] = {}
 
     # ── Connection / table access ───────────────────────────────────
@@ -206,9 +207,8 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMix
 
         The embedding uses the LlamaIndex global ``Settings.embed_model``
         (assigned by ``compose.ensure_runtime_setup``).  stdout is
-        redirected because the adapter prints a notice to stdout when
-        it lazily creates a table — stdout is the MCP protocol channel
-        and must stay clean.
+        redirected because the adapter prints a notice when it lazily
+        creates a table — stdout is the MCP protocol channel.
 
         The ``metadata`` struct is fixed on the first write, so a batch
         introducing new metadata keys grows the struct first (old rows
@@ -437,6 +437,7 @@ class LanceVectorStore(LanceTableMetadataMixin, LancePagedReadMixin, LanceFTSMix
             raise ValueError(
                 f"delete_where on {collection_name!r} requires a non-empty where filter."
             )
+        self.ensure_dataset_epoch(collection_name)
         table.delete(filter_sql)
         self.bump_generation(collection_name)
 

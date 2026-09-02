@@ -110,7 +110,11 @@ Identity follows the path. A new canonical path is a new logical source, so:
 1. Delete the old path from the collection.
 2. Ingest the destination path.
 
-The system does not track moves or renames. Equal bytes at two paths share
+The watcher applies both steps automatically for a rename inside the watch
+tree (`on_moved`: delete the old path first, then ingest the destination). A
+failed cleanup is retried and reported; the destination is never ingested
+while the old path still holds rows. Manual moves outside a watch tree still
+need the two steps above. Equal bytes at two paths share
 `source_content_hash` but keep different `source_id` values; content is never
 deduplicated.
 
