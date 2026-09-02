@@ -26,6 +26,7 @@ import pytest
 from rag_mcp.core.vectordb.base import VectorStore
 from rag_mcp.core.vectordb.identity import EmbeddingIdentity
 from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from rag_mcp.core.vectordb.paged import PagedReadMixin
 
 # Task 5.1: the ChromaDB adapter import is lazy so this shared contract
 # module collects (and runs every LanceDB parameter) in the base install
@@ -657,7 +658,8 @@ class TestFilteredDocuments:
         assert "filter=filter_sql" in lance_source
 
         chroma_source = inspect.getsource(PagedReadMixin.iter_filtered_documents)
-        assert "where=where" in chroma_source
+        assert "_chroma_where(where)" in chroma_source
+        assert "where=chroma_where" in chroma_source
 
 
 # ── Dimension locking (spec MUST scenario) ────────────────────────────
@@ -712,3 +714,87 @@ class TestMissingCollection:
 
     def test_query_dense_missing_empty(self, store: VectorStore) -> None:
         assert store.query_dense("nope", [0.0] * 384, 5) == []
+
+
+# ── ChromaDB where-clause translation ────────────────────────────────
+# CI evidence (PR #80): chromadb rejects multi-key equality dicts
+# ("Expected where to have exactly one operator"), so the store-neutral
+# filter must be wrapped in {"$and": [...]}. These tests pin the
+# translation against a duck-typed collection handle and run in the
+# base install — no chromadb required (ADR-049 keeps it quarantined).
+
+
+class _WhereCapturingCollection:
+    """Duck-typed Chroma collection recording the where clause it received."""
+
+    def __init__(self, rows: list[tuple[str, str, dict]]) -> None:
+        self._rows = rows
+        self.seen_where: list[dict] = []
+
+    def get(self, where: dict, include: list, limit: int, offset: int) -> dict:
+        self.seen_where.append(dict(where))
+        matched = [
+            (row_id, text, meta)
+            for row_id, text, meta in self._rows
+            if all(meta.get(k) == v for k, v in where.items())
+            or (
+                "$and" in where
+                and all(meta.get(k) == v for clause in where["$and"] for k, v in clause.items())
+            )
+        ][offset : offset + limit]
+        return {
+            "ids": [row[0] for row in matched],
+            "documents": [row[1] for row in matched],
+            "metadatas": [row[2] for row in matched],
+        }
+
+
+class _StubPagedStore(PagedReadMixin):
+    """Minimal host satisfying the mixin's supplied-attribute contract."""
+
+    def __init__(self, collection: _WhereCapturingCollection) -> None:
+        self._collection = collection
+
+    def _get_collection(self, name: str):  # noqa: ANN202 - duck-typed host
+        return self._collection
+
+    def _default_page_size(self) -> int:
+        return 100
+
+    def bump_generation(self, name: str) -> None:
+        pass
+
+
+class TestChromaWhereTranslation:
+    ROWS = [
+        ("c0", "alpha", {"source_id": "s1", "source_chunk_index": 0}),
+        ("c1", "beta", {"source_id": "s1", "source_chunk_index": 1}),
+        ("c2", "gamma", {"source_id": "s2", "source_chunk_index": 1}),
+    ]
+
+    def test_single_key_filter_passes_through_unchanged(self) -> None:
+        collection = _WhereCapturingCollection(self.ROWS)
+        store = _StubPagedStore(collection)
+        rows = list(store.iter_filtered_documents("docs", {"source_id": "s1"}))
+        assert collection.seen_where == [{"source_id": "s1"}]
+        assert [row[0] for row in rows] == ["c0", "c1"]
+
+    def test_compound_filter_is_wrapped_in_and(self) -> None:
+        collection = _WhereCapturingCollection(self.ROWS)
+        store = _StubPagedStore(collection)
+        rows = list(
+            store.iter_filtered_documents("docs", {"source_id": "s1", "source_chunk_index": 1})
+        )
+        assert collection.seen_where == [{"$and": [{"source_id": "s1"}, {"source_chunk_index": 1}]}]
+        assert [row[0] for row in rows] == ["c1"]
+
+    def test_compound_filter_key_order_is_preserved(self) -> None:
+        from rag_mcp.core.vectordb.paged import _chroma_where
+
+        where = _chroma_where({"b": 2, "a": 1})
+        assert where == {"$and": [{"b": 2}, {"a": 1}]}
+
+    def test_empty_filter_still_rejected(self) -> None:
+        store = _StubPagedStore(_WhereCapturingCollection(self.ROWS))
+        with pytest.raises(ValueError, match="non-empty where filter"):
+            list(store.iter_filtered_documents("docs", {}))

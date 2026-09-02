@@ -14,6 +14,26 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _chroma_where(where: dict) -> dict:
+    """Translate a store-neutral equality filter into ChromaDB ``where`` form.
+
+    ChromaDB accepts a single ``{key: value}`` dict as shorthand for one
+    equality condition, but rejects multi-key dicts outright ("Expected
+    where to have exactly one operator"). The store-neutral filtered-read
+    contract passes plain equality dicts, so compound filters are wrapped
+    in ``{"$and": [...]}`` with one clause per key, preserving key order.
+
+    Args:
+        where: Non-empty dict of metadata equality conditions.
+
+    Returns:
+        A ChromaDB-valid ``where`` clause for the same conditions.
+    """
+    if len(where) == 1:
+        return dict(where)
+    return {"$and": [{key: value} for key, value in where.items()]}
+
+
 class PagedReadMixin:
     """Bounded-page reads plus stable-ID deletion over Chroma collections."""
 
@@ -64,15 +84,17 @@ class PagedReadMixin:
     ) -> Iterator[tuple[str, str, dict]]:
         """Yield ``(id, text, metadata)`` rows matching *where*, filter pushed down.
 
-        ``where`` is handed straight to ChromaDB's ``get`` so the
-        server filters before paging — the bounded-read contract the
-        lineage navigator and source-scoped stale selection depend on.
+        ``where`` is a store-neutral equality dict translated to
+        ChromaDB's ``where`` form (multi-key dicts wrapped in
+        ``{"$and": [...]}``) so the server filters before paging —
+        the bounded-read contract the lineage navigator and
+        source-scoped stale selection depend on.
 
         Args:
             collection_name: Collection to read.
-            where: ChromaDB-style filter dict; empty filters are
-                rejected because an unfiltered scan is what
-                ``iter_documents`` is for.
+            where: Non-empty dict of metadata equality conditions;
+                empty filters are rejected because an unfiltered scan
+                is what ``iter_documents`` is for.
             page_size: Optional page size for bounded batches.
 
         Yields:
@@ -87,6 +109,7 @@ class PagedReadMixin:
                 f"iter_filtered_documents on {collection_name!r} requires a "
                 "non-empty where filter; use iter_documents for unfiltered scans."
             )
+        chroma_where = _chroma_where(where)
         collection = self._get_collection(collection_name)
         if collection is None:
             return
@@ -96,7 +119,7 @@ class PagedReadMixin:
         while True:
             batch = collection.get(
                 include=["documents", "metadatas"],
-                where=where,
+                where=chroma_where,
                 limit=effective_page_size,
                 offset=offset,
             )
