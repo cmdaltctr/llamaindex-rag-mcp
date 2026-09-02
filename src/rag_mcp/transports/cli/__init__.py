@@ -55,7 +55,9 @@ def _print_ollama_error(detail: str, json_output: bool = False) -> None:
     if detail:
         msg += f"\n  Detail: {detail}"
     if json_output:
-        typer.echo(json.dumps({"status": "error", "message": msg}))
+        # Gotcha #5: stdout is the MCP protocol channel — every JSON
+        # payload from the CLI goes to stderr.
+        typer.echo(json.dumps({"status": "error", "message": msg}), err=True)
     else:
         console.print(f"[red]Error:[/red] {msg}")
 

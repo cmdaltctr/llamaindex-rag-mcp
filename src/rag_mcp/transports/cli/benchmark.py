@@ -136,7 +136,7 @@ def benchmark(
     }
 
     if json_output:
-        typer.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2), err=True)
         return
 
     table = Table(title="Embedding Benchmark Results")

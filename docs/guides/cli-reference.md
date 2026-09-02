@@ -25,7 +25,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | Flag                 | Applies to                                               | Description                                                          |
 | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
 | `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`, `answer`  | Collection name in the selected vector store (default `"documents"`) |
-| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete`, `answer` | Output results as JSON                                      |
+| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete`, `answer` | Output results as JSON (written to stderr like all CLI output; stdout stays the MCP protocol channel) |
 | `--chunk-size`       | `ingest`                                                 | Override chunk size (characters)                                     |
 | `--chunk-overlap`    | `ingest`                                                 | Override chunk overlap (characters)                                  |
 | `--report`, `-r`     | `ingest`                                                 | Write ingestion report to a file                                     |

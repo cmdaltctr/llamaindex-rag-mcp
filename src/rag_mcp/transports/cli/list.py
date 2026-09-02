@@ -30,13 +30,13 @@ def list_cmd(
 
     if not docs:
         if json_output:
-            typer.echo("[]")
+            typer.echo("[]", err=True)
         else:
             console.print("[yellow]No indexed documents.[/yellow]")
         return
 
     if json_output:
-        typer.echo(json.dumps(docs, indent=2))
+        typer.echo(json.dumps(docs, indent=2), err=True)
         return
 
     table = Table(title="Indexed Documents")
@@ -68,13 +68,13 @@ def list_collections_cmd(
 
     if not collections:
         if json_output:
-            typer.echo("[]")
+            typer.echo("[]", err=True)
         else:
             console.print("[yellow]No collections found.[/yellow]")
         return
 
     if json_output:
-        typer.echo(json.dumps(collections, indent=2))
+        typer.echo(json.dumps(collections, indent=2), err=True)
         return
 
     table = Table(title="ChromaDB Collections")

@@ -85,7 +85,7 @@ def _delete_by_collection(coll_name, dry_run, yes, preview_delete, remove_collec
 def _print_delete_result(result, coll_name, json_output, dry_run) -> None:
     """Display delete command results."""
     if json_output:
-        typer.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2), err=True)
         return
 
     if result.get("status") == "error":

@@ -91,13 +91,15 @@ def search(
 
     if not results:
         if json_output:
-            typer.echo("[]")
+            typer.echo("[]", err=True)
         else:
             console.print("[yellow]No results found.[/yellow]")
         return
 
     if json_output:
-        typer.echo(json.dumps(results, indent=2))
+        # Gotcha #5: stdout is the MCP protocol channel — the JSON
+        # payload goes to stderr.
+        typer.echo(json.dumps(results, indent=2), err=True)
         return
 
     table = Table(title="Search Results")
