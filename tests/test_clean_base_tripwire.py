@@ -34,7 +34,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 2174  # Includes document-backend registry + orchestrator pins,
+_BASE_EXECUTED = 2178  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -65,6 +65,9 @@ _BASE_EXECUTED = 2174  # Includes document-backend registry + orchestrator pins,
 # Re-baselined at fix-retrieval-freshness-and-context-assembly-2 stage 7:
 # stage 6 (watcher move handling + source-scoped stale selection) added
 # four watcher-move cases after the stage-5 baseline was cut.
+# Re-baselined for the CI ChromaDB fix: the $and-wrapping fix added
+# four duck-typed where-translation cases to the vectordb contract
+# suite (2174 -> 2178).
 _BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
 # (47 vectordb-contract, 19 chunk-lineage-navigation, 13
 # embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
