@@ -357,7 +357,9 @@ def _metrics(rows: list[dict[str, Any]], *, verdict_of: Any = None) -> dict[str,
     per_class: dict[str, dict[str, int]] = {}
     for row in rows:
         verdict = row["verdict"] if verdict_of is None else verdict_of(row)
-        bucket = per_class.setdefault(row["attack_class"], {"correct": 0, "total": 0})
+        bucket = per_class.setdefault(
+            row["attack_class"], {"correct": 0, "total": 0, "wrongly_rejected": 0, "supported": 0}
+        )
         bucket["total"] += 1
         if verdict is None:
             unparseable += 1
@@ -369,11 +371,14 @@ def _metrics(rows: list[dict[str, Any]], *, verdict_of: Any = None) -> dict[str,
                 bucket["correct"] += 1
             else:
                 fn += 1
-        elif flagged:
-            fp += 1
         else:
-            tn += 1
-            bucket["correct"] += 1
+            bucket["supported"] += 1
+            if flagged:
+                fp += 1
+                bucket["wrongly_rejected"] += 1
+            else:
+                tn += 1
+                bucket["correct"] += 1
     unsupported_total, supported_total = tp + fn, fp + tn
     precision = tp / (tp + fp) if tp + fp else 0.0
     recall = tp / unsupported_total if unsupported_total else 0.0
@@ -389,6 +394,15 @@ def _metrics(rows: list[dict[str, Any]], *, verdict_of: Any = None) -> dict[str,
         "per_class_recall": {
             cls: round(bucket["correct"] / bucket["total"], 4) if bucket["total"] else 0.0
             for cls, bucket in sorted(per_class.items())
+        },
+        # Per-class false rejection (supported classes only): the
+        # protocol's paraphrase gate is evaluated on this field.
+        "per_class_false_rejection": {
+            cls: round(bucket["wrongly_rejected"] / bucket["supported"], 4)
+            if bucket["supported"]
+            else None
+            for cls, bucket in sorted(per_class.items())
+            if bucket["supported"]
         },
     }
 
@@ -428,19 +442,50 @@ def _aggregate_cell(cell: dict[str, Any], thresholds: list[float]) -> dict[str, 
         sweep: dict[str, Any] = {}
         for threshold in thresholds:
             sweep[f"{threshold:.1f}"] = _metrics(rows, verdict_of=_verdict_at_threshold(threshold))
-        # Best threshold for the H2 gap comparison: highest unsupported
-        # recall, ties broken by lower supported false rejection.  Chosen
-        # on the eval set itself — legitimate here because lexical is the
-        # negative control (the gate needs lexical at its BEST).
-        best_key = max(
-            sweep,
-            key=lambda key: (
-                sweep[key]["unsupported_recall"],
-                -sweep[key]["supported_false_rejection"],
-            ),
-        )
+        # H2 operating point (protocol amendment 2026-09-02): the lexical
+        # baseline is compared to the judge AT THE JUDGE'S OWN CONSTRAINT —
+        # highest unsupported recall among thresholds whose supported false
+        # rejection is <= 0.10.  An unconstrained maximum makes H2 vacuous:
+        # lexical could trade any false-rejection budget for recall and cap
+        # the judge's possible gap below the required 0.20.  Both operating
+        # points are recorded; the constrained one is the H2 reference.
+        eligible = [
+            key for key, metrics in sweep.items() if metrics["supported_false_rejection"] <= 0.10
+        ]
+
+        def _pick(keys: list[str]) -> str | None:
+            if not keys:
+                return None
+            return max(
+                keys,
+                key=lambda key: (
+                    sweep[key]["unsupported_recall"],
+                    -sweep[key]["supported_false_rejection"],
+                ),
+            )
+
+        constrained_key = _pick(eligible)
+        unconstrained_key = _pick(list(sweep))
+        if constrained_key is not None:
+            summary["best_threshold"] = {
+                "threshold": constrained_key,
+                "constraint": "supported_false_rejection <= 0.10",
+                **sweep[constrained_key],
+            }
+        else:
+            # No threshold qualifies: record the unconstrained point and a
+            # null constraint so the summariser cannot mistake it for the
+            # H2 reference.
+            summary["best_threshold"] = {
+                "threshold": unconstrained_key,
+                "constraint": None,
+                **sweep[unconstrained_key],
+            }
+        summary["best_threshold_unconstrained"] = {
+            "threshold": unconstrained_key,
+            **sweep[unconstrained_key],
+        }
         summary["threshold_sweep"] = sweep
-        summary["best_threshold"] = {"threshold": best_key, **sweep[best_key]}
     else:
         summary["metrics"] = _metrics(rows)
         summary["est_tokens_total"] = sum(row.get("est_tokens", 0) for row in rows)

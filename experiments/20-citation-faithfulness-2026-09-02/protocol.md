@@ -78,14 +78,21 @@ verification of existing outputs only.
 
 Triple construction:
 
-1. **Faithful:** run the answer pipeline over corpus questions; keep answers
-   whose citations the operator judges supported (human label).
+1. **Faithful:** fact sentences A and B verbatim from each corpus file as
+   extractive supported controls (amendment 1, 2026-09-02 — the original
+   plan derived these from answer-pipeline outputs with human labels;
+   extractive construction makes labels deterministic by construction;
+   pipeline-derived faithful claims are a follow-up validation set before
+   any H1-based deployment decision).
 2. **Adversarial-unsupported** (mirrors F4's attack classes):
-   contradicted claim citing real evidence; invented claim citing a real
-   ordinal from a different question; swapped evidence (citation text
-   replaced with evidence for another query, claim unchanged).
+   contradicted claim citing real evidence (explicitly exclusive "instead
+   of" flip of one fact slot); invented claim — a purely additive
+   fabrication paired with its own real file, the F4 shape where the
+   citation resolves to genuine lineage that simply does not entail the
+   claim; swapped evidence (citation text replaced with evidence for
+   another query, claim unchanged).
 3. **Neutral-hard:** paraphrased supported claims (tests the judge does not
-   fail on wording change).
+   fail on wording change; the named institution stays the agent).
 
 Labels are written by the operator BEFORE any verifier runs.
 
@@ -174,9 +181,43 @@ never silently counted as either class).
 | Criterion | Threshold | Why this threshold matters |
 | --- | ---: | --- |
 | Unsupported recall (20B) | `>= 0.80` | misses one in five or fewer attacks — a real gate, not theatre |
+| Per-class recall (20B) | `>= 0.80` each for contradicted, invented, swapped | aggregate recall is gameable: swapped and invented are lexically trivial, so 0.80 overall passes while missing most contradicted claims (amendment 2) |
 | Supported false rejection (20B) | `<= 0.10` | rejecting correct answers erodes trust faster than it builds it |
-| Lexical gap (20A vs 20B) | `>= 0.20` recall | confirms semantic judgement is required |
+| Paraphrase false rejection (20B) | `<= 0.10` | the FR gate must hold on the wording-change class, not just on verbatim faithful claims (amendment 2) |
+| Lexical gap (20A vs 20B) | `>= 0.20` recall | confirms semantic judgement is required; the lexical operating point is its best threshold subject to the same `<= 0.10` false-rejection budget the judge must satisfy (amendment 2) |
 | P95 latency (20B) | `<= 5 s` per claim | keeps the answer tool responsive when gating `ok` |
+
+### Amendments (pre-registered changes; all made 2026-09-02 after the lexical control arm, before any judge run)
+
+1. **Faithful construction (corpus section above).** The committed dataset
+   uses verbatim corpus sentences, not pipeline-derived answers with human
+   labels — deterministic labels, and pipeline-derived faithful claims
+   remain a required validation set before any deployment decision built
+   on H1.
+2. **Gate strengthening and the H2 operating point.** The lexical control
+   arm showed (a) aggregate recall 0.80 is reachable while detecting only
+   4/20 contradicted claims (swapped and invented are lexically trivial),
+   and (b) an unconstrained lexical best threshold (recall 0.95 at 0.267
+   false rejection) caps the judge's possible gap at 0.05, making the
+   original H2 formulation vacuous. Gates added/tightened as in the table
+   above; the runner records both lexical operating points and names the
+   constrained one as the H2 reference. Tightening a gate after seeing
+   only the control arm, blind to the treatment arm, strengthens rather
+   than games the pre-registration.
+3. **Contradicted exclusivity.** The first dataset revision used bare
+   slot flips ("every Thursday" against "every Tuesday") that can coexist
+   with the evidence; all non-exclusive contradicted claims were reworded
+   with explicit "instead of" contrast (audit finding, 2026-09-02). Five
+   invented claims that flipped stated slots were reworded to purely
+   additive fabrications, and thirteen paraphrases were reworded to keep
+   the named institution as agent.
+4. **Declined: a hard-swapped stratum** (swapped pairs with topically
+   related evidence). This corpus is intentionally entity-disjoint per
+   file; only one related pair exists (harbour ↔ meridian via golden
+   query q12), which cannot support a stratum. Recorded as a known
+   limitation: if 20B passes with suspiciously easy swapped detection,
+   rebuild the corpus with related-file structure before trusting the
+   swapped class.
 
 ## Interpretation rules
 
