@@ -570,3 +570,188 @@ class TestFailureMessagesAreActionable:
             for field in missing:
                 assert field in msg
             assert "SearchResult" in msg
+
+
+# ── add-grounded-answer-synthesis-3 (task 6.2): answer contract ──────────
+
+_ANSWER_PATH = "/collections/{collection}/answer"
+
+
+def _load_full_contract() -> tuple[dict, dict]:
+    """Return ``(paths, component_schemas)`` from the OpenAPI contract."""
+    with _OPENAPI_PATH.open(encoding="utf-8") as fh:
+        doc = yaml.safe_load(fh)
+    return doc.get("paths", {}), doc.get("components", {}).get("schemas", {})
+
+
+class TestAnswerCollectionConformance:
+    """The answering endpoint and its schemas are declared in the contract."""
+
+    def test_answer_path_and_operation_are_declared(self) -> None:
+        """POST ``/collections/{collection}/answer`` exists as ``answerCollection``."""
+        paths, _ = _load_full_contract()
+
+        entry = paths.get(_ANSWER_PATH)
+        assert entry is not None, (
+            f"{_ANSWER_PATH} is missing from openapi.yaml paths. Add the "
+            f"POST operation for the answering endpoint (task 6.1)."
+        )
+        post = entry.get("post", {})
+        assert post.get("operationId") == "answerCollection", (
+            f"{_ANSWER_PATH} POST operationId must be 'answerCollection', "
+            f"got {post.get('operationId')!r}."
+        )
+
+    def test_answer_response_schema_covers_status_enum_and_blocks(self) -> None:
+        """``AnswerResponse`` declares every block and the full status enum."""
+        _, schemas = _load_full_contract()
+
+        response = schemas.get("AnswerResponse")
+        assert response is not None, "AnswerResponse schema is missing from openapi.yaml."
+        props = response.get("properties", {})
+        for field in (
+            "status",
+            "query",
+            "answer",
+            "citations",
+            "evidence",
+            "failure_stage",
+            "error",
+            "completion_source",
+        ):
+            assert field in props, f"AnswerResponse.properties is missing {field!r}."
+
+        status_enum = props.get("status", {}).get("enum", [])
+        for value in ("ok", "no_evidence", "generation_unverified", "error"):
+            assert value in status_enum, (
+                f"AnswerResponse.status enum is missing {value!r}; the "
+                f"no-evidence shape is part of the contract."
+            )
+
+        citations_ref = str(props.get("citations", {}).get("items", {}).get("$ref", ""))
+        assert citations_ref.endswith("/AnswerCitation"), (
+            "AnswerResponse.citations must reference the AnswerCitation schema."
+        )
+        evidence_ref = str(props.get("evidence", {}).get("items", {}).get("$ref", ""))
+        assert evidence_ref.endswith("/AnswerEvidence"), (
+            "AnswerResponse.evidence must reference the AnswerEvidence schema."
+        )
+
+    def test_answer_citation_evidence_and_diagnostics_schemas(self) -> None:
+        """``AnswerCitation``, ``AnswerEvidence`` and ``AnswerDiagnostics`` exist."""
+        _, schemas = _load_full_contract()
+
+        citation = schemas.get("AnswerCitation")
+        assert citation is not None, "AnswerCitation schema is missing from openapi.yaml."
+        for field in (
+            "ordinal",
+            "chunk_id",
+            "chunk_ids",
+            "source_id",
+            "source_version",
+            "source",
+            "source_chunk_index",
+            "score",
+            "score_kind",
+        ):
+            assert field in citation.get("properties", {}), (
+                f"AnswerCitation.properties is missing {field!r}."
+            )
+
+        evidence = schemas.get("AnswerEvidence")
+        assert evidence is not None, "AnswerEvidence schema is missing from openapi.yaml."
+        for field in (*citation.get("properties", {}), "text"):
+            assert field in evidence.get("properties", {}), (
+                f"AnswerEvidence.properties is missing {field!r} (evidence adds "
+                f"the chunk text to the citation lineage)."
+            )
+
+        diagnostics = schemas.get("AnswerDiagnostics")
+        assert diagnostics is not None, "AnswerDiagnostics schema is missing from openapi.yaml."
+        for field in ("retrieval_ms", "generation_ms", "completion_calls"):
+            assert field in diagnostics.get("properties", {}), (
+                f"AnswerDiagnostics.properties is missing {field!r}."
+            )
+
+    def test_answer_request_limits_mirror_core(self) -> None:
+        """The published request bounds equal the core-enforced limits.
+
+        Core rejects out-of-bounds values at the ``answer()`` entry
+        (every transport inherits); the contract must not advertise a
+        wider range than core accepts, or clients would build requests
+        that always fail.
+        """
+        from rag_mcp.core.answer.pipeline import (
+            _EXPAND_WINDOW_MAX,
+            _QUERY_MAX_CHARS,
+            _TOP_K_MAX,
+        )
+
+        _, schemas = _load_full_contract()
+        props = schemas["AnswerRequest"]["properties"]
+        assert props["query"]["maxLength"] == _QUERY_MAX_CHARS
+        assert props["top_k"]["minimum"] == 1
+        assert props["top_k"]["maximum"] == _TOP_K_MAX
+        assert props["expand_window"]["minimum"] == 0
+        assert props["expand_window"]["maximum"] == _EXPAND_WINDOW_MAX
+        threshold = props["similarity_threshold"]
+        assert threshold["minimum"] == 0
+        assert threshold["maximum"] == 1
+
+    def test_failure_stage_enum_accepts_json_null(self) -> None:
+        """Representative runtime failure responses validate against the schema.
+
+        Core returns a Python ``None`` ``failure_stage`` for every
+        non-attributed outcome (no_evidence, ok, provider-absent errors),
+        so the enum must contain YAML ``null`` — the literal string
+        ``"null"`` would reject those responses at validation time.
+        """
+        _, schemas = _load_full_contract()
+        prop = schemas["AnswerResponse"]["properties"]["failure_stage"]
+        enum = prop.get("enum", [])
+        allowed_types = prop.get("type", [])
+
+        assert "null" not in enum, (
+            "AnswerResponse.failure_stage enum contains the literal string "
+            "'null'; runtime responses carry JSON null, which would fail "
+            "validation. Use YAML null in the enum."
+        )
+        assert None in enum, (
+            "AnswerResponse.failure_stage enum does not accept JSON null, "
+            "but core emits failure_stage null for non-attributed outcomes."
+        )
+
+        # Representative runtime responses (core's result skeleton): a
+        # provider-absent error carries failure_stage null; a generation
+        # failure carries a concrete stage.
+        provider_absent = {
+            "status": "error",
+            "query": "what changed",
+            "answer": None,
+            "citations": [],
+            "evidence": [],
+            "failure_stage": None,
+            "error": "No answer model is configured for grounded answering.",
+            "completion_source": "none",
+        }
+        generation_failure = dict(
+            provider_absent,
+            failure_stage="generation",
+            error="Generation failed: ConnectionError: ollama unreachable",
+        )
+        response_props = schemas["AnswerResponse"].get("properties", {})
+        response_required = schemas["AnswerResponse"].get("required", [])
+
+        for response in (provider_absent, generation_failure):
+            stage = response["failure_stage"]
+            assert stage in enum, f"runtime failure_stage {stage!r} is not permitted by the enum."
+            json_type = "null" if stage is None else "string"
+            assert json_type in allowed_types, (
+                f"failure_stage type list must include {json_type!r} for runtime value {stage!r}."
+            )
+            assert set(response) <= set(response_props), (
+                "Representative response carries fields the schema does not declare."
+            )
+            assert set(response_required) <= set(response), (
+                "Representative response is missing a schema-required field."
+            )

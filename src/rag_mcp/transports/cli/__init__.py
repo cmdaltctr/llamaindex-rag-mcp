@@ -219,6 +219,7 @@ def run_cli() -> None:
 # ── Register all command groups ───────────────────────────────────────────
 # Importing these modules registers their ``@app.command()`` decorators.
 from . import (  # noqa: E402,F401
+    answer,
     benchmark,
     delete,
     ingest,

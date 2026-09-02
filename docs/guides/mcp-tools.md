@@ -1,6 +1,6 @@
 # MCP Tools Reference
 
-Seven tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
+Eight tools are exposed over the MCP protocol. All parameters are optional except where marked _(required)_.
 
 ## `search_documents`
 
@@ -86,6 +86,92 @@ rows stored without lineage, such as experiment precomputed rows. The
 internal attempt-specific vector row ID is not exposed; use `chunk_id` as the
 stable per-chunk reference, and `source_id` plus `source_version` to select
 one complete source version.
+
+## `answer_documents`
+
+Answer a question from the indexed documents with deterministic, verifiable
+citations ([ADR-057](../adr/057-answering-is-additive-and-injected.md)). This
+is the first query-time generation path: it performs one or more
+language-model completion calls. Retrieval is cheaper. Use
+[`search_documents`](#search_documents) when you only need ranked chunks.
+
+| Parameter              | Type   | Default         | Description                                                                                            |
+| ---------------------- | ------ | --------------- | ------------------------------------------------------------------------------------------------------ |
+| `query`                | string | _(required)_    | Natural language question                                                                              |
+| `top_k`                | int    | profile default | Maximum chunks used as evidence                                                                        |
+| `similarity_threshold` | float  | `0.0`           | Minimum evidence score. Same semantics as `search_documents`                                           |
+| `rerank`               | bool   | `null`          | Tri-state rerank control. Same semantics as `search_documents`                                         |
+| `hybrid`               | bool   | `null`          | Tri-state hybrid retrieval control. Same semantics as `search_documents`                               |
+| `expand_window`        | int    | `0`             | Neighbours merged into each evidence chunk during context assembly                                     |
+| `diagnostics`          | bool   | `false`         | Include retrieval and generation timings, and the completion-call count                                |
+| `collection`           | string | `"documents"`   | Collection to answer over                                                                              |
+| `metadata_filter`      | dict   | `null`          | ChromaDB-compatible `where` clause restricting the evidence, e.g. `{"category": "AI"}`                 |
+
+Retrieval runs through the same profile-resolved path as
+`search_documents`. The answer is synthesised only from the retrieved
+evidence. Synthesis uses LlamaIndex COMPACT mode, which packs the evidence
+into as few completion calls as the context allows and may refine across more
+calls. Rounds are bounded by `ANSWER__MAX_ROUNDS` (1–8; the client-sampling
+path caps at 4). Each round gets a per-round context budget in characters
+(`ANSWER__CONTEXT_WINDOW`). Later rounds may widen that budget, but never
+past a hard character ceiling (262,144). At the ceiling, the lowest-ranked
+evidence is dropped or trimmed first, and the prompt carries a truncation
+notice.
+
+### Statuses
+
+| Status                  | Meaning                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `ok`                    | The answer carries at least one verifiable citation                                                                 |
+| `no_evidence`           | Retrieval found nothing. Returned before any model call — no completion runs, whatever the provider configuration |
+| `generation_unverified` | The model produced a non-empty answer with no valid citation. Never reported as `ok`. The evidence is still returned |
+| `error`                 | A stage failed. `failure_stage` separates `retrieval` from `generation`; `error` carries the message. The tool never raises |
+
+### Result shape
+
+Every result carries `query`, `answer`, `citations[]`, `evidence[]`,
+`failure_stage` (`retrieval`, `generation`, or `null`), `error`, and
+`completion_source`. With `diagnostics: true`, a `diagnostics` object adds
+`retrieval_ms`, `generation_ms`, and `completion_calls`.
+
+Citations and evidence rows carry `ordinal`, `chunk_id`, `chunk_ids`,
+`source_id`, `source_version`, `source`, `source_chunk_index`, `score`, and
+`score_kind`. Evidence rows also carry `text`.
+
+### Completion source
+
+`completion_source` names the model that produced the answer:
+
+| Value           | Model that ran                                                                                                                                                                          |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client_mrtr`   | The MCP client's own model, through the bounded multi-round resolver chain. Modern session (protocol ≥ 2026-07-28) with the sampling capability and `ANSWER__PREFER_CLIENT_SAMPLING=true` |
+| `client_legacy` | The client's model through the deprecated `create_message` back-channel. Runs only on a negotiated pre-2026-07-28 session with `ANSWER__ALLOW_LEGACY_SAMPLING=true`. Never runs on a modern session |
+| `server`        | The configured server model (`ANSWER__PROVIDER` / `ANSWER__MODEL`), resolved through the same LLM registry as metadata extraction                                                        |
+| `none`          | No model ran (`no_evidence`, or an error)                                                                                                                                                |
+
+With evidence but no model available from either side, the tool returns an
+actionable error. The error names `ANSWER__PROVIDER` and `ANSWER__MODEL`,
+and the client-sampling alternative.
+
+### Citation verifiability
+
+Citations are built from chunk lineage, never from model-invented
+identifiers. A `chunk_id` the model invents, or an ordinal outside the
+supplied range, is discarded. Malformed and duplicate ordinals are dropped or
+deduped. Every cited `chunk_id` re-fetches exactly one stored chunk by
+metadata filter. A merged row lists every constituent `chunk_id`, so any
+listed id resolves to one stored chunk. A non-empty answer with no valid
+citation is `generation_unverified`, never `ok`.
+
+### Prompt-injection caveat
+
+The prompt is a fixed instruction block. Retrieved text is presented as
+quoted sources inside it. This does not eliminate prompt injection from
+ingested content — the risk is inherent to retrieval-augmented generation.
+It is mitigated, not solved. Treat ingested content as untrusted input.
+
+Configuration: the `ANSWER__*` variables. See
+[Configuration](configuration.md#answering--answer__).
 
 ## `ingest_documents`
 

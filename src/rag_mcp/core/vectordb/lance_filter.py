@@ -1,20 +1,40 @@
 """ChromaDB ``where`` clause translation for LanceDB filters.
 
 Translates the ChromaDB-style ``where`` dict (the shape the MCP
-``search_documents`` tool advertises) into a LanceDB SQL filter string.
+``search_documents`` and ``answer_documents`` tools advertise) into a
+LanceDB SQL filter string.
 
-Construction safety (design decision DD2): every VALUE is serialised by
-the ``lancedb.expr`` literal builder — ``lit(value).to_sql()`` — whose
-unparser performs the engine's own quoting (verified: a single quote
-becomes ``'a''b"c.py'``).  Field names are validated against a
-conservative identifier grammar and then backtick-quoted, and the
-operator vocabulary is a fixed internal set, so neither half of any
-comparison is built by interpolating client input.  A full expression
-tree per leaf is not possible: ``lancedb.expr`` (0.37.1) has no struct
-field access, and the adapter stores user metadata inside an Arrow
-``metadata`` struct, so filters must reference ``metadata.<field>``
-paths that ``col()`` would quote as a single identifier.  Values still
-flow exclusively through the type-safe literal builder.
+Construction safety (design decision DD2 of the archived
+``add-lancedb-vectordb-backend`` change, ADR-046): every VALUE is
+serialised by the ``lancedb.expr`` literal builder —
+``lit(value).to_sql()`` — whose unparser performs the engine's own
+quoting.  Field names are validated against a conservative identifier
+grammar and then backtick-quoted, and the operator vocabulary is a
+fixed internal set, so neither half of any comparison is built by
+interpolating client input.  A full expression tree per leaf is not
+possible in the locked version: ``lancedb.expr`` (0.37.1) has no struct
+field access (``col("metadata.tag")`` is one quoted identifier naming a
+column, verified live), the adapter stores user metadata inside an
+Arrow ``metadata`` struct whose ``metadata.<field>`` paths ``col()``
+cannot express, and LanceDB offers no bind-parameter API — ``where()``
+takes a SQL string or an ``Expr`` that is itself serialised to SQL.
+
+Fail-closed verification (security finding F1): the engine's unparser
+is treated as untrusted.  Every serialised fragment is checked against
+a closed form per value type, and string fragments are re-decoded with
+the standard SQL literal grammar and compared to the original value.
+This is not theoretical: on lancedb 0.37.1, ``lit("''").to_sql()`` is
+``''''`` — the engine parses it as ONE apostrophe, so an unverified
+filter on a double-apostrophe value silently matches the WRONG row —
+and a backslash directly before an apostrophe emits ``\'`` undoubled,
+which is unfaithful under every decode convention.  Values the engine
+cannot serialise faithfully are refused with an actionable
+``ValueError`` rather than emitted.
+
+Structural bounds (findings F1/F2): client filters are untrusted
+input, so nesting depth (10), comparison-clause count (50),
+``$in``/``$nin`` list length (100), and serialised length (8192
+characters) are each capped with a ``ValueError`` naming the limit.
 
 Null semantics (ChromaDB parity): Arrow struct fields are nullable, and
 ChromaDB treats a missing metadata key on a row as "not equal" — so
@@ -36,6 +56,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from datetime import date, datetime
+from decimal import Decimal
 
 from lancedb.expr import lit
 
@@ -63,22 +85,125 @@ _ABSENT_MATCHES_OPS = frozenset({"$ne", "$nin"})
 # Dots are excluded deliberately: the dot is the struct path separator.
 _FIELD_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
 
+# Structural complexity bounds (security findings F1/F2): client filters
+# are untrusted input, so depth, clause count, membership-list length,
+# and serialised size are each capped with an actionable ValueError.
+# The serialised cap also bounds every value length by construction.
+_MAX_FILTER_DEPTH = 10
+_MAX_CLAUSE_COUNT = 50
+_MAX_IN_LIST_LENGTH = 100
+_MAX_FILTER_SQL_LENGTH = 8192
+
+
+def _decode_single_quoted_literal(fragment: str) -> str | None:
+    """Decode *fragment* as exactly one standard-grammar SQL literal.
+
+    A literal opens with ``'``, closes with a ``'`` that is not doubled,
+    and an interior ``''`` decodes to one ``'``.  Returns ``None`` when
+    the fragment is not exactly one well-formed literal — including a
+    literal that closes early or ends on a doubled pair.
+
+    Args:
+        fragment: The candidate SQL fragment.
+
+    Returns:
+        The decoded literal value, or ``None`` when the fragment is not
+        exactly one well-formed quoted literal.
+    """
+    if len(fragment) < 2 or fragment[0] != "'" or fragment[-1] != "'":
+        return None
+    chars: list[str] = []
+    i = 1
+    last = len(fragment) - 1
+    while i < last:
+        if fragment[i] == "'":
+            if fragment[i + 1] == "'":
+                chars.append("'")
+                i += 2
+                continue
+            return None  # closes early or is a stray quote
+        chars.append(fragment[i])
+        i += 1
+    return "".join(chars) if i == last else None
+
+
+# Closed serialisation forms per value type.  Anything the engine's
+# unparser emits outside these forms is refused (fail closed).
+_BOOL_FORMS = frozenset({"true", "false"})
+_INT_FORM = re.compile(r"-?\d+")
+_NUMERIC_FORM = re.compile(r"-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
+_FLOAT_SPECIAL_FORMS = frozenset({"inf", "-inf", "NaN"})
+_BYTES_FORM = re.compile(r"X'([0-9a-fA-F]*)'")
+_CAST_FORM = re.compile(r"CAST\('([^']*)' AS (?:DATE|TIMESTAMP)\)")
+
+
+def _is_faithful_literal(value: object, sql: str) -> bool:
+    """Check the engine's serialisation against a closed form per type.
+
+    Args:
+        value: The original comparison value handed to ``lit``.
+        sql: The fragment the engine's unparser produced.
+
+    Returns:
+        True only when *sql* is a well-formed, faithful serialisation
+        of *value* for its type.  ``bool`` is checked before ``int``
+        because ``bool`` subclasses ``int``.
+    """
+    if isinstance(value, bool):
+        return sql in _BOOL_FORMS
+    if isinstance(value, int):
+        return _INT_FORM.fullmatch(sql) is not None
+    if isinstance(value, float):
+        return sql in _FLOAT_SPECIAL_FORMS or _NUMERIC_FORM.fullmatch(sql) is not None
+    if isinstance(value, Decimal):
+        return _NUMERIC_FORM.fullmatch(sql) is not None
+    if isinstance(value, str):
+        decoded = _decode_single_quoted_literal(sql)
+        return decoded is not None and decoded == value
+    if isinstance(value, bytes):
+        match = _BYTES_FORM.fullmatch(sql)
+        return match is not None and bytes.fromhex(match.group(1)) == value
+    if isinstance(value, (date, datetime)):
+        return _CAST_FORM.fullmatch(sql) is not None
+    return False
+
 
 def _literal_sql(value: object) -> str:
     """Serialise one value through the type-safe literal builder.
+
+    The engine's unparser output is verified against a closed form per
+    value type (and, for strings, decoded back and compared to the
+    original value) before it is allowed into a filter.  The engine has
+    demonstrated mis-serialisation classes — apostrophe runs collapse,
+    and a backslash before an apostrophe emits ``\'`` undoubled — so an
+    unverified fragment is a wrong-row or broken-SQL hazard, and this
+    boundary refuses it.
 
     Args:
         value: A scalar supported by ``lit`` (bool/int/float/str/bytes/
             date/datetime/Decimal).
 
     Returns:
-        The engine-quoted SQL literal.
+        The verified, engine-quoted SQL literal.
 
     Raises:
         TypeError: When ``lit`` rejects the value's type — the trust
             boundary that keeps structured values from reaching SQL.
+        ValueError: When the engine's serialisation fails the closed-
+            form or round-trip check.  The filter is refused rather
+            than emitted with an unfaithful literal.
     """
-    return lit(value).to_sql()
+    sql = lit(value).to_sql()
+    if not _is_faithful_literal(value, sql):
+        raise ValueError(
+            "metadata_filter value cannot be serialised safely: the engine's "
+            f"literal builder returned an unfaithful fragment for a "
+            f"{type(value).__name__} value (sample {str(value)[:60]!r}). "
+            "Refusing to build the filter; values containing runs of "
+            "apostrophes, or a backslash directly before an apostrophe, are "
+            "known to be affected."
+        )
+    return sql
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -119,12 +244,35 @@ def _field_sql(field: str, metadata_column: str | None) -> str:
     return f"{_quote_identifier(metadata_column)}.{_quote_identifier(field)}"
 
 
+class _ClauseCounter:
+    """Running comparison-clause count across a whole filter tree.
+
+    Charging past :data:`_MAX_CLAUSE_COUNT` raises immediately, so a
+    client cannot buy unbounded predicate work with a wide filter.
+    """
+
+    __slots__ = ("count",)
+
+    def __init__(self) -> None:
+        self.count = 0
+
+    def charge(self) -> None:
+        """Count one comparison leaf, refusing the tree past the cap."""
+        self.count += 1
+        if self.count > _MAX_CLAUSE_COUNT:
+            raise ValueError(
+                f"metadata_filter has more than {_MAX_CLAUSE_COUNT} comparison "
+                "clauses. Split the filter into separate queries."
+            )
+
+
 def _leaf(
     field: str,
     op: str,
     value: object,
     metadata_column: str | None,
     known_fields: frozenset[str] | None,
+    counter: _ClauseCounter,
 ) -> str:
     """Build one field/operator/value comparison as SQL.
 
@@ -136,13 +284,16 @@ def _leaf(
         known_fields: Field names present in the table's schema, when
             the caller knows them.  Predicates on any other field fold
             to the ChromaDB absent-field constant.
+        counter: The tree-wide clause counter (charged once per leaf).
 
     Returns:
         The SQL predicate string.
 
     Raises:
-        ValueError: When ``$in``/``$nin`` receives a non-list value.
+        ValueError: When ``$in``/``$nin`` receives a non-list value or a
+            list longer than :data:`_MAX_IN_LIST_LENGTH`.
     """
+    counter.charge()
     if known_fields is not None and field not in known_fields:
         # ChromaDB parity: the planner would reject the reference
         # ("Field ... not found in struct"), so fold it to the
@@ -159,6 +310,11 @@ def _leaf(
     if op in ("$in", "$nin"):
         if not isinstance(value, (list, tuple)):
             raise ValueError(f"{op} requires a list of values, got {type(value).__name__}.")
+        if len(value) > _MAX_IN_LIST_LENGTH:
+            raise ValueError(
+                f"{op} list exceeds the maximum of {_MAX_IN_LIST_LENGTH} entries "
+                f"(got {len(value)})."
+            )
         elements = ", ".join(_literal_sql(item) for item in value)
         if not elements:
             # An empty $in matches nothing; an empty $nin matches everything.
@@ -175,6 +331,7 @@ def _field_predicate(
     value: object,
     metadata_column: str | None,
     known_fields: frozenset[str] | None,
+    counter: _ClauseCounter,
 ) -> str:
     """Build the predicate for one ``field: value`` entry.
 
@@ -199,9 +356,9 @@ def _field_predicate(
                     f"Boolean operator {op!r} is only valid at the top level of "
                     "a where clause, not inside a field's operator dict."
                 )
-            parts.append(_leaf(field, op, operand, metadata_column, known_fields))
+            parts.append(_leaf(field, op, operand, metadata_column, known_fields, counter))
         return f"({' AND '.join(parts)})"
-    return _leaf(field, "$eq", value, metadata_column, known_fields)
+    return _leaf(field, "$eq", value, metadata_column, known_fields, counter)
 
 
 def translate_where(
@@ -211,6 +368,10 @@ def translate_where(
     known_fields: frozenset[str] | set[str] | None = None,
 ) -> str | None:
     """Translate a ChromaDB ``where`` dict into a LanceDB SQL filter.
+
+    Enforces the structural bounds — nesting depth, clause count,
+    membership-list length, and serialised length — with actionable
+    ``ValueError`` messages naming the limit that was crossed.
 
     Args:
         where: The ChromaDB-style filter dict, or ``None``.
@@ -228,30 +389,63 @@ def translate_where(
         empty (no filtering).
 
     Raises:
-        ValueError: On an unsupported operator, an unsafe field name,
-            or a malformed clause.
+        ValueError: On an unsupported operator, an unsafe field name, a
+            malformed clause, a crossed structural bound, or a value
+            the engine's literal builder cannot serialise faithfully.
         TypeError: When a value's type is rejected by the literal
             builder (lists, dicts, ``None`` as a bare value).
     """
     if not where:
         return None
     fields = frozenset(known_fields) if known_fields is not None else None
+    counter = _ClauseCounter()
+    result = _translate(
+        where, metadata_column=metadata_column, fields=fields, depth=1, counter=counter
+    )
+    if result is not None and len(result) > _MAX_FILTER_SQL_LENGTH:
+        raise ValueError(
+            f"metadata_filter serialises to {len(result)} characters, above the "
+            f"maximum of {_MAX_FILTER_SQL_LENGTH}. Reduce the filter's size or "
+            "its list lengths."
+        )
+    return result
+
+
+def _translate(
+    where: dict,
+    *,
+    metadata_column: str | None,
+    fields: frozenset[str] | None,
+    depth: int,
+    counter: _ClauseCounter,
+) -> str:
+    """Recursive translation core carrying depth and clause budget.
+
+    Raises:
+        ValueError: When the nesting depth exceeds
+            :data:`_MAX_FILTER_DEPTH`.
+    """
+    if depth > _MAX_FILTER_DEPTH:
+        raise ValueError(
+            f"metadata_filter nesting exceeds the maximum depth of {_MAX_FILTER_DEPTH}."
+        )
     parts: list[str] = []
     for key, value in where.items():
-        if key == "$and":
-            clauses = " AND ".join(
-                translate_where(clause, metadata_column=metadata_column, known_fields=fields)
-                for clause in _require_clause_list(key, value)
-            )
-            parts.append(f"({clauses})" if clauses else "true")
-        elif key == "$or":
-            clauses = " OR ".join(
-                translate_where(clause, metadata_column=metadata_column, known_fields=fields)
+        if key in ("$and", "$or"):
+            joiner = " AND " if key == "$and" else " OR "
+            clauses = joiner.join(
+                _translate(
+                    clause,
+                    metadata_column=metadata_column,
+                    fields=fields,
+                    depth=depth + 1,
+                    counter=counter,
+                )
                 for clause in _require_clause_list(key, value)
             )
             parts.append(f"({clauses})" if clauses else "true")
         else:
-            parts.append(_field_predicate(key, value, metadata_column, fields))
+            parts.append(_field_predicate(key, value, metadata_column, fields, counter))
     return f"({' AND '.join(parts)})" if len(parts) > 1 else parts[0]
 
 

@@ -65,6 +65,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         populated from *settings*.
     """
     from .core.settings import (
+        AnswerBlock,
         ChunkingBlock,
         EffectiveSettings,
         EmbeddingBlock,
@@ -93,6 +94,7 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
             }
         ),
         metadata=MetadataBlock(**settings.metadata.model_dump()),
+        answer=AnswerBlock(**settings.answer.model_dump()),
         profile_name=settings.rag_profile,
         chroma_persist_dir=settings.chroma_persist_dir,
         collection_name=settings.collection_name,
@@ -247,6 +249,11 @@ def storage_summary(settings: Settings | None = None) -> str:
     return _summary_storage(settings)
 
 
+# Answer-model builder lives in a sibling module (task 2.9: this module
+# sits at the 500-line ceiling); re-exported here because the composition
+# root is the sanctioned construction surface.
+from .compose_answer import build_answer_llm  # noqa: E402,F401
+
 # Backward-compatible import surface (existing callers/tests).
 from .core.vectordb.summary import storage_summary as _summary_storage  # noqa: E402
 
@@ -342,6 +349,21 @@ def _resolve_active_strategies(settings: Settings) -> None:
             else settings.local_backend
         )
         active.append(("llm", llm_registry, llm_backend))
+
+    # The answer LLM resolves through the same registry: validate the
+    # configured provider name fail-fast (task 3.4) so a typo in
+    # ANSWER__PROVIDER surfaces at startup, not at first answer.  Only
+    # the NAME is validated here — resolving the callable would import
+    # the provider module eagerly; ``build_answer_llm`` stays lazy and
+    # tolerates a missing optional dependency (retrieval-only startup).
+    if settings.answer.enabled:
+        _answer_name = settings.answer.provider.strip()
+        if _answer_name and _answer_name not in llm_registry.available():
+            raise ValueError(
+                f"ANSWER__PROVIDER={settings.answer.provider!r} is not a "
+                "registered LLM provider. Available: "
+                f"{', '.join(llm_registry.available())}."
+            )
 
     for label, registry, name in active:
         if label == "chunking" and name == "markdown":

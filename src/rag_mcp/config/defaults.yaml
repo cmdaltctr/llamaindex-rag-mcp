@@ -69,6 +69,27 @@ metadata:
   # null (unset) and falls back to the shared value above; set one here or
   # via METADATA__<NAME> only on the machine that needs different tuning.
 
+# ── Grounded answering ────────────────────────────────────────────────
+# Server-level configuration for the answering operation (answer_documents
+# tool, `rag-mcp answer` CLI command). ANSWER__PROVIDER resolves through
+# the LLM provider registry (ollama, llamacpp, openrouter) and is
+# validated at startup. context_window is a per-round context budget in
+# CHARACTERS (deterministic character count, not a token estimate).
+answer:
+  enabled: true
+  provider: ollama
+  model: "qwen3:4b"
+  timeout: 120.0
+  max_rounds: 4
+  context_window: 8192
+  max_output_tokens: 2048
+  # Prefer the MCP client's model (MRTR) over the server model when the
+  # client advertises sampling.
+  prefer_client_sampling: true
+  # Deprecated create_message back-channel, allowed ONLY on a negotiated
+  # pre-2026-07-28 session.
+  allow_legacy_sampling: true
+
 # ── Storage (cross-cutting, flat) ─────────────────────────────────────
 CHROMA_PERSIST_DIR: ./chroma_db
 COLLECTION_NAME: documents

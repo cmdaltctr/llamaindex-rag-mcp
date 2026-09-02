@@ -7,6 +7,7 @@ Tools
 -----
 - ingest_documents       – index a file / directory into the RAG store
 - search_documents       – semantic search over the indexed documents
+- answer_documents       – grounded answering with verifiable citations
 - list_indexed_documents – show what's currently in the store
 - list_collections       – list all ChromaDB collections with counts
 - delete_documents       – remove documents by path, metadata filter, or drop collection
@@ -157,6 +158,7 @@ if __name__ == "__main__":
 # at the bottom because ``mcp`` must exist before the decorators run; the
 # ``noqa`` suppresses E402 (module-level import not at top) and F401 (imported
 # but unused — the names are re-exports).
+from .answer import answer_documents  # noqa: E402,F401
 from .codebase import get_codebase_map  # noqa: E402,F401
 from .delete import delete_documents  # noqa: E402,F401
 from .ingest import ingest_documents  # noqa: E402,F401

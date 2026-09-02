@@ -98,6 +98,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  # ── Grounded answering ───────────────────────────────────────────────
+  /collections/{collection}/answer:
+    post:
+      operationId: answerCollection
+      summary: Answer a question from retrieved evidence with citations
+      description: >
+        Retrieves evidence through the same profile-resolved path as
+        search, then synthesises a grounded answer (one or more
+        language-model completion calls). Citations are constructed
+        deterministically from chunk lineage: every cited chunk_id
+        re-fetches exactly one stored chunk. When retrieval finds
+        nothing the response carries the no_evidence shape rather than
+        an error; retrieval and generation failures are attributed
+        separately via failure_stage.
+      parameters:
+        - $ref: "#/components/parameters/CollectionName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerRequest"
+      responses:
+        "200":
+          description: Grounded answer result (including the no-evidence shape)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   # ── List documents ───────────────────────────────────────────────────
   /collections/{collection}/documents:
     get:
@@ -593,6 +629,266 @@ components:
             format: float
 
     # ── Document info ──────────────────────────────────────────────────
+    AnswerRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          maxLength: 4096
+          description: Natural language question to answer.
+        top_k:
+          type:
+            - integer
+            - "null"
+          minimum: 1
+          maximum: 100
+          description: >
+            Maximum chunks to use as evidence. Resolved from the
+            collection profile when omitted.
+        similarity_threshold:
+          type:
+            - number
+            - "null"
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Minimum evidence score (0.0 = no filtering).
+        rerank:
+          type:
+            - boolean
+            - "null"
+          description: >
+            Re-score evidence with the cross-encoder reranker. Resolved
+            from the collection profile when omitted.
+        hybrid:
+          type:
+            - boolean
+            - "null"
+          description: >
+            Fuse dense + sparse retrieval. Resolved from the collection
+            profile when omitted.
+        expand_window:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 0
+          description: >
+            Neighbours merged into each evidence chunk during context
+            assembly.
+        metadata_filter:
+          type:
+            - object
+            - "null"
+          description: ChromaDB-compatible `where` clause for evidence filtering
+          additionalProperties: true
+
+    AnswerResponse:
+      type: object
+      required:
+        - status
+        - query
+        - answer
+        - citations
+        - evidence
+        - failure_stage
+        - error
+        - completion_source
+      properties:
+        status:
+          type: string
+          enum: [ok, no_evidence, generation_unverified, error]
+          description: >
+            ok = grounded answer with at least one valid citation.
+            no_evidence = retrieval found nothing (no model call made).
+            generation_unverified = answer text present but no valid
+            citation; the evidence is still returned. error = see
+            failure_stage and error.
+        query:
+          type: string
+        answer:
+          type:
+            - string
+            - "null"
+          description: >
+            The synthesised answer text (null for no_evidence, retrieval
+            failure, and provider-absent errors).
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerCitation"
+          description: >
+            Deterministic citations built from supplied chunk lineage.
+            Empty for no_evidence; a substantive answer with no valid
+            citation yields an empty list and status
+            generation_unverified.
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerEvidence"
+          description: >
+            Every chunk supplied as context, retained even on generation
+            failure so the caller keeps the evidence.
+        failure_stage:
+          type:
+            - string
+            - "null"
+          enum: [retrieval, generation, null]
+          description: >
+            Which stage failed (null unless status is error). retrieval =
+            the language model was never called.
+        error:
+          type:
+            - string
+            - "null"
+          description: >
+            Actionable message; the provider-absent case names the
+            configuration to set.
+        completion_source:
+          type: string
+          description: >
+            Which model completed the answer: server, client_mrtr,
+            client_legacy, or none.
+        diagnostics:
+          $ref: "#/components/schemas/AnswerDiagnostics"
+          description: >
+            Present only when diagnostics were requested.
+
+    AnswerCitation:
+      type: object
+      required:
+        - ordinal
+        - chunk_id
+        - chunk_ids
+        - source_id
+        - source_version
+        - source
+        - source_chunk_index
+      properties:
+        ordinal:
+          type: integer
+          minimum: 1
+          description: The 1-based supplied-source number the model cited.
+        chunk_id:
+          type:
+            - string
+            - "null"
+          description: >
+            The merged row's representative chunk id; re-fetches exactly
+            one stored chunk by metadata filter.
+        chunk_ids:
+          type: array
+          items:
+            type: string
+          description: >
+            Every constituent chunk id when context assembly merged
+            rows; a single-element list otherwise.
+        source_id:
+          type:
+            - string
+            - "null"
+        source_version:
+          type:
+            - string
+            - "null"
+        source:
+          type:
+            - string
+            - "null"
+        source_chunk_index:
+          type:
+            - integer
+            - "null"
+        score:
+          type:
+            - number
+            - "null"
+          format: float
+        score_kind:
+          type:
+            - string
+            - "null"
+
+    AnswerEvidence:
+      type: object
+      description: >
+        One chunk supplied as context — the citation lineage plus the
+        ordinal it was labelled with in the prompt and the chunk text.
+      required:
+        - ordinal
+        - chunk_id
+        - chunk_ids
+        - source_id
+        - source_version
+        - source
+        - source_chunk_index
+        - text
+      properties:
+        ordinal:
+          type: integer
+          minimum: 1
+          description: >
+            The 1-based position of this chunk in the supplied context;
+            the number citations refer to.
+        chunk_id:
+          type:
+            - string
+            - "null"
+        chunk_ids:
+          type: array
+          items:
+            type: string
+        source_id:
+          type:
+            - string
+            - "null"
+        source_version:
+          type:
+            - string
+            - "null"
+        source:
+          type:
+            - string
+            - "null"
+        source_chunk_index:
+          type:
+            - integer
+            - "null"
+        score:
+          type:
+            - number
+            - "null"
+          format: float
+        score_kind:
+          type:
+            - string
+            - "null"
+        text:
+          type: string
+
+    AnswerDiagnostics:
+      type: object
+      required:
+        - retrieval_ms
+        - generation_ms
+        - completion_calls
+      properties:
+        retrieval_ms:
+          type: number
+          format: float
+          description: Duration of the retrieval stage in milliseconds.
+        generation_ms:
+          type: number
+          format: float
+          description: Duration of the generation stage in milliseconds.
+        completion_calls:
+          type: integer
+          minimum: 0
+          description: >
+            Number of language-model completion rounds made (bounded by
+            the answer configuration).
+
     DocumentInfo:
       type: object
       properties:

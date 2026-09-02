@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
+from ..core.answer.settings import AnswerSettings
 from ..core.chunking.settings import ChunkingSettings
 from ..core.ingestion.settings import IngestionSettings
 from ..core.metadata.settings import MetadataSettings
@@ -135,6 +136,7 @@ class Settings(StorageValidationMixin, BaseSettings):
     embedding: EmbeddingSettings = EmbeddingSettings()
     retrieval: RetrievalSettings = RetrievalSettings()
     metadata: MetadataSettings = MetadataSettings()
+    answer: AnswerSettings = AnswerSettings()
 
     # ── Storage ────────────────────────────────────────────────────
     chroma_persist_dir: str = "./chroma_db"

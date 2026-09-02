@@ -212,6 +212,10 @@ source_modules = [
     "rag_mcp.core.codebase",
     "rag_mcp.core.documents",
     "rag_mcp.core.community",
+    # add-grounded-answer-synthesis-3 task 3.5: answering is core business
+    # logic with an injected LLM seam (design D1) — it must never import a
+    # provider or transport module directly, with NO ignore entry.
+    "rag_mcp.core.answer",
     "rag_mcp.daemon",
 ]
 forbidden_modules = [

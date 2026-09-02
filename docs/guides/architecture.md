@@ -309,7 +309,7 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 
 ### `transports/` — exposes it
 
-- `transports/mcp/` — the MCP server, seven tools, over stdio (split by tool)
+- `transports/mcp/` — the MCP server, eight tools, over stdio (split by tool)
 - `transports/cli/` — the `rag-mcp` command, one file per command group
 - `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
   deliberately: the contract is published before anything implements it.

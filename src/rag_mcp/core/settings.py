@@ -169,6 +169,32 @@ class MetadataBlock(BaseModel):
     taxonomy_mode: str = "category"
 
 
+class AnswerBlock(BaseModel):
+    """Answering knobs carried in :attr:`EffectiveSettings.answer`.
+
+    Mirrors :class:`rag_mcp.core.answer.settings.AnswerSettings` (the
+    config-side model); both must stay in sync — the MetadataBlock/
+    MetadataSettings pair established the convention.  Answering is
+    server-level configuration: the profile resolver does not overlay
+    these fields per collection.
+    """
+
+    # Frozen like the parent: EffectiveSettings.model_copy shares block
+    # instances by reference between overlays, so a mutable block would
+    # let one operation silently rewrite another's configuration.
+    model_config = ConfigDict(frozen=True)
+
+    enabled: bool = True
+    provider: str = "ollama"
+    model: str = "qwen3:4b"
+    timeout: float = Field(default=120.0, gt=0)
+    max_rounds: int = Field(default=4, ge=1, le=8)
+    context_window: int = Field(default=8192, gt=0)
+    max_output_tokens: int = Field(default=2048, gt=0)
+    prefer_client_sampling: bool = True
+    allow_legacy_sampling: bool = True
+
+
 class EffectiveSettings(BaseModel):
     """Frozen settings value object threaded through all ``core/`` operations.
 
@@ -193,6 +219,7 @@ class EffectiveSettings(BaseModel):
     embedding: EmbeddingBlock = EmbeddingBlock()
     retrieval: RetrievalBlock = RetrievalBlock()
     metadata: MetadataBlock = MetadataBlock()
+    answer: AnswerBlock = AnswerBlock()
 
     # ── Profile identity ──────────────────────────────────────────
     profile_name: str = "documents"
