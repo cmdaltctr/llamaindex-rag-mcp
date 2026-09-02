@@ -1,0 +1,3 @@
+Source identifier: source-14-nimbus.
+Nimbus Centre backs up climate sensors every six hours to the Slate Archive.
+The backup operator checks a green checksum report.

@@ -3,7 +3,7 @@
 **ID**: `20-citation-faithfulness-2026-09-02`
 **Date planned**: 2026-09-02
 **Operator**: Dr Muhammad Aizat with build agent (scaffold only; not run)
-**Status**: PLANNED
+**Status**: READY TO RUN (ground truth and runner written 2026-09-02; operator review of `ground-truth.json` is the gate before the first judge run)
 **Relation**: `openspec/changes/add-grounded-answer-synthesis-3` — task 7.2 (recorded follow-up experiment) and security-review finding F4 (referential-only `ok` status)
 
 ---
@@ -138,12 +138,36 @@ Stop rules:
 
 ## Procedure / reproduction commands
 
-Not yet written — the runner (`run_eval.py`) is written together with
-`ground-truth.json` in Phase 3/4, per the s-experiment protocol (ground
-truth and success criteria come first; both are in this file). The runner
-will follow the canonical pattern: per-cell atomic checkpoints
-(`eval_results_checkpoint.json`), `--resume`, `--methods lexical,judge-local`,
-results to `eval_results.json`.
+The runner (`run_eval.py`) and frozen triple set (`ground-truth.json`) were
+written together per the s-experiment protocol (ground truth first).  The
+runner validates the triple set against this protocol's gates (≥ 100 triples,
+≥ 40% unsupported, ≥ 30 adversarial, evidence byte-identical to `corpus/`)
+before any verifier runs, and checkpoints per triple so an interrupted judge
+cell resumes without repeating model calls.
+
+```bash
+# Sanity checks before running
+uv sync
+ollama list          # qwen3:4b pulled; note a second model for cell 20C
+
+# Cell 20A — lexical negative control (no model; already computed, resumable)
+PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+  --methods lexical
+
+# Cell 20B — primary judge gate (the configured answer model, qwen3:4b)
+PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+  --methods judge-local --resume 2>&1 | tee -a experiments/20-citation-faithfulness-2026-09-02/output/run_eval.log
+
+# Cell 20C — cross-model diagnostic (only if 20B passes H1)
+PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+  --methods judge-cross --cross-model <second-local-model> --resume
+```
+
+Judge cells build through the production provider registry (the same
+resolution path as `compose.build_answer_llm`) with temperature pinned to 0;
+replies are stripped of `<think>` blocks and parsed for strict JSON, with one
+retry before a verdict is recorded as unparseable (reported separately,
+never silently counted as either class).
 
 ## Success criteria / pass gates
 

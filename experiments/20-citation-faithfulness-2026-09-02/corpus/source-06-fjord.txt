@@ -1,0 +1,3 @@
+Source identifier: source-06-fjord.
+Fjord Clinic stores vaccine lot VX-81 in locker seven at minus seventy degrees Celsius.
+Two temperature probes monitor the locker.

@@ -1,0 +1,3 @@
+Source identifier: source-04-delta.
+Delta Observatory maps comet Nereid with a 2.4 metre mirror.
+Its night team verifies the map against three reference stars.
