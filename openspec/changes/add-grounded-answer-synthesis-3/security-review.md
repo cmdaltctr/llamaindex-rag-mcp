@@ -32,7 +32,7 @@ Local Aikido MCP re-scan: **attempted, blocked, then deferred by user decision**
 
 ### Remaining ship gates (user decision required)
 
-1. **F1 policy exception.** The engine offers no parameterised path; values are engine-quoted, independently verified, and fail closed. Options: (a) approve a documented exception to the parameterised-query invariant for the LanceDB filter adapter; (b) drop `metadata_filter` from the answer path only; (c) schedule a metadata schema redesign as its own change. **Status: pending — the user is sizing option (c).**
+1. **F1 policy exception.** The engine offers no parameterised path; values are engine-quoted, independently verified, and fail closed. Options: (a) approve a documented exception to the parameterised-query invariant for the LanceDB filter adapter; (b) drop `metadata_filter` from the answer path only; (c) schedule a metadata schema redesign as its own change. **Status: RESOLVED IN PRINCIPLE, DEFERRED 2026-09-02 — the user chose option (a); the acceptance proposal `openspec/changes/accept-lancedb-filter-policy-exception/` is drafted and validates strict. Implementation and archiving happen later per user decision.**
 2. **Scanner false-positive ratification.** ~~No user-approved rationale exists to lower that floor.~~ **RESOLVED 2026-09-02: the user accepted the triage — the 73 gitleaks records (72 SHA-256 model-file hashes, one process-lock UUID) are approved false positives. The deterministic floor no longer blocks this change.**
 3. **Local Aikido re-scan.** ~~Restart the Aikido MCP host to trigger the rules download, then re-run.~~ **DEFERRED by user decision 2026-09-02 — to be fixed and re-run later; not a release gate for this change.**
 
