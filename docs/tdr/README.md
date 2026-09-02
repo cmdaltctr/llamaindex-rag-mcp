@@ -45,6 +45,8 @@ architecture), see the [ADR index](../adr/).
 | 017 | [Restore root logging state after MCP entry-point tests](017-restore-root-logging-after-mcp-entry-point-tests.md)                                   | Accepted                                                           | 2026-08-30 |
 | 018 | [`monkeypatch.setattr` on a submodule name is a silent no-op](018-monkeypatch-on-submodule-name-is-silent-no-op.md)                                 | Accepted                                                           | 2026-08-31 |
 | 019 | [Markdown formatter damages continuation lines in list items](019-markdown-formatter-damages-continuation-lines-in-lists.md)                        | Accepted                                                           | 2026-09-01 |
+| 020 | [Permanent `sys.modules` eviction in laziness tests poisons later real imports](020-sys-modules-eviction-in-lazeness-tests-poisons-later-imports.md)| Accepted                                                           | 2026-09-01 |
+| 021 | [Release notes must ride a `BREAKING CHANGE` footer on an included commit type](021-release-notes-ride-breaking-change-footer-on-included-commit-type.md)| Accepted                                                           | 2026-09-01 |
 
 ## Status values
 
