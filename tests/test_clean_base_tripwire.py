@@ -45,7 +45,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # stream/hybrid/no-evidence cases, conformance null-and-limits pins,
 # and CLI failure-path coverage (2224 -> 2363), plus the similarity
 # threshold finiteness case (2364).
-_BASE_EXECUTED = 2364  # Includes document-backend registry + orchestrator pins,
+_BASE_EXECUTED = 2371  # Re-baselined after the conftest embedding-registry
+# patch was extended to test_answer_transport_cli.py: the five answer-CLI
+# ingestion tests that previously failed in CI (no Ollama) now pass,
+# raising the base count by 7 (2364 -> 2371). The embedding-registry
+# patch already covered test_cli.py; the answer transport CLI tests
+# perform the same real-ingestion path and needed the same MockEmbedding
+# redirect. Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -85,7 +91,10 @@ _BASE_EXECUTED = 2364  # Includes document-backend registry + orchestrator pins,
 # seven-tool discovery rename, plus five CLI transport cases for
 # `rag-mcp answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
+_BASE_SKIPPED = 120  # Re-baselined with _BASE_EXECUTED: the conftest
+# embedding-registry patch extension and the poison_llm fixture fix moved
+# 7 tests from skipped to passed (127 -> 120). self-ignored run: base
+# skips incl. chroma-gated files
 # (47 vectordb-contract, 19 chunk-lineage-navigation, 13
 # embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
 # plus the compose/metadata-extractor/lancedb/experiment/chroma-cloud

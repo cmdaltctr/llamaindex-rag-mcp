@@ -70,7 +70,14 @@ class _PoisonLLM(MockLLM):
 
 @pytest.fixture
 def poison_llm():
-    """Install the poison LLM on the shared settings, then restore it."""
+    """Install the poison LLM on the shared settings, then restore it.
+
+    A ``MockLLM`` is installed first so that reading ``Settings.llm`` does
+    not trigger ``resolve_llm("default")``, which would try to construct an
+    OpenAI LLM and require ``OPENAI_API_KEY``. In CI that key is absent, so
+    the resolution raises ``ValueError`` at fixture setup.
+    """
+    Settings.llm = MockLLM()
     original = Settings.llm
     Settings.llm = _PoisonLLM()
     yield Settings.llm
