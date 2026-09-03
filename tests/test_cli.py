@@ -143,12 +143,15 @@ class TestPrintOllamaError:
             assert "Ollama" in call_arg
 
     def test_json_output(self) -> None:
-        """JSON mode outputs valid JSON with status 'error'."""
-        # Capture stdout
-        captured = StringIO()
-        with patch("sys.stdout", captured):
+        """JSON mode outputs valid JSON with status 'error' on stderr."""
+        # Capture stderr (gotcha #5: JSON never goes to stdout) and
+        # stdout separately to prove the stream split.
+        captured_err = StringIO()
+        captured_out = StringIO()
+        with patch("sys.stderr", captured_err), patch("sys.stdout", captured_out):
             _print_ollama_error("Connection refused", json_output=True)
-        data = json.loads(captured.getvalue())
+        data = json.loads(captured_err.getvalue())
+        assert captured_out.getvalue() == "", "JSON error output must not write to stdout"
         assert data["status"] == "error"
         assert "Ollama" in data["message"]
 
@@ -198,7 +201,7 @@ class TestIngestCLI:
         """--json flag produces valid JSON with expected keys."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stderr)
         assert data["status"] == "ok"
         assert "files_indexed" in data
         assert "chunks_created" in data
@@ -279,7 +282,7 @@ class TestSearchCLI:
         """Search --json on empty store returns '[]'."""
         result = runner.invoke(app, ["search", "quantum computing", "--json"])
         assert result.exit_code == 0
-        assert result.output.strip() == "[]"
+        assert result.stderr.strip() == "[]"
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_search_json_results(self, mock_signal: MagicMock, sample_txt: Path) -> None:
@@ -289,7 +292,7 @@ class TestSearchCLI:
         # Then search
         result = runner.invoke(app, ["search", "capital of France", "--json"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stderr)
         assert isinstance(data, list)
         assert len(data) > 0
         for r in data:
@@ -413,7 +416,7 @@ class TestListCLI:
         """List --json on empty store returns '[]'."""
         result = runner.invoke(app, ["list", "--json"])
         assert result.exit_code == 0
-        assert result.output.strip() == "[]"
+        assert result.stderr.strip() == "[]"
 
     @patch("rag_mcp.transports.cli.ingest.signal.signal")
     def test_list_json_with_docs(self, mock_signal: MagicMock, sample_txt: Path) -> None:
@@ -421,7 +424,7 @@ class TestListCLI:
         runner.invoke(app, ["ingest", str(sample_txt)])
         result = runner.invoke(app, ["list", "--json"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stderr)
         assert isinstance(data, list)
         assert len(data) > 0
         for doc in data:
@@ -466,7 +469,7 @@ class TestListCLI:
             result = runner.invoke(app, ["list", "--json"])
 
         assert result.exit_code == 0
-        assert json.loads(result.output) == rows
+        assert json.loads(result.stderr) == rows
 
     def test_list_help_defines_machine_local_orphan_status(self) -> None:
         """List help states that orphan status is machine-local."""
@@ -630,7 +633,7 @@ class TestIngestErrorHandling:
             try:
                 result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
                 assert result.exit_code == 130
-                data = json.loads(result.output)
+                data = json.loads(result.stderr)
                 assert data.get("interrupted") is True
             finally:
                 _shutdown_requested.clear()
@@ -665,7 +668,7 @@ class TestIngestErrorHandling:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path", "--json"])
             assert result.exit_code == 1
-            data = json.loads(result.output)
+            data = json.loads(result.stderr)
             assert data["status"] == "error"
             assert "Ollama" in data["message"]
 
@@ -703,7 +706,7 @@ class TestSearchErrorHandling:
             )
 
         assert result.exit_code == 0
-        assert json.loads(result.output) == result_payload
+        assert json.loads(result.stderr) == result_payload
         mock_search.assert_called_once_with(
             "cli query",
             top_k=2,
@@ -734,7 +737,7 @@ class TestSearchErrorHandling:
             result = runner.invoke(app, ["search", "cli query", "--json"])
 
         assert result.exit_code == 0
-        assert json.loads(result.output) == result_payload
+        assert json.loads(result.stderr) == result_payload
         mock_search.assert_called_once_with(
             "cli query",
             top_k=_gs().retrieval.top_k,
@@ -823,7 +826,7 @@ class TestSearchErrorHandling:
             result = runner.invoke(app, arguments)
 
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stderr)
         assert observed == [enabled]
         assert ("dense_rank" in data[0]) is enabled
         assert ("sparse_rank" in data[0]) is enabled
@@ -873,7 +876,7 @@ class TestSearchErrorHandling:
             )
 
         assert result.exit_code == 0
-        assert json.loads(result.output) == result_payload
+        assert json.loads(result.stderr) == result_payload
         assert mock_search.call_args.kwargs["hybrid"] is True
 
     def test_search_connection_error(self) -> None:
@@ -903,7 +906,7 @@ class TestSearchErrorHandling:
             mock_search.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["search", "test query", "--json"])
             assert result.exit_code == 1
-            data = json.loads(result.output)
+            data = json.loads(result.stderr)
             assert data["status"] == "error"
 
 
@@ -1887,7 +1890,7 @@ class TestListCollectionsCLI:
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
         assert result.exit_code == 0
-        assert result.output.strip() == "[]"
+        assert result.stderr.strip() == "[]"
 
     def test_list_collections_non_empty(self) -> None:
         """Non-empty result renders a Rich table with collection names."""
@@ -1917,7 +1920,7 @@ class TestListCollectionsCLI:
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
         assert result.exit_code == 0
-        data = json.loads(result.output)
+        data = json.loads(result.stderr)
         assert isinstance(data, list)
         assert len(data) == 1
         assert data[0]["name"] == "documents"

@@ -393,6 +393,25 @@ file replacement before any write), warn-and-continue at query (results stay ava
 | `hybrid_rrf_k` | `60` | Rank-fusion constant ([ADR-017](../adr/017-hybrid-retrieval-rrf.md)) |
 | `hybrid_sparse_backend` | `bm25` | Sparse backend for hybrid search: `bm25`, `native`, or `auto`. Registry-owned validation at the composition boundary; unknown names fail startup listing `auto` plus the registered backends. See [Reranker](reranker.md#sparse-retrieval-backends-hybrid-search) |
 
+### Answering — `ANSWER__*`
+
+The grounded answering operation (`rag-mcp answer`, the `answer_documents`
+MCP tool, and the HTTP contract). It performs one or more completion calls at
+query time. See [MCP tools](mcp-tools.md#answer_documents) and
+[ADR-057](../adr/057-answering-is-additive-and-injected.md).
+
+| Field | Default | What it does |
+|---|---|---|
+| `enabled` | `true` | Master switch. `false` makes the server model resolve to `None`; the answering tools then return an actionable error |
+| `provider` | `ollama` | LLM provider, resolved through the same registry as metadata extraction. Unknown names fail startup |
+| `model` | `qwen3:4b` | Model tag, passed to the provider builder as an `answer_model` override so answering never reuses the small metadata-classification model |
+| `timeout` | `120.0` | Seconds to wait for one completion round |
+| `max_rounds` | `4` | Maximum COMPACT refinement rounds (1–8; the client-sampling path caps at 4). Later rounds widen the per-round budget up to a hard character ceiling (262,144); overflow evidence is dropped lowest-ranked first |
+| `context_window` | `8192` | Per-round context budget in **characters** — a deterministic count, not a token estimate |
+| `max_output_tokens` | `2048` | Reserved head-room for the model's reply inside one round's budget |
+| `prefer_client_sampling` | `true` | Prefer the MCP client's model over the server model when the client advertises the sampling capability |
+| `allow_legacy_sampling` | `true` | Allow the deprecated sampling back-channel only on a negotiated pre-2026-07-28 session. Never on a modern session |
+
 ### Metadata — `METADATA__*`
 
 | Field | Default | What it does |

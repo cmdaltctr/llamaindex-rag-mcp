@@ -69,7 +69,8 @@ class TestPreviewAndConfirm:
         with c, a as apply_mock, r:
             result = runner.invoke(app, ["set-profile", "-c", "docs", "-p", "codebase", "--json"])
         assert result.exit_code == 0
-        payload = json.loads(result.stdout)
+        payload = json.loads(result.stderr)
+        assert result.stdout.strip() == "", "--json output must not write to stdout"
         assert payload["new_profile"] == "codebase"
         apply_mock.assert_not_called()
 

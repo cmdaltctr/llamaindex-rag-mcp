@@ -153,7 +153,7 @@ def _root_logging_leak_guard() -> Iterator[None]:
 # ── Tool discovery ─────────────────────────────────────────────────────────
 
 
-async def test_list_tools_discovers_all_seven(mcp_server) -> None:
+async def test_list_tools_discovers_all_eight(mcp_server) -> None:
     """The server must expose all expected tools."""
     async with connected_client(mcp_server) as client:
         result = await client.list_tools()
@@ -161,6 +161,7 @@ async def test_list_tools_discovers_all_seven(mcp_server) -> None:
         assert tool_names == {
             "ingest_documents",
             "search_documents",
+            "answer_documents",
             "list_indexed_documents",
             "list_collections",
             "delete_documents",

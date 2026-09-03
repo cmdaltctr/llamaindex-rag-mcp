@@ -9,6 +9,7 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 | `rag-mcp`                       | Start the MCP stdio server                                                       |
 | `rag-mcp ingest <path>`         | Index a file or directory into the vector store                                  |
 | `rag-mcp search <query>`        | Search indexed documents for semantically relevant chunks                        |
+| `rag-mcp answer <query>`        | Answer a question from indexed documents with verifiable citations               |
 | `rag-mcp list`                  | Show indexed documents with chunk counts                                         |
 | `rag-mcp list-collections`      | Show all collections in the selected vector store with document and chunk counts |
 | `rag-mcp watch <dir>`           | Watch a directory for new/changed documents and auto-ingest them                 |
@@ -23,17 +24,17 @@ The `rag-mcp` command doubles as an MCP server and a CLI tool. With no arguments
 
 | Flag                 | Applies to                                               | Description                                                          |
 | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
-| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`            | Collection name in the selected vector store (default `"documents"`) |
-| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete` | Output results as JSON                                               |
+| `--collection`, `-c` | `ingest`, `search`, `list`, `watch`, `delete`, `answer`  | Collection name in the selected vector store (default `"documents"`) |
+| `--json`             | `ingest`, `search`, `list`, `list-collections`, `delete`, `answer` | Output results as JSON (written to stderr like all CLI output; stdout stays the MCP protocol channel) |
 | `--chunk-size`       | `ingest`                                                 | Override chunk size (characters)                                     |
 | `--chunk-overlap`    | `ingest`                                                 | Override chunk overlap (characters)                                  |
 | `--report`, `-r`     | `ingest`                                                 | Write ingestion report to a file                                     |
-| `--top-k`, `-k`      | `search`                                                 | Max results to return                                                |
+| `--top-k`, `-k`      | `search`, `answer`                                       | Max results to return; evidence chunks for `answer`                  |
 | `--threshold`, `-t`  | `search`                                                 | Minimum similarity score                                             |
-| `--rerank`           | `search`                                                 | Re-score with cross-encoder reranker                                 |
-| `--hybrid`           | `search`                                                 | Fuse dense vector search with sparse BM25 via RRF                    |
+| `--rerank`           | `search`, `answer`                                       | Re-score with cross-encoder reranker (`answer` also `--no-rerank`)   |
+| `--hybrid`           | `search`, `answer`                                       | Fuse dense vector search with sparse BM25 via RRF (`answer` also `--no-hybrid`) |
 | `--expand-window`    | `search`                                                 | Neighbours added per side of each chunk during context assembly      |
-| `--diagnostics`      | `search`                                                 | Include core-produced retrieval diagnostics. Disabled by default.    |
+| `--diagnostics`      | `search`, `answer`                                       | Include core-produced retrieval diagnostics; `answer` adds generation timings and completion counts. Disabled by default. |
 | `--debounce`, `-d`   | `watch`                                                  | Debounce interval in seconds (default: 2)                            |
 | `--verbose`, `-v`    | `watch`                                                  | Enable DEBUG-level logging                                           |
 | `--dry-run`          | `delete`                                                 | Preview deletion without modifying the selected vector store         |
@@ -100,6 +101,69 @@ duration is emitted. Dense and sparse stages run concurrently in hybrid mode,
 so their durations overlap; do not sum them to get wall time.
 
 > Search-time metadata filtering is available via the `search_documents` MCP tool. The CLI supports metadata filters for deletion via `rag-mcp delete --metadata`.
+
+### answer
+
+```bash
+# Answer a question with citations
+rag-mcp answer "What thresholds does the reranker use?"
+
+# Scope to a collection and raise the evidence pool
+rag-mcp answer "What fixes MCP-1138?" --collection research --top-k 15
+
+# Hybrid retrieval for rare terms and exact identifiers
+rag-mcp answer "What fixes MCP-1138?" --hybrid
+
+# Force the reranker off
+rag-mcp answer "summarise the norm guard" --no-rerank
+
+# JSON output with retrieval and generation timings
+rag-mcp answer "quantum entanglement" --diagnostics --json
+```
+
+The command retrieves through the same profile-resolved path as
+[`search`](#search), then synthesises one answer from the evidence with one
+or more language-model completion calls
+([ADR-057](../adr/057-answering-is-additive-and-injected.md)). Human output
+prints the answer, then numbered sources:
+
+```
+Sources
+  1. docs/guides/reranker.md chunk=3f2a91c4 score=0.712
+  2. docs/adr/053-embedding-norm-guard.md chunk=9d08e7f1 score=0.655 (+2 merged)
+```
+
+A `(+N merged)` note marks a row that merged adjacent chunks; every
+constituent `chunk_id` appears in the JSON output.
+
+All output goes to stderr — human and `--json` alike. Stdout stays the
+MCP protocol channel. In `--json` mode the result object is the only
+output; pipeline chatter is suppressed so the JSON stream stays clean.
+
+The JSON result carries `status`, `query`, `answer`, `citations`, `evidence`,
+`failure_stage`, `error`, and `completion_source`. With `--diagnostics`, a
+`diagnostics` object adds `retrieval_ms`, `generation_ms`, and
+`completion_calls`.
+
+Statuses:
+
+- `ok` — the answer carries at least one verifiable citation.
+- `no_evidence` — prints `No supporting evidence was found.` No model call ran.
+- `generation_unverified` — prints a warning; the answer carried no
+  verifiable citation. Treat it as unverified.
+- `error` — prints the message and exits 1.
+
+With no answer model configured, a run that finds evidence exits 1 with
+an actionable message naming `ANSWER__PROVIDER`. An empty collection
+still returns `no_evidence` and exits 0, because no model call was
+needed:
+
+```
+Error: No answer model is configured for grounded answering. Set ANSWER__PROVIDER (and ANSWER__MODEL) to configure a server-side model, or use an MCP client that supports sampling so the client's model can complete the answer.
+```
+
+The server model and the sampling preferences are configured with the
+`ANSWER__*` variables. See [Configuration](configuration.md#answering--answer__).
 
 ### list
 

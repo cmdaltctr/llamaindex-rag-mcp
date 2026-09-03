@@ -321,7 +321,7 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
     _patch_embed_model._mock = _UnitNormMockEmbedding(embed_dim=384)
     Settings.embed_model = _patch_embed_model._mock
 
-    if request.node.path.name == "test_cli.py":
+    if request.node.path.name in ("test_cli.py", "test_answer_transport_cli.py"):
         from rag_mcp.core.providers.embeddings import registry as embed_registry
 
         real_get = embed_registry.get

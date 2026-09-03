@@ -34,7 +34,18 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # measured via `uv sync --frozen` (the CI-equivalent base state); bump
 # them only when the suite legitimately changes. The executed and
 # skipped counts come from the self-ignored ``-rs`` run summary line.
-_BASE_EXECUTED = 2178  # Includes document-backend registry + orchestrator pins,
+# capability added the red-first core (15), compose (4), MCP transport
+# (16), LM-free search guard (2), OpenAPI conformance (3) and the
+# seven-tool discovery rename, plus five CLI transport cases for
+# `rag-mcp answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# is deselected by the not-slow marker, not skipped.
+# Re-baselined at add-grounded-answer-synthesis-3 review remediation:
+# the second review round added the MRTR split suite, filter-security
+# fuzz corpus, citations/synthesis bounds, compose degradation, CLI
+# stream/hybrid/no-evidence cases, conformance null-and-limits pins,
+# and CLI failure-path coverage (2224 -> 2363), plus the similarity
+# threshold finiteness case (2364).
+_BASE_EXECUTED = 2364  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -68,6 +79,12 @@ _BASE_EXECUTED = 2178  # Includes document-backend registry + orchestrator pins,
 # Re-baselined for the CI ChromaDB fix: the $and-wrapping fix added
 # four duck-typed where-translation cases to the vectordb contract
 # suite (2174 -> 2178).
+# Re-baselined at add-grounded-answer-synthesis-3: the answering
+# capability added the red-first core (15), compose (4), MCP transport
+# (16), LM-free search guard (2), OpenAPI conformance (3) and the
+# seven-tool discovery rename, plus five CLI transport cases for
+# `rag-mcp answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# is deselected by the not-slow marker, not skipped.
 _BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
 # (47 vectordb-contract, 19 chunk-lineage-navigation, 13
 # embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
@@ -77,7 +94,8 @@ _BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
 # singles. Corrected at stage 7: the stage-5 re-baseline updated the
 # executed count only and left this at 100, which the count assertion
 # masked until the executed count was re-baselined first.
-_BASE_DESELECTED = 18  # -m "not slow": existing 14 plus four quality gates
+_BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
+# plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
 _CHROMA_GATED_FILES = frozenset(
     {
         "test_chroma_cloud.py",

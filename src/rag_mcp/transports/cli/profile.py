@@ -60,9 +60,9 @@ def set_profile_cmd(
     if json_output:
         if yes:
             result = apply_profile_change(collection, profile)
-            typer.echo(json.dumps(result, indent=2))
+            typer.echo(json.dumps(result, indent=2), err=True)
         else:
-            typer.echo(json.dumps(contract, indent=2))
+            typer.echo(json.dumps(contract, indent=2), err=True)
         return
 
     console.print(f"\n[bold]Profile change:[/bold] {collection} → {profile}")
