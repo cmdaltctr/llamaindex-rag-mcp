@@ -3,7 +3,7 @@
 **ID**: `20-citation-faithfulness-2026-09-02`
 **Date planned**: 2026-09-02
 **Operator**: Dr Muhammad Aizat with build agent (scaffold only; not run)
-**Status**: READY TO RUN (ground truth and runner written 2026-09-02; operator review of `ground-truth.json` is the gate before the first judge run)
+**Status**: PASS (all gates met; see `results.md`)
 **Relation**: `openspec/changes/add-grounded-answer-synthesis-3` — task 7.2 (recorded follow-up experiment) and security-review finding F4 (referential-only `ok` status)
 
 ---
@@ -31,9 +31,9 @@ referential guarantee and document the residual)?
 2. **Negative control (lexical):** a lexical-overlap baseline is materially
    weaker — at least 0.20 lower unsupported-claim recall than the judge —
    confirming the task needs semantic judgement, not token overlap.
-3. **Operational:** judge verdicts add P95 ≤ 5 s per claim on the local
-   answer model class (qwen3:4b), small enough to gate `ok` without
-   destroying the tool's latency budget.
+3. **Operational:** judge verdicts add P95 ≤ 5 s per claim on the
+   judge model (Z.AI GLM-5.3 via cloud API), small enough to gate `ok`
+   without destroying the tool's latency budget.
 
 ## Background and prior evidence
 
@@ -45,15 +45,17 @@ referential guarantee and document the residual)?
 - Code paths: `core/answer/citations.py` (ordinal parsing, lineage),
   `core/answer/pipeline.py` (status decision), `core/answer/prompt.py`
   (instruction block).
-- Caveat: any judge running on the same local model that generated the
-  answer shares that model's blind spots; a cross-model cell is included
-  as a diagnostic to bound this concern.
+- Caveat: the judge is a cloud model (GLM-5.3) distinct from the
+  production answer generator (qwen3:4b, local), so the shared-blind-spot
+  concern is structurally weaker than a self-judge setup. The cross-model
+  cell (20C, DeepSeek V4 Flash 0731 via OpenRouter) remains as a
+  judge-vs-judge agreement diagnostic.
 
 ## Variables
 
 | Type | Variable | Values / treatment |
 | --- | --- | --- |
-| Independent | Verification method | `lexical` (token-overlap baseline), `judge-local` (answer model as judge), `judge-cross` (second model, diagnostic only) |
+| Independent | Verification method | `lexical` (token-overlap baseline), `judge-local` (Z.AI GLM-5.3 as judge), `judge-cross` (DeepSeek V4 Flash 0731 via OpenRouter, diagnostic only) |
 | Dependent | Unsupported-claim recall | TP / (TP + FN) over unsupported triples |
 | Dependent | Supported-claim false rejection | FP / (FP + TN) over supported triples |
 | Dependent | Accuracy / F1 | over all labelled triples |
@@ -102,15 +104,17 @@ Labels are written by the operator BEFORE any verifier runs.
 | --- | --- |
 | Python | 3.12 |
 | Package manager | `uv` |
-| Answer model | configured `ANSWER__PROVIDER`/`ANSWER__MODEL` (local default qwen3:4b) |
-| Cross model | any second local model available via Ollama |
-| Hardware | local dev machine (Apple Silicon) |
+| Judge model (20B) | Z.AI GLM-5.3 via `ZAI_API_KEY` (cloud, OpenAI-compatible) |
+| Cross model (20C) | DeepSeek V4 Flash 0731 via `OPENROUTER_API_KEY` (OpenRouter) |
+| Optional extra | `uv sync --extra openrouter` (installs `llama-index-llms-openai-like`) |
+| Hardware | any machine with network access to the cloud APIs |
 | Key config | experiment-local collection; never production data |
 
 ```bash
 # Sanity checks before running
-uv sync
-ollama list
+uv sync --extra openrouter
+echo $ZAI_API_KEY        # primary judge
+echo $OPENROUTER_API_KEY # cross judge
 ```
 
 ## Experimental design / cell matrix
@@ -118,8 +122,8 @@ ollama list
 | Run ID | Purpose | Method | Key settings | Expected interpretation |
 | --- | --- | --- | --- | --- |
 | `20A-lexical` | negative control | token-overlap verifier | threshold swept 0.1–0.9 | bounds the floor; H2 |
-| `20B-judge-local` | primary | answer model as judge | judge prompt v1 (protocol-only, no answer context) | H1 gate |
-| `20C-judge-cross` | robustness diagnostic | second model as judge | same prompt as 20B | shared-blind-spot bound |
+| `20B-judge-local` | primary | Z.AI GLM-5.3 as judge | judge prompt v1 (protocol-only, no answer context), cloud API | H1 gate |
+| `20C-judge-cross` | robustness diagnostic | DeepSeek V4 Flash 0731 (OpenRouter) as judge | same prompt as 20B | judge-vs-judge agreement |
 
 Stop rules:
 
@@ -154,24 +158,25 @@ cell resumes without repeating model calls.
 
 ```bash
 # Sanity checks before running
-uv sync
-ollama list          # qwen3:4b pulled; note a second model for cell 20C
+uv sync --extra openrouter
+echo $ZAI_API_KEY        # primary judge (Z.AI GLM-5.3)
+echo $OPENROUTER_API_KEY # cross judge (OpenRouter)
 
 # Cell 20A — lexical negative control (no model; already computed, resumable)
 PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
   --methods lexical
 
-# Cell 20B — primary judge gate (the configured answer model, qwen3:4b)
-PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+# Cell 20B — primary judge gate (Z.AI GLM-5.3 via cloud API)
+PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
   --methods judge-local --resume 2>&1 | tee -a experiments/20-citation-faithfulness-2026-09-02/output/run_eval.log
 
 # Cell 20C — cross-model diagnostic (only if 20B passes H1)
-PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
-  --methods judge-cross --cross-model <second-local-model> --resume
+PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+  --methods judge-cross --cross-model deepseek/deepseek-v4-flash-0731 --resume
 ```
 
-Judge cells build through the production provider registry (the same
-resolution path as `compose.build_answer_llm`) with temperature pinned to 0;
+Judge cells construct an `OpenAILike` LLM pointed at the cloud API
+(Z.AI or OpenRouter) with temperature pinned to 0;
 replies are stripped of `<think>` blocks and parsed for strict JSON, with one
 retry before a verdict is recorded as unparseable (reported separately,
 never silently counted as either class).
@@ -185,7 +190,7 @@ never silently counted as either class).
 | Supported false rejection (20B) | `<= 0.10` | rejecting correct answers erodes trust faster than it builds it |
 | Paraphrase false rejection (20B) | `<= 0.10` | the FR gate must hold on the wording-change class, not just on verbatim faithful claims (amendment 2) |
 | Lexical gap (20A vs 20B) | `>= 0.20` recall | confirms semantic judgement is required; the lexical operating point is its best threshold subject to the same `<= 0.10` false-rejection budget the judge must satisfy (amendment 2) |
-| P95 latency (20B) | `<= 5 s` per claim | keeps the answer tool responsive when gating `ok` |
+| P95 latency (20B) | `<= 5 s` per claim | keeps the answer tool responsive when gating `ok` (cloud API round-trip including reasoning) |
 
 ### Amendments (pre-registered changes; all made 2026-09-02 after the lexical control arm, before any judge run)
 
@@ -218,6 +223,21 @@ never silently counted as either class).
    limitation: if 20B passes with suspiciously easy swapped detection,
    rebuild the corpus with related-file structure before trusting the
    swapped class.
+5. **Cloud judge substitution (2026-09-02, before any judge run).** The
+   original design used the local answer model (qwen3:4b via Ollama) as
+   judge. On a 32 GB M1 Pro, LlamaIndex's Ollama client sent
+   `num_ctx=262144` (qwen3's model-info default, ignoring the Modelfile
+   `PARAMETER`), consuming 43 GB and spilling 41% of compute to CPU —
+   zero verdicts in 10+ minutes. The judge was switched to cloud:
+   Z.AI GLM-5.3 (`ZAI_API_KEY`) for 20B, DeepSeek V4 Flash 0731 via
+   OpenRouter (`OPENROUTER_API_KEY`) for 20C. This is a judge-only
+   substitution; the production answer generator remains qwen3:4b
+   (local). The shared-blind-spot concern is structurally weaker than a
+   self-judge setup because the judge and the answer generator are now
+   different model families. The H3 latency gate is retained at ≤ 5 s
+   but now measures cloud API round-trip (including reasoning) rather
+   than local inference. The `lexical` cell (20A) is unaffected — it
+   uses no model and its results stand.
 
 ## Interpretation rules
 
@@ -237,7 +257,7 @@ never silently counted as either class).
 
 1. Document the negative result; keep the referential-only guarantee and
    the documented F4 residual.
-2. Try a stronger judge model (local-first; cloud only as explicit opt-in).
+2. Try a stronger judge model (cloud or local).
 3. Escalate to an OpenSpec change only if a later verifier design clears
    the gates.
 
@@ -250,9 +270,11 @@ never silently counted as either class).
   class F4 describes applies to the judge.
 - Scope boundary: verification of generated answers only; retrieval,
   citations, and statuses are unchanged by this experiment.
-- Known risks: single-model self-agreement bias (20C bounds it);
-  ground-truth labelling subjectivity (operator labels before any verifier
-  output is seen).
+- Known risks: judge-vs-answer-generator model-family bias (the judge is
+  GLM-5.3, the answer generator is qwen3:4b — different families, so
+  shared blind spots are less likely than a self-judge setup; 20C adds a
+  second judge family as further diagnostic); ground-truth labelling
+  subjectivity (operator labels before any verifier output is seen).
 
 ## Cleanup
 

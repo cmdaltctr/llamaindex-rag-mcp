@@ -1,19 +1,19 @@
 """Experiment 20 runner: citation-faithfulness verification cells.
 
 Usage:
-    uv run python experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+    ZAI_API_KEY=... uv run python experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
         --methods lexical,judge-local --resume
-    uv run python experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
-        --methods judge-cross --cross-model llama3.1:8b --resume
+    OPENROUTER_API_KEY=... uv run python experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
+        --methods judge-cross --cross-model deepseek/deepseek-v4-flash-0731 --resume
 
 Cells (protocol.md "Experimental design / cell matrix"):
 - lexical (20A): token-containment verifier, negative control; verdict
   thresholds 0.1-0.9 are swept as pure aggregation over per-triple scores.
-- judge-local (20B): the configured answer model as judge, built through
-  the SAME provider registry the answer pipeline uses (compose_answer
-  resolution path), temperature pinned to 0 for verdict determinism.
-- judge-cross (20C): a second model as judge (--cross-model required),
-  diagnostic cell bounding single-model self-agreement bias.
+- judge-local (20B): Z.AI GLM-5.3 as judge (cloud, OpenAI-compatible
+  endpoint via OpenAILike), temperature pinned to 0 for verdict determinism.
+- judge-cross (20C): a second cloud model via OpenRouter as judge
+  (--cross-model required), diagnostic cell bounding single-model
+  self-agreement bias.
 
 The frozen triple set in ground-truth.json is the only input: no vector
 store, no ingestion, and no answer-pipeline calls — verification methods
@@ -29,8 +29,8 @@ own failure rate, never silently counted as either class).
 Timeout resilience: a read timeout on a judge call gets one full retry
 after a short backoff; a second timeout records the triple as
 unparseable, and three consecutive such triples abort the run with the
-checkpoint saved. That streak means the setup is broken (Ollama dead or
-the model too slow for ANSWER__TIMEOUT), not momentarily busy.
+checkpoint saved. That streak means the setup is broken (cloud API down
+or the model too slow for ANSWER__TIMEOUT), not momentarily busy.
 
 Outputs (atomic .tmp -> rename):
 - output/eval_results_checkpoint.json  per-triple resumable checkpoint
@@ -204,29 +204,53 @@ def containment_score(claim: str, evidence: str) -> float:
 # ── Judge verifier (cells 20B / 20C) ─────────────────────────────────
 
 
+# Cloud judge endpoints (amendment 5: switched from local Ollama to cloud
+# after qwen3:4b at its default 262K context exhausted 43 GB on a 32 GB
+# machine and produced zero verdicts in 10+ minutes).  Both are
+# OpenAI-compatible, so ``OpenAILike`` covers them without a registry change.
+_ZAI_API_BASE = "https://api.z.ai/api/coding/paas/v4"
+_OPENROUTER_API_BASE = "https://openrouter.ai/api/v1"
+
+
 def _build_judge(model_override: str | None) -> tuple[Any, str]:
-    """Build the judge LLM through the production provider registry.
+    """Build the judge LLM as an ``OpenAILike`` cloud client.
 
-    Same resolution path as ``compose.build_answer_llm`` (registry lookup
-    with the ``answer_model`` override), so judge-local IS the configured
-    answer model.  Temperature is pinned to 0 where the provider supports
-    it — a verifier gate needs stable verdicts, not creative sampling.
+    Primary judge (no override): Z.AI GLM-5.3 via ``ZAI_API_KEY``.
+    Cross judge (``model_override`` given): OpenRouter with the specified
+    model slug (e.g. ``deepseek/deepseek-v4-flash-0731``) via
+    ``OPENROUTER_API_KEY`` — a different provider family for the
+    shared-blind-spot diagnostic.
+
+    Temperature is pinned to 0 — a verifier gate needs stable verdicts,
+    not creative sampling.  ``ANSWER__TIMEOUT`` controls the per-call
+    timeout (default 600 s; reasoning models can be slow on first token).
     """
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.providers.llm import registry as llm_registry
+    import os
 
-    settings = get_settings()
-    provider = settings.answer.provider.strip()
-    if provider not in llm_registry.available():
-        raise SystemExit(
-            f"ANSWER__PROVIDER={provider!r} is not a registered LLM provider "
-            f"(available: {', '.join(llm_registry.available())})"
-        )
-    model = model_override or settings.answer.model
-    llm = llm_registry.get(provider)(settings, timeout=settings.answer.timeout, answer_model=model)
-    if hasattr(llm, "temperature"):
-        llm.temperature = 0.0
-    return llm, f"{provider}/{model}"
+    from llama_index.llms.openai_like import OpenAILike
+
+    timeout = float(os.environ.get("ANSWER__TIMEOUT", "600"))
+    if model_override:
+        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        api_base = _OPENROUTER_API_BASE
+        model = model_override
+        if not api_key:
+            raise SystemExit("OPENROUTER_API_KEY is not set; required for judge-cross")
+    else:
+        api_key = os.environ.get("ZAI_API_KEY", "")
+        api_base = _ZAI_API_BASE
+        model = os.environ.get("ANSWER__MODEL", "glm-5.3")
+        if not api_key:
+            raise SystemExit("ZAI_API_KEY is not set; required for the primary judge")
+    llm = OpenAILike(
+        model=model,
+        api_base=api_base,
+        api_key=api_key,
+        timeout=timeout,
+        temperature=0.0,
+        is_chat_model=True,
+    )
+    return llm, f"openai-like/{model}"
 
 
 def _parse_verdict(reply: str) -> tuple[bool, str] | None:
@@ -252,6 +276,8 @@ def _parse_verdict(reply: str) -> tuple[bool, str] | None:
 
 async def _judge_triple(llm: Any, claim: str, evidence: str, *, attempts: int) -> dict[str, Any]:
     """Judge one triple: prompt -> reply -> parse, with retries."""
+    from llama_index.core.llms import ChatMessage, MessageRole
+
     prompt = JUDGE_PROMPT_TEMPLATE.format(claim=claim, evidence=evidence)
     started = time.perf_counter()
     parsed: tuple[bool, str] | None = None
@@ -260,8 +286,9 @@ async def _judge_triple(llm: Any, claim: str, evidence: str, *, attempts: int) -
     attempts_used = 0
     while attempts_used < attempts:
         attempts_used += 1
-        response = await llm.acomplete(used_prompt)
-        reply = response.text
+        messages = [ChatMessage(role=MessageRole.USER, content=used_prompt)]
+        response = await llm.achat(messages)
+        reply = response.message.content or ""
         parsed = _parse_verdict(reply)
         if parsed is not None:
             break
@@ -612,7 +639,7 @@ async def main() -> None:
     parser.add_argument(
         "--cross-model",
         default=None,
-        help="second local model for judge-cross (required for that method)",
+        help="OpenRouter model slug for judge-cross, e.g. deepseek/deepseek-v4-flash-0731 (required for that method)",
     )
     parser.add_argument("--thresholds", nargs="+", type=float, default=DEFAULT_THRESHOLDS)
     parser.add_argument(
@@ -647,7 +674,9 @@ async def main() -> None:
     if unknown:
         raise SystemExit(f"Unknown methods: {sorted(unknown)}")
     if "judge-cross" in methods and not args.cross_model:
-        raise SystemExit("judge-cross requires --cross-model (e.g. llama3.1:8b; see `ollama list`)")
+        raise SystemExit(
+            "judge-cross requires --cross-model (e.g. deepseek/deepseek-v4-flash-0731; uses OPENROUTER_API_KEY)"
+        )
 
     checkpoint_path = output_dir / "eval_results_checkpoint.json"
     output_path = output_dir / "eval_results.json"
