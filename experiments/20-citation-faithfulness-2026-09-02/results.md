@@ -66,7 +66,7 @@ judge can close that gap.
 
 | Type | Variable | Values actually run |
 | --- | --- | --- |
-| Independent | Verification method | `lexical` (20A), `judge-local` GLM-5.3 (20B), `judge-cross` DeepSeek V4 Flash 0731 (20C) |
+| Independent | Verification method | `lexical` (Cell A), `judge-local` GLM-5.3 (Cell B), `judge-cross` DeepSeek V4 Flash 0731 (Cell C) |
 | Dependent | Unsupported-claim recall | per method, overall and per adversarial class |
 | Dependent | Supported-claim false rejection | per method, overall and on paraphrases |
 | Dependent | P95 verdict latency | per claim, per method |
@@ -78,20 +78,20 @@ judge can close that gap.
 
 > Amendment 5 (2026-09-02, before any judge run): the judge was switched from
 > the local answer model (qwen3:4b via Ollama) to cloud models — Z.AI GLM-5.3
-> for 20B, DeepSeek V4 Flash 0731 via OpenRouter for 20C. On a 32 GB M1 Pro,
+> for Cell B, DeepSeek V4 Flash 0731 via OpenRouter for Cell C. On a 32 GB M1 Pro,
 > LlamaIndex's Ollama client sent `num_ctx=262144` (qwen3's model-info
 > default), consuming 43 GB and producing zero verdicts in 10+ minutes. The
 > judge-only substitution weakens the shared-blind-spot concern (the judge is
 > now a different model family from the production answer generator). The
-> lexical cell (20A) is unaffected. See protocol amendment 5 for full detail.
+> lexical cell (Cell A) is unaffected. See protocol amendment 5 for full detail.
 
 ## Environment and corpus
 
 | Item | Value |
 | --- | --- |
 | Python | 3.12 |
-| Judge model (20B) | Z.AI GLM-5.3 via `ZAI_API_KEY` (cloud, OpenAI-compatible) |
-| Cross model (20C) | DeepSeek V4 Flash 0731 via `OPENROUTER_API_KEY` (OpenRouter) |
+| Judge model (Cell B) | Z.AI GLM-5.3 via `ZAI_API_KEY` (cloud, OpenAI-compatible) |
+| Cross model (Cell C) | DeepSeek V4 Flash 0731 via `OPENROUTER_API_KEY` (OpenRouter) |
 | LLM library | `llama-index-llms-openai-like` 0.7.2 (`uv sync --extra openrouter`) |
 | Hardware | MacBook Pro M1 Pro (32 GB), network access to cloud APIs |
 | Corpus | 120 labelled (claim, evidence-text, label) triples; 60 unsupported (20 contradicted, 20 invented, 20 swapped), 60 supported (40 faithful, 20 paraphrase) |
@@ -101,16 +101,16 @@ judge can close that gap.
 ## Method / reproduction
 
 ```bash
-# Cell 20A — lexical negative control (deterministic, no model)
+# Cell A — lexical negative control (deterministic, no model)
 PYTHONUNBUFFERED=1 uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
   --methods lexical
 
-# Cell 20B — primary judge gate (Z.AI GLM-5.3)
+# Cell B — primary judge gate (Z.AI GLM-5.3)
 ZAI_API_KEY=... PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 \
   uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
   --methods judge-local --resume
 
-# Cell 20C — cross-model diagnostic (DeepSeek V4 Flash 0731 via OpenRouter)
+# Cell C — cross-model diagnostic (DeepSeek V4 Flash 0731 via OpenRouter)
 OPENROUTER_API_KEY=... PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 \
   uv run python -u experiments/20-citation-faithfulness-2026-09-02/run_eval.py \
   --methods judge-cross --cross-model deepseek/deepseek-v4-flash-0731 --resume
@@ -122,13 +122,13 @@ OPENROUTER_API_KEY=... PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 \
 
 | Cell | Method | Model | Unsupported recall | False rejection | Accuracy | F1 | Unparseable | P50 latency | P95 latency |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 20A | lexical (best constrained @0.7) | — | 0.617 | 0.017 | 0.800 | 0.755 | 0 | 0.01 ms | 0.02 ms |
-| 20B | judge-local | GLM-5.3 | **1.000** | **0.000** | **1.000** | **1.000** | 0 | 2032 ms | 3328 ms |
-| 20C | judge-cross | DeepSeek V4 Flash 0731 | 1.000 | 0.000 | 1.000 | 1.000 | 0 | 2132 ms | 9976 ms |
+| A | lexical (best constrained @0.7) | — | 0.617 | 0.017 | 0.800 | 0.755 | 0 | 0.01 ms | 0.02 ms |
+| B | judge-local | GLM-5.3 | **1.000** | **0.000** | **1.000** | **1.000** | 0 | 2032 ms | 3328 ms |
+| C | judge-cross | DeepSeek V4 Flash 0731 | 1.000 | 0.000 | 1.000 | 1.000 | 0 | 2132 ms | 9976 ms |
 
 ### Per-class recall (unsupported claims)
 
-| Class | Lexical (20A) | Judge-local (20B) | Judge-cross (20C) |
+| Class | Lexical (Cell A) | Judge-local (Cell B) | Judge-cross (Cell C) |
 | --- | ---: | ---: | ---: |
 | contradicted | 0.0 | 1.0 | 1.0 |
 | invented | 0.85 | 1.0 | 1.0 |
@@ -136,7 +136,7 @@ OPENROUTER_API_KEY=... PYTHONUNBUFFERED=1 ANSWER__TIMEOUT=600 \
 
 ### Per-class false rejection (supported claims)
 
-| Class | Lexical (20A) | Judge-local (20B) | Judge-cross (20C) |
+| Class | Lexical (Cell A) | Judge-local (Cell B) | Judge-cross (Cell C) |
 | --- | ---: | ---: | ---: |
 | faithful | 0.0 | 0.0 | 0.0 |
 | paraphrase | 0.05 | 0.0 | 0.0 |
@@ -163,7 +163,7 @@ quarter of supported claims — an unacceptable trade.
 
 ## Pass-gate evaluation
 
-| Gate | Threshold | 20B result | Pass? |
+| Gate | Threshold | Cell B result | Pass? |
 | --- | ---: | ---: | :---: |
 | Unsupported recall | ≥ 0.80 | 1.000 | ✅ |
 | Per-class recall: contradicted | ≥ 0.80 | 1.0 | ✅ |
@@ -200,7 +200,7 @@ The judge achieves perfect accuracy on this corpus. Three factors explain this:
    is reliable at temperature 0.
 
 The P95 latency of 3.33 s for GLM-5.3 includes the full cloud round-trip plus
-reasoning. DeepSeek V4 Flash 0731 is slower (P95 9.98 s) but 20C is a
+reasoning. DeepSeek V4 Flash 0731 is slower (P95 9.98 s) but Cell C is a
 diagnostic cell, not latency-gated. The P50 for both judges is ~2 s, which is
 acceptable for an optional verification stage.
 
