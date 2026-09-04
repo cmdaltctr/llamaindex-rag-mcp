@@ -56,7 +56,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from lancedb.expr import lit
@@ -140,6 +140,13 @@ _CAST_FORM = re.compile(r"CAST\('([^']*)' AS (?:DATE|TIMESTAMP)\)")
 def _is_faithful_literal(value: object, sql: str) -> bool:
     """Check the engine's serialisation against a closed form per type.
 
+    The engine's unparser is treated as untrusted: each fragment must
+    not only match a valid SQL shape but also *represent* the original
+    value.  For every supported scalar type the fragment is parsed or
+    decoded and compared with the original using exact or canonical
+    type semantics, so a regression that emits a different valid-looking
+    value is refused.
+
     Args:
         value: The original comparison value handed to ``lit``.
         sql: The fragment the engine's unparser produced.
@@ -150,13 +157,29 @@ def _is_faithful_literal(value: object, sql: str) -> bool:
         because ``bool`` subclasses ``int``.
     """
     if isinstance(value, bool):
-        return sql in _BOOL_FORMS
+        # bool: exact match against the two SQL boolean literals.
+        return sql == ("true" if value else "false")
     if isinstance(value, int):
-        return _INT_FORM.fullmatch(sql) is not None
+        # int: the fragment must parse to the same integer.
+        match = _INT_FORM.fullmatch(sql)
+        return match is not None and int(sql) == value
     if isinstance(value, float):
-        return sql in _FLOAT_SPECIAL_FORMS or _NUMERIC_FORM.fullmatch(sql) is not None
+        # float: special values (inf, -inf, NaN) matched by name;
+        # ordinary floats compared by numeric equality so that
+        # equivalent representations (1e10 vs 10000000000.0) pass.
+        if value != value:  # NaN
+            return sql == "NaN"
+        if value == float("inf"):
+            return sql == "inf"
+        if value == float("-inf"):
+            return sql == "-inf"
+        match = _NUMERIC_FORM.fullmatch(sql)
+        return match is not None and float(sql) == value
     if isinstance(value, Decimal):
-        return _NUMERIC_FORM.fullmatch(sql) is not None
+        # Decimal: the fragment must parse to the same Decimal using
+        # exact arithmetic (not float coercion, which loses precision).
+        match = _NUMERIC_FORM.fullmatch(sql)
+        return match is not None and Decimal(sql) == value
     if isinstance(value, str):
         decoded = _decode_single_quoted_literal(sql)
         return decoded is not None and decoded == value
@@ -164,8 +187,65 @@ def _is_faithful_literal(value: object, sql: str) -> bool:
         match = _BYTES_FORM.fullmatch(sql)
         return match is not None and bytes.fromhex(match.group(1)) == value
     if isinstance(value, (date, datetime)):
-        return _CAST_FORM.fullmatch(sql) is not None
+        # date/datetime: the engine emits CAST('...' AS DATE|TIMESTAMP).
+        # Parse the inner string and compare it with the original value.
+        # For naive datetimes the engine converts local time to UTC, so
+        # the comparison round-trips through the same conversion.
+        match = _CAST_FORM.fullmatch(sql)
+        if match is None:
+            return False
+        inner = match.group(1)
+        if isinstance(value, datetime):
+            return _datetime_matches(value, inner)
+        return _date_matches(value, inner)
     return False
+
+
+def _date_matches(value: date, inner: str) -> bool:
+    """Check whether a CAST(... AS DATE) inner string matches *value*.
+
+    Args:
+        value: The original ``date`` value.
+        inner: The date string inside the CAST, e.g. ``2026-09-02``.
+
+    Returns:
+        True when *inner* parses to the same calendar date.
+    """
+    try:
+        parsed = date.fromisoformat(inner)
+    except ValueError:
+        return False
+    return parsed == value
+
+
+def _datetime_matches(value: datetime, inner: str) -> bool:
+    """Check whether a CAST(... AS TIMESTAMP) inner string matches *value*.
+
+    The engine converts naive datetimes from local time to UTC before
+    serialising.  This function replicates that conversion for the
+    comparison so a faithful serialisation is recognised.
+
+    Args:
+        value: The original ``datetime`` value (naive or aware).
+        inner: The timestamp string inside the CAST, e.g.
+            ``2026-09-02 14:30:45``.
+
+    Returns:
+        True when *inner* represents the same instant as *value* after
+        accounting for the engine's local-to-UTC conversion.
+    """
+    try:
+        parsed = datetime.fromisoformat(inner)
+    except ValueError:
+        return False
+    if value.tzinfo is not None:
+        # Aware datetime: the engine serialises the UTC equivalent.
+        expected_utc = value.astimezone(UTC).replace(tzinfo=None)
+    else:
+        # Naive datetime: the engine converts from local time to UTC.
+        local = value.replace(tzinfo=None)
+        expected_utc = local.astimezone().astimezone(UTC).replace(tzinfo=None)
+    return parsed == expected_utc
 
 
 def _literal_sql(value: object) -> str:
@@ -294,6 +374,21 @@ def _leaf(
             list longer than :data:`_MAX_IN_LIST_LENGTH`.
     """
     counter.charge()
+    # Validate the field name before the absent-field fold so that
+    # invalid names on schema-absent fields are rejected rather than
+    # silently folded to a constant (which would bypass input controls).
+    _field_sql(field, metadata_column)  # raises ValueError on bad names
+    # Validate membership operands and the list-length bound before the
+    # fold, for the same reason: a client must not probe or bypass
+    # complexity bounds by targeting absent fields.
+    if op in ("$in", "$nin"):
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(f"{op} requires a list of values, got {type(value).__name__}.")
+        if len(value) > _MAX_IN_LIST_LENGTH:
+            raise ValueError(
+                f"{op} list exceeds the maximum of {_MAX_IN_LIST_LENGTH} entries "
+                f"(got {len(value)})."
+            )
     if known_fields is not None and field not in known_fields:
         # ChromaDB parity: the planner would reject the reference
         # ("Field ... not found in struct"), so fold it to the
@@ -308,13 +403,6 @@ def _leaf(
             return f"({ref} != {literal} OR {ref} IS NULL)"
         return f"{ref} {_COMPARISON_OPS[op]} {literal}"
     if op in ("$in", "$nin"):
-        if not isinstance(value, (list, tuple)):
-            raise ValueError(f"{op} requires a list of values, got {type(value).__name__}.")
-        if len(value) > _MAX_IN_LIST_LENGTH:
-            raise ValueError(
-                f"{op} list exceeds the maximum of {_MAX_IN_LIST_LENGTH} entries "
-                f"(got {len(value)})."
-            )
         elements = ", ".join(_literal_sql(item) for item in value)
         if not elements:
             # An empty $in matches nothing; an empty $nin matches everything.

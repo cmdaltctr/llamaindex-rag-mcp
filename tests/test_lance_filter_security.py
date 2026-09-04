@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import random
 import re
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import lancedb
@@ -424,3 +426,211 @@ def test_literal_forms_are_closed(value: object, pattern: str) -> None:
     from rag_mcp.core.vectordb.lance_filter import _literal_sql
 
     assert re.fullmatch(pattern, _literal_sql(value))
+
+
+# ── Layer 5: absent-field validation must not bypass input controls ────
+#
+# A field absent from the table's schema folds to a ChromaDB constant
+# (false for equality/membership/comparison, true for $ne/$nin).  That
+# fold must happen AFTER field-name validation, membership-operand
+# validation, and the membership-list-length check — otherwise a client
+# can probe schema layout or bypass complexity bounds by targeting
+# absent fields with invalid input.
+
+
+_KNOWN_FIELDS = frozenset({"id", "tag", "score"})
+
+
+class TestAbsentFieldValidationBypass:
+    """Schema-absent fields must not bypass field-name or membership checks."""
+
+    def test_invalid_field_name_on_absent_field_rejected(self) -> None:
+        """An invalid field name is rejected before the absent-field fold."""
+        with pytest.raises(ValueError, match="cannot be"):
+            translate_where({"bad.field": "x"}, known_fields=_KNOWN_FIELDS)
+
+    def test_invalid_field_name_with_dollar_on_absent_field_rejected(self) -> None:
+        """A field name with a dot is rejected even when the field is absent."""
+        with pytest.raises(ValueError, match="cannot be"):
+            translate_where({"a b": "x"}, known_fields=_KNOWN_FIELDS)
+
+    def test_non_list_in_on_absent_field_rejected(self) -> None:
+        """$in with a non-list operand is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="requires a list"):
+            translate_where({"nope": {"$in": "x"}}, known_fields=_KNOWN_FIELDS)
+
+    def test_non_list_nin_on_absent_field_rejected(self) -> None:
+        """$nin with a non-list operand is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="requires a list"):
+            translate_where({"nope": {"$nin": 42}}, known_fields=_KNOWN_FIELDS)
+
+    def test_oversized_in_list_on_absent_field_rejected(self) -> None:
+        """An oversized $in list is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="100"):
+            translate_where(
+                {"nope": {"$in": [f"v{i}" for i in range(_MAX_IN_LIST_LENGTH + 1)]}},
+                known_fields=_KNOWN_FIELDS,
+            )
+
+    def test_oversized_nin_list_on_absent_field_rejected(self) -> None:
+        """An oversized $nin list is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="100"):
+            translate_where(
+                {"nope": {"$nin": [f"v{i}" for i in range(_MAX_IN_LIST_LENGTH + 1)]}},
+                known_fields=_KNOWN_FIELDS,
+            )
+
+    def test_valid_absent_field_still_folds(self) -> None:
+        """A valid field name on an absent field still folds (sanity check)."""
+        sql = translate_where({"nope": "x"}, known_fields=_KNOWN_FIELDS)
+        assert sql == "false"
+
+    def test_valid_absent_field_ne_still_folds(self) -> None:
+        """A valid absent field with $ne still folds to true."""
+        sql = translate_where({"nope": {"$ne": "x"}}, known_fields=_KNOWN_FIELDS)
+        assert sql == "(true)"
+
+
+# ── Layer 6: scalar value-faithfulness verification ───────────────────
+#
+# The engine's unparser is treated as untrusted.  Every serialised
+# literal must not only match a valid SQL shape but also represent the
+# original value.  These tests monkeypatch ``lit`` to emit a different
+# valid-looking fragment for each scalar type and prove the translator
+# refuses it.
+
+
+class _MismatchedLit:
+    """A broken ``lit`` that emits a valid-looking but WRONG fragment.
+
+    Each branch produces SQL that passes the closed-form shape check but
+    represents a different value than the one handed to ``lit``.
+    """
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+
+    def to_sql(self) -> str:
+        v = self._value
+        # bool: swap true/false
+        if isinstance(v, bool):
+            return "false" if v else "true"
+        # int: emit value + 1
+        if isinstance(v, int):
+            return str(v + 1)
+        # float: emit a different but valid float
+        if isinstance(v, float):
+            if v != v:  # NaN
+                return "0.0"
+            if v == float("inf"):
+                return "0.0"
+            if v == float("-inf"):
+                return "0.0"
+            return repr(v + 1.0)
+        # Decimal: emit a different but valid decimal
+        if isinstance(v, Decimal):
+            return str(v + Decimal("1"))
+        # date: emit the next day
+        if isinstance(v, date) and not isinstance(v, datetime):
+            from datetime import timedelta
+
+            return f"CAST('{(v + timedelta(days=1)).isoformat()}' AS DATE)"
+        # datetime: emit a different but valid timestamp.
+        # Shift by one day (not one hour) so a timezone-offset change
+        # between seasons cannot accidentally cancel the mismatch.
+        if isinstance(v, datetime):
+            from datetime import timedelta
+
+            shifted = v + timedelta(days=1)
+            # Mimic the engine's UTC conversion for naive datetimes.
+            # Use the timezone offset that applies at the shifted date,
+            # not the current date, so the conversion matches the
+            # engine's behaviour for that calendar date.
+            if v.tzinfo is None:
+                local_aware = shifted.astimezone()
+                utc = local_aware.astimezone(UTC)
+            else:
+                utc = shifted.astimezone(UTC)
+            ts = utc.replace(tzinfo=None).isoformat(sep=" ")
+            return f"CAST('{ts}' AS TIMESTAMP)"
+        # str: emit a different but valid quoted string
+        if isinstance(v, str):
+            return "'mismatched'"
+        # bytes: emit different but valid hex
+        if isinstance(v, bytes):
+            return "X'00'"
+        return str(v)
+
+
+@pytest.mark.parametrize(
+    ("value", "label"),
+    [
+        (True, "bool True"),
+        (False, "bool False"),
+        (0, "int zero"),
+        (42, "int positive"),
+        (-7, "int negative"),
+        (3.14, "float positive"),
+        (-0.5, "float negative"),
+        (0.0, "float zero"),
+        (float("inf"), "float inf"),
+        (float("-inf"), "float -inf"),
+        (float("nan"), "float nan"),
+        (Decimal("0"), "Decimal zero"),
+        (Decimal("3.14"), "Decimal positive"),
+        (Decimal("-7.5"), "Decimal negative"),
+        (date(2026, 9, 2), "date"),
+        (date(1970, 1, 1), "date epoch"),
+        (datetime(2026, 9, 2, 15, 30, 45), "datetime naive"),
+        (datetime(2026, 1, 15, 12, 0, 0), "datetime winter"),
+        (datetime(2026, 9, 2, 15, 30, 45, 123456), "datetime microsecond"),
+    ],
+)
+def test_mismatched_scalar_refused(
+    monkeypatch: pytest.MonkeyPatch, value: object, label: str
+) -> None:
+    """A valid-looking but wrong scalar fragment is refused.
+
+    Monkeypatches ``lit`` to emit a fragment that passes the closed-form
+    shape check but represents a different value.  The translator must
+    refuse the filter rather than emit a literal that matches the wrong
+    rows.
+    """
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_filter.lit", _MismatchedLit, raising=True)
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": value})
+
+
+def test_faithful_scalar_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Genuinely faithful scalar serialisations are accepted (no false refusal).
+
+    Uses the real ``lit`` (no monkeypatch) to verify that ordinary values
+    of every supported scalar type pass the faithfulness check without
+    false refusal.
+    """
+    from rag_mcp.core.vectordb.lance_filter import _literal_sql
+
+    values: list[object] = [
+        True,
+        False,
+        0,
+        42,
+        -7,
+        3.14,
+        -0.5,
+        0.0,
+        float("inf"),
+        float("-inf"),
+        Decimal("0"),
+        Decimal("3.14"),
+        Decimal("-7.5"),
+        date(2026, 9, 2),
+        date(1970, 1, 1),
+        datetime(2026, 9, 2, 15, 30, 45),
+        datetime(2026, 1, 15, 12, 0, 0),
+        datetime(2026, 9, 2, 15, 30, 45, 123456),
+    ]
+    for v in values:
+        # Must not raise — the real engine serialises faithfully
+        sql = _literal_sql(v)
+        assert sql, f"Faithful serialisation of {v!r} was refused"

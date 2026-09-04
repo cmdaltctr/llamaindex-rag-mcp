@@ -22,13 +22,16 @@ SHALL raise a clear error naming it. Translation SHALL preserve ChromaDB
 missing-field semantics: `$ne` and `$nin` match rows whose field is null
 or absent, every other operator does not, and a field absent from the
 table's schema SHALL fold to the same constants instead of reaching the
-SQL planner.
+SQL planner. The translator SHALL validate each field name and
+membership operand, including the membership-list limit, before it folds
+a schema-absent field to a constant.
 
 The translator SHALL treat the engine's unparser as untrusted. Every
-serialised literal SHALL be checked against a closed form per value type
-(bool, int, float, Decimal, bytes, date/datetime casts), and every
-string literal SHALL additionally be decoded with the standard SQL
-literal grammar and compared to the original value. A fragment that is
+serialised literal SHALL match the closed form for its value type and
+represent the original value. This applies to bool, int, float, Decimal,
+bytes, date, datetime, and string values. The translator SHALL decode or
+parse each fragment and compare it with the original value using the
+corresponding type's exact or canonical semantics. A fragment that is
 not a faithful serialisation of its value SHALL refuse the whole filter
 with an actionable error before any SQL reaches the engine. Client
 filters are untrusted input, so nesting depth, comparison-clause count,
@@ -70,12 +73,20 @@ an error naming the crossed limit.
 
 #### Scenario: Unfaithful engine serialisation is refused
 
-- **WHEN** the engine's literal builder emits a fragment that fails the
-  closed-form check or the round-trip decode (values containing runs of
-  apostrophes, or a backslash directly before an apostrophe)
+- **WHEN** the engine's literal builder emits a fragment that fails its
+  closed-form check or represents a different value
 - **THEN** the translator MUST refuse the filter with an error naming
   the affected value class
+- **AND** this MUST apply to string, byte, boolean, numeric, Decimal,
+  date, and datetime values
 - **AND** no SQL MUST reach the engine for that filter
+
+#### Scenario: Absent fields do not bypass input validation
+
+- **WHEN** a filter targets a schema-absent field with an invalid field
+  name, invalid membership operand, or oversized membership list
+- **THEN** the translator MUST reject the invalid input before folding
+  the predicate to an absent-field constant
 
 #### Scenario: Structural bounds are enforced
 
