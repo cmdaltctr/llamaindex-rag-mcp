@@ -1,7 +1,12 @@
 # cloud-embed-providers Specification
 
 ## Purpose
-TBD - created by archiving change add-openrouter-provider. Update Purpose after archive.
+Defines how cloud providers (OpenRouter embeddings and LLMs, resolved
+through the shared provider registry) join the local-first deployment:
+opt-in per ADR-024, configuration-driven, and degrading gracefully when
+credentials or optional dependencies are absent. Local operation never
+depends on a cloud provider being configured.
+
 ## Requirements
 ### Requirement: Config-based provider registry
 

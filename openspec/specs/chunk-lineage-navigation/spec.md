@@ -1,7 +1,11 @@
 # chunk-lineage-navigation Specification
 
 ## Purpose
-TBD - created by archiving change fix-retrieval-freshness-and-context-assembly-2. Update Purpose after archive.
+Guarantees that chunk relationships survive persistence: every stored
+chunk carries the metadata needed to resolve its neighbours and decide
+contiguity. This is what lets retrieval assemble context from the store
+alone, with no document store or re-parse of the source.
+
 ## Requirements
 ### Requirement: Chunk neighbours are resolvable from persisted metadata
 

@@ -1,7 +1,14 @@
 # config-composition-root Specification
 
 ## Purpose
-TBD - created by archiving change phase-2-refactor-config-core-split. Update Purpose after archive.
+Defines the three-layer configuration architecture — packaged defaults,
+environment overrides, and per-collection profile overlays — and the
+resolution precedence between them. ``compose.py`` is the single
+construction surface: it resolves settings once, fails fast on
+construction and provider-selection errors, and hands every operation a
+frozen effective-settings object. No layer below the composition root
+reads configuration on its own.
+
 ## Requirements
 ### Requirement: Three-layer configuration architecture
 
