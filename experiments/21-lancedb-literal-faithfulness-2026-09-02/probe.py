@@ -170,6 +170,63 @@ def _is_faithful(value: object, sql: str) -> bool:
     return _is_faithful_literal(value, sql)
 
 
+# ── Known mis-serialisation classes (single source for the verdict) ────
+KNOWN_UNFAITHFUL_LABELS: frozenset[str] = frozenset(
+    {
+        "apostrophe double",
+        "apostrophe triple",
+        "apostrophe quadruple",
+        "apostrophe in word",
+        "apostrophe run + text",
+        "backslash-apostrophe",
+        "backslash-apostrophe in word",
+        "backslash-apostrophe payload",
+    }
+)
+
+
+def _verdict(hostile: list[dict], ordinary: list[dict], live: list[dict]) -> tuple[bool, list[str]]:
+    """Return the shared PASS/FAIL predicate and its failure reasons.
+
+    One predicate feeds the JSON, Markdown, and console verdicts, so no
+    output surface can report PASS on incomplete results.  PASS requires
+    ALL of:
+
+    1. every hostile value serialised — an engine error leaves the
+       inventory incomplete;
+    2. the observed unfaithful labels equal KNOWN_UNFAITHFUL_LABELS
+       exactly — a missing label means the engine changed, an extra
+       label means a new mis-serialisation class;
+    3. every known unfaithful label refused by ``translate_where``;
+    4. zero false refusals on the ordinary corpus;
+    5. every live-table result equal to ``"pass"`` — ``"FAIL"``,
+       ``"error"``, and ``"skipped"`` are failures, not silence.
+    """
+    reasons: list[str] = []
+    engine_errors = sorted(r["label"] for r in hostile if r["engine_error"])
+    if engine_errors:
+        reasons.append(f"engine errors on: {engine_errors}")
+    observed = {r["label"] for r in hostile if not r["faithful"] and r["engine_output"]}
+    if observed != KNOWN_UNFAITHFUL_LABELS:
+        missing = sorted(KNOWN_UNFAITHFUL_LABELS - observed)
+        extra = sorted(observed - KNOWN_UNFAITHFUL_LABELS)
+        reasons.append(f"unfaithful label drift (missing {missing}, extra {extra})")
+    not_refused = sorted(
+        r["label"]
+        for r in hostile
+        if r["label"] in KNOWN_UNFAITHFUL_LABELS and r["translator_verdict"] != "refused"
+    )
+    if not_refused:
+        reasons.append(f"known unfaithful labels not refused: {not_refused}")
+    false_refusals = sorted(r["label"] for r in ordinary if not r["accepted"])
+    if false_refusals:
+        reasons.append(f"false refusals: {false_refusals}")
+    live_bad = [r for r in live if r["result"] != "pass"]
+    if live_bad:
+        reasons.append(f"live-table non-pass results: {len(live_bad)}")
+    return (not reasons, reasons)
+
+
 def run_hostile_sweep() -> list[dict]:
     """Sweep the hostile corpus through the engine and translator."""
     print("Phase 1: Hostile corpus sweep", flush=True)
@@ -328,19 +385,8 @@ def write_results(
     faithful_count = sum(1 for r in hostile if r["faithful"])
     unfaithful_count = len(unfaithful)
 
-    # Known mis-serialisation classes
-    known_unfaithful_labels = {
-        "apostrophe double",
-        "apostrophe triple",
-        "apostrophe quadruple",
-        "apostrophe in word",
-        "apostrophe run + text",
-        "backslash-apostrophe",
-        "backslash-apostrophe in word",
-        "backslash-apostrophe payload",
-    }
     discovered_unfaithful = {
-        r["label"] for r in unfaithful if r["label"] not in known_unfaithful_labels
+        r["label"] for r in unfaithful if r["label"] not in KNOWN_UNFAITHFUL_LABELS
     }
 
     # Ordinary corpus false refusals
@@ -348,15 +394,12 @@ def write_results(
 
     # Live table results
     live_pass = sum(1 for r in live if r["result"] == "pass")
-    live_fail = sum(1 for r in live if r["result"] == "FAIL")
+    live_fail = sum(1 for r in live if r["result"] != "pass")
 
-    # Verdict
-    prediction_supported = (
-        all(r["label"] in known_unfaithful_labels for r in unfaithful)
-        and not discovered_unfaithful
-        and len(false_refusals) == 0
-        and live_fail == 0
-    )
+    # Verdict — the single shared predicate (JSON, Markdown, and the
+    # console summary in main() all use it, so no surface can report
+    # PASS on incomplete results).
+    prediction_supported, verdict_reasons = _verdict(hostile, ordinary, live)
 
     status = "PASS" if prediction_supported else "FAIL"
 
@@ -366,6 +409,7 @@ def write_results(
         "date": "2026-09-02",
         "status": status,
         "prediction_supported": prediction_supported,
+        "verdict_reasons": verdict_reasons if not prediction_supported else [],
         "hostile_corpus": hostile,
         "ordinary_corpus": ordinary,
         "live_table": live,
@@ -373,7 +417,7 @@ def write_results(
             "hostile_total": len(hostile),
             "faithful": faithful_count,
             "unfaithful": unfaithful_count,
-            "known_unfaithful_classes": sorted(known_unfaithful_labels),
+            "known_unfaithful_classes": sorted(KNOWN_UNFAITHFUL_LABELS),
             "discovered_unfaithful_classes": sorted(discovered_unfaithful),
             "ordinary_total": len(ordinary),
             "false_refusals": len(false_refusals),
@@ -417,6 +461,8 @@ def write_results(
         md_lines.append(f"- Live-table failures: {live_fail}")
     else:
         md_lines.append("- Decision: additional investigation required")
+        for reason in verdict_reasons:
+            md_lines.append(f"- Verdict failure: {reason}")
         if discovered_unfaithful:
             md_lines.append(
                 f"- Discovered additional unfaithful classes: {sorted(discovered_unfaithful)}"
@@ -492,7 +538,7 @@ def write_results(
     )
     known_refused = all(
         any(r["label"] == lbl and r["translator_verdict"] == "refused" for r in hostile)
-        for lbl in known_unfaithful_labels
+        for lbl in KNOWN_UNFAITHFUL_LABELS
     )
     refused_str = "all refused" if known_refused else "NOT all refused"
     refused_check = "✅" if known_refused else "❌"
@@ -580,21 +626,15 @@ def main() -> None:
 
     write_results(hostile, ordinary, live, output_dir)
 
-    # Print summary
+    # Print summary — same shared predicate as the JSON and Markdown
+    # verdicts, so the console can never report PASS on results the
+    # written report would fail.
     unfaithful = [r for r in hostile if not r["faithful"] and r["engine_output"]]
-    known_unfaithful_labels = {
-        "apostrophe double",
-        "apostrophe triple",
-        "apostrophe quadruple",
-        "apostrophe in word",
-        "apostrophe run + text",
-        "backslash-apostrophe",
-        "backslash-apostrophe in word",
-        "backslash-apostrophe payload",
-    }
-    discovered = [r for r in unfaithful if r["label"] not in known_unfaithful_labels]
+    discovered = [r for r in unfaithful if r["label"] not in KNOWN_UNFAITHFUL_LABELS]
     false_refusals = [r for r in ordinary if not r["accepted"]]
-    live_fail = sum(1 for r in live if r["result"] == "FAIL")
+    supported, reasons = _verdict(hostile, ordinary, live)
+    live_pass = sum(1 for r in live if r["result"] == "pass")
+    live_fail = sum(1 for r in live if r["result"] != "pass")
     print(flush=True)
     print("=" * 60, flush=True)
     print(f"Hostile corpus: {len(hostile)} values, {len(unfaithful)} unfaithful", flush=True)
@@ -604,15 +644,16 @@ def main() -> None:
         f"Ordinary corpus: {len(ordinary)} values, {len(false_refusals)} false refusals",
         flush=True,
     )
-    live_pass = sum(1 for r in live if r["result"] == "pass")
     print(
         f"Live table: {live_pass} passed, {live_fail} failed",
         flush=True,
     )
-    if not discovered and not false_refusals and live_fail == 0:
+    if supported:
         print("VERDICT: PASS — prediction supported", flush=True)
     else:
         print("VERDICT: FAIL — prediction not supported", flush=True)
+        for reason in reasons:
+            print(f"  - {reason}", flush=True)
     print("=" * 60, flush=True)
 
 
