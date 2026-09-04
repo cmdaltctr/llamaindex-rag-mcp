@@ -165,7 +165,7 @@ def _translate(value: object) -> tuple[str | None, str | None]:
 
 def _is_faithful(value: object, sql: str) -> bool:
     """Check if the engine output faithfully represents the value."""
-    from rag_mcp.core.vectordb.lance_filter import _is_faithful_literal
+    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
 
     return _is_faithful_literal(value, sql)
 

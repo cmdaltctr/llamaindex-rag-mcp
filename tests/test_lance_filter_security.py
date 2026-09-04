@@ -405,7 +405,7 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
             # fail-closed check exists to stop.
             return str(self._value)
 
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_filter.lit", _BrokenLit, raising=True)
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _BrokenLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": "x' OR '1'='1"})
 
@@ -423,7 +423,7 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
 )
 def test_literal_forms_are_closed(value: object, pattern: str) -> None:
     """Engine literal serialisations match a closed form per type."""
-    from rag_mcp.core.vectordb.lance_filter import _literal_sql
+    from rag_mcp.core.vectordb.lance_literal import _literal_sql
 
     assert re.fullmatch(pattern, _literal_sql(value))
 
@@ -596,7 +596,7 @@ def test_mismatched_scalar_refused(
     refuse the filter rather than emit a literal that matches the wrong
     rows.
     """
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_filter.lit", _MismatchedLit, raising=True)
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _MismatchedLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": value})
 
@@ -608,7 +608,7 @@ def test_faithful_scalar_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
     of every supported scalar type pass the faithfulness check without
     false refusal.
     """
-    from rag_mcp.core.vectordb.lance_filter import _literal_sql
+    from rag_mcp.core.vectordb.lance_literal import _literal_sql
 
     values: list[object] = [
         True,
