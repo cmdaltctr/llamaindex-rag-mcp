@@ -51,12 +51,48 @@ alongside the answer.
 Citations SHALL be constructed by the system from retrieved chunk lineage.
 The system SHALL NOT depend on the model to emit correct identifiers.
 
+The citation wire format is normative:
+
+- Supplied sources are numbered from 1 in the order they are placed in
+  the prompt, and each prompt source is labelled with its ordinal in a
+  bracket marker (`[1]`, `[2]`, ...).
+- The model cites a source by emitting a bracket group of one or more
+  comma-separated ordinals (`[1]`, `[2, 4]`); whitespace inside the
+  brackets is tolerated.
+- A bracket group containing anything non-numeric cites nothing: the
+  whole group is dropped, so an answer mixing valid and invalid
+  citations is grounded only in its valid ordinals.
+- An ordinal string longer than nine digits SHALL be rejected with an
+  actionable error (attributed to generation, with evidence retained)
+  before integer conversion.
+- Ordinals outside the supplied range (`< 1` or `> ` the number of
+  supplied sources) are discarded, never resolved and never fabricated.
+- Valid ordinals are deduplicated and reported in ascending order.
+- Ordinal `N` maps to the `N`-th supplied evidence row, and the citation
+  entry carries that row's `chunk_id` (re-fetchable as exactly one
+  stored chunk), every constituent `chunk_id` of a merged assembly row,
+  and its lineage fields (`source_id`, `source_version`, `source`,
+  `source_chunk_index`).
+- A non-empty answer from which no valid ordinal survives has status
+  `generation_unverified` (never `ok`), and the supplied evidence is
+  still returned.
+
 #### Scenario: A citation resolves to exactly one stored chunk
 
 - **GIVEN** an answer citing source N
 - **WHEN** the `chunk_id` the system associated with source N is used as a
   metadata filter
 - **THEN** exactly the corresponding stored chunk SHALL be retrieved
+
+#### Scenario: Malformed and out-of-range citation groups cite nothing
+
+- **GIVEN** a model answer whose bracket groups include a non-numeric
+  entry (`[1, x]`), an out-of-range ordinal (`[99]`), and a valid one
+  (`[2]`)
+- **WHEN** the result is assembled
+- **THEN** only ordinal 2 SHALL produce a citation
+- **AND** no citation, identifier, or lineage SHALL be fabricated for the
+  malformed or out-of-range entries
 
 #### Scenario: A substantive answer needs a valid citation
 
@@ -124,6 +160,56 @@ retrieval problem from a generation problem without reading logs.
 - **THEN** the failure SHALL be attributed to retrieval
 - **AND** no language-model call SHALL have been made
 
+### Requirement: Answer results carry a closed status schema
+
+Every answering result SHALL carry the same top-level fields with
+closed value sets, so consumers can branch on shape rather than probe
+for keys. The fields are: `status`, `query`, `answer`, `citations`,
+`evidence`, `failure_stage`, `error`, and `completion_source`. The
+`status` value SHALL be one of `ok`, `no_evidence`,
+`generation_unverified`, or `error`; `failure_stage`, when set, SHALL
+be `retrieval` or `generation` and is `null` when no stage-attributed
+failure occurred; `completion_source` SHALL be one of `none`,
+`client_mrtr`, `client_legacy`, or `server`.
+
+Per status:
+
+- `ok`: a grounded answer. `answer` is the model text, `citations` is
+  non-empty and built from supplied evidence, `evidence` is every chunk
+  placed in the prompt, and `failure_stage` and `error` are `null`.
+- `no_evidence`: retrieval returned nothing above threshold. `answer`
+  is `null`, `citations` and `evidence` are empty, `failure_stage` and
+  `error` are `null`, and no language-model call was made.
+- `generation_unverified`: a non-empty answer with no valid supplied
+  ordinal. `answer` and `evidence` are returned, `citations` is empty,
+  and `failure_stage` and `error` are `null`.
+- `error`: `answer` is `null`, `citations` is empty, and `error` names
+  the failure actionably. `evidence` is the retrieved chunks when
+  retrieval succeeded (generation-stage failures retain the evidence)
+  and empty when it did not. `failure_stage` names the failed stage,
+  or is `null` for failures outside both stages (for example the
+  capability being disabled or no provider being configured).
+
+A `diagnostics` field (with `retrieval_ms`, `generation_ms`, and
+`completion_calls`) SHALL be present exactly when diagnostics were
+requested, on every status.
+
+#### Scenario: The result shape is identical across statuses
+
+- **WHEN** any answering result is returned, on any status
+- **THEN** it SHALL carry the eight top-level fields with the closed
+  value sets above
+- **AND** a consumer SHALL be able to branch on `status` without
+  probing for keys
+
+#### Scenario: Diagnostics are present exactly when requested
+
+- **GIVEN** diagnostics are requested
+- **WHEN** the result is returned, on any status
+- **THEN** it SHALL carry `diagnostics` with retrieval and generation
+  durations reported separately and the completion-call count
+- **AND** a result with diagnostics not requested SHALL omit the field
+
 ### Requirement: The answer model is injected, never resolved inside core
 
 The language model SHALL be constructed by the composition root and passed
@@ -154,11 +240,17 @@ provider module.
 
 ### Requirement: Modern client model requests use multi-round trips where available
 
-Where the calling MCP client advertises model-request capability, the tool
-SHALL prefer the current protocol's multi-round-trip request mechanism and
-SHALL report the selected completion source. It SHALL NOT use deprecated
-server-initiated sampling on a modern session. A negotiated legacy session MAY
-use the older path as a labelled compatibility mode.
+Where the calling MCP client advertises model-request capability AND
+the server is configured to prefer the client model
+(`answer.prefer_client_sampling`), the tool SHALL prefer the current
+protocol's multi-round-trip request mechanism and SHALL report the
+selected completion source. Client sampling is opt-in: a capable client
+without the preference set SHALL be served by the configured
+server-side model, and preference wins over capability in neither
+direction — both must hold for a client source to be selected. The tool
+SHALL NOT use deprecated server-initiated sampling on a modern session.
+A negotiated legacy session MAY use the older path as a labelled
+compatibility mode, and only when legacy sampling is explicitly allowed.
 
 #### Scenario: Modern client sampling uses MRTR
 
