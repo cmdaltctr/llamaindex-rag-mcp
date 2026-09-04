@@ -1,7 +1,13 @@
 # retrieval-score-semantics Specification
 
 ## Purpose
-TBD - created by archiving change harden-pipeline-correctness-before-calibration. Update Purpose after archive.
+Fixes what retrieval scores mean: dense retrieval exposes canonical
+higher-is-better scores, contract-tested across stores; score kinds are
+never compared across incompatible scales; a positive similarity
+threshold in non-reranked hybrid mode has explicit semantics; and
+diagnostics expose which score kind filtered the results. Retrieval
+quality work depends on these meanings being stable.
+
 ## Requirements
 ### Requirement: Dense retrieval exposes canonical higher-is-better scores
 

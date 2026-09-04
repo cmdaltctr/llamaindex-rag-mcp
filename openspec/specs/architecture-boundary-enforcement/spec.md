@@ -1,7 +1,13 @@
 # architecture-boundary-enforcement Specification
 
 ## Purpose
-TBD - created by archiving change complete-architecture-v2-conformance. Update Purpose after archive.
+Defines the layering invariants that keep the codebase modular as it
+grows: provider SDKs stay inside their implementation leaves,
+configuration stays a leaf, integrations stay acyclic, business logic
+lives under core, and no file outgrows the 500-line ceiling. The
+lint-imports contracts and the file-size test are the executable forms
+of these rules; this spec is the contract they enforce.
+
 ## Requirements
 ### Requirement: ChromaDB confined to the vector store implementation
 

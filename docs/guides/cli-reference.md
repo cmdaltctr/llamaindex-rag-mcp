@@ -151,7 +151,18 @@ Statuses:
 - `no_evidence` — prints `No supporting evidence was found.` No model call ran.
 - `generation_unverified` — prints a warning; the answer carried no
   verifiable citation. Treat it as unverified.
+- `unverified_claims` — claim verification was enabled
+  (`ANSWER__VERIFY_CLAIMS=true`) and one or more cited claims failed the
+  judge. The answer, citations, and evidence are all retained; `--json`
+  output lists the failing claims under `unverified_claims`.
 - `error` — prints the message and exits 1.
+
+Claim verification is **settings-only**: there is deliberately no
+`--verify` flag. Control it with `ANSWER__VERIFY_CLAIMS` (or a profile
+bundle's `answer.verify_claims`); when the judge cannot run, `--json`
+output carries `verification_skipped` with the reason and the status
+stays `ok`. See
+[ADR-059](../adr/059-claim-verification-stage.md).
 
 With no answer model configured, a run that finds evidence exits 1 with
 an actionable message naming `ANSWER__PROVIDER`. An empty collection

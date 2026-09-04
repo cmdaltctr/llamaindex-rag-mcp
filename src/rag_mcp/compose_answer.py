@@ -9,6 +9,12 @@ answering is disabled or the provider's optional dependency is missing,
 so a retrieval-only deployment stays usable.  An unknown provider name
 raises ``ValueError`` (validated fail-fast at startup by
 ``compose._resolve_active_strategies``, task 3.4).
+
+``build_verify_llm`` (ADR-059) follows the same policy for the claim-
+verification judge: ``None`` when verification is disabled or the
+optional dependency is missing; credential/configuration ``ImportError``
+stays loud for the TRANSPORT to convert into ``verification_skipped``
+(the answer itself must never fail behind an unconfigured judge).
 """
 
 from __future__ import annotations
@@ -74,4 +80,149 @@ def build_answer_llm(settings: Settings | None = None) -> Any:
         # credentials and similar configuration errors) stays loud.
         # A retrieval-only deployment remains usable; the answering
         # tools return the actionable error.
+        return None
+
+
+def validate_verify_provider(settings: Settings) -> None:
+    """Fail fast at startup on an unknown verify-provider name (ADR-059).
+
+    Mirrors the ANSWER__PROVIDER gate: only validated when the judge is
+    actually opted in, so default deployments gain no new failure mode.
+    Only the NAME is validated; :func:`build_verify_llm` stays lazy.
+
+    The shipped operational profiles are validated too when their
+    bundle enables verification: a bad ``verify_provider`` inside a
+    profile YAML fails startup rather than degrading on the first
+    request.  Custom operator-authored bundles are not known here and
+    keep the request-time ``verification_skipped`` degradation.
+
+    Args:
+        settings: Resolved settings.
+
+    Raises:
+        ValueError: When an alias-resolved provider name is not in the
+            LLM registry, listing the registered names.
+    """
+    from .core.profiles.resolver import OPERATIONAL_PROFILES
+    from .core.providers.llm import registry as llm_registry
+
+    def _validate(raw_provider: str, origin: str) -> None:
+        raw = str(raw_provider or "cloud").strip()
+        if raw in ("", "cloud"):
+            name = settings.cloud_backend
+        elif raw == "local":
+            name = settings.local_backend
+        else:
+            name = raw
+        if name not in llm_registry.available():
+            raise ValueError(
+                f"{origin} names verify provider {raw_provider!r}, which is not a "
+                f"registered LLM provider (aliases: cloud, local). Available: "
+                f"{', '.join(llm_registry.available())}."
+            )
+
+    if settings.answer.enabled and settings.answer.verify_claims:
+        _validate(settings.answer.verify_provider, "ANSWER__VERIFY_PROVIDER")
+
+    # Profile bundles can enable verification per collection even when
+    # the global setting is off — validate those names at startup too.
+    if not settings.answer.enabled:
+        return
+    from .config import _load_profile_bundle
+
+    for profile in sorted(OPERATIONAL_PROFILES):
+        bundle = _load_profile_bundle(profile) or {}
+        answer_bundle = bundle.get("answer", {}) or {}
+        if _profile_truthy(answer_bundle.get("verify_claims")):
+            _validate(
+                str(answer_bundle.get("verify_provider", "cloud")),
+                f"Profile {profile!r} answer.verify_provider",
+            )
+
+
+def _profile_truthy(value: object) -> bool:
+    """Parse a YAML bundle boolean using legacy ``.lower() == "true"``."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return bool(value)
+
+
+def build_verify_llm(
+    settings: Settings | None = None,
+    *,
+    answer_block: Any | None = None,
+) -> Any:
+    """Construct the claim-verification judge LLM (ADR-059).
+
+    Resolves through the same LLM provider registry as the answer
+    model, with ``answer.verify_model`` (empty string → the provider's
+    default model, e.g. ``openrouter_llm_model``) passed via the
+    ``answer_model`` override.
+
+    Resolution is lazy — ``core/`` and the transports may call it per
+    answer without paying an import at startup (retrieval-only
+    deployments stay usable).
+
+    Args:
+        settings: Resolved settings (defaults to the singleton).
+        answer_block: Optional resolved :class:`AnswerBlock`
+            (``EffectiveSettings.answer``) carrying the operation's
+            final ``verify_*`` values — profile/env precedence already
+            applied by the caller.  When given, its ``enabled`` and
+            ``verify_*`` fields drive the build so a profile-enabled
+            judge is honoured; backends, credentials and timeout still
+            come from *settings*.
+
+    Returns:
+        A configured LlamaIndex LLM, or ``None`` when verification is
+        disabled (``verify_claims`` false) or the provider's optional
+        dependency is missing.
+
+    Raises:
+        ValueError: When ``verify_provider`` (after alias resolution)
+            names no registered provider.  Also surfaced fail-fast at
+            startup by ``compose._resolve_active_strategies``.
+        ImportError: When the provider requires credentials or other
+            configuration that is absent.  Deliberately loud HERE; the
+            transport catches it and reports ``verification_skipped``
+            naming the error so the answer never fails behind an
+            unconfigured judge (spec: graceful degradation).
+    """
+    from .config import get_settings
+    from .core.providers.llm import registry as llm_registry
+
+    if settings is None:
+        settings = get_settings()
+
+    block = answer_block if answer_block is not None else settings.answer
+    if not (getattr(block, "enabled", True) and getattr(block, "verify_claims", False)):
+        return None
+
+    raw = str(getattr(block, "verify_provider", "cloud") or "cloud").strip()
+    verify_model = str(getattr(block, "verify_model", "") or "").strip()
+    if raw in ("", "cloud"):
+        name = settings.cloud_backend
+    elif raw == "local":
+        name = settings.local_backend
+    else:
+        name = raw
+    if name not in llm_registry.available():
+        raise ValueError(
+            f"ANSWER__VERIFY_PROVIDER={getattr(block, 'verify_provider', '')!r} is not a "
+            f"registered LLM provider (aliases: cloud, local). Available: "
+            f"{', '.join(llm_registry.available())}."
+        )
+    try:
+        build = llm_registry.get(name)
+        return build(
+            settings,
+            timeout=settings.answer.timeout,
+            answer_model=(verify_model or None),
+        )
+    except ModuleNotFoundError:
+        # Missing optional package — same policy as build_answer_llm:
+        # the judge silently does not exist, verification degrades to
+        # verification_skipped, retrieval-only startup stays usable.
         return None

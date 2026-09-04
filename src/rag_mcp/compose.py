@@ -251,8 +251,9 @@ def storage_summary(settings: Settings | None = None) -> str:
 
 # Answer-model builder lives in a sibling module (task 2.9: this module
 # sits at the 500-line ceiling); re-exported here because the composition
-# root is the sanctioned construction surface.
-from .compose_answer import build_answer_llm  # noqa: E402,F401
+# root is the sanctioned construction surface.  build_verify_llm (ADR-059)
+# joins it for the same reason.
+from .compose_answer import build_answer_llm, build_verify_llm  # noqa: E402,F401
 
 # Backward-compatible import surface (existing callers/tests).
 from .core.vectordb.summary import storage_summary as _summary_storage  # noqa: E402
@@ -364,6 +365,14 @@ def _resolve_active_strategies(settings: Settings) -> None:
                 "registered LLM provider. Available: "
                 f"{', '.join(llm_registry.available())}."
             )
+
+    # The verification judge (ADR-059) validates the same way as the
+    # answer provider above, but only when opted in — the alias
+    # resolution and registry check live beside the builder in
+    # ``compose_answer`` (this module sits at the 500-line ceiling).
+    from .compose_answer import validate_verify_provider
+
+    validate_verify_provider(settings)
 
     for label, registry, name in active:
         if label == "chunking" and name == "markdown":

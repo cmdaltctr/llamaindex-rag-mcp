@@ -1,7 +1,12 @@
 # settings-dependency-injection Specification
 
 ## Purpose
-TBD - created by archiving change complete-architecture-v2-conformance. Update Purpose after archive.
+Defines how configuration reaches the code: one frozen
+EffectiveSettings value object, threaded through operations as a
+parameter (ADR-037). No settings singleton outside the composition
+root, and no import-time snapshots — a deployment's configuration is a
+fact about an operation, not about the process.
+
 ## Requirements
 ### Requirement: Immutable effective settings value object
 

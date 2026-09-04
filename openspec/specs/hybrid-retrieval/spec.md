@@ -1,7 +1,12 @@
 # hybrid-retrieval Specification
 
 ## Purpose
-TBD - created by archiving change rag-hybrid-retrieval. Update Purpose after archive.
+Defines opt-in hybrid retrieval: dense vector search fused with a
+sparse backend through Reciprocal Rank Fusion (k=60), with a BM25
+fallback index that is scoped per store and collection and invalidated
+on every mutation. Mixed-coverage collections warn once, and the mode
+is reachable from both MCP and CLI.
+
 ## Requirements
 ### Requirement: Hybrid retrieval mode is opt-in
 The system SHALL provide an opt-in hybrid retrieval mode that fuses dense vector search with sparse keyword retrieval. When `hybrid=True` is requested via the MCP tool or `retrieval.search()`, the system SHALL run both retrievers and fuse their rankings. When `hybrid=False` (the default), the system SHALL behave exactly as the existing dense-only pipeline.

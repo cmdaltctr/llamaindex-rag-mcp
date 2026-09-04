@@ -1,7 +1,12 @@
 # type-aware-ingestion Specification
 
 ## Purpose
-TBD - created by archiving change harden-pipeline-correctness-before-calibration. Update Purpose after archive.
+Defines content-aware ingestion: code files are split by a verifiably
+active AST-aware splitter, fallback behaviour is observable, Markdown
+and sentence helper paths honour the same configured post-processing,
+and the ingestible extension set is scoped per profile. What a file IS
+decides how it is chunked.
+
 ## Requirements
 ### Requirement: Code files use a verifiably active AST-aware splitter
 

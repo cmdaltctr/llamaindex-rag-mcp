@@ -1,7 +1,12 @@
 # vector-store-registry Specification
 
 ## Purpose
-TBD - created by archiving change add-lancedb-vectordb-backend. Update Purpose after archive.
+Defines how vector stores are selected: through a registry, never a
+branch over names. Process-wide store access requires prior composition,
+optional backend availability is registry metadata, and sparse
+capability follows the selected store. A new backend is one module plus
+one registration.
+
 ## Requirements
 ### Requirement: Vector stores SHALL be selected through a registry
 

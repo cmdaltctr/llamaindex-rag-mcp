@@ -175,8 +175,11 @@ class AnswerBlock(BaseModel):
     Mirrors :class:`rag_mcp.core.answer.settings.AnswerSettings` (the
     config-side model); both must stay in sync — the MetadataBlock/
     MetadataSettings pair established the convention.  Answering is
-    server-level configuration: the profile resolver does not overlay
-    these fields per collection.
+    server-level configuration, with one carve-out: the three
+    ``verify_*`` fields ARE profile-overlaid per collection (the
+    ``documents`` use case may opt into the cloud judge while
+    ``codebase`` stays speed-first); every other answer field stays
+    server-level.
     """
 
     # Frozen like the parent: EffectiveSettings.model_copy shares block
@@ -193,6 +196,12 @@ class AnswerBlock(BaseModel):
     max_output_tokens: int = Field(default=2048, gt=0)
     prefer_client_sampling: bool = True
     allow_legacy_sampling: bool = True
+    # Claim verification (ADR-059): opt-in cloud judge.  The three
+    # verify fields are the profile-overlaid carve-out; see the class
+    # docstring.  Keep in sync with AnswerSettings.
+    verify_claims: bool = False
+    verify_model: str = ""
+    verify_provider: str = "cloud"
 
 
 class EffectiveSettings(BaseModel):

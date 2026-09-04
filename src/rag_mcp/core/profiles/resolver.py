@@ -87,6 +87,7 @@ def _bundle_to_effective(
     chunking = bundle.get("chunking", {}) or {}
     metadata = bundle.get("metadata", {}) or {}
     ingestion = bundle.get("ingestion", {}) or {}
+    answer = bundle.get("answer", {}) or {}
 
     raw_top_k = os.environ.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
     try:
@@ -138,6 +139,26 @@ def _bundle_to_effective(
         )
     )
 
+    # Claim verification (ADR-059): the three verify fields are the one
+    # answer-block carve-out that IS profile-overlaid.  Precedence matches
+    # every other Tier 2 lever: env wins over the bundle, the bundle wins
+    # over the server-default base.  Everything else on the answer block
+    # stays server-level configuration.
+    verify_claims = _parse_profile_bool(
+        os.environ.get(
+            "ANSWER__VERIFY_CLAIMS", answer.get("verify_claims", base.answer.verify_claims)
+        )
+    )
+    verify_model = str(
+        os.environ.get("ANSWER__VERIFY_MODEL", answer.get("verify_model", base.answer.verify_model))
+    )
+    verify_provider = str(
+        os.environ.get(
+            "ANSWER__VERIFY_PROVIDER",
+            answer.get("verify_provider", base.answer.verify_provider),
+        )
+    )
+
     return base.model_copy(
         update={
             "profile_name": profile_name,
@@ -155,6 +176,13 @@ def _bundle_to_effective(
                 }
             ),
             "metadata": base.metadata.model_copy(update={"taxonomy_mode": metadata_taxonomy_mode}),
+            "answer": base.answer.model_copy(
+                update={
+                    "verify_claims": verify_claims,
+                    "verify_model": verify_model,
+                    "verify_provider": verify_provider,
+                }
+            ),
         }
     )
 

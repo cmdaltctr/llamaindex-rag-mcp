@@ -1,7 +1,12 @@
 # retrieval-context-assembly Specification
 
 ## Purpose
-TBD - created by archiving change fix-retrieval-freshness-and-context-assembly-2. Update Purpose after archive.
+Defines the explicit context-assembly stage between ranking and
+return: overlapping adjacent chunks are merged rather than returned
+twice, neighbour expansion is opt-in and bounded, and the assembly's
+behaviour is observable in diagnostics. The caller sees assembled
+context, never duplicated fragments.
+
 ## Requirements
 ### Requirement: Retrieval has an explicit context-assembly stage
 

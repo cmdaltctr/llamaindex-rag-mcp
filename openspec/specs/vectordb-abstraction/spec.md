@@ -1,7 +1,12 @@
 # vectordb-abstraction Specification
 
 ## Purpose
-TBD - created by archiving change phase-3-refactor-vectordb-abstraction. Update Purpose after archive.
+Defines the VectorStore abstract contract that every backend
+implements, with ChromaDB's specific behaviours encoded honestly in the
+contract rather than smeared across call sites. Store selection is
+configuration; implementations may accept an injected client; and the
+Chroma client construction keeps a single import boundary.
+
 ## Requirements
 ### Requirement: VectorStore abstract contract
 

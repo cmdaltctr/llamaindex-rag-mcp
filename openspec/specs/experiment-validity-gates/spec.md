@@ -1,7 +1,14 @@
 # experiment-validity-gates Specification
 
 ## Purpose
-TBD - created by archiving change harden-pipeline-correctness-before-calibration. Update Purpose after archive.
+Sets the validity bar for experiments under ``experiments/``:
+machine-checkable plans, runtime manifests recording what actually ran,
+manipulated variables that are observed rather than assumed, paired
+comparisons by default, execution controls for time and hardware
+confounds, and pre-registered practical gates on primary effects.
+Calibration decisions cite these gates; without them a PASS is an
+opinion.
+
 ## Requirements
 ### Requirement: Experiment plans are machine-checkable
 

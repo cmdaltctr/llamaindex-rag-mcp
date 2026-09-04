@@ -1,7 +1,13 @@
 # semantic-technical-reranker-policy Specification
 
 ## Purpose
-TBD - created by archiving change rag-semantic-technical-reranker-policy. Update Purpose after archive.
+Defines the workload-aware rerank policy that split from a single
+global default: the codebase profile stays speed-first (the reranker
+degrades technical-workload retrieval, Experiment 10), while the
+documents profile restores it for semantic workloads (ADR-030). Public
+search surfaces follow the config defaults; profiles resolve the
+effective policy.
+
 ## Requirements
 ### Requirement: Effective rerank policy resolution
 

@@ -125,6 +125,7 @@ notice.
 | `ok`                    | The answer carries at least one verifiable citation                                                                 |
 | `no_evidence`           | Retrieval found nothing. Returned before any model call — no completion runs, whatever the provider configuration |
 | `generation_unverified` | The model produced a non-empty answer with no valid citation. Never reported as `ok`. The evidence is still returned |
+| `unverified_claims`     | Verification was enabled and one or more cited claims failed the judge. The answer, citations, and evidence are all retained; `unverified_claims` in the result lists the failing claims. Opt-in only — see [Claim verification](#claim-verification-optional) |
 | `error`                 | A stage failed. `failure_stage` separates `retrieval` from `generation`; `error` carries the message. The tool never raises |
 
 ### Result shape
@@ -132,7 +133,12 @@ notice.
 Every result carries `query`, `answer`, `citations[]`, `evidence[]`,
 `failure_stage` (`retrieval`, `generation`, or `null`), `error`, and
 `completion_source`. With `diagnostics: true`, a `diagnostics` object adds
-`retrieval_ms`, `generation_ms`, and `completion_calls`.
+`retrieval_ms`, `generation_ms`, and `completion_calls`; when claim
+verification ran, it also adds `verification_ms` and `verification_calls`,
+kept separate from retrieval and generation timings. When verification
+ran and passed, the result carries `verified: true`; when the judge could
+not run, the result carries `verification_skipped` with the reason (see
+[Claim verification](#claim-verification-optional)).
 
 Citations and evidence rows carry `ordinal`, `chunk_id`, `chunk_ids`,
 `source_id`, `source_version`, `source`, `source_chunk_index`, `score`, and
@@ -169,6 +175,55 @@ The prompt is a fixed instruction block. Retrieved text is presented as
 quoted sources inside it. This does not eliminate prompt injection from
 ingested content — the risk is inherent to retrieval-augmented generation.
 It is mitigated, not solved. Treat ingested content as untrusted input.
+
+### Claim verification (optional)
+
+A citation proves the ordinal resolves to stored lineage. It does not prove
+the cited evidence supports the claim. Setting `ANSWER__VERIFY_CLAIMS=true`
+adds an LLM judge that closes this gap (security review F4; mitigated by
+[ADR-059](../adr/059-claim-verification-stage.md), with the evidence from
+[experiment 20](../../experiments/20-citation-faithfulness-2026-09-02/)).
+
+The judge splits the answer into cited claims and evaluates each against
+the text of the evidence its citation references — one judge call **per
+cited claim**, to the **configured judge provider** (`ANSWER__VERIFY_PROVIDER`;
+default `cloud`, aliasing the configured cloud backend — experiment 20
+measured P95 ≈ 3.3 s per claim on the GLM-5.3 cloud judge, and a local
+`qwen3:4b` judge was infeasible, so the cloud path is the only tested
+one). This is an explicit opt-in against the local-first policy of
+ADR-024. Choose it knowingly.
+
+Outcomes:
+
+- Every cited claim supported → status stays `ok` and the result carries
+  `verified: true`.
+- Any claim unsupported → `status="unverified_claims"`; the result lists
+  the failing claims and keeps the answer, citations, and evidence, so
+  the caller decides what to do.
+- Mixed supported/unparseable → also `unverified_claims`: an unreadable
+  verdict is never silently passed, and the claim is listed with
+  `verdict: "unparseable"`.
+- Judge unreachable (missing API key, network error) or every verdict
+  unparseable → status stays `ok` (the referential-only guarantee) with a
+  `verification_skipped` field naming the reason. The answer is never
+  blocked behind an unconfigured cloud dependency.
+- Disabled (the default) → no judge calls, no new fields, no behavioural
+  change.
+
+The judge prompt wraps evidence in explicit `<evidence>` delimiters,
+labels it untrusted source data, and repeats the instruction hierarchy
+after each block; angle brackets inside untrusted text are escaped so
+the content cannot forge its own delimiter. This is a mitigation, not
+a guarantee — treat verification results as advisory when the indexed
+evidence may be attacker-controlled.
+
+Configuration: `ANSWER__VERIFY_CLAIMS` (default `false`),
+`ANSWER__VERIFY_MODEL` (default empty — the provider's default model),
+`ANSWER__VERIFY_PROVIDER` (default `cloud`; aliases `cloud`/`local`
+resolve to the configured backends, anything else is a literal registry
+name validated at startup). Profile bundles may override the three keys
+per collection; environment variables still win over the profile. See
+[Configuration](configuration.md#answering--answer__).
 
 Configuration: the `ANSWER__*` variables. See
 [Configuration](configuration.md#answering--answer__).

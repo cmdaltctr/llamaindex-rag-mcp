@@ -83,6 +83,15 @@ SHALL list which claims failed verification.
 - **WHEN** verification completes
 - **THEN** the result SHALL have `status="ok"` and `verified=true`
 
+#### Scenario: Mixed supported and unparseable verdicts
+
+- **GIVEN** `ANSWER__VERIFY_CLAIMS=true` and an answer with two claims
+- **AND** one verdict is `supported` and one is `unparseable`
+- **WHEN** verification completes
+- **THEN** the result SHALL have `status="unverified_claims"`
+- **AND** the unparseable claim SHALL be listed with `verdict="unparseable"`
+- **AND** only an all-unparseable run degrades to `verification_skipped`
+
 ### Requirement: Verification degrades gracefully when the provider is unavailable
 
 When the verification provider cannot be reached — missing API key, network

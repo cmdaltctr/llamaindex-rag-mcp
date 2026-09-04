@@ -45,11 +45,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # stream/hybrid/no-evidence cases, conformance null-and-limits pins,
 # and CLI failure-path coverage (2224 -> 2363), plus the similarity
 # threshold finiteness case (2364).
-# Re-baselined at accept-lancedb-filter-policy-exception: the literal
-# faithfulness hardening added the swapped-CAST regression, closed-form
-# verifier branch pins, and the bytes/aware-datetime scalar cases to
-# the filter-security suite (2364 -> 2398; CodeRabbit remediation).
-_BASE_EXECUTED = 2398  # Includes document-backend registry + orchestrator pins,
+# Re-baselined at add-claim-verification-stage: the injected judge,
+# graceful-degradation, prompt-injection, profile/env precedence, compose,
+# diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
+# plus the review round (trailing citations, delimiter escaping, CLI
+# degradation) added 39 counted cases (2398 -> 2437).
+_BASE_EXECUTED = 2437  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the

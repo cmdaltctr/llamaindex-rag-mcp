@@ -24,13 +24,16 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from llama_index.core.schema import NodeWithScore, TextNode
-
 from ..settings import resolve_effective_settings
 from .citations import build_citations, parse_citation_ordinals
+from .evidence import _evidence_rows, _labelled_nodes  # noqa: F401 (re-exported below)
 from .retriever import SearchRetriever
 from .settings import AnswerSettings
 from .synthesis import CompletionSeam, run_synthesis
+from .verify import VerificationFields, run_verification_stage
+
+#: Shared no-op outcome for the disabled verification path.
+_NO_VERIFICATION = VerificationFields()
 
 #: Actionable message for the no-provider case (spec scenario).  Names
 #: the settings AND the MCP-client alternative so both options surface.
@@ -124,18 +127,8 @@ def _validate_request(
             )
 
 
-#: Lineage fields carried on every evidence row.  Same lineage as
-#: ``retriever._LINEAGE_FIELDS`` minus ``chunk_ids``, which each row
-#: carries normalised (representative chunk first) via the logic below.
-_EVIDENCE_FIELDS = (
-    "chunk_id",
-    "source_id",
-    "source_version",
-    "source",
-    "source_chunk_index",
-    "score",
-    "score_kind",
-)
+# Lineage fields and the evidence/node assembly helpers live in
+# ``evidence.py`` (the ADR-059 head-room split); imported above.
 
 
 def _safe_error_detail(exc: BaseException, settings: Any) -> str:
@@ -211,40 +204,6 @@ def _zero_generation_diagnostics(retrieval_ms: float) -> dict[str, Any]:
     }
 
 
-def _evidence_rows(rows: list[dict]) -> list[dict]:
-    """Normalise search rows to evidence rows with merged constituents.
-
-    Each row carries the pinned lineage fields, its 1-based ``ordinal``
-    (the supplied-source number citations refer to) and the chunk text.
-    ``chunk_ids`` lists every constituent chunk of a merged assembly row
-    (the merged row's representative included); rows that were not
-    merged carry a single-element list.
-    """
-    evidence: list[dict] = []
-    for ordinal, row in enumerate(rows, start=1):
-        entry: dict[str, Any] = {field: row.get(field) for field in _EVIDENCE_FIELDS}
-        entry["ordinal"] = ordinal
-        chunk_ids = [cid for cid in row.get("chunk_ids") or [] if cid is not None]
-        if row.get("chunk_id") is not None and row["chunk_id"] not in chunk_ids:
-            chunk_ids.insert(0, row["chunk_id"])
-        entry["chunk_ids"] = chunk_ids
-        entry["text"] = row.get("text") or ""
-        evidence.append(entry)
-    return evidence
-
-
-def _labelled_nodes(evidence: list[dict]) -> list[NodeWithScore]:
-    """Build scored nodes whose texts carry the ``[n]`` source labels."""
-    nodes: list[NodeWithScore] = []
-    for ordinal, row in enumerate(evidence, start=1):
-        metadata = {field: row.get(field) for field in _EVIDENCE_FIELDS}
-        metadata["chunk_ids"] = list(row.get("chunk_ids") or [])
-        node = TextNode(text=f"[{ordinal}]\n{row['text']}", metadata=metadata)
-        score = row.get("score")
-        nodes.append(NodeWithScore(node=node, score=float(score) if score is not None else None))
-    return nodes
-
-
 async def answer(
     query: str,
     *,
@@ -257,6 +216,8 @@ async def answer(
     metadata_filter: dict | None = None,
     include_diagnostics: bool = False,
     complete: CompletionSeam | None = None,
+    verify_complete: CompletionSeam | None = None,
+    verify_unavailable_reason: str | None = None,
     completion_source: str = "server",
     rows: list[dict] | ResolvedRetrieval | None = None,
     reranker: Any = None,
@@ -281,6 +242,12 @@ async def answer(
         complete: Injected async completion seam (``prompt -> reply``).
             ``None`` means no model is available; with evidence present
             the operation returns an actionable error.
+        verify_complete: Injected async judge seam for the optional
+            claim-verification stage (ADR-059).  ``None`` with
+            ``verify_claims`` enabled reports ``verification_skipped``.
+        verify_unavailable_reason: Why no judge seam could be built
+            (transport-resolved provider errors); reported verbatim in
+            ``verification_skipped``.
         completion_source: Label echoed in the result (``"server"``,
             ``"client_mrtr"``, ``"client_legacy"``).
         rows: Pre-retrieved ``search()`` rows — a plain list, or a
@@ -466,20 +433,45 @@ async def answer(
         return result
     grounded = bool(text.strip()) and bool(citations)
 
-    result = _base_result(
-        query,
-        completion_source,
-        status="ok" if grounded else "generation_unverified",
-        answer=text,
+    # ── Claim verification (ADR-059): after citation assembly, before
+    # the final status decision.  Opt-in; the stage never raises — a
+    # non-grounded answer (no citations) skips the judge entirely.
+    verification = _NO_VERIFICATION
+    if grounded and getattr(answer_block, "verify_claims", False):
+        verification = await run_verification_stage(
+            text,
+            evidence,
+            verify_complete=verify_complete,
+            unavailable_reason=verify_unavailable_reason,
+            error_detail=lambda exc: _safe_error_detail(exc, settings),
+        )
+
+    status = (
+        "unverified_claims"
+        if verification.failing
+        else ("ok" if grounded else "generation_unverified")
     )
+
+    result = _base_result(query, completion_source, status=status, answer=text)
     result["citations"] = citations
     result["evidence"] = evidence
+    if verification.verified:
+        result["verified"] = True
+    if verification.skipped_reason is not None:
+        result["verification_skipped"] = verification.skipped_reason
+    if verification.failing:
+        result["unverified_claims"] = list(verification.failing)
     if include_diagnostics:
         result["diagnostics"] = {
             "retrieval_ms": retrieval_ms,
             "generation_ms": generation_ms,
             "completion_calls": completion_calls,
         }
+        if verification.ran:
+            # The judge's cost is reported separately from retrieval and
+            # generation (spec: cost disclosure) — only when it ran.
+            result["diagnostics"]["verification_ms"] = verification.ms
+            result["diagnostics"]["verification_calls"] = verification.calls
     return result
 
 
@@ -487,14 +479,10 @@ async def answer(
 # The MCP transport's MRTR resolvers must predict the exact prompt each
 # completion round will use (design D6: core owns prompt construction).
 # They share these pure helpers with the pipeline so both paths agree by
-# construction rather than by duplication.
+# construction rather than by duplication.  The implementations live in
+# ``evidence.py`` (the ADR-059 head-room split); re-exported here for the
+# existing import surface.
 
-
-def evidence_rows(rows: list[dict]) -> list[dict]:
-    """Public alias of :func:`_evidence_rows` for transport resolvers."""
-    return _evidence_rows(rows)
-
-
-def labelled_nodes(evidence: list[dict]) -> list[NodeWithScore]:
-    """Public alias of :func:`_labelled_nodes` for transport resolvers."""
-    return _labelled_nodes(evidence)
+#: Public aliases for transport resolvers (see ``evidence.py``).
+evidence_rows = _evidence_rows
+labelled_nodes = _labelled_nodes

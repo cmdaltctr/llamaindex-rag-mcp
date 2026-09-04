@@ -1,7 +1,13 @@
 # lancedb-vector-store Specification
 
 ## Purpose
-TBD - created by archiving change add-lancedb-vectordb-backend. Update Purpose after archive.
+Defines the LanceDB implementation of the VectorStore contract: the
+vector space locks on first write, embedding identity is enforced
+through table config, ChromaDB-style where clauses are translated
+safely, the metadata struct evolves on later writes, and reads use
+bounded scanner pages. These are the guarantees that make LanceDB a
+qualified default backend.
+
 ## Requirements
 ### Requirement: LanceDB SHALL implement the VectorStore contract
 

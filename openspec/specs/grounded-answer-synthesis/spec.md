@@ -1,7 +1,13 @@
 # grounded-answer-synthesis Specification
 
 ## Purpose
-TBD - created by archiving change add-grounded-answer-synthesis-3. Update Purpose after archive.
+Defines the grounded answering operation: answers are synthesised only
+from retrieved evidence, citations are built deterministically from
+stored chunk lineage (never from model-invented identifiers), and the
+result carries a closed status schema that separates retrieval failure
+from generation failure. The referential citation guarantee is
+optionally backed by a semantic claim-verification judge (ADR-059),
+which never weakens the guarantee when absent or skipped.
 
 ## Requirements
 

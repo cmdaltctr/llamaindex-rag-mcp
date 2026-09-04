@@ -152,7 +152,9 @@ def _payload_failure_result(query: str, payload: Any) -> dict:
         "verifiable citations (every cited chunk_id re-fetches exactly "
         "one stored chunk). Performs ONE OR MORE language-model "
         "completion calls — use search_documents instead when you only "
-        "need ranked chunks without that cost."
+        "need ranked chunks without that cost. When ANSWER__VERIFY_CLAIMS "
+        "is enabled, each cited claim additionally costs one cloud-judge "
+        "call (~3.3 s P95 each, ADR-059)."
     ),
     annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False),
 )
@@ -199,10 +201,20 @@ async def answer_documents(
     try:
         effective = _get_profile_resolver().resolve(collection)
         # Answering is server-level configuration: take the answer block
-        # from the composition-root default, not the profile base.
+        # from the composition-root default, not the profile base — with
+        # the ADR-059 carve-out: the three verify_* fields survive the
+        # profile resolution (profile/env precedence already applied by
+        # the resolver), so a profile-enabled judge reaches the build.
         answer_block = _answer_settings()
         if answer_block is not None:
-            effective = effective.model_copy(update={"answer": answer_block})
+            merged_block = answer_block.model_copy(
+                update={
+                    "verify_claims": effective.answer.verify_claims,
+                    "verify_model": effective.answer.verify_model,
+                    "verify_provider": effective.answer.verify_provider,
+                }
+            )
+            effective = effective.model_copy(update={"answer": merged_block})
 
         # Master switch (review F4): the actionable disabled response is
         # returned BEFORE consuming client replies or selecting a source
@@ -250,6 +262,28 @@ async def answer_documents(
                 complete = _server_seam(llm)
                 label = "server"
 
+        # Claim verification (ADR-059): the judge is ALWAYS the
+        # server-side model — never the client's model, whose replies
+        # it may be judging.  A build failure degrades to
+        # verification_skipped, never a tool error.
+        verify_complete: Any = None
+        verify_unavailable_reason: str | None = None
+        if getattr(effective.answer, "verify_claims", False):
+            try:
+                verify_llm = compose.build_verify_llm(answer_block=effective.answer)
+            except Exception as exc:
+                verify_unavailable_reason = (
+                    "verification provider unavailable: "
+                    f"{type(exc).__name__}: {_error_message(exc)}"
+                )
+            else:
+                if verify_llm is not None:
+                    verify_complete = _server_seam(verify_llm)
+                else:
+                    verify_unavailable_reason = (
+                        "verification provider unavailable (no judge configured)"
+                    )
+
         return await answer(
             query,
             top_k=top_k,
@@ -261,6 +295,8 @@ async def answer_documents(
             metadata_filter=metadata_filter,
             include_diagnostics=diagnostics,
             complete=complete,
+            verify_complete=verify_complete,
+            verify_unavailable_reason=verify_unavailable_reason,
             completion_source=label,
             rows=preflight,
             reranker=_get_reranker(),
