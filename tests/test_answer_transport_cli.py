@@ -417,3 +417,66 @@ def test_answer_generation_unverified_warns_in_human_mode(
     assert result.stdout.strip() == ""
     assert "no verifiable citation" in result.stderr
     assert "Station one" in result.stderr
+
+
+# ── Claim verification (ADR-059): settings-only, threaded per CLI run ──────
+
+
+def test_answer_verification_skipped_prints_reason_when_no_judge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No usable judge → the answer stays ok and names the skip reason."""
+    _ingest(tmp_path)
+    _install_llm(monkeypatch, _FakeLLM())
+    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", lambda *a, **k: None)
+    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
+
+    result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout.strip() == "", "human mode must not write to stdout"
+    assert "Verification skipped: verification provider unavailable" in result.output
+
+
+def test_answer_unverified_claims_warns_in_human_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A judge-rejected claim warns without failing the run."""
+
+    class _JudgeLLM:
+        async def acomplete(self, prompt: str, **kwargs: Any) -> SimpleNamespace:
+            assert "\n<evidence>\n" in prompt, "the judge must see delimited evidence"
+            return SimpleNamespace(text="unsupported")
+
+    _ingest(tmp_path)
+    _install_llm(monkeypatch, _FakeLLM())
+    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", lambda *a, **k: _JudgeLLM())
+    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
+
+    result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout.strip() == "", "human mode must not write to stdout"
+    assert "unsupported or unreadable claim(s)" in result.output
+    assert "calibrated at station one" in result.output, "the answer text is retained"
+
+
+def test_answer_verification_build_failure_degrades_to_skipped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A raising judge build names the error; the answer still succeeds."""
+
+    def _raise(*args: Any, **kwargs: Any) -> Any:
+        raise ValueError("no such provider")
+
+    _ingest(tmp_path)
+    _install_llm(monkeypatch, _FakeLLM())
+    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", _raise)
+    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
+
+    result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])
+
+    assert result.exit_code == 0, result.output
+    assert "Verification skipped: verification provider unavailable: no such provider" in (
+        result.output
+    )

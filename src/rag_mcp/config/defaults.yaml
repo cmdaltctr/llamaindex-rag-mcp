@@ -89,7 +89,7 @@ answer:
   # Deprecated create_message back-channel, allowed ONLY on a negotiated
   # pre-2026-07-28 session.
   allow_legacy_sampling: true
-  # ── Claim verification (opt-in cloud judge — ADR-059) ──────────
+  # ── Claim verification (opt-in judge, default cloud — ADR-059) ─
   # Off by default: the judge needs a cloud model (ADR-024 local-first).
   # When enabled, each cited claim adds one judge call (~3.3 s P95 on
   # GLM-5.3 in experiment 20); unavailable providers degrade to

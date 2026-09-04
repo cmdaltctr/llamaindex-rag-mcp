@@ -47,9 +47,10 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # threshold finiteness case (2364).
 # Re-baselined at add-claim-verification-stage: the injected judge,
 # graceful-degradation, prompt-injection, profile/env precedence, compose,
-# diagnostics, MRTR-prefetch, and transport-level judge-threading suites
-# added 29 counted cases (2398 -> 2427).
-_BASE_EXECUTED = 2427  # Includes document-backend registry + orchestrator pins,
+# diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
+# plus the review round (trailing citations, delimiter escaping, CLI
+# degradation) added 39 counted cases (2398 -> 2437).
+_BASE_EXECUTED = 2437  # Includes document-backend registry + orchestrator pins,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the

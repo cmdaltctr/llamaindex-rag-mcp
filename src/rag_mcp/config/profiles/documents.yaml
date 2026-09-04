@@ -35,9 +35,10 @@ metadata:
 
 # Claim verification (ADR-059) — OPT-IN, deliberately NOT enabled here.
 # Uncomment to have every cited claim checked by an LLM judge before the
-# answer reports ok.  Requires a cloud model (the experiment-20 local
-# qwen3:4b judge was infeasible) and adds one judge call per cited claim
-# (~3.3 s P95 each on GLM-5.3).  An unavailable provider degrades to
+# answer reports ok.  The default judge provider is the cloud backend
+# (the only tested path — the experiment-20 local qwen3:4b judge was
+# infeasible) and adds one judge call per cited claim (~3.3 s P95 each
+# on GLM-5.3).  An unavailable provider degrades to
 # verification_skipped; the answer is never blocked.
 # answer:
 #   verify_claims: true

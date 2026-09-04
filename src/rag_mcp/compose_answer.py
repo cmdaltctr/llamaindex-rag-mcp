@@ -83,28 +83,6 @@ def build_answer_llm(settings: Settings | None = None) -> Any:
         return None
 
 
-def _resolve_verify_provider_name(settings: Settings) -> str:
-    """Resolve the verify-provider alias to a registry name.
-
-    ``verify_provider`` accepts the same aliases the metadata LLM
-    provider uses (ADR-059): ``cloud`` (or empty) resolves to the cloud
-    backend, ``local`` to the local backend; anything else is a literal
-    registry name.
-
-    Args:
-        settings: Resolved settings.
-
-    Returns:
-        The concrete LLM-registry provider name.
-    """
-    raw = settings.answer.verify_provider.strip()
-    if raw in ("", "cloud"):
-        return settings.cloud_backend
-    if raw == "local":
-        return settings.local_backend
-    return raw
-
-
 def validate_verify_provider(settings: Settings) -> None:
     """Fail fast at startup on an unknown verify-provider name (ADR-059).
 
@@ -112,24 +90,63 @@ def validate_verify_provider(settings: Settings) -> None:
     actually opted in, so default deployments gain no new failure mode.
     Only the NAME is validated; :func:`build_verify_llm` stays lazy.
 
+    The shipped operational profiles are validated too when their
+    bundle enables verification: a bad ``verify_provider`` inside a
+    profile YAML fails startup rather than degrading on the first
+    request.  Custom operator-authored bundles are not known here and
+    keep the request-time ``verification_skipped`` degradation.
+
     Args:
         settings: Resolved settings.
 
     Raises:
-        ValueError: When the alias-resolved provider name is not in the
+        ValueError: When an alias-resolved provider name is not in the
             LLM registry, listing the registered names.
     """
+    from .core.profiles.resolver import OPERATIONAL_PROFILES
     from .core.providers.llm import registry as llm_registry
 
-    if not (settings.answer.enabled and settings.answer.verify_claims):
+    def _validate(raw_provider: str, origin: str) -> None:
+        raw = str(raw_provider or "cloud").strip()
+        if raw in ("", "cloud"):
+            name = settings.cloud_backend
+        elif raw == "local":
+            name = settings.local_backend
+        else:
+            name = raw
+        if name not in llm_registry.available():
+            raise ValueError(
+                f"{origin} names verify provider {raw_provider!r}, which is not a "
+                f"registered LLM provider (aliases: cloud, local). Available: "
+                f"{', '.join(llm_registry.available())}."
+            )
+
+    if settings.answer.enabled and settings.answer.verify_claims:
+        _validate(settings.answer.verify_provider, "ANSWER__VERIFY_PROVIDER")
+
+    # Profile bundles can enable verification per collection even when
+    # the global setting is off — validate those names at startup too.
+    if not settings.answer.enabled:
         return
-    name = _resolve_verify_provider_name(settings)
-    if name not in llm_registry.available():
-        raise ValueError(
-            f"ANSWER__VERIFY_PROVIDER={settings.answer.verify_provider!r} is not a "
-            f"registered LLM provider (aliases: cloud, local). Available: "
-            f"{', '.join(llm_registry.available())}."
-        )
+    from .config import _load_profile_bundle
+
+    for profile in sorted(OPERATIONAL_PROFILES):
+        bundle = _load_profile_bundle(profile) or {}
+        answer_bundle = bundle.get("answer", {}) or {}
+        if _profile_truthy(answer_bundle.get("verify_claims")):
+            _validate(
+                str(answer_bundle.get("verify_provider", "cloud")),
+                f"Profile {profile!r} answer.verify_provider",
+            )
+
+
+def _profile_truthy(value: object) -> bool:
+    """Parse a YAML bundle boolean using legacy ``.lower() == "true"``."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return bool(value)
 
 
 def build_verify_llm(

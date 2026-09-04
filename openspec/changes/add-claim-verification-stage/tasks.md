@@ -140,8 +140,12 @@ proposal only; tasks are not started until the change is applied.
 
 - [x] 7.1 `openspec validate add-claim-verification-stage --strict` —
        passes.
-- [x] 7.2 `openspec validate --all --strict` — passes with no regressions
-       on existing changes or specs.
+- [x] 7.2 `openspec validate --all --strict` — no regressions on
+       existing changes or specs. Pre-existing exception: the dormant
+       `improve-rag-input-quality-5` proposal fails strict validation
+       (its MODIFIED blocks drop baseline scenarios); verified identical
+       at the base commit via a clean worktree, so it is out of scope
+       here and tracked for that change's own remediation.
 - [x] 7.3 `uv run lint-imports` — clean, no new ignore entries. If an
        ignore is needed, the injection pattern has been violated — fix it
        instead.

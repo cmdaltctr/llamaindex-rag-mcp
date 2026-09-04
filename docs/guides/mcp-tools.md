@@ -186,10 +186,12 @@ adds an LLM judge that closes this gap (security review F4; mitigated by
 
 The judge splits the answer into cited claims and evaluates each against
 the text of the evidence its citation references — one judge call **per
-cited claim**, to a **cloud model** (experiment 20 measured P95 ≈ 3.3 s per
-claim on GLM-5.3; a local `qwen3:4b` judge was infeasible). This is an
-explicit opt-in against the local-first policy of ADR-024. Choose it
-knowing the cost.
+cited claim**, to the **configured judge provider** (`ANSWER__VERIFY_PROVIDER`;
+default `cloud`, aliasing the configured cloud backend — experiment 20
+measured P95 ≈ 3.3 s per claim on the GLM-5.3 cloud judge, and a local
+`qwen3:4b` judge was infeasible, so the cloud path is the only tested
+one). This is an explicit opt-in against the local-first policy of
+ADR-024. Choose it knowingly.
 
 Outcomes:
 
@@ -198,6 +200,9 @@ Outcomes:
 - Any claim unsupported → `status="unverified_claims"`; the result lists
   the failing claims and keeps the answer, citations, and evidence, so
   the caller decides what to do.
+- Mixed supported/unparseable → also `unverified_claims`: an unreadable
+  verdict is never silently passed, and the claim is listed with
+  `verdict: "unparseable"`.
 - Judge unreachable (missing API key, network error) or every verdict
   unparseable → status stays `ok` (the referential-only guarantee) with a
   `verification_skipped` field naming the reason. The answer is never
@@ -207,8 +212,10 @@ Outcomes:
 
 The judge prompt wraps evidence in explicit `<evidence>` delimiters,
 labels it untrusted source data, and repeats the instruction hierarchy
-after each block — an injected instruction in a cited chunk cannot flip
-the verdict.
+after each block; angle brackets inside untrusted text are escaped so
+the content cannot forge its own delimiter. This is a mitigation, not
+a guarantee — treat verification results as advisory when the indexed
+evidence may be attacker-controlled.
 
 Configuration: `ANSWER__VERIFY_CLAIMS` (default `false`),
 `ANSWER__VERIFY_MODEL` (default empty — the provider's default model),
