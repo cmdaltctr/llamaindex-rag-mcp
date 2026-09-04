@@ -284,7 +284,7 @@ source_modules = ["rag_mcp"]
 forbidden_modules = ["lancedb"]
 ignore_imports = [
     "rag_mcp.core.vectordb.lancedb -> lancedb",
-    "rag_mcp.core.vectordb.lance_filter -> lancedb",
+    "rag_mcp.core.vectordb.lance_literal -> lancedb",
     "rag_mcp.core.vectordb.lance_fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"

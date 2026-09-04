@@ -1,8 +1,24 @@
 # Tasks: accept-lancedb-filter-policy-exception
 
-## 1. Evidence: Experiment 21 (engine literal-faithfulness inventory)
+## 1. Harden the translator and add regression tests
 
-- [ ] 1.1 Create `experiments/21-lancedb-literal-faithfulness-2026-09-02/`
+- [x] 1.1 Add failing tests proving that schema-absent fields do not
+  bypass field-name validation, membership operand validation, or the
+  membership-list limit.
+- [x] 1.2 Move field-name and membership validation before the
+  schema-absent-field fold in `core/vectordb/lance_filter.py`. Confirm
+  the new tests pass without changing ChromaDB missing-field semantics.
+- [x] 1.3 Add failing tests that replace the engine builder's boolean,
+  integer, float, Decimal, date, and datetime output with a different
+  valid-looking value. Each test must prove that the translator refuses
+  the mismatched value.
+- [x] 1.4 Parse each supported scalar fragment and compare it with the
+  original value using exact or canonical type semantics. Confirm all
+  scalar-faithfulness tests pass.
+
+## 2. Evidence: Experiment 21 (engine literal-faithfulness inventory)
+
+- [x] 2.1 Create `experiments/21-lancedb-literal-faithfulness-2026-09-02/`
   from `experiments/EXP_TEMPLATE.md`. Write `protocol.md` stating the
   falsifiable prediction: on lancedb 0.37.1 the engine's literal builder
   mis-serialises exactly the two known value classes (apostrophe runs;
@@ -10,7 +26,7 @@
   `translate_where` refuses those two while accepting every ordinary
   value. Record scope: deterministic, offline, no model calls, seconds
   to run.
-- [ ] 1.2 Write the probe script: (i) a hostile corpus sweep through
+- [x] 2.2 Write the probe script: (i) a hostile corpus sweep through
   `lancedb.expr.lit(...).to_sql()` recording the raw serialisation of
   every value class (apostrophe runs, backslash-apostrophe, double
   quotes, unicode, control characters, NUL, newlines, long strings,
@@ -22,16 +38,16 @@
   equality filter matches only its own row. Use `print(..., flush=True)`
   and atomic output writes (`.tmp` then rename) per experiment
   discipline.
-- [ ] 1.3 Run the probe. Write `results.md` from
+- [x] 2.3 Run the probe. Write `results.md` from
   `experiments/EXP_RESULT_TEMPLATE.md` with the inventory table (value
   class, engine output, faithful yes/no, translator verdict) and the
   verdict against the prediction.
-- [ ] 1.4 Update the `experiments/EXP_README.md` index with the
+- [x] 2.4 Update the `experiments/EXP_README.md` index with the
   Experiment 21 row (PLANNED to DONE).
 
-## 2. Decision record: ADR-058
+## 3. Decision record: ADR-058
 
-- [ ] 2.1 Write `docs/adr/058-lancedb-filter-policy-exception.md`:
+- [x] 3.1 Write `docs/adr/058-lancedb-filter-policy-exception.md`:
   Status Accepted; decider Dr Muhammad Aizat Bin Md Hawari; decision
   date 2026-09-02. Context: lancedb 0.37.x has no bind-parameter filter
   API and expression objects cannot address struct sub-fields (verified
@@ -46,38 +62,42 @@
   Explicitly reject F1's suggested policy tripwire that fails while
   `translate_where` returns executable SQL text: under this decision it
   would fail by design forever, and the fail-closed verification is the
-  standing control. Evidence base: Experiment 21 results plus the 129
-  collected tests in `tests/test_lance_filter_security.py` and
-  `tests/test_lance_filter.py` including the live-engine round-trip
+  standing control. Evidence base: Experiment 21 results, the existing
+  129 collected tests, and the new absent-field and scalar-faithfulness
+  regression tests in `tests/test_lance_filter_security.py` and
+  `tests/test_lance_filter.py`, including the live-engine round-trip
   layer. Revisit triggers: lancedb ships bind parameters or
   struct-capable expression objects; or a new mis-serialisation class
   bypasses the closed-form checks.
-- [ ] 2.2 Add ADR-058 to the `docs/adr/ADR_README.md` index.
+- [x] 3.2 Add ADR-058 to the `docs/adr/ADR_README.md` index.
 
-## 3. Spec delta
+## 4. Spec delta
 
-- [ ] 3.1 Land the delta in this change's
+- [x] 4.1 Land the delta in this change's
   `specs/lancedb-vector-store/spec.md`: one MODIFIED requirement
   ("translate ChromaDB where clauses safely") adding the fail-closed
-  verification and structural bounds as normative SHALLs with two new
+  verification and structural bounds as normative SHALLs with three new
   scenarios; one ADDED requirement scoping the exception to this
   adapter and mandating migration when a parameterised path exists.
-- [ ] 3.2 Run `openspec validate accept-lancedb-filter-policy-exception
+- [x] 4.2 Run `openspec validate accept-lancedb-filter-policy-exception
   --strict` and fix any baseline-scenario drift it reports.
 
-## 4. Close the F1 ship gate in add-grounded-answer-synthesis-3
+## 5. Close the F1 ship gate in archived grounded-answer synthesis
 
-- [ ] 4.1 In `openspec/changes/add-grounded-answer-synthesis-3/
-  security-review.md`: set F1 status to approved option (a) on
-  2026-09-02 with pointers to ADR-058 and Experiment 21; update the
+- [x] 5.1 In `openspec/changes/archive/
+  2026-09-03-add-grounded-answer-synthesis-3/security-review.md`, set F1
+  status to approved option (a) on 2026-09-02 with pointers to ADR-058
+  and Experiment 21. Update the
   "Most important reason" summary, the open-questions line 35 entry,
   and the line 229 conclusion to match.
-- [ ] 4.2 In `openspec/changes/add-grounded-answer-synthesis-3/
-  risks.md`: mark ship gate (1) resolved with the same pointers.
+- [x] 5.2 In `openspec/changes/archive/
+  2026-09-03-add-grounded-answer-synthesis-3/risks.md`, mark ship gate
+  (1) resolved with the same pointers.
 
-## 5. Verification
+## 6. Verification
 
-- [ ] 5.1 Run `uv run pytest tests/test_lance_filter_security.py
-  tests/test_lance_filter.py -q` (129 passing expected) and confirm
-  with `git status` that no file under `src/` changed.
-- [ ] 5.2 Run `openspec validate --all --strict`.
+- [x] 6.1 Run `uv run pytest tests/test_lance_filter_security.py
+  tests/test_lance_filter.py -q`. Record the passing count and confirm
+  that the production diff is limited to the planned translator
+  hardening.
+- [x] 6.2 Run `openspec validate --all --strict`.

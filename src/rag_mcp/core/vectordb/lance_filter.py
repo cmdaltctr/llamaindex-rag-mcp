@@ -56,10 +56,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from datetime import date, datetime
-from decimal import Decimal
 
-from lancedb.expr import lit
+from rag_mcp.core.vectordb.lance_literal import _literal_sql
 
 __all__ = ["translate_where"]
 
@@ -93,117 +91,6 @@ _MAX_FILTER_DEPTH = 10
 _MAX_CLAUSE_COUNT = 50
 _MAX_IN_LIST_LENGTH = 100
 _MAX_FILTER_SQL_LENGTH = 8192
-
-
-def _decode_single_quoted_literal(fragment: str) -> str | None:
-    """Decode *fragment* as exactly one standard-grammar SQL literal.
-
-    A literal opens with ``'``, closes with a ``'`` that is not doubled,
-    and an interior ``''`` decodes to one ``'``.  Returns ``None`` when
-    the fragment is not exactly one well-formed literal — including a
-    literal that closes early or ends on a doubled pair.
-
-    Args:
-        fragment: The candidate SQL fragment.
-
-    Returns:
-        The decoded literal value, or ``None`` when the fragment is not
-        exactly one well-formed quoted literal.
-    """
-    if len(fragment) < 2 or fragment[0] != "'" or fragment[-1] != "'":
-        return None
-    chars: list[str] = []
-    i = 1
-    last = len(fragment) - 1
-    while i < last:
-        if fragment[i] == "'":
-            if fragment[i + 1] == "'":
-                chars.append("'")
-                i += 2
-                continue
-            return None  # closes early or is a stray quote
-        chars.append(fragment[i])
-        i += 1
-    return "".join(chars) if i == last else None
-
-
-# Closed serialisation forms per value type.  Anything the engine's
-# unparser emits outside these forms is refused (fail closed).
-_BOOL_FORMS = frozenset({"true", "false"})
-_INT_FORM = re.compile(r"-?\d+")
-_NUMERIC_FORM = re.compile(r"-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
-_FLOAT_SPECIAL_FORMS = frozenset({"inf", "-inf", "NaN"})
-_BYTES_FORM = re.compile(r"X'([0-9a-fA-F]*)'")
-_CAST_FORM = re.compile(r"CAST\('([^']*)' AS (?:DATE|TIMESTAMP)\)")
-
-
-def _is_faithful_literal(value: object, sql: str) -> bool:
-    """Check the engine's serialisation against a closed form per type.
-
-    Args:
-        value: The original comparison value handed to ``lit``.
-        sql: The fragment the engine's unparser produced.
-
-    Returns:
-        True only when *sql* is a well-formed, faithful serialisation
-        of *value* for its type.  ``bool`` is checked before ``int``
-        because ``bool`` subclasses ``int``.
-    """
-    if isinstance(value, bool):
-        return sql in _BOOL_FORMS
-    if isinstance(value, int):
-        return _INT_FORM.fullmatch(sql) is not None
-    if isinstance(value, float):
-        return sql in _FLOAT_SPECIAL_FORMS or _NUMERIC_FORM.fullmatch(sql) is not None
-    if isinstance(value, Decimal):
-        return _NUMERIC_FORM.fullmatch(sql) is not None
-    if isinstance(value, str):
-        decoded = _decode_single_quoted_literal(sql)
-        return decoded is not None and decoded == value
-    if isinstance(value, bytes):
-        match = _BYTES_FORM.fullmatch(sql)
-        return match is not None and bytes.fromhex(match.group(1)) == value
-    if isinstance(value, (date, datetime)):
-        return _CAST_FORM.fullmatch(sql) is not None
-    return False
-
-
-def _literal_sql(value: object) -> str:
-    """Serialise one value through the type-safe literal builder.
-
-    The engine's unparser output is verified against a closed form per
-    value type (and, for strings, decoded back and compared to the
-    original value) before it is allowed into a filter.  The engine has
-    demonstrated mis-serialisation classes — apostrophe runs collapse,
-    and a backslash before an apostrophe emits ``\'`` undoubled — so an
-    unverified fragment is a wrong-row or broken-SQL hazard, and this
-    boundary refuses it.
-
-    Args:
-        value: A scalar supported by ``lit`` (bool/int/float/str/bytes/
-            date/datetime/Decimal).
-
-    Returns:
-        The verified, engine-quoted SQL literal.
-
-    Raises:
-        TypeError: When ``lit`` rejects the value's type — the trust
-            boundary that keeps structured values from reaching SQL.
-        ValueError: When the engine's serialisation fails the closed-
-            form or round-trip check.  The filter is refused rather
-            than emitted with an unfaithful literal.
-    """
-    sql = lit(value).to_sql()
-    if not _is_faithful_literal(value, sql):
-        raise ValueError(
-            "metadata_filter value cannot be serialised safely: the engine's "
-            f"literal builder returned an unfaithful fragment for a "
-            f"{type(value).__name__} value (sample {str(value)[:60]!r}). "
-            "Refusing to build the filter; values containing runs of "
-            "apostrophes, or a backslash directly before an apostrophe, are "
-            "known to be affected."
-        )
-    return sql
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -294,6 +181,21 @@ def _leaf(
             list longer than :data:`_MAX_IN_LIST_LENGTH`.
     """
     counter.charge()
+    # Validate the field name before the absent-field fold so that
+    # invalid names on schema-absent fields are rejected rather than
+    # silently folded to a constant (which would bypass input controls).
+    _field_sql(field, metadata_column)  # raises ValueError on bad names
+    # Validate membership operands and the list-length bound before the
+    # fold, for the same reason: a client must not probe or bypass
+    # complexity bounds by targeting absent fields.
+    if op in ("$in", "$nin"):
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(f"{op} requires a list of values, got {type(value).__name__}.")
+        if len(value) > _MAX_IN_LIST_LENGTH:
+            raise ValueError(
+                f"{op} list exceeds the maximum of {_MAX_IN_LIST_LENGTH} entries "
+                f"(got {len(value)})."
+            )
     if known_fields is not None and field not in known_fields:
         # ChromaDB parity: the planner would reject the reference
         # ("Field ... not found in struct"), so fold it to the
@@ -308,13 +210,6 @@ def _leaf(
             return f"({ref} != {literal} OR {ref} IS NULL)"
         return f"{ref} {_COMPARISON_OPS[op]} {literal}"
     if op in ("$in", "$nin"):
-        if not isinstance(value, (list, tuple)):
-            raise ValueError(f"{op} requires a list of values, got {type(value).__name__}.")
-        if len(value) > _MAX_IN_LIST_LENGTH:
-            raise ValueError(
-                f"{op} list exceeds the maximum of {_MAX_IN_LIST_LENGTH} entries "
-                f"(got {len(value)})."
-            )
         elements = ", ".join(_literal_sql(item) for item in value)
         if not elements:
             # An empty $in matches nothing; an empty $nin matches everything.

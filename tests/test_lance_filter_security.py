@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import random
 import re
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import lancedb
@@ -403,7 +405,7 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
             # fail-closed check exists to stop.
             return str(self._value)
 
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_filter.lit", _BrokenLit, raising=True)
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _BrokenLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": "x' OR '1'='1"})
 
@@ -421,6 +423,315 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
 )
 def test_literal_forms_are_closed(value: object, pattern: str) -> None:
     """Engine literal serialisations match a closed form per type."""
-    from rag_mcp.core.vectordb.lance_filter import _literal_sql
+    from rag_mcp.core.vectordb.lance_literal import _literal_sql
 
     assert re.fullmatch(pattern, _literal_sql(value))
+
+
+# ── Layer 5: absent-field validation must not bypass input controls ────
+#
+# A field absent from the table's schema folds to a ChromaDB constant
+# (false for equality/membership/comparison, true for $ne/$nin).  That
+# fold must happen AFTER field-name validation, membership-operand
+# validation, and the membership-list-length check — otherwise a client
+# can probe schema layout or bypass complexity bounds by targeting
+# absent fields with invalid input.
+
+
+_KNOWN_FIELDS = frozenset({"id", "tag", "score"})
+
+
+class TestAbsentFieldValidationBypass:
+    """Schema-absent fields must not bypass field-name or membership checks."""
+
+    def test_invalid_field_name_on_absent_field_rejected(self) -> None:
+        """An invalid field name is rejected before the absent-field fold."""
+        with pytest.raises(ValueError, match="cannot be"):
+            translate_where({"bad.field": "x"}, known_fields=_KNOWN_FIELDS)
+
+    def test_invalid_field_name_with_dollar_on_absent_field_rejected(self) -> None:
+        """A field name with a dot is rejected even when the field is absent."""
+        with pytest.raises(ValueError, match="cannot be"):
+            translate_where({"a b": "x"}, known_fields=_KNOWN_FIELDS)
+
+    def test_non_list_in_on_absent_field_rejected(self) -> None:
+        """$in with a non-list operand is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="requires a list"):
+            translate_where({"nope": {"$in": "x"}}, known_fields=_KNOWN_FIELDS)
+
+    def test_non_list_nin_on_absent_field_rejected(self) -> None:
+        """$nin with a non-list operand is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="requires a list"):
+            translate_where({"nope": {"$nin": 42}}, known_fields=_KNOWN_FIELDS)
+
+    def test_oversized_in_list_on_absent_field_rejected(self) -> None:
+        """An oversized $in list is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="100"):
+            translate_where(
+                {"nope": {"$in": [f"v{i}" for i in range(_MAX_IN_LIST_LENGTH + 1)]}},
+                known_fields=_KNOWN_FIELDS,
+            )
+
+    def test_oversized_nin_list_on_absent_field_rejected(self) -> None:
+        """An oversized $nin list is rejected even on an absent field."""
+        with pytest.raises(ValueError, match="100"):
+            translate_where(
+                {"nope": {"$nin": [f"v{i}" for i in range(_MAX_IN_LIST_LENGTH + 1)]}},
+                known_fields=_KNOWN_FIELDS,
+            )
+
+    def test_valid_absent_field_still_folds(self) -> None:
+        """A valid field name on an absent field still folds (sanity check)."""
+        sql = translate_where({"nope": "x"}, known_fields=_KNOWN_FIELDS)
+        assert sql == "false"
+
+    def test_valid_absent_field_ne_still_folds(self) -> None:
+        """A valid absent field with $ne still folds to true."""
+        sql = translate_where({"nope": {"$ne": "x"}}, known_fields=_KNOWN_FIELDS)
+        assert sql == "(true)"
+
+
+# ── Layer 6: scalar value-faithfulness verification ───────────────────
+#
+# The engine's unparser is treated as untrusted.  Every serialised
+# literal must not only match a valid SQL shape but also represent the
+# original value.  These tests monkeypatch ``lit`` to emit a different
+# valid-looking fragment for each scalar type and prove the translator
+# refuses it.
+
+
+class _MismatchedLit:
+    """A broken ``lit`` that emits a valid-looking but WRONG fragment.
+
+    Each branch produces SQL that passes the closed-form shape check but
+    represents a different value than the one handed to ``lit``.
+    """
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+
+    def to_sql(self) -> str:
+        v = self._value
+        # bool: swap true/false
+        if isinstance(v, bool):
+            return "false" if v else "true"
+        # int: emit value + 1
+        if isinstance(v, int):
+            return str(v + 1)
+        # float: emit a different but valid float
+        if isinstance(v, float):
+            if v != v:  # NaN
+                return "0.0"
+            if v == float("inf"):
+                return "0.0"
+            if v == float("-inf"):
+                return "0.0"
+            return repr(v + 1.0)
+        # Decimal: emit a different but valid decimal
+        if isinstance(v, Decimal):
+            return str(v + Decimal("1"))
+        # date: emit the next day
+        if isinstance(v, date) and not isinstance(v, datetime):
+            from datetime import timedelta
+
+            return f"CAST('{(v + timedelta(days=1)).isoformat()}' AS DATE)"
+        # datetime: emit a different but valid timestamp.
+        # Shift by one day (not one hour) so a timezone-offset change
+        # between seasons cannot accidentally cancel the mismatch.
+        if isinstance(v, datetime):
+            from datetime import timedelta
+
+            shifted = v + timedelta(days=1)
+            # Mimic the engine's UTC conversion for naive datetimes.
+            # Use the timezone offset that applies at the shifted date,
+            # not the current date, so the conversion matches the
+            # engine's behaviour for that calendar date.
+            if v.tzinfo is None:
+                local_aware = shifted.astimezone()
+                utc = local_aware.astimezone(UTC)
+            else:
+                utc = shifted.astimezone(UTC)
+            ts = utc.replace(tzinfo=None).isoformat(sep=" ")
+            return f"CAST('{ts}' AS TIMESTAMP)"
+        # str: emit a different but valid quoted string
+        if isinstance(v, str):
+            return "'mismatched'"
+        # bytes: emit different but valid hex
+        if isinstance(v, bytes):
+            return "X'00'"
+        return str(v)
+
+
+@pytest.mark.parametrize(
+    ("value", "label"),
+    [
+        (True, "bool True"),
+        (False, "bool False"),
+        (0, "int zero"),
+        (42, "int positive"),
+        (-7, "int negative"),
+        (3.14, "float positive"),
+        (-0.5, "float negative"),
+        (0.0, "float zero"),
+        (float("inf"), "float inf"),
+        (float("-inf"), "float -inf"),
+        (float("nan"), "float nan"),
+        (Decimal("0"), "Decimal zero"),
+        (Decimal("3.14"), "Decimal positive"),
+        (Decimal("-7.5"), "Decimal negative"),
+        (b"hello", "bytes hello"),
+        (b"", "bytes empty"),
+        (date(2026, 9, 2), "date"),
+        (date(1970, 1, 1), "date epoch"),
+        (datetime(2026, 9, 2, 15, 30, 45), "datetime naive"),
+        (datetime(2026, 1, 15, 12, 0, 0), "datetime winter"),
+        (datetime(2026, 9, 2, 15, 30, 45, 123456), "datetime microsecond"),
+        (datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "datetime aware"),
+    ],
+)
+def test_mismatched_scalar_refused(
+    monkeypatch: pytest.MonkeyPatch, value: object, label: str
+) -> None:
+    """A valid-looking but wrong scalar fragment is refused.
+
+    Monkeypatches ``lit`` to emit a fragment that passes the closed-form
+    shape check but represents a different value.  The translator must
+    refuse the filter rather than emit a literal that matches the wrong
+    rows.
+    """
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _MismatchedLit, raising=True)
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": value})
+
+
+def test_faithful_scalar_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Genuinely faithful scalar serialisations are accepted (no false refusal).
+
+    Uses the real ``lit`` (no monkeypatch) to verify that ordinary values
+    of every supported scalar type pass the faithfulness check without
+    false refusal.
+    """
+    from rag_mcp.core.vectordb.lance_literal import _literal_sql
+
+    values: list[object] = [
+        True,
+        False,
+        0,
+        42,
+        -7,
+        3.14,
+        -0.5,
+        0.0,
+        float("inf"),
+        float("-inf"),
+        Decimal("0"),
+        Decimal("3.14"),
+        Decimal("-7.5"),
+        b"hello",
+        b"",
+        b"\x00\x01\x02",
+        date(2026, 9, 2),
+        date(1970, 1, 1),
+        datetime(2026, 9, 2, 15, 30, 45),
+        datetime(2026, 1, 15, 12, 0, 0),
+        datetime(2026, 9, 2, 15, 30, 45, 123456),
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC),
+    ]
+    for v in values:
+        # Must not raise — the real engine serialises faithfully
+        sql = _literal_sql(v)
+        assert sql, f"Faithful serialisation of {v!r} was refused"
+
+
+# ── Layer 7: CAST target-type fidelity (CodeRabbit review remediation) ─
+#
+# ``_CAST_FORM`` originally matched ``CAST('...' AS DATE|TIMESTAMP)``
+# with a NON-CAPTURING type group, so the verifier dispatched purely on
+# the Python value's type: a ``date`` value emitted as
+# ``CAST('2026-09-02' AS TIMESTAMP)`` — or a ``datetime`` emitted as a
+# ``DATE`` cast — passed verification whenever the inner string
+# round-tripped.  A swapped target type is a different SQL value class,
+# so the fragment is unfaithful and must be refused.
+
+
+class _SwappedCastLit:
+    """A ``lit`` that emits the WRONG CAST target type for date values.
+
+    The inner string is exactly what the engine would serialise (the
+    naive-datetime UTC conversion is replicated); only the target type
+    is swapped, so a verifier that discards the target type accepts the
+    fragment.
+    """
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+
+    def to_sql(self) -> str:
+        v = self._value
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                utc = v.replace(tzinfo=None).astimezone().astimezone(UTC).replace(tzinfo=None)
+            else:
+                utc = v.astimezone(UTC).replace(tzinfo=None)
+            return f"CAST('{utc.isoformat(sep=' ')}' AS DATE)"
+        if isinstance(v, date):
+            return f"CAST('{v.isoformat()}' AS TIMESTAMP)"
+        # Only date/datetime values are exercised by the swapped-cast
+        # regression; anything else is a test bug.
+        raise AssertionError(f"_SwappedCastLit only handles date/datetime, got {v!r}")
+
+
+def test_swapped_cast_target_type_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A CAST fragment with a swapped target type is refused.
+
+    Simulates a lancedb regression that serialises dates as TIMESTAMP
+    casts (or datetimes as DATE casts): the inner string round-trips
+    but the SQL value class differs, so the translator must refuse the
+    filter rather than emit a predicate against the wrong type.
+    """
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _SwappedCastLit, raising=True)
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": date(2026, 9, 2)})
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": datetime(2026, 9, 2, 15, 30, 45)})
+
+
+def test_cast_target_type_must_match_value_type() -> None:
+    """Direct unit pins: the CAST target type must agree with the value."""
+    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+
+    # Swapped target types are refused for both directions.
+    assert not _is_faithful_literal(date(2026, 9, 2), "CAST('2026-09-02' AS TIMESTAMP)")
+    assert not _is_faithful_literal(
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "CAST('2026-09-02 14:30:45' AS DATE)"
+    )
+    # Matching target types with faithful inner strings are accepted.
+    assert _is_faithful_literal(date(2026, 9, 2), "CAST('2026-09-02' AS DATE)")
+    assert _is_faithful_literal(
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "CAST('2026-09-02 14:30:45' AS TIMESTAMP)"
+    )
+
+
+def test_literal_faithfulness_closed_branches() -> None:
+    """Every verifier branch closes: no fragment shape is implicitly trusted."""
+    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+
+    # bytes: faithful hex round-trip accepted; wrong bytes refused.
+    assert _is_faithful_literal(b"hello", "X'68656C6C6F'")
+    assert not _is_faithful_literal(b"hello", "X'00'")
+    # date/datetime: the fragment must be a CAST at all — a bare string
+    # literal for a date value is not the engine's closed form.
+    assert not _is_faithful_literal(date(2026, 9, 2), "'2026-09-02'")
+    # Unparseable CAST inner strings are refused for both target types.
+    assert not _is_faithful_literal(date(2026, 9, 2), "CAST('not-a-date' AS DATE)")
+    assert not _is_faithful_literal(
+        datetime(2026, 9, 2, 15, 30, 45), "CAST('garbage' AS TIMESTAMP)"
+    )
+    # Aware datetimes compare through their UTC equivalent: an aware
+    # value never takes the engine's naive local-to-UTC conversion path.
+    aware = datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC)
+    assert _is_faithful_literal(aware, "CAST('2026-09-02 14:30:45' AS TIMESTAMP)")
+    assert not _is_faithful_literal(aware, "CAST('2026-09-02 15:30:45' AS TIMESTAMP)")
+    # Unsupported scalar types are refused rather than trusted.
+    assert not _is_faithful_literal(None, "NULL")
+    assert not _is_faithful_literal([1], "(1)")
