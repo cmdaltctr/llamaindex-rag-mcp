@@ -579,11 +579,14 @@ class _MismatchedLit:
         (Decimal("0"), "Decimal zero"),
         (Decimal("3.14"), "Decimal positive"),
         (Decimal("-7.5"), "Decimal negative"),
+        (b"hello", "bytes hello"),
+        (b"", "bytes empty"),
         (date(2026, 9, 2), "date"),
         (date(1970, 1, 1), "date epoch"),
         (datetime(2026, 9, 2, 15, 30, 45), "datetime naive"),
         (datetime(2026, 1, 15, 12, 0, 0), "datetime winter"),
         (datetime(2026, 9, 2, 15, 30, 45, 123456), "datetime microsecond"),
+        (datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "datetime aware"),
     ],
 )
 def test_mismatched_scalar_refused(
@@ -624,13 +627,111 @@ def test_faithful_scalar_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
         Decimal("0"),
         Decimal("3.14"),
         Decimal("-7.5"),
+        b"hello",
+        b"",
+        b"\x00\x01\x02",
         date(2026, 9, 2),
         date(1970, 1, 1),
         datetime(2026, 9, 2, 15, 30, 45),
         datetime(2026, 1, 15, 12, 0, 0),
         datetime(2026, 9, 2, 15, 30, 45, 123456),
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC),
     ]
     for v in values:
         # Must not raise — the real engine serialises faithfully
         sql = _literal_sql(v)
         assert sql, f"Faithful serialisation of {v!r} was refused"
+
+
+# ── Layer 7: CAST target-type fidelity (CodeRabbit review remediation) ─
+#
+# ``_CAST_FORM`` originally matched ``CAST('...' AS DATE|TIMESTAMP)``
+# with a NON-CAPTURING type group, so the verifier dispatched purely on
+# the Python value's type: a ``date`` value emitted as
+# ``CAST('2026-09-02' AS TIMESTAMP)`` — or a ``datetime`` emitted as a
+# ``DATE`` cast — passed verification whenever the inner string
+# round-tripped.  A swapped target type is a different SQL value class,
+# so the fragment is unfaithful and must be refused.
+
+
+class _SwappedCastLit:
+    """A ``lit`` that emits the WRONG CAST target type for date values.
+
+    The inner string is exactly what the engine would serialise (the
+    naive-datetime UTC conversion is replicated); only the target type
+    is swapped, so a verifier that discards the target type accepts the
+    fragment.
+    """
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+
+    def to_sql(self) -> str:
+        v = self._value
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                utc = v.replace(tzinfo=None).astimezone().astimezone(UTC).replace(tzinfo=None)
+            else:
+                utc = v.astimezone(UTC).replace(tzinfo=None)
+            return f"CAST('{utc.isoformat(sep=' ')}' AS DATE)"
+        if isinstance(v, date):
+            return f"CAST('{v.isoformat()}' AS TIMESTAMP)"
+        # Only date/datetime values are exercised by the swapped-cast
+        # regression; anything else is a test bug.
+        raise AssertionError(f"_SwappedCastLit only handles date/datetime, got {v!r}")
+
+
+def test_swapped_cast_target_type_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A CAST fragment with a swapped target type is refused.
+
+    Simulates a lancedb regression that serialises dates as TIMESTAMP
+    casts (or datetimes as DATE casts): the inner string round-trips
+    but the SQL value class differs, so the translator must refuse the
+    filter rather than emit a predicate against the wrong type.
+    """
+    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _SwappedCastLit, raising=True)
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": date(2026, 9, 2)})
+    with pytest.raises(ValueError, match="literal"):
+        translate_where({"tag": datetime(2026, 9, 2, 15, 30, 45)})
+
+
+def test_cast_target_type_must_match_value_type() -> None:
+    """Direct unit pins: the CAST target type must agree with the value."""
+    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+
+    # Swapped target types are refused for both directions.
+    assert not _is_faithful_literal(date(2026, 9, 2), "CAST('2026-09-02' AS TIMESTAMP)")
+    assert not _is_faithful_literal(
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "CAST('2026-09-02 14:30:45' AS DATE)"
+    )
+    # Matching target types with faithful inner strings are accepted.
+    assert _is_faithful_literal(date(2026, 9, 2), "CAST('2026-09-02' AS DATE)")
+    assert _is_faithful_literal(
+        datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC), "CAST('2026-09-02 14:30:45' AS TIMESTAMP)"
+    )
+
+
+def test_literal_faithfulness_closed_branches() -> None:
+    """Every verifier branch closes: no fragment shape is implicitly trusted."""
+    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+
+    # bytes: faithful hex round-trip accepted; wrong bytes refused.
+    assert _is_faithful_literal(b"hello", "X'68656C6C6F'")
+    assert not _is_faithful_literal(b"hello", "X'00'")
+    # date/datetime: the fragment must be a CAST at all — a bare string
+    # literal for a date value is not the engine's closed form.
+    assert not _is_faithful_literal(date(2026, 9, 2), "'2026-09-02'")
+    # Unparseable CAST inner strings are refused for both target types.
+    assert not _is_faithful_literal(date(2026, 9, 2), "CAST('not-a-date' AS DATE)")
+    assert not _is_faithful_literal(
+        datetime(2026, 9, 2, 15, 30, 45), "CAST('garbage' AS TIMESTAMP)"
+    )
+    # Aware datetimes compare through their UTC equivalent: an aware
+    # value never takes the engine's naive local-to-UTC conversion path.
+    aware = datetime(2026, 9, 2, 14, 30, 45, tzinfo=UTC)
+    assert _is_faithful_literal(aware, "CAST('2026-09-02 14:30:45' AS TIMESTAMP)")
+    assert not _is_faithful_literal(aware, "CAST('2026-09-02 15:30:45' AS TIMESTAMP)")
+    # Unsupported scalar types are refused rather than trusted.
+    assert not _is_faithful_literal(None, "NULL")
+    assert not _is_faithful_literal([1], "(1)")

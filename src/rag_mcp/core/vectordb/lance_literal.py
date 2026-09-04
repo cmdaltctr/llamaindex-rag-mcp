@@ -69,7 +69,11 @@ _INT_FORM = re.compile(r"-?\d+")
 _NUMERIC_FORM = re.compile(r"-?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 _FLOAT_SPECIAL_FORMS = frozenset({"inf", "-inf", "NaN"})
 _BYTES_FORM = re.compile(r"X'([0-9a-fA-F]*)'")
-_CAST_FORM = re.compile(r"CAST\('([^']*)' AS (?:DATE|TIMESTAMP)\)")
+# The CAST target type is CAPTURED (not discarded): a date value in a
+# TIMESTAMP cast — or a datetime in a DATE cast — is a different SQL
+# value class even when the inner string round-trips, so the target
+# type must be validated against the value type, not assumed.
+_CAST_FORM = re.compile(r"CAST\('([^']*)' AS (DATE|TIMESTAMP)\)")
 
 
 def _is_faithful_literal(value: object, sql: str) -> bool:
@@ -123,16 +127,20 @@ def _is_faithful_literal(value: object, sql: str) -> bool:
         return match is not None and bytes.fromhex(match.group(1)) == value
     if isinstance(value, (date, datetime)):
         # date/datetime: the engine emits CAST('...' AS DATE|TIMESTAMP).
-        # Parse the inner string and compare it with the original value.
-        # For naive datetimes the engine converts local time to UTC, so
-        # the comparison round-trips through the same conversion.
+        # The target type must agree with the value type (a swapped cast
+        # is a different SQL value class even when the inner string
+        # round-trips), the fragment must match the CAST form at all,
+        # and the inner string must parse to the same calendar date or
+        # instant.  For naive datetimes the engine converts local time
+        # to UTC, so the comparison round-trips through the same
+        # conversion.
         match = _CAST_FORM.fullmatch(sql)
         if match is None:
             return False
-        inner = match.group(1)
+        inner, target = match.group(1), match.group(2)
         if isinstance(value, datetime):
-            return _datetime_matches(value, inner)
-        return _date_matches(value, inner)
+            return target == "TIMESTAMP" and _datetime_matches(value, inner)
+        return target == "DATE" and _date_matches(value, inner)
     return False
 
 
