@@ -411,6 +411,27 @@ query time. See [MCP tools](mcp-tools.md#answer_documents) and
 | `max_output_tokens` | `2048` | Reserved head-room for the model's reply inside one round's budget |
 | `prefer_client_sampling` | `true` | Prefer the MCP client's model over the server model when the client advertises the sampling capability |
 | `allow_legacy_sampling` | `true` | Allow the deprecated sampling back-channel only on a negotiated pre-2026-07-28 session. Never on a modern session |
+| `verify_claims` | `false` | Opt-in claim-verification judge ([ADR-059](../adr/059-claim-verification-stage.md)). `true` adds one cloud judge call per cited claim (~3.3 s P95 each, experiment 20). An unavailable provider degrades to `verification_skipped`; the answer is never blocked |
+| `verify_model` | `""` | Judge model. Empty derives it from the provider's default model (e.g. `OPENROUTER_LLM_MODEL`) |
+| `verify_provider` | `cloud` | Judge provider. Aliases: `cloud` (or empty) resolves to the cloud backend, `local` to the local backend; anything else is a literal LLM-registry name. Unknown names fail startup |
+
+The three `verify_*` fields are the one answer-block group a profile
+bundle may override per collection — a `documents` collection can opt
+into the cloud judge while a `codebase` collection stays speed-first.
+Environment variables still win over the profile:
+
+```yaml
+# config/profiles/documents.yaml — opt-in example (not enabled by default)
+answer:
+  verify_claims: true
+  verify_model: ""          # empty = provider default model
+  verify_provider: cloud
+```
+
+When verification runs, the result reports `verified: true` on success,
+`unverified_claims` listing the failing claims on failure, or
+`verification_skipped` with the reason when the judge could not run. See
+[MCP tools — claim verification](mcp-tools.md#claim-verification-optional).
 
 ### Metadata — `METADATA__*`
 

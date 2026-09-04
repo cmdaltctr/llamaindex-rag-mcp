@@ -89,6 +89,17 @@ answer:
   # Deprecated create_message back-channel, allowed ONLY on a negotiated
   # pre-2026-07-28 session.
   allow_legacy_sampling: true
+  # ── Claim verification (opt-in cloud judge — ADR-059) ──────────
+  # Off by default: the judge needs a cloud model (ADR-024 local-first).
+  # When enabled, each cited claim adds one judge call (~3.3 s P95 on
+  # GLM-5.3 in experiment 20); unavailable providers degrade to
+  # verification_skipped, never blocking the answer.
+  verify_claims: false
+  # Empty derives the judge model from the provider default.
+  verify_model: ""
+  # Alias: "cloud" (or empty) resolves to the cloud backend, "local"
+  # to the local backend; otherwise a literal LLM-registry name.
+  verify_provider: cloud
 
 # ── Storage (cross-cutting, flat) ─────────────────────────────────────
 CHROMA_PERSIST_DIR: ./chroma_db

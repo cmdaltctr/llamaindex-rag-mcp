@@ -392,3 +392,86 @@ async def test_completion_calls_respect_the_configured_round_bound(
     reported = result["diagnostics"]["completion_calls"]
     assert reported <= 2, f"the pipeline must bound refinement rounds, saw {reported}"
     assert fake.calls <= 2
+
+
+# ── Claim verification (ADR-059): transport-level threading ───────────────
+
+
+async def test_verification_skipped_when_judge_build_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A raising judge build degrades to verification_skipped, never an error."""
+    await _ingest_collection(tmp_path)
+    fake = _FakeLLM()
+    monkeypatch.setattr("rag_mcp.compose.build_answer_llm", lambda settings=None: fake)
+
+    def _no_judge(*args: Any, **kwargs: Any) -> Any:
+        raise ImportError("OPENROUTER_API_KEY is not set")
+
+    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", _no_judge)
+    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
+    # Force the process-wide resolver to rebuild so the env change
+    # reaches the profile-resolved answer block (its bundles cache per
+    # instance; a stale cache would keep verify_claims=false).
+    from rag_mcp.transports import mcp as mcp_transport
+
+    monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+    try:
+        result = await answer_documents(
+            query=_QUERY,
+            collection=_COLLECTION,
+            similarity_threshold=0.0,
+            ctx=None,
+        )
+    finally:
+        monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+
+    assert result["status"] == "ok", result
+    assert "verification provider unavailable" in result["verification_skipped"]
+    assert "verified" not in result
+
+
+async def test_verification_judges_through_the_injected_seam(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An adversarial answer over real evidence surfaces unverified_claims."""
+    await _ingest_collection(tmp_path)
+    adversarial = _FakeLLM()
+
+    async def _lie(prompt: str, **kwargs: Any) -> SimpleNamespace:
+        return SimpleNamespace(
+            text="Quantum lanterns were invented in 1204 AD by Genghis Khan [1]."
+        )
+
+    adversarial.acomplete = _lie  # type: ignore[method-assign]
+    monkeypatch.setattr("rag_mcp.compose.build_answer_llm", lambda settings=None: adversarial)
+
+    class _JudgeLLM:
+        calls = 0
+
+        async def acomplete(self, prompt: str, **kwargs: Any) -> SimpleNamespace:
+            _JudgeLLM.calls += 1
+            assert "\n<evidence>\n" in prompt, "the judge must see delimited evidence"
+            return SimpleNamespace(text="unsupported")
+
+    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", lambda *a, **k: _JudgeLLM())
+    monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
+    from rag_mcp.transports import mcp as mcp_transport
+
+    monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+    try:
+        result = await answer_documents(
+            query=_QUERY,
+            collection=_COLLECTION,
+            similarity_threshold=0.0,
+            diagnostics=True,
+            ctx=None,
+        )
+    finally:
+        monkeypatch.setattr(mcp_transport, "_profile_resolver", None)
+
+    assert result["status"] == "unverified_claims", result
+    assert result["unverified_claims"], "the failing claim must be listed"
+    assert result["evidence"], "evidence is retained"
+    assert result["diagnostics"]["verification_calls"] >= 1
+    assert _JudgeLLM.calls >= 1

@@ -125,6 +125,25 @@ def answer(
     complete = _server_seam(llm) if llm is not None else None
     source = "server" if llm is not None else "none"
 
+    # Claim verification (ADR-059) is settings-only — no ``--verify``
+    # flag by design.  The judge is the server-side model resolved from
+    # the profile/env-precedenced answer block; a build failure
+    # degrades to verification_skipped, never a CLI failure.
+    verify_complete: Any = None
+    verify_unavailable_reason: str | None = None
+    if getattr(effective.answer, "verify_claims", False):
+        try:
+            verify_llm = compose.build_verify_llm(answer_block=effective.answer)
+        except (ValueError, ImportError) as exc:
+            verify_unavailable_reason = f"verification provider unavailable: {exc}"
+        else:
+            if verify_llm is not None:
+                verify_complete = _server_seam(verify_llm)
+            else:
+                verify_unavailable_reason = (
+                    "verification provider unavailable (no judge configured)"
+                )
+
     try:
         output_guard = redirect_stdout(StringIO()) if json_output else nullcontext()
         error_guard = redirect_stderr(StringIO()) if json_output else nullcontext()
@@ -138,6 +157,8 @@ def answer(
                     collection_name=collection,
                     include_diagnostics=diagnostics,
                     complete=complete,
+                    verify_complete=verify_complete,
+                    verify_unavailable_reason=verify_unavailable_reason,
                     completion_source=source,
                     effective_settings=effective,
                 )
@@ -178,6 +199,17 @@ def _print_human(result: dict[str, Any]) -> None:
             "[yellow]Warning:[/yellow] the answer carried no verifiable "
             "citation; treat it as unverified.\n"
         )
+    if status == "unverified_claims":
+        failing = result.get("unverified_claims") or []
+        console.print(
+            "[yellow]Warning:[/yellow] claim verification found "
+            f"{len(failing)} unsupported or unreadable claim(s); the "
+            "citations resolve, but the cited evidence does not fully "
+            "support the answer.\n"
+        )
+    skipped = result.get("verification_skipped")
+    if skipped:
+        console.print(f"[dim]Verification skipped: {skipped}[/dim]\n")
     console.print(result.get("answer") or "")
 
     citations = result.get("citations") or []

@@ -78,3 +78,16 @@ class AnswerSettings(BaseModel):
     # ONLY on a negotiated pre-2026-07-28 session (explicit compatibility
     # mode; never attempted on a modern session).
     allow_legacy_sampling: LegacyBool = True
+
+    # ── Claim verification (opt-in cloud judge — ADR-059) ──────────
+    # Off by default: the judge needs a cloud model (experiment 20
+    # showed a local qwen3:4b judge infeasible on consumer hardware),
+    # which is an explicit opt-in against ADR-024's local-first policy.
+    verify_claims: LegacyBool = False
+    # Empty string derives the judge model from the provider's default
+    # (e.g. ``openrouter_llm_model``); set to pin a specific judge.
+    verify_model: str = ""
+    # Alias resolved like ``metadata_llm_provider``: "cloud" (or empty)
+    # → the cloud backend, "local" → the local backend, anything else
+    # is a literal LLM-registry name validated at startup.
+    verify_provider: str = "cloud"

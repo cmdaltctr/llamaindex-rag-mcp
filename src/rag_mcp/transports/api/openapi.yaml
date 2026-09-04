@@ -698,13 +698,16 @@ components:
       properties:
         status:
           type: string
-          enum: [ok, no_evidence, generation_unverified, error]
+          enum: [ok, no_evidence, generation_unverified, unverified_claims, error]
           description: >
             ok = grounded answer with at least one valid citation.
             no_evidence = retrieval found nothing (no model call made).
             generation_unverified = answer text present but no valid
-            citation; the evidence is still returned. error = see
-            failure_stage and error.
+            citation; the evidence is still returned. unverified_claims =
+            claim verification (ANSWER__VERIFY_CLAIMS, ADR-059) found one
+            or more cited claims unsupported by their evidence; the
+            answer, citations, and evidence are retained and the failing
+            claims are listed. error = see failure_stage and error.
         query:
           type: string
         answer:
@@ -754,6 +757,42 @@ components:
           $ref: "#/components/schemas/AnswerDiagnostics"
           description: >
             Present only when diagnostics were requested.
+        verified:
+          type: boolean
+          description: >
+            Present only when claim verification ran and every cited
+            claim passed the judge (ADR-059). Absent when verification
+            is disabled or skipped.
+        unverified_claims:
+          type: array
+          items:
+            type: object
+            required: [claim, verdict, ordinals]
+            properties:
+              claim:
+                type: string
+                description: The failing claim text (citation markers stripped).
+              verdict:
+                type: string
+                enum: [unsupported, unparseable]
+                description: unsupported = the evidence contradicts or omits the claim; unparseable = the judge reply could not be read (never silently passed).
+              ordinals:
+                type: array
+                items:
+                  type: integer
+                  minimum: 1
+                description: The evidence ordinals the claim cited.
+          description: >
+            Present only when status is unverified_claims — the cited
+            claims that failed verification. The answer, citations, and
+            evidence are all retained.
+        verification_skipped:
+          type: string
+          description: >
+            Present only when claim verification was enabled but could
+            not run (provider unavailable, call failure, or every
+            verdict unparseable). Names the reason; the referential-only
+            ok guarantee is retained.
 
     AnswerCitation:
       type: object
@@ -888,6 +927,19 @@ components:
           description: >
             Number of language-model completion rounds made (bounded by
             the answer configuration).
+        verification_ms:
+          type: number
+          format: float
+          description: >
+            Duration of the claim-verification stage in milliseconds
+            (ADR-059). Present only when the stage ran.
+        verification_calls:
+          type: integer
+          minimum: 0
+          description: >
+            Judge completions made, one per cited claim. Present only
+            when the stage ran; reported separately from
+            completion_calls.
 
     DocumentInfo:
       type: object
