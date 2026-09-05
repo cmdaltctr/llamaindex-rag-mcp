@@ -1,4 +1,4 @@
-"""Composition root for the RAG MCP server.
+"""Composition root for OMRG — Opinionated Modular RAG.
 
 This is the **only** module that instantiates provider and pipeline
 objects.  It reads the resolved ``Settings`` from ``omrg.config``

@@ -87,8 +87,6 @@ No output means it is working — it waits silently for MCP messages on stdin.
 
 Then register it with your AI client: [MCP client setup](docs/guides/mcp-client-setup.md).
 
-> The console alias `rag-mcp` still works but is deprecated; use `omrg`.
-
 ### What goes in `.env`
 
 Connection details, vector-store selection, and secrets.

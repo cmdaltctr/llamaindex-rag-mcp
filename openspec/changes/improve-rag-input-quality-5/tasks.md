@@ -61,7 +61,7 @@ Implement in stages. Do not promote OCR thresholds, chunk-size defaults, or quer
 - [ ] 6.3 Document `EMBEDDING__QUERY_INSTRUCTION`, including that it applies to queries only and may change query-vector semantics without requiring document re-ingestion.
 - [ ] 6.4 Update `.env.example` with commented examples for `Qwen/Qwen3-Embedding-4B` tokenizer identity and the evaluated query instruction. Do not add pre-v2 flat aliases.
 - [ ] 6.5 Run `uv sync` and targeted PDF/chunking/retrieval tests.
-- [ ] 6.6 Run `uv run pytest -m "not slow" --cov=rag_mcp` and confirm the existing coverage floors hold.
+- [ ] 6.6 Run `uv run pytest -m "not slow" --cov=omrg` and confirm the existing coverage floors hold.
 - [ ] 6.7 Run the dependency-floor job/test after adding the new dependencies.
 - [ ] 6.8 Run `openspec validate improve-rag-input-quality-5 --strict` and fix any stale baseline requirement rather than working around the validator.
 - [ ] 6.9 After the empirical decisions are confirmed, write an ADR recording the accepted OCR routing gate, tokenizer/chunking choice, query-instruction policy, fallback behaviour, and any defaults that were actually promoted.

@@ -82,14 +82,14 @@ cheap to close now while the v3 line is open for breaking work.
 ## Impact
 
 **Code**
-- `src/rag_mcp/config/legacy.py` — policy docstring, entry retention/removal.
-- `src/rag_mcp/core/metadata/extractor.py` — loses the OpenRouter implementation
+- `src/omrg/config/legacy.py` — policy docstring, entry retention/removal.
+- `src/omrg/core/metadata/extractor.py` — loses the OpenRouter implementation
   and `_CLOUD_BACKENDS`; shrinks toward pure dispatch.
-- `src/rag_mcp/core/metadata/openrouter.py` — **new**.
-- `src/rag_mcp/core/providers/llm/openrouter.py` — **new**.
-- `src/rag_mcp/core/providers/llm/registry.py`, `core/metadata/registry.py` — one
+- `src/omrg/core/metadata/openrouter.py` — **new**.
+- `src/omrg/core/providers/llm/openrouter.py` — **new**.
+- `src/omrg/core/providers/llm/registry.py`, `core/metadata/registry.py` — one
   `register()` line each.
-- `src/rag_mcp/core/metadata/llamaindex.py` — inline construction removed.
+- `src/omrg/core/metadata/llamaindex.py` — inline construction removed.
 
 **Tests**
 - New guard test and symmetry test.

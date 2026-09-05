@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: RAG MCP REST API
+  title: OMRG REST API
   description: >
-    REST transport contract for the LlamaIndex RAG MCP server.
+    REST transport contract for OMRG — Opinionated Modular RAG.
 
     Maps HTTP endpoints to the same core operations that the MCP and CLI
     transports call. This is a contract-first document — no runtime HTTP

@@ -8,14 +8,14 @@ consecutive-error detection, and graceful shutdown on SIGINT.
 Move (rename) events are handled as delete-then-ingest by
 :class:`MoveHandlingMixin <omrg.daemon.move_handling.MoveHandlingMixin>`.
 
-The watcher runs as a standalone CLI process (``rag-mcp watch``), not
+The watcher runs as a standalone CLI process (``omrg watch``), not
 inside the MCP server loop.  All ingestion is dispatched through
 ``asyncio.run(ingest_path_async(...))`` from the watcher thread.
 
 Usage::
 
-    rag-mcp watch /path/to/docs
-    rag-mcp watch /path/to/docs --debounce 5
+    omrg watch /path/to/docs
+    omrg watch /path/to/docs --debounce 5
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# AGENTS.md — LlamaIndex RAG MCP Server
+# AGENTS.md for OMRG — Opinionated Modular RAG
 
 Conventions, constraints, and workflow for AI agents. Only what you **cannot infer** from reading the code — details live in `docs/guides/`.
 
@@ -131,7 +131,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 | ADRs (27 decisions)           | [`docs/adr/`](docs/adr/)                                                   |
 | Config vars                   | `.env.example` + defaults in `config.py`                                   |
 | OpenSpec specs                | `openspec/specs/` + `openspec/changes/`                                    |
-| NiftyPM local source of truth | `niftypm/llamaindex-rag-mcp.json`                                          |
+| NiftyPM local source of truth | `niftypm/omrg.json`                                                        |
 
 ## graphify
 

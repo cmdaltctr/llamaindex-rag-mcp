@@ -130,8 +130,6 @@ torch = [
 
 [project.scripts]
 omrg = "omrg.transports.cli:run_cli"
-# Deprecated one-major compatibility alias for installed LaunchAgents.
-rag-mcp = "omrg.transports.cli:run_cli"
 
 [build-system]
 requires = ["hatchling"]
