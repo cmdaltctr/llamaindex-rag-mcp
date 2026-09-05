@@ -1,19 +1,31 @@
 """End-to-end smoke test: server over stdio transport.
 
 Launches ``uv run omrg`` as a subprocess, performs MCP handshake,
-and verifies tool discovery. Marked ``slow`` — skipped by default.
+and verifies tool discovery. Marked ``slow`` — skipped by default,
+and skipped under CI: the probe only ever usefully runs against a
+local checkout (GitHub-hosted runners have no Ollama, so the CI slow
+step already exits early; the marker keeps that policy explicit if a
+self-hosted Ollama runner ever appears).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 
 import pytest
 
+pytestmark = [
+    pytest.mark.slow,
+    pytest.mark.skipif(
+        os.environ.get("CI") == "true",
+        reason="stdio server probe runs locally only (uv run pytest -m slow)",
+    ),
+]
 
-@pytest.mark.slow
+
 def test_stdio_server_lists_tools() -> None:
     """Launch the server over stdio and verify all tools are present."""
     proc = subprocess.Popen(
@@ -55,6 +67,7 @@ def test_stdio_server_lists_tools() -> None:
         assert tool_names == {
             "ingest_documents",
             "search_documents",
+            "answer_documents",
             "list_indexed_documents",
             "list_collections",
             "delete_documents",
