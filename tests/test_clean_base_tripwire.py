@@ -62,12 +62,16 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_BASE_EXECUTED = 2513  # Re-baselined at the v3 console-alias-removal change:
+_BASE_EXECUTED = 2515  # Re-baselined at the v3 console-alias-removal change:
 # it added five cases — two packaging regression tests
 # (tests/test_package_metadata.py) proving `omrg` is the only console
 # script and the removed alias does not resolve, plus three LaunchAgent
 # regression tests (tests/unit/test_launchagent.py) for legacy-only
-# resolution failure and legacy-prefix plist discovery (2508 -> 2513).
+# resolution failure and legacy-prefix plist discovery (2508 -> 2513);
+# review remediation then added two more LaunchAgent regression tests —
+# a relative-PATH discovery result resolved to absolute, and a
+# custom-labelled legacy plist discovered by prefix rather than slug
+# (2513 -> 2515).
 # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout

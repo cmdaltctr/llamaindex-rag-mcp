@@ -163,7 +163,12 @@ def resolve_command_path(override: str | None = None) -> str:
         return str(resolved)
     found = shutil.which("omrg")
     if found:
-        return str(Path(found))
+        # shutil.which() returns the path exactly as PATH constructs it —
+        # a relative PATH entry (e.g. "bin") yields a relative result
+        # (e.g. "bin/omrg"). launchd resolves ProgramArguments[0] against
+        # its own sparse default PATH, not the install-time shell's, so a
+        # relative path here would silently fail to start (CodeRabbit).
+        return str(Path(found).resolve())
     sibling = Path(sys.executable).parent / "omrg"
     if sibling.exists():
         return str(sibling)
@@ -238,20 +243,21 @@ def _plist_watches(plist_path: Path) -> Path | None:
 def find_existing_plist(plan: LaunchAgentPlan) -> Path | None:
     """Return a previously generated plist for this watch folder, if any.
 
-    Checks the exact planned path first, then any generated label — under
-    the current ``com.omrg.watch.`` prefix or the legacy
-    ``com.rag-mcp.watch.`` prefix — whose slug matches the watch directory.
-    Slug candidates are verified via :func:`_plist_watches` — the slug glob
-    is a shortlist, never the verdict, because ``docs`` also prefixes
+    Checks the exact planned path first, then every plist under the
+    current ``com.omrg.watch.`` prefix or the legacy ``com.rag-mcp.watch.``
+    prefix. Every candidate under a prefix is examined, not only ones whose
+    filename shares the watch directory's slug — a custom ``--label``
+    (current or legacy) never shares that slug, and a slug-restricted glob
+    would leave it undiscovered (CodeRabbit). :func:`_plist_watches` is the
+    verdict for every candidate: it is what makes ``docs`` never match
     ``docs-backup``. A matching legacy plist is surfaced the same way as a
     matching current one, so it takes the existing different-label
     confirmation-or-``--force`` removal flow rather than a separate path.
     """
     if plan.plist_path.exists():
         return plan.plist_path
-    slug = slugify_label_part(plan.watch_path.name)
     for prefix in (LABEL_PREFIX, LEGACY_LABEL_PREFIX):
-        for candidate in sorted(plan.plist_path.parent.glob(f"{prefix}{slug}*.plist")):
+        for candidate in sorted(plan.plist_path.parent.glob(f"{prefix}*.plist")):
             if _plist_watches(candidate) == plan.watch_path:
                 return candidate
     return None

@@ -206,6 +206,21 @@ class TestResolveCommandPath:
         with patch("shutil.which", return_value="/fake/bin/omrg"):
             assert la.resolve_command_path(None) == str(Path("/fake/bin/omrg"))
 
+    def test_shutil_which_relative_result_resolved_to_absolute(
+        self, la, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A relative PATH entry makes shutil.which() return a relative path.
+
+        launchd resolves ``ProgramArguments[0]`` against its own sparse
+        default PATH, not the install-time shell's, so a relative path
+        stored here would silently fail to start (CodeRabbit).
+        """
+        monkeypatch.chdir(tmp_path)
+        with patch("shutil.which", return_value="bin/omrg"):
+            resolved = la.resolve_command_path(None)
+        assert Path(resolved).is_absolute()
+        assert resolved == str((tmp_path / "bin" / "omrg").resolve())
+
     def test_sibling_of_interpreter_as_fallback(self, la) -> None:
         """Without which(), the interpreter's bin sibling is used if present."""
         sibling = Path(sys.executable).parent / "omrg"
@@ -485,6 +500,26 @@ class TestFindExistingPlist:
             plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
         )
         assert la.find_existing_plist(plan) is None
+
+    def test_custom_label_legacy_plist_watching_same_folder_is_discovered(
+        self, la, make_plan, tmp_path: Path
+    ) -> None:
+        """A legacy plist under a fully custom ``--label`` is still found.
+
+        A custom label (``nightly``) shares no slug with the watch
+        directory (``docs``), so a slug-restricted glob would never
+        examine this file — only the prefix plus :func:`_plist_watches`
+        can catch it (CodeRabbit).
+        """
+        agents = tmp_path / "Library/LaunchAgents"
+        watched = tmp_path / "docs"
+        watched.mkdir()
+        legacy = self._seed(agents / f"{la.LEGACY_LABEL_PREFIX}nightly.plist", watched.resolve())
+        plan = make_plan(
+            watch_path=watched.resolve(),
+            plist_path=agents / "com.omrg.watch.docs-1a2b3c4d.plist",
+        )
+        assert la.find_existing_plist(plan) == legacy
 
 
 # ── launchctl wrapper (task 2.4/2.5) ────────────────────────────────
