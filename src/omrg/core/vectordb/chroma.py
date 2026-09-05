@@ -179,10 +179,10 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     ) -> None:
         """Embed and write nodes via LlamaIndex's ChromaVectorStore adapter.
 
-        The embedding uses the LlamaIndex global ``Settings.embed_model``
-        (assigned by ``compose.ensure_runtime_setup``).  When an
-        embedding identity is attached, the collection's stored identity
-        is stamped (legacy collections) or verified first.
+        Embedding uses the injected *embed_model* (the engine's embedder);
+        only the direct-call path without one falls back to the LlamaIndex
+        global. When an embedding identity is attached, the collection's
+        stored identity is stamped (legacy collections) or verified first.
         """
         if embed_model is None:
             from llama_index.core import Settings
@@ -208,10 +208,14 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
         vector_store = _LlamaChromaVectorStore(chroma_collection=collection)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
+        # embed_model is passed explicitly: the constructor resolves
+        # ``embed_model or Settings.embed_model`` BEFORE processing the
+        # (already embedded) nodes, so omitting it reads the global.
         VectorStoreIndex(
             nodes,
             storage_context=storage_context,
             show_progress=False,
+            embed_model=embed_model,
         )
         self.bump_generation(collection_name)
 
@@ -370,7 +374,14 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
     # ── Generation counter (BM25 cache invalidation) ───────────────
 
     def close(self) -> None:
-        """Release backend resources. ChromaDB clients need no explicit release."""
+        """Release process-local state; the client itself needs no teardown.
+
+        ChromaDB's ``ClientAPI`` exposes no public close (local persistent
+        and ephemeral clients release storage when garbage-collected, and a
+        shared cloud client must keep serving other callers). Clearing the
+        generation counters drops this instance's BM25-invalidation state.
+        """
+        self._generations.clear()
 
     def bump_generation(self, collection_name: str) -> None:
         """Advance the process-local generation counter."""

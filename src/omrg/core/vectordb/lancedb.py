@@ -201,14 +201,11 @@ class LanceVectorStore(
     ) -> None:
         """Embed and write nodes via LlamaIndex's LanceDB adapter.
 
-        The embedding uses the LlamaIndex global ``Settings.embed_model``
-        (assigned by ``compose.ensure_runtime_setup``).  stdout is
-        redirected because the adapter prints a notice when it lazily
-        creates a table — stdout is the MCP protocol channel.
-        The ``metadata`` struct is fixed on the first write, so a batch
-        introducing new metadata keys grows the struct first (old rows
-        gain nulls); the adapter's internal keys are included because
-        the adapter writes them into the same struct.
+        Embedding uses the injected *embed_model*; a direct call without
+        one falls back to the LlamaIndex global. stdout is redirected
+        because the adapter prints on lazy table creation (stdout is the
+        MCP channel). New metadata keys widen the struct first; old rows
+        gain nulls.
         """
         if embed_model is None:
             from llama_index.core import Settings
@@ -233,15 +230,15 @@ class LanceVectorStore(
         connection = self._get_connection()
         with redirect_stdout(io.StringIO()):
             vector_store = _LlamaLanceVectorStore(
-                connection=connection,
-                table_name=collection_name,
-                mode="create",
+                connection=connection, table_name=collection_name, mode="create"
             )
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
+            # embed_model is explicit: the constructor would otherwise read the global.
             VectorStoreIndex(
                 nodes,
                 storage_context=storage_context,
                 show_progress=False,
+                embed_model=embed_model,
             )
         self._intents.discard(collection_name)
         self._flush_after_write(collection_name)
@@ -473,7 +470,10 @@ class LanceVectorStore(
     # ── Generation counter (BM25 cache invalidation) ───────────────
 
     def close(self) -> None:
-        """Release backend resources. Embedded LanceDB needs no explicit release."""
+        """Drop process-local state; the embedded backend has no close API."""
+        self._generations.clear()
+        self._intents.clear()
+        self._pending_metadata.clear()
 
     def bump_generation(self, collection_name: str) -> None:
         """Advance the process-local generation counter."""
