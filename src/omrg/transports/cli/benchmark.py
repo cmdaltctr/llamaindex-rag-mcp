@@ -12,8 +12,8 @@ from pathlib import Path
 import typer
 from rich.table import Table
 
-from ...config import get_settings
 from ...core.ingestion.loader import SUPPORTED_EXTENSIONS
+from ...core.settings import get_default_effective_settings
 from . import _print_ollama_error, app, console
 
 
@@ -38,15 +38,15 @@ def _prepare_benchmark_chunks(text: str | None, file: str | None) -> list[str]:
         nodes = asyncio.run(
             read_and_chunk_file_async(
                 file_path,
-                chunk_size=get_settings().chunking.chunk_size,
-                chunk_overlap=get_settings().chunking.chunk_overlap,
+                chunk_size=get_default_effective_settings().chunking.chunk_size,
+                chunk_overlap=get_default_effective_settings().chunking.chunk_overlap,
             )
         )
         return [n.get_content() for n in nodes]
 
     splitter = SentenceSplitter(
-        chunk_size=get_settings().chunking.chunk_size,
-        chunk_overlap=get_settings().chunking.chunk_overlap,
+        chunk_size=get_default_effective_settings().chunking.chunk_size,
+        chunk_overlap=get_default_effective_settings().chunking.chunk_overlap,
     )
     doc = Document(text=text)
     nodes = splitter.get_nodes_from_documents([doc])
@@ -95,7 +95,7 @@ def benchmark(
         raise typer.Exit(code=1)
 
     embed_model = LISettings.embed_model
-    model_name = get_settings().embed_model
+    model_name = get_default_effective_settings().embed_model
 
     console.print(f"[dim]Warming up {model_name} with 1 chunk…[/dim]")
     try:
@@ -127,8 +127,8 @@ def benchmark(
     result = {
         "model": model_name,
         "chunks": total_chunks,
-        "batch_size": get_settings().ingestion.embed_batch_size,
-        "concurrency": get_settings().ingestion.embed_concurrency,
+        "batch_size": get_default_effective_settings().ingestion.embed_batch_size,
+        "concurrency": get_default_effective_settings().ingestion.embed_concurrency,
         "iterations": iterations,
         "avg_time_sec": round(avg_time, 4),
         "chunks_per_sec": round(throughput, 2),
@@ -145,8 +145,8 @@ def benchmark(
 
     table.add_row("Model", model_name)
     table.add_row("Chunks", str(total_chunks))
-    table.add_row("Batch Size", str(get_settings().ingestion.embed_batch_size))
-    table.add_row("Concurrency", str(get_settings().ingestion.embed_concurrency))
+    table.add_row("Batch Size", str(get_default_effective_settings().ingestion.embed_batch_size))
+    table.add_row("Concurrency", str(get_default_effective_settings().ingestion.embed_concurrency))
     table.add_row("Iterations", str(iterations))
     table.add_row("Avg Time (s)", f"{avg_time:.4f}")
     table.add_row("Chunks/sec", f"{throughput:.2f}")

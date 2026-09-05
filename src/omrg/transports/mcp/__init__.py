@@ -74,17 +74,17 @@ def _error_detail(exc: Exception) -> str:
     unredacted detail from a tool error path (gotcha #1).
     """
     try:
-        settings = compose.get_settings()
+        values = compose.redaction_values()
     except Exception:
         return _SETTINGS_UNRESOLVED
     return redact_secret(
         redact_cloud_secrets(
             str(exc),
-            settings.chroma_cloud_api_key,
-            settings.chroma_cloud_tenant,
-            settings.chroma_cloud_database,
+            values["chroma_cloud_api_key"],
+            values["chroma_cloud_tenant"],
+            values["chroma_cloud_database"],
         ),
-        settings.openrouter_api_key,
+        values["openrouter_api_key"],
     )
 
 
