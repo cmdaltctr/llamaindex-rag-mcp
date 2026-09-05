@@ -161,3 +161,67 @@ def test_effective_settings_fixture_rejects_unknown_block(effective_settings) ->
     """An unknown dotted block must raise."""
     with pytest.raises(TypeError, match="unknown block"):
         effective_settings(**{"nosuchblock.field": 1})
+
+
+# ── Review fixes: engine-owned store and composition-time env snapshot ──
+
+
+class _TagStore:
+    """Minimal store double exposing one collection metadata tag."""
+
+    def __init__(self, tag: str | None) -> None:
+        self._tag = tag
+
+    def get_collection_metadata(self, collection_name: str) -> dict | None:
+        return {"profile": self._tag} if self._tag is not None else None
+
+
+def test_resolver_reads_tags_from_injected_store() -> None:
+    """Two resolvers with injected stores resolve same-named collections apart.
+
+    Profile tags are read from the engine-owned store, never from the
+    process-default store (which may belong to another engine).
+    """
+    from omrg.core.settings import MetadataBlock
+
+    base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+    codebase_engine = ProfileResolver(
+        store=_TagStore("codebase"), server_profile="documents", base=base
+    )
+    documents_engine = ProfileResolver(
+        store=_TagStore("documents"), server_profile="documents", base=base
+    )
+
+    assert codebase_engine.resolve("shared").profile_name == "codebase"
+    assert documents_engine.resolve("shared").profile_name == "documents"
+
+
+def test_resolver_uses_captured_env_not_live(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A resolver built with a snapshot ignores later environment changes."""
+    from omrg.core.settings import MetadataBlock
+
+    base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+    monkeypatch.setenv("RETRIEVAL__TOP_K", "5")  # the LATER environment
+
+    snapshotted = ProfileResolver(
+        store=_TagStore(None),
+        server_profile="documents",
+        base=base,
+        env_overrides={"RETRIEVAL__TOP_K": "7"},
+    )
+    assert snapshotted.resolve("shared").retrieval.top_k == 7
+
+    legacy = ProfileResolver(store=_TagStore(None), server_profile="documents", base=base)
+    assert legacy.resolve("shared").retrieval.top_k == 5  # live env still wins
+
+
+def test_build_profile_resolver_forwards_store_and_env() -> None:
+    """compose.build_profile_resolver passes store/env_overrides through."""
+    from omrg import compose
+
+    store = _TagStore("codebase")
+    resolver = compose.build_profile_resolver(store=store, env_overrides={})
+    assert resolver._store is store
+    assert resolver._env_overrides == {}

@@ -31,13 +31,16 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...config import _load_profile_bundle
 from ..ingestion.settings import parse_extension_set
 from ..settings import EffectiveSettings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +61,17 @@ def _bundle_to_effective(
     profile_name: str,
     bundle: dict[str, Any],
     base: EffectiveSettings | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> EffectiveSettings:
     """Overlay a raw profile bundle's Tier 2 levers onto *base*.
 
     Environment variables override the profile bundle values for Tier 2
     levers, preserving the "env still wins" precedence established by
-    the startup Settings resolver.
+    the startup Settings resolver. *env* is the override mapping to
+    consult; ``None`` reads the live ``os.environ`` (the legacy
+    transport behaviour — engines pass the snapshot captured at
+    composition time so a constructed engine never observes later
+    environment changes).
 
     Validates each lever value and raises a clear error naming the
     offending key if validation fails.
@@ -77,10 +85,14 @@ def _bundle_to_effective(
             replaced; every other field is inherited.  When ``None``, class
             defaults are used — correct only for tests that assert on
             levers alone.
+        env: Override mapping consulted for the Tier 2 levers
+            (``None`` → live ``os.environ``).
 
     Returns:
         Frozen :class:`EffectiveSettings` instance.
     """
+    if env is None:
+        env = os.environ
     # Tier 2 lever env overrides (env still wins over the profile bundle).
     # The bundle is nested (v2.0.0), and env vars use the nested delimiter.
     retrieval = bundle.get("retrieval", {}) or {}
@@ -89,7 +101,7 @@ def _bundle_to_effective(
     ingestion = bundle.get("ingestion", {}) or {}
     answer = bundle.get("answer", {}) or {}
 
-    raw_top_k = os.environ.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
+    raw_top_k = env.get("RETRIEVAL__TOP_K", retrieval.get("top_k", 10))
     try:
         top_k = int(raw_top_k)
     except (ValueError, TypeError) as exc:
@@ -99,19 +111,19 @@ def _bundle_to_effective(
         ) from exc
 
     reranker_enabled = _parse_profile_bool(
-        os.environ.get("RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False))
+        env.get("RETRIEVAL__RERANK_ENABLED", retrieval.get("rerank_enabled", False))
     )
     hybrid_enabled = _parse_profile_bool(
-        os.environ.get("RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False))
+        env.get("RETRIEVAL__HYBRID_ENABLED", retrieval.get("hybrid_enabled", False))
     )
     chunk_strategy_fallback = str(
-        os.environ.get(
+        env.get(
             "CHUNKING__STRATEGY_FALLBACK",
             chunking.get("strategy_fallback", "markdown"),
         )
     )
     metadata_taxonomy_mode = str(
-        os.environ.get("METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category"))
+        env.get("METADATA__TAXONOMY_MODE", metadata.get("taxonomy_mode", "category"))
     )
 
     # Validate taxonomy mode against known values.
@@ -133,7 +145,7 @@ def _bundle_to_effective(
     # bundle value (a YAML list), the env override (comma-separated or a
     # JSON array string), or the server-default base set — in that order.
     resolved_extensions = parse_extension_set(
-        os.environ.get(
+        env.get(
             "INGESTION__INGEST_EXTENSIONS",
             ingestion.get("ingest_extensions", base.ingestion.ingest_extensions),
         )
@@ -145,15 +157,13 @@ def _bundle_to_effective(
     # over the server-default base.  Everything else on the answer block
     # stays server-level configuration.
     verify_claims = _parse_profile_bool(
-        os.environ.get(
-            "ANSWER__VERIFY_CLAIMS", answer.get("verify_claims", base.answer.verify_claims)
-        )
+        env.get("ANSWER__VERIFY_CLAIMS", answer.get("verify_claims", base.answer.verify_claims))
     )
     verify_model = str(
-        os.environ.get("ANSWER__VERIFY_MODEL", answer.get("verify_model", base.answer.verify_model))
+        env.get("ANSWER__VERIFY_MODEL", answer.get("verify_model", base.answer.verify_model))
     )
     verify_provider = str(
-        os.environ.get(
+        env.get(
             "ANSWER__VERIFY_PROVIDER",
             answer.get("verify_provider", base.answer.verify_provider),
         )
@@ -205,12 +215,15 @@ class ProfileResolver:
         store: VectorStore | None = None,
         server_profile: str | None = None,
         base: EffectiveSettings | None = None,
+        env_overrides: Mapping[str, str] | None = None,
     ) -> None:
         """Initialise the resolver.
 
         Args:
             store: Optional :class:`VectorStore` for reading collection
-                metadata.  Defaults to the process-wide store.
+                metadata. ``build_engine`` injects the engine-owned store;
+                ``None`` falls back to the process-wide store (legacy
+                transport path, which installs the process default).
             server_profile: The server-wide default profile name
                 (``RAG_PROFILE``).  Supplied by ``compose.py`` via
                 injection (task 4.5); when ``None``, falls back to the
@@ -221,10 +234,14 @@ class ProfileResolver:
                 ``None``, class defaults are used — every non-lever field
                 would then ignore the operator's configuration, so
                 production callers MUST supply it.
+            env_overrides: Snapshot of the applicable profile env
+                overrides, captured at composition time. ``None`` reads
+                the live environment (legacy transport behaviour).
         """
         self._store = store
         self._server_profile = server_profile
         self._base = base
+        self._env_overrides = env_overrides
         self._cache: dict[str, EffectiveSettings] = {}
 
     # ── Public API ──────────────────────────────────────────────────
@@ -403,6 +420,6 @@ class ProfileResolver:
             )
             bundle = {}
 
-        effective = _bundle_to_effective(profile_name, bundle, self._base)
+        effective = _bundle_to_effective(profile_name, bundle, self._base, self._env_overrides)
         self._cache[profile_name] = effective
         return effective

@@ -168,6 +168,23 @@ def runtime_summary() -> tuple[str, int, int]:
     )
 
 
+def redaction_values() -> dict[str, str]:
+    """Return the active credential values used for error-text redaction.
+
+    Composition-root surface for transports that redact tool errors
+    (gotcha #1) without calling ``get_settings()`` directly — the
+    settings-resolution boundary forbids that outside ``compose``
+    siblings.
+    """
+    settings = get_settings()
+    return {
+        "chroma_cloud_api_key": settings.chroma_cloud_api_key,
+        "chroma_cloud_tenant": settings.chroma_cloud_tenant,
+        "chroma_cloud_database": settings.chroma_cloud_database,
+        "openrouter_api_key": settings.openrouter_api_key,
+    }
+
+
 def build_reranker(settings: Settings | None = None) -> Any:
     """Construct the cross-encoder reranker from resolved settings.
 
@@ -258,7 +275,12 @@ from .compose_answer import build_answer_llm, build_verify_llm  # noqa: E402,F40
 from .core.vectordb.summary import storage_summary as _summary_storage  # noqa: E402
 
 
-def build_profile_resolver(settings: Settings | None = None) -> Any:
+def build_profile_resolver(
+    settings: Settings | None = None,
+    *,
+    store: Any = None,
+    env_overrides: Any = None,
+) -> Any:
     """Construct the :class:`ProfileResolver` with its dependencies injected.
 
     This is the only sanctioned way to build a resolver in production.
@@ -269,10 +291,20 @@ def build_profile_resolver(settings: Settings | None = None) -> Any:
 
     Args:
         settings: Resolved settings (defaults to the singleton).
+        store: Optional engine-owned :class:`VectorStore` the resolver
+            reads collection metadata from. ``build_engine`` always
+            injects the engine's store so profile tags are read from
+            the right store in multi-engine processes; legacy transport
+            callers omit it and resolve through the process-default
+            store.
+        env_overrides: Optional snapshot of the applicable profile env
+            overrides, captured at composition time so an
+            already-constructed engine never observes later environment
+            changes. ``None`` keeps the legacy live-environment read.
 
     Returns:
-        A :class:`ProfileResolver` with ``server_profile`` and ``base``
-        injected.
+        A :class:`ProfileResolver` with ``server_profile``, ``base``,
+        ``store`` and ``env_overrides`` injected.
     """
     from .core.profiles import ProfileResolver
 
@@ -280,8 +312,10 @@ def build_profile_resolver(settings: Settings | None = None) -> Any:
         settings = get_settings()
 
     return ProfileResolver(
+        store=store,
         server_profile=settings.rag_profile,
         base=settings_to_effective(settings),
+        env_overrides=env_overrides,
     )
 
 
@@ -433,40 +467,20 @@ def ensure_runtime_setup() -> None:
     """Build the default engine from the environment and install it as the process default.
 
     Delegates construction to ``compose.build_engine()`` (the single
-    construction path), then installs the result as the process default
-    store, default effective settings, and LlamaIndex global embed model
-    for legacy transport compatibility. The builder itself installs nothing.
+    construction path — the legacy-env tripwire, the recognised-Chroma-data
+    protection and the active-strategy validation all run inside the
+    builder, before any dependency is constructed), then installs the
+    result as the process default store, default effective settings, and
+    LlamaIndex global embed model for legacy transport compatibility. The
+    builder itself installs nothing.
 
     Safe to call multiple times — only runs once.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
         return
-    # Fail fast on pre-v2.0.0 flat env vars before resolving anything, so an
-    # unmigrated .env produces a naming error rather than silent defaults.
-    from .config import check_legacy_env_vars
-
-    check_legacy_env_vars()
-    settings = get_settings()
-    # Disabled norm guard is an explicit operator decision: make its
-    # consequence visible in the startup log (spec: guard configuration
-    # is explicit).
-    _log_norm_guard_state(settings)
-    # Fail closed on recognised legacy Chroma data when no explicit backend
-    # was selected (task 4, design D6) — before any store construction so
-    # ingestion/retrieval can never touch the untouched directory.
-    from .core.vectordb.legacy import evaluate_legacy_chroma_data
-
-    evaluate_legacy_chroma_data(
-        settings.chroma_persist_dir,
-        settings.vector_store,
-        settings.vector_store_provenance,
-    )
-
-    engine = build_engine(settings)
+    engine = build_engine()
     engine._install_as_process_default()
-    # Resolve the configured strategies so a bad import string fails fast.
-    _resolve_active_strategies(settings)
     _runtime_setup_done = True
 
 

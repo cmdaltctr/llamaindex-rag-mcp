@@ -457,7 +457,10 @@ def test_build_engine_constructs_engine_from_settings(tmp_path: Path) -> None:
         patch("omrg.compose.build_vector_store", return_value=mock_store),
         patch("omrg.compose.settings_to_effective", return_value=mock_effective),
         patch("omrg.compose.build_reranker", return_value=mock_reranker),
-        patch("omrg.config.get_settings", return_value=mock_settings) as mock_get_settings,
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrg.core.vectordb.legacy.evaluate_legacy_chroma_data"),
+        patch("omrg.compose.get_settings", return_value=mock_settings) as mock_get_settings,
     ):
         engine = build_engine()
 
@@ -485,6 +488,8 @@ def test_build_engine_reranker_failure_degrades_to_none(tmp_path: Path) -> None:
         patch("omrg.compose.build_vector_store", return_value=MagicMock()),
         patch("omrg.compose.settings_to_effective", return_value=mock_effective),
         patch("omrg.compose.build_reranker", side_effect=RuntimeError("no onnx")),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
     ):
         engine = build_engine(mock_settings)
 
@@ -535,9 +540,13 @@ def test_engine_construction_failure_leaves_no_partial_state(tmp_path: Path) -> 
     from omrg.compose_engine import build_engine
 
     mock_settings = MagicMock()
-    with patch(
-        "omrg.compose.build_embed_model",
-        side_effect=ValueError("invalid embed_provider='bogus'"),
+    with (
+        patch(
+            "omrg.compose.build_embed_model",
+            side_effect=ValueError("invalid embed_provider='bogus'"),
+        ),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -553,9 +562,13 @@ def test_build_engine_fail_fast_on_invalid_embed_provider(tmp_path: Path) -> Non
     from omrg.compose_engine import build_engine
 
     mock_settings = MagicMock()
-    with patch(
-        "omrg.compose.build_embed_model",
-        side_effect=ValueError("unknown provider 'bogus'"),
+    with (
+        patch(
+            "omrg.compose.build_embed_model",
+            side_effect=ValueError("unknown provider 'bogus'"),
+        ),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -569,6 +582,8 @@ def test_build_engine_fail_fast_on_invalid_store(tmp_path: Path) -> None:
     with (
         patch("omrg.compose.build_embed_model", return_value=MagicMock()),
         patch("omrg.compose.build_vector_store", side_effect=ValueError("unknown store 'bogus'")),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
     ):
         with pytest.raises(ValueError, match="bogus"):
             build_engine(mock_settings)
@@ -660,8 +675,13 @@ def test_source_index_identity_changes_with_different_embedders() -> None:
 # ── Coverage of composition fallbacks ────────────────────────────────
 
 
-def test_engine_profile_resolution_fallbacks() -> None:
-    """Profile construction and resolution failures use the engine settings."""
+def test_engine_profile_resolution_errors_propagate() -> None:
+    """Profile construction and resolution failures surface, not fall back.
+
+    An invalid collection profile is a configuration error: silently
+    running the operation on base settings would change retrieval
+    behaviour without the operator knowing.
+    """
     from omrg.engine import Engine
 
     settings = MagicMock()
@@ -671,8 +691,8 @@ def test_engine_profile_resolution_fallbacks() -> None:
         embed_model=MagicMock(),
         profile_resolver_factory=MagicMock(side_effect=RuntimeError("unavailable")),
     )
-    assert failed_factory._resolve_settings("docs") is settings
-    assert failed_factory._profile_resolver_factory is None
+    with pytest.raises(RuntimeError, match="unavailable"):
+        failed_factory._resolve_settings("docs")
 
     resolved = MagicMock()
     resolver = MagicMock()
@@ -685,8 +705,9 @@ def test_engine_profile_resolution_fallbacks() -> None:
     )
     assert working._resolve_settings("docs") is resolved
 
-    resolver.resolve.side_effect = RuntimeError("invalid profile")
-    assert working._resolve_settings("docs") is settings
+    resolver.resolve.side_effect = ValueError("invalid profile tag")
+    with pytest.raises(ValueError, match="invalid profile tag"):
+        working._resolve_settings("docs")
 
 
 def test_engine_verification_provider_paths() -> None:
@@ -728,9 +749,15 @@ def test_engine_verification_provider_paths() -> None:
     assert "unavailable" in captured[1]["verify_unavailable_reason"]
 
 
-def test_safe_llm_builders_cover_success_and_failure() -> None:
-    """Safe composition helpers return providers or degrade to ``None``."""
-    from omrg.compose_engine import _build_answer_llm_safe, _build_verify_llm_safe
+def test_llm_builders_propagate_configuration_errors() -> None:
+    """Composition helpers return providers and let configuration errors raise.
+
+    ``build_answer_llm`` already implements the availability policy
+    (None for disabled/missing optional extra); unknown providers and
+    missing credentials stay loud so the first ``engine.answer()`` call
+    surfaces the actionable message instead of silently degrading.
+    """
+    from omrg.compose_engine import _build_answer_llm, _build_verify_llm
 
     settings = MagicMock()
     answer_block = MagicMock()
@@ -738,11 +765,307 @@ def test_safe_llm_builders_cover_success_and_failure() -> None:
     verify_llm = MagicMock()
 
     with patch("omrg.compose_answer.build_answer_llm", return_value=answer_llm):
-        assert _build_answer_llm_safe(settings) is answer_llm
-    with patch("omrg.compose_answer.build_answer_llm", side_effect=RuntimeError("unavailable")):
-        assert _build_answer_llm_safe(settings) is None
+        assert _build_answer_llm(settings) is answer_llm
+    with patch(
+        "omrg.compose_answer.build_answer_llm",
+        side_effect=ValueError("ANSWER__PROVIDER='bogus' is not registered"),
+    ):
+        with pytest.raises(ValueError, match="bogus"):
+            _build_answer_llm(settings)
     with patch("omrg.compose_answer.build_verify_llm", return_value=verify_llm) as build_verify:
-        assert _build_verify_llm_safe(settings, answer_block) is verify_llm
+        assert _build_verify_llm(settings, answer_block) is verify_llm
         build_verify.assert_called_once_with(settings, answer_block=answer_block)
-    with patch("omrg.compose_answer.build_verify_llm", side_effect=RuntimeError("unavailable")):
-        assert _build_verify_llm_safe(settings, answer_block) is None
+    with patch(
+        "omrg.compose_answer.build_verify_llm",
+        side_effect=RuntimeError("credential rejected"),
+    ):
+        # The ENGINE converts this into verification_skipped; the builder
+        # itself must not swallow it (ADR-059 degrade happens one level up).
+        with pytest.raises(RuntimeError, match="credential rejected"):
+            _build_verify_llm(settings, answer_block)
+
+
+# ── Review fixes: builder validation, answer threading, close ─────────
+
+
+def test_build_engine_env_route_runs_legacy_env_tripwire(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """``Engine.from_environment`` fails on pre-v2 flat env vars.
+
+    The tripwire is shared validation in the builder, not installer-only:
+    the library construction path must fail the same way transport
+    startup does.
+    """
+    from omrg.compose_engine import build_engine
+
+    monkeypatch.setenv("TOP_K", "10")
+    monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
+    with pytest.raises(ValueError, match="TOP_K.*RETRIEVAL__TOP_K"):
+        build_engine()
+
+
+def test_build_engine_env_route_fails_closed_on_recognised_chroma(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``build_engine`` (no explicit settings) requires an explicit backend.
+
+    Recognised legacy Chroma data with no explicit ``VECTOR_STORE`` must
+    fail closed before any store is constructed — the library path can no
+    longer silently select default LanceDB over existing Chroma data.
+    """
+    from omrg.compose_engine import build_engine
+    from omrg.core.vectordb.legacy import LegacyChromaDataError
+
+    legacy_dir = tmp_path / "legacy_chroma"
+    legacy_dir.mkdir()
+    (legacy_dir / "chroma.sqlite3").write_bytes(b"stub")
+
+    monkeypatch.delenv("VECTOR_STORE", raising=False)
+    monkeypatch.setenv("CHROMA_PERSIST_DIR", str(legacy_dir))
+    monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
+    with pytest.raises(LegacyChromaDataError, match="VECTOR_STORE=chroma"):
+        build_engine()
+
+
+def test_build_engine_validates_strategies_for_explicit_settings(
+    tmp_path: Path,
+) -> None:
+    """Explicit-settings construction still runs the shared strategy gate."""
+    from omrg.compose_engine import build_engine
+    from omrg.config import get_settings
+
+    settings = get_settings().model_copy(update={"community_algorithm": "not-a-strategy"})
+    with pytest.raises(ValueError, match="not-a-strategy"):
+        build_engine(settings)
+
+
+def test_build_engine_wires_store_and_env_snapshot_into_resolver_factory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The resolver factory receives the engine's store and a captured env.
+
+    The snapshot is taken at composition time: later environment changes
+    must not alter an already-constructed engine.
+    """
+    from omrg.compose_engine import build_engine
+
+    mock_settings = MagicMock()
+    mock_settings.chroma_scan_page_size = 10000
+    mock_settings.lancedb_uri = str(tmp_path / "lancedb")
+    mock_effective = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+        lancedb_uri=str(tmp_path / "lancedb"),
+    )
+    mock_store = MagicMock()
+    mock_store.cache_identity = "wiring-identity"
+
+    for key in (
+        "RETRIEVAL__TOP_K",
+        "RETRIEVAL__RERANK_ENABLED",
+        "ANSWER__VERIFY_CLAIMS",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    with (
+        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrg.compose.build_vector_store", return_value=mock_store),
+        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrg.compose.build_reranker", return_value=MagicMock()),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrg.compose.build_profile_resolver") as mock_bpr,
+    ):
+        engine = build_engine(mock_settings)
+        engine._profile_resolver_factory()
+
+    kwargs = mock_bpr.call_args.kwargs
+    assert kwargs["store"] is mock_store
+    assert kwargs["env_overrides"] == {}
+
+    # A later environment change must not reach an engine built before it.
+    monkeypatch.setenv("RETRIEVAL__TOP_K", "9")
+    with (
+        patch("omrg.compose.build_embed_model", return_value=MagicMock()),
+        patch("omrg.compose.build_vector_store", return_value=mock_store),
+        patch("omrg.compose.settings_to_effective", return_value=mock_effective),
+        patch("omrg.compose.build_reranker", return_value=MagicMock()),
+        patch("omrg.compose._resolve_active_strategies"),
+        patch("omrg.compose._log_norm_guard_state"),
+        patch("omrg.compose.build_profile_resolver") as mock_bpr_late,
+    ):
+        late_engine = build_engine(mock_settings)
+        late_engine._profile_resolver_factory()
+    assert mock_bpr_late.call_args.kwargs["env_overrides"] == {"RETRIEVAL__TOP_K": "9"}
+    engine.close()
+    late_engine.close()
+
+
+def test_engine_answer_threads_embedder_and_query_cache() -> None:
+    """``engine.answer()`` passes its embedder and query cache to core answering.
+
+    Without threading, ``engine.search()`` and ``engine.answer()`` could
+    query the same collection with different embedding models.
+    """
+    import asyncio
+
+    from omrg.engine import Engine
+
+    effective = MagicMock()
+    effective.answer.verify_claims = False
+    captured: dict[str, Any] = {}
+
+    async def fake_core_answer(_question: str, **kwargs: Any) -> dict:
+        captured.update(kwargs)
+        return {"status": "ok"}
+
+    embed = MagicMock()
+    engine = Engine(
+        effective,
+        store=MagicMock(cache_identity="answer-threading"),
+        embed_model=embed,
+    )
+    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
+        asyncio.run(engine.answer("question"))
+
+    assert captured["embed_model"] is embed
+    assert captured["query_cache"] is engine._query_cache
+    engine.close()
+
+
+def test_engine_answer_llm_factory_failure_propagates() -> None:
+    """An answer-provider construction error surfaces from ``answer()``."""
+    import asyncio
+
+    from omrg.engine import Engine
+
+    effective = MagicMock()
+    effective.answer.verify_claims = False
+
+    def failing_factory() -> object:
+        raise ValueError("ANSWER__PROVIDER='bogus' is not a registered LLM provider")
+
+    engine = Engine(
+        effective,
+        store=MagicMock(cache_identity="answer-fail"),
+        embed_model=MagicMock(),
+        answer_llm_factory=failing_factory,
+    )
+    with pytest.raises(ValueError, match="bogus"):
+        asyncio.run(engine.answer("question"))
+    # The failure is not cached: the next call retries the factory.
+    with pytest.raises(ValueError, match="bogus"):
+        asyncio.run(engine.answer("question"))
+    engine.close()
+
+
+def test_engine_answer_verify_failure_degrades_with_redacted_reason() -> None:
+    """A verify-provider failure degrades to a redacted skipped reason."""
+    import asyncio
+
+    from omrg.engine import Engine
+
+    effective = MagicMock()
+    effective.answer.verify_claims = True
+    effective.openrouter_api_key = "sk-SECRET123"
+    effective.chroma_cloud_api_key = ""
+    effective.chroma_cloud_tenant = ""
+    effective.chroma_cloud_database = ""
+    captured: dict[str, Any] = {}
+
+    async def fake_core_answer(_question: str, **kwargs: Any) -> dict:
+        captured.update(kwargs)
+        return {"status": "ok"}
+
+    def failing_verify_factory(_block: object) -> object:
+        raise RuntimeError("credential rejected for sk-SECRET123")
+
+    engine = Engine(
+        effective,
+        store=MagicMock(cache_identity="verify-fail"),
+        embed_model=MagicMock(),
+        verify_llm_factory=failing_verify_factory,
+    )
+    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_core_answer):
+        result = asyncio.run(engine.answer("question"))
+
+    assert result == {"status": "ok"}  # the answer itself never fails
+    reason = captured["verify_unavailable_reason"]
+    assert "RuntimeError" in reason
+    assert "credential rejected" in reason
+    assert "sk-SECRET123" not in reason  # redacted
+    assert captured["verify_complete"] is None
+    engine.close()
+
+
+def test_engine_close_rejects_operations_and_releases_references(
+    tmp_path: Path,
+) -> None:
+    """A closed engine refuses operations and drops owned references."""
+    import asyncio
+
+    from omrg.engine import Engine
+
+    settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+        lancedb_uri=str(tmp_path / "lancedb"),
+    )
+    store = MagicMock(cache_identity="closed-identity")
+    embed = MagicMock()
+    reranker = MagicMock()
+    engine = Engine(
+        settings,
+        store=store,
+        embed_model=embed,
+        reranker=reranker,
+        profile_resolver_factory=lambda: MagicMock(),
+        answer_llm_factory=lambda: MagicMock(),
+        verify_llm_factory=lambda block: None,
+    )
+    engine.close()
+
+    store.close.assert_called_once()
+    # Owned references are released (ADR-061: the embedder must not pin).
+    assert engine._store is None
+    assert engine._embed_model is None
+    assert engine._reranker is None
+    assert engine._profile_resolver_factory is None
+    assert engine._answer_llm_factory is None
+    assert engine._verify_llm_factory is None
+    assert engine._query_cache == {}
+
+    with pytest.raises(RuntimeError, match="[Cc]losed"):
+        asyncio.run(engine.ingest(str(tmp_path)))
+    with pytest.raises(RuntimeError, match="[Cc]losed"):
+        engine.search("query")
+    with pytest.raises(RuntimeError, match="[Cc]losed"):
+        asyncio.run(engine.answer("question"))
+    with pytest.raises(RuntimeError, match="[Cc]losed"):
+        engine.list_collections()
+    with pytest.raises(RuntimeError, match="[Cc]losed"):
+        engine.delete_collection("name")
+    engine.close()  # idempotent
+
+
+def test_engine_close_survives_store_close_failure(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A store close() failure is logged; the release still completes."""
+    import logging
+
+    from omrg.engine import Engine
+
+    settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+        lancedb_uri=str(tmp_path / "lancedb"),
+    )
+    store = MagicMock(cache_identity="boom-identity")
+    store.close.side_effect = RuntimeError("backend teardown failed")
+    engine = Engine(settings, store=store, embed_model=MagicMock())
+
+    with caplog.at_level(logging.WARNING):
+        engine.close()  # must not raise
+
+    assert any("store close() failed" in record.message for record in caplog.records)
+    assert engine._store is None
+    assert engine._embed_model is None

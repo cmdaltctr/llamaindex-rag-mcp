@@ -21,6 +21,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from llama_index.core.embeddings import MockEmbedding
 from typer.testing import CliRunner
 
 from omrg.transports.cli import app
@@ -1014,6 +1015,13 @@ class TestContentionWarning:
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose._resolve_active_strategies"),
+            patch(
+                "omrg.compose.build_embed_model",
+                return_value=MockEmbedding(embed_dim=8),
+            ),
+            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
             patch("omrg.config.get_settings") as mock_settings,
             patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
@@ -1047,6 +1055,13 @@ class TestContentionWarning:
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose._resolve_active_strategies"),
+            patch(
+                "omrg.compose.build_embed_model",
+                return_value=MockEmbedding(embed_dim=8),
+            ),
+            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
             patch("omrg.config.get_settings") as mock_settings,
             patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
@@ -1076,6 +1091,13 @@ class TestContentionWarning:
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.compose._resolve_active_strategies"),
+            patch(
+                "omrg.compose.build_embed_model",
+                return_value=MockEmbedding(embed_dim=8),
+            ),
+            patch("omrg.compose.build_vector_store", return_value=MagicMock()),
+            patch("omrg.compose.settings_to_effective", return_value=MagicMock()),
             patch("omrg.config.get_settings") as mock_settings,
             patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
