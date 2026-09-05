@@ -85,8 +85,17 @@ collection.
 
 The resolved `Settings` singleton SHALL NOT be instantiated at module import
 time. `config` SHALL expose `get_settings()` and SHALL NOT expose a
-module-level `settings` object. `compose.py` SHALL be the only caller of
-`get_settings()`.
+module-level `settings` object.
+
+`get_settings()` SHALL remain the environment-and-file resolution path, and
+its production call sites SHALL remain limited to the composition root.
+`Engine.from_environment()` SHALL delegate to that root rather than calling
+`get_settings()` itself. An engine constructed from caller-supplied settings
+SHALL NOT call it at all.
+
+This preserves the existing sole-caller rule while adding an explicit Engine
+factory over it; direct Engine construction accepts already-resolved
+`EffectiveSettings` and never reads config.
 
 #### Scenario: Import does not resolve settings
 
@@ -98,7 +107,14 @@ module-level `settings` object. `compose.py` SHALL be the only caller of
 #### Scenario: Single call site
 
 - **WHEN** the codebase is searched for `get_settings()`
-- **THEN** the only production call site MUST be in `compose.py`
+- **THEN** the composition root MUST remain the sole production call site
+- **AND** no module under `core/` or `integrations/` MUST call it
+
+#### Scenario: Explicit settings bypass resolution entirely
+
+- **WHEN** an engine is constructed from a caller-supplied settings object
+- **THEN** `get_settings()` MUST NOT be called
+- **AND** no environment variable or configuration file MUST be read
 
 ---
 

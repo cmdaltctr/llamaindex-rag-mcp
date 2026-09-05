@@ -75,6 +75,11 @@ quality. Calibration must therefore wait for a deterministic semantic contract.
    process-global provider. Concurrent per-collection provider selection needs
    a future explicit design with per-operation embedding context.
 
+   > **Superseded by [ADR-061](./061-engine-scoped-embedding-provider.md):**
+   > Embedding-provider selection is now engine-scoped
+   > (`EMBEDDING_PROVIDER_SCOPE = "engine"`). Each `Engine` owns its embedder
+   > and two engines with different models coexist in one process.
+
 ## Acceptance Evidence
 
 Stage 2 is implemented by commit
