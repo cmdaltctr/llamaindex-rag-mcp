@@ -50,7 +50,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
 # plus the review round (trailing citations, delimiter escaping, CLI
 # degradation) added 39 counted cases (2398 -> 2437).
-_BASE_EXECUTED = 2465  # Includes the 28 engine and public API cases added by PR 85,
+_BASE_EXECUTED = 2468  # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the

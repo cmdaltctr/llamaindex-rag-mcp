@@ -12,7 +12,7 @@ import importlib
 import types
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -318,6 +318,7 @@ def test_engine_answer_builds_completion_seam_lazily(tmp_path: Path) -> None:
     embed_model = MagicMock(model_name="test-model")
 
     mock_llm = MagicMock()
+    mock_llm.acomplete = AsyncMock(return_value=types.SimpleNamespace(text="completed"))
     factory_called = {"count": 0}
 
     def answer_llm_factory():
@@ -345,6 +346,7 @@ def test_engine_answer_builds_completion_seam_lazily(tmp_path: Path) -> None:
     assert captured.get("store") is store
     assert captured.get("effective_settings") is settings
     assert captured.get("complete") is not None
+    assert asyncio.run(captured["complete"]("prompt")) == "completed"
     engine.close()
 
 
@@ -455,8 +457,11 @@ def test_build_engine_constructs_engine_from_settings(tmp_path: Path) -> None:
         patch("omrg.compose.build_vector_store", return_value=mock_store),
         patch("omrg.compose.settings_to_effective", return_value=mock_effective),
         patch("omrg.compose.build_reranker", return_value=mock_reranker),
+        patch("omrg.config.get_settings", return_value=mock_settings) as mock_get_settings,
     ):
-        engine = build_engine(mock_settings)
+        engine = build_engine()
+
+    mock_get_settings.assert_called_once_with()
 
     assert engine._embed_model is mock_embed
     assert engine._store is mock_store
@@ -650,3 +655,94 @@ def test_source_index_identity_changes_with_different_embedders() -> None:
         embed_model=embed_b,
     )
     assert identity_a != identity_b
+
+
+# ── Coverage of composition fallbacks ────────────────────────────────
+
+
+def test_engine_profile_resolution_fallbacks() -> None:
+    """Profile construction and resolution failures use the engine settings."""
+    from omrg.engine import Engine
+
+    settings = MagicMock()
+    failed_factory = Engine(
+        settings,
+        store=MagicMock(),
+        embed_model=MagicMock(),
+        profile_resolver_factory=MagicMock(side_effect=RuntimeError("unavailable")),
+    )
+    assert failed_factory._resolve_settings("docs") is settings
+    assert failed_factory._profile_resolver_factory is None
+
+    resolved = MagicMock()
+    resolver = MagicMock()
+    resolver.resolve.return_value = resolved
+    working = Engine(
+        settings,
+        store=MagicMock(),
+        embed_model=MagicMock(),
+        profile_resolver=resolver,
+    )
+    assert working._resolve_settings("docs") is resolved
+
+    resolver.resolve.side_effect = RuntimeError("invalid profile")
+    assert working._resolve_settings("docs") is settings
+
+
+def test_engine_verification_provider_paths() -> None:
+    """Answering adapts an available judge and reports an unavailable judge."""
+    import asyncio
+
+    from omrg.engine import Engine
+
+    effective = MagicMock()
+    effective.answer.verify_claims = True
+    store = MagicMock(cache_identity="test-identity")
+    verify_llm = MagicMock()
+    verify_llm.acomplete = AsyncMock(return_value=types.SimpleNamespace(text="verified"))
+    captured: list[dict[str, Any]] = []
+
+    async def fake_answer(_question: str, **kwargs: Any) -> dict:
+        captured.append(kwargs)
+        return {"status": "ok"}
+
+    with patch("omrg.core.answer.pipeline.answer", side_effect=fake_answer):
+        available = Engine(
+            effective,
+            store=store,
+            embed_model=MagicMock(),
+            verify_llm_factory=lambda _block: verify_llm,
+        )
+        asyncio.run(available.answer("question"))
+        unavailable = Engine(
+            effective,
+            store=store,
+            embed_model=MagicMock(),
+            verify_llm_factory=lambda _block: None,
+        )
+        asyncio.run(unavailable.answer("question"))
+
+    assert asyncio.run(captured[0]["verify_complete"]("prompt")) == "verified"
+    assert captured[0]["verify_unavailable_reason"] is None
+    assert captured[1]["verify_complete"] is None
+    assert "unavailable" in captured[1]["verify_unavailable_reason"]
+
+
+def test_safe_llm_builders_cover_success_and_failure() -> None:
+    """Safe composition helpers return providers or degrade to ``None``."""
+    from omrg.compose_engine import _build_answer_llm_safe, _build_verify_llm_safe
+
+    settings = MagicMock()
+    answer_block = MagicMock()
+    answer_llm = MagicMock()
+    verify_llm = MagicMock()
+
+    with patch("omrg.compose_answer.build_answer_llm", return_value=answer_llm):
+        assert _build_answer_llm_safe(settings) is answer_llm
+    with patch("omrg.compose_answer.build_answer_llm", side_effect=RuntimeError("unavailable")):
+        assert _build_answer_llm_safe(settings) is None
+    with patch("omrg.compose_answer.build_verify_llm", return_value=verify_llm) as build_verify:
+        assert _build_verify_llm_safe(settings, answer_block) is verify_llm
+        build_verify.assert_called_once_with(settings, answer_block=answer_block)
+    with patch("omrg.compose_answer.build_verify_llm", side_effect=RuntimeError("unavailable")):
+        assert _build_verify_llm_safe(settings, answer_block) is None
