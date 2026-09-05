@@ -56,6 +56,8 @@ class SearchRetriever(BaseRetriever):
         reranker: Any = None,
         store: Any = None,
         effective_settings: Any = None,
+        embed_model: Any = None,
+        query_cache: Any = None,
     ) -> None:
         """Store the retrieval arguments; nothing runs until ``retrieve``.
 
@@ -73,6 +75,9 @@ class SearchRetriever(BaseRetriever):
             reranker: Optional pre-constructed reranker.
             store: Optional injected vector store.
             effective_settings: Optional resolved profile settings.
+            embed_model: Optional injected embedding model (the engine's
+                embedder); ``None`` selects the legacy global path.
+            query_cache: Optional engine-owned query embedding cache.
         """
         self._search_fn = search_fn
         self._collection_name = collection_name
@@ -85,6 +90,8 @@ class SearchRetriever(BaseRetriever):
         self._reranker = reranker
         self._store = store
         self._effective_settings = effective_settings
+        self._embed_model = embed_model
+        self._query_cache = query_cache
         # Raw search rows from the last retrieve() call.
         self.rows: list[dict] = []
         super().__init__(callback_manager=None)
@@ -108,6 +115,8 @@ class SearchRetriever(BaseRetriever):
             reranker=self._reranker,
             store=self._store,
             effective_settings=self._effective_settings,
+            embed_model=self._embed_model,
+            query_cache=self._query_cache,
         )
         return [_row_to_node(row) for row in self.rows]
 

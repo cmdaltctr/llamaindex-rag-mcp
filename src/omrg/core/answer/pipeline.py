@@ -223,6 +223,8 @@ async def answer(
     reranker: Any = None,
     store: Any = None,
     effective_settings: Any = None,
+    embed_model: Any = None,
+    query_cache: Any = None,
 ) -> dict[str, Any]:
     """Answer a query from retrieved evidence with verifiable citations.
 
@@ -258,6 +260,10 @@ async def answer(
         reranker: Optional pre-constructed reranker.
         store: Optional injected vector store.
         effective_settings: Optional resolved profile settings.
+        embed_model: Optional injected embedding model (the engine's
+            embedder); ``None`` selects the legacy global path so
+            ``engine.search()`` and ``engine.answer()`` share one model.
+        query_cache: Optional engine-owned query embedding cache.
 
     Returns:
         The answer result dict; see the capability spec for the shape.
@@ -303,6 +309,8 @@ async def answer(
             reranker=reranker,
             store=store,
             effective_settings=settings,
+            embed_model=embed_model,
+            query_cache=query_cache,
         )
         try:
             # search() is synchronous; off the event loop (review F10)

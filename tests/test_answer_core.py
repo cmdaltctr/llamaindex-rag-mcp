@@ -664,3 +664,30 @@ async def test_exception_group_during_generation_is_structured_error(
     assert result["status"] == "error"
     assert result["failure_stage"] == "generation"
     assert result["evidence"], "the retrieved evidence must still be returned"
+
+
+# ── Review fix: SearchRetriever forwards the engine embedder/cache ─────
+
+
+def test_search_retriever_forwards_embedder_and_cache() -> None:
+    """The retriever passes embed_model and query_cache into search()."""
+    from omrg.core.answer.retriever import SearchRetriever
+
+    captured: dict = {}
+
+    def spy_search(query: str, **kwargs: object) -> list[dict]:
+        captured.update(kwargs)
+        return []
+
+    embed = object()
+    cache = {}
+    retriever = SearchRetriever(
+        search_fn=spy_search,
+        collection_name="docs",
+        embed_model=embed,
+        query_cache=cache,
+    )
+    retriever.retrieve("query text")
+
+    assert captured["embed_model"] is embed
+    assert captured["query_cache"] is cache
