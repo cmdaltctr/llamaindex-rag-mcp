@@ -8,7 +8,7 @@ The current document path already contains the right extension points:
 - `integrations/pdf/registry.py` and `factory.py` provide reader registration and construction.
 - `core/chunking/sentence.py` currently sends Markdown through `MarkdownNodeParser` and `SentenceSplitter`.
 - `core/chunking/markdown.py` preserves heading metadata and recovery knobs, but small-chunk sizing still uses a four-characters-per-token estimate.
-- `core/retrieval/dense.py` calls `Settings.embed_model.get_query_embedding(query)` and caches query embeddings.
+- `core/retrieval/dense.py::_embed_query()` accepts an injected embedder and engine-owned cache. Its legacy fallback still uses `Settings.embed_model`; the new preparation seam must preserve the engine-owned path.
 - embedding inference is already provider-selected through `core/providers/embeddings/` and the composition root.
 
 The change should use those seams rather than create a second ingestion or retrieval architecture.
@@ -197,7 +197,9 @@ The cache therefore keys on:
 (prepared_query, embedding_model_name)
 ```
 
-This also means filtered and unfiltered retrieval still share a cache entry when their actual query embedding input is identical.
+This changes the key, not cache ownership. Each engine retains its own bounded cache, which is released when that engine closes. Separate engines never share entries, even when model names match.
+
+Filtered and unfiltered retrieval within the same engine still share a cache entry when their actual query embedding input is identical.
 
 ### D7. Defaults and thresholds are empirical decisions
 
