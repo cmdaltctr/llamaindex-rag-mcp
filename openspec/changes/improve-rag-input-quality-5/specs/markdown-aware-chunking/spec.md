@@ -53,6 +53,23 @@ Text from readers declaring `plain` SHALL retain the existing non-Markdown split
 - **THEN** the current MarkdownNodeParser/SentenceSplitter path SHALL be used
 - **AND** the system SHALL NOT describe its size accounting as the embedding model's exact token count
 
+#### Scenario: Markdown-format reader output uses the heading-aware path
+
+- **GIVEN** a `.pdf` read by a reader declaring its emitted text format as `markdown`
+- **AND** the legacy Markdown fallback path is active because no model-matched tokenizer is configured or it cannot be resolved
+- **WHEN** the file is ingested
+- **THEN** the heading-aware node parser SHALL run before sentence splitting
+- **THEN** the emitted chunks SHALL carry `header_path`
+- **THEN** the `CHUNKING__MARKDOWN_CHUNK_SIZE` budget SHALL apply
+
+#### Scenario: Reader-produced Markdown honours the recovery knobs
+
+- **GIVEN** reader-produced Markdown text
+- **WHEN** the file is ingested
+- **THEN** `ensure_heading_metadata`, `apply_heading_prepend` and
+  `drop_small_markdown_chunks` SHALL apply with the same configured behaviour
+  they have for `.md` files
+
 ### Requirement: Markdown files support configurable Markdown-only recovery knobs
 
 The Markdown branch SHALL support a Markdown-only chunk-size override, optional heading-path prepend, optional small-chunk filtering, and defensive heading metadata propagation. Heading prepend and small-chunk filtering SHALL remain opt-in. Defensive heading metadata propagation SHALL be idempotent.
@@ -88,6 +105,14 @@ When the model-token-aware Markdown path is active, small-chunk filtering SHALL 
 - **WHEN** Markdown chunks are emitted
 - **THEN** each chunk's size SHALL be measured with the configured embedding tokenizer
 - **AND** chunks below `CHUNKING__MARKDOWN_CHUNK_SIZE * CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` tokenizer units SHALL be filtered according to the configured recovery behaviour
+- **AND** the system SHALL log how many chunks were filtered
+
+#### Scenario: Small Markdown chunks can be filtered
+
+- **GIVEN** `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION > 0.0`
+- **AND** the legacy Markdown fallback path is active because no model-matched tokenizer is configured or it cannot be resolved
+- **WHEN** Markdown chunks are emitted after splitting
+- **THEN** chunks smaller than `CHUNKING__MARKDOWN_CHUNK_SIZE * 4 * CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` characters SHALL be filtered before embedding
 - **AND** the system SHALL log how many chunks were filtered
 
 ## ADDED Requirements

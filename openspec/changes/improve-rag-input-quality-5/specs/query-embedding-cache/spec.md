@@ -2,9 +2,11 @@
 
 ### Requirement: Query embedding cache reduces repeat Ollama calls
 
-The system SHALL cache recent query embeddings in process so that repeated identical **prepared query embedding inputs** do not re-issue the embedding request. The cache SHALL be keyed by `(prepared_query, embedding_model_name)` and SHALL be bounded in size. Query preparation includes any configured query-only instruction; therefore the same raw query prepared with two different instructions SHALL NOT collide.
+The system SHALL cache recent query embeddings in engine-local state so that repeated identical **prepared query embedding inputs** do not re-issue the embedding request. The cache SHALL be keyed by `(prepared_query, embedding_model_name)` and SHALL be bounded in size. Query preparation includes any configured query-only instruction; therefore the same raw query prepared with two different instructions SHALL NOT collide.
 
-The cache SHALL apply uniformly across every retrieval branch in `search()`, including metadata-filtered and unfiltered paths. An implementation that caches only one branch SHALL NOT satisfy this requirement.
+Entries SHALL be shared between filtered and unfiltered searches of one engine, SHALL NEVER be shared between separate engines in one process, and SHALL be released when the owning engine is closed.
+
+The cache SHALL apply uniformly across every retrieval branch in an engine's `search()`, including metadata-filtered and unfiltered paths. An implementation that caches only one branch SHALL NOT satisfy this requirement.
 
 #### Scenario: Repeated identical query hits cache (unfiltered)
 
@@ -47,3 +49,16 @@ The cache SHALL apply uniformly across every retrieval branch in `search()`, inc
 - **WHEN** more than the configured `maxsize` distinct prepared query/model pairs are embedded
 - **THEN** the cache SHALL evict least-recently-used entries
 - **AND** memory usage SHALL NOT grow unbounded
+
+#### Scenario: Cache is not shared between engines
+
+- **GIVEN** two engines in one process whose embedders report the same model name
+- **WHEN** each engine embeds the same query
+- **THEN** each engine SHALL compute its own embedding
+- **AND** neither engine SHALL serve an entry cached by the other
+
+#### Scenario: Cache is released with its engine
+
+- **WHEN** an engine is closed
+- **THEN** its query-embedding cache SHALL be released
+- **AND** other engines' caches SHALL remain intact

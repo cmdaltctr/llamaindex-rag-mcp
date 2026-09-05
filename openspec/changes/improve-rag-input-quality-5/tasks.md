@@ -43,7 +43,7 @@ Implement in stages. Do not promote OCR thresholds, chunk-size defaults, or quer
 - [ ] 4.3 Apply query preparation immediately before query embedding. Indexed/document embedding text MUST remain unchanged.
 - [ ] 4.4 Keep dense retrieval model-agnostic. Do NOT add Qwen/provider/model-substring `if/elif` dispatch in `dense.py`.
 - [ ] 4.5 Change query-embedding cache identity to `(prepared_query, embedding_model_name)` so equal raw queries with different instructions cannot collide.
-- [ ] 4.6 Add tests for empty-instruction backward compatibility, instructed query formatting, unchanged document embeddings, cache reuse for identical prepared queries, and cache separation when the instruction changes.
+- [ ] 4.6 Add tests for empty-instruction backward compatibility, instructed query formatting, unchanged document embeddings, cache reuse for identical prepared queries, and cache separation when the instruction changes, isolation between engines with the same model name, and cache release on engine close.
 - [ ] 4.7 Use the first experiment candidate: `Given a user query, retrieve passages that provide relevant and accurate evidence for answering the query.` Do not make it a packaged default yet.
 
 ## 5. Run isolated and combined evaluations
@@ -61,7 +61,7 @@ Implement in stages. Do not promote OCR thresholds, chunk-size defaults, or quer
 - [ ] 6.3 Document `EMBEDDING__QUERY_INSTRUCTION`, including that it applies to queries only and may change query-vector semantics without requiring document re-ingestion.
 - [ ] 6.4 Update `.env.example` with commented examples for `Qwen/Qwen3-Embedding-4B` tokenizer identity and the evaluated query instruction. Do not add pre-v2 flat aliases.
 - [ ] 6.5 Run `uv sync` and targeted PDF/chunking/retrieval tests.
-- [ ] 6.6 Run `uv run pytest -m "not slow" --cov=omrg` and confirm the existing coverage floors hold.
+- [ ] 6.6 Run `uv run pytest -m "not slow" --cov=omrg --cov-branch` and confirm the existing coverage floors hold.
 - [ ] 6.7 Run the dependency-floor job/test after adding the new dependencies.
 - [ ] 6.8 Run `openspec validate improve-rag-input-quality-5 --strict` and fix any stale baseline requirement rather than working around the validator.
 - [ ] 6.9 After the empirical decisions are confirmed, write an ADR recording the accepted OCR routing gate, tokenizer/chunking choice, query-instruction policy, fallback behaviour, and any defaults that were actually promoted.
