@@ -203,3 +203,72 @@ def test_lru_eviction_caps_cache_at_maxsize() -> None:
     finally:
         Settings.embed_model = previous
         cache.cache_clear()
+
+
+# ── Engine isolation: an injected model never routes through the global ──
+
+
+class _PoisonedGlobalEmbedding(MockEmbedding):
+    """Valid ``BaseEmbedding`` whose every embedding call fails.
+
+    Installed on the LlamaIndex global so any path that embeds through
+    ``Settings.embed_model`` raises instead of silently swapping models.
+    """
+
+    def _get_query_embedding(self, query: str) -> list[float]:
+        raise AssertionError("the LlamaIndex global embedder embedded a query")
+
+    def get_text_embedding_batch(self, texts, **kwargs):  # noqa: ANN001, ARG002
+        raise AssertionError("the LlamaIndex global embedder embedded texts")
+
+
+def test_injected_model_without_cache_uses_injected_model() -> None:
+    """A named injected model with cache=None embeds through itself.
+
+    The module-level LRU belongs to the legacy global path only: its
+    underlying function embeds with ``Settings.embed_model``, so routing
+    an injected-model call through it would silently swap models.
+    """
+    model = _CountingMockEmbedding.make(model_name="injected-no-cache-1")
+    _dense._cached_query_embedding.cache_clear()
+    previous = Settings.embed_model
+    Settings.embed_model = _PoisonedGlobalEmbedding(embed_dim=384)  # type: ignore[assignment]
+    try:
+        vec = _dense._embed_query("needle", embed_model=model, cache=None)
+    finally:
+        Settings.embed_model = previous
+
+    assert model.calls == 1
+    assert vec == model.get_query_embedding("needle")  # calls becomes 2
+    assert model.calls == 2
+
+
+def test_legacy_global_path_still_uses_module_cache() -> None:
+    """The legacy path (no injected model) keeps the module-level LRU."""
+    _dense._cached_query_embedding.cache_clear()
+    counter = _CountingMockEmbedding.make(model_name="legacy-module-cache-1")
+    previous = Settings.embed_model
+    Settings.embed_model = counter
+    try:
+        first = _dense._embed_query("legacy-needle")
+        second = _dense._embed_query("legacy-needle")
+    finally:
+        Settings.embed_model = previous
+        _dense._cached_query_embedding.cache_clear()
+
+    assert counter.calls == 1  # second call hit the module-level LRU
+    assert first == second
+
+
+def test_injected_model_with_cache_hits_engine_cache() -> None:
+    """A named injected model plus a supplied cache uses that cache."""
+    from collections import OrderedDict
+
+    model = _CountingMockEmbedding.make(model_name="injected-with-cache-1")
+    cache: OrderedDict = OrderedDict()
+    first = _dense._embed_query("cached-needle", embed_model=model, cache=cache)
+    second = _dense._embed_query("cached-needle", embed_model=model, cache=cache)
+
+    assert model.calls == 1  # second call hit the supplied cache
+    assert first == second
+    assert ("cached-needle", "injected-with-cache-1") in cache

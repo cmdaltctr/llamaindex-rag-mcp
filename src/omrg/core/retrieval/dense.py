@@ -55,7 +55,7 @@ def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list
 
     Falls back to the LlamaIndex global ``Settings.embed_model`` when
     embed_model is None (legacy transport path), and to the module-level
-    LRU cache when cache is None.
+    LRU cache when cache is None **and** the legacy global is in use.
 
     Args:
         query: The user's search query string.
@@ -63,12 +63,13 @@ def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list
             the LlamaIndex global is read (legacy transport path).
         cache: Optional ``OrderedDict``-shaped cache keyed by
             ``(query, model_name)``.  When ``None``, the module-level
-            LRU cache is used (legacy path).
+            LRU cache is used on the legacy global path only.
 
     Returns:
         Embedding vector as a list of floats.
     """
-    if embed_model is None:
+    injected = embed_model is not None
+    if not injected:
         embed_model = Settings.embed_model
     model_name = getattr(embed_model, "model_name", None)
     if model_name is None:
@@ -85,6 +86,11 @@ def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list
         if len(cache) > _QUERY_EMBED_CACHE_MAXSIZE:
             cache.popitem(last=False)
         return list(vec)
+    if injected:
+        # An explicitly injected model must never touch the module-level
+        # LRU: it embeds through ``Settings.embed_model`` (the global),
+        # which would silently swap models on an injected-model call.
+        return list(embed_model.get_query_embedding(query))
     return list(_cached_query_embedding(query, model_name))
 
 
