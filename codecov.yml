@@ -11,21 +11,21 @@ coverage:
         target: 95%
         informational: true
         paths:
-          - "src/rag_mcp/core/ingestion/"
-          - "src/rag_mcp/core/retrieval/"
-          - "src/rag_mcp/core/metadata/"
-          - "src/rag_mcp/core/chunking/"
-          - "src/rag_mcp/core/vectordb/"
-          - "src/rag_mcp/core/profiles/"
-          - "src/rag_mcp/core/settings.py"
-          - "src/rag_mcp/config/"
-          - "src/rag_mcp/transports/mcp.py"
+          - "src/omrg/core/ingestion/"
+          - "src/omrg/core/retrieval/"
+          - "src/omrg/core/metadata/"
+          - "src/omrg/core/chunking/"
+          - "src/omrg/core/vectordb/"
+          - "src/omrg/core/profiles/"
+          - "src/omrg/core/settings.py"
+          - "src/omrg/config/"
+          - "src/omrg/transports/mcp.py"
       orchestration:
         target: 85%
         informational: true
         paths:
-          - "src/rag_mcp/daemon/"
-          - "src/rag_mcp/transports/cli/"
+          - "src/omrg/daemon/"
+          - "src/omrg/transports/cli/"
       default:
         target: 90%
         informational: true

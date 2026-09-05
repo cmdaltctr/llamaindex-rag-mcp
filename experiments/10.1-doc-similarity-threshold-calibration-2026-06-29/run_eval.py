@@ -105,7 +105,7 @@ def _evaluate_threshold(
     seed: int,
 ) -> dict[str, Any]:
     """Build document graph at a given threshold and compute metrics."""
-    from rag_mcp.core.documents.doc_graph import build_document_graph
+    from omrg.core.documents.doc_graph import build_document_graph
 
     started = time.perf_counter()
     graph = build_document_graph(collection, threshold=threshold)

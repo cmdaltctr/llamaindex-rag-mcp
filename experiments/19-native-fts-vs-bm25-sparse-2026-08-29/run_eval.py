@@ -90,8 +90,8 @@ def sparse_pass(retriever_cls, store) -> tuple[list[dict], list[float]]:
 
 def hybrid_pass(store, backend: str, embed_ready) -> list[dict]:
     """One warm hybrid pass through the real pipeline."""
-    from rag_mcp.core.retrieval import pipeline
-    from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+    from omrg.core.retrieval import pipeline
+    from omrg.core.settings import EffectiveSettings, RetrievalBlock
 
     queries = json.loads(GT_PATH.read_text())["queries"]
     settings = EffectiveSettings(
@@ -126,10 +126,10 @@ def hybrid_pass(store, backend: str, embed_ready) -> list[dict]:
 
 def run_cell(cell: str) -> None:
     """Run one backend cell and write its JSON atomically."""
-    from rag_mcp.compose import ensure_runtime_setup
-    from rag_mcp.core.retrieval.native_sparse import NativeSparseRetriever
-    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.compose import ensure_runtime_setup
+    from omrg.core.retrieval.native_sparse import NativeSparseRetriever
+    from omrg.core.retrieval.sparse import BM25SparseRetriever
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     ensure_runtime_setup()
     store = LanceVectorStore(uri=str(STORE_URI))

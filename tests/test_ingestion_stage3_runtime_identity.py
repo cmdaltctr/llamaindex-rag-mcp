@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.core.ingestion import source_state
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.ingestion import source_state
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 def test_index_identity_tracks_actual_process_embedder(

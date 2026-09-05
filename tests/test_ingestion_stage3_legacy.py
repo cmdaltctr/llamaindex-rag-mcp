@@ -17,10 +17,10 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.schema import NodeRelationship, RelatedNodeInfo, TextNode
 
-from rag_mcp.core.ingestion import ingest_path_async, pipeline
-from rag_mcp.core.vectordb import get_default_store, set_default_store
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.ingestion import ingest_path_async, pipeline
+from omrg.core.vectordb import get_default_store, set_default_store
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _COLLECTION = "stage3_legacy"
 _EXPERIMENT_COLLECTION = "stage3_legacy_experiment_only"

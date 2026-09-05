@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from rag_mcp.transports.cli import app
+from omrg.transports.cli import app
 
 runner = CliRunner()
 
@@ -37,7 +37,7 @@ def _strip_ansi(text: str) -> str:
 
 def _installer():
     """Return the command module; ModuleNotFoundError until implemented."""
-    from rag_mcp.transports.cli import install_login_watcher
+    from omrg.transports.cli import install_login_watcher
 
     return install_login_watcher
 
@@ -56,8 +56,8 @@ def invoke_happy(tmp_path):
         stub_cmd = str(fake_bin / "rag-mcp")
         with (
             patch("shutil.which", return_value=stub_cmd),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
         ):
             result = runner.invoke(
                 app,
@@ -84,7 +84,7 @@ def macos_home(monkeypatch: pytest.MonkeyPatch):
     """
 
     def _apply(home: Path) -> Path:
-        from rag_mcp.transports.cli import install_login_watcher
+        from omrg.transports.cli import install_login_watcher
 
         home.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(Path, "home", lambda: home)
@@ -229,8 +229,8 @@ class TestPlistGeneration:
         watched.mkdir()
         override = "/opt/homebrew/bin/rag-mcp"
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
         ):
             result = runner.invoke(
                 app,
@@ -324,9 +324,9 @@ class TestDifferentLabelReplacement:
         old_bytes = old_plist.read_bytes()
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -358,10 +358,10 @@ class TestDifferentLabelReplacement:
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=ok),
             ) as mock_lc,
         ):
@@ -399,10 +399,10 @@ class TestDifferentLabelReplacement:
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=ok),
             ),
         ):
@@ -429,9 +429,9 @@ class TestDifferentLabelReplacement:
         old_bytes = old_plist.read_bytes()
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -461,9 +461,9 @@ class TestDifferentLabelReplacement:
         old_bytes = old_plist.read_bytes()
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -490,11 +490,11 @@ class TestDifferentLabelReplacement:
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
             patch(
-                "rag_mcp.core.ingestion.ingest_path_async",
+                "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = runner.invoke(
                 app,
@@ -531,10 +531,10 @@ class TestDifferentLabelReplacement:
 
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 side_effect=_launchctl,
             ),
         ):
@@ -561,10 +561,10 @@ class TestDifferentLabelReplacement:
 
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 side_effect=_launchctl,
             ),
         ):
@@ -588,10 +588,10 @@ class TestDryRun:
         watched = tmp_path / "docs5"
         watched.mkdir()
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_launchctl,
         ):
@@ -633,10 +633,10 @@ class TestInteractiveWizard:
         watched.mkdir()
         text_input = f"{watched}\n\nn\ny\n\n\n\n"
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ),
         ):
@@ -664,10 +664,10 @@ class TestInteractiveWizard:
         bad.write_text("x")
         text_input = f"{bad}\n{watched}\n\nn\ny\n\n\n\n"
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ),
         ):
@@ -710,15 +710,15 @@ class TestInitialIngest:
 
         parent = MagicMock()
         with (
-            patch("rag_mcp.compose.build_profile_resolver", return_value=resolver),
+            patch("omrg.compose.build_profile_resolver", return_value=resolver),
             patch(
-                "rag_mcp.core.ingestion.ingest_path_async",
+                "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(
                     return_value={"status": "success", "files_indexed": 3, "chunks_created": 7}
                 ),
             ) as mock_ing,
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -751,9 +751,9 @@ class TestInitialIngest:
         resolver = MagicMock()
         resolver.resolve.side_effect = ValueError("No profile registered for collection 'research'")
         with (
-            patch("rag_mcp.compose.build_profile_resolver", return_value=resolver),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()) as mock_ing,
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.compose.build_profile_resolver", return_value=resolver),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()) as mock_ing,
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -775,12 +775,12 @@ class TestInitialIngest:
         watched = tmp_path / "ie-docs"
         watched.mkdir()
         with (
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.core.ingestion.ingest_path_async",
+                "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -800,13 +800,13 @@ class TestInitialIngest:
         watched = tmp_path / "if-docs"
         watched.mkdir()
         with (
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.core.ingestion.ingest_path_async",
+                "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
             ),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -836,9 +836,9 @@ class TestInitialIngest:
         resolver = MagicMock()
         resolver.resolve.side_effect = ValueError("No profile registered")
         with (
-            patch("rag_mcp.compose.build_profile_resolver", return_value=resolver),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.compose.build_profile_resolver", return_value=resolver),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched,
@@ -862,8 +862,8 @@ class TestInitialIngest:
         watched = tmp_path / "dp-docs"
         watched.mkdir()
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
         ):
             result = self._invoke(watched, ["--collection", "-evil", "--yes"])
         assert result.exit_code != 0
@@ -877,12 +877,12 @@ class TestInitialIngest:
         watched = tmp_path / "ex-docs"
         watched.mkdir()
         with (
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.core.ingestion.ingest_path_async",
+                "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(side_effect=RuntimeError("kaboom")),
             ),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
         ):
             result = self._invoke(
                 watched, ["--collection", "research", "--initial-ingest", "--yes"]
@@ -907,10 +907,10 @@ class TestLoadAndStart:
         watched.mkdir()
         uid = os.getuid()
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -932,10 +932,10 @@ class TestLoadAndStart:
         watched = tmp_path / "st-docs"
         watched.mkdir()
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=subprocess.CompletedProcess(args=[], returncode=0)),
             ) as mock_lc,
         ):
@@ -954,10 +954,10 @@ class TestLoadAndStart:
             args=[], returncode=1, stdout="", stderr="launchctl boom"
         )
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
             patch(
-                "rag_mcp.transports.cli._launchagent.run_launchctl",
+                "omrg.transports.cli._launchagent.run_launchctl",
                 new=MagicMock(return_value=failed),
             ),
         ):
@@ -1012,10 +1012,10 @@ class TestContentionWarning:
         self._seed_existing(home, watched)
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.config.get_settings") as mock_settings,
-            patch("rag_mcp.core.vectordb.registry.describe") as mock_describe,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.config.get_settings") as mock_settings,
+            patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": False}
@@ -1045,10 +1045,10 @@ class TestContentionWarning:
         self._seed_existing(home, watched)
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.config.get_settings") as mock_settings,
-            patch("rag_mcp.core.vectordb.registry.describe") as mock_describe,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.config.get_settings") as mock_settings,
+            patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": False}
@@ -1074,10 +1074,10 @@ class TestContentionWarning:
         self._seed_existing(home, watched)
         with (
             patch("shutil.which", return_value="/fake/bin/rag-mcp"),
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.config.get_settings") as mock_settings,
-            patch("rag_mcp.core.vectordb.registry.describe") as mock_describe,
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.config.get_settings") as mock_settings,
+            patch("omrg.core.vectordb.registry.describe") as mock_describe,
         ):
             mock_settings.return_value = MagicMock(vector_store="fakestore")
             mock_describe.return_value = {"cross_process_writes_safe": True}
@@ -1110,9 +1110,9 @@ class TestWizardSummaryDecline:
         watched.mkdir()
         text_input = f"{watched}\n\nn\nn\n"
         with (
-            patch("rag_mcp.core.ingestion.ingest_path_async", new=AsyncMock()),
-            patch("rag_mcp.compose.build_profile_resolver"),
-            patch("rag_mcp.transports.cli._launchagent.run_launchctl", new=MagicMock()),
+            patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
+            patch("omrg.compose.build_profile_resolver"),
+            patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()),
         ):
             result = runner.invoke(app, ["install-login-watcher"], input=text_input)
         assert result.exit_code != 0

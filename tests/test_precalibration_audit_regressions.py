@@ -14,7 +14,7 @@ from pathlib import Path
 
 from llama_index.core.node_parser import CodeSplitter
 
-from rag_mcp.core.chunking.code import chunk_code_file_async
+from omrg.core.chunking.code import chunk_code_file_async
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -60,14 +60,14 @@ def test_code_splitter_wrapper_uses_supported_code_units() -> None:
 
 def test_llamaindex_metadata_cap_is_not_character_slicing() -> None:
     """A max-chunks setting must cap split chunks, not ``N * tokens`` chars."""
-    source = _python_source("src/rag_mcp/core/metadata/llamaindex.py")
+    source = _python_source("src/omrg/core/metadata/llamaindex.py")
     assert "text[: max_chunks * resolved.chunk_size]" not in source
     assert "[:max_chunks]" in source or "[: max_chunks]" in source
 
 
 def test_hybrid_sparse_path_accepts_the_query_metadata_filter() -> None:
     """Hybrid filtering must constrain sparse retrieval, not dense only."""
-    from rag_mcp.core.retrieval import pipeline
+    from omrg.core.retrieval import pipeline
 
     sparse_signature = inspect.signature(pipeline._sparse_bm25_query)
     assert "metadata_filter" in sparse_signature.parameters
@@ -82,7 +82,7 @@ def test_hybrid_sparse_path_accepts_the_query_metadata_filter() -> None:
 
 def test_bm25_cache_isolated_by_store_identity() -> None:
     """Same collection name in two stores must never share sparse rows."""
-    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+    from omrg.core.retrieval.sparse import BM25SparseRetriever
 
     class FakeStore:
         def __init__(self, doc_id: str, text: str) -> None:
@@ -116,8 +116,8 @@ def test_bm25_cache_isolated_by_store_identity() -> None:
 
 def test_hybrid_dense_threshold_is_not_applied_to_rrf_score(monkeypatch) -> None:
     """A qualifying dense score must not be rejected because RRF is ~0.03."""
-    from rag_mcp.core.retrieval import pipeline
-    from rag_mcp.core.settings import EffectiveSettings
+    from omrg.core.retrieval import pipeline
+    from omrg.core.settings import EffectiveSettings
 
     class FakeStore:
         def count(self, collection_name: str) -> int:
@@ -158,8 +158,8 @@ def test_hybrid_dense_threshold_is_not_applied_to_rrf_score(monkeypatch) -> None
 
 def test_each_vector_store_mutation_owns_generation_invalidation() -> None:
     """Chroma and Lance must expose the same store-owned mutation contract."""
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     for store_cls in (ChromaVectorStore, LanceVectorStore):
         for method_name in ("write_nodes", "delete_where", "delete_collection"):
@@ -171,7 +171,7 @@ def test_each_vector_store_mutation_owns_generation_invalidation() -> None:
 
 def test_orchestration_does_not_duplicate_store_generation_bumps() -> None:
     """Once stores own invalidation, writer orchestration must not bump again."""
-    from rag_mcp.core.ingestion import writer
+    from omrg.core.ingestion import writer
 
     mutation_helpers = [
         writer.embed_and_write_async,

@@ -23,18 +23,18 @@ The `ingest_path()` function SHALL return a `file_details` list alongside the ex
 During ingestion, the CLI SHALL log one structured line per file at INFO level containing the file name, status (indexed/failed/skipped), and chunk count or error message.
 
 #### Scenario: Logging during folder ingestion
-- **WHEN** `rag-mcp ingest /path/to/folder` processes 5 files
+- **WHEN** `omrg ingest /path/to/folder` processes 5 files
 - **THEN** stderr SHALL contain 5 INFO-level log lines, one per file, each including the file name and outcome
 
 ### Requirement: Report generation via --report flag
-The `rag-mcp ingest` command SHALL accept a `--report <path>` option. When provided, the CLI SHALL write an ingestion report to the specified path after completion. The format SHALL be JSON if the path ends in `.json`, otherwise Markdown.
+The `omrg ingest` command SHALL accept a `--report <path>` option. When provided, the CLI SHALL write an ingestion report to the specified path after completion. The format SHALL be JSON if the path ends in `.json`, otherwise Markdown.
 
 #### Scenario: JSON report output
-- **WHEN** `rag-mcp ingest /path/to/docs --report report.json` completes successfully
+- **WHEN** `omrg ingest /path/to/docs --report report.json` completes successfully
 - **THEN** `report.json` SHALL be a valid JSON file containing `timestamp`, `config`, `input_path`, `summary` (total, indexed, failed, skipped, chunks), and `files` array
 
 #### Scenario: Markdown report output
-- **WHEN** `rag-mcp ingest /path/to/docs --report report.md` completes successfully
+- **WHEN** `omrg ingest /path/to/docs --report report.md` completes successfully
 - **THEN** `report.md` SHALL be a Markdown file with headers for Summary, Configuration, and Per-File Details
 
 #### Scenario: Report on partial failure
@@ -42,21 +42,21 @@ The `rag-mcp ingest` command SHALL accept a `--report <path>` option. When provi
 - **THEN** the report SHALL include all files — successful ones with chunk counts and failed ones with error messages
 
 #### Scenario: No --report flag
-- **WHEN** `rag-mcp ingest /path/to/docs` is run without `--report`
+- **WHEN** `omrg ingest /path/to/docs` is run without `--report`
 - **THEN** no report file is written and behaviour is identical to the current implementation
 
 ### Requirement: Report overwrites with warning
 When `--report <path>` is provided and the file already exists, the CLI SHALL overwrite it and log a WARNING to stderr.
 
 #### Scenario: Overwriting existing report
-- **WHEN** `rag-mcp ingest /path/to/docs --report existing.json` is run and `existing.json` exists
+- **WHEN** `omrg ingest /path/to/docs --report existing.json` is run and `existing.json` exists
 - **THEN** the file is overwritten and a warning is logged to stderr
 
 ### Requirement: Integration test with real PDFs
 The test suite SHALL include an integration test that ingests a folder of PDFs via the CLI and verifies the report content.
 
 #### Scenario: Ingest 5 PDFs from test fixtures
-- **WHEN** the integration test runs `rag-mcp ingest <fixture_dir> --report report.json`
+- **WHEN** the integration test runs `omrg ingest <fixture_dir> --report report.json`
 - **THEN** the report SHALL list all 5 PDFs with `status "indexed"` and `chunks > 0`
 
 ### Requirement: ADR documentation

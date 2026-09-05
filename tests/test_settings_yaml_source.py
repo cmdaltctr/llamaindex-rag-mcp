@@ -18,7 +18,7 @@ import os
 import pytest
 import yaml
 
-from rag_mcp.config import Settings
+from omrg.config import Settings
 
 
 def _yaml_lookup(data: dict, dotted: str, env_name: str) -> object:
@@ -50,7 +50,7 @@ def _load_packaged_yaml() -> dict[str, object]:
     """Load the packaged defaults.yaml as a plain dict."""
     from importlib.resources import files
 
-    yaml_path = files("rag_mcp.config") / "defaults.yaml"
+    yaml_path = files("omrg.config") / "defaults.yaml"
     with yaml_path.open("r") as fh:
         data = yaml.safe_load(fh)
     return data if isinstance(data, dict) else {}
@@ -63,7 +63,7 @@ def test_defaults_yaml_resource_exists() -> None:
     """The packaged ``defaults.yaml`` SHALL be discoverable as a file."""
     from importlib.resources import files
 
-    yaml_path = files("rag_mcp.config") / "defaults.yaml"
+    yaml_path = files("omrg.config") / "defaults.yaml"
     assert yaml_path.is_file()
 
 

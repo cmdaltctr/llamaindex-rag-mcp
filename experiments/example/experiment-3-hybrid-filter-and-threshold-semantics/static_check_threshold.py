@@ -28,8 +28,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 TARGETS = [
-    PROJECT_ROOT / "src" / "rag_mcp" / "core" / "retrieval" / "pipeline.py",
-    PROJECT_ROOT / "src" / "rag_mcp" / "core" / "retrieval" / "policy.py",
+    PROJECT_ROOT / "src" / "omrg" / "core" / "retrieval" / "pipeline.py",
+    PROJECT_ROOT / "src" / "omrg" / "core" / "retrieval" / "policy.py",
 ]
 OUTPUT = SCRIPT_DIR / "output" / "static_check" / "threshold_application_sites.json"
 

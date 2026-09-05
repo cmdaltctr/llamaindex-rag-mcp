@@ -164,7 +164,7 @@ def _generate_corpus(file_count: int, name: str) -> tuple[Path, str]:
 
 def _ingest(path: Path | str, settings, collection: str = "documents") -> dict:
     """Run one bounded ingestion and return the raw result contract."""
-    from rag_mcp.core.ingestion.pipeline import ingest_path_async
+    from omrg.core.ingestion.pipeline import ingest_path_async
 
     return asyncio.run(
         ingest_path_async(
@@ -177,7 +177,7 @@ def _ingest(path: Path | str, settings, collection: str = "documents") -> dict:
 
 def _peak_rss() -> int | None:
     ensure_import_path()
-    from rag_mcp.core.ingestion.metrics import sample_peak_rss_bytes
+    from omrg.core.ingestion.metrics import sample_peak_rss_bytes
 
     return sample_peak_rss_bytes()
 
@@ -248,8 +248,8 @@ def run_fault_cell(cell_id: str, stage: str) -> dict:
     )
 
     ensure_import_path()
-    from rag_mcp.core.ingestion import pipeline as pipeline_module
-    from rag_mcp.core.ingestion import replacement as replacement_module
+    from omrg.core.ingestion import pipeline as pipeline_module
+    from omrg.core.ingestion import replacement as replacement_module
 
     initial = _ingest(corpus_dir, settings)
     target = sorted(corpus_dir.glob("source_*.txt"))[0]
@@ -375,7 +375,7 @@ def _ingest_both(half1: Path, half2: Path, settings) -> tuple[dict, dict]:
     """Run two ingest streams concurrently on one event loop."""
 
     async def _gather():
-        from rag_mcp.core.ingestion.pipeline import ingest_path_async
+        from omrg.core.ingestion.pipeline import ingest_path_async
 
         return await asyncio.gather(
             ingest_path_async(str(half1), collection_name="documents", effective_settings=settings),

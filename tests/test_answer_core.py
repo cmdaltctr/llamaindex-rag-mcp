@@ -1,6 +1,6 @@
 """Red-first tests for the grounded answering operation (tasks 1.2-1.4).
 
-Pins the contract of ``rag_mcp.core.answer.answer``: the status taxonomy,
+Pins the contract of ``omrg.core.answer.answer``: the status taxonomy,
 deterministic citations built from supplied lineage, the no-evidence
 short-circuit, failure attribution, diagnostics, and merged constituent
 reporting. Every test must FAIL today (the operation does not exist) and
@@ -12,9 +12,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from rag_mcp.core.answer import answer
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
+from omrg.core.answer import answer
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import search
 
 _COLLECTION = "answer_core_docs"
 
@@ -395,7 +395,7 @@ async def test_completion_source_label_is_echoed(tmp_path: Path) -> None:
 
 async def test_disabled_returns_actionable_error_without_retrieval() -> None:
     """``enabled=False``: actionable error before retrieval or any model."""
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         AnswerBlock,
         get_default_effective_settings,
         set_default_effective_settings,
@@ -425,8 +425,8 @@ def test_max_rounds_is_bounded_in_both_settings_models() -> None:
     """``max_rounds`` accepts 1..8 and rejects values beyond the bound."""
     import pytest as _pytest
 
-    from rag_mcp.core.answer.settings import AnswerSettings
-    from rag_mcp.core.settings import AnswerBlock
+    from omrg.core.answer.settings import AnswerSettings
+    from omrg.core.settings import AnswerBlock
 
     for model in (AnswerSettings, AnswerBlock):
         assert model(max_rounds=1).max_rounds == 1
@@ -537,7 +537,7 @@ async def test_concurrent_answers_are_not_serialised_by_retrieval(
     import asyncio as _asyncio
     import time as _time
 
-    from rag_mcp.core.answer import pipeline as answer_pipeline
+    from omrg.core.answer import pipeline as answer_pipeline
 
     monkeypatch.setattr(answer_pipeline, "SearchRetriever", _SlowRetriever)
     seam = RecordingSeam("The slow evidence body [1].")
@@ -571,7 +571,7 @@ def _plain_row(chunk_id: str, text: str) -> dict[str, Any]:
 
 async def test_resolved_retrieval_carries_honest_timings_and_counts() -> None:
     """``ResolvedRetrieval`` threads preflight timings into diagnostics."""
-    from rag_mcp.core.answer.pipeline import ResolvedRetrieval
+    from omrg.core.answer.pipeline import ResolvedRetrieval
 
     preflight = ResolvedRetrieval(
         rows=[_plain_row("pre-1", "pre-retrieved evidence body")],

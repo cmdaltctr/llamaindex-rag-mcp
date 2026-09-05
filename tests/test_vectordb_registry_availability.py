@@ -18,12 +18,12 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.compose import build_vector_store, resolve_sparse_backend
-from rag_mcp.config import Settings
-from rag_mcp.core.vectordb import registry
+from omrg.compose import build_vector_store, resolve_sparse_backend
+from omrg.config import Settings
+from omrg.core.vectordb import registry
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_COMPOSE_SOURCE = _REPO_ROOT / "src" / "rag_mcp" / "compose.py"
+_COMPOSE_SOURCE = _REPO_ROOT / "src" / "omrg" / "compose.py"
 
 
 @pytest.fixture(autouse=True)
@@ -52,7 +52,7 @@ def _scrub_chroma_from_sys_modules(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     prefixes = (
         "chromadb",
-        "rag_mcp.core.vectordb.chroma",
+        "omrg.core.vectordb.chroma",
         "llama_index.vector_stores.chroma",
     )
     for key in list(sys.modules):
@@ -86,7 +86,7 @@ def test_absent_backend_error_names_extra_and_packages() -> None:
         "fakepkg_absent_xyz_mod:build",
         requires={"fakepkg_absent_xyz": "fakepkg-absent-xyz"},
         extra="fake",
-        install_hint="Supported default: lancedb. Install with rag-mcp[fake].",
+        install_hint="Supported default: lancedb. Install with omrg[fake].",
     )
     assert registry.availability("_test_absent") == "absent"
     with pytest.raises(ImportError) as excinfo:
@@ -97,7 +97,7 @@ def test_absent_backend_error_names_extra_and_packages() -> None:
     assert "fakepkg_absent_xyz" in message
     assert "fakepkg-absent-xyz" in message
     assert "fake" in message
-    assert "rag-mcp[fake]" in message
+    assert "omrg[fake]" in message
     assert "lancedb" in message
 
 
@@ -115,7 +115,7 @@ def test_partial_backend_detected() -> None:
             "fakepkg_absent_xyz": "fakepkg-absent-xyz",
         },
         extra="fake",
-        install_hint="Repair with rag-mcp[fake].",
+        install_hint="Repair with omrg[fake].",
     )
     assert registry.availability("_test_partial") == "partial"
     with pytest.raises(ImportError) as excinfo:
@@ -125,7 +125,7 @@ def test_partial_backend_detected() -> None:
     assert "Missing packages" in message
     assert "fakepkg_absent_xyz" in message
     assert "fakepkg-absent-xyz" in message
-    assert "Repair with rag-mcp[fake]" in message
+    assert "Repair with omrg[fake]" in message
 
 
 def test_broken_backend_preserves_cause(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -236,7 +236,7 @@ def test_sparse_capability_follows_selected_store(
     # a warning and never loads chromadb.
     _scrub_chroma_from_sys_modules(monkeypatch)
     assert _chroma_modules_loaded() == []
-    import rag_mcp.core.vectordb.lance_fts as lance_fts
+    import omrg.core.vectordb.lance_fts as lance_fts
 
     monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
     native_settings = Settings(

@@ -77,7 +77,7 @@ class TestLiteParsePageLabel:
 
     def test_emits_string_page_label_alongside_integer_page(self, fixtures_dir: Path) -> None:
         """Each emitted document carries a string page_label next to int page."""
-        from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+        from omrg.integrations.pdf.liteparse import LiteParseReader
 
         documents = LiteParseReader().load_data(file=fixtures_dir / "smoke_text.pdf")
 
@@ -108,7 +108,7 @@ class TestPypdfium2PageLabel:
                 "Second page text with enough content to survive chunking.",
             ],
         )
-        from rag_mcp.integrations.pdf.pypdfium import PyPDFium2Reader
+        from omrg.integrations.pdf.pypdfium import PyPDFium2Reader
 
         pdf = tmp_path / "two_page.pdf"
         pdf.write_bytes(b"%PDF-1.4 stub")
@@ -148,8 +148,8 @@ class TestAutoChainPreservesPageLabel:
         )
         monkeypatch.setitem(sys.modules, "liteparse", None)
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.vectordb import get_default_store
 
         settings = effective_settings(pdf_reader="auto", extraction_mode="disabled")
         result = await ingest_path_async(
@@ -177,7 +177,7 @@ class TestPdfInspectorReportsNoPage:
 
     def test_page_label_absent_not_fabricated(self, fixtures_dir: Path) -> None:
         """One document per file: page_label MUST be absent, never a placeholder."""
-        from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+        from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
         documents = PdfInspectorReader().load_data(file=fixtures_dir / "smoke_text.pdf")
 
@@ -189,7 +189,7 @@ class TestPdfInspectorReportsNoPage:
 
     def test_still_reports_page_count(self, fixtures_dir: Path) -> None:
         """The operator still sees the document's true length."""
-        from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+        from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
         documents = PdfInspectorReader().load_data(file=fixtures_dir / "smoke_text.pdf")
 
@@ -227,7 +227,7 @@ class TestDocsAndRegistryAgree:
 
     def test_every_registered_reader_has_a_matrix_row(self) -> None:
         """The matrix covers exactly the registered concrete readers."""
-        from rag_mcp.integrations.pdf import registry
+        from omrg.integrations.pdf import registry
 
         rows = self._matrix_rows()
         assert set(rows) == set(registry.available()), (
@@ -237,7 +237,7 @@ class TestDocsAndRegistryAgree:
 
     def test_matrix_agrees_with_registry_declarations(self) -> None:
         """Each row's format and page capability match ``describe()``."""
-        from rag_mcp.integrations.pdf import registry
+        from omrg.integrations.pdf import registry
 
         rows = self._matrix_rows()
         assert rows, "no page-provenance matrix found in docs/guides/configuration.md"

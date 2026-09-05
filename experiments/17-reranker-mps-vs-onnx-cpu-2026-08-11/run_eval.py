@@ -276,9 +276,9 @@ def run_cell_17a(
     iterations: int,
 ) -> dict[str, Any]:
     """Cell 17A: production ONNX reranker on CPU."""
-    from rag_mcp.core.retrieval._model_config import read_max_position_embeddings
-    from rag_mcp.core.retrieval._reranker_cache import reset_model_cache
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval._model_config import read_max_position_embeddings
+    from omrg.core.retrieval._reranker_cache import reset_model_cache
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         CrossEncoderReranker,
         _select_onnx_variant,
@@ -370,8 +370,8 @@ def run_cell_torch(
     import torch  # noqa: F811
     from sentence_transformers import CrossEncoder
 
-    from rag_mcp.core.retrieval._model_config import read_max_position_embeddings
-    from rag_mcp.core.retrieval.reranker import TOKENIZER_MAX_LENGTH
+    from omrg.core.retrieval._model_config import read_max_position_embeddings
+    from omrg.core.retrieval.reranker import TOKENIZER_MAX_LENGTH
 
     model_max = read_max_position_embeddings(MODEL_ID, TOKENIZER_MAX_LENGTH)
     effective_max_length = min(TOKENIZER_MAX_LENGTH, model_max)
@@ -479,8 +479,8 @@ def run_cell_torch(
 
 def run_preflight(queries: list[str], docs: list[str]) -> dict[str, Any]:
     """Untimed preflight: verify which device SentenceTransformerReranker selects."""
-    from rag_mcp.core.retrieval._reranker_cache import reset_model_cache
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval._reranker_cache import reset_model_cache
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reset_model_cache()
     reranker = SentenceTransformerReranker(model_id=MODEL_ID)
@@ -488,7 +488,7 @@ def run_preflight(queries: list[str], docs: list[str]) -> dict[str, Any]:
     reranker.rerank(queries[0], results, top_k=1)
 
     # Inspect the cached CrossEncoder's device
-    from rag_mcp.core.retrieval._reranker_cache import _MODEL_CACHE
+    from omrg.core.retrieval._reranker_cache import _MODEL_CACHE
 
     cached = _MODEL_CACHE.get(("torch", MODEL_ID))
     selected = "unknown"

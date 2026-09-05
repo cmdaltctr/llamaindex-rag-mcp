@@ -29,7 +29,7 @@ METADATA__EXTRACTION_MODE=local
 METADATA__EXTRACTION_MODE=disabled
 
 # Or inline for a single run
-METADATA__EXTRACTION_MODE=disabled uv run rag-mcp ingest /path/to/docs/
+METADATA__EXTRACTION_MODE=disabled uv run omrg ingest /path/to/docs/
 ```
 
 ## LlamaIndex mode

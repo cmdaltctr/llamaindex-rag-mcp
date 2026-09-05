@@ -110,8 +110,8 @@ class _FailingReranker:
 @pytest.fixture(autouse=True)
 def _clear_retrieval_caches() -> Iterator[None]:
     """Clear the embedding LRU and BM25 caches for deterministic tests."""
-    from rag_mcp.core.retrieval.dense import _cached_query_embedding
-    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+    from omrg.core.retrieval.dense import _cached_query_embedding
+    from omrg.core.retrieval.sparse import BM25SparseRetriever
 
     _cached_query_embedding.cache_clear()
     BM25SparseRetriever._cache.clear()
@@ -131,8 +131,8 @@ def _search(
     similarity_threshold: float | None = None,
 ) -> list[dict]:
     """Run a search with default stubs and return results."""
-    from rag_mcp.core.retrieval import search
-    from rag_mcp.core.settings import EffectiveSettings
+    from omrg.core.retrieval import search
+    from omrg.core.settings import EffectiveSettings
 
     return search(
         query,
@@ -343,7 +343,7 @@ class TestCachedEmbeddingTiming:
         because the stage ran and served from cache (design D9: count
         provider calls via LRU cache_info, do not compare durations).
         """
-        from rag_mcp.core.retrieval.dense import _cached_query_embedding
+        from omrg.core.retrieval.dense import _cached_query_embedding
 
         # The autouse _clear_retrieval_caches fixture already cleared the
         # LRU cache before this test, so the first search is a guaranteed
@@ -424,8 +424,8 @@ class TestZeroResultsNoTimings:
 
         This pins the documented boundary: timings travel on result rows.
         """
-        from rag_mcp.core.retrieval import search
-        from rag_mcp.core.settings import EffectiveSettings
+        from omrg.core.retrieval import search
+        from omrg.core.settings import EffectiveSettings
 
         empty_store = MagicMock()
         empty_store.count.return_value = 0

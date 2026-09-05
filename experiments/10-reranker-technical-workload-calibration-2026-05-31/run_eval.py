@@ -8,7 +8,7 @@ Cell matrix: 2 modes × 4 rerank policies = 8 cells.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -80,7 +80,7 @@ def _setup_environment(
         os.environ["RERANK_MAX_FETCH"] = str(rerank_max_fetch)
         os.environ["RERANK_FETCH_MULTIPLIER"] = str(rerank_fetch_multiplier)
 
-    for mod_name in ("rag_mcp.config", "rag_mcp.retrieval", "rag_mcp.ingestion"):
+    for mod_name in ("omrg.config", "omrg.retrieval", "omrg.ingestion"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -100,12 +100,12 @@ def _setup_environment(
 
     # Clear caches between cells
     try:
-        from rag_mcp.retrieval import _cached_query_embedding
+        from omrg.retrieval import _cached_query_embedding
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
     try:
-        from rag_mcp.sparse_retriever import BM25SparseRetriever
+        from omrg.sparse_retriever import BM25SparseRetriever
         BM25SparseRetriever.clear_all_caches()
     except Exception:
         pass
@@ -203,8 +203,8 @@ def _prewarm_sparse_index() -> float | None:
     """Warm up BM25 sparse index and return build time in ms."""
     try:
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
-        from rag_mcp.sparse_retriever import BM25SparseRetriever
+        from omrg.config import CHROMA_PERSIST_DIR
+        from omrg.sparse_retriever import BM25SparseRetriever
 
         db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_collection("documents")
@@ -231,7 +231,7 @@ def _evaluate_cell(
     warmup_queries: int,
 ) -> dict[str, Any]:
     """Run one cell of the evaluation matrix."""
-    import rag_mcp.retrieval as retrieval
+    import omrg.retrieval as retrieval
 
     _setup_environment(
         mode,
@@ -443,7 +443,7 @@ def main() -> None:
     rerank_settings = [False, True] if args.rerank_cross else [True]
 
     # Assert retrieval exposes the required controls
-    import rag_mcp.retrieval as retrieval
+    import omrg.retrieval as retrieval
     sig = inspect.signature(retrieval.search)
     if "hybrid" not in sig.parameters:
         raise RuntimeError("retrieval.search does not expose the hybrid parameter")

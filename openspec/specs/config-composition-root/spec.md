@@ -40,7 +40,7 @@ import concrete provider classes or a settings singleton.
 
 #### Scenario: config.py meets its size target
 
-- **WHEN** `src/rag_mcp/config/__init__.py` is measured
+- **WHEN** `src/omrg/config/__init__.py` is measured
 - **THEN** it MUST be at or below approximately 150 lines
 
 #### Scenario: compose.py is the single construction site

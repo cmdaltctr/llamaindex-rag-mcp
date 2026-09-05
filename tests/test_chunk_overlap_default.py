@@ -10,7 +10,7 @@ and ADR-018 balanced retrieval defaults:
 
 from __future__ import annotations
 
-from rag_mcp.config import Settings
+from omrg.config import Settings
 
 
 def _model_default(field_name: str):

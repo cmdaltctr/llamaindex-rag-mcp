@@ -1,6 +1,6 @@
 """Guard test: documentation file-path references SHALL resolve.
 
-Every ``src/rag_mcp/**.py`` path cited in operator-facing documentation
+Every ``src/omrg/**.py`` path cited in operator-facing documentation
 (``docs/guides/`` and ``tests/TEST_README.md``) must exist on disk.
 Historical records (``docs/adr/``) are excluded — they legitimately cite
 paths that no longer exist, because they describe the past.
@@ -27,10 +27,10 @@ _SCAN_DIRS: list[Path] = [
     _REPO_ROOT / "docs" / "guides",
 ]
 
-# Match src/rag_mcp/...py paths in documentation.  Path components may
+# Match src/omrg/...py paths in documentation.  Path components may
 # contain hyphens (e.g. ``providers/llama-cpp.py``) as well as word
 # characters, so the class includes ``-`` alongside ``\w``, ``/``, ``.``.
-_SRC_PATH_RE = re.compile(r"src/rag_mcp/[\w./-]+\.py")
+_SRC_PATH_RE = re.compile(r"src/omrg/[\w./-]+\.py")
 
 
 def _scan_files() -> list[Path]:
@@ -43,7 +43,7 @@ def _scan_files() -> list[Path]:
 
 
 def test_documented_src_paths_exist() -> None:
-    """Every ``src/rag_mcp/**.py`` path in operator docs must exist.
+    """Every ``src/omrg/**.py`` path in operator docs must exist.
 
     A path either resolves or it does not — there is no judgement and no
     suppression mechanism needed.  A guide that cites a moved file fails
@@ -62,5 +62,5 @@ def test_documented_src_paths_exist() -> None:
 
     if findings:
         pytest.fail(
-            "Documentation cites src/rag_mcp/ paths that do not exist:\n" + "\n".join(findings)
+            "Documentation cites src/omrg/ paths that do not exist:\n" + "\n".join(findings)
         )

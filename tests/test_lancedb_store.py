@@ -19,14 +19,14 @@ from pathlib import Path
 import pyarrow as pa
 import pytest
 
-from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
-from rag_mcp.core.vectordb.identity import (
+from omrg.core.retrieval.sparse import BM25SparseRetriever
+from omrg.core.vectordb.identity import (
     IDENTITY_INDEX_KEY,
     IDENTITY_MODEL_KEY,
     IDENTITY_PROVIDER_KEY,
     EmbeddingIdentity,
 )
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 
@@ -39,7 +39,7 @@ def test_bm25_cache_isolated_between_chroma_and_lance(tmp_path: Path) -> None:
     pytest.importorskip(
         "chromadb", reason="chroma extra not installed; runs in the chroma-extra CI job"
     )
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     collection = "cross_backend_cache_isolation"
     chroma = ChromaVectorStore()
@@ -400,7 +400,7 @@ class TestUpsertAndMetadataEdges:
 
         uri = str(tmp_path / "lancedb")
         store = LanceVectorStore(uri=uri)
-        from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
+        from omrg.core.vectordb.validation import EmbeddingWriteContractError
 
         with pytest.raises(EmbeddingWriteContractError):
             store.upsert_precomputed(

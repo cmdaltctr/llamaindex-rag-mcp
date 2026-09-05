@@ -27,7 +27,7 @@ def liteparse_default(effective_settings):
     Explicit save/restore rather than relying on the autouse fixture's
     blanket reset.
     """
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         get_default_effective_settings,
         set_default_effective_settings,
     )
@@ -49,7 +49,7 @@ class TestIngestionPDFExtractor:
 
         import asyncio
 
-        from rag_mcp.core.ingestion.chunker import (
+        from omrg.core.ingestion.chunker import (
             read_and_chunk_file_async as _read_and_chunk_file_async,
         )
 
@@ -73,13 +73,13 @@ class TestIngestionLiteParsePath:
 
         settings = liteparse_default
 
-        import rag_mcp.integrations.pdf.factory as factory_mod
+        import omrg.integrations.pdf.factory as factory_mod
 
         monkeypatch.setattr(factory_mod, "_pdf_reader_logged", set())
 
         import asyncio
 
-        from rag_mcp.core.ingestion.chunker import (
+        from omrg.core.ingestion.chunker import (
             read_and_chunk_file_async as _read_and_chunk_file_async,
         )
 
@@ -107,8 +107,8 @@ class TestChunkerThreadsReaderName:
 
         from llama_index.core.schema import Document
 
-        import rag_mcp.integrations.pdf as pdf_pkg
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        import omrg.integrations.pdf as pdf_pkg
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
         requested_names: list[str] = []
 

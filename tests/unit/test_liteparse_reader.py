@@ -26,7 +26,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+        from omrg.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)
@@ -45,7 +45,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+        from omrg.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)
@@ -59,7 +59,7 @@ class TestLiteParseReader:
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
-        from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+        from omrg.integrations.pdf.liteparse import LiteParseReader
 
         reader = LiteParseReader()
         documents = reader.load_data(file=CORPUS_PDF)

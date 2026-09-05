@@ -35,7 +35,7 @@ Pinned surface (observed on the locked versions):
   serves FTS immediately.
 
 The production row schema comes from the shared seam
-(:func:`rag_mcp.core.vectordb.lance_rows.upsert_schema`) so the pins
+(:func:`omrg.core.vectordb.lance_rows.upsert_schema`) so the pins
 hold for the schema the adapter actually writes, and metadata filters
 flow through :func:`.lance_filter.translate_where` so the SQL the
 adapter will build is the SQL pinned here.
@@ -49,8 +49,8 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.vectordb.lance_filter import translate_where
-from rag_mcp.core.vectordb.lance_rows import upsert_schema
+from omrg.core.vectordb.lance_filter import translate_where
+from omrg.core.vectordb.lance_rows import upsert_schema
 
 _DIM = 4
 

@@ -155,7 +155,7 @@ def parse_corpus(corpus_dir: Path, reader: str) -> dict[str, Any]:
         token_count, parse_time_s, error), ``parsed_text_sha256_by_file``
         and ``artefact_sha256``.
     """
-    from rag_mcp.integrations.pdf.factory import get_pdf_reader
+    from omrg.integrations.pdf.factory import get_pdf_reader
 
     identity = corpus_identity(corpus_dir)
     adapter = get_pdf_reader(reader)
@@ -351,9 +351,9 @@ def main() -> None:
     # install it explicitly.  Deliberately NOT ensure_runtime_setup():
     # that would build the ambient .env store and embed model, overriding
     # the per-parser experiment store built below.
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.settings import set_default_effective_settings
+    from omrg.compose import settings_to_effective
+    from omrg.config import get_settings
+    from omrg.core.settings import set_default_effective_settings
 
     set_default_effective_settings(settings_to_effective(get_settings()))
 
@@ -443,8 +443,8 @@ def main() -> None:
         }
         for doc in documents
     ]
-    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-    from rag_mcp.core.vectordb.validation import validate_embedding_batch
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrg.core.vectordb.validation import validate_embedding_batch
 
     identity = EmbeddingIdentity(provider="ollama", model=embed_model)
     validate_embedding_batch(

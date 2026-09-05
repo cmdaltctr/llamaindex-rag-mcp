@@ -4,7 +4,7 @@ Protocol §2 H5 claims "core dense retrieval requires no backend-name
 branch or native-distance interpretation".  This module records STATIC
 evidence for that claim as a raw artefact:
 
-1. An AST scan of ``src/rag_mcp/core/retrieval/dense.py`` asserting no
+1. An AST scan of ``src/omrg/core/retrieval/dense.py`` asserting no
    string constant mentions a vector-store backend name and no
    subscript/attribute access reads ``native_distance``.
 2. A citation scan of both adapters proving the native-distance-to-
@@ -25,12 +25,12 @@ from pathlib import Path
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DENSE_PY = PROJECT_ROOT / "src" / "rag_mcp" / "core" / "retrieval" / "dense.py"
+DENSE_PY = PROJECT_ROOT / "src" / "omrg" / "core" / "retrieval" / "dense.py"
 ADAPTER_FILES = {
-    "chroma": PROJECT_ROOT / "src" / "rag_mcp" / "core" / "vectordb" / "chroma.py",
-    "lancedb": PROJECT_ROOT / "src" / "rag_mcp" / "core" / "vectordb" / "lancedb.py",
+    "chroma": PROJECT_ROOT / "src" / "omrg" / "core" / "vectordb" / "chroma.py",
+    "lancedb": PROJECT_ROOT / "src" / "omrg" / "core" / "vectordb" / "lancedb.py",
 }
-SCORE_PY = PROJECT_ROOT / "src" / "rag_mcp" / "core" / "vectordb" / "score.py"
+SCORE_PY = PROJECT_ROOT / "src" / "omrg" / "core" / "vectordb" / "score.py"
 
 _BACKEND_TOKENS = ("chroma", "lance")
 

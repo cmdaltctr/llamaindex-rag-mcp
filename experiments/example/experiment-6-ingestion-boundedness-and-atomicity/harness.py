@@ -37,7 +37,7 @@ PIPELINE_VARIANT = "stage3b_narrow_lock_current"
 
 
 def ensure_import_path() -> None:
-    """Make ``rag_mcp`` and ``experiments._lib`` importable from source."""
+    """Make ``omrg`` and ``experiments._lib`` importable from source."""
     for entry in (str(PROJECT_ROOT), str(PROJECT_ROOT / "src")):
         if entry not in sys.path:
             sys.path.insert(0, entry)
@@ -64,7 +64,7 @@ def build_fake_settings(collection_name: str, persist_dir: Path) -> Any:
     Mirrors the deterministic test defaults so no real LLM call can hang.
     """
     ensure_import_path()
-    from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+    from omrg.core.settings import EffectiveSettings, MetadataBlock
 
     return EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -81,7 +81,7 @@ def _install_default_settings(collection_name: str, persist_dir: Path) -> None:
     composition root and must install the default itself — the store's
     stale-cleanup path reads it via ``get_default_effective_settings``.
     """
-    from rag_mcp.core.settings import set_default_effective_settings
+    from omrg.core.settings import set_default_effective_settings
 
     set_default_effective_settings(build_fake_settings(collection_name, persist_dir))
 
@@ -91,8 +91,8 @@ def install_fake_runtime(persist_dir: Path) -> dict[str, Any]:
     ensure_import_path()
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.vectordb import reset_default_store, set_default_store
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb import reset_default_store, set_default_store
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     reset_default_store()
     store = ChromaVectorStore(persist_dir=str(persist_dir))
@@ -132,10 +132,10 @@ def install_real_runtime(persist_dir: Path) -> dict[str, Any]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.vectordb import reset_default_store, set_default_store
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.compose import build_embed_model
+    from omrg.config import get_settings
+    from omrg.core.vectordb import reset_default_store, set_default_store
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     config = get_settings()
     model = build_embed_model(config)
@@ -172,7 +172,7 @@ def install_embed_counter() -> dict[str, int]:
     missing nodes.
     """
     ensure_import_path()
-    from rag_mcp.core.ingestion import replacement as replacement_module
+    from omrg.core.ingestion import replacement as replacement_module
 
     counts = {"embed_seam_calls": 0, "nodes_embedded": 0}
     original = replacement_module._embed_missing_nodes
@@ -216,7 +216,7 @@ def install_replacement_probe() -> dict[str, int]:
     of corpus file count.  Harness-level seam; production source untouched.
     """
     ensure_import_path()
-    from rag_mcp.core.ingestion import pipeline as pipeline_module
+    from omrg.core.ingestion import pipeline as pipeline_module
 
     state = {"live": 0, "max_live": 0, "max_nodes": 0, "batches": 0}
     original = pipeline_module.replace_source_nodes_async
@@ -246,7 +246,7 @@ def compute_index_identity(settings: Any) -> str:
     pipeline-internal value; the identity here is the cross-cell constant.
     """
     ensure_import_path()
-    from rag_mcp.core.ingestion.source_state import build_index_identity
+    from omrg.core.ingestion.source_state import build_index_identity
 
     return build_index_identity(
         settings,
@@ -296,7 +296,7 @@ def manifest_for_cell(
 def peak_rss_bytes() -> int | None:
     """Return this process's peak RSS via the production sampler."""
     ensure_import_path()
-    from rag_mcp.core.ingestion.metrics import sample_peak_rss_bytes
+    from omrg.core.ingestion.metrics import sample_peak_rss_bytes
 
     return sample_peak_rss_bytes()
 

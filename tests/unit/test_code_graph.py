@@ -6,7 +6,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from rag_mcp.core.codebase.code_graph import (
+from omrg.core.codebase.code_graph import (
     ASTResult,
     Community,
     build_code_graph,
@@ -15,7 +15,7 @@ from rag_mcp.core.codebase.code_graph import (
     detect_hubs,
     extract_ast_relationships,
 )
-from rag_mcp.core.codebase.codebase_map import FileEntry
+from omrg.core.codebase.codebase_map import FileEntry
 
 # ── AST extraction tests ─────────────────────────────────────────────────
 
@@ -25,9 +25,9 @@ class TestExtractASTRelationships:
 
     def test_python_imports(self) -> None:
         """Python imports are extracted correctly."""
-        content = "from rag_mcp.config import TOP_K\nimport os\n"
+        content = "from omrg.config import TOP_K\nimport os\n"
         result = extract_ast_relationships("config.py", content, "python")
-        assert "rag_mcp/config" in result.imports
+        assert "omrg/config" in result.imports
         assert "os" in result.imports
 
     def test_python_class_inheritance(self) -> None:

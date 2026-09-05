@@ -29,7 +29,7 @@ Compare under-load.P95 to idle-baseline.P95. Pass criterion: ratio <= 2.0.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -107,7 +107,7 @@ async def _query_loop(
     Returns:
         List of QueryTiming records.
     """
-    from rag_mcp.retrieval import search
+    from omrg.retrieval import search
 
     timings: list[QueryTiming] = []
     cadence_s = cadence_ms / 1000.0
@@ -156,7 +156,7 @@ async def _ingest_task(corpus_path: Path) -> float:
     Returns:
         Ingest wall-clock seconds.
     """
-    from rag_mcp.ingestion import ingest_path_async
+    from omrg.ingestion import ingest_path_async
 
     started = time.perf_counter()
     await ingest_path_async(str(corpus_path))

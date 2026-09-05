@@ -219,10 +219,10 @@ def branch_traces(
     fusion when no reranker is active; the failed-reranker restore path
     re-runs the same gated fusion).
     """
-    from rag_mcp.core.retrieval.dense import _dense_query_rows
-    from rag_mcp.core.retrieval.filters import matches_metadata_filter
-    from rag_mcp.core.retrieval.fusion import rrf_with_metadata
-    from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+    from omrg.core.retrieval.dense import _dense_query_rows
+    from omrg.core.retrieval.filters import matches_metadata_filter
+    from omrg.core.retrieval.fusion import rrf_with_metadata
+    from omrg.core.retrieval.sparse import BM25SparseRetriever
 
     dense_rows = _dense_query_rows(store, collection_name, query_text, fetch_k, metadata_filter)
     dense_trace = [

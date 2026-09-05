@@ -1,6 +1,6 @@
 """End-to-end smoke test: server over stdio transport.
 
-Launches ``uv run rag-mcp`` as a subprocess, performs MCP handshake,
+Launches ``uv run omrg`` as a subprocess, performs MCP handshake,
 and verifies tool discovery. Marked ``slow`` — skipped by default.
 """
 
@@ -17,7 +17,7 @@ import pytest
 def test_stdio_server_lists_tools() -> None:
     """Launch the server over stdio and verify all tools are present."""
     proc = subprocess.Popen(
-        ["uv", "run", "rag-mcp"],
+        ["uv", "run", "omrg"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

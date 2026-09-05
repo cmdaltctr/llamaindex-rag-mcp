@@ -132,7 +132,7 @@ class TestPersistentRerankFailureFallback:
         this reset, the escalation test below would hit that cache instead
         of the patched failing import and never see a failure at all.
         """
-        from rag_mcp.core.retrieval.reranker import reset_model_cache
+        from omrg.core.retrieval.reranker import reset_model_cache
 
         reset_model_cache()
 
@@ -144,7 +144,7 @@ class TestPersistentRerankFailureFallback:
         the loaded session leaks into later tests, which becomes
         load-bearing once ``_FAILURE_STATE`` shares the same reset hook.
         """
-        from rag_mcp.core.retrieval.reranker import reset_model_cache
+        from omrg.core.retrieval.reranker import reset_model_cache
 
         reset_model_cache()
 
@@ -153,8 +153,8 @@ class TestPersistentRerankFailureFallback:
     ) -> None:
         """A permanently failing reranker yields un-reranked results + warning."""
 
-        import rag_mcp.core.retrieval.reranker as reranker_mod
-        from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+        import omrg.core.retrieval.reranker as reranker_mod
+        from omrg.core.retrieval.reranker import CrossEncoderReranker
 
         # Build a reranker whose model load fails permanently.
         failing = CrossEncoderReranker(model_id="invalid/model-id")
@@ -170,7 +170,7 @@ class TestPersistentRerankFailureFallback:
         monkeypatch.setattr(reranker_mod.CrossEncoderReranker, "_load_model", _fail_load)
 
         # Inject the failing reranker through the DI parameter.
-        import rag_mcp.transports.mcp.search as search_mod
+        import omrg.transports.mcp.search as search_mod
 
         original_search = search_mod.search
 
@@ -213,8 +213,8 @@ class TestPersistentRerankFailureFallback:
         import builtins
         import logging
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         await ingest_path_async(str(fixtures_dir), collection_name="escalation_churn")
 
@@ -225,7 +225,7 @@ class TestPersistentRerankFailureFallback:
                 raise ImportError("persistent onnx failure")
             return real_import(name, *args, **kwargs)
 
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             with patch("builtins.__import__", side_effect=_selective_import):
                 for _ in range(3):
                     search(
@@ -246,7 +246,7 @@ class TestPersistentRerankFailureFallback:
 
     def test_transient_failure_retries_then_succeeds(self) -> None:
         """A transient load failure must retry on the next call and recover."""
-        from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+        from omrg.core.retrieval.reranker import CrossEncoderReranker
 
         reranker = CrossEncoderReranker(model_id="transient/model")
         reranker._loaded = False
@@ -257,13 +257,13 @@ class TestPersistentRerankFailureFallback:
         mock_tokenizer = MagicMock()
 
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+            "omrg.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         with patch(
-                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            "omrg.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             reranker._load_model()
@@ -286,31 +286,31 @@ class TestThresholdScaling:
 
     def test_no_rerank_threshold_unchanged(self) -> None:
         """Without reranking, the threshold must not be scaled."""
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=False) == 0.3
 
     def test_rerank_threshold_scaled_down(self) -> None:
         """With reranking, the threshold must be scaled down 30x."""
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.3, rerank=True) == pytest.approx(0.01)
 
     def test_zero_threshold_stays_zero_no_rerank(self) -> None:
         """Zero threshold (no filtering) must stay zero without rerank."""
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.0, rerank=False) == 0.0
 
     def test_zero_threshold_stays_zero_with_rerank(self) -> None:
         """Zero threshold (no filtering) must stay zero with rerank."""
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.0, rerank=True) == 0.0
 
     def test_moderate_threshold_with_rerank(self) -> None:
         """A moderate threshold (0.5) should become ~0.0167 with rerank."""
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         assert _effective_threshold(0.5, rerank=True) == pytest.approx(0.5 / 30)
 
@@ -321,7 +321,7 @@ class TestThresholdScaling:
         the Colosseum chunk but gave it a low sigmoid score (0.015).
         With 30x scaling, threshold 0.3 → 0.01, so 0.015 passes.
         """
-        from rag_mcp.core.retrieval.policy import _effective_threshold
+        from omrg.core.retrieval.policy import _effective_threshold
 
         threshold = _effective_threshold(0.3, rerank=True)
         assert 0.015 >= threshold  # Colosseum score should pass
@@ -357,11 +357,11 @@ def _patch_dense(monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> None:
     """Replace pipeline's "dense" strategy resolution with fixed rows.
 
     The registry caches resolved callables by name (``registry.py::get``),
-    so patching ``rag_mcp.core.retrieval.dense._dense_query_rows`` after
+    so patching ``omrg.core.retrieval.dense._dense_query_rows`` after
     the first real resolution elsewhere in the suite would be a no-op.
     Patching ``pipeline._retrieval_get`` itself sidesteps that cache.
     """
-    import rag_mcp.core.retrieval.pipeline as pipeline_mod
+    import omrg.core.retrieval.pipeline as pipeline_mod
 
     real_get = pipeline_mod._retrieval_get
     monkeypatch.setattr(
@@ -373,7 +373,7 @@ def _patch_dense(monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> None:
 
 def _mock_reranker_instance(*, fails: bool, logit: float = -3.0):
     """Build a loaded ``CrossEncoderReranker`` whose inference succeeds or fails."""
-    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+    from omrg.core.retrieval.reranker import CrossEncoderReranker
 
     reranker = CrossEncoderReranker()
     mock_session = MagicMock()
@@ -402,7 +402,7 @@ class TestRerankReasonDiagnostics:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A failing reranker's own reason replaces the policy string (task 2.3)."""
-        from rag_mcp.core.retrieval import search
+        from omrg.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
@@ -447,7 +447,7 @@ class TestRerankReasonDiagnostics:
         into the public result dict when diagnostics are off, even
         though the reranker did set ``last_failure_reason`` internally.
         """
-        from rag_mcp.core.retrieval import search
+        from omrg.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
@@ -490,7 +490,7 @@ class TestThresholdFollowsRerankOutcome:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Successful reranking still applies the ÷30 threshold (task 3.2)."""
-        from rag_mcp.core.retrieval import search
+        from omrg.core.retrieval import search
 
         # score=0.2 dense/raw would fail an unscaled 0.3 threshold, but the
         # reranker replaces it with a sigmoid score (logit -3.0 -> ~0.047),
@@ -536,7 +536,7 @@ class TestThresholdFollowsRerankOutcome:
         raw cosine similarity while filtering at the ÷30-scaled threshold
         — about 30x too permissive.
         """
-        from rag_mcp.core.retrieval import search
+        from omrg.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
@@ -570,7 +570,7 @@ class TestThresholdFollowsRerankOutcome:
 
     def test_rerank_false_applies_unscaled_threshold(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """rerank=False applies the unscaled threshold, unchanged (task 3.4)."""
-        from rag_mcp.core.retrieval import search
+        from omrg.core.retrieval import search
 
         _patch_dense(
             monkeypatch,
@@ -627,8 +627,8 @@ class TestCollectionAwareSearch:
 
     async def test_search_named_collection(self, sample_txt, sample_md):
         """Search must return results only from the specified collection."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         # Ingest into two different collections
         await ingest_path_async(str(sample_txt), collection_name="research")
@@ -654,8 +654,8 @@ class TestCollectionAwareSearch:
 
     async def test_default_collection_search(self, sample_txt):
         """Search without collection_name must use 'documents'."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         await ingest_path_async(str(sample_txt))
 
@@ -668,7 +668,7 @@ class TestMetadataFiltering:
 
     async def test_filter_by_category(self, tmp_path, monkeypatch):
         """Search with metadata_filter must return only matching chunks."""
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -678,8 +678,8 @@ class TestMetadataFiltering:
             EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         ai_file = tmp_path / "ai_content.txt"
         ai_file.write_text(
@@ -704,7 +704,7 @@ class TestMetadataFiltering:
 
     async def test_no_filter_returns_all(self, tmp_path, monkeypatch):
         """Search without metadata_filter must return all categories."""
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -714,8 +714,8 @@ class TestMetadataFiltering:
             EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         ai_file = tmp_path / "ai.txt"
         ai_file.write_text("attention transformer neural network deep learning")
@@ -730,8 +730,8 @@ class TestListCollections:
 
     async def test_list_collections_with_data(self, sample_txt, sample_md):
         """list_collections must return collection names and counts."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import list_collections
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import list_collections
 
         await ingest_path_async(str(sample_txt), collection_name="research")
         await ingest_path_async(str(sample_md), collection_name="code")
@@ -751,7 +751,7 @@ class TestListCollections:
 
     def test_list_collections_empty(self):
         """list_collections on fresh store must return empty list."""
-        from rag_mcp.core.retrieval import list_collections
+        from omrg.core.retrieval import list_collections
 
         # Note: EphemeralClient is shared between tests,
         # but collections from other tests might be visible.
@@ -773,9 +773,9 @@ class TestListCollections:
         """
         from asyncio import run as asyncio_run
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import list_collections
-        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import list_collections
+        from omrg.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
@@ -815,7 +815,7 @@ class TestScoreConsistency:
         monkeypatch,
     ) -> None:
         """Same chunk + same query → equal score on both paths."""
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -825,8 +825,8 @@ class TestScoreConsistency:
             EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         ai_file = tmp_path / "ai_only.txt"
         ai_file.write_text(
@@ -875,7 +875,7 @@ class TestScoreConsistency:
         monkeypatch,
     ) -> None:
         """Same threshold filters identically on both paths."""
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -885,8 +885,8 @@ class TestScoreConsistency:
             EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import search
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import search
 
         ai_file = tmp_path / "ai_threshold.txt"
         ai_file.write_text(
@@ -933,7 +933,7 @@ class TestScoreConsistency:
 
     def test_l2_to_score_canonical_formula_lives_at_store_boundary(self) -> None:
         """The adapter helper follows ``1 / (1 + d)`` and rejects omissions."""
-        from rag_mcp.core.vectordb.score import canonical_score_from_l2
+        from omrg.core.vectordb.score import canonical_score_from_l2
 
         assert canonical_score_from_l2(0.0, backend="test") == pytest.approx(1.0)
         assert canonical_score_from_l2(1.0, backend="test") == pytest.approx(0.5)

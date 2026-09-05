@@ -42,7 +42,7 @@ Q_DELTA = "pilot station rope ladder listening watch"
 
 
 def _export_env(run_dir: Path) -> None:
-    """Pin the campaign environment before any rag_mcp import."""
+    """Pin the campaign environment before any omrg import."""
     os.environ.update(
         {
             "VECTOR_STORE": "lancedb",
@@ -164,7 +164,7 @@ def _build_manifest() -> dict[str, Any]:
     """Freeze the TDR-014 runtime manifest for this run."""
     from experiments._lib.manifest import build_runtime_manifest, observe_document_reader
 
-    from rag_mcp.core.vectordb.score import DENSE_SCORE_KIND
+    from omrg.core.vectordb.score import DENSE_SCORE_KIND
 
     return build_runtime_manifest(
         experiment_id="19-lancedb-lifecycle-qualification",
@@ -197,7 +197,7 @@ def _build_manifest() -> dict[str, Any]:
 
 
 async def _ingest(path: Path, collection: str = COLLECTION) -> dict[str, Any]:
-    from rag_mcp.core.ingestion import ingest_path_async
+    from omrg.core.ingestion import ingest_path_async
 
     result = await ingest_path_async(str(path), collection_name=collection)
     return result if isinstance(result, dict) else {"result": result}
@@ -212,7 +212,7 @@ def _search(
     metadata_filter: dict | None = None,
     diagnostics: bool = True,
 ) -> list[dict]:
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     return search(
         query,
@@ -225,7 +225,7 @@ def _search(
 
 
 def _store() -> Any:
-    from rag_mcp.core.vectordb import get_default_store
+    from omrg.core.vectordb import get_default_store
 
     return get_default_store()
 
@@ -385,7 +385,7 @@ async def gate_g7(ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
 
 async def gate_g8(ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     """G8 document deletion."""
-    from rag_mcp.core.ingestion.writer import remove_document
+    from omrg.core.ingestion.writer import remove_document
 
     target = str(ctx["corpus_work"] / "bravo_harbour.txt")
     before = _store().count(COLLECTION)
@@ -409,7 +409,7 @@ async def gate_g8(ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
 
 async def gate_g9(ctx: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     """G9 collection deletion and recreation."""
-    from rag_mcp.core.retrieval import list_collections
+    from omrg.core.retrieval import list_collections
 
     store = _store()
     store.delete_collection(COLLECTION)
@@ -591,7 +591,7 @@ async def main(run_label: str, resume: bool) -> int:
     admissibility = _check_admissible(run_dir)
     print(f"admissible: {admissibility}", flush=True)
 
-    from rag_mcp.compose import ensure_runtime_setup
+    from omrg.compose import ensure_runtime_setup
 
     ensure_runtime_setup()
     print("runtime setup complete (lancedb store installed)", flush=True)

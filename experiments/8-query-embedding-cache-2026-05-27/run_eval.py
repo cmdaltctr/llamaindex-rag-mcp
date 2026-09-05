@@ -21,7 +21,7 @@ Run with:
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -137,11 +137,11 @@ def _set_cache_enabled(enabled: bool) -> None:
     If the production code exposes a flag, prefer that over monkey-patching.
     """
     try:
-        from rag_mcp.retrieval import _cached_query_embedding  # type: ignore
+        from omrg.retrieval import _cached_query_embedding  # type: ignore
     except ImportError:
         # Fallback name — adjust to whatever Tier 2 names the helper.
         try:
-            from rag_mcp.retrieval import get_cached_query_embedding as _cached_query_embedding  # type: ignore
+            from omrg.retrieval import get_cached_query_embedding as _cached_query_embedding  # type: ignore
         except ImportError:
             print("  WARNING: could not find the cached embed helper to toggle.")
             return
@@ -160,7 +160,7 @@ def _set_cache_enabled(enabled: bool) -> None:
 def _read_cache_info() -> dict:
     """Read `cache_info()` from the production cache wrapper."""
     try:
-        from rag_mcp.retrieval import _cached_query_embedding  # type: ignore
+        from omrg.retrieval import _cached_query_embedding  # type: ignore
 
         info = _cached_query_embedding.cache_info()  # type: ignore[attr-defined]
         return {
@@ -181,7 +181,7 @@ def _run_cell(
     chroma_dir: str,
 ) -> CellResult:
     """Run one cell of the 2 × 2 grid."""
-    from rag_mcp.retrieval import search
+    from omrg.retrieval import search
 
     print(f"\n  Cell: cache={'on' if cache_enabled else 'off'}, trace={trace_label}")
     _set_cache_enabled(cache_enabled)
@@ -259,12 +259,12 @@ def _ingest_corpus(corpus_dir: Path) -> str:
     """Ingest the corpus into a fresh temp ChromaDB and return its path."""
     import asyncio
 
-    from rag_mcp.ingestion import ingest_path_async
+    from omrg.ingestion import ingest_path_async
 
     tmp_dir = tempfile.mkdtemp(prefix="rag_cache_")
     os.environ["CHROMA_PERSIST_DIR"] = tmp_dir
     os.environ["COLLECTION_NAME"] = EXPERIMENT_COLLECTION
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "CHROMA_PERSIST_DIR"):
             mod.CHROMA_PERSIST_DIR = tmp_dir
@@ -339,8 +339,8 @@ def main() -> None:
     print(f"  Warm trace: {len(warm_queries)} queries")
     print(f"  Cold trace: {len(cold_queries)} queries")
 
-    import rag_mcp.ingestion  # noqa: F401
-    import rag_mcp.retrieval  # noqa: F401
+    import omrg.ingestion  # noqa: F401
+    import omrg.retrieval  # noqa: F401
 
     chroma_dir = _ingest_corpus(corpus_dir)
     counter = EmbedCallCounter()

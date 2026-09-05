@@ -197,7 +197,7 @@ async def test_ingest_documents_with_fixtures_dir(mcp_server, fixtures_dir: Path
 async def test_ingest_documents_returns_lazy_setup_error(mcp_server) -> None:
     """Lazy profile-resolver construction errors return an MCP error result."""
     with patch(
-        "rag_mcp.transports.mcp.ingest._get_profile_resolver",
+        "omrg.transports.mcp.ingest._get_profile_resolver",
         side_effect=ImportError("missing optional dependency"),
     ):
         async with connected_client(mcp_server) as client:
@@ -232,7 +232,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
     mcp_server,
 ) -> None:
     """MCP search handler is async and returns the same list-of-dicts shape."""
-    import rag_mcp.transports.mcp as server
+    import omrg.transports.mcp as server
 
     expected = [
         {
@@ -246,7 +246,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
     assert inspect.iscoroutinefunction(server.search_documents)
 
-    with patch("rag_mcp.transports.mcp.search.search", return_value=expected) as mock_search:
+    with patch("omrg.transports.mcp.search.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -278,7 +278,7 @@ async def test_search_documents_handler_is_async_and_preserves_shape(
 
 async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> None:
     """MCP omitted rerank should pass None so retrieval resolves policy."""
-    from rag_mcp.config import get_settings as _gs
+    from omrg.config import get_settings as _gs
 
     expected = [
         {
@@ -290,7 +290,7 @@ async def test_search_documents_defaults_follow_policy_resolver(mcp_server) -> N
         }
     ]
 
-    with patch("rag_mcp.transports.mcp.search.search", return_value=expected) as mock_search:
+    with patch("omrg.transports.mcp.search.search", return_value=expected) as mock_search:
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -343,7 +343,7 @@ async def test_search_documents_diagnostics_passthrough(
             item.update({"dense_rank": 1, "fused_rank": 1, "sparse_backend": "bm25"})
         return [item]
 
-    with patch("rag_mcp.transports.mcp.search.search", side_effect=_search):
+    with patch("omrg.transports.mcp.search.search", side_effect=_search):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -382,7 +382,7 @@ async def test_list_passes_through_orphaned_values(mcp_server) -> None:
         {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
     ]
 
-    with patch("rag_mcp.transports.mcp.list._list_documents", return_value=rows):
+    with patch("omrg.transports.mcp.list._list_documents", return_value=rows):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool("list_indexed_documents", {})
 
@@ -776,12 +776,12 @@ async def test_delete_documents_path_dry_run_nonexistent_coll(
 def test_main_calls_mcp_run() -> None:
     """main() prepares runtime state, then calls mcp.run(transport='stdio')."""
     with (
-        patch("rag_mcp.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
-        patch("rag_mcp.transports.mcp._get_reranker") as mock_reranker,
-        patch("rag_mcp.transports.mcp._get_profile_resolver") as mock_resolver,
-        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+        patch("omrg.transports.mcp.compose.ensure_runtime_setup") as mock_setup,
+        patch("omrg.transports.mcp._get_reranker") as mock_reranker,
+        patch("omrg.transports.mcp._get_profile_resolver") as mock_resolver,
+        patch("omrg.transports.mcp.mcp.run") as mock_run,
     ):
-        from rag_mcp.transports.mcp import main
+        from omrg.transports.mcp import main
 
         main()
 
@@ -795,13 +795,13 @@ def test_main_reports_runtime_setup_error(capsys: pytest.CaptureFixture[str]) ->
     """main() reports startup configuration errors without starting the server."""
     with (
         patch(
-            "rag_mcp.transports.mcp.compose.ensure_runtime_setup",
+            "omrg.transports.mcp.compose.ensure_runtime_setup",
             side_effect=ValueError("EMBED_PROVIDER='invalid'"),
         ),
-        patch("rag_mcp.transports.mcp.mcp.run") as mock_run,
+        patch("omrg.transports.mcp.mcp.run") as mock_run,
         pytest.raises(SystemExit, match="1"),
     ):
-        from rag_mcp.transports.mcp import main
+        from omrg.transports.mcp import main
 
         main()
 
@@ -850,7 +850,7 @@ def test_leak_guard_detects_closed_handlers(tmp_path: Path) -> None:
 
 def test_runtime_resources_are_built_once(monkeypatch: pytest.MonkeyPatch) -> None:
     """Lazy MCP runtime resources are cached after their first construction."""
-    import rag_mcp.transports.mcp as mcp_module
+    import omrg.transports.mcp as mcp_module
 
     reranker = object()
     resolver = object()
@@ -890,7 +890,7 @@ async def test_search_documents_metadata_filter_passed_through(
     ]
 
     with patch(
-        "rag_mcp.transports.mcp.search.search",
+        "omrg.transports.mcp.search.search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -916,7 +916,7 @@ async def test_search_documents_returns_filter_matches(
     monkeypatch,
 ) -> None:
     """End-to-end: a filtered MCP search returns only matching chunks."""
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,
@@ -975,7 +975,7 @@ async def test_search_documents_expand_window_passthrough(
     ]
 
     with patch(
-        "rag_mcp.transports.mcp.search.search",
+        "omrg.transports.mcp.search.search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -995,7 +995,7 @@ async def test_search_documents_unfiltered_unchanged(mcp_server) -> None:
     expected: list[dict] = []
 
     with patch(
-        "rag_mcp.transports.mcp.search.search",
+        "omrg.transports.mcp.search.search",
         return_value=expected,
     ) as mock_search:
         async with connected_client(mcp_server) as client:
@@ -1021,7 +1021,7 @@ async def test_search_documents_validation_error_envelope(
     def _raise_value_error(*args, **kwargs):
         raise ValueError("Invalid where clause: unsupported operator $bogus")
 
-    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_value_error):
+    with patch("omrg.transports.mcp.search.search", side_effect=_raise_value_error):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1048,7 +1048,7 @@ async def test_search_documents_retrieval_error_envelope(
     # Forge an exception class whose ``__module__`` lives under chromadb,
     # without importing chromadb.errors directly (which moves between
     # versions).  This matches the production-side discriminator in
-    # rag_mcp.transports.mcp.search_documents.
+    # omrg.transports.mcp.search_documents.
     fake_chroma = type(
         "ChromaError",
         (RuntimeError,),
@@ -1058,7 +1058,7 @@ async def test_search_documents_retrieval_error_envelope(
     def _raise_chroma(*args, **kwargs):
         raise fake_chroma("collection 'x' is corrupt")
 
-    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_chroma):
+    with patch("omrg.transports.mcp.search.search", side_effect=_raise_chroma):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1082,7 +1082,7 @@ async def test_search_documents_internal_error_envelope(
     def _raise_unexpected(*args, **kwargs):
         raise KeyError("missing config key 'foo'")
 
-    with patch("rag_mcp.transports.mcp.search.search", side_effect=_raise_unexpected):
+    with patch("omrg.transports.mcp.search.search", side_effect=_raise_unexpected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1118,7 +1118,7 @@ async def test_search_documents_success_has_no_status_key(
         },
     ]
 
-    with patch("rag_mcp.transports.mcp.search.search", return_value=expected):
+    with patch("omrg.transports.mcp.search.search", return_value=expected):
         async with connected_client(mcp_server) as client:
             result = await client.call_tool(
                 "search_documents",
@@ -1172,7 +1172,7 @@ def _mcp_error_log_text(caplog: pytest.LogCaptureFixture) -> str:
     return " ".join(
         record.getMessage()
         for record in caplog.records
-        if record.name == "rag_mcp.transports.mcp" and record.levelno >= logging.WARNING
+        if record.name == "omrg.transports.mcp" and record.levelno >= logging.WARNING
     )
 
 
@@ -1185,8 +1185,8 @@ async def _ingest_failure_result(
     """Set up a cloud runtime, then make ingest fail with ``leaked_text``."""
     from llama_index.core.embeddings import MockEmbedding
 
-    from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
-    from rag_mcp.core.vectordb import reset_default_store
+    from omrg.compose import ensure_runtime_setup, reset_runtime_setup
+    from omrg.core.vectordb import reset_default_store
     from test_chroma_cloud import _cloud_settings, _install_fake_cloud_client, _shared_client
 
     cloud_settings = _cloud_settings(
@@ -1199,15 +1199,15 @@ async def _ingest_failure_result(
     try:
         _install_fake_cloud_client(monkeypatch, backing=_shared_client())
         with (
-            patch("rag_mcp.compose.get_settings", return_value=cloud_settings),
+            patch("omrg.compose.get_settings", return_value=cloud_settings),
             patch(
-                "rag_mcp.compose.build_embed_model",
+                "omrg.compose.build_embed_model",
                 return_value=MockEmbedding(embed_dim=384),
             ),
         ):
             ensure_runtime_setup()
             with patch(
-                "rag_mcp.transports.mcp.ingest.ingest_path_async",
+                "omrg.transports.mcp.ingest.ingest_path_async",
                 side_effect=RuntimeError(leaked_text),
             ):
                 async with connected_client(mcp_server) as client:
@@ -1298,7 +1298,7 @@ def test_error_detail_settings_failure_returns_placeholder(
     must not leak unredacted detail when there is no settings object to
     redact against (gotcha #1).
     """
-    from rag_mcp.transports import mcp as mcp_mod
+    from omrg.transports import mcp as mcp_mod
 
     def _raise() -> None:
         raise OSError("settings unavailable")
@@ -1318,7 +1318,7 @@ def test_main_settings_failure_prints_reason(
     Config validation messages name the offending variable and never echo
     key material, so the operator sees why startup failed.
     """
-    from rag_mcp.transports import mcp as mcp_mod
+    from omrg.transports import mcp as mcp_mod
 
     def _settings_failure() -> None:
         raise ValueError("EMBED_PROVIDER='bogus' is not an accepted value")
@@ -1347,9 +1347,9 @@ def test_all_handlers_importable_from_package_root() -> None:
     This guards against the bottom import block using module-only imports
     (``from . import search``) which register the decorator but do not bind
     the handler name on the package, breaking
-    ``from rag_mcp.transports.mcp import search_documents``.
+    ``from omrg.transports.mcp import search_documents``.
     """
-    import rag_mcp.transports.mcp as pkg
+    import omrg.transports.mcp as pkg
 
     handler_names = [
         "ingest_documents",

@@ -1,8 +1,8 @@
 """No global settings singleton reads inside ``core/`` or ``integrations/``.
 
-Asserts that no module under ``src/rag_mcp/core/`` or
-``src/rag_mcp/integrations/`` imports the resolved ``settings`` singleton
-from ``rag_mcp.config``. Every such module must receive its configuration as
+Asserts that no module under ``src/omrg/core/`` or
+``src/omrg/integrations/`` imports the resolved ``settings`` singleton
+from ``omrg.config``. Every such module must receive its configuration as
 an injected ``EffectiveSettings`` parameter instead (PROPOSAL §6.3.1,
 settings-dependency-injection spec).
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
 
 # Matches ``from ...config import settings`` / ``from ..config import settings``
 # and the inline ``from ...config import settings`` inside functions.
@@ -40,6 +40,9 @@ def _python_files() -> list[Path]:
 
 def test_no_global_settings_reads_in_core_or_integrations() -> None:
     """No module under ``core/`` or ``integrations/`` may import the settings singleton."""
+    assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
+    for scan_dir in _SCAN_DIRS:
+        assert scan_dir.is_dir(), f"configured scan directory is missing: {scan_dir}"
     hits: list[tuple[Path, int, str]] = []
     for path in _python_files():
         text = path.read_text(encoding="utf-8")

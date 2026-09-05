@@ -23,8 +23,8 @@ def test_settings_to_effective_preserves_rerank_backend(effective_settings) -> N
     so Pydantic defaults to extra="ignore" — undeclared fields are
     silently dropped during the model_dump() copy in compose.
     """
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import get_settings
+    from omrg.compose import settings_to_effective
+    from omrg.config import get_settings
 
     # Default install: backend is "onnx"
     settings = get_settings()
@@ -50,7 +50,7 @@ def test_unknown_rerank_backend_rejected(monkeypatch: pytest.MonkeyPatch) -> Non
     # Construct Settings() directly to avoid the get_settings() cache —
     # an earlier test may have already resolved and cached settings,
     # which would return the cached object without re-reading env vars.
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     with pytest.raises(ValueError, match="RETRIEVAL__RERANK_BACKEND.*Accepted values: onnx, torch"):
         Settings()
@@ -59,7 +59,7 @@ def test_unknown_rerank_backend_rejected(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_empty_rerank_backend_resets_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
     """Empty RETRIEVAL__RERANK_BACKEND resets to the default ("onnx")."""
     monkeypatch.setenv("RETRIEVAL__RERANK_BACKEND", "")
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     settings = Settings()
     assert settings.retrieval.rerank_backend == "onnx"
@@ -68,7 +68,7 @@ def test_empty_rerank_backend_resets_to_default(monkeypatch: pytest.MonkeyPatch)
 def test_whitespace_rerank_backend_stripped(monkeypatch: pytest.MonkeyPatch) -> None:
     """Padded RETRIEVAL__RERANK_BACKEND value is stripped."""
     monkeypatch.setenv("RETRIEVAL__RERANK_BACKEND", "  onnx  ")
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     settings = Settings()
     assert settings.retrieval.rerank_backend == "onnx"
@@ -83,8 +83,8 @@ def test_lazy_and_injected_paths_select_same_backend(effective_settings) -> None
     compose.build_reranker() and the lazy path in pipeline.py both call
     build_reranker_from_settings, so they cannot diverge (design decision 5).
     """
-    from rag_mcp.compose import build_reranker
-    from rag_mcp.core.retrieval.backend import build_reranker_from_settings
+    from omrg.compose import build_reranker
+    from omrg.core.retrieval.backend import build_reranker_from_settings
 
     settings = effective_settings(rerank_backend="onnx")
 
@@ -108,8 +108,8 @@ def test_torch_missing_falls_back_to_onnx(effective_settings) -> None:
     reranker_torch would succeed (torch is imported lazily inside
     _load_model).
     """
-    from rag_mcp.core.retrieval.backend import resolve_reranker_backend
-    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+    from omrg.core.retrieval.backend import resolve_reranker_backend
+    from omrg.core.retrieval.reranker import CrossEncoderReranker
 
     # No mocking needed — sentence_transformers is not installed in the
     # fast suite, so _is_torch_extra_available() naturally returns False.
@@ -126,8 +126,8 @@ def test_torch_missing_and_onnx_fails_degrades(effective_settings) -> None:
     also can't load, the search SHALL return un-reranked results truncated
     to top_k, set last_failure_reason, and never raise.
     """
-    from rag_mcp.core.retrieval.backend import build_reranker_from_settings
-    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
+    from omrg.core.retrieval.backend import build_reranker_from_settings
+    from omrg.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
 
     settings = effective_settings(rerank_backend="torch")
     reset_model_cache()
@@ -159,7 +159,7 @@ def test_read_max_position_embeddings_reads_config_json() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import _read_max_position_embeddings
+    from omrg.core.retrieval.reranker import _read_max_position_embeddings
 
     config = json.dumps({"max_position_embeddings": 512})
     with patch("huggingface_hub.hf_hub_download", return_value="/fake/config.json"):
@@ -173,7 +173,7 @@ def test_read_max_position_embeddings_sentinel_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         _read_max_position_embeddings,
     )
@@ -190,7 +190,7 @@ def test_read_max_position_embeddings_missing_key_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         _read_max_position_embeddings,
     )
@@ -204,7 +204,7 @@ def test_read_max_position_embeddings_missing_key_falls_back() -> None:
 def test_read_max_position_embeddings_no_config_falls_back() -> None:
     """Missing config.json SHALL fall back to default without raising."""
 
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         _read_max_position_embeddings,
     )
@@ -224,7 +224,7 @@ def test_read_max_position_embeddings_zero_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         _read_max_position_embeddings,
     )
@@ -241,7 +241,7 @@ def test_read_max_position_embeddings_bool_falls_back() -> None:
     import json
     from unittest.mock import mock_open
 
-    from rag_mcp.core.retrieval.reranker import (
+    from omrg.core.retrieval.reranker import (
         TOKENIZER_MAX_LENGTH,
         _read_max_position_embeddings,
     )
@@ -253,7 +253,7 @@ def test_read_max_position_embeddings_bool_falls_back() -> None:
             assert result == TOKENIZER_MAX_LENGTH
 
 
-# ── read_pad_token_config (rag_mcp.core.retrieval._model_config) ───────
+# ── read_pad_token_config (omrg.core.retrieval._model_config) ───────
 
 
 def _make_download_side_effect(files: dict[str, str]):
@@ -286,7 +286,7 @@ def test_read_pad_token_config_reads_bert_defaults() -> None:
     """read_pad_token_config SHALL read pad_token_id from config.json."""
     import json
 
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({"pad_token_id": 0}),
@@ -305,7 +305,7 @@ def test_read_pad_token_config_reads_roberta_values() -> None:
     """read_pad_token_config SHALL read non-BERT pad values (e.g. RoBERTa)."""
     import json
 
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({"pad_token_id": 1}),
@@ -322,7 +322,7 @@ def test_read_pad_token_config_reads_roberta_values() -> None:
 
 def test_read_pad_token_config_missing_config_falls_back() -> None:
     """Missing config.json SHALL return (None, None) without raising."""
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     with patch("huggingface_hub.hf_hub_download", side_effect=Exception("not found")):
         pad_id, pad_token = read_pad_token_config("test/model")
@@ -339,7 +339,7 @@ def test_read_pad_token_config_missing_tokenizer_config_falls_back() -> None:
     """
     import json
 
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     # Only config.json is available; tokenizer_config.json is not.
     files = {"config.json": json.dumps({"pad_token_id": 0})}
@@ -362,7 +362,7 @@ def test_read_pad_token_config_missing_pad_token_id_falls_back() -> None:
     """
     import json
 
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({}),
@@ -389,7 +389,7 @@ def test_read_pad_token_config_invalid_pad_id_falls_back(bad_pad_id: object) -> 
     """
     import json
 
-    from rag_mcp.core.retrieval._model_config import read_pad_token_config
+    from omrg.core.retrieval._model_config import read_pad_token_config
 
     files = {
         "config.json": json.dumps({"pad_token_id": bad_pad_id}),
@@ -406,7 +406,7 @@ def test_read_pad_token_config_invalid_pad_id_falls_back(bad_pad_id: object) -> 
 
 def test_resolve_unknown_backend_name_raises_keyerror() -> None:
     """Unknown backend name SHALL raise KeyError (defensive guard)."""
-    from rag_mcp.core.retrieval.backend import resolve_reranker_backend
+    from omrg.core.retrieval.backend import resolve_reranker_backend
 
     with pytest.raises(KeyError, match="Unknown reranker backend"):
         resolve_reranker_backend("unknown")
@@ -414,7 +414,7 @@ def test_resolve_unknown_backend_name_raises_keyerror() -> None:
 
 def test_build_reranker_empty_backend_defaults_to_onnx(effective_settings) -> None:
     """Empty backend string SHALL default to onnx (guard in build_reranker_from_settings)."""
-    from rag_mcp.core.retrieval.backend import (
+    from omrg.core.retrieval.backend import (
         resolve_reranker_backend,
     )
 

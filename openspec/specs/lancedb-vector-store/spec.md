@@ -27,7 +27,7 @@ import `lancedb`.
 
 #### Scenario: Single lancedb import site
 
-- **WHEN** `src/rag_mcp/` is searched for `import lancedb`
+- **WHEN** `src/omrg/` is searched for `import lancedb`
 - **THEN** the only matches MUST be within `core/vectordb/`
 
 #### Scenario: Contract parity with the ABC

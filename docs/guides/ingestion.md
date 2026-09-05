@@ -265,7 +265,7 @@ For comparison, the larger `qwen3-embedding:8b` model (4,096-dim vectors) takes 
 
 File reading is sequential. Tune throughput with `INGESTION__EMBED_BATCH_SIZE` and `INGESTION__EMBED_CONCURRENCY` rather than file-reader worker settings.
 
-Run `uv run rag-mcp benchmark` to measure throughput on your own hardware.
+Run `uv run omrg benchmark` to measure throughput on your own hardware.
 
 ### Switching models
 
@@ -277,7 +277,7 @@ ollama pull mxbai-embed-large
 EMBED_MODEL=mxbai-embed-large
 
 # 3. Re-index your documents into a fresh collection
-rag-mcp ingest /path/to/docs/
+omrg ingest /path/to/docs/
 ```
 
 > **Why re-index?** The selected vector store locks the vector dimension at collection creation time. Each model produces a different dimension (nomic=768, mxbai=1024, minilm=384). Switching models requires a fresh collection.
@@ -297,7 +297,7 @@ The default 512-character chunk size is safe for all models. For models with lar
 
 ```bash
 # 2048-char chunks are fine (2048 × 0.25 = 512 tokens)
-rag-mcp ingest /path/to/docs/ --chunk-size 2048
+omrg ingest /path/to/docs/ --chunk-size 2048
 ```
 
 ## Progress and interruption

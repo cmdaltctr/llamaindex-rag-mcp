@@ -129,7 +129,7 @@ def test_audit_literals_present() -> None:
 def test_run_query_dispatch_literals(monkeypatch: Any) -> None:
     """The four (mode, rerank) arms reach the pipeline with the right kwargs."""
     runner = _load_runner()
-    import rag_mcp.core.retrieval as retrieval_pkg
+    import omrg.core.retrieval as retrieval_pkg
 
     calls: list[dict[str, Any]] = []
 

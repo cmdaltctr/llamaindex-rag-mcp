@@ -13,7 +13,7 @@ document-backend-strategies/spec.md`` plus tasks 1.1-1.3:
 * Registry-contract specifics and composition-startup validation gates.
 
 Test-state convention: every NEW-surface import (the
-``core.ingestion.backends`` package, ``rag_mcp.capabilities``, the
+``core.ingestion.backends`` package, ``omrg.capabilities``, the
 ``read_documents`` adapters) lives INSIDE a test body so this module still
 collects before implementation lands. Those tests fail (red) until the
 implementation merges; the parity classes pass both before and after.
@@ -31,14 +31,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_mcp.config import Settings
-from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+from omrg.config import Settings
+from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
 # The orchestrator logs under its own module name; diagnostics from the
 # config and capabilities layers are captured per-logger below.
-_ORCH_LOGGER = "rag_mcp.core.ingestion.backends.orchestrator"
-_CONFIG_LOGGER = "rag_mcp.config"
-_CAPABILITIES_LOGGER = "rag_mcp.capabilities"
+_ORCH_LOGGER = "omrg.core.ingestion.backends.orchestrator"
+_CONFIG_LOGGER = "omrg.config"
+_CAPABILITIES_LOGGER = "omrg.capabilities"
 
 
 def _azure_sdk_present() -> bool:
@@ -128,7 +128,7 @@ class TestAzureMetadataParity:
 
     def test_azure_documents_carry_file_path_and_content_type(self, tmp_path: Path) -> None:
         """Spec scenario "Azure backend is selected": metadata stays compatible."""
-        from rag_mcp.integrations.azure import parse_azure_response
+        from omrg.integrations.azure import parse_azure_response
 
         paras = [MagicMock(content="Hello world", role="paragraph")]
         documents = parse_azure_response(self._mock_result(paragraphs=paras), tmp_path / "test.pdf")
@@ -139,7 +139,7 @@ class TestAzureMetadataParity:
 
     def test_table_docs_carry_table_index(self, tmp_path: Path) -> None:
         """Table documents expose table_index on top of the required fields."""
-        from rag_mcp.integrations.azure import parse_azure_response
+        from omrg.integrations.azure import parse_azure_response
 
         cells = [
             MagicMock(content="A", row_index=0, column_index=0),
@@ -155,7 +155,7 @@ class TestAzureMetadataParity:
 
     def test_large_tables_split_with_row_group(self, tmp_path: Path) -> None:
         """A >50-row table splits into row groups carrying row_group ids."""
-        from rag_mcp.integrations.azure import _split_table_rows, parse_azure_response
+        from omrg.integrations.azure import _split_table_rows, parse_azure_response
 
         cells = [
             MagicMock(content=f"R{r}C{c}", row_index=r, column_index=c)
@@ -174,7 +174,7 @@ class TestAzureMetadataParity:
         """Parity: azure and local documents both carry file_path and text."""
         from llama_index.core import Document, SimpleDirectoryReader
 
-        from rag_mcp.integrations.azure import parse_azure_response
+        from omrg.integrations.azure import parse_azure_response
 
         md = _local_md(tmp_path)
         local_docs = SimpleDirectoryReader(input_files=[str(md)], filename_as_id=True).load_data()
@@ -201,12 +201,12 @@ class TestDocumentBackendRegistry:
     """The lazy document-backend registry mirrors the shared contract.
 
     New surface (task 2.1): every test in this class imports
-    ``rag_mcp.core.ingestion.backends`` inside the body, so the module
+    ``omrg.core.ingestion.backends`` inside the body, so the module
     still collects before the package exists.
     """
 
     def _registry(self):
-        from rag_mcp.core.ingestion.backends import registry
+        from omrg.core.ingestion.backends import registry
 
         return registry
 
@@ -232,7 +232,7 @@ class TestDocumentBackendRegistry:
             "structured_output",
             "text_format",
         }
-        assert meta["availability_path"] == ("rag_mcp.integrations.azure:require_azure_installed")
+        assert meta["availability_path"] == ("omrg.integrations.azure:require_azure_installed")
         assert meta["fallback"] == "local"
         assert meta["document_suffixes"] == frozenset({".pdf", ".docx", ".doc"})
         assert meta["structured_output"] is True
@@ -271,7 +271,7 @@ class TestDocumentBackendRegistry:
         """A broken strategy module raises ImportError naming the backend."""
         registry = self._registry()
         registry._cache.pop("local", None)
-        monkeypatch.setitem(sys.modules, "rag_mcp.core.ingestion.backends.local", None)
+        monkeypatch.setitem(sys.modules, "omrg.core.ingestion.backends.local", None)
         with pytest.raises(ImportError) as excinfo:
             registry.get("local")
         assert "local" in str(excinfo.value)
@@ -288,7 +288,7 @@ class TestDocumentBackendRegistry:
         The probe is stubbed at the integrations module so this holds
         regardless of whether the azure extra is installed in the dev venv.
         """
-        import rag_mcp.integrations.azure as azure_mod
+        import omrg.integrations.azure as azure_mod
 
         def _missing() -> None:
             raise ImportError(
@@ -303,7 +303,7 @@ class TestDocumentBackendRegistry:
     @pytest.mark.skipif(_AZURE_SDK_PRESENT, reason="azure extra installed")
     def test_require_azure_installed_raises_without_sdk(self) -> None:
         """Without the SDK the real probe names the package and instruction."""
-        import rag_mcp.integrations.azure as azure_mod
+        import omrg.integrations.azure as azure_mod
 
         with pytest.raises(ImportError) as excinfo:
             azure_mod.require_azure_installed()
@@ -331,23 +331,23 @@ class TestRuntimeFallback:
 
     Spec requirement "Cloud selection remains local-first on failure".
     All patch targets are the new-surface adapters:
-    ``rag_mcp.integrations.azure.read_documents`` and
-    ``rag_mcp.core.ingestion.backends.local.read_documents``.
+    ``omrg.integrations.azure.read_documents`` and
+    ``omrg.core.ingestion.backends.local.read_documents``.
     """
 
     async def test_runtime_failure_retries_then_single_local_fallback(
         self, tmp_path: Path, effective_settings, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Azure gets MAX_RETRIES+1 attempts, local exactly one, structured=True."""
-        from rag_mcp.core.ingestion.backends import BackendRead
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import BackendRead
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         docs = [MagicMock(name="local-doc")]
         azure_read = AsyncMock(side_effect=RuntimeError("azure down"))
         local_read = AsyncMock(return_value=docs)
         with (
-            patch("rag_mcp.integrations.azure.read_documents", azure_read),
-            patch("rag_mcp.core.ingestion.backends.local.read_documents", local_read),
+            patch("omrg.integrations.azure.read_documents", azure_read),
+            patch("omrg.core.ingestion.backends.local.read_documents", local_read),
             patch("asyncio.sleep", new_callable=AsyncMock),
             caplog.at_level(logging.WARNING, logger=_ORCH_LOGGER),
         ):
@@ -369,14 +369,14 @@ class TestRuntimeFallback:
         self, tmp_path: Path, effective_settings, caplog: pytest.LogCaptureFixture
     ) -> None:
         """ImportError goes straight to local: one azure call, structured=False."""
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         docs = [MagicMock(name="local-doc")]
         azure_read = AsyncMock(side_effect=ImportError("azure-ai-documentintelligence missing"))
         local_read = AsyncMock(return_value=docs)
         with (
-            patch("rag_mcp.integrations.azure.read_documents", azure_read),
-            patch("rag_mcp.core.ingestion.backends.local.read_documents", local_read),
+            patch("omrg.integrations.azure.read_documents", azure_read),
+            patch("omrg.core.ingestion.backends.local.read_documents", local_read),
             patch("asyncio.sleep", new_callable=AsyncMock) as sleep_mock,
             caplog.at_level(logging.WARNING, logger=_ORCH_LOGGER),
         ):
@@ -399,13 +399,13 @@ class TestRuntimeFallback:
         self, tmp_path: Path, effective_settings
     ) -> None:
         """When the local fallback also fails, its error propagates (no retry)."""
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         azure_read = AsyncMock(side_effect=RuntimeError("azure down"))
         local_read = AsyncMock(side_effect=RuntimeError("local exploded"))
         with (
-            patch("rag_mcp.integrations.azure.read_documents", azure_read),
-            patch("rag_mcp.core.ingestion.backends.local.read_documents", local_read),
+            patch("omrg.integrations.azure.read_documents", azure_read),
+            patch("omrg.core.ingestion.backends.local.read_documents", local_read),
             patch("asyncio.sleep", new_callable=AsyncMock),
         ):
             with pytest.raises(RuntimeError, match="local exploded"):
@@ -418,7 +418,7 @@ class TestRuntimeFallback:
         self, tmp_path: Path, effective_settings
     ) -> None:
         """An unconfigured backend name surfaces the registry's listing error."""
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         settings = effective_settings(document_backend="no-such-backend")
         with pytest.raises(KeyError) as excinfo:
@@ -428,7 +428,7 @@ class TestRuntimeFallback:
 
     def test_retry_policy_is_orchestrator_owned(self) -> None:
         """The retry budget lives on the orchestrator, not the caller."""
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         assert orch.MAX_RETRIES == 1
         assert orch.RETRY_DELAY_S == 5.0
@@ -446,7 +446,7 @@ class TestStartupValidation:
         Spec scenario "Unknown backend is configured": startup SHALL fail
         and list the available backend names.
         """
-        from rag_mcp.capabilities import validate_document_backend
+        from omrg.capabilities import validate_document_backend
 
         settings = Settings(_env_file=None, document_backend="totally-bogus")
         with pytest.raises(ValueError) as excinfo:
@@ -458,11 +458,11 @@ class TestStartupValidation:
 
     def test_resolve_active_strategies_lists_registered_names(self) -> None:
         """The composition-root strategy gate carries the same listing."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(_env_file=None, document_backend="totally-bogus")
         with (
@@ -476,13 +476,13 @@ class TestStartupValidation:
 
     def test_validate_known_name_is_silent(self) -> None:
         """A registered name passes the gate without diagnostics."""
-        from rag_mcp.capabilities import validate_document_backend
+        from omrg.capabilities import validate_document_backend
 
         assert validate_document_backend(Settings(_env_file=None)) is None
 
     def test_resolve_document_backend_normalises_and_defaults(self) -> None:
         """Whitespace is stripped; an empty value resets to local."""
-        from rag_mcp.capabilities import resolve_document_backend
+        from omrg.capabilities import resolve_document_backend
 
         assert resolve_document_backend(Settings(_env_file=None, document_backend="  ")) == "local"
         # A name outside the config tuple passes through unchanged:
@@ -494,7 +494,7 @@ class TestStartupValidation:
     @pytest.mark.skipif(not _AZURE_SDK_PRESENT, reason="azure extra not installed")
     def test_resolve_document_backend_keeps_azure_with_sdk(self) -> None:
         """With the SDK importable, an explicit azure selection survives."""
-        from rag_mcp.capabilities import resolve_document_backend
+        from omrg.capabilities import resolve_document_backend
 
         configured = Settings(
             _env_file=None,
@@ -516,8 +516,8 @@ class TestStartupValidation:
         """
         import logging
 
-        from rag_mcp.capabilities import resolve_document_backend
-        from rag_mcp.compose import settings_to_effective
+        from omrg.capabilities import resolve_document_backend
+        from omrg.compose import settings_to_effective
 
         monkeypatch.setitem(sys.modules, "azure.ai.documentintelligence", None)
         settings = Settings(
@@ -549,7 +549,7 @@ class TestMissingCredentialDegradation:
     """
 
     def _settings(self, monkeypatch: pytest.MonkeyPatch) -> object:
-        from rag_mcp.config import Settings as S
+        from omrg.config import Settings as S
 
         monkeypatch.setenv("DOCUMENT_BACKEND", "azure")
         monkeypatch.delenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", raising=False)
@@ -632,7 +632,7 @@ class TestAsyncResponsiveness:
         """A slow SimpleDirectoryReader.load_data keeps the loop responsive."""
         from llama_index.core import Document, SimpleDirectoryReader
 
-        from rag_mcp.core.ingestion.backends import orchestrator as orch
+        from omrg.core.ingestion.backends import orchestrator as orch
 
         def slow_load_data(self, *args, **kwargs):
             time.sleep(0.3)
@@ -654,8 +654,8 @@ class TestAsyncResponsiveness:
         """A slow AzureDocReader.read runs in a thread, not the event loop."""
         from llama_index.core import Document
 
-        from rag_mcp.integrations.azure import AzureDocReader
-        from rag_mcp.integrations.azure import read_documents as azure_read
+        from omrg.integrations.azure import AzureDocReader
+        from omrg.integrations.azure import read_documents as azure_read
 
         def slow_read(self, file_path):
             time.sleep(0.3)
@@ -685,7 +685,7 @@ class TestChunkerDispatchViaOrchestrator:
         pdf = _write_pdf(tmp_path)
         docs = [Document(text="Azure extracted prose. " * 40)]
         with patch(
-            "rag_mcp.integrations.azure.read_documents",
+            "omrg.integrations.azure.read_documents",
             AsyncMock(return_value=docs),
         ):
             nodes = await read_and_chunk_file_async(
@@ -709,7 +709,7 @@ class TestChunkerDispatchViaOrchestrator:
         md = _local_md(tmp_path, word_count=40)
         azure_read = AsyncMock(return_value=[MagicMock(name="never-used")])
         settings = _azure_settings(effective_settings, **{"metadata.extraction_mode": "disabled"})
-        with patch("rag_mcp.integrations.azure.read_documents", azure_read):
+        with patch("omrg.integrations.azure.read_documents", azure_read):
             nodes = await read_and_chunk_file_async(md, content_type="document", settings=settings)
         assert azure_read.await_count == 0, "suffix gate must bypass the cloud backend"
         assert nodes, "local reading must still produce chunks"
@@ -722,11 +722,11 @@ class TestChunkerDispatchViaOrchestrator:
         pdf = _write_pdf(tmp_path)
         with (
             patch(
-                "rag_mcp.integrations.azure.read_documents",
+                "omrg.integrations.azure.read_documents",
                 AsyncMock(side_effect=RuntimeError("azure down")),
             ),
             patch(
-                "rag_mcp.core.ingestion.backends.local.read_documents",
+                "omrg.core.ingestion.backends.local.read_documents",
                 AsyncMock(side_effect=RuntimeError("local exploded")),
             ),
             patch("asyncio.sleep", new_callable=AsyncMock),
@@ -759,10 +759,10 @@ def test_backends_package_import_is_lazy() -> None:
     )
     program = (
         "import sys\n"
-        "import rag_mcp.core.ingestion.backends\n"
+        "import omrg.core.ingestion.backends\n"
         "eager = [m for m in (\n"
-        "    'rag_mcp.core.ingestion.backends.local',\n"
-        "    'rag_mcp.integrations.azure',\n"
+        "    'omrg.core.ingestion.backends.local',\n"
+        "    'omrg.integrations.azure',\n"
         ") if m in sys.modules]\n"
         "if eager:\n"
         "    print(','.join(eager))\n"

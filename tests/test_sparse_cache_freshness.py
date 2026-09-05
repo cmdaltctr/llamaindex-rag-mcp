@@ -30,9 +30,9 @@ from typing import Any
 import lancedb
 import pytest
 
-from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.retrieval.sparse import BM25SparseRetriever
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 _EMBEDDING_DIM = 384
@@ -178,7 +178,7 @@ def _assert_hybrid_sparse_leg_reflects(
     the honest observable for the sparse defect is the fused row carrying
     a sparse rank: only a rebuilt BM25 index can supply it.
     """
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     rows = search(
         query,
@@ -365,8 +365,8 @@ def test_durable_token_for_absent_collection_reports_absence(tmp_path: Path) -> 
 _WRITER_SCRIPT = textwrap.dedent(
     """
     import sys
-    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     uri, collection, phase = sys.argv[1], sys.argv[2], sys.argv[3]
     vector = [1.0] + [0.0] * 383

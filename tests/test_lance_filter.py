@@ -20,7 +20,7 @@ from pathlib import Path
 import lancedb
 import pytest
 
-from rag_mcp.core.vectordb.lance_filter import translate_where
+from omrg.core.vectordb.lance_filter import translate_where
 
 # Four rows with known field values; the vector column exists only so
 # the table is a valid LanceDB table (dimension 4, arbitrary values).

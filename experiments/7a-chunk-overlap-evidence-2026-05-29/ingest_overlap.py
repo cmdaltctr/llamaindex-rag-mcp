@@ -31,12 +31,12 @@ async def _force_sentence_splitter(file_path: Path, *, chunk_size=None, chunk_ov
     This monkey-patches the ingestion module's ``_read_and_chunk_file_async``
     so the Markdown branch is bypassed for every file.  ``chunk_size`` and
     ``chunk_overlap`` honour the environment-driven defaults from
-    ``rag_mcp.config`` unless explicitly overridden.
+    ``omrg.config`` unless explicitly overridden.
     """
     from llama_index.core import SimpleDirectoryReader
     from llama_index.core.node_parser import SentenceSplitter
 
-    from rag_mcp.config import CHUNK_OVERLAP, CHUNK_SIZE
+    from omrg.config import CHUNK_OVERLAP, CHUNK_SIZE
 
     cs = chunk_size if chunk_size is not None else CHUNK_SIZE
     co = chunk_overlap if chunk_overlap is not None else CHUNK_OVERLAP
@@ -63,10 +63,10 @@ async def _ingest_one_overlap(out_dir: Path, *, overlap: int) -> dict:
     # Force a clean reload so the new CHUNK_OVERLAP is picked up by config.py
     # at import time rather than being shadowed by a previously-cached value.
     for mod_name in list(sys.modules):
-        if mod_name.startswith("rag_mcp"):
+        if mod_name.startswith("omrg"):
             sys.modules.pop(mod_name, None)
 
-    from rag_mcp import ingestion as _ing
+    from omrg import ingestion as _ing
 
     _ing._read_and_chunk_file_async = _force_sentence_splitter
     print(f"[overlap={overlap}] ingesting {CORPUS} -> {out_dir}")

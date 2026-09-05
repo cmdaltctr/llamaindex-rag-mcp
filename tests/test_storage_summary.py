@@ -12,8 +12,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from rag_mcp.core.vectordb import registry
-from rag_mcp.core.vectordb.summary import storage_summary
+from omrg.core.vectordb import registry
+from omrg.core.vectordb.summary import storage_summary
 
 
 @pytest.fixture(autouse=True)

@@ -18,7 +18,7 @@ from pathlib import Path
 
 from watchdog.events import FileCreatedEvent, FileSystemMovedEvent
 
-from rag_mcp.daemon.watcher import DocumentIngestHandler
+from omrg.daemon.watcher import DocumentIngestHandler
 
 # Content must contain a unique token so presence under the new path is
 # distinguishable from any other row in the collection.
@@ -61,7 +61,7 @@ def _fire_all_timers(handler: DocumentIngestHandler) -> None:
 
 def _chunks_by_file_path(collection: str, file_path: str) -> list[tuple[str, dict]]:
     """Return ``(text, metadata)`` for stored chunks whose ``file_path`` matches."""
-    from rag_mcp.core.vectordb import get_default_store
+    from omrg.core.vectordb import get_default_store
 
     return [
         (text, metadata)
@@ -82,7 +82,7 @@ def test_rename_inside_watch_tree_reindexes_under_new_path(
     AND the new path's chunks are present.
     """
     monkeypatch.setattr(
-        "rag_mcp.daemon.watcher.threading.Timer",
+        "omrg.daemon.watcher.threading.Timer",
         _FakeTimer,
     )
     watch_root = tmp_path / "docs"
@@ -132,8 +132,8 @@ def _make_handler(
     """Build a handler whose debounce and move-retry timers are fake."""
     # Both spellings are patched: debounce timers are created in
     # watcher.py, move-cleanup retries in move_handling.py.
-    monkeypatch.setattr("rag_mcp.daemon.watcher.threading.Timer", _FakeTimer)
-    monkeypatch.setattr("rag_mcp.daemon.move_handling.threading.Timer", _FakeTimer)
+    monkeypatch.setattr("omrg.daemon.watcher.threading.Timer", _FakeTimer)
+    monkeypatch.setattr("omrg.daemon.move_handling.threading.Timer", _FakeTimer)
     return DocumentIngestHandler(
         debounce_seconds=0.01,
         watch_root=watch_root.resolve(),
@@ -152,7 +152,7 @@ def _fire_timer(handler: DocumentIngestHandler, path: str) -> None:
 
 def _ingest_via_watcher(handler: DocumentIngestHandler, path: Path, caplog) -> None:
     """Ingest a file through the created-event path and assert it landed."""
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.watcher"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.watcher"):
         handler.on_created(FileCreatedEvent(str(path)))
         _fire_all_timers(handler)
     assert _chunks_by_file_path("documents", str(path.resolve())), (
@@ -183,7 +183,7 @@ def test_move_out_of_watch_tree_removes_chunks_and_rejects_destination(
     outside.mkdir()
     destination = outside / "moved_out.txt"
     source.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.watcher"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.watcher"):
         handler.on_moved(FileSystemMovedEvent(str(source), str(destination)))
         _fire_all_timers(handler)
 
@@ -220,7 +220,7 @@ def test_move_into_watch_tree_ingests_destination(
 
     destination = watch_root / "arrived.txt"
     source.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.watcher"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.watcher"):
         handler.on_moved(FileSystemMovedEvent(str(source), str(destination)))
         _fire_all_timers(handler)
 
@@ -252,7 +252,7 @@ def test_move_of_unindexed_file_is_reported_noop(
 
     destination = watch_root / "now_indexed.txt"
     unindexed.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.move_handling"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.move_handling"):
         handler.on_moved(FileSystemMovedEvent(str(unindexed), str(destination)))
         _fire_all_timers(handler)
 
@@ -277,7 +277,7 @@ def test_failed_cleanup_never_ingests_destination_and_is_retried(
     AND the failure is observable and a retry is pending
     AND once the retry's cleanup succeeds, B is ingested.
     """
-    from rag_mcp.core.ingestion import remove_document as real_remove_document
+    from omrg.core.ingestion import remove_document as real_remove_document
 
     watch_root = tmp_path / "docs"
     watch_root.mkdir()
@@ -299,11 +299,11 @@ def test_failed_cleanup_never_ingests_destination_and_is_retried(
             }
         return real_remove_document(file_path, collection_name=collection_name, store=store)
 
-    monkeypatch.setattr("rag_mcp.core.ingestion.remove_document", _flaky_remove_document)
+    monkeypatch.setattr("omrg.core.ingestion.remove_document", _flaky_remove_document)
 
     destination = watch_root / "destination.txt"
     source.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.move_handling"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.move_handling"):
         handler.on_moved(FileSystemMovedEvent(str(source), str(destination)))
 
     # While cleanup failed: no destination ingest is scheduled or run…
@@ -353,13 +353,13 @@ def test_recreated_old_path_after_move_is_ingested_not_skipped(
 
     destination = watch_root / "moved_on.txt"
     source.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.watcher"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.watcher"):
         handler.on_moved(FileSystemMovedEvent(str(source), str(destination)))
         _fire_all_timers(handler)
 
     # Re-create the old path with byte-identical content.
     source.write_text(_DOC_CONTENT)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.watcher"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.watcher"):
         handler.on_created(FileCreatedEvent(str(source)))
         _fire_all_timers(handler)
 
@@ -393,7 +393,7 @@ def test_persistent_cleanup_failure_exhausts_retries_and_leaves_move_pending(
     _ingest_via_watcher(handler, source, caplog)
 
     monkeypatch.setattr(
-        "rag_mcp.core.ingestion.remove_document",
+        "omrg.core.ingestion.remove_document",
         lambda file_path, collection_name="documents", store=None: {
             "status": "error",
             "message": "injected persistent cleanup failure",
@@ -404,7 +404,7 @@ def test_persistent_cleanup_failure_exhausts_retries_and_leaves_move_pending(
 
     destination = watch_root / "never_ingested.txt"
     source.rename(destination)
-    with caplog.at_level(logging.INFO, logger="rag_mcp.daemon.move_handling"):
+    with caplog.at_level(logging.INFO, logger="omrg.daemon.move_handling"):
         handler.on_moved(FileSystemMovedEvent(str(source), str(destination)))
         # Drive every scheduled retry to exhaustion.
         while handler._timers:

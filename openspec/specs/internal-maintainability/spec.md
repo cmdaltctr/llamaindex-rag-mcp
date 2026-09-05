@@ -17,7 +17,7 @@ Internal file discovery helpers SHALL not contain unreachable branches or commen
 The benchmark command SHALL use a chunking helper whose intended internal/public boundary is explicit.
 
 #### Scenario: Benchmark chunks a file without indexing it
-- **WHEN** `rag-mcp benchmark --file path` runs
+- **WHEN** `omrg benchmark --file path` runs
 - **THEN** the command SHALL read and chunk the file without writing to ChromaDB
 - **THEN** the helper used for read-and-chunk behavior SHALL be named or documented so maintainers know it is intentionally shared with benchmark
 
@@ -48,20 +48,20 @@ Tests SHALL not rely on a hardcoded shared ChromaDB persist path when an isolate
 ### Requirement: Documented source paths resolve
 
 Documentation that cites a source file path SHALL cite a path that exists.
-Every `src/rag_mcp/**/*.py` path referenced in `docs/guides/` or
+Every `src/omrg/**/*.py` path referenced in `docs/guides/` or
 `tests/TEST_README.md` SHALL resolve to a file on disk. Records under
 `docs/adr/` are EXCLUDED: an ADR legitimately cites paths that were correct
 when the decision was taken and have since moved.
 
 #### Scenario: A guide cites a path deleted by a refactor
 
-- **WHEN** a guide references `src/rag_mcp/config.py` after the v2 split moved it to `src/rag_mcp/config/__init__.py`
+- **WHEN** a guide references `src/omrg/config.py` after the v2 split moved it to `src/omrg/config/__init__.py`
 - **THEN** the documentation reference check SHALL fail
 - **THEN** the failure SHALL name the citing file, its line, and the unresolved path
 
 #### Scenario: A historical ADR cites a since-deleted path
 
-- **WHEN** `docs/adr/026-provider-registry-and-openrouter.md` references `src/rag_mcp/metadata_extractor.py`, a v1 module deleted in v2.0.0
+- **WHEN** `docs/adr/026-provider-registry-and-openrouter.md` references `src/omrg/metadata_extractor.py`, a v1 module deleted in v2.0.0
 - **THEN** the check SHALL NOT fail
 - **THEN** the ADR SHALL remain unmodified, its accuracy carried by a dated forward note instead
 

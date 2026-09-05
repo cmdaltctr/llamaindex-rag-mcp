@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rag_mcp.core.profiles.resolver import ProfileResolver
-from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+from omrg.core.profiles.resolver import ProfileResolver
+from omrg.core.settings import EffectiveSettings, RetrievalBlock
 
 
 @pytest.fixture(autouse=True)
@@ -115,7 +115,7 @@ class TestNoGlobalMutation:
 
     def test_profile_difference_leaves_the_default_untouched(self) -> None:
         """Resolving profiles must not rewrite the composition-root default."""
-        from rag_mcp.core.settings import get_default_effective_settings
+        from omrg.core.settings import get_default_effective_settings
 
         before = get_default_effective_settings()
         store = _store_with({"docs": "documents", "code": "codebase"})

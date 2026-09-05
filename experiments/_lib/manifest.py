@@ -148,7 +148,7 @@ def observe_reranker(reranker: Any, requested_backend: str | None) -> dict[str, 
 def observe_chunking(result: Any) -> dict[str, Any]:
     """Return the D13 ``chunker`` section from a chunking result.
 
-    Accepts a :class:`~rag_mcp.core.chunking.code.CodeChunkResult`
+    Accepts a :class:`~omrg.core.chunking.code.CodeChunkResult`
     (attribute access) or a plain mapping with the keys ``requested`` /
     ``effective`` / ``fallback_reason``.  A ``fallback_reason`` of None
     means no fallback occurred.
@@ -177,7 +177,7 @@ def observe_document_reader(requested: str | None, effective: str | None = None)
     if effective is not None:
         resolved = effective
     elif requested == "auto":
-        from rag_mcp.integrations.pdf.factory import _resolve_auto
+        from omrg.integrations.pdf.factory import _resolve_auto
 
         resolved = _resolve_auto()
     else:
@@ -189,12 +189,12 @@ def scrub_secrets(manifest: Mapping[str, Any], secrets: Iterable[str | None]) ->
     """Return a scrubbed deep copy of *manifest* with *secrets* redacted.
 
     Applies the production ``redact_secret`` helper
-    (``rag_mcp.core.vectordb.identity``) to every string leaf, recursively
+    (``omrg.core.vectordb.identity``) to every string leaf, recursively
     across mappings and lists, so neither a full secret value nor a prefix
     of six or more characters survives.  The input manifest is never
     mutated; None/empty entries in *secrets* are ignored.
     """
-    from rag_mcp.core.vectordb.identity import redact_secret
+    from omrg.core.vectordb.identity import redact_secret
 
     secret_values = [secret for secret in secrets if secret]
 

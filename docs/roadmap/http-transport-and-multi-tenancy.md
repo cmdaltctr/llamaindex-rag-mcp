@@ -7,7 +7,7 @@
 
 ## Existing contract boundary
 
-`src/rag_mcp/transports/api/openapi.yaml` is a contract-only OpenAPI 3.1
+`src/omrg/transports/api/openapi.yaml` is a contract-only OpenAPI 3.1
 surface. The baseline `transport-separation` requirement explicitly forbids
 runtime `.py` files in that package. The contract already declares
 `202 Accepted` job responses for ingestion and codebase-map generation plus

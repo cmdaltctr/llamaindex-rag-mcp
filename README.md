@@ -35,8 +35,8 @@ settings. You pick per collection.
 | Search           | embeddings only                       | embeddings + keyword (BM25)           |
 
 ```bash
-rag-mcp set-profile -c my_papers -p documents
-rag-mcp set-profile -c my_code   -p codebase
+omrg set-profile -c my_papers -p documents
+omrg set-profile -c my_code   -p codebase
 ```
 
 Both collections then behave correctly in the same running server. See
@@ -58,7 +58,7 @@ uv sync --extra llamacpp
 llama-server -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0 --port 8080 --embeddings &
 llama-server -hf Qwen/Qwen3-0.6B-GGUF:Q8_0 --port 8081 &
 
-uv run rag-mcp            # Ctrl-C to stop
+uv run omrg            # Ctrl-C to stop
 ```
 
 No output means it is working — it waits silently for MCP messages on stdin.
@@ -80,7 +80,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 # plus any API keys
 ```
 
-Tuning belongs in `src/rag_mcp/config/defaults.yaml`; per-collection behaviour
+Tuning belongs in `src/omrg/config/defaults.yaml`; per-collection behaviour
 belongs in a profile. Putting tuning in `.env` silently overrides your profiles
 — see [Configuration](docs/guides/configuration.md) for the precedence rules.
 
@@ -93,7 +93,7 @@ LanceDB is the base-install default. It stores each collection under
 uv sync --extra chroma
 ```
 
-For an installed package, use `pip install "rag-mcp[chroma]"`. Then set
+For an installed package, use `pip install "omrg[chroma]"`. Then set
 `VECTOR_STORE=chroma`. CVE-2026-45829 (PYSEC-2026-311) remains active for
 this optional dependency. Do not expose Chroma's Python FastAPI server through
 this project.
@@ -129,20 +129,20 @@ Details: [MCP tools reference](docs/guides/mcp-tools.md).
 
 ## CLI
 
-The same `rag-mcp` command is both the MCP server and a terminal tool.
+The same `omrg` command is both the MCP server and a terminal tool.
 
 | Command                    | What it does                          |
 | -------------------------- | ------------------------------------- |
-| `rag-mcp`                  | Start the MCP server                  |
-| `rag-mcp ingest <path>`    | Index a file or directory             |
-| `rag-mcp search <query>`   | Search from the terminal              |
-| `rag-mcp list`             | List indexed documents                |
-| `rag-mcp list-collections` | List all collections                  |
-| `rag-mcp watch <dir>`      | Auto-ingest new and changed files     |
-| `rag-mcp install-login-watcher` | Install a macOS login watcher for a folder |
-| `rag-mcp delete`           | Delete documents or drop a collection |
-| `rag-mcp set-profile`      | Bind a collection to a profile        |
-| `rag-mcp benchmark`        | Benchmark embedding throughput        |
+| `omrg`                  | Start the MCP server                  |
+| `omrg ingest <path>`    | Index a file or directory             |
+| `omrg search <query>`   | Search from the terminal              |
+| `omrg list`             | List indexed documents                |
+| `omrg list-collections` | List all collections                  |
+| `omrg watch <dir>`      | Auto-ingest new and changed files     |
+| `omrg install-login-watcher` | Install a macOS login watcher for a folder |
+| `omrg delete`           | Delete documents or drop a collection |
+| `omrg set-profile`      | Bind a collection to a profile        |
+| `omrg benchmark`        | Benchmark embedding throughput        |
 
 Every flag and example: [CLI reference](docs/guides/cli-reference.md).
 
@@ -164,7 +164,7 @@ for exact identifiers, error codes, product names, citations. On by default in
 the `codebase` profile.
 
 ```bash
-uv run rag-mcp search "What fixes MCP-1138?" --hybrid
+uv run omrg search "What fixes MCP-1138?" --hybrid
 ```
 
 **Ollama instead of llama.cpp** — simpler model management.
@@ -234,9 +234,9 @@ three things. If you are coming from v1:
 - **Settings are renamed.** `TOP_K` is now `RETRIEVAL__TOP_K`, `CHUNK_SIZE` is
   `CHUNKING__CHUNK_SIZE`, and so on. The server refuses to start on an old name
   and tells you the replacement rather than silently ignoring it.
-- **Old import paths are gone.** `rag_mcp.server`, `rag_mcp.cli`,
-  `rag_mcp.ingestion` and the rest now live under `rag_mcp.core.*`,
-  `rag_mcp.transports.*` and `rag_mcp.integrations.*`.
+- **Old import paths are gone.** `omrg.server`, `omrg.cli`,
+  `omrg.ingestion` and the rest now live under `omrg.core.*`,
+  `omrg.transports.*` and `omrg.integrations.*`.
 - **Custom profile YAML needs converting** to nested blocks.
 
 Your ChromaDB collections, CLI commands and MCP tool signatures are unchanged,

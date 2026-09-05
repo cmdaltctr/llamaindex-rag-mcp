@@ -14,9 +14,9 @@ For the hard rules and non-obvious gotchas, see [`AGENTS.md`](../AGENTS.md).
 uv run pytest -m "not slow" -v
 
 # With coverage (must stay above the per-module floors below)
-uv run pytest -m "not slow" --cov=rag_mcp --cov-report=term-missing
+uv run pytest -m "not slow" --cov=omrg --cov-report=term-missing
 
-# E2E stdio smoke test (slow — boots a real `uv run rag-mcp` subprocess)
+# E2E stdio smoke test (slow — boots a real `uv run omrg` subprocess)
 uv run pytest -m slow -v
 
 # Single test file
@@ -90,7 +90,7 @@ LlamaIndex's global embedding model is replaced with a deterministic
 mock that hashes text. Tests run without Ollama. Note: `config.py`
 sets `Settings.embed_model = OllamaEmbedding(...)` at import time, so
 the `mcp_server` fixture re-applies the mock after server import. If
-you write a test that imports `rag_mcp.server` outside that fixture,
+you write a test that imports `omrg.server` outside that fixture,
 re-apply the mock yourself.
 
 **3. Settings are injected, not patched via `sys.modules`**.
@@ -112,7 +112,7 @@ instance per process. If your test loads or configures the reranker,
 reset it in `setup_method` and `teardown_method`:
 
 ```python
-from rag_mcp.core.retrieval.reranker import reset_model_cache
+from omrg.core.retrieval.reranker import reset_model_cache
 
 
 class TestSomeRerankerThing:
@@ -140,7 +140,7 @@ conftest factory to control the extraction mode in tests:
 
 ```python
 def test_keyword_extraction(monkeypatch):
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,
@@ -187,7 +187,7 @@ change the factor without re-running `experiments/reranker-threshold-calibration
 ## Adding a new test
 
 **Where it goes.** One file per module-under-test. New module
-`rag_mcp/foo.py` → new file `tests/test_foo.py`. Don't bolt unrelated
+`omrg/foo.py` → new file `tests/test_foo.py`. Don't bolt unrelated
 tests onto an existing file just because the file is open in your
 editor.
 
@@ -207,7 +207,7 @@ new fixtures the same way: drop the file, add a `@pytest.fixture` in
 subprocess, hits a real network, or takes more than a few seconds.
 Everything else stays in the fast suite.
 
-**Coverage.** Run `uv run pytest -m "not slow" --cov=rag_mcp
+**Coverage.** Run `uv run pytest -m "not slow" --cov=omrg
 --cov-report=term-missing` and check that your new module hits its
 floor before pushing.
 
@@ -229,8 +229,8 @@ reranker singleton, `EphemeralClient` collections, the
 **Suspect Ollama.** The fast suite must never call Ollama. If a fast
 test connects to Ollama, find the real network call and mock it.
 
-**Slow E2E failure?** It boots `uv run rag-mcp`. If the binary is
-broken, the slow test is the canary. Run `uv run rag-mcp` by hand and
+**Slow E2E failure?** It boots `uv run omrg`. If the binary is
+broken, the slow test is the canary. Run `uv run omrg` by hand and
 see what stderr says.
 
 ---

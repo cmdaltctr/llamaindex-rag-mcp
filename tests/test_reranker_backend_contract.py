@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
+from omrg.core.retrieval.reranker import CrossEncoderReranker, reset_model_cache
 
 # Shared fixture data — small enough to run quickly, large enough to
 # exercise sorting and top_k truncation.
@@ -46,7 +46,7 @@ def _isolate_cache():
 
 def test_torch_backend_fallback_returns_un_reranked() -> None:
     """Without torch installed, rerank SHALL return un-reranked results."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     results = [
@@ -60,7 +60,7 @@ def test_torch_backend_fallback_returns_un_reranked() -> None:
 
 def test_torch_backend_fallback_sets_failure_reason() -> None:
     """Without torch, last_failure_reason SHALL be set."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=1)
@@ -70,7 +70,7 @@ def test_torch_backend_fallback_sets_failure_reason() -> None:
 
 def test_torch_backend_empty_returns_empty() -> None:
     """Empty results SHALL return empty without loading the model."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     assert reranker.rerank("query", [], top_k=5) == []
@@ -78,7 +78,7 @@ def test_torch_backend_empty_returns_empty() -> None:
 
 def test_torch_backend_fallback_truncates_to_top_k() -> None:
     """Fallback SHALL truncate results to top_k."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     results = [{"text": f"doc {i}", "score": 0.5} for i in range(5)]
@@ -88,7 +88,7 @@ def test_torch_backend_fallback_truncates_to_top_k() -> None:
 
 def test_torch_backend_backend_name_is_torch() -> None:
     """The backend_name attribute SHALL be 'torch'."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     assert reranker.backend_name == "torch"
@@ -96,7 +96,7 @@ def test_torch_backend_backend_name_is_torch() -> None:
 
 def test_torch_backend_constructor_accepts_model_id() -> None:
     """Constructor SHALL accept a model_id override."""
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker(model_id="custom/model")
     assert reranker._model_id == "custom/model"
@@ -116,7 +116,7 @@ def test_torch_backend_score_processing_with_mocked_cross_encoder() -> None:
 
     import numpy as np
 
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     reranker._loaded = True
@@ -153,7 +153,7 @@ def test_torch_backend_inference_failure_returns_un_reranked() -> None:
     import sys
     from unittest.mock import MagicMock, patch
 
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     reranker._loaded = True
@@ -180,7 +180,7 @@ def test_torch_backend_score_cardinality_mismatch() -> None:
 
     import numpy as np
 
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     reranker._loaded = True
@@ -207,8 +207,8 @@ def test_torch_backend_cache_hit_reuses_model() -> None:
     """Cache hit SHALL reuse the cached cross-encoder without reloading."""
     from unittest.mock import MagicMock
 
-    from rag_mcp.core.retrieval._reranker_cache import _MODEL_CACHE
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval._reranker_cache import _MODEL_CACHE
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker()
     mock_ce = MagicMock()
@@ -285,7 +285,7 @@ def test_cross_backend_top_ranked_matches() -> None:
     except ImportError:
         pytest.skip("torch extra not installed — run 'uv sync --extra torch'")
 
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     onnx = CrossEncoderReranker()
     torch_backend = SentenceTransformerReranker()

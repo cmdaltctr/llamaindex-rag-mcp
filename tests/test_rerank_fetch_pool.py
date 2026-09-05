@@ -9,8 +9,8 @@ Covers Section 2 of the rag-retrieval-quality-improvements OpenSpec change:
 
 from __future__ import annotations
 
-from rag_mcp.core.retrieval.policy import _resolve_fetch_k
-from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+from omrg.core.retrieval.policy import _resolve_fetch_k
+from omrg.core.settings import EffectiveSettings, RetrievalBlock
 
 
 def _settings(**retrieval_overrides) -> EffectiveSettings:

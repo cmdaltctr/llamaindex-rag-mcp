@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-import rag_mcp.config as config
+import omrg.config as config
 
 
 class TestNoLegacyConstantShim:

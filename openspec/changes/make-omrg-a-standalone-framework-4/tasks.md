@@ -6,34 +6,34 @@ validates and documents the completed change.
 
 ## 1. Rename to omrg — one commit, no behaviour change
 
-- [ ] 1.1 `git mv src/rag_mcp src/omrg`.
-- [ ] 1.2 Rewrite live `rag_mcp` imports and path references across `src/`,
+- [x] 1.1 `git mv src/rag_mcp src/omrg`.
+- [x] 1.2 Rewrite live `rag_mcp` imports and path references across `src/`,
   `tests/`, `experiments/`, `scripts/`, `.github/workflows`, `codecov.yml`,
   `.coderabbit.yaml`, `.env.example`, contribution docs and active guides.
   Preserve released changelogs, ADR/TDR decisions and archived OpenSpec as
   historical records.
-- [ ] 1.3 Update `pyproject.toml`: `project.name` → `omrg`, console-script
+- [x] 1.3 Update `pyproject.toml`: `project.name` → `omrg`, console-script
   entry points (keep `rag-mcp` as the deprecated one-major alias), coverage
   `source`/`omit` paths, every import-linter contract module name, the
   `[tool.hatch.build.targets.wheel]` `packages` list and every
   force-include source/destination package path. Regenerate `uv.lock`.
-- [ ] 1.4 Update `[tool.semantic_release] version_toml` if the path changed.
-- [ ] 1.5 Update every path-based test guard that names `src/rag_mcp`
+- [x] 1.4 Update `[tool.semantic_release] version_toml` if the path changed.
+- [x] 1.5 Update every path-based test guard that names `src/rag_mcp`
   (including `tests/test_file_size_ceiling.py` and
   `tests/test_no_global_settings_reads.py`), and make each guard assert its
   configured source root exists so a stale path cannot pass vacuously.
-- [ ] 1.6 Verify packaged YAML resources resolve from an installed wheel
+- [x] 1.6 Verify packaged YAML resources resolve from an installed wheel
   (`config/defaults.yaml`, `config/profiles/*.yaml` via the updated Hatch
   force-includes).
-- [ ] 1.7 `uv sync && uv run pytest -m "not slow"` — green.
-- [ ] 1.8 `uv run lint-imports` — green, no stale ignores.
-- [ ] 1.9 Prove the commit is content-neutral per design D1: compare the tree
+- [x] 1.7 `uv sync && uv run pytest -m "not slow"` — green.
+- [x] 1.8 `uv run lint-imports` — green, no stale ignores.
+- [x] 1.9 Prove the commit is content-neutral per design D1: compare the tree
   hash against the pre-rename ref after normalising exactly the permitted
   substitutions (package/module paths, filesystem and packaging paths,
   command/distribution references, import-string registry entries). A diff
   beyond that permitted set means something else was changed — fix before
   merge.
-- [ ] 1.10 Commit alone, with no behavioural change bundled in.
+- [x] 1.10 Commit alone, with no behavioural change bundled in.
 
 ## 2. Public API surface
 

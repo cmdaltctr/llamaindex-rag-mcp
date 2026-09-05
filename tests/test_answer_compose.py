@@ -16,7 +16,7 @@ import inspect
 
 import pytest
 
-from rag_mcp import compose
+from omrg import compose
 
 # Ollama constructs without network access; it is the local-first default
 # provider, so the real builder is exercised rather than a stub.
@@ -56,7 +56,7 @@ def test_ollama_builder_uses_the_answer_model(monkeypatch: pytest.MonkeyPatch) -
 
 def test_every_registered_builder_accepts_answer_model_kwarg() -> None:
     """Every provider builder gains the backwards-compatible override."""
-    from rag_mcp.core.providers.llm import llamacpp, ollama, openrouter
+    from omrg.core.providers.llm import llamacpp, ollama, openrouter
 
     for module in (ollama, llamacpp, openrouter):
         params = inspect.signature(module.build).parameters
@@ -83,7 +83,7 @@ def _enable_llamacpp(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_builder_missing_package_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
     """A ModuleNotFoundError from the builder resolves to ``None``."""
-    from rag_mcp.core.providers.llm import registry
+    from omrg.core.providers.llm import registry
 
     def _build_without_extra(*args: object, **kwargs: object) -> object:
         raise ModuleNotFoundError("No module named 'llama_index.llms.openai_like'")
@@ -96,7 +96,7 @@ def test_builder_missing_package_returns_none(monkeypatch: pytest.MonkeyPatch) -
 
 def test_builder_missing_credentials_still_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """A configuration ImportError (missing credentials) stays loud."""
-    from rag_mcp.core.providers.llm import registry
+    from omrg.core.providers.llm import registry
 
     def _build_without_key(*args: object, **kwargs: object) -> object:
         raise ImportError("openrouter_api_key is required but not configured")

@@ -21,16 +21,16 @@ from tests.quality.runner import (
     validate_baseline,
 )
 
-from rag_mcp.compose import (
+from omrg.compose import (
     build_embed_model,
     build_vector_store,
     settings_to_effective,
 )
-from rag_mcp.config import Settings
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
-from rag_mcp.core.retrieval.dense import _cached_query_embedding
-from rag_mcp.core.vectordb import set_default_store
+from omrg.config import Settings
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import search
+from omrg.core.retrieval.dense import _cached_query_embedding
+from omrg.core.vectordb import set_default_store
 
 pytestmark = pytest.mark.slow
 

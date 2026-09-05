@@ -206,9 +206,9 @@ The `hybrid: bool` parameter SHALL be exposed via the MCP `search_documents` too
 - **THEN** retrieval SHALL run in dense-only mode
 
 #### Scenario: CLI exposes --hybrid flag
-- **WHEN** the operator runs `rag-mcp search "X" --hybrid`
+- **WHEN** the operator runs `omrg search "X" --hybrid`
 - **THEN** retrieval SHALL run in hybrid mode
-- **WHEN** the operator runs `rag-mcp search "X"` without `--hybrid`
+- **WHEN** the operator runs `omrg search "X"` without `--hybrid`
 - **THEN** retrieval SHALL run in dense-only mode
 
 ### Requirement: Hybrid retrieval recovers rare-term failure cases

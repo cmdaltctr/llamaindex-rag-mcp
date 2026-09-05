@@ -12,10 +12,10 @@ from typing import Any
 
 import pytest
 
-from rag_mcp import compose
-from rag_mcp.core.answer import answer
-from rag_mcp.core.answer.pipeline import ResolvedRetrieval
-from rag_mcp.core.answer.verify import (
+from omrg import compose
+from omrg.core.answer import answer
+from omrg.core.answer.pipeline import ResolvedRetrieval
+from omrg.core.answer.verify import (
     VERDICT_SUPPORTED,
     VERDICT_UNPARSEABLE,
     VERDICT_UNSUPPORTED,
@@ -24,8 +24,8 @@ from rag_mcp.core.answer.verify import (
     split_claims,
     verify_claims,
 )
-from rag_mcp.core.profiles.resolver import _bundle_to_effective
-from rag_mcp.core.settings import AnswerBlock, EffectiveSettings
+from omrg.core.profiles.resolver import _bundle_to_effective
+from omrg.core.settings import AnswerBlock, EffectiveSettings
 
 
 class RecordingSeam:
@@ -420,7 +420,7 @@ def test_env_model_and_provider_override_bundle(monkeypatch: pytest.MonkeyPatch)
 
 def test_evidence_aliases_match_the_internal_helpers() -> None:
     """The transport-planning aliases wrap the shared implementations."""
-    from rag_mcp.core.answer.evidence import (
+    from omrg.core.answer.evidence import (
         _evidence_rows,
         evidence_rows,
         labelled_nodes,
@@ -468,7 +468,7 @@ def test_build_verify_llm_degrades_on_missing_optional_dependency(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A missing optional extra resolves to ``None`` (graceful, not loud)."""
-    from rag_mcp.core.providers.llm import registry as llm_registry
+    from omrg.core.providers.llm import registry as llm_registry
 
     def _missing(name: str):
         raise ModuleNotFoundError("No module named 'llama_index.llms.openai_like'")
@@ -484,8 +484,8 @@ def test_build_verify_llm_degrades_on_missing_optional_dependency(
 
 def test_validate_verify_provider_gates_on_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
     """Startup validation only fires when the judge is opted in."""
-    from rag_mcp.compose_answer import validate_verify_provider
-    from rag_mcp.config import Settings
+    from omrg.compose_answer import validate_verify_provider
+    from omrg.config import Settings
 
     # Disabled (default): no failure even for a nonsense provider.
     monkeypatch.setenv("ANSWER__ENABLED", "true")
@@ -616,8 +616,8 @@ async def test_empty_claims_outcome_reports_zero_rate() -> None:
 
 def test_validate_accepts_alias_resolved_backends(monkeypatch: pytest.MonkeyPatch) -> None:
     """The cloud and local aliases resolve to registered backends."""
-    from rag_mcp.compose_answer import validate_verify_provider
-    from rag_mcp.config import Settings
+    from omrg.compose_answer import validate_verify_provider
+    from omrg.config import Settings
 
     monkeypatch.setenv("ANSWER__ENABLED", "true")
     monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
@@ -630,13 +630,13 @@ def test_validate_profile_bundle_provider_at_startup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A shipped profile enabling verification with a bad provider fails startup."""
-    from rag_mcp.compose_answer import validate_verify_provider
-    from rag_mcp.config import Settings
+    from omrg.compose_answer import validate_verify_provider
+    from omrg.config import Settings
 
     monkeypatch.setenv("ANSWER__ENABLED", "true")
     monkeypatch.delenv("ANSWER__VERIFY_CLAIMS", raising=False)
     monkeypatch.setattr(
-        "rag_mcp.config._load_profile_bundle",
+        "omrg.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": "true", "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
@@ -645,14 +645,14 @@ def test_validate_profile_bundle_provider_at_startup(
     # Non-boolean YAML truthiness parses and still gates the profile check:
     # the bare-integer form (``verify_claims: 1``)…
     monkeypatch.setattr(
-        "rag_mcp.config._load_profile_bundle",
+        "omrg.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": 1, "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
         validate_verify_provider(Settings())
     # …and the plain boolean form.
     monkeypatch.setattr(
-        "rag_mcp.config._load_profile_bundle",
+        "omrg.config._load_profile_bundle",
         lambda profile: {"answer": {"verify_claims": True, "verify_provider": "nope"}},
     )
     with pytest.raises(ValueError, match="verify provider 'nope'"):
@@ -667,7 +667,7 @@ def test_build_verify_llm_local_alias_resolves_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """verify_provider="local" resolves through the local backend."""
-    from rag_mcp.core.providers.llm import registry as llm_registry
+    from omrg.core.providers.llm import registry as llm_registry
 
     calls: dict[str, Any] = {}
 
@@ -686,7 +686,7 @@ def test_build_verify_llm_local_alias_resolves_backend(
         )
     )
     assert llm is not None
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     assert calls["name"] == Settings().local_backend, "the local alias resolves to local_backend"
     assert calls["answer_model"] == "judge-m"

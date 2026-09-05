@@ -36,16 +36,16 @@ from collections.abc import Iterable
 import networkx as nx
 import pytest
 
-import rag_mcp.integrations.leidenalg as leidenalg_adapter
+import omrg.integrations.leidenalg as leidenalg_adapter
 
 # Enter the codebase package through code_graph (it re-exports the
 # detectors): importing communities directly trips a circular import.
-from rag_mcp.compose import _validate_community_strategy
-from rag_mcp.config import Settings
-from rag_mcp.core.codebase.code_graph import detect_communities
-from rag_mcp.core.community import partition_graph
-from rag_mcp.core.community import registry as community_registry
-from rag_mcp.core.documents.doc_graph import detect_document_communities
+from omrg.compose import _validate_community_strategy
+from omrg.config import Settings
+from omrg.core.codebase.code_graph import detect_communities
+from omrg.core.community import partition_graph
+from omrg.core.community import registry as community_registry
+from omrg.core.documents.doc_graph import detect_document_communities
 
 _REPEATS = 3  # membership repeats for the determinism checks
 _ALGORITHMS = ["louvain", "leiden"]
@@ -184,7 +184,7 @@ def _run_python(code: str, *, with_env_overrides: bool = False) -> subprocess.Co
     Args:
         code: Python source executed via ``python -c``.
         with_env_overrides: Apply the conftest env vars (needed when the
-            probe imports ``rag_mcp.compose``, whose import-time
+            probe imports ``omrg.compose``, whose import-time
             ``ensure_runtime_setup()`` resolves an embed model).
 
     Returns:
@@ -375,17 +375,17 @@ class TestBoundaryPurity:
         """Importing the community surface pulls no llama_index or providers modules."""
         code = (
             "import sys\n"
-            "import rag_mcp.core.community\n"
+            "import omrg.core.community\n"
             # code_graph first: importing communities directly trips a
             # circular import (communities -> code_graph -> communities).
-            "import rag_mcp.core.codebase.code_graph\n"
-            "import rag_mcp.core.codebase.communities\n"
-            "import rag_mcp.core.documents.doc_graph\n"
-            "import rag_mcp.integrations.leidenalg\n"
+            "import omrg.core.codebase.code_graph\n"
+            "import omrg.core.codebase.communities\n"
+            "import omrg.core.documents.doc_graph\n"
+            "import omrg.integrations.leidenalg\n"
             "llama = sorted(m for m in sys.modules"
             " if m == 'llama_index' or m.startswith('llama_index.'))\n"
             "providers = sorted(m for m in sys.modules"
-            " if m.startswith('rag_mcp.core.providers'))\n"
+            " if m.startswith('omrg.core.providers'))\n"
             "assert not llama, f'llama_index leaked into base imports: {llama[:5]}'\n"
             "assert not providers, f'providers leaked into base imports: {providers[:5]}'\n"
         )
@@ -409,12 +409,12 @@ class TestBoundaryPurity:
         """Even with the extra installed, base imports stay lazy (design decision 3)."""
         code = (
             "import sys\n"
-            "import rag_mcp.core.community\n"
-            "import rag_mcp.core.community.registry\n"
-            "import rag_mcp.core.codebase.code_graph\n"
-            "import rag_mcp.core.codebase.communities\n"
-            "import rag_mcp.core.documents.doc_graph\n"
-            "import rag_mcp.compose\n"
+            "import omrg.core.community\n"
+            "import omrg.core.community.registry\n"
+            "import omrg.core.codebase.code_graph\n"
+            "import omrg.core.codebase.communities\n"
+            "import omrg.core.documents.doc_graph\n"
+            "import omrg.compose\n"
             "heavy = [m for m in ('leidenalg', 'igraph') if m in sys.modules]\n"
             "assert not heavy, f'optional-extra modules loaded at import time: {heavy}'\n"
         )
@@ -438,11 +438,11 @@ class TestRegistryContract:
         fake = "test-fake-strategy"
         assert fake not in community_registry.available()
         try:
-            community_registry.register(fake, "rag_mcp.core.community.louvain:partition")
+            community_registry.register(fake, "omrg.core.community.louvain:partition")
             assert fake in community_registry.available()
             # No availability probe registered → verification is a no-op.
             community_registry.verify_available(fake)
-            from rag_mcp.core.community import louvain as louvain_strategy
+            from omrg.core.community import louvain as louvain_strategy
 
             assert community_registry.get(fake) is louvain_strategy.partition
         finally:
@@ -467,28 +467,28 @@ class TestPartitionContractValidation:
 
     def test_rejects_non_list_or_non_set_result(self):
         """A tuple of frozensets (igraph-style) is rejected with a type error."""
-        from rag_mcp.core.community import validate_partition
+        from omrg.core.community import validate_partition
 
         with pytest.raises(ValueError, match="list\\[set\\[Hashable\\]\\]"):
             validate_partition((frozenset({"a"}),), {"a"})
 
     def test_rejects_empty_community(self):
         """An empty community set violates the non-empty rule."""
-        from rag_mcp.core.community import validate_partition
+        from omrg.core.community import validate_partition
 
         with pytest.raises(ValueError, match="empty community"):
             validate_partition([{"a"}, set()], {"a"})
 
     def test_rejects_overlapping_communities(self):
         """A node in two communities violates the disjoint rule."""
-        from rag_mcp.core.community import validate_partition
+        from omrg.core.community import validate_partition
 
         with pytest.raises(ValueError, match="more than\\s+one community"):
             validate_partition([{"a", "b"}, {"b", "c"}], {"a", "b", "c"})
 
     def test_rejects_incomplete_coverage(self):
         """A partition missing input nodes violates the complete rule."""
-        from rag_mcp.core.community import validate_partition
+        from omrg.core.community import validate_partition
 
         with pytest.raises(ValueError, match="complete coverage"):
             validate_partition([{"a"}], {"a", "z"})

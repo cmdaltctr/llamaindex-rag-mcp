@@ -178,7 +178,7 @@ def prepare_corpora(sizes: tuple[int, ...] = CORPUS_SIZES) -> dict[int, str]:
 
 def _ingest(path: Path | str, settings: Any, collection: str = "documents") -> dict[str, Any]:
     """Run one bounded ingestion and return the raw result contract."""
-    from rag_mcp.core.ingestion.pipeline import ingest_path_async
+    from omrg.core.ingestion.pipeline import ingest_path_async
 
     return asyncio.run(
         ingest_path_async(
@@ -376,8 +376,8 @@ def run_fault_cell(cell_id: str, factors: dict[str, Any], out_dir: Path) -> None
     verify the swap completed with zero stale rows.
     """
     ensure_import_path()
-    from rag_mcp.core.ingestion import pipeline as pipeline_module
-    from rag_mcp.core.ingestion import replacement as replacement_module
+    from omrg.core.ingestion import pipeline as pipeline_module
+    from omrg.core.ingestion import replacement as replacement_module
 
     stage = factors["failure_point"]
     corpus_dir = corpus_dir_for(3)
@@ -564,7 +564,7 @@ def _ingest_both(half1: Path, half2: Path, settings: Any) -> list[dict[str, Any]
     """Run two ingest streams concurrently on one event loop."""
 
     async def _gather() -> list[dict[str, Any]]:
-        from rag_mcp.core.ingestion.pipeline import ingest_path_async
+        from omrg.core.ingestion.pipeline import ingest_path_async
 
         results = await asyncio.gather(
             ingest_path_async(str(half1), collection_name="documents", effective_settings=settings),

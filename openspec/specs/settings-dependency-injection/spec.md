@@ -26,7 +26,7 @@ binary, thresholds). It SHALL live in a pure-data module with no imports from
 
 - **WHEN** the import-linter check runs against the module defining
   `EffectiveSettings`
-- **THEN** it MUST have no import from `rag_mcp.config`, `rag_mcp.compose`, or
+- **THEN** it MUST have no import from `omrg.config`, `omrg.compose`, or
   a sibling `core/` business module
 
 #### Scenario: Covers every core-consumed knob
@@ -48,7 +48,7 @@ collection.
 
 #### Scenario: No global settings read in core
 
-- **WHEN** `src/rag_mcp/core/` and `src/rag_mcp/integrations/` are searched for
+- **WHEN** `src/omrg/core/` and `src/omrg/integrations/` are searched for
   `from ...config import settings` (or any equivalent import of the resolved
   settings singleton)
 - **THEN** the search MUST return zero results
@@ -90,7 +90,7 @@ module-level `settings` object. `compose.py` SHALL be the only caller of
 
 #### Scenario: Import does not resolve settings
 
-- **WHEN** `rag_mcp.config` is imported
+- **WHEN** `omrg.config` is imported
 - **THEN** no `Settings()` instance MUST be constructed as a side effect
 - **AND** no environment or YAML resolution MUST occur until `get_settings()`
   is called

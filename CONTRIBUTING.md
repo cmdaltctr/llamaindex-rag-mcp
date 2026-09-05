@@ -31,7 +31,7 @@ flowchart TD
     Implement --> Experiment{Empirical question?<br/>retrieval quality, perf}
     Experiment -->|Yes| RunExperiment[Add experiment under experiments/<br/>copy EXP_TEMPLATE.md<br/>ground-truth before running]
     Experiment -->|No| Test
-    RunExperiment --> Test[Run tests + coverage<br/>uv run pytest -m 'not slow' --cov=rag_mcp<br/>see tests/TEST_README.md]
+    RunExperiment --> Test[Run tests + coverage<br/>uv run pytest -m 'not slow' --cov=omrg<br/>see tests/TEST_README.md]
     Test --> Pass{Coverage floors met?<br/>core ≥95% · cli/watcher ≥85%}
     Pass -->|No| Implement
     Pass -->|Yes| Architectural{Architectural<br/>tradeoff?}
@@ -47,7 +47,7 @@ flowchart TD
 **Setup.** Install `uv` and `ollama`, pull the embedding model, copy
 `.env.example` to `.env`, run `uv sync`. Full instructions in
 [`docs/guides/getting-started.md`](./docs/guides/getting-started.md).
-Verify with `uv run rag-mcp` — silent stdout means it is working.
+Verify with `uv run omrg` — silent stdout means it is working.
 
 **Branch off main.** Use a descriptive name. Examples: `add-watcher-debounce`,
 `fix-reranker-singleton-leak`, `docs-clarify-collection-isolation`. Never
@@ -161,7 +161,7 @@ touching the affected modules.
 Before marking a PR ready for review:
 
 - [ ] Branch is up to date with `main`
-- [ ] `uv run pytest -m "not slow" --cov=rag_mcp` passes
+- [ ] `uv run pytest -m "not slow" --cov=omrg` passes
 - [ ] Coverage floors hold (core ≥95%, CLI/watcher ≥85%, overall ≥90%)
 - [ ] If the change is architectural, an ADR exists and the index is updated
 - [ ] If the change has an OpenSpec proposal, `tasks.md` boxes are all ticked

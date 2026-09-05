@@ -6,10 +6,10 @@ Conventions, constraints, and workflow for AI agents. Only what you **cannot inf
 
 ```bash
 uv sync                          # Install deps (uv, not pip/poetry)
-uv run rag-mcp                   # Start MCP server (stdio)
-uv run rag-mcp ingest ./docs     # CLI ingest
+uv run omrg                   # Start MCP server (stdio)
+uv run omrg ingest ./docs     # CLI ingest
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
-uv run pytest --cov=rag_mcp      # Coverage
+uv run pytest --cov=omrg      # Coverage
 ```
 
 ## WHEN YOU WRITE
@@ -34,7 +34,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
 1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader).
-2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/rag_mcp/` holds only `__init__.py` and `compose.py` at the top level.
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrg/` holds only `__init__.py` and `compose.py` at the top level.
 3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
@@ -76,7 +76,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
 | ✅ Always | Type annotations + `from __future__ import annotations` in new modules.                                                                             |
 | ✅ Always | Google-style docstrings on public functions and classes.                                                                                            |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.                                                                          |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrg` before committing.                                                                          |
 
 ## Change Workflow
 
@@ -106,7 +106,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 | Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                                                                                      |
 | **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                                                                                     |
 
-> All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
+> All modules under `src/omrg/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
 >
 > Coverage is measured with branch coverage (`--cov-branch`), which scores

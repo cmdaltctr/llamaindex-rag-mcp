@@ -1,4 +1,4 @@
-"""Tests for the composition root (``rag_mcp.compose``) and provider helpers.
+"""Tests for the composition root (``omrg.compose``) and provider helpers.
 
 Covers the config-composition-root spec scenarios:
 - ``compose.build_embed_model`` constructs the embedding provider
@@ -23,15 +23,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rag_mcp.compose import (
+from omrg.compose import (
     build_embed_model,
     build_reranker,
     ensure_runtime_setup,
     reset_runtime_setup,
     runtime_summary,
 )
-from rag_mcp.config import Settings
-from rag_mcp.core.providers.common import get_embed_endpoint
+from omrg.config import Settings
+from omrg.core.providers.common import get_embed_endpoint
 
 requires_chroma = pytest.mark.skipif(
     _find_spec("chromadb") is None,
@@ -41,7 +41,7 @@ requires_chroma = pytest.mark.skipif(
 
 def test_embedding_provider_scope_is_process_global() -> None:
     """Profiles must not imply concurrent per-collection embed providers."""
-    import rag_mcp.compose as compose
+    import omrg.compose as compose
 
     assert compose.EMBEDDING_PROVIDER_SCOPE == "process"
 
@@ -104,9 +104,9 @@ def _settings(**overrides) -> Settings:
     Accepts flat keyword names for readability and routes each into its
     nested block, so callers need not restate the schema at every site.
     """
-    from rag_mcp.core.ingestion.settings import IngestionSettings
-    from rag_mcp.core.metadata.settings import MetadataSettings
-    from rag_mcp.core.retrieval.settings import RetrievalSettings
+    from omrg.core.ingestion.settings import IngestionSettings
+    from omrg.core.metadata.settings import MetadataSettings
+    from omrg.core.retrieval.settings import RetrievalSettings
 
     flat = dict(_DEFAULT_FLAT)
     flat.update(overrides)
@@ -199,7 +199,7 @@ def test_build_embed_model_validates_unknown_provider() -> None:
 def test_runtime_summary_reads_resolved_settings_once() -> None:
     """Runtime logging details are resolved by the composition root."""
     settings = _settings(embed_model="summary-model", embed_batch_size=24, embed_concurrency=3)
-    with patch("rag_mcp.compose.get_settings", return_value=settings) as mock_settings:
+    with patch("omrg.compose.get_settings", return_value=settings) as mock_settings:
         assert runtime_summary() == ("summary-model", 24, 3)
     mock_settings.assert_called_once()
 
@@ -226,12 +226,12 @@ def test_ensure_runtime_setup_assigns_embed_model_once() -> None:
     reset_runtime_setup()
 
     mock_model = MockEmbedding(embed_dim=384)
-    with patch("rag_mcp.compose.build_embed_model", return_value=mock_model):
+    with patch("omrg.compose.build_embed_model", return_value=mock_model):
         ensure_runtime_setup()
         assert LlamaIndexSettings.embed_model is mock_model
 
         # Second call must not rebuild.
-        with patch("rag_mcp.compose.build_embed_model") as rebuild:
+        with patch("omrg.compose.build_embed_model") as rebuild:
             ensure_runtime_setup()
             rebuild.assert_not_called()
     reset_runtime_setup()
@@ -250,7 +250,7 @@ def test_ensure_runtime_setup_propagates_embed_model_failure() -> None:
     reset_runtime_setup()
 
     with patch(
-        "rag_mcp.compose.build_embed_model",
+        "omrg.compose.build_embed_model",
         side_effect=ImportError("optional dep missing"),
     ):
         with pytest.raises(ImportError, match="optional dep missing"):
@@ -314,8 +314,8 @@ class TestResolveSparseBackendNative:
 
     @staticmethod
     def _settings(backend: str, vector_store: str = "lancedb"):
-        from rag_mcp.config import Settings
-        from rag_mcp.core.retrieval.settings import RetrievalSettings
+        from omrg.config import Settings
+        from omrg.core.retrieval.settings import RetrievalSettings
 
         return Settings(
             _env_file=None,
@@ -325,8 +325,8 @@ class TestResolveSparseBackendNative:
 
     def test_native_with_probe_true_returns_native(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A native request with the probe passing returns native."""
-        import rag_mcp.compose as compose
-        import rag_mcp.core.vectordb.lance_fts as lance_fts
+        import omrg.compose as compose
+        import omrg.core.vectordb.lance_fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: True)
         assert compose.resolve_sparse_backend(self._settings("native")) == "native"
@@ -339,11 +339,11 @@ class TestResolveSparseBackendNative:
         """A native request with the probe failing falls back to bm25 with a warning."""
         import logging
 
-        import rag_mcp.compose as compose
-        import rag_mcp.core.vectordb.lance_fts as lance_fts
+        import omrg.compose as compose
+        import omrg.core.vectordb.lance_fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: False)
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.WARNING, logger="omrg.compose"):
             result = compose.resolve_sparse_backend(self._settings("native"))
         assert result == "bm25"
         assert any("native" in r.message and "bm25" in r.message for r in caplog.records)
@@ -354,16 +354,16 @@ class TestResolveSparseBackendNative:
         """Explicit native under a store declaring no probe warns and falls back."""
         import logging
 
-        import rag_mcp.compose as compose
+        import omrg.compose as compose
 
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.WARNING, logger="omrg.compose"):
             result = compose.resolve_sparse_backend(self._settings("native", vector_store="chroma"))
         assert result == "bm25"
         assert any("Falling back to bm25" in r.message for r in caplog.records)
 
     def test_unknown_name_fails_listing_names(self, caplog: pytest.LogCaptureFixture) -> None:
         """An unregistered concrete name raises listing auto plus the registry."""
-        import rag_mcp.compose as compose
+        import omrg.compose as compose
 
         with pytest.raises(ValueError, match="Available: auto, bm25, native"):
             compose.resolve_sparse_backend(self._settings("tantivy"))
@@ -377,8 +377,8 @@ class TestResolvePdfReader:
 
     def test_liteparse_available_returns_liteparse(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A liteparse reader with the package importable returns liteparse."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
         settings = Settings(_env_file=None, pdf_reader="liteparse")
@@ -386,8 +386,8 @@ class TestResolvePdfReader:
 
     def test_liteparse_missing_falls_back_to_pypdf(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A liteparse reader with the package absent falls back to pypdf."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "liteparse", None)
         settings = Settings(_env_file=None, pdf_reader="liteparse")
@@ -403,8 +403,8 @@ class TestResolvePdfReader:
         scenario "Explicit pdf-inspector selection via env var": explicit
         selection SHALL win over the auto preference order.
         """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
         monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
@@ -425,13 +425,13 @@ class TestResolvePdfReader:
         """
         import logging
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "pdf_inspector", None)
         monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
         settings = Settings(_env_file=None, pdf_reader="pdf_inspector")
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.ERROR, logger="omrg.compose"):
             assert compose.resolve_pdf_reader(settings) == "pypdf"
         assert any("pdf_inspector" in r.message and "pypdf" in r.message for r in caplog.records)
 
@@ -445,8 +445,8 @@ class TestResolvePdfReader:
         the packaged Settings default and the composition-root resolution
         yield pdf_inspector.
         """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.delenv("PDF_READER", raising=False)
         monkeypatch.setitem(sys.modules, "pdf_inspector", MagicMock())
@@ -459,8 +459,8 @@ class TestResolvePdfReader:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """An auto reader resolves to liteparse when the package is importable."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "liteparse", MagicMock())
         settings = Settings(_env_file=None, pdf_reader="auto")
@@ -470,8 +470,8 @@ class TestResolvePdfReader:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """An auto reader falls back to pypdf when both optional packages are absent."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "liteparse", None)
         monkeypatch.setitem(sys.modules, "pypdfium2", None)
@@ -489,8 +489,8 @@ class TestResolvePdfReader:
         non-goal: no pdf-inspector priority inside auto). Pins the
         current liteparse → pypdfium2 → pypdf probe order.
         """
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         settings = Settings(_env_file=None, pdf_reader="auto")
 
@@ -531,15 +531,15 @@ class TestResolvePdfReader:
         import logging
         from types import SimpleNamespace
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "fastparser", SimpleNamespace())
 
         settings = Settings(_env_file=None)
         object.__setattr__(settings, "pdf_reader", "fastparser")
 
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.ERROR, logger="omrg.compose"):
             assert compose.resolve_pdf_reader(settings) == "pypdf"
         assert any("fastparser" in r.message and "registered" in r.message for r in caplog.records)
 
@@ -557,14 +557,14 @@ class TestResolvePdfReader:
         """
         import logging
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         hostile = "evil\nreader"
         settings = Settings(_env_file=None)
         object.__setattr__(settings, "pdf_reader", hostile)
 
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.ERROR, logger="omrg.compose"):
             assert compose.resolve_pdf_reader(settings) == "pypdf"
         record = next(r for r in caplog.records if "unregistered" in r.message)
         assert repr(hostile) in record.message
@@ -580,7 +580,7 @@ class TestResolvePdfReader:
         the sandbox restores ``_registry``, ``_probe_modules``, and ``_cache``
         so the planted names never leak into other tests.
         """
-        from rag_mcp.integrations.pdf import registry as pdf_registry
+        from omrg.integrations.pdf import registry as pdf_registry
 
         saved_registry = dict(pdf_registry._registry)
         saved_probe_modules = dict(pdf_registry._probe_modules)
@@ -628,8 +628,8 @@ class TestResolvePdfReader:
         """
         import types
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         probe = types.ModuleType("resolvetest_pdf_probe")
 
@@ -675,8 +675,8 @@ class TestResolvePdfReader:
         import logging
         from types import SimpleNamespace
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         monkeypatch.setitem(sys.modules, "resolvetest_ghost", SimpleNamespace())
         monkeypatch.delitem(sys.modules, "resolvetest_missing_probe", raising=False)
@@ -691,7 +691,7 @@ class TestResolvePdfReader:
         settings = Settings(_env_file=None)
         object.__setattr__(settings, "pdf_reader", "resolvetest_ghost")
 
-        with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.ERROR, logger="omrg.compose"):
             assert compose.resolve_pdf_reader(settings) == "pypdf"
         assert any(
             "resolvetest_ghost" in r.message and "pypdf" in r.message for r in caplog.records
@@ -713,8 +713,8 @@ class TestResolvePdfReader:
         """
         import types
 
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         probe = types.ModuleType("resolvetest_pdf_probe")
         monkeypatch.setitem(sys.modules, "resolvetest_pdf_probe", probe)
@@ -740,9 +740,9 @@ class TestResolvePdfReader:
 @requires_chroma
 def test_build_vector_store_chroma_delegates_to_factory() -> None:
     """build_vector_store with chroma delegates to build_chroma_vector_store."""
-    from rag_mcp.compose import build_vector_store
+    from omrg.compose import build_vector_store
 
-    with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+    with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
         build_vector_store(_settings(vector_store="chroma"))
         mock_build.assert_called_once()
 
@@ -756,8 +756,8 @@ def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
     registry's import-string resolution covered in
     ``test_vectordb_registry.py``).
     """
-    from rag_mcp.compose import build_vector_store
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.compose import build_vector_store
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     uri = str(tmp_path / "lancedb")
     settings = _settings(
@@ -782,11 +782,11 @@ def test_build_vector_store_lancedb_constructs_store(tmp_path: Path) -> None:
 
 def test_settings_to_effective_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings and bakes its embed_model into the result."""
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.core.settings import EffectiveSettings
+    from omrg.compose import settings_to_effective
+    from omrg.core.settings import EffectiveSettings
 
     controlled = _settings(embed_model="controlled-embed-model")
-    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
+    with patch("omrg.compose.get_settings", return_value=controlled) as mock_gs:
         result = settings_to_effective(None)
     mock_gs.assert_called_once()
     assert isinstance(result, EffectiveSettings)
@@ -801,13 +801,13 @@ class TestResolveActiveStrategies:
 
     def test_disabled_mode_skips_metadata(self) -> None:
         """A 'disabled' extraction mode is not passed to the metadata registry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -825,13 +825,13 @@ class TestResolveActiveStrategies:
 
     def test_unknown_chunking_name_raises_at_startup(self) -> None:
         """A chunking fallback absent from the registry fails startup."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.chunking.settings import ChunkingSettings
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -853,13 +853,13 @@ class TestResolveActiveStrategies:
 
     def test_markdown_chunking_fallback_skips_registry_resolution(self) -> None:
         """The inline document-path fallback does not need a registry entry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.chunking.settings import ChunkingSettings
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -876,13 +876,13 @@ class TestResolveActiveStrategies:
 
     def test_valid_name_is_resolved(self) -> None:
         """A registered chunking name triggers registry.get()."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.chunking.settings import ChunkingSettings
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.chunking.settings import ChunkingSettings
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -904,13 +904,13 @@ class TestResolveActiveStrategies:
         which is wider than the registered names — 'disabled' and 'local'
         are accepted without registry entries — so acceptance by Settings
         does not guarantee the registry holds an implementation."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -931,13 +931,13 @@ class TestResolveActiveStrategies:
 
     def test_local_llm_alias_resolves_to_local_backend(self) -> None:
         """metadata_llm_provider='local' validates LOCAL_BACKEND, not the alias."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -956,13 +956,13 @@ class TestResolveActiveStrategies:
 
     def test_cloud_llm_alias_resolves_to_cloud_backend(self) -> None:
         """metadata_llm_provider='cloud' validates CLOUD_BACKEND, not the alias."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -982,13 +982,13 @@ class TestResolveActiveStrategies:
     @pytest.mark.parametrize("mode", ["keyword", "disabled"])
     def test_llm_registry_untouched_when_extraction_mode_needs_no_llm(self, mode: str) -> None:
         """'keyword'/'disabled' modes never call the LLM registry."""
-        from rag_mcp.compose import _resolve_active_strategies
-        from rag_mcp.config import Settings
-        from rag_mcp.core.chunking import registry as chunking_reg
-        from rag_mcp.core.metadata import registry as metadata_reg
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.providers.embeddings import registry as embed_reg
-        from rag_mcp.core.providers.llm import registry as llm_reg
+        from omrg.compose import _resolve_active_strategies
+        from omrg.config import Settings
+        from omrg.core.chunking import registry as chunking_reg
+        from omrg.core.metadata import registry as metadata_reg
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.providers.embeddings import registry as embed_reg
+        from omrg.core.providers.llm import registry as llm_reg
 
         settings = Settings(
             _env_file=None,
@@ -1016,14 +1016,14 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
     """
     from llama_index.core.embeddings import MockEmbedding
 
-    from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
+    from omrg.compose import ensure_runtime_setup, reset_runtime_setup
 
     _ = _settings()
     reset_runtime_setup()
     mock_model = MockEmbedding(embed_dim=384)
     with (
-        patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
-        patch("rag_mcp.compose.build_vector_store", side_effect=ImportError("missing")),
+        patch("omrg.compose.build_embed_model", return_value=mock_model),
+        patch("omrg.compose.build_vector_store", side_effect=ImportError("missing")),
     ):
         with pytest.raises(ImportError, match="missing"):
             ensure_runtime_setup()
@@ -1032,7 +1032,7 @@ def test_ensure_runtime_setup_propagates_vector_store_failure() -> None:
 
 @pytest.mark.parametrize(
     "module",
-    ["rag_mcp.compose", "rag_mcp.transports.mcp", "rag_mcp.transports.cli"],
+    ["omrg.compose", "omrg.transports.mcp", "omrg.transports.cli"],
 )
 def test_import_does_not_initialise_runtime(module: str) -> None:
     """Composition and MCP modules import without validating providers.
@@ -1104,7 +1104,7 @@ def test_build_embed_model_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings for embed model construction."""
     controlled = _settings()
     with (
-        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
+        patch("omrg.compose.get_settings", return_value=controlled) as mock_gs,
         patch("llama_index.embeddings.ollama.OllamaEmbedding"),
     ):
         build_embed_model(None)
@@ -1114,12 +1114,12 @@ def test_build_embed_model_none_delegates_to_get_settings() -> None:
 @requires_chroma
 def test_build_vector_store_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings for vector store construction."""
-    from rag_mcp.compose import build_vector_store
+    from omrg.compose import build_vector_store
 
     controlled = _settings(vector_store="chroma")
     with (
-        patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs,
-        patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store"),
+        patch("omrg.compose.get_settings", return_value=controlled) as mock_gs,
+        patch("omrg.core.vectordb.chroma.build_chroma_vector_store"),
     ):
         build_vector_store(None)
     mock_gs.assert_called_once()
@@ -1127,18 +1127,18 @@ def test_build_vector_store_none_delegates_to_get_settings() -> None:
 
 def test_build_profile_resolver_none_delegates_to_get_settings() -> None:
     """Passing None calls get_settings for profile resolver construction."""
-    from rag_mcp.compose import build_profile_resolver
+    from omrg.compose import build_profile_resolver
 
     controlled = _settings()
-    with patch("rag_mcp.compose.get_settings", return_value=controlled) as mock_gs:
+    with patch("omrg.compose.get_settings", return_value=controlled) as mock_gs:
         build_profile_resolver(None)
     mock_gs.assert_called_once()
 
 
 def test_build_profile_resolver_explicit_settings_skips_get_settings() -> None:
     """Passing explicit settings does NOT call get_settings."""
-    from rag_mcp.compose import build_profile_resolver
+    from omrg.compose import build_profile_resolver
 
-    with patch("rag_mcp.compose.get_settings") as mock_gs:
+    with patch("omrg.compose.get_settings") as mock_gs:
         build_profile_resolver(_settings())
     mock_gs.assert_not_called()

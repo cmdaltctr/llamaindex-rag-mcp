@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rag_mcp.core.codebase.codebase_map import CodebaseMap, get_codebase_map_text
+from omrg.core.codebase.codebase_map import CodebaseMap, get_codebase_map_text
 
 
 class TestPathBoundaryValidation:
@@ -39,7 +39,7 @@ class TestPathBoundaryValidation:
         """
         sentinel = CodebaseMap(commit_hash="SENTINEL")
         with patch(
-            "rag_mcp.core.codebase.codebase_map.build_codebase_map",
+            "omrg.core.codebase.codebase_map.build_codebase_map",
             return_value=sentinel,
         ) as mock_build:
             result = get_codebase_map_text(path="/etc")
@@ -66,7 +66,7 @@ class TestPathBoundaryValidation:
         (tmp_path / "app.py").write_text("x = 1\n")
 
         with patch(
-            "rag_mcp.integrations.magika._is_magika_available",
+            "omrg.integrations.magika._is_magika_available",
             return_value=False,
         ):
             result = get_codebase_map_text(path=".")
@@ -104,7 +104,7 @@ class TestPathBoundaryValidation:
 
         sentinel = CodebaseMap(commit_hash="SENTINEL")
         with patch(
-            "rag_mcp.core.codebase.codebase_map.build_codebase_map",
+            "omrg.core.codebase.codebase_map.build_codebase_map",
             return_value=sentinel,
         ) as mock_build:
             result = get_codebase_map_text(path="../secret")

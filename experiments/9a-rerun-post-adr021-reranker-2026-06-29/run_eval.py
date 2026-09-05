@@ -5,7 +5,7 @@ Same 4-cell grid as Exp 9a but with post-ADR-021 config
 Reuses Exp 9a's ChromaDB indexes and ground truth.
 
 Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
-through ``rag_mcp.core.retrieval.search`` with an explicitly injected
+through ``omrg.core.retrieval.search`` with an explicitly injected
 store obtained from ``experiments/_lib/storage.py`` — no environment
 mutation or module-constant patching.  Works in local and cloud Chroma
 modes; retrieval-only cells reuse the immutable index read-only.
@@ -61,7 +61,7 @@ def _resolve_cell_runtime(mode: str, chroma_dir: Path) -> tuple[Any, str]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.vectordb import set_default_store
+    from omrg.core.vectordb import set_default_store
 
     # Pin the query embedder to the index identity; ambient Settings()
     # could select a different provider and query with incompatible vectors.
@@ -69,13 +69,13 @@ def _resolve_cell_runtime(mode: str, chroma_dir: Path) -> tuple[Any, str]:
     set_default_store(store)
 
     try:
-        from rag_mcp.core.retrieval.dense import _cached_query_embedding
+        from omrg.core.retrieval.dense import _cached_query_embedding
 
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
     try:
-        from rag_mcp.core.retrieval.sparse import BM25SparseRetriever
+        from omrg.core.retrieval.sparse import BM25SparseRetriever
 
         BM25SparseRetriever._cache.clear()
     except Exception:
@@ -160,7 +160,7 @@ def _evaluate_cell(
     top_k: int,
     warmup_queries: int,
 ) -> dict[str, Any]:
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     store, collection_name = _resolve_cell_runtime(mode, chroma_dir)
 

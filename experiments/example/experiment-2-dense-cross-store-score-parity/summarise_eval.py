@@ -252,9 +252,9 @@ def _production_findings(h2: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
                     "the committed qrels encode that geometric interpretation."
                 ),
                 "locations": [
-                    "src/rag_mcp/core/vectordb/score.py:27-51 (contract text)",
-                    "src/rag_mcp/core/vectordb/chroma.py:264 (pass-through of Chroma 'l2' value)",
-                    "src/rag_mcp/core/vectordb/lancedb.py:370 (pass-through of Lance '_distance')",
+                    "src/omrg/core/vectordb/score.py:27-51 (contract text)",
+                    "src/omrg/core/vectordb/chroma.py:264 (pass-through of Chroma 'l2' value)",
+                    "src/omrg/core/vectordb/lancedb.py:370 (pass-through of Lance '_distance')",
                 ],
                 "impact": (
                     "Monotonicity and cross-store parity hold (d**2 is monotone "

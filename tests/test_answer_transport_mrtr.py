@@ -25,9 +25,9 @@ import pytest
 from mcp.client import Client
 from mcp.types import CreateMessageResult, SamplingCapability, TextContent
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.transports.mcp import answer_documents
-from rag_mcp.transports.mcp.answer_mrtr import (
+from omrg.core.ingestion import ingest_path_async
+from omrg.transports.mcp import answer_documents
+from omrg.transports.mcp.answer_mrtr import (
     _MAX_MRTR_ROUNDS,
     _client_seam,
     _outstanding_payloads,
@@ -58,8 +58,8 @@ def _extract_result(result: Any) -> dict[str, Any]:
 
 def _counting_search(monkeypatch: pytest.MonkeyPatch, *, delay: float = 0.0) -> list[int]:
     """Patch the resolver-side search with a call-counting wrapper."""
-    from rag_mcp.core.retrieval import search as real_search
-    from rag_mcp.transports.mcp import answer_mrtr
+    from omrg.core.retrieval import search as real_search
+    from omrg.transports.mcp import answer_mrtr
 
     calls: list[int] = []
 
@@ -82,7 +82,7 @@ def _scripted_planner(
     round whose reply count is absent ends the chain (``None``).  The
     default asks exactly one round.
     """
-    from rag_mcp.transports.mcp import answer_mrtr
+    from omrg.transports.mcp import answer_mrtr
 
     if prompts_for_rounds is None:
         prompts_for_rounds = {0: "planned prompt round 1"}
@@ -181,7 +181,7 @@ async def test_resolver_retrieval_failure_returns_structured_error(
 ) -> None:
     """A retrieval failure inside the resolver chain never escapes raw."""
     await _ingest_collection(tmp_path)
-    from rag_mcp.transports.mcp import answer_mrtr
+    from omrg.transports.mcp import answer_mrtr
 
     def _boom(*args: Any, **kwargs: Any) -> list[dict]:
         raise RuntimeError("collection missing")
@@ -214,7 +214,7 @@ async def test_resolver_planning_failure_returns_structured_generation_error(
 ) -> None:
     """A planning failure inside the resolver chain reports generation."""
     await _ingest_collection(tmp_path)
-    from rag_mcp.transports.mcp import answer_mrtr
+    from omrg.transports.mcp import answer_mrtr
 
     async def _boom(*args: Any, **kwargs: Any) -> str:
         raise RuntimeError("planner exploded")
@@ -247,7 +247,7 @@ async def test_disabled_modern_session_never_samples_the_client(
     mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """``ANSWER__ENABLED=false``: no Sample issued, actionable error."""
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         AnswerBlock,
         get_default_effective_settings,
         set_default_effective_settings,
@@ -283,7 +283,7 @@ async def test_disabled_server_path_returns_disabled_error_before_the_model(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Disabled direct call: error before the server model is resolved."""
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         AnswerBlock,
         get_default_effective_settings,
         set_default_effective_settings,
@@ -298,7 +298,7 @@ async def test_disabled_server_path_returns_disabled_error_before_the_model(
             _NeverLLM.calls += 1
             raise AssertionError("the server model must not run when disabled")
 
-    monkeypatch.setattr("rag_mcp.compose.build_answer_llm", lambda settings=None: _NeverLLM())
+    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: _NeverLLM())
     current = get_default_effective_settings()
     set_default_effective_settings(
         current.model_copy(update={"answer": AnswerBlock(enabled=False)})
@@ -334,7 +334,7 @@ async def test_client_rounds_are_capped_by_the_chain_depth(
     mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """``max_rounds`` above the chain depth still serves at most 4 rounds."""
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         AnswerBlock,
         get_default_effective_settings,
         set_default_effective_settings,
@@ -379,7 +379,7 @@ async def test_exhausted_client_seam_is_a_generation_error(
     mcp_server, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Synthesis outliving the client replies is an honest generation error."""
-    from rag_mcp.core.answer import pipeline as answer_pipeline
+    from omrg.core.answer import pipeline as answer_pipeline
 
     await _ingest_collection(tmp_path)
     # Planning asks two rounds; the body's synthesis demands three seam

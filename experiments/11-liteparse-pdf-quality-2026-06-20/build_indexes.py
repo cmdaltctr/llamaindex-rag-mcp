@@ -40,11 +40,11 @@ load_dotenv(PROJECT_ROOT / ".env")
 from llama_index.core import Document, Settings  # noqa: E402
 from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
 
-from rag_mcp.core.ingestion import (  # noqa: E402
+from omrg.core.ingestion import (  # noqa: E402
     embed_and_write_async,
     gather_supported_files,
 )
-from rag_mcp.core.settings import get_default_effective_settings  # noqa: E402
+from omrg.core.settings import get_default_effective_settings  # noqa: E402
 
 CORPUS_DIR = SCRIPT_DIR / "corpus"
 OUTPUT_DIR = SCRIPT_DIR / "output"
@@ -66,7 +66,7 @@ def _parse_with_liteparse(file_path: Path) -> list[Document]:
 
     Adds bbox metadata per spec requirement so downstream retrieval can
     optionally consume it. Mirrors what the eventual ``LiteParseReader``
-    adapter in ``src/rag_mcp/readers/liteparse_reader.py`` will produce.
+    adapter in ``src/omrg/readers/liteparse_reader.py`` will produce.
     """
     from liteparse import LiteParse
 
@@ -266,7 +266,7 @@ def main() -> None:
     print(f"CHROMA_PERSIST_DIR={chroma_dir}", flush=True)
     print(f"PDF_READER={os.environ.get('PDF_READER', '<unset>')}", flush=True)
 
-    from rag_mcp import compose
+    from omrg import compose
 
     compose.ensure_runtime_setup()
     asyncio.run(_build(args.parser))

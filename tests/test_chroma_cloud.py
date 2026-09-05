@@ -37,10 +37,10 @@ import chromadb
 import pytest
 from llama_index.core.schema import TextNode
 
-from rag_mcp.config import Settings
-from rag_mcp.core.vectordb import chroma as chroma_mod
-from rag_mcp.core.vectordb.chroma import ChromaVectorStore
-from rag_mcp.core.vectordb.identity import redact_secret
+from omrg.config import Settings
+from omrg.core.vectordb import chroma as chroma_mod
+from omrg.core.vectordb.chroma import ChromaVectorStore
+from omrg.core.vectordb.identity import redact_secret
 
 # Test key chosen so no prefix collides with words that legitimately
 # appear in error messages ("CHROMA_MODE=cloud", "tenant", "database").
@@ -93,7 +93,7 @@ def _embedding_identity(
     index_identity: str | None = None,
 ):
     """Construct an ``EmbeddingIdentity`` lazily (red pre-implementation)."""
-    from rag_mcp.core.vectordb.chroma import EmbeddingIdentity
+    from omrg.core.vectordb.chroma import EmbeddingIdentity
 
     return EmbeddingIdentity(provider=provider, model=model, index_identity=index_identity)
 
@@ -386,7 +386,7 @@ class TestFactoryLocal:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Without an explicit path, the composition-root default is used."""
-        from rag_mcp.core.settings import get_default_effective_settings
+        from omrg.core.settings import get_default_effective_settings
 
         calls = _install_persistent_spy(monkeypatch)
         chroma_mod.build_chroma_vector_store()
@@ -594,10 +594,10 @@ class TestCloudRuntimeSetup:
         """Failed validation registers nothing; a later call re-attempts."""
         from llama_index.core.embeddings import MockEmbedding
 
-        import rag_mcp.compose as compose_mod
-        import rag_mcp.core.vectordb as vectordb_mod
-        from rag_mcp.compose import ensure_runtime_setup, reset_runtime_setup
-        from rag_mcp.core.vectordb import reset_default_store
+        import omrg.compose as compose_mod
+        import omrg.core.vectordb as vectordb_mod
+        from omrg.compose import ensure_runtime_setup, reset_runtime_setup
+        from omrg.core.vectordb import reset_default_store
 
         cloud_settings = _cloud_settings(
             chroma_cloud_tenant="tenant-r", chroma_cloud_database="db-r"
@@ -612,8 +612,8 @@ class TestCloudRuntimeSetup:
             )
             _forbid_persistent_client(monkeypatch)
             with (
-                patch("rag_mcp.compose.get_settings", return_value=cloud_settings),
-                patch("rag_mcp.compose.build_embed_model", return_value=mock_model),
+                patch("omrg.compose.get_settings", return_value=cloud_settings),
+                patch("omrg.compose.build_embed_model", return_value=mock_model),
             ):
                 with pytest.raises(RuntimeError, match="CHROMA_MODE=cloud"):
                     ensure_runtime_setup()
@@ -637,7 +637,7 @@ class TestChromaStorageSummary:
     """chroma_storage_summary exposes identifiers, never key material."""
 
     def test_local_summary(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from rag_mcp.core.vectordb.summary import chroma_storage_summary
+        from omrg.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         assert chroma_storage_summary(_settings()) == "chroma mode=local"
@@ -645,7 +645,7 @@ class TestChromaStorageSummary:
     def test_cloud_summary_includes_identifiers_not_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from rag_mcp.core.vectordb.summary import chroma_storage_summary
+        from omrg.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         settings = _cloud_settings(chroma_cloud_tenant="tenant-9", chroma_cloud_database="db-9")
@@ -656,7 +656,7 @@ class TestChromaStorageSummary:
     def test_cloud_summary_without_tenant_carries_no_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from rag_mcp.core.vectordb.summary import chroma_storage_summary
+        from omrg.core.vectordb.summary import chroma_storage_summary
 
         _clear_chroma_env(monkeypatch)
         summary = chroma_storage_summary(_cloud_settings())
@@ -961,7 +961,7 @@ class TestFourModeIndependence:
         chroma_mode: str,
     ) -> None:
         """The factory receives the storage mode regardless of the embed axis."""
-        from rag_mcp.compose import build_vector_store
+        from omrg.compose import build_vector_store
 
         _clear_chroma_env(monkeypatch)
         cloud = chroma_mode == "cloud"
@@ -972,7 +972,7 @@ class TestFourModeIndependence:
             chroma_cloud_tenant="t-9" if cloud else "",
             chroma_cloud_database="d-9" if cloud else "",
         )
-        with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+        with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
             build_vector_store(settings)
         kwargs = mock_build.call_args.kwargs
         assert kwargs["mode"] == chroma_mode
@@ -1019,7 +1019,7 @@ class TestComposeEmbeddingIdentity:
     def test_identity_maps_each_provider_to_its_model_field(
         self, provider_kwargs: dict, expected_provider: str, expected_model: str
     ) -> None:
-        from rag_mcp.core.vectordb.identity import embedding_identity_from_settings
+        from omrg.core.vectordb.identity import embedding_identity_from_settings
 
         identity = embedding_identity_from_settings(_settings(**provider_kwargs))
         assert identity.provider == expected_provider
@@ -1028,14 +1028,14 @@ class TestComposeEmbeddingIdentity:
 
     def test_build_vector_store_passes_embedding_identity(self) -> None:
         """The factory receives the derived identity object."""
-        from rag_mcp.compose import build_vector_store
+        from omrg.compose import build_vector_store
 
         settings = _settings(
             embed_provider="local",
             local_backend="llamacpp",
             llamacpp_embed_model="t.gguf",
         )
-        with patch("rag_mcp.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
+        with patch("omrg.core.vectordb.chroma.build_chroma_vector_store") as mock_build:
             build_vector_store(settings)
         identity = mock_build.call_args.kwargs.get("embedding_identity")
         assert identity is not None
@@ -1138,7 +1138,7 @@ class TestChromaImportBoundary:
 
     def test_chroma_module_is_the_only_chromadb_import_site(self) -> None:
         """No other production module may import chromadb (spec scenario)."""
-        src_root = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
+        src_root = Path(__file__).resolve().parent.parent / "src" / "omrg"
         allowed = frozenset(
             {
                 "core/vectordb/chroma.py",

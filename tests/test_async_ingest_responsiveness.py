@@ -38,7 +38,7 @@ async def _patched_read_and_chunk(file_path, **kwargs):
     older versions of this test pass against an ingest that failed before it
     was actually in flight when new chunker parameters were introduced.
     """
-    from rag_mcp.core.ingestion import chunker as _chunker
+    from omrg.core.ingestion import chunker as _chunker
 
     await _pause.wait()
     return await _chunker.read_and_chunk_file_async(file_path, **kwargs)
@@ -51,8 +51,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent MCP search returns while ingest is blocked mid-flight."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.transports.mcp import search_documents
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.transports.mcp import search_documents
 
         coll = "resp_test"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -61,7 +61,7 @@ class TestIngestResponsiveness:
         _pause = asyncio.Event()
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -95,8 +95,8 @@ class TestIngestResponsiveness:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Concurrent ``list_collections`` returns during in-flight ingest."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.retrieval import list_collections
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.retrieval import list_collections
 
         coll = "list_resp"
         await ingest_path_async(dir_with_docs, collection_name=coll)
@@ -104,7 +104,7 @@ class TestIngestResponsiveness:
         global _pause
         _pause = asyncio.Event()
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _patched_read_and_chunk,
         )
 
@@ -131,7 +131,7 @@ class TestIngestResponsiveness:
 
     async def test_async_search_offloads_blocking_retrieval(self, monkeypatch) -> None:
         """Slow synchronous retrieval runs in a worker, not the event loop."""
-        from rag_mcp.transports.mcp import search_documents
+        from omrg.transports.mcp import search_documents
 
         def slow_search(*args, **kwargs):
             time.sleep(0.3)
@@ -145,7 +145,7 @@ class TestIngestResponsiveness:
                 }
             ]
 
-        monkeypatch.setattr("rag_mcp.transports.mcp.search.search", slow_search)
+        monkeypatch.setattr("omrg.transports.mcp.search.search", slow_search)
 
         search_task = asyncio.create_task(search_documents("slow"))
         await asyncio.sleep(0.05)
@@ -173,7 +173,7 @@ class TestResponsivenessRegression:
         self, dir_with_docs: str, monkeypatch
     ) -> None:
         """Insert ``time.sleep(2)`` into the async path; confirm test catches it."""
-        import rag_mcp.core.ingestion.pipeline as _ing
+        import omrg.core.ingestion.pipeline as _ing
 
         original = _ing.read_and_chunk_file_async
 
@@ -190,11 +190,11 @@ class TestResponsivenessRegression:
             )
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _blocking_patched,
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         coll = "regress_test"
         start = time.monotonic()
@@ -231,8 +231,8 @@ class TestSplitterOffload:
         """A slow splitter must not stall a concurrent search call."""
         from llama_index.core.node_parser import SentenceSplitter
 
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.transports.mcp import search_documents
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.transports.mcp import search_documents
 
         coll = "splitter_offload"
         await ingest_path_async(dir_with_docs, collection_name=coll)

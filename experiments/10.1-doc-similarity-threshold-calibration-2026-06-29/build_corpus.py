@@ -1,6 +1,6 @@
 """Build a mixed corpus for Experiment 10.1.
 
-Ingests code files from `src/rag_mcp/` and documentation from `docs/` into a
+Ingests code files from `src/omrg/` and documentation from `docs/` into a
 ChromaDB collection in the experiment output directory. The corpus must contain
 ≥ 50 documents with pairwise similarity above 0.70 to produce a non-trivial
 document graph.
@@ -84,8 +84,8 @@ def _collect_files(project_root: Path) -> list[dict[str, Any]]:
     """Collect code and doc files from the repo."""
     files: list[dict[str, Any]] = []
 
-    # Code files from src/rag_mcp/
-    code_dir = project_root / "src" / "rag_mcp"
+    # Code files from src/omrg/
+    code_dir = project_root / "src" / "omrg"
     for py_file in sorted(code_dir.rglob("*.py")):
         text = py_file.read_text(encoding="utf-8", errors="replace")
         files.append(

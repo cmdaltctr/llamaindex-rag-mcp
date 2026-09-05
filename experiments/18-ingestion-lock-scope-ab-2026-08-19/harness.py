@@ -27,7 +27,7 @@ FAKE_DIM = 32
 
 
 def ensure_import_path() -> None:
-    """Make ``rag_mcp`` and ``experiments._lib`` importable from source."""
+    """Make ``omrg`` and ``experiments._lib`` importable from source."""
     for entry in (str(PROJECT_ROOT), str(PROJECT_ROOT / "src")):
         if entry not in sys.path:
             sys.path.insert(0, entry)
@@ -56,7 +56,7 @@ def build_fake_settings(collection_name: str, persist_dir: Path) -> Any:
     no real LLM call can hang the harness.
     """
     ensure_import_path()
-    from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+    from omrg.core.settings import EffectiveSettings, MetadataBlock
 
     return EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
@@ -73,7 +73,7 @@ def _install_default_settings(collection_name: str, persist_dir: Path) -> None:
     process's composition root and must install the default itself — the
     store's stale-cleanup path reads it via ``get_default_effective_settings``.
     """
-    from rag_mcp.core.settings import set_default_effective_settings
+    from omrg.core.settings import set_default_effective_settings
 
     set_default_effective_settings(build_fake_settings(collection_name, persist_dir))
 
@@ -89,8 +89,8 @@ def install_fake_runtime(persist_dir: Path) -> dict[str, Any]:
     ensure_import_path()
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.vectordb import reset_default_store, set_default_store
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb import reset_default_store, set_default_store
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     reset_default_store()
     store = ChromaVectorStore(persist_dir=str(persist_dir))
@@ -132,10 +132,10 @@ def install_real_runtime(persist_dir: Path) -> dict[str, Any]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.vectordb import reset_default_store, set_default_store
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.compose import build_embed_model
+    from omrg.config import get_settings
+    from omrg.core.vectordb import reset_default_store, set_default_store
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     config = get_settings()
     model = build_embed_model(config)

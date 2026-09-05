@@ -13,13 +13,13 @@ from pathlib import Path
 
 import pytest
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
 
 
 def _absolute_module_name(module_path: Path) -> str:
     """Return the dotted module name for a file under ``src/``.
 
-    ``src/rag_mcp/core/ingestion/chunker.py`` → ``rag_mcp.core.ingestion.chunker``
+    ``src/omrg/core/ingestion/chunker.py`` → ``omrg.core.ingestion.chunker``
     """
     rel = module_path.resolve().relative_to(_SRC_ROOT.parent)
     return ".".join(rel.with_suffix("").parts)
@@ -34,7 +34,7 @@ def _resolve_relative(importer: str, level: int, module: str | None) -> str:
 
     Without this resolution a relative import such as
     ``from ..chunking.code import chunk_code_file_async`` inside
-    ``rag_mcp.core.ingestion.chunker`` yields the bare string
+    ``omrg.core.ingestion.chunker`` yields the bare string
     ``"chunking.code"``, which can never match an absolute forbidden name —
     silently rendering this whole test decorative.
     """
@@ -77,29 +77,29 @@ def _module_top_level_imports(module_path: Path) -> set[str]:
 
 # The concrete strategy modules that must NOT appear as top-level imports.
 _FORBIDDEN_STRATEGY_MODULES = {
-    "rag_mcp.core.chunking.code",
-    "rag_mcp.core.chunking.markdown",
-    "rag_mcp.core.chunking.sentence",
-    "rag_mcp.core.chunking.config_file",
-    "rag_mcp.core.metadata.keyword",
-    "rag_mcp.core.metadata.ollama",
-    "rag_mcp.core.metadata.llamaindex",
-    "rag_mcp.core.metadata.llamacpp",
-    "rag_mcp.core.retrieval.dense",
-    "rag_mcp.core.retrieval.fusion",
-    "rag_mcp.core.retrieval.policy",
-    "rag_mcp.core.retrieval.reranker",
-    "rag_mcp.core.retrieval.sparse",
-    "rag_mcp.core.community.louvain",
-    "rag_mcp.core.community.leiden",
-    "rag_mcp.integrations.pdf.liteparse",
-    "rag_mcp.integrations.pdf.pypdf",
-    "rag_mcp.integrations.pdf.pypdfium",
+    "omrg.core.chunking.code",
+    "omrg.core.chunking.markdown",
+    "omrg.core.chunking.sentence",
+    "omrg.core.chunking.config_file",
+    "omrg.core.metadata.keyword",
+    "omrg.core.metadata.ollama",
+    "omrg.core.metadata.llamaindex",
+    "omrg.core.metadata.llamacpp",
+    "omrg.core.retrieval.dense",
+    "omrg.core.retrieval.fusion",
+    "omrg.core.retrieval.policy",
+    "omrg.core.retrieval.reranker",
+    "omrg.core.retrieval.sparse",
+    "omrg.core.community.louvain",
+    "omrg.core.community.leiden",
+    "omrg.integrations.pdf.liteparse",
+    "omrg.integrations.pdf.pypdf",
+    "omrg.integrations.pdf.pypdfium",
     # register-document-backend-strategies (task 4.2): the chunker and the
     # backends orchestrator must resolve adapters through the registry —
     # never a module-level import of either concrete backend.
-    "rag_mcp.core.ingestion.backends.local",
-    "rag_mcp.integrations.azure",
+    "omrg.core.ingestion.backends.local",
+    "omrg.integrations.azure",
 }
 
 
@@ -115,10 +115,11 @@ _FORBIDDEN_STRATEGY_MODULES = {
 )
 def test_no_module_level_strategy_import(rel_path: str) -> None:
     """The dispatch module must not import concrete strategies at top level."""
+    assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
     module_path = _SRC_ROOT / rel_path
     imports = _module_top_level_imports(module_path)
 
-    # Check both the short form (e.g. "rag_mcp") and full dotted paths.
+    # Check both the short form (e.g. "omrg") and full dotted paths.
     offenders = imports & _FORBIDDEN_STRATEGY_MODULES
     assert not offenders, (
         f"{rel_path} has module-level imports of concrete strategy modules: "

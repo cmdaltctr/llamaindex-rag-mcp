@@ -35,13 +35,13 @@ compute, rename, or add diagnostic fields.
 
 ### Requirement: CLI search exposes diagnostics as an optional passthrough
 
-The `rag-mcp search` command SHALL accept a `--diagnostics` flag. Its default
+The `omrg search` command SHALL accept a `--diagnostics` flag. Its default
 SHALL be disabled. The command SHALL pass the resulting boolean to core
 retrieval's diagnostics control without changing its meaning.
 
 #### Scenario: CLI JSON output includes requested diagnostics
 
-- **WHEN** a user runs `rag-mcp search <query> --diagnostics --json`
+- **WHEN** a user runs `omrg search <query> --diagnostics --json`
 - **THEN** the CLI passes `true` to core retrieval's diagnostics control
 - **AND** the JSON result preserves applicable core-produced fields such as
   `dense_rank`, `sparse_rank`, `fused_rank`, `rerank_reason`,
@@ -49,13 +49,13 @@ retrieval's diagnostics control without changing its meaning.
 
 #### Scenario: CLI JSON output stays lean by default
 
-- **WHEN** a user runs `rag-mcp search <query> --json` without `--diagnostics`
+- **WHEN** a user runs `omrg search <query> --json` without `--diagnostics`
 - **THEN** the CLI passes `false` to core retrieval's diagnostics control
 - **AND** the JSON result omits core retrieval's opt-in diagnostic fields
 
 #### Scenario: Human-readable output receives diagnostic results
 
-- **WHEN** a user runs `rag-mcp search <query> --diagnostics` without `--json`
+- **WHEN** a user runs `omrg search <query> --diagnostics` without `--json`
 - **THEN** the existing human-readable result table renders successfully
 - **AND** additional diagnostic fields do not add or change table columns
 

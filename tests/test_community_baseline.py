@@ -28,12 +28,12 @@ import pytest
 
 # Enter through code_graph (its __all__ re-exports the detectors):
 # importing communities directly trips a circular import.
-from rag_mcp.core.codebase.code_graph import (
+from omrg.core.codebase.code_graph import (
     detect_bridges,
     detect_communities,
     detect_hubs,
 )
-from rag_mcp.core.documents.doc_graph import detect_document_communities
+from omrg.core.documents.doc_graph import detect_document_communities
 
 _REPEATS = 30  # runs for the task 1.1 determinism tests
 

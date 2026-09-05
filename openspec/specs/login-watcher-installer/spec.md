@@ -2,21 +2,21 @@
 
 ## Purpose
 
-Define the `rag-mcp install-login-watcher` CLI command that installs a macOS per-user LaunchAgent which starts `rag-mcp watch` at login, covering guided and scriptable installation, plist generation, overwrite safety, optional catch-up ingest, and launchd loading.
+Define the `omrg install-login-watcher` CLI command that installs a macOS per-user LaunchAgent which starts `omrg watch` at login, covering guided and scriptable installation, plist generation, overwrite safety, optional catch-up ingest, and launchd loading.
 
 ## Requirements
 
-### Requirement: CLI subcommand `rag-mcp install-login-watcher`
+### Requirement: CLI subcommand `omrg install-login-watcher`
 
-The system SHALL provide a `rag-mcp install-login-watcher` CLI subcommand that installs a macOS per-user LaunchAgent for starting `rag-mcp watch` at login. The command SHALL expose help text describing both interactive and non-interactive usage.
+The system SHALL provide a `omrg install-login-watcher` CLI subcommand that installs a macOS per-user LaunchAgent for starting `omrg watch` at login. The command SHALL expose help text describing both interactive and non-interactive usage.
 
 #### Scenario: Help describes guided and scriptable usage
-- **WHEN** the user runs `rag-mcp install-login-watcher --help`
+- **WHEN** the user runs `omrg install-login-watcher --help`
 - **THEN** the CLI SHALL show the purpose of the command
 - **THEN** the CLI SHALL list options for watch path, collection, debounce, label, dry-run, force/overwrite, initial ingest, and immediate start/load behaviour
 
 #### Scenario: Non-macOS install is rejected
-- **WHEN** the user runs `rag-mcp install-login-watcher` on a non-macOS platform without `--dry-run`
+- **WHEN** the user runs `omrg install-login-watcher` on a non-macOS platform without `--dry-run`
 - **THEN** the command SHALL print a clear error that LaunchAgent installation is macOS-only
 - **THEN** the command SHALL exit with a non-zero status code
 
@@ -25,7 +25,7 @@ The system SHALL provide a `rag-mcp install-login-watcher` CLI subcommand that i
 When required options are omitted in an interactive terminal, the installer SHALL guide the user step by step through selecting the watch directory, target collection, debounce interval, initial ingest choice, label, and whether to load/start the agent immediately. The wizard SHALL validate answers before writing any files.
 
 #### Scenario: Wizard collects missing values
-- **WHEN** the user runs `rag-mcp install-login-watcher` in an interactive terminal without required options
+- **WHEN** the user runs `omrg install-login-watcher` in an interactive terminal without required options
 - **THEN** the CLI SHALL prompt for the folder to watch
 - **THEN** the CLI SHALL prompt for the vector-store collection name, defaulting to `documents`
 - **THEN** the CLI SHALL prompt for whether to run an initial catch-up ingest
@@ -41,7 +41,7 @@ When required options are omitted in an interactive terminal, the installer SHAL
 The installer SHALL support non-interactive usage when the watch directory and collection are provided as options. In non-interactive mode, missing required values SHALL cause a clear error instead of prompting.
 
 #### Scenario: Scriptable install with explicit options
-- **WHEN** the user runs `rag-mcp install-login-watcher --path /docs --collection research --yes`
+- **WHEN** the user runs `omrg install-login-watcher --path /docs --collection research --yes`
 - **THEN** the command SHALL validate `/docs` as a directory
 - **THEN** the command SHALL generate a LaunchAgent configured for collection `research`
 - **THEN** the command SHALL not require interactive prompts
@@ -53,7 +53,7 @@ The installer SHALL support non-interactive usage when the watch directory and c
 
 ### Requirement: LaunchAgent plist generation
 
-The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library/LaunchAgents` by default. The plist SHALL use a deterministic label, an absolute path to the resolved `rag-mcp` console executable as `ProgramArguments[0]` (overridable via an explicit command-path option when resolution is ambiguous), the chosen watch path, collection, debounce interval, RunAtLoad behaviour, KeepAlive disabled by default, and log paths under `~/Library/Logs/rag-mcp`.
+The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library/LaunchAgents` by default. The plist SHALL use a deterministic label, an absolute path to the resolved `omrg` console executable as `ProgramArguments[0]` (overridable via an explicit command-path option when resolution is ambiguous), the chosen watch path, collection, debounce interval, RunAtLoad behaviour, KeepAlive disabled by default, and log paths under `~/Library/Logs/omrg`.
 
 #### Scenario: Plist contains watcher command
 - **WHEN** the installer generates a plist for path `/docs`, collection `research`, and debounce `3`
@@ -62,20 +62,20 @@ The installer SHALL generate a valid per-user LaunchAgent plist under `~/Library
 
 #### Scenario: Command executable is resolved absolutely
 - **WHEN** the installer generates a plist without an explicit command-path option
-- **THEN** `ProgramArguments[0]` SHALL be the absolute path of the installed `rag-mcp` console executable resolved at install time
+- **THEN** `ProgramArguments[0]` SHALL be the absolute path of the installed `omrg` console executable resolved at install time
 - **AND** the resolved path SHALL be persisted in the plist and shown to the user
 
 #### Scenario: Command path override is honoured
-- **WHEN** the user provides an explicit command-path option such as `--command-path /opt/homebrew/bin/rag-mcp`
+- **WHEN** the user provides an explicit command-path option such as `--command-path /opt/homebrew/bin/omrg`
 - **THEN** `ProgramArguments[0]` SHALL use that path exactly
 
 #### Scenario: Deterministic label and paths
 - **WHEN** the user does not provide a custom label
-- **THEN** the installer SHALL derive a stable label using a `com.rag-mcp.watch.` prefix and a safe slug or hash from the watch configuration
+- **THEN** the installer SHALL derive a stable label using a `com.omrg.watch.` prefix and a safe slug or hash from the watch configuration
 - **THEN** the plist path SHALL be shown to the user after generation
 
 #### Scenario: Dry run previews without writing
-- **WHEN** the user runs `rag-mcp install-login-watcher --path /docs --collection research --dry-run`
+- **WHEN** the user runs `omrg install-login-watcher --path /docs --collection research --dry-run`
 - **THEN** the command SHALL print the planned plist path and plist content or summary
 - **THEN** the command SHALL NOT write a plist file
 - **THEN** the command SHALL NOT call `launchctl`
@@ -98,7 +98,7 @@ If the target generated plist already exists, the installer SHALL protect the ex
 
 ### Requirement: Optional initial catch-up ingest
 
-The installer SHALL support running an initial catch-up ingestion of the selected directory into the selected collection before loading or starting the LaunchAgent. This operation SHALL use the existing ingestion pipeline, SHALL route documents to the selected collection, and SHALL mirror the `rag-mcp ingest` flow by resolving the collection's profile once and injecting the resulting effective settings.
+The installer SHALL support running an initial catch-up ingestion of the selected directory into the selected collection before loading or starting the LaunchAgent. This operation SHALL use the existing ingestion pipeline, SHALL route documents to the selected collection, and SHALL mirror the `omrg ingest` flow by resolving the collection's profile once and injecting the resulting effective settings.
 
 #### Scenario: Initial ingest runs before load
 - **WHEN** the user enables initial ingest for path `/docs` and collection `research`

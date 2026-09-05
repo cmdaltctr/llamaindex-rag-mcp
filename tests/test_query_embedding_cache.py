@@ -14,9 +14,9 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import dense as _dense
-from rag_mcp.core.retrieval import search as _retrieval_search
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import dense as _dense
+from omrg.core.retrieval import search as _retrieval_search
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 

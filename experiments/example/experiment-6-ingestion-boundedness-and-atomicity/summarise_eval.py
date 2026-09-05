@@ -126,7 +126,7 @@ def _h1_bounded_unit() -> dict[str, Any]:
         "max_live_2_stream_contended": max(contended_lives) if contended_lives else None,
         "declared_bounded_unit": "one source file's node set per ingest stream",
         "code_path_evidence": (
-            "src/rag_mcp/core/ingestion/pipeline.py processes files in a "
+            "src/omrg/core/ingestion/pipeline.py processes files in a "
             "sequential for-loop and drops the node set in the finally block "
             "('del nodes'); replacement receives exactly one source's nodes. "
             "The probe wraps pipeline.replace_source_nodes_async and its "

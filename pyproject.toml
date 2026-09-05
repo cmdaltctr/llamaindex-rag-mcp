@@ -1,5 +1,5 @@
 [project]
-name = "rag-mcp"
+name = "omrg"
 version = "2.2.0"
 description = "LlamaIndex RAG MCP server for document retrieval"
 requires-python = ">=3.11"
@@ -79,7 +79,7 @@ dependencies = [
 # supported: chromadb>=1.0.0 reverts list_collections() to returning
 # Collection objects (0.6.0–0.9.x returned bare strings, breaking
 # ChromaVectorStoreAdapter.list_collections — see ADR-042).
-# Install: uv sync --extra chroma (source) / pip install "rag-mcp[chroma]".
+# Install: uv sync --extra chroma (source) / pip install "omrg[chroma]".
 chroma = [
     "chromadb>=1.0.0",
     "llama-index-vector-stores-chroma>=0.5.0",
@@ -129,20 +129,22 @@ torch = [
 ]
 
 [project.scripts]
-rag-mcp = "rag_mcp.transports.cli:run_cli"
+omrg = "omrg.transports.cli:run_cli"
+# Deprecated one-major compatibility alias for installed LaunchAgents.
+rag-mcp = "omrg.transports.cli:run_cli"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/rag_mcp"]
+packages = ["src/omrg"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/rag_mcp/config/defaults.yaml" = "rag_mcp/config/defaults.yaml"
-"src/rag_mcp/config/profiles/documents.yaml" = "rag_mcp/config/profiles/documents.yaml"
-"src/rag_mcp/config/profiles/codebase.yaml" = "rag_mcp/config/profiles/codebase.yaml"
-"src/rag_mcp/config/profiles/hybrid.yaml" = "rag_mcp/config/profiles/hybrid.yaml"
+"src/omrg/config/defaults.yaml" = "omrg/config/defaults.yaml"
+"src/omrg/config/profiles/documents.yaml" = "omrg/config/profiles/documents.yaml"
+"src/omrg/config/profiles/codebase.yaml" = "omrg/config/profiles/codebase.yaml"
+"src/omrg/config/profiles/hybrid.yaml" = "omrg/config/profiles/hybrid.yaml"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -162,45 +164,45 @@ markers = [
 #   config.py (typed resolver) / compose.py (composition root) / DI elsewhere.
 # See openspec/changes/phase-2-refactor-config-core-split/design.md (D5).
 [tool.importlinter]
-root_package = "rag_mcp"
+root_package = "omrg"
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "settings-models-are-pure-data"
 type = "forbidden"
 source_modules = [
-    "rag_mcp.core.chunking.settings",
-    "rag_mcp.core.ingestion.settings",
-    "rag_mcp.core.retrieval.settings",
-    "rag_mcp.core.metadata.settings",
+    "omrg.core.chunking.settings",
+    "omrg.core.ingestion.settings",
+    "omrg.core.retrieval.settings",
+    "omrg.core.metadata.settings",
     # Task 10.2: the EffectiveSettings value object every core/ and
     # integrations/ module now receives must stay pure data too.
-    "rag_mcp.core.settings",
+    "omrg.core.settings",
 ]
 forbidden_modules = [
-    "rag_mcp.config",
-    "rag_mcp.compose",
-    "rag_mcp.core",
+    "omrg.config",
+    "omrg.compose",
+    "omrg.core",
 ]
 
 [[tool.importlinter.contracts]]
 name = "providers-constructed-only-in-compose"
 type = "forbidden"
-source_modules = ["rag_mcp"]
+source_modules = ["omrg"]
 forbidden_modules = [
-    "rag_mcp.core.providers.embeddings.ollama",
-    "rag_mcp.core.providers.embeddings.llamacpp",
-    "rag_mcp.core.providers.embeddings.openrouter",
-    "rag_mcp.core.providers.llm.ollama",
-    "rag_mcp.core.providers.llm.llamacpp",
-    "rag_mcp.core.providers.llm.openrouter",
+    "omrg.core.providers.embeddings.ollama",
+    "omrg.core.providers.embeddings.llamacpp",
+    "omrg.core.providers.embeddings.openrouter",
+    "omrg.core.providers.llm.ollama",
+    "omrg.core.providers.llm.llamacpp",
+    "omrg.core.providers.llm.openrouter",
 ]
 # Imports within core/providers/ and imports made by the composition root
 # are permitted (registries resolve concrete modules lazily via importlib,
 # which import-linter cannot see; these expressions cover the static cases).
 ignore_imports = [
-    "rag_mcp.compose -> rag_mcp.core.providers.**",
-    "rag_mcp.core.providers.** -> rag_mcp.core.providers.**",
+    "omrg.compose -> omrg.core.providers.**",
+    "omrg.core.providers.** -> omrg.core.providers.**",
 ]
 unmatched_ignore_imports_alerting = "none"
 
@@ -208,38 +210,38 @@ unmatched_ignore_imports_alerting = "none"
 name = "core-business-avoids-providers-transports"
 type = "forbidden"
 source_modules = [
-    "rag_mcp.core.ingestion",
-    "rag_mcp.core.retrieval",
-    "rag_mcp.core.metadata",
-    "rag_mcp.core.chunking",
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.metadata",
+    "omrg.core.chunking",
     # Extended at task 10.1: these were uncovered, so the boundary they
     # depend on was unenforced even though no violation existed.
-    "rag_mcp.core.vectordb",
-    "rag_mcp.core.profiles",
-    "rag_mcp.core.codebase",
-    "rag_mcp.core.documents",
-    "rag_mcp.core.community",
+    "omrg.core.vectordb",
+    "omrg.core.profiles",
+    "omrg.core.codebase",
+    "omrg.core.documents",
+    "omrg.core.community",
     # add-grounded-answer-synthesis-3 task 3.5: answering is core business
     # logic with an injected LLM seam (design D1) — it must never import a
     # provider or transport module directly, with NO ignore entry.
-    "rag_mcp.core.answer",
-    "rag_mcp.daemon",
+    "omrg.core.answer",
+    "omrg.daemon",
 ]
 forbidden_modules = [
-    "rag_mcp.core.providers",
-    "rag_mcp.transports",
+    "omrg.core.providers",
+    "omrg.transports",
 ]
 ignore_imports = [
     # PERMANENT: daemon is an orchestration layer, like transports — it is a
     # legitimate CONSUMER of the composition root. What this contract forbids
     # is core BUSINESS logic reaching for providers directly; calling
     # compose.build_profile_resolver() is the sanctioned direction.
-    "rag_mcp.daemon.watcher -> rag_mcp.compose",
+    "omrg.daemon.watcher -> omrg.compose",
     # metadata.llamaindex resolves the LLM provider registry for the cloud
     # (OpenRouter) branch — the registry centralises construction that was
     # previously inline.  The contract forbids business logic from importing
     # concrete provider modules; the registry is the sanctioned indirection.
-    "rag_mcp.core.metadata.llamaindex -> rag_mcp.core.providers.llm.registry",
+    "omrg.core.metadata.llamaindex -> omrg.core.providers.llm.registry",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -249,10 +251,10 @@ unmatched_ignore_imports_alerting = "error"
 [[tool.importlinter.contracts]]
 name = "community-strategies-independent-of-consumers"
 type = "forbidden"
-source_modules = ["rag_mcp.core.community"]
+source_modules = ["omrg.core.community"]
 forbidden_modules = [
-    "rag_mcp.core.codebase",
-    "rag_mcp.core.documents",
+    "omrg.core.codebase",
+    "omrg.core.documents",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -265,11 +267,11 @@ unmatched_ignore_imports_alerting = "error"
 [[tool.importlinter.contracts]]
 name = "chromadb-confined-to-vectordb"
 type = "forbidden"
-source_modules = ["rag_mcp"]
+source_modules = ["omrg"]
 forbidden_modules = ["chromadb"]
 ignore_imports = [
-    "rag_mcp.core.vectordb.chroma -> chromadb",
-    "rag_mcp.core.vectordb.chroma_cloud -> chromadb",
+    "omrg.core.vectordb.chroma -> chromadb",
+    "omrg.core.vectordb.chroma_cloud -> chromadb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -280,42 +282,42 @@ unmatched_ignore_imports_alerting = "error"
 [[tool.importlinter.contracts]]
 name = "lancedb-confined-to-vectordb"
 type = "forbidden"
-source_modules = ["rag_mcp"]
+source_modules = ["omrg"]
 forbidden_modules = ["lancedb"]
 ignore_imports = [
-    "rag_mcp.core.vectordb.lancedb -> lancedb",
-    "rag_mcp.core.vectordb.lance_literal -> lancedb",
-    "rag_mcp.core.vectordb.lance_fts -> lancedb",
+    "omrg.core.vectordb.lancedb -> lancedb",
+    "omrg.core.vectordb.lance_literal -> lancedb",
+    "omrg.core.vectordb.lance_fts -> lancedb",
 ]
 unmatched_ignore_imports_alerting = "error"
 
 # F3: config is a leaf — it must not import core business logic, compose,
 # transports, integrations, or daemon. Only the pure-data subpackage
-# settings models (rag_mcp.core.*.settings) are sanctioned upward refs.
+# settings models (omrg.core.*.settings) are sanctioned upward refs.
 [[tool.importlinter.contracts]]
 name = "config-is-leaf"
 type = "forbidden"
-source_modules = ["rag_mcp.config"]
+source_modules = ["omrg.config"]
 forbidden_modules = [
-    "rag_mcp.core.ingestion",
-    "rag_mcp.core.retrieval",
-    "rag_mcp.core.metadata",
-    "rag_mcp.core.vectordb",
-    "rag_mcp.core.profiles",
-    "rag_mcp.core.providers",
-    "rag_mcp.compose",
-    "rag_mcp.transports",
-    "rag_mcp.integrations",
-    "rag_mcp.daemon",
+    "omrg.core.ingestion",
+    "omrg.core.retrieval",
+    "omrg.core.metadata",
+    "omrg.core.vectordb",
+    "omrg.core.profiles",
+    "omrg.core.providers",
+    "omrg.compose",
+    "omrg.transports",
+    "omrg.integrations",
+    "omrg.daemon",
 ]
 ignore_imports = [
     # PERMANENT: sanctioned pure-data settings model imports. Config
     # composes the subpackage settings models by inheritance (pre-group-7)
     # or nesting (post-group-7). These are the only upward refs allowed.
-    "rag_mcp.config -> rag_mcp.core.chunking.settings",
-    "rag_mcp.config -> rag_mcp.core.retrieval.settings",
-    "rag_mcp.config -> rag_mcp.core.metadata.settings",
-    "rag_mcp.config -> rag_mcp.core.ingestion.settings",
+    "omrg.config -> omrg.core.chunking.settings",
+    "omrg.config -> omrg.core.retrieval.settings",
+    "omrg.config -> omrg.core.metadata.settings",
+    "omrg.config -> omrg.core.ingestion.settings",
 ]
 unmatched_ignore_imports_alerting = "error"
 
@@ -324,20 +326,20 @@ unmatched_ignore_imports_alerting = "error"
 [[tool.importlinter.contracts]]
 name = "integrations-are-leaves"
 type = "forbidden"
-source_modules = ["rag_mcp.integrations"]
+source_modules = ["omrg.integrations"]
 forbidden_modules = [
-    "rag_mcp.core",
-    "rag_mcp.transports",
-    "rag_mcp.daemon",
+    "omrg.core",
+    "omrg.transports",
+    "omrg.daemon",
 ]
 ignore_imports = [
     # PERMANENT: integrations read the frozen EffectiveSettings value object.
     # This is the same sanctioned category as config -> core.*.settings: a
     # pure-data model with no business logic and no imports of its own. It is
     # NOT a dependency on core business logic, which stays forbidden.
-    "rag_mcp.integrations.magika -> rag_mcp.core.settings",
-    "rag_mcp.integrations.azure -> rag_mcp.core.settings",
-    "rag_mcp.integrations.pdf.liteparse -> rag_mcp.core.settings",
+    "omrg.integrations.magika -> omrg.core.settings",
+    "omrg.integrations.azure -> omrg.core.settings",
+    "omrg.integrations.pdf.liteparse -> omrg.core.settings",
     # TEMPORARY: integrations import config, which transitively reaches
     # core through the sanctioned settings models. These import edges
     # are removed at task 5.6 when integrations receive EffectiveSettings
@@ -354,9 +356,9 @@ ignore_imports = [
 unmatched_ignore_imports_alerting = "error"
 
 [tool.coverage.run]
-source = ["rag_mcp"]
+source = ["omrg"]
 # The deprecated-shim omit list was removed in v2.0.0 together with the
-# shims themselves (task 9.5). Every module under src/rag_mcp is now real
+# shims themselves (task 9.5). Every module under src/omrg is now real
 # code with real consumers, so nothing is excluded from the gate.
 
 # ─── Ruff (lint + format) ────────────────────────────────────────────

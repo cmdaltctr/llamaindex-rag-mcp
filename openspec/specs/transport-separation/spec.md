@@ -31,7 +31,7 @@ package.
 - **WHEN** the CLI is inspected after the move
 - **THEN** `transports/cli/` MUST contain separate modules per command group
   (`ingest.py`, `search.py`, `list.py`, `watch.py`)
-- **AND** every `rag-mcp` subcommand MUST behave identically to the
+- **AND** every `omrg` subcommand MUST behave identically to the
   pre-refactor CLI
 
 #### Scenario: MCP split by tool
@@ -45,7 +45,7 @@ package.
 
 #### Scenario: MCP server entry unchanged
 
-- **WHEN** `rag-mcp` is run with no arguments
+- **WHEN** `omrg` is run with no arguments
 - **THEN** the MCP server MUST start identically to the pre-refactor server
   with all tool signatures unchanged
 
@@ -167,7 +167,7 @@ transports.
 
 #### Scenario: Watch behaviour unchanged
 
-- **WHEN** `rag-mcp watch` runs after the move
+- **WHEN** `omrg watch` runs after the move
 - **THEN** debouncing, hashing, and ingestion triggering MUST behave
   identically to the pre-refactor watcher
 
@@ -346,7 +346,7 @@ enforced by a test or an import-linter contract.
   that import-linter contracts already cover the boundaries, and ADR-036 §3's
   claim about the Magika extraction MUST each be either true of the code or
   amended with a correction note
-- **AND** ADR-033's reference to `src/rag_mcp/server.py` for reranker wiring
+- **AND** ADR-033's reference to `src/omrg/server.py` for reranker wiring
   MUST point at `transports/mcp/`
 
 #### Scenario: Reference documents match the shipped tree

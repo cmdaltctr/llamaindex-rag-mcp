@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_mcp.core.settings import (
+from omrg.core.settings import (
     EffectiveSettings,
     MetadataBlock,
 )
@@ -58,7 +58,7 @@ class TestOpenRouterExtraction:
 
     async def test_valid_response_is_parsed(self, monkeypatch) -> None:
         """A well-formed OpenRouter reply produces parsed metadata."""
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from omrg.core.metadata.openrouter import _extract_openrouter_chat_async
 
         self._mock_openrouter(
             monkeypatch,
@@ -70,7 +70,7 @@ class TestOpenRouterExtraction:
 
     async def test_unreachable_falls_back_to_uncategorised(self, monkeypatch) -> None:
         """A total failure degrades rather than raising into the pipeline."""
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from omrg.core.metadata.openrouter import _extract_openrouter_chat_async
 
         client = MagicMock()
         client.__aenter__ = AsyncMock(return_value=client)
@@ -81,19 +81,19 @@ class TestOpenRouterExtraction:
         async def _no_sleep(_s):
             return None
 
-        monkeypatch.setattr("rag_mcp.core.metadata._common._retry_sleep", _no_sleep)
+        monkeypatch.setattr("omrg.core.metadata._common._retry_sleep", _no_sleep)
         result = await _extract_openrouter_chat_async("text", "f.txt", self._settings())
         assert result["category"] == "uncategorised"
 
     async def test_cloud_provider_routes_to_openrouter(self, monkeypatch) -> None:
         """metadata_llm_provider=cloud selects the openrouter strategy."""
-        from rag_mcp.core.metadata import extractor as ext
+        from omrg.core.metadata import extractor as ext
 
         mock = AsyncMock(return_value={"category": "x", "keywords": [], "summary": ""})
         with (
             patch.dict(ext._metadata_get.__globals__["_cache"], {}, clear=False),
             patch(
-                "rag_mcp.core.metadata.openrouter._extract_openrouter_chat_async",
+                "omrg.core.metadata.openrouter._extract_openrouter_chat_async",
                 mock,
             ),
         ):
@@ -108,12 +108,12 @@ class TestCodebaseMapRendering:
     """format_codebase_map renders each optional section."""
 
     def _map(self, **kw):
-        from rag_mcp.core.codebase.codebase_map import CodebaseMap, FileInventory
+        from omrg.core.codebase.codebase_map import CodebaseMap, FileInventory
 
         return CodebaseMap(inventory=FileInventory(type_counts={"code/python": 2}), **kw)
 
     def test_renders_code_communities(self) -> None:
-        from rag_mcp.core.codebase.format import format_codebase_map
+        from omrg.core.codebase.format import format_codebase_map
 
         text = format_codebase_map(
             self._map(
@@ -130,7 +130,7 @@ class TestCodebaseMapRendering:
         assert "Core" in text
 
     def test_renders_hubs(self) -> None:
-        from rag_mcp.core.codebase.format import format_codebase_map
+        from omrg.core.codebase.format import format_codebase_map
 
         text = format_codebase_map(
             self._map(hubs=[{"file": "core.py", "in_degree": 5, "out_degree": 1}])
@@ -138,7 +138,7 @@ class TestCodebaseMapRendering:
         assert "core.py" in text
 
     def test_renders_doc_communities_and_cross_links(self) -> None:
-        from rag_mcp.core.codebase.format import format_codebase_map
+        from omrg.core.codebase.format import format_codebase_map
 
         text = format_codebase_map(
             self._map(
@@ -153,7 +153,7 @@ class TestCodebaseMapRendering:
 
     def test_empty_map_still_renders(self) -> None:
         """A map with no graph data must produce text, not raise."""
-        from rag_mcp.core.codebase.format import format_codebase_map
+        from omrg.core.codebase.format import format_codebase_map
 
         assert isinstance(format_codebase_map(self._map()), str)
 
@@ -165,7 +165,7 @@ class TestDefaultStoreHolder:
     """set/reset/get semantics for the composition-root store."""
 
     def test_reset_clears_the_default(self) -> None:
-        from rag_mcp.core.vectordb import (
+        from omrg.core.vectordb import (
             get_default_store,
             reset_default_store,
             set_default_store,
@@ -190,8 +190,8 @@ class TestCapabilityProbes:
     """The probes moved out of config in task 7.10."""
 
     def _settings(self, backend: str, vector_store: str = "lancedb"):
-        from rag_mcp.config import Settings
-        from rag_mcp.core.retrieval.settings import RetrievalSettings
+        from omrg.config import Settings
+        from omrg.core.retrieval.settings import RetrievalSettings
 
         # Store-neutral route (task 3.2,
         # implement-native-sparse-backend-strategy): capability follows
@@ -204,8 +204,8 @@ class TestCapabilityProbes:
 
     def test_bm25_needs_no_probe(self, monkeypatch) -> None:
         """An explicit bm25 selection short-circuits before probing."""
-        import rag_mcp.compose as compose
-        import rag_mcp.core.vectordb.lance_fts as lance_fts
+        import omrg.compose as compose
+        import omrg.core.vectordb.lance_fts as lance_fts
 
         def _boom():  # pragma: no cover - must not run
             raise AssertionError("probe ran for an explicit bm25 selection")
@@ -215,16 +215,16 @@ class TestCapabilityProbes:
 
     @pytest.mark.parametrize("available, expected", [(True, "native"), (False, "bm25")])
     def test_auto_follows_the_probe(self, monkeypatch, available, expected) -> None:
-        import rag_mcp.compose as compose
-        import rag_mcp.core.vectordb.lance_fts as lance_fts
+        import omrg.compose as compose
+        import omrg.core.vectordb.lance_fts as lance_fts
 
         monkeypatch.setattr(lance_fts, "probe_native_fts", lambda: available)
         assert compose.resolve_sparse_backend(self._settings("auto")) == expected
 
     def test_pdf_reader_explicit_value_is_returned(self) -> None:
         """An explicit reader bypasses the LiteParse probe."""
-        import rag_mcp.compose as compose
-        from rag_mcp.config import Settings
+        import omrg.compose as compose
+        from omrg.config import Settings
 
         settings = Settings(_env_file=None, pdf_reader="pypdf")
         assert compose.resolve_pdf_reader(settings) == "pypdf"
@@ -239,7 +239,7 @@ class TestSentenceChunkerSettings:
     async def test_explicit_sizes_win_over_injected(self) -> None:
         from llama_index.core import Document
 
-        from rag_mcp.core.chunking.sentence import chunk_sentence_file_async
+        from omrg.core.chunking.sentence import chunk_sentence_file_async
 
         nodes = await chunk_sentence_file_async(
             [Document(text="one two three. " * 50)],
@@ -254,7 +254,7 @@ class TestSentenceChunkerSettings:
     async def test_injected_settings_supply_the_defaults(self) -> None:
         from llama_index.core import Document
 
-        from rag_mcp.core.chunking.sentence import chunk_sentence_file_async
+        from omrg.core.chunking.sentence import chunk_sentence_file_async
 
         nodes = await chunk_sentence_file_async(
             [Document(text="alpha beta gamma. " * 40)],
@@ -273,8 +273,8 @@ class TestVectordbLazyReexport:
 
     def test_vector_store_lazy_reexport(self) -> None:
         """VectorStore is resolved lazily via __getattr__, not imported at module level."""
-        import rag_mcp.core.vectordb as vdb
-        from rag_mcp.core.vectordb.base import VectorStore
+        import omrg.core.vectordb as vdb
+        from omrg.core.vectordb.base import VectorStore
 
         # If VectorStore were imported eagerly at module top level it would
         # appear in the module dict.  Its absence proves the __getattr__ path.
@@ -283,9 +283,9 @@ class TestVectordbLazyReexport:
 
     def test_unknown_attribute_raises_attribute_error(self) -> None:
         """An unknown attribute raises AttributeError mentioning the module name."""
-        import rag_mcp.core.vectordb as vdb
+        import omrg.core.vectordb as vdb
 
-        with pytest.raises(AttributeError, match="rag_mcp.core.vectordb"):
+        with pytest.raises(AttributeError, match="omrg.core.vectordb"):
             _ = vdb.Nope
 
     def test_get_default_store_lazy_build_caches(self) -> None:
@@ -295,7 +295,7 @@ class TestVectordbLazyReexport:
         composition root when nothing is installed, and hand back the
         installed instance unchanged once composed.
         """
-        from rag_mcp.core.vectordb import (
+        from omrg.core.vectordb import (
             get_default_store,
             reset_default_store,
             set_default_store,

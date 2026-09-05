@@ -22,8 +22,8 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.llms.mock import MockLLM
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import search
 
 
 class _PoisonLLM(MockLLM):
@@ -125,7 +125,7 @@ async def test_search_never_resolves_llm_provider(
 
     await _ingest_small_doc(tmp_path)
 
-    from rag_mcp.core.providers.llm import registry as llm_registry
+    from omrg.core.providers.llm import registry as llm_registry
 
     monkeypatch.setattr(llm_registry, "get", _boom)
 

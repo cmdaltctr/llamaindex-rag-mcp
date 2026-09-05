@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from llama_index.core.schema import NodeWithScore, TextNode
 
-from rag_mcp.core.answer import synthesis
+from omrg.core.answer import synthesis
 
 _CEILING = synthesis._PROMPT_CHAR_CEILING
 _MARKER = "[evidence truncated]"

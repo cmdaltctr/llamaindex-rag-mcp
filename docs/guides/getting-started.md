@@ -34,7 +34,7 @@ uv sync
 ## Verify it works
 
 ```bash
-uv run rag-mcp
+uv run omrg
 ```
 
 No output means it's working — it's waiting silently for MCP messages on stdin. Press Ctrl-C to stop.
@@ -42,7 +42,7 @@ No output means it's working — it's waiting silently for MCP messages on stdin
 To inspect the tools interactively:
 
 ```bash
-npx @modelcontextprotocol/inspector uv run rag-mcp
+npx @modelcontextprotocol/inspector uv run omrg
 ```
 
 ## Reranker and hybrid search
@@ -64,7 +64,7 @@ llama.cpp is the default, but you can also use [Ollama](https://ollama.com) for 
 For rare terms, citations, error codes, and exact identifiers, try opt-in hybrid retrieval:
 
 ```bash
-uv run rag-mcp search "What fixes MCP-1138?" --hybrid
+uv run omrg search "What fixes MCP-1138?" --hybrid
 ```
 
 MCP clients can pass `hybrid: true` to `search_documents`.
@@ -76,7 +76,7 @@ See [MCP Client Setup](mcp-client-setup.md) to connect the server to OpenChamber
 ## Verification checklist
 
 - [ ] `ollama ps` shows `qwen3-embedding:0.6b` loaded
-- [ ] `uv run rag-mcp` starts without errors and waits on stdin
+- [ ] `uv run omrg` starts without errors and waits on stdin
 - [ ] MCP Inspector can discover and call all five tools
 - [ ] Your MCP client shows `rag-docs` as connected (green)
 - [ ] "What documents do you have access to?" calls `list_indexed_documents`

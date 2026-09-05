@@ -136,7 +136,7 @@ guarantee.
 
 #### Scenario: Full test suite passes
 
-- **WHEN** `uv run pytest -m "not slow" --cov=rag_mcp` is run at the change
+- **WHEN** `uv run pytest -m "not slow" --cov=omrg` is run at the change
   boundary
 - **THEN** all tests MUST pass
 - **AND** coverage MUST meet the recorded floors: Core + MCP ≥95%,
@@ -144,7 +144,7 @@ guarantee.
 
 #### Scenario: File size ceiling across the package
 
-- **WHEN** `src/rag_mcp/` is inspected
+- **WHEN** `src/omrg/` is inspected
 - **THEN** no Python file MUST exceed 500 lines, including modules outside
   `core/`
 
