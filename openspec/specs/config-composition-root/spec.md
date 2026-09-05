@@ -265,13 +265,10 @@ a registered default vector store — leaving either unset and continuing
 turns a construction failure into a confusing downstream error (or silent
 misbehaviour) instead of a clear startup failure.
 
-Because `compose.py` invokes `ensure_runtime_setup()` at module scope, this
-failure surfaces at import time. That is the same behaviour the existing
-`VECTOR_STORE` unknown-value check already ships (`vectordb-abstraction`,
-ADR-034), and it is accepted here for consistency: a traceback plus a
-non-zero exit is loud, which is the point. Moving the invocation out of
-module scope is tracked as separate work and is NOT part of this
-requirement.
+Entry points call `ensure_runtime_setup()` explicitly during startup, so
+this failure surfaces when the startup path runs, not at import time.
+Importing `compose.py` has no runtime side effects. A traceback plus a
+non-zero exit is loud, which is the point.
 
 `config/__init__.py`'s provider-selection validation SHALL raise
 `ValueError` — which pydantic surfaces as a `ValidationError` subclassing

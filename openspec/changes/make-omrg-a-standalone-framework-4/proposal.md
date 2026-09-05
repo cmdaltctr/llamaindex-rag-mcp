@@ -63,9 +63,12 @@ cost a line in `pyproject.toml` and a mechanical import rewrite.
 - `omrg/__init__.py` becomes a real public API centred on `Engine`,
   `EffectiveSettings` and stable result types. Ingest, search and answer are
   explicit Engine methods; no module-level default engine is introduced.
-- A new engine object owns composition. Constructing one resolves providers,
-  the store and settings **for that engine**, mutating no process-global
-  state. Two engines with different configurations coexist in one process.
+- A new engine object owns its providers, store, reranker and settings for
+  its lifetime. The composition root keeps constructing them — a
+  `compose.build_engine()` factory resolves settings, builds the
+  dependencies and returns an Engine — so no process-global state is
+  mutated and the composition-root invariant is preserved. Two engines with
+  different configurations coexist in one process.
 - Embedding-provider selection becomes engine-scoped rather than
   process-scoped, retiring ADR-047 decision 7. Different engines may target
   different collections/providers; profile-driven routing within one Engine
@@ -73,9 +76,11 @@ cost a line in `pyproject.toml` and a mechanical import rewrite.
 - `ensure_runtime_setup()` remains, reimplemented as the server startup path
   that delegates environment resolution to the composition root and installs
   a default engine. Existing transports keep working. The Python import break
-  has no shim, while the old `rag-mcp` console/LaunchAgent surface is migrated
-  or retained as a one-major deprecated console alias so installed watchers
-  do not die or duplicate.
+  has no shim; `rag-mcp` is retained as a deprecated console alias for one
+  major so installed watchers keep working, and the watcher installer keeps
+  its existing `com.rag-mcp.watch.*` labels, log paths and command resolution
+  for that compatibility period. No plist migration is performed in this
+  change.
 - `__version__` is single-sourced from installed package metadata, so it
   cannot drift again.
 
@@ -101,6 +106,10 @@ changes here; this is a surface and lifetime change, not a pipeline change.
 - `settings-dependency-injection`: `get_settings()` remains the environment
   resolution path, but an engine constructed from caller-supplied settings
   reaches it never.
+- `query-embedding-cache`: the cache ownership moves from process-local to
+  engine-local. Behavioural guarantees (keyed by `(query, model_name)`,
+  bounded LRU, shared between filtered and unfiltered search within one
+  engine) are preserved; entries are never shared between engines.
 
 ## Impact
 

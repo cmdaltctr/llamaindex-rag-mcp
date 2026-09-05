@@ -2,22 +2,46 @@
 
 ### Requirement: The package exposes a public API
 
-The package SHALL export, from its top-level `__init__`, `Engine`,
-`EffectiveSettings`, stable public result/error types and `__version__`. A
-library consumer SHALL ingest, retrieve and answer through explicit Engine
-methods without importing private modules or creating an implicit module-level
-engine. Everything not exported SHALL be treated as internal and free to
-change without a major version.
+The package SHALL export, from its top-level `__init__`, exactly these public
+names: `Engine`, `EffectiveSettings` and `__version__`. A library consumer
+SHALL ingest, retrieve and answer through explicit Engine methods without
+importing private modules or creating an implicit module-level engine.
+Everything not exported SHALL be treated as internal and free to change
+without a major version.
+
+The initial surface is deliberately minimal. Internal registries, adapters,
+builders and convenience functions SHALL NOT be exported "just in case".
 
 #### Scenario: Core operations are importable from the top level
 
 - **WHEN** a consumer imports the package
-- **THEN** the engine type, effective-settings type and stable result/error
-  types SHALL be importable by name from the top level
-- **AND** ingest, search and answer SHALL be documented Engine methods, with
-  ingestion and answering async
-- **AND** none of them SHALL require importing a module whose name begins with
-  an underscore or that lives under an internal subpackage
+- **THEN** `Engine`, `EffectiveSettings` and `__version__` SHALL be
+  importable by name from the top level
+- **AND** none of them SHALL require importing a module whose name begins
+  with an underscore or that lives under an internal subpackage
+
+#### Scenario: Engine methods are the documented operation surface
+
+- **WHEN** the `Engine` type is inspected
+- **THEN** it SHALL provide: `ingest` (async, returning the existing
+  ingestion result `dict`), `search` (sync, returning the existing
+  `list[dict]` hit shape with the same retrieval-override keyword parameters
+  as the core `search()`), `answer` (async, returning the existing answer
+  result `dict`), `list_collections` (sync, returning `list[str]`),
+  `delete_collection(name)` (sync) and `close()` (sync)
+- **AND** no additional public methods SHALL be added beyond this set in
+  this change
+
+#### Scenario: Result and error shapes are the existing ones
+
+- **WHEN** an Engine operation returns or fails
+- **THEN** successful results SHALL use the existing plain `dict` /
+  `list[dict]` shapes documented for the corresponding core operation
+- **AND** failures SHALL propagate as the existing core exceptions (for
+  example `ValueError` for invalid configuration, `ImportError` for a
+  missing optional extra)
+- **AND** no new result or exception DTO classes SHALL be introduced by this
+  change
 
 #### Scenario: The exported surface is declared
 
@@ -45,9 +69,9 @@ change without a major version.
 
 The distribution name and the import name SHALL both be `omrg`. The previous
 `rag_mcp` import path and `rag-mcp` distribution name SHALL be removed rather
-than aliased.
+than aliased at the Python level.
 
-No compatibility shim SHALL be provided. This follows the project's
+No Python compatibility shim SHALL be provided. This follows the project's
 established precedent: the v1 top-level shims were deleted outright in v2.0.0
 rather than carried forward, and this change lands on the v3 breaking branch.
 
@@ -65,18 +89,19 @@ rather than carried forward, and this change lands on the v3 breaking branch.
 #### Scenario: Entry points follow the package
 
 - **WHEN** the console scripts are invoked
-- **THEN** they SHALL resolve into the `omrg` package
+- **THEN** the `omrg` entry points SHALL resolve into the `omrg` package
 - **AND** the MCP server, CLI and watcher SHALL behave exactly as before the
   rename
 
-#### Scenario: Installed watchers survive the command rename
+#### Scenario: The old command survives as a one-major alias
 
-- **GIVEN** a legacy LaunchAgent whose label starts `com.rag-mcp.watch.` and
-  whose ProgramArguments contain an absolute `rag-mcp` executable
-- **WHEN** the v3 command surface is installed or its watcher installer runs
-- **THEN** the legacy plist MUST be discovered and migrated, or the deprecated
-  console alias MUST continue to resolve for one major
-- **AND** no duplicate watcher MUST be installed under a new label
+- **GIVEN** the deprecated `rag-mcp` console alias retained for one major
+- **WHEN** an installed LaunchAgent invokes the `rag-mcp` executable, or the
+  watcher installer resolves the command
+- **THEN** the alias SHALL resolve to the same entry point as `omrg`
+- **AND** existing `com.rag-mcp.watch.*` labels and `~/Library/Logs/rag-mcp/`
+  log paths SHALL remain valid and SHALL NOT be migrated in this change
+- **AND** the installer MUST NOT create a duplicate watcher under a new label
 
 #### Scenario: Stored data survives the rename
 
