@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.core.answer.citations import parse_citation_ordinals
+from omrg.core.answer.citations import parse_citation_ordinals
 
 
 def test_five_thousand_digit_ordinal_rejected_actionably() -> None:

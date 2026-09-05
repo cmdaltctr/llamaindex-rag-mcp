@@ -22,7 +22,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "rag_mcp"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "omrg"
 
 # Matches ``import lancedb`` / ``import lancedb.expr`` / ``from lancedb
 # import ...`` at the start of a line (leading whitespace allowed).
@@ -33,6 +33,7 @@ _DIRECT_LANCEDB_IMPORT = re.compile(r"^\s*(?:import|from)\s+lancedb\b", re.MULTI
 
 def test_lancedb_imports_confined_to_vectordb() -> None:
     """Every direct ``lancedb`` import must live under ``core/vectordb/``."""
+    assert _SRC_ROOT.is_dir(), f"configured source root is missing: {_SRC_ROOT}"
     offenders: list[str] = []
     for path in sorted(_SRC_ROOT.rglob("*.py")):
         source = path.read_text(encoding="utf-8")
@@ -74,8 +75,8 @@ def test_registry_and_filter_imports_stay_torch_free() -> None:
         import importlib
         import sys
 
-        importlib.import_module("rag_mcp.core.vectordb.registry")
-        importlib.import_module("rag_mcp.core.vectordb.lance_filter")
+        importlib.import_module("omrg.core.vectordb.registry")
+        importlib.import_module("omrg.core.vectordb.lance_filter")
 
         assert "torch" not in sys.modules, "torch leaked onto the base import path"
         """

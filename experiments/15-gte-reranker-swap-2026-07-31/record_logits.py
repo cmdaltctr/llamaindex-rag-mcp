@@ -64,7 +64,7 @@ def _load_onnx_session(model_id: str) -> tuple[Any, Any, str]:
     from huggingface_hub import hf_hub_download
     from transformers import AutoTokenizer
 
-    from rag_mcp.reranker import _select_onnx_variant
+    from omrg.reranker import _select_onnx_variant
 
     candidates = _select_onnx_variant(model_id)
     onnx_path = None

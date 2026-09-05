@@ -16,8 +16,8 @@ from __future__ import annotations
 import asyncio
 import json
 
-from rag_mcp.core.metadata._common import _degradation_flag
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.metadata._common import _degradation_flag
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 class _FakeAsyncClient:
@@ -99,7 +99,7 @@ class TestDirectChatSignalsDegraded:
 
     def test_llamacpp_exhausted_retries_signals_degraded(self, monkeypatch) -> None:
         monkeypatch.setattr("httpx.AsyncClient", _FakeAsyncClient)
-        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+        from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
         result, degraded = self._run_and_read_flag(
@@ -110,7 +110,7 @@ class TestDirectChatSignalsDegraded:
 
     def test_ollama_exhausted_retries_signals_degraded(self, monkeypatch) -> None:
         monkeypatch.setattr("httpx.AsyncClient", _FakeAsyncClient)
-        from rag_mcp.core.metadata.ollama import _extract_ollama_async
+        from omrg.core.metadata.ollama import _extract_ollama_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
         result, degraded = self._run_and_read_flag(
@@ -121,7 +121,7 @@ class TestDirectChatSignalsDegraded:
 
     def test_openrouter_exhausted_retries_signals_degraded(self, monkeypatch) -> None:
         monkeypatch.setattr("httpx.AsyncClient", _FakeAsyncClient)
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from omrg.core.metadata.openrouter import _extract_openrouter_chat_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
         result, degraded = self._run_and_read_flag(
@@ -133,7 +133,7 @@ class TestDirectChatSignalsDegraded:
     def test_llamacpp_success_does_not_signal_degraded(self, monkeypatch) -> None:
         """A successful classification never sets the degradation flag."""
         monkeypatch.setattr("httpx.AsyncClient", _AlwaysSucceedsClient)
-        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+        from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
         result, degraded = self._run_and_read_flag(
@@ -181,7 +181,7 @@ class TestParserFallbackSignalsDegraded:
 
     def test_malformed_json_signals_degraded(self, monkeypatch) -> None:
         monkeypatch.setattr("httpx.AsyncClient", _MalformedJSONClient)
-        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+        from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_max_attempts=1))
 
@@ -216,9 +216,9 @@ class TestLlamaIndexSignalsDegraded:
         async def _fake_ollama(text, file_name="", settings=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama)
+        monkeypatch.setattr("omrg.core.metadata.ollama._extract_ollama_async", _fake_ollama)
 
-        from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
+        from omrg.core.metadata.llamaindex import _extract_llamaindex_async
 
         settings = EffectiveSettings(local_backend="ollama")
 
@@ -256,9 +256,9 @@ class TestLlamaIndexSignalsDegraded:
         async def _fake_ollama(text, file_name="", settings=None) -> dict:
             return {"category": "ai", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _fake_ollama)
+        monkeypatch.setattr("omrg.core.metadata.ollama._extract_ollama_async", _fake_ollama)
 
-        from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
+        from omrg.core.metadata.llamaindex import _extract_llamaindex_async
 
         settings = EffectiveSettings(local_backend="ollama")
 
@@ -284,7 +284,7 @@ class TestLlamaIndexSignalsDegraded:
 
         # _extract_llamaindex_async accesses resolved.chunk_size directly
         # (a pre-existing flat-alias gap). Add the property for this test.
-        from rag_mcp.core.settings import EffectiveSettings as _ES
+        from omrg.core.settings import EffectiveSettings as _ES
 
         monkeypatch.setattr(
             _ES, "chunk_size", property(lambda self: self.chunking.chunk_size), raising=False
@@ -313,7 +313,7 @@ class TestLlamaIndexSignalsDegraded:
         mock_ingestion.IngestionPipeline = MagicMock(return_value=mock_pipeline)
         monkeypatch.setitem(sys.modules, "llama_index.core.ingestion", mock_ingestion)
 
-        from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
+        from omrg.core.metadata.llamaindex import _extract_llamaindex_async
 
         settings = EffectiveSettings(local_backend="ollama")
 
@@ -340,11 +340,11 @@ class TestExtractMetadataWithStatusAsync:
             return {"category": "ai", "keywords": ["x"], "summary": "s"}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
+            "omrg.core.metadata.llamaindex._extract_llamaindex_async",
             _fake_llamaindex,
         )
 
-        from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
+        from omrg.core.metadata.extractor import extract_metadata_with_status_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="llamaindex"))
         metadata, degraded = asyncio.run(
@@ -357,17 +357,17 @@ class TestExtractMetadataWithStatusAsync:
         """Scenario: timeout fallback is signalled."""
 
         async def _degrading_llamaindex(text, file_name="", settings=None) -> dict:
-            from rag_mcp.core.metadata._common import _signal_degraded
+            from omrg.core.metadata._common import _signal_degraded
 
             _signal_degraded()
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.llamaindex._extract_llamaindex_async",
+            "omrg.core.metadata.llamaindex._extract_llamaindex_async",
             _degrading_llamaindex,
         )
 
-        from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
+        from omrg.core.metadata.extractor import extract_metadata_with_status_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="llamaindex"))
         metadata, degraded = asyncio.run(
@@ -380,14 +380,14 @@ class TestExtractMetadataWithStatusAsync:
         """Configured mode 'local' also counts as LLM-backed."""
 
         async def _degrading_ollama(text, file_name="", settings=None) -> dict:
-            from rag_mcp.core.metadata._common import _signal_degraded
+            from omrg.core.metadata._common import _signal_degraded
 
             _signal_degraded()
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
-        monkeypatch.setattr("rag_mcp.core.metadata.ollama._extract_ollama_async", _degrading_ollama)
+        monkeypatch.setattr("omrg.core.metadata.ollama._extract_ollama_async", _degrading_ollama)
 
-        from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
+        from omrg.core.metadata.extractor import extract_metadata_with_status_async
 
         settings = EffectiveSettings(
             local_backend="ollama",
@@ -405,7 +405,7 @@ class TestExtractMetadataWithStatusAsync:
         keyword mode never touches an LLM backend and the wrapper's
         detection rule excludes non-LLM-backed modes outright.
         """
-        from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
+        from omrg.core.metadata.extractor import extract_metadata_with_status_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="keyword"))
         token = _degradation_flag.set(True)  # simulate leftover noise
@@ -418,7 +418,7 @@ class TestExtractMetadataWithStatusAsync:
             _degradation_flag.reset(token)
 
     def test_disabled_mode_never_degrades(self) -> None:
-        from rag_mcp.core.metadata.extractor import extract_metadata_with_status_async
+        from omrg.core.metadata.extractor import extract_metadata_with_status_async
 
         settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
         metadata, degraded = asyncio.run(
@@ -451,7 +451,7 @@ class TestChunkerForwardsSettings:
             metadata=MetadataBlock(extraction_mode="keyword", keyword_rules=custom_rules)
         )
 
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
         nodes = asyncio.run(read_and_chunk_file_async(sample_txt, settings=settings))
         assert len(nodes) > 0
@@ -476,7 +476,7 @@ class TestPipelineDegradationAggregation:
     @staticmethod
     async def _fake_replacement_outcome(nodes, **kwargs):
         """Async stand-in for ``replace_source_nodes_async``."""
-        from rag_mcp.core.ingestion.replacement import WriteTimings
+        from omrg.core.ingestion.replacement import WriteTimings
 
         class _Outcome:
             chunks_written = len(nodes)
@@ -493,7 +493,7 @@ class TestPipelineDegradationAggregation:
 
         from llama_index.core.schema import TextNode
 
-        from rag_mcp.core.ingestion.chunker import _ChunkResult
+        from omrg.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
             return _ChunkResult(
@@ -502,15 +502,15 @@ class TestPipelineDegradationAggregation:
             )
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
         )
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
+            "omrg.core.ingestion.pipeline.replace_source_nodes_async",
             self._fake_replacement_outcome,
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_zero_test"))
         assert result["status"] == "ok"
@@ -525,7 +525,7 @@ class TestPipelineDegradationAggregation:
 
         from llama_index.core.schema import TextNode
 
-        from rag_mcp.core.ingestion.chunker import _ChunkResult
+        from omrg.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
             degraded = file_path.name == "b.txt"
@@ -535,15 +535,15 @@ class TestPipelineDegradationAggregation:
             )
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
         )
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
+            "omrg.core.ingestion.pipeline.replace_source_nodes_async",
             self._fake_replacement_outcome,
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_one_test"))
         assert result["status"] == "ok"
@@ -569,7 +569,7 @@ class TestPipelineDegradationAggregation:
 
         from llama_index.core.schema import TextNode
 
-        from rag_mcp.core.ingestion.chunker import _ChunkResult
+        from omrg.core.ingestion.chunker import _ChunkResult
 
         async def _fake_read_and_chunk(file_path, **kwargs):
             degraded = file_path.name == "b.txt"
@@ -579,7 +579,7 @@ class TestPipelineDegradationAggregation:
             )
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.pipeline.read_and_chunk_file_async",
+            "omrg.core.ingestion.pipeline.read_and_chunk_file_async",
             _fake_read_and_chunk,
         )
 
@@ -587,11 +587,11 @@ class TestPipelineDegradationAggregation:
             raise RuntimeError("embedding backend down")
 
         monkeypatch.setattr(
-            "rag_mcp.core.ingestion.replacement._embed_missing_nodes",
+            "omrg.core.ingestion.replacement._embed_missing_nodes",
             _failing_embed,
         )
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = asyncio.run(ingest_path_async(str(tmp_path), collection_name="degr_embed_err"))
         assert result["status"] == "error"
@@ -600,7 +600,7 @@ class TestPipelineDegradationAggregation:
 
     def test_path_not_found_includes_zero_degraded(self, monkeypatch) -> None:
         """Every result dict includes ``metadata_degraded``, even early exits."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = asyncio.run(ingest_path_async("/nonexistent/path", collection_name="degr_404"))
         assert result["status"] == "error"
@@ -621,7 +621,7 @@ class TestMetadataShapeUnchanged:
             metadata=MetadataBlock(extraction_mode="local", classify_max_attempts=1),
         )
 
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
         nodes = asyncio.run(read_and_chunk_file_async(sample_txt, settings=settings))
         assert len(nodes) > 0

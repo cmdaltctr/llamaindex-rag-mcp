@@ -4,7 +4,7 @@ Define the asynchronous ingestion contract so document ingestion can run without
 ## Requirements
 ### Requirement: Async ingestion entry point
 
-The system SHALL expose `ingest_path_async(path, ...)` in `rag_mcp.ingestion`
+The system SHALL expose `ingest_path_async(path, ...)` in `omrg.ingestion`
 as the primary ingestion function. The function SHALL be declared `async def`
 and SHALL return the same result dictionary shape as the existing
 `ingest_path()` (`files_indexed`, `chunks_created`, `file_details`, plus the
@@ -124,7 +124,7 @@ run.
 
 ### Requirement: Watcher dispatches via running loop
 
-The file watcher (`rag_mcp.watcher`) SHALL submit ingestion work to the MCP
+The file watcher (`omrg.watcher`) SHALL submit ingestion work to the MCP
 event loop via `asyncio.run_coroutine_threadsafe(...)` rather than calling
 ingestion synchronously from the watcher thread. The watcher SHALL capture
 a reference to the running loop at startup.
@@ -148,7 +148,7 @@ a reference to the running loop at startup.
 
 ### Requirement: CLI wraps async ingest
 
-The CLI subcommand `rag-mcp ingest` SHALL invoke `ingest_path_async(...)`
+The CLI subcommand `omrg ingest` SHALL invoke `ingest_path_async(...)`
 via `asyncio.run(...)` at the entry point. CLI flags, output format, exit
 codes, and report generation SHALL describe only controls that affect
 current async ingestion behavior. The CLI SHALL NOT present a file-reader
@@ -157,14 +157,14 @@ implemented.
 
 #### Scenario: CLI ingest uses async entry point
 
-- **WHEN** the user runs `rag-mcp ingest /path/to/docs`
+- **WHEN** the user runs `omrg ingest /path/to/docs`
 - **THEN** the CLI SHALL invoke `asyncio.run(ingest_path_async("/path/to/docs"))`
 - **THEN** stderr output, exit code, and `--report` output SHALL reflect the
   async implementation
 
 #### Scenario: Ingest help omits ineffective workers option
 
-- **WHEN** the user runs `rag-mcp ingest --help`
+- **WHEN** the user runs `omrg ingest --help`
 - **THEN** the help output SHALL NOT advertise file-reader workers as an
   effective throughput control
 - **THEN** the help output SHALL continue to document effective chunking,
@@ -172,7 +172,7 @@ implemented.
 
 #### Scenario: Ingest report omits ineffective workers setting
 
-- **WHEN** `rag-mcp ingest /docs --report report.json` runs
+- **WHEN** `omrg ingest /docs --report report.json` runs
 - **THEN** the generated report SHALL NOT claim a file-reader worker count
   affected the run
 - **THEN** the report MAY include effective embedding batch size and embedding
@@ -182,14 +182,14 @@ implemented.
 
 The async path SHALL be the sole supported ingestion entry point. Once all
 callers (CLI, watcher, MCP server) use `ingest_path_async`, the sync
-`ingest_path()` function SHALL be removed from `rag_mcp.ingestion`, and
+`ingest_path()` function SHALL be removed from `omrg.ingestion`, and
 the `ThreadPoolExecutor` workaround in
-`rag_mcp.metadata_extractor._extract_llamaindex` SHALL also be removed.
+`omrg.metadata_extractor._extract_llamaindex` SHALL also be removed.
 
 #### Scenario: Sync ingestion entry point no longer exists
 
 - **WHEN** code attempts to import `ingest_path` (without the `_async`
-  suffix) from `rag_mcp.ingestion`
+  suffix) from `omrg.ingestion`
 - **THEN** the import SHALL fail with `ImportError`
 
 #### Scenario: ThreadPoolExecutor workaround removed
@@ -236,7 +236,7 @@ implementation.
 
 #### Scenario: `--report` output preserves core report structure
 
-- **WHEN** `rag-mcp ingest /docs --report report.json` runs against the
+- **WHEN** `omrg ingest /docs --report report.json` runs against the
   async build
 - **THEN** the JSON report SHALL include `timestamp`, `config`, `input_path`,
   `summary`, and `files`

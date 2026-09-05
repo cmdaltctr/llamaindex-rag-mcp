@@ -18,7 +18,7 @@ import asyncio
 
 import pytest
 
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 # ── Task 2.2: resolver unit tests ───────────────────────────────────────
 
@@ -36,7 +36,7 @@ class TestResolveClassifyTimeout:
     )
     def test_override_honoured(self, provider: str, field: str) -> None:
         """A set override wins over the shared classify_timeout."""
-        from rag_mcp.core.metadata._common import _resolve_classify_timeout
+        from omrg.core.metadata._common import _resolve_classify_timeout
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_timeout=30.0, **{field: 99.0}))
         assert _resolve_classify_timeout(settings, provider) == 99.0
@@ -44,14 +44,14 @@ class TestResolveClassifyTimeout:
     @pytest.mark.parametrize("provider", ["llamacpp", "ollama", "openrouter"])
     def test_unset_falls_back_to_shared(self, provider: str) -> None:
         """An unset override (None, the default) falls back to classify_timeout."""
-        from rag_mcp.core.metadata._common import _resolve_classify_timeout
+        from omrg.core.metadata._common import _resolve_classify_timeout
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_timeout=42.0))
         assert _resolve_classify_timeout(settings, provider) == 42.0
 
     def test_unknown_provider_falls_back_to_shared(self) -> None:
         """A provider name with no matching field behaves like an unset override."""
-        from rag_mcp.core.metadata._common import _resolve_classify_timeout
+        from omrg.core.metadata._common import _resolve_classify_timeout
 
         settings = EffectiveSettings(metadata=MetadataBlock(classify_timeout=17.0))
         assert _resolve_classify_timeout(settings, "made_up_provider") == 17.0
@@ -70,7 +70,7 @@ class TestResolvePipelineTimeout:
     )
     def test_override_honoured(self, provider: str, field: str) -> None:
         """A set override wins over the shared pipeline_timeout."""
-        from rag_mcp.core.metadata._common import _resolve_pipeline_timeout
+        from omrg.core.metadata._common import _resolve_pipeline_timeout
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(pipeline_timeout=180.0, **{field: 300.0})
@@ -80,14 +80,14 @@ class TestResolvePipelineTimeout:
     @pytest.mark.parametrize("provider", ["llamacpp", "ollama", "openrouter"])
     def test_unset_falls_back_to_shared(self, provider: str) -> None:
         """An unset override (None, the default) falls back to pipeline_timeout."""
-        from rag_mcp.core.metadata._common import _resolve_pipeline_timeout
+        from omrg.core.metadata._common import _resolve_pipeline_timeout
 
         settings = EffectiveSettings(metadata=MetadataBlock(pipeline_timeout=210.0))
         assert _resolve_pipeline_timeout(settings, provider) == 210.0
 
     def test_unknown_provider_falls_back_to_shared(self) -> None:
         """A provider name with no matching field behaves like an unset override."""
-        from rag_mcp.core.metadata._common import _resolve_pipeline_timeout
+        from omrg.core.metadata._common import _resolve_pipeline_timeout
 
         settings = EffectiveSettings(metadata=MetadataBlock(pipeline_timeout=99.0))
         assert _resolve_pipeline_timeout(settings, "made_up_provider") == 99.0
@@ -130,7 +130,7 @@ class TestClassifyTimeoutWiring:
     """Each direct-chat backend passes its resolved timeout to httpx."""
 
     def test_llamacpp_uses_override(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+        from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(
@@ -143,7 +143,7 @@ class TestClassifyTimeoutWiring:
         assert fake_httpx_client.captured["timeout"] == 45.0
 
     def test_llamacpp_unset_uses_shared(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
+        from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(classify_timeout=30.0, classify_max_attempts=1)
@@ -152,7 +152,7 @@ class TestClassifyTimeoutWiring:
         assert fake_httpx_client.captured["timeout"] == 30.0
 
     def test_ollama_uses_override(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.ollama import _extract_ollama_async
+        from omrg.core.metadata.ollama import _extract_ollama_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(
@@ -165,7 +165,7 @@ class TestClassifyTimeoutWiring:
         assert fake_httpx_client.captured["timeout"] == 55.0
 
     def test_ollama_unset_uses_shared(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.ollama import _extract_ollama_async
+        from omrg.core.metadata.ollama import _extract_ollama_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(classify_timeout=30.0, classify_max_attempts=1)
@@ -174,7 +174,7 @@ class TestClassifyTimeoutWiring:
         assert fake_httpx_client.captured["timeout"] == 30.0
 
     def test_openrouter_uses_override(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from omrg.core.metadata.openrouter import _extract_openrouter_chat_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(
@@ -187,7 +187,7 @@ class TestClassifyTimeoutWiring:
         assert fake_httpx_client.captured["timeout"] == 65.0
 
     def test_openrouter_unset_uses_shared(self, fake_httpx_client) -> None:
-        from rag_mcp.core.metadata.openrouter import _extract_openrouter_chat_async
+        from omrg.core.metadata.openrouter import _extract_openrouter_chat_async
 
         settings = EffectiveSettings(
             metadata=MetadataBlock(classify_timeout=30.0, classify_max_attempts=1)
@@ -221,17 +221,17 @@ class TestPipelineTimeoutWiring:
 
             return _build
 
-        monkeypatch.setattr("rag_mcp.core.providers.llm.registry.get", _fake_llm_get)
+        monkeypatch.setattr("omrg.core.providers.llm.registry.get", _fake_llm_get)
 
         async def _fake_dispatch(text, settings, file_name):
             return {"category": "uncategorised", "keywords": [], "summary": ""}
 
         monkeypatch.setattr(
-            "rag_mcp.core.metadata.extractor._dispatch_local_extraction",
+            "omrg.core.metadata.extractor._dispatch_local_extraction",
             _fake_dispatch,
         )
 
-        from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
+        from omrg.core.metadata.llamaindex import _extract_llamaindex_async
 
         asyncio.run(_extract_llamaindex_async("text", "file.txt", settings))
         return recorded
@@ -278,7 +278,7 @@ class TestPipelineTimeoutWiring:
         assert recorded["backend"] == "openrouter"
         assert recorded["timeout"] == 180.0
 
-        from rag_mcp.core.metadata._common import _resolve_classify_timeout
+        from omrg.core.metadata._common import _resolve_classify_timeout
 
         assert _resolve_classify_timeout(settings, "openrouter") == 30.0
 
@@ -309,19 +309,19 @@ class TestOllamaClassifyTimeoutOverrideAvoidsCollision:
     """
 
     def test_still_in_retired_map(self) -> None:
-        from rag_mcp.config.legacy import _RETIRED_ENV_VARS
+        from omrg.config.legacy import _RETIRED_ENV_VARS
 
         assert "METADATA__OLLAMA_CLASSIFY_TIMEOUT" in _RETIRED_ENV_VARS
 
     def test_old_name_trips_the_startup_tripwire(self) -> None:
-        from rag_mcp.config.legacy import check_legacy_env_vars
+        from omrg.config.legacy import check_legacy_env_vars
 
         with pytest.raises(ValueError, match="METADATA__CLASSIFY_TIMEOUT"):
             check_legacy_env_vars({"METADATA__OLLAMA_CLASSIFY_TIMEOUT": "45.0"})
 
     def test_override_env_var_resolves_into_the_new_field(self, monkeypatch) -> None:
         """End-to-end: ``METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE`` reaches the field."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.setenv("METADATA__OLLAMA_CLASSIFY_TIMEOUT_OVERRIDE", "45.0")
         settings = Settings(_env_file=None)
@@ -334,7 +334,7 @@ class TestOllamaClassifyTimeoutOverrideAvoidsCollision:
         moved into a nested block) and must keep tripwiring — pydantic
         cannot detect flat names on its own.
         """
-        from rag_mcp.config.legacy import check_legacy_env_vars
+        from omrg.config.legacy import check_legacy_env_vars
 
         with pytest.raises(ValueError, match="METADATA__CLASSIFY_TIMEOUT"):
             check_legacy_env_vars({"OLLAMA_CLASSIFY_TIMEOUT": "45.0"})
@@ -353,8 +353,8 @@ class TestTimeoutOverrideTravelsThroughCompose:
     """
 
     def test_override_survives_compose_round_trip(self) -> None:
-        from rag_mcp.compose import settings_to_effective
-        from rag_mcp.config import Settings
+        from omrg.compose import settings_to_effective
+        from omrg.config import Settings
 
         settings = Settings(_env_file=None)
         settings.metadata.ollama_classify_timeout_override = 45.0

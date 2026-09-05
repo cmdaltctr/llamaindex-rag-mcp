@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from rag_mcp.core.chunking.code import chunk_code_file_async as _chunk_code_file_async
-from rag_mcp.core.chunking.config_file import chunk_config_file as _chunk_config_file
-from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
+from omrg.core.chunking.code import chunk_code_file_async as _chunk_code_file_async
+from omrg.core.chunking.config_file import chunk_config_file as _chunk_config_file
+from omrg.core.ingestion.chunker import read_and_chunk_file_async as _read_and_chunk_file_async
 
 
 class TestCodeSplitterDispatch:
@@ -127,7 +127,7 @@ class TestBinarySkip:
         (tmp_path / "app.py").write_text("x = 1\n")
         (tmp_path / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n")
 
-        from rag_mcp.core.codebase.codebase_map import FileEntry, FileInventory
+        from omrg.core.codebase.codebase_map import FileEntry, FileInventory
 
         mock_inventory = FileInventory(
             entries=[
@@ -138,7 +138,7 @@ class TestBinarySkip:
             binary_files=["image.png"],
         )
 
-        from rag_mcp.core.ingestion.replacement import WriteTimings
+        from omrg.core.ingestion.replacement import WriteTimings
 
         outcome = SimpleNamespace(
             chunks_written=1,
@@ -147,21 +147,19 @@ class TestBinarySkip:
             timings=WriteTimings(),
         )
         with (
-            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("omrg.integrations.magika._is_magika_available", return_value=False),
+            patch("omrg.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory),
             patch(
-                "rag_mcp.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory
-            ),
-            patch(
-                "rag_mcp.core.ingestion.pipeline.gather_supported_files",
+                "omrg.core.ingestion.pipeline.gather_supported_files",
                 return_value=([tmp_path / "app.py", tmp_path / "image.png"], []),
             ),
             patch(
-                "rag_mcp.core.ingestion.pipeline.replace_source_nodes_async",
+                "omrg.core.ingestion.pipeline.replace_source_nodes_async",
                 new_callable=AsyncMock,
                 return_value=outcome,
             ),
         ):
-            from rag_mcp.core.ingestion import ingest_path_async
+            from omrg.core.ingestion import ingest_path_async
 
             result = await ingest_path_async(str(tmp_path))
 
@@ -186,8 +184,8 @@ class TestSingleFileIngestRouting:
     @pytest.mark.asyncio
     async def test_single_markdown_file_ingests_with_typed_metadata(self, tmp_path: Path) -> None:
         """A directly ingested .md file carries content_type document/markdown."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.vectordb import get_default_store
 
         f = tmp_path / "note.md"
         f.write_text("# Heading\n\nParagraph one.\n\n## Sub\n\nParagraph two.\n")
@@ -206,8 +204,8 @@ class TestSingleFileIngestRouting:
     @pytest.mark.asyncio
     async def test_single_text_file_ingests_with_typed_metadata(self, tmp_path: Path) -> None:
         """A directly ingested .txt file carries content_type document/text."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.vectordb import get_default_store
 
         f = tmp_path / "notes.txt"
         f.write_text("First line.\nSecond line with more words.\nThird line.\n")

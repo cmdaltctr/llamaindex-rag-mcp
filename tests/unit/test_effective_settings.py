@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from rag_mcp.core.settings import EffectiveSettings
+from omrg.core.settings import EffectiveSettings
 
 
 def test_effective_settings_is_frozen() -> None:
@@ -35,7 +35,7 @@ def test_two_instances_are_independent() -> None:
     other's values.  Asserting on two freshly-constructed defaults proves
     nothing, since frozen Pydantic models cannot share state anyway.
     """
-    from rag_mcp.core.settings import RetrievalBlock
+    from omrg.core.settings import RetrievalBlock
 
     base = EffectiveSettings(retrieval=RetrievalBlock(top_k=10, rerank_enabled=False))
     overlaid = base.model_copy(
@@ -77,7 +77,7 @@ def test_overlay_preserves_non_lever_fields() -> None:
 
 def test_backward_compat_properties() -> None:
     """Flat property aliases map to nested blocks."""
-    from rag_mcp.core.settings import RetrievalBlock
+    from omrg.core.settings import RetrievalBlock
 
     settings = EffectiveSettings(
         retrieval=RetrievalBlock(top_k=42, rerank_enabled=True, hybrid_enabled=True),
@@ -90,18 +90,18 @@ def test_backward_compat_properties() -> None:
 def test_core_settings_has_no_upward_imports() -> None:
     """``core/settings.py`` must not import from config, compose, or core."""
     settings_path = (
-        Path(__file__).resolve().parent.parent.parent / "src" / "rag_mcp" / "core" / "settings.py"
+        Path(__file__).resolve().parent.parent.parent / "src" / "omrg" / "core" / "settings.py"
     )
     source = settings_path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(settings_path))
 
     forbidden_prefixes = (
-        "rag_mcp.config",
-        "rag_mcp.compose",
-        "rag_mcp.core",
+        "omrg.config",
+        "omrg.compose",
+        "omrg.core",
     )
-    # core/settings.py is rag_mcp.core.settings, so its package is rag_mcp.core.
-    importer_package = "rag_mcp.core"
+    # core/settings.py is omrg.core.settings, so its package is omrg.core.
+    importer_package = "omrg.core"
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

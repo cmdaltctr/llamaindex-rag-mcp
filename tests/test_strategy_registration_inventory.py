@@ -3,7 +3,7 @@
 Compares the maintained audit inventory in ``docs/guides/architecture.md``
 with the code it audits:
 
-- Every ``.py`` module under ``src/rag_mcp/integrations/`` (``__pycache__``
+- Every ``.py`` module under ``src/omrg/integrations/`` (``__pycache__``
   excluded) must appear in the ``integration-inventory`` table, and the
   table must name nothing absent from disk.
 - Every ``registry-names`` marker block must list exactly the matching
@@ -28,20 +28,20 @@ from types import ModuleType
 
 import pytest
 
-from rag_mcp.core.chunking import registry as chunking_registry
-from rag_mcp.core.community import registry as community_registry
-from rag_mcp.core.ingestion.backends import registry as docbackend_registry
-from rag_mcp.core.metadata import registry as metadata_registry
-from rag_mcp.core.providers.embeddings import registry as embed_registry
-from rag_mcp.core.providers.llm import registry as llm_registry
-from rag_mcp.core.retrieval import registry as retrieval_registry
-from rag_mcp.core.retrieval import sparse_registry
-from rag_mcp.core.vectordb import registry as vectordb_registry
-from rag_mcp.integrations.pdf import registry as pdf_registry
+from omrg.core.chunking import registry as chunking_registry
+from omrg.core.community import registry as community_registry
+from omrg.core.ingestion.backends import registry as docbackend_registry
+from omrg.core.metadata import registry as metadata_registry
+from omrg.core.providers.embeddings import registry as embed_registry
+from omrg.core.providers.llm import registry as llm_registry
+from omrg.core.retrieval import registry as retrieval_registry
+from omrg.core.retrieval import sparse_registry
+from omrg.core.vectordb import registry as vectordb_registry
+from omrg.integrations.pdf import registry as pdf_registry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ARCHITECTURE_GUIDE = REPO_ROOT / "docs" / "guides" / "architecture.md"
-INTEGRATIONS_DIR = REPO_ROOT / "src" / "rag_mcp" / "integrations"
+INTEGRATIONS_DIR = REPO_ROOT / "src" / "omrg" / "integrations"
 CHANGES_DIR = REPO_ROOT / "openspec" / "changes"
 
 #: The six audit columns every inventory row must carry, all non-empty.
@@ -155,7 +155,7 @@ def _inventory_rows(body: str) -> list[list[str]]:
 
 
 def _discovered_integration_modules() -> set[str]:
-    """Discover every Python module under ``src/rag_mcp/integrations/``.
+    """Discover every Python module under ``src/omrg/integrations/``.
 
     ``__pycache__`` byte-code directories are excluded. ``__init__.py``
     maps to its package name; every other file maps to its module.
@@ -168,7 +168,7 @@ def _discovered_integration_modules() -> set[str]:
         if parts and parts[-1] == "__init__":
             parts = parts[:-1]
         # A top-level __init__.py maps to the package root itself.
-        name = "rag_mcp.integrations" if not parts else "rag_mcp.integrations." + ".".join(parts)
+        name = "omrg.integrations" if not parts else "omrg.integrations." + ".".join(parts)
         modules.add(name)
     return modules
 
@@ -233,12 +233,12 @@ def test_integration_inventory_table_matches_disk() -> None:
     """The inventory table SHALL name exactly the modules on disk.
 
     Spec scenario "Integrations directory changes": adding a module
-    under ``src/rag_mcp/integrations/`` without classifying it in the
+    under ``src/omrg/integrations/`` without classifying it in the
     inventory must fail this check.
     """
     discovered = _discovered_integration_modules()
     documented = _documented_inventory_modules()
-    assert discovered, "no modules discovered under src/rag_mcp/integrations/"
+    assert discovered, "no modules discovered under src/omrg/integrations/"
     assert discovered == documented, (
         "integration inventory in architecture.md drifted from disk.\n"
         f"  undocumented (on disk, missing from table): "

@@ -18,13 +18,13 @@ from unittest.mock import patch
 
 import pytest
 
-from rag_mcp.core.chunking import registry as chunking_registry
-from rag_mcp.core.community import registry as community_registry
-from rag_mcp.core.ingestion.backends import registry as docbackend_registry
-from rag_mcp.core.metadata import registry as metadata_registry
-from rag_mcp.core.providers.embeddings import registry as embed_registry
-from rag_mcp.core.providers.llm import registry as llm_registry
-from rag_mcp.core.retrieval import registry as retrieval_registry
+from omrg.core.chunking import registry as chunking_registry
+from omrg.core.community import registry as community_registry
+from omrg.core.ingestion.backends import registry as docbackend_registry
+from omrg.core.metadata import registry as metadata_registry
+from omrg.core.providers.embeddings import registry as embed_registry
+from omrg.core.providers.llm import registry as llm_registry
+from omrg.core.retrieval import registry as retrieval_registry
 
 ALL_REGISTRIES = [
     chunking_registry,
@@ -156,7 +156,7 @@ def test_registry_package_import_is_lazy(registry) -> None:
     """Importing the registry's *package* must not import strategy modules.
 
     Complements :func:`test_registry_is_lazy`: that test imports the registry
-    submodule directly, this one imports the package (e.g. ``rag_mcp.core.chunking``)
+    submodule directly, this one imports the package (e.g. ``omrg.core.chunking``)
     the way production code does, catching an eager re-export added to
     ``__init__.py``.  Also runs in a subprocess — see that test's docstring
     for why an in-process ``sys.modules`` check is unfalsifiable here.
@@ -194,11 +194,11 @@ def test_registry_missing_dependency_raises_import_error() -> None:
     Simulates a missing optional dependency by poisoning ``sys.modules``
     with ``None`` for the target module.
     """
-    target = "rag_mcp.core.providers.embeddings.llamacpp"
+    target = "omrg.core.providers.embeddings.llamacpp"
     with patch.dict(sys.modules, {target: None}):
         import importlib
 
-        fresh = importlib.import_module("rag_mcp.core.providers.embeddings.registry")
+        fresh = importlib.import_module("omrg.core.providers.embeddings.registry")
         fresh._cache.clear()
         with pytest.raises(ImportError) as excinfo:
             fresh.get("llamacpp")
@@ -209,7 +209,7 @@ def test_registry_missing_module_raises_import_error() -> None:
     """A fully missing strategy module raises a naming ImportError."""
     import importlib
 
-    fresh = importlib.import_module("rag_mcp.core.retrieval.registry")
+    fresh = importlib.import_module("omrg.core.retrieval.registry")
     fresh._cache.clear()
     with patch(
         "importlib.import_module",
@@ -233,7 +233,7 @@ def test_register_adds_new_strategy() -> None:
     """``register()`` adds a new entry to the registry."""
     chunking_registry._cache.pop("__test__", None)
     chunking_registry._registry.pop("__test__", None)
-    chunking_registry.register("__test__", "rag_mcp.core.chunking.code:chunk_code_file_async")
+    chunking_registry.register("__test__", "omrg.core.chunking.code:chunk_code_file_async")
     assert "__test__" in chunking_registry.available()
     resolved = chunking_registry.get("__test__")
     assert callable(resolved)
@@ -350,13 +350,13 @@ def test_config_accepts_every_registered_pdf_reader() -> None:
     reader to ``auto`` and the registry check never fires. This pin
     turns that drift into a build failure.
     """
-    from rag_mcp.config import Settings
-    from rag_mcp.integrations.pdf import registry as pdf_registry
+    from omrg.config import Settings
+    from omrg.integrations.pdf import registry as pdf_registry
 
     for name in pdf_registry.available():
         settings = Settings(_env_file=None, pdf_reader=name)
         assert settings.pdf_reader == name, (
             f"config validator coerced registered reader {name!r} to "
             f"{settings.pdf_reader!r}; add it to the accepted values in "
-            f"src/rag_mcp/config/__init__.py"
+            f"src/omrg/config/__init__.py"
         )

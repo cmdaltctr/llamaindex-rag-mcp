@@ -14,7 +14,7 @@ Requires Ollama running with both models pulled:
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -232,7 +232,7 @@ def _setup_model(model_name: str, tmp_dir: str) -> None:
     os.environ["CHROMA_PERSIST_DIR"] = tmp_dir
     os.environ["COLLECTION_NAME"] = EXPERIMENT_COLLECTION
 
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None:
             if hasattr(mod, "CHROMA_PERSIST_DIR"):
@@ -272,8 +272,8 @@ def evaluate_model(
     Returns:
         ModelEvaluation with per-query and aggregate results.
     """
-    from rag_mcp.ingestion import ingest_path
-    from rag_mcp.retrieval import search
+    from omrg.ingestion import ingest_path
+    from omrg.retrieval import search
 
     model_name = model_info["name"]
     label = model_info["label"]
@@ -486,8 +486,8 @@ def main() -> None:
     print(f"  Reranking: disabled (isolating embedding quality)")
 
     # Ensure ingestion/retrieval modules are loaded so we can patch them.
-    import rag_mcp.ingestion  # noqa: F401
-    import rag_mcp.retrieval  # noqa: F401
+    import omrg.ingestion  # noqa: F401
+    import omrg.retrieval  # noqa: F401
 
     evaluations: list[ModelEvaluation] = []
 

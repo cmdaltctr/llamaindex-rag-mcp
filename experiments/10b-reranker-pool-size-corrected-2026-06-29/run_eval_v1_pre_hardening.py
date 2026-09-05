@@ -20,7 +20,7 @@ Uses the fetch_k override parameter to control candidate pool size precisely.
 Reuses Exp 9a's ChromaDB indexes and ground truth.
 
 Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
-through ``rag_mcp.core.retrieval.search`` with an explicitly injected
+through ``omrg.core.retrieval.search`` with an explicitly injected
 store obtained from ``experiments/_lib/storage.py`` — no environment
 mutation or module-constant patching.  Works in local and cloud Chroma
 modes; retrieval-only cells reuse the immutable index read-only.
@@ -77,7 +77,7 @@ def _resolve_cell_runtime(chroma_dir: Path) -> tuple[Any, str]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.vectordb import set_default_store
+    from omrg.core.vectordb import set_default_store
 
     # Pin the query embedder to the index identity; ambient Settings()
     # could select a different provider and query with incompatible vectors.
@@ -85,7 +85,7 @@ def _resolve_cell_runtime(chroma_dir: Path) -> tuple[Any, str]:
     set_default_store(store)
 
     try:
-        from rag_mcp.core.retrieval.dense import _cached_query_embedding
+        from omrg.core.retrieval.dense import _cached_query_embedding
 
         _cached_query_embedding.cache_clear()
     except Exception:  # noqa: S110 — provenance copy of run_eval.py v1 (best-effort clear)
@@ -168,7 +168,7 @@ def _evaluate_cell(
     top_k: int,
     warmup_queries: int,
 ) -> dict[str, Any]:
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     store, collection_name = _resolve_cell_runtime(chroma_dir)
 

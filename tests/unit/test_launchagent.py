@@ -1,4 +1,4 @@
-"""Unit tests for ``rag_mcp.transports.cli._launchagent``.
+"""Unit tests for ``omrg.transports.cli._launchagent``.
 
 Covers OpenSpec change ``add-login-watcher-installer``:
 - Requirement: LaunchAgent plist generation (deterministic label and paths;
@@ -26,7 +26,7 @@ import pytest
 @pytest.fixture
 def la():
     """Import the module under test; errors cleanly while unimplemented."""
-    from rag_mcp.transports.cli import _launchagent
+    from omrg.transports.cli import _launchagent
 
     return _launchagent
 
@@ -36,7 +36,7 @@ def make_plan(la):
     """Return a factory building a fully-populated LaunchAgentPlan."""
 
     def _factory(**overrides):
-        from rag_mcp.transports.cli._launchagent import LaunchAgentPlan
+        from omrg.transports.cli._launchagent import LaunchAgentPlan
 
         base = {
             "label": "com.rag-mcp.watch.docs",
@@ -445,7 +445,7 @@ class TestRunLaunchctl:
         done = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
         monkeypatch.setattr(sys, "platform", "darwin")
         with patch(
-            "rag_mcp.transports.cli._launchagent.subprocess.run",
+            "omrg.transports.cli._launchagent.subprocess.run",
             return_value=done,
         ) as mock_run:
             result = la.run_launchctl(["launchctl", "print"])

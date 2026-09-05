@@ -58,7 +58,7 @@ reviews:
   # (see AGENTS.md) so CodeRabbit enforces them the same way a human
   # reviewer familiar with the codebase would.
   path_instructions:
-    - path: "src/rag_mcp/config/**"
+    - path: "src/omrg/config/**"
       instructions: |
         This package is a LEAF. It must not import core/ business logic —
         only the pure-data core/*/settings.py models. Flag any import of
@@ -66,14 +66,14 @@ reviews:
         module. There is no config.settings singleton and no RESOLVED_*
         module-level constant; importing config must not resolve anything.
 
-    - path: "src/rag_mcp/core/ingestion/**"
+    - path: "src/omrg/core/ingestion/**"
       instructions: |
         Must not import from core/retrieval/ — the two share only settings,
         injected as EffectiveSettings. Flag any cross-import. Ingestion
         entry points must go through ingest_path_async (async-only, no sync
         entry point).
 
-    - path: "src/rag_mcp/core/retrieval/**"
+    - path: "src/omrg/core/retrieval/**"
       instructions: |
         Must not import from core/ingestion/. Settings are injected, never
         read from a global/singleton. If touching reranker.py, verify any
@@ -83,19 +83,19 @@ reviews:
         reranker per call, so instance-level resets defeat cross-call
         escalation logic silently.
 
-    - path: "src/rag_mcp/core/codebase/**"
+    - path: "src/omrg/core/codebase/**"
       instructions: |
         Deterministic only — no LLM calls in code graph construction or
         community detection. Must not cross-import core/ingestion/ or
         core/retrieval/. Magika detection lives in integrations/magika.py
         and must not be imported back into this package.
 
-    - path: "src/rag_mcp/core/documents/**"
+    - path: "src/omrg/core/documents/**"
       instructions: |
         Deterministic only — no LLM calls in doc graph or similarity
         scoring. Must not cross-import core/ingestion/ or core/retrieval/.
 
-    - path: "src/rag_mcp/transports/**"
+    - path: "src/omrg/transports/**"
       instructions: |
         Thin wrappers only — delegate to core/, never contain business
         logic. Every MCP tool handler in transports/mcp.py must wrap its
@@ -105,13 +105,13 @@ reviews:
         destructiveHint). CLI output must go to stderr (Console(stderr=True))
         since stdout is the MCP protocol channel.
 
-    - path: "src/rag_mcp/integrations/azure.py"
+    - path: "src/omrg/integrations/azure.py"
       instructions: |
         azure-ai-documentintelligence must not be imported at module
         top-level (ADR-024) — the import must happen lazily inside
         _get_client() so the SDK is not a hard runtime dependency.
 
-    - path: "src/rag_mcp/**/*.py"
+    - path: "src/omrg/**/*.py"
       instructions: |
         New modules need type annotations and `from __future__ import
         annotations`, plus Google-style docstrings on public functions and
@@ -222,7 +222,7 @@ code_generation:
   docstrings:
     language: en-GB
     path_instructions:
-      - path: "src/rag_mcp/**/*.py"
+      - path: "src/omrg/**/*.py"
         instructions: |
           Google-style docstrings. British English spelling in prose.
           Document the WHY for non-obvious behaviour, not a restatement of

@@ -35,12 +35,12 @@ def main() -> int:
             "LANCEDB_URI": os.environ.get("LANCEDB_URI"),
         }
 
-        from rag_mcp.compose import ensure_runtime_setup
+        from omrg.compose import ensure_runtime_setup
 
         ensure_runtime_setup()
 
-        from rag_mcp.core.retrieval import search
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.retrieval import search
+        from omrg.core.vectordb import get_default_store
 
         store = get_default_store()
         count = store.count("qual_documents")

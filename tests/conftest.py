@@ -65,7 +65,7 @@ class _UnitNormMockEmbedding(MockEmbedding):
 # settings). Defined once so the two fixtures cannot drift apart.
 _TEST_PERSIST_DIR = os.path.join(
     tempfile.gettempdir(),
-    f"test_chroma_rag_mcp_{os.getpid()}",
+    f"test_chroma_omrg_{os.getpid()}",
 )
 _TEST_COLLECTION = "test_documents"
 
@@ -81,8 +81,8 @@ def _reset_default_store() -> None:
     ``ensure_runtime_setup`` recomposes against this test's pinned
     environment instead of skipping setup with a cleared store.
     """
-    from rag_mcp.compose import reset_runtime_setup
-    from rag_mcp.core.vectordb import reset_default_store
+    from omrg.compose import reset_runtime_setup
+    from omrg.core.vectordb import reset_default_store
 
     reset_runtime_setup()
     reset_default_store()
@@ -140,15 +140,15 @@ def _clear_registry_caches() -> None:
     at the original.  Clearing the caches ensures each test sees the
     patched function (task 3.7/3.9).
     """
-    from rag_mcp.core.chunking import registry as _chunking
-    from rag_mcp.core.community import registry as _community
-    from rag_mcp.core.ingestion.backends import registry as _docbackend
-    from rag_mcp.core.metadata import registry as _metadata
-    from rag_mcp.core.providers.embeddings import registry as _embed
-    from rag_mcp.core.providers.llm import registry as _llm
-    from rag_mcp.core.retrieval import registry as _retrieval
-    from rag_mcp.core.vectordb import registry as _vectordb
-    from rag_mcp.integrations.pdf import registry as _pdf
+    from omrg.core.chunking import registry as _chunking
+    from omrg.core.community import registry as _community
+    from omrg.core.ingestion.backends import registry as _docbackend
+    from omrg.core.metadata import registry as _metadata
+    from omrg.core.providers.embeddings import registry as _embed
+    from omrg.core.providers.llm import registry as _llm
+    from omrg.core.retrieval import registry as _retrieval
+    from omrg.core.vectordb import registry as _vectordb
+    from omrg.integrations.pdf import registry as _pdf
 
     for reg in (
         _chunking,
@@ -180,7 +180,7 @@ def effective_settings():
     Builds a frozen :class:`EffectiveSettings` with sensible defaults so
     later test migrations are one-line changes (task 4.1).
     """
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         ChunkingBlock,
         EffectiveSettings,
         EmbeddingBlock,
@@ -261,7 +261,7 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     (pytest orders dependency-free autouse fixtures alphabetically, which
     would otherwise reset the store AFTER this fixture installs it).
     """
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         reset_default_effective_settings,
@@ -292,8 +292,8 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     # fixture never resolves — and therefore never caches — the flat
     # Settings singleton: a test that overrides provider env vars inside
     # a CliRunner.invoke() must still hit fresh validation.
-    from rag_mcp.core.vectordb import registry as vectordb_registry
-    from rag_mcp.core.vectordb import set_default_store
+    from omrg.core.vectordb import registry as vectordb_registry
+    from omrg.core.vectordb import set_default_store
 
     backend = os.environ.get("VECTOR_STORE", "lancedb")
     set_default_store(vectordb_registry.get(backend)(effective))
@@ -322,7 +322,7 @@ def _patch_embed_model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
     Settings.embed_model = _patch_embed_model._mock
 
     if request.node.path.name in ("test_cli.py", "test_answer_transport_cli.py"):
-        from rag_mcp.core.providers.embeddings import registry as embed_registry
+        from omrg.core.providers.embeddings import registry as embed_registry
 
         real_get = embed_registry.get
 
@@ -385,7 +385,7 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # the EffectiveSettings every layer receives.
     #
     # Clear any cached Settings so the env above is picked up per test.
-    config_mod = sys.modules.get("rag_mcp.config")
+    config_mod = sys.modules.get("omrg.config")
     if config_mod is not None:
         monkeypatch.setattr(config_mod, "_settings", None, raising=False)
 
@@ -395,7 +395,7 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 @pytest.fixture
 def mcp_server():
-    """Return the real FastMCP server instance from rag_mcp.transports.mcp.
+    """Return the real FastMCP server instance from omrg.transports.mcp.
 
     The LanceDB store and embedding patches are applied via autouse
     fixtures above, so the server uses a tmp-path store and mock
@@ -403,7 +403,7 @@ def mcp_server():
 
     The test fixture supplies a mock embedding model for tool handlers.
     """
-    from rag_mcp.transports.mcp import mcp
+    from omrg.transports.mcp import mcp
 
     # Importing server.py triggers config.py which sets
     # Settings.embed_model = OllamaEmbedding(...).  Re-apply mock.

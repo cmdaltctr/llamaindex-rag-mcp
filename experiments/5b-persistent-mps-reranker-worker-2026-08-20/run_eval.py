@@ -73,7 +73,7 @@ def ensure_onnx_parent() -> Any:
     measurement across the whole campaign.
     """
     if "reranker" not in _onnx_parent_state:
-        from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
+        from omrg.core.retrieval.reranker import CrossEncoderReranker
 
         reranker = CrossEncoderReranker(model_id=harness.MODEL_ID)
         probe = [{"text": "probe passage", "score": 0.0, "doc_id": "probe"}]

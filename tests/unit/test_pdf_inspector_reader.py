@@ -19,8 +19,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rag_mcp.integrations.pdf.factory import get_pdf_reader
-from rag_mcp.integrations.pdf.registry import available as available_readers
+from omrg.integrations.pdf.factory import get_pdf_reader
+from omrg.integrations.pdf.registry import available as available_readers
 
 
 def _stub_pdf_inspector(monkeypatch, markdown: str) -> None:
@@ -58,7 +58,7 @@ def test_adapter_module_imports_pdf_inspector_lazily(monkeypatch):
     # earlier-running test exercises the real reader).
     monkeypatch.delitem(sys.modules, "pdf_inspector", raising=False)
 
-    importlib.import_module("rag_mcp.integrations.pdf.pdf_inspector")
+    importlib.import_module("omrg.integrations.pdf.pdf_inspector")
 
     assert "pdf_inspector" not in sys.modules
 
@@ -68,7 +68,7 @@ def test_load_data_passthroughs_mock_markdown(monkeypatch, tmp_path):
     markdown = "# Title\n\nBody text extracted by pdf-inspector."
     _stub_pdf_inspector(monkeypatch, markdown)
 
-    from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -87,7 +87,7 @@ def test_missing_package_raises_actionable_importerror(monkeypatch, tmp_path):
     """Without pdf_inspector installed, load_data raises an ImportError naming the fix."""
     monkeypatch.setitem(sys.modules, "pdf_inspector", None)
 
-    from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_bytes(b"%PDF-1.4 stub")
@@ -113,7 +113,7 @@ def test_real_pdf_end_to_end_smoke(fixtures_dir):
     """
     from pathlib import Path
 
-    from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     pdf = fixtures_dir / "smoke_text.pdf"
     assert isinstance(pdf, Path)

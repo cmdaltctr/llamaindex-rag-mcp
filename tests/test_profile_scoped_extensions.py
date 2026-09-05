@@ -31,7 +31,7 @@ def _profile_settings(effective_settings, profile: str):
     takes — with a base that pins ``extraction_mode="disabled"`` so no
     test performs real LLM calls (conftest docstring).
     """
-    from rag_mcp.core.profiles.resolver import ProfileResolver
+    from omrg.core.profiles.resolver import ProfileResolver
 
     base = effective_settings(extraction_mode="disabled")
     return ProfileResolver(server_profile="documents", base=base)._load_effective(profile)
@@ -85,7 +85,7 @@ class TestCodebaseProfileAdmitsSourceFiles:
         source file through the real extension gate and assert
         ``effective_strategy == "code"``.
         """
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         settings = _profile_settings(effective_settings, "codebase")
@@ -111,7 +111,7 @@ class TestCodebaseProfileAdmitsSourceFiles:
         under the codebase profile collects them, and files with a
         tree-sitter mapping are chunked by the AST-aware code strategy.
         """
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         settings = _profile_settings(effective_settings, "codebase")
@@ -132,8 +132,8 @@ class TestCodebaseProfileAdmitsSourceFiles:
         self, effective_settings, tmp_path: Path
     ) -> None:
         """The typed metadata parity holds on the code path too."""
-        from rag_mcp.core.ingestion import ingest_path_async
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.ingestion import ingest_path_async
+        from omrg.core.vectordb import get_default_store
 
         src = _source_dir(tmp_path)
         settings = _profile_settings(effective_settings, "codebase")
@@ -163,7 +163,7 @@ class TestDocumentsProfileUnchanged:
         The source files are reported ``status: "skipped"`` with an
         explicit reason, exactly as before this change.
         """
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         settings = _profile_settings(effective_settings, "documents")
@@ -184,7 +184,7 @@ class TestDocumentsProfileUnchanged:
         self, effective_settings, tmp_path: Path
     ) -> None:
         """A single .py handed to a documents-profile ingest fails loudly."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         settings = _profile_settings(effective_settings, "documents")
@@ -212,7 +212,7 @@ class TestBinaryExcludedUnderEveryProfile:
         Exactly one row must be binary; the pipeline's binary skip keys on
         the ``binary/`` group prefix of the emitted content type.
         """
-        from rag_mcp.core.codebase.codebase_map import FileEntry, FileInventory
+        from omrg.core.codebase.codebase_map import FileEntry, FileInventory
 
         file_entries = [
             FileEntry(name, group, label, not group.startswith("binary"), suffix)
@@ -228,16 +228,16 @@ class TestBinaryExcludedUnderEveryProfile:
         self, effective_settings, tmp_path: Path
     ) -> None:
         """Admitted by the extension set, rejected by content-type detection."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         (src / "blob.py").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
         settings = _profile_settings(effective_settings, "codebase")
 
         with (
-            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("omrg.integrations.magika._is_magika_available", return_value=False),
             patch(
-                "rag_mcp.core.codebase.codebase_map.detect_file_types",
+                "omrg.core.codebase.codebase_map.detect_file_types",
                 return_value=self._binary_inventory(
                     [
                         ("app.py", "code", "python", ".py"),
@@ -260,16 +260,16 @@ class TestBinaryExcludedUnderEveryProfile:
         self, effective_settings, tmp_path: Path
     ) -> None:
         """The default seven stay binary-guarded too (a renamed blob)."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = _source_dir(tmp_path)
         (src / "photo.txt").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
         settings = _profile_settings(effective_settings, "documents")
 
         with (
-            patch("rag_mcp.integrations.magika._is_magika_available", return_value=False),
+            patch("omrg.integrations.magika._is_magika_available", return_value=False),
             patch(
-                "rag_mcp.core.codebase.codebase_map.detect_file_types",
+                "omrg.core.codebase.codebase_map.detect_file_types",
                 return_value=self._binary_inventory(
                     [
                         ("notes.md", "document", "markdown", ".md"),
@@ -302,7 +302,7 @@ class TestExtensionSetChangeDetection:
         otherwise every still-admitted file would be reprocessed solely
         because the set changed.
         """
-        from rag_mcp.core.ingestion.source_state import build_index_identity
+        from omrg.core.ingestion.source_state import build_index_identity
 
         narrow = effective_settings(ingest_extensions=(".md",))
         wide = effective_settings(ingest_extensions=(".md", ".py", ".ts", ".go"))
@@ -325,7 +325,7 @@ class TestExtensionSetChangeDetection:
         the second run must index the newly admitted ``.py`` and skip the
         already-indexed ``.md`` as unchanged — never reprocess it.
         """
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         src = tmp_path / "mixed"
         src.mkdir()
@@ -367,7 +367,7 @@ class TestLoaderExtensionSet:
 
     def test_explicit_set_admits_source_files(self, tmp_path: Path) -> None:
         """A source extension set collects .py files and reports the rest."""
-        from rag_mcp.core.ingestion.loader import gather_supported_files
+        from omrg.core.ingestion.loader import gather_supported_files
 
         src = _source_dir(tmp_path)
         files, skipped = gather_supported_files(src, extensions=(".py",))
@@ -378,7 +378,7 @@ class TestLoaderExtensionSet:
 
     def test_default_set_is_the_document_seven(self, tmp_path: Path) -> None:
         """Without an explicit set the historical seven remain the default."""
-        from rag_mcp.core.ingestion.loader import SUPPORTED_EXTENSIONS, gather_supported_files
+        from omrg.core.ingestion.loader import SUPPORTED_EXTENSIONS, gather_supported_files
 
         assert SUPPORTED_EXTENSIONS == set(_DOCUMENT_EXTENSIONS)
 
@@ -390,7 +390,7 @@ class TestLoaderExtensionSet:
 
     def test_single_file_gate_honours_the_set(self, tmp_path: Path) -> None:
         """The single-file branch checks the provided set too."""
-        from rag_mcp.core.ingestion.loader import gather_supported_files
+        from omrg.core.ingestion.loader import gather_supported_files
 
         py = tmp_path / "app.py"
         py.write_text("x = 1\n", encoding="utf-8")
@@ -410,19 +410,19 @@ class TestIngestExtensionsSettings:
 
     def test_settings_model_default(self) -> None:
         """IngestionSettings defaults to the historical seven."""
-        from rag_mcp.core.ingestion.settings import IngestionSettings
+        from omrg.core.ingestion.settings import IngestionSettings
 
         assert IngestionSettings().ingest_extensions == _DOCUMENT_EXTENSIONS
 
     def test_effective_block_default(self) -> None:
         """IngestionBlock defaults to the same seven (models stay in sync)."""
-        from rag_mcp.core.settings import IngestionBlock
+        from omrg.core.settings import IngestionBlock
 
         assert IngestionBlock().ingest_extensions == _DOCUMENT_EXTENSIONS
 
     def test_env_override_comma_separated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """INGESTION__INGEST_EXTENSIONS accepts a plain comma-separated list."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.setenv("INGESTION__INGEST_EXTENSIONS", ".py, .ts,.go")
         settings = Settings(_env_file=None)
@@ -430,7 +430,7 @@ class TestIngestExtensionsSettings:
 
     def test_env_override_json_array(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A JSON array string also parses (the KEYWORD_RULES precedent)."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.setenv("INGESTION__INGEST_EXTENSIONS", '[".pdf", ".txt"]')
         settings = Settings(_env_file=None)
@@ -438,7 +438,7 @@ class TestIngestExtensionsSettings:
 
     def test_normalisation_adds_dots_and_lowercases(self) -> None:
         """Bare extensions and upper case are normalised, never silently kept."""
-        from rag_mcp.core.ingestion.settings import IngestionSettings
+        from omrg.core.ingestion.settings import IngestionSettings
 
         parsed = IngestionSettings(ingest_extensions=["py", ".TS", ".Go"])
         assert parsed.ingest_extensions == (".py", ".ts", ".go")
@@ -474,7 +474,7 @@ class TestProfileOverlay:
     def test_base_default_flows_through_when_bundle_silent(self, effective_settings) -> None:
         """A custom base default survives profiles that declare no set."""
         base = effective_settings(extraction_mode="disabled", ingest_extensions=(".rst",))
-        from rag_mcp.core.profiles.resolver import ProfileResolver
+        from omrg.core.profiles.resolver import ProfileResolver
 
         settings = ProfileResolver(server_profile="documents", base=base)._load_effective(
             "documents"
@@ -490,7 +490,7 @@ class TestWatcherPatterns:
 
     def test_handler_patterns_from_explicit_set(self) -> None:
         """An explicit extension set drives the watchdog patterns."""
-        from rag_mcp.daemon.watcher import DocumentIngestHandler
+        from omrg.daemon.watcher import DocumentIngestHandler
 
         handler = DocumentIngestHandler(extensions=(".py", ".go"))
 
@@ -498,7 +498,7 @@ class TestWatcherPatterns:
 
     def test_handler_defaults_to_the_constant_set(self) -> None:
         """Without an explicit set the default constant applies."""
-        from rag_mcp.daemon.watcher import SUPPORTED_EXTENSIONS, DocumentIngestHandler
+        from omrg.daemon.watcher import SUPPORTED_EXTENSIONS, DocumentIngestHandler
 
         handler = DocumentIngestHandler()
 
@@ -508,8 +508,8 @@ class TestWatcherPatterns:
         """The resolver helper reads the collection's profile set."""
         from types import SimpleNamespace
 
-        import rag_mcp.compose as compose_mod
-        from rag_mcp.daemon import watcher as watcher_mod
+        import omrg.compose as compose_mod
+        from omrg.daemon import watcher as watcher_mod
 
         def _fake_builder():
             def _resolve(collection_name: str):
@@ -525,8 +525,8 @@ class TestWatcherPatterns:
 
     def test_resolve_watch_extensions_falls_back_on_resolver_error(self, monkeypatch) -> None:
         """A failing profile resolution falls back to the default constant."""
-        import rag_mcp.compose as compose_mod
-        from rag_mcp.daemon import watcher as watcher_mod
+        import omrg.compose as compose_mod
+        from omrg.daemon import watcher as watcher_mod
 
         def _boom():
             raise ValueError("bad profile tag")

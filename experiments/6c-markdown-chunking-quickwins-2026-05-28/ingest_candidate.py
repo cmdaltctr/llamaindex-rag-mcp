@@ -35,10 +35,10 @@ async def _ingest_candidate(out_dir: Path) -> None:
     os.environ["CHUNK_OVERLAP"] = "100"
 
     for mod_name in list(sys.modules):
-        if mod_name.startswith("rag_mcp"):
+        if mod_name.startswith("omrg"):
             sys.modules.pop(mod_name, None)
 
-    from rag_mcp import ingestion as _ing
+    from omrg import ingestion as _ing
 
     print(f"Ingesting candidate: {CORPUS} → {out_dir}")
     print(f"  MARKDOWN_CHUNK_SIZE={os.environ.get('MARKDOWN_CHUNK_SIZE')}")

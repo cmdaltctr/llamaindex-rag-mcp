@@ -44,12 +44,12 @@ from llama_index.core import (  # noqa: E402
 from llama_index.core.node_parser import SentenceSplitter  # noqa: E402
 from llama_index.core.utils import get_tokenizer  # noqa: E402
 
-from rag_mcp.core.metadata._common import (  # noqa: E402
+from omrg.core.metadata._common import (  # noqa: E402
     _strip_llm_prefix,
     _truncate_keywords,
     _truncate_summary,
 )
-from rag_mcp.core.metadata.llamaindex import (  # noqa: E402
+from omrg.core.metadata.llamaindex import (  # noqa: E402
     _derive_category,
     _parse_keywords_from_meta,
 )

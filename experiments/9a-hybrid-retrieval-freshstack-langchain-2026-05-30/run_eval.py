@@ -41,7 +41,7 @@ def _setup_environment(mode: str, chroma_dir: Path) -> None:
     os.environ["HYBRID_RRF_K"] = os.getenv("HYBRID_RRF_K", "60")
     os.environ["CHROMA_PERSIST_DIR"] = str(chroma_dir)
 
-    for mod_name in ("rag_mcp.config", "rag_mcp.retrieval", "rag_mcp.ingestion"):
+    for mod_name in ("omrg.config", "omrg.retrieval", "omrg.ingestion"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -55,13 +55,13 @@ def _setup_environment(mode: str, chroma_dir: Path) -> None:
             mod.RESOLVED_HYBRID_SPARSE_BACKEND = "bm25"
 
     try:
-        from rag_mcp.retrieval import _cached_query_embedding
+        from omrg.retrieval import _cached_query_embedding
 
         _cached_query_embedding.cache_clear()
     except Exception:
         pass
     try:
-        from rag_mcp.sparse_retriever import BM25SparseRetriever
+        from omrg.sparse_retriever import BM25SparseRetriever
 
         BM25SparseRetriever.clear_all_caches()
     except Exception:
@@ -137,8 +137,8 @@ def _metrics_for_query(parent_ids: list[str], query: dict[str, Any]) -> dict[str
 def _prewarm_sparse_index() -> float | None:
     try:
         import chromadb
-        from rag_mcp.config import CHROMA_PERSIST_DIR
-        from rag_mcp.sparse_retriever import BM25SparseRetriever
+        from omrg.config import CHROMA_PERSIST_DIR
+        from omrg.sparse_retriever import BM25SparseRetriever
 
         db = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
         collection = db.get_collection("documents")
@@ -158,7 +158,7 @@ def _evaluate_cell(
     top_k: int,
     warmup_queries: int,
 ) -> dict[str, Any]:
-    import rag_mcp.retrieval as retrieval
+    import omrg.retrieval as retrieval
 
     _setup_environment(mode, chroma_dir)
     bm25_build_ms = _prewarm_sparse_index() if mode == "hybrid_bm25" else None
@@ -237,7 +237,7 @@ def _result_payload(
     """Build the persisted result/checkpoint payload."""
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -332,7 +332,7 @@ def main() -> None:
     modes = [mode.strip() for mode in args.modes.split(",") if mode.strip()]
     rerank_settings = [False, True] if args.rerank_cross else [True]
 
-    import rag_mcp.retrieval as retrieval
+    import omrg.retrieval as retrieval
     if "hybrid" not in inspect.signature(retrieval.search).parameters:
         raise RuntimeError("retrieval.search does not expose the hybrid parameter")
 

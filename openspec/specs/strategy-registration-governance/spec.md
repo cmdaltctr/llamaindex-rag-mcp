@@ -31,7 +31,7 @@ Registered strategy consumers SHALL resolve configured names through the relevan
 - **AND** registration SHALL make the strategy discoverable through the registry
 
 ### Requirement: Existing modules receive a registration audit
-The change SHALL audit every Python module recursively under `src/rag_mcp/integrations/`, plus current factories and name-dispatched implementation families elsewhere. The audit SHALL include package facades, Azure, Magika, every PDF module, sparse retrieval backends, metadata extraction, embedding providers, LLM providers, chunking, reranking, and community detection. No integration module SHALL remain unclassified.
+The change SHALL audit every Python module recursively under `src/omrg/integrations/`, plus current factories and name-dispatched implementation families elsewhere. The audit SHALL include package facades, Azure, Magika, every PDF module, sparse retrieval backends, metadata extraction, embedding providers, LLM providers, chunking, reranking, and community detection. No integration module SHALL remain unclassified.
 
 For each module, the audit SHALL record whether it is native or optional, whether configuration selects it by name, its shared contract if any, its fallback owner, and its disposition as registry strategy, capability integration, factory, facade, or direct implementation.
 
@@ -50,7 +50,7 @@ For each module, the audit SHALL record whether it is native or optional, whethe
 - **AND** it SHALL remain unregistered unless configuration selects it among interchangeable file-detection implementations with one shared contract
 
 #### Scenario: Integrations directory changes
-- **WHEN** a Python module is added beneath `src/rag_mcp/integrations/`
+- **WHEN** a Python module is added beneath `src/omrg/integrations/`
 - **THEN** the maintained inventory SHALL classify it using the registry eligibility rule
 - **AND** the audit check SHALL fail while the module is absent from the inventory
 

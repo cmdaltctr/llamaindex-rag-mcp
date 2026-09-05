@@ -14,11 +14,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.ingestion.metrics import sample_peak_rss_bytes
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
-from rag_mcp.core.vectordb import get_default_store, set_default_store
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.ingestion.metrics import sample_peak_rss_bytes
+from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.vectordb import get_default_store, set_default_store
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _COLLECTION = "stage3_ingestion"
 
@@ -159,7 +159,7 @@ async def test_exclusion_set_change_forces_reprocessing(
     ``skipped_unchanged``. The identity-level half lives in
     ``tests/test_embedding_text_composition.py``.
     """
-    from rag_mcp.core.ingestion import source_state
+    from omrg.core.ingestion import source_state
 
     source = tmp_path / "exclusion-set.txt"
     source.write_text("exclusion-set sensitive content " * 100, encoding="utf-8")
@@ -212,7 +212,7 @@ async def test_parse_failure_preserves_last_searchable_version(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A replacement parse failure does not delete the durable old source."""
-    from rag_mcp.core.ingestion import pipeline
+    from omrg.core.ingestion import pipeline
 
     store = get_default_store()
     source = tmp_path / "parse-failure.txt"
@@ -240,7 +240,7 @@ async def test_embedding_failure_preserves_last_searchable_version(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A replacement embedding failure leaves the old source searchable."""
-    from rag_mcp.core.ingestion import replacement
+    from omrg.core.ingestion import replacement
 
     store = get_default_store()
     source = tmp_path / "embed-failure.txt"
@@ -361,8 +361,8 @@ async def test_generated_corpus_retains_only_one_source_node_set(
     file_count: int,
 ) -> None:
     """Peak live mock nodes is bounded by one file, not directory size."""
-    from rag_mcp.core.codebase import codebase_map
-    from rag_mcp.core.ingestion import pipeline
+    from omrg.core.codebase import codebase_map
+    from omrg.core.ingestion import pipeline
 
     for index in range(file_count):
         (tmp_path / f"doc-{index:03d}.txt").write_text(

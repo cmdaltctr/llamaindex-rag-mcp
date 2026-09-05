@@ -15,34 +15,34 @@ import sys
 
 import pytest
 
-from rag_mcp.integrations.pdf.factory import get_pdf_reader
+from omrg.integrations.pdf.factory import get_pdf_reader
 
 
 @pytest.fixture(autouse=True)
 def _reset_logged(monkeypatch):
     """Start each test with an empty log-once set."""
-    import rag_mcp.integrations.pdf.factory as factory_mod
+    import omrg.integrations.pdf.factory as factory_mod
 
     monkeypatch.setattr(factory_mod, "_pdf_reader_logged", set())
 
 
 def test_factory_returns_pypdf_when_passed():
     """pdf_reader=pypdf passed by the caller returns PyPDFReader."""
-    from rag_mcp.integrations.pdf.pypdf import PyPDFReader
+    from omrg.integrations.pdf.pypdf import PyPDFReader
 
     assert isinstance(get_pdf_reader("pypdf"), PyPDFReader)
 
 
 def test_factory_returns_liteparse_when_passed():
     """pdf_reader=liteparse passed by the caller returns LiteParseReader."""
-    from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+    from omrg.integrations.pdf.liteparse import LiteParseReader
 
     assert isinstance(get_pdf_reader("liteparse"), LiteParseReader)
 
 
 def test_factory_returns_pypdfium2_when_passed():
     """pdf_reader=pypdfium2 passed by the caller returns PyPDFium2Reader."""
-    from rag_mcp.integrations.pdf.pypdfium import PyPDFium2Reader
+    from omrg.integrations.pdf.pypdfium import PyPDFium2Reader
 
     assert isinstance(get_pdf_reader("pypdfium2"), PyPDFium2Reader)
 
@@ -56,7 +56,7 @@ def test_factory_returns_pdf_inspector_when_passed():
     (ADR-024 pattern), so construction does not require the pdf-inspector
     distribution — same shape as the pypdfium2 test above.
     """
-    from rag_mcp.integrations.pdf.pdf_inspector import PdfInspectorReader
+    from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     assert isinstance(get_pdf_reader("pdf_inspector"), PdfInspectorReader)
 
@@ -71,7 +71,7 @@ def test_factory_module_has_no_default_settings_lookup():
     """Contract: factory.py contains no composition-root default fetch."""
     from pathlib import Path
 
-    import rag_mcp.integrations.pdf.factory as factory_mod
+    import omrg.integrations.pdf.factory as factory_mod
 
     source = Path(factory_mod.__file__).read_text(encoding="utf-8")
     assert "get_default_effective_settings" not in source
@@ -87,7 +87,7 @@ def test_factory_auto_prefers_pypdfium2_when_liteparse_missing(monkeypatch):
     """auto resolves to pypdfium2 when liteparse is not importable."""
     import types
 
-    from rag_mcp.integrations.pdf.pypdfium import PyPDFium2Reader
+    from omrg.integrations.pdf.pypdfium import PyPDFium2Reader
 
     # Poisoning sys.modules with None makes `import liteparse` raise
     # ImportError; a stub module makes `import pypdfium2` succeed. The
@@ -106,7 +106,7 @@ def test_factory_auto_prefers_liteparse_when_pdf_inspector_available(monkeypatch
     """
     import types
 
-    from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+    from omrg.integrations.pdf.liteparse import LiteParseReader
 
     monkeypatch.setitem(sys.modules, "liteparse", types.ModuleType("liteparse"))
     monkeypatch.setitem(sys.modules, "pdf_inspector", types.ModuleType("pdf_inspector"))
@@ -124,7 +124,7 @@ def test_factory_auto_ignores_pdf_inspector_when_optionals_missing(monkeypatch):
     """
     import types
 
-    from rag_mcp.integrations.pdf.pypdf import PyPDFReader
+    from omrg.integrations.pdf.pypdf import PyPDFReader
 
     monkeypatch.setitem(sys.modules, "liteparse", None)
     monkeypatch.setitem(sys.modules, "pypdfium2", None)
@@ -134,7 +134,7 @@ def test_factory_auto_ignores_pdf_inspector_when_optionals_missing(monkeypatch):
 
 def test_factory_auto_falls_back_to_pypdf_when_no_optional_installed(monkeypatch):
     """auto resolves to pypdf when neither optional backend imports."""
-    from rag_mcp.integrations.pdf.pypdf import PyPDFReader
+    from omrg.integrations.pdf.pypdf import PyPDFReader
 
     monkeypatch.setitem(sys.modules, "liteparse", None)
     monkeypatch.setitem(sys.modules, "pypdfium2", None)
@@ -149,8 +149,8 @@ def test_factory_auto_matches_compose_resolution(monkeypatch):
     """
     import types
 
-    from rag_mcp.compose import resolve_pdf_reader
-    from rag_mcp.integrations.pdf.factory import get_pdf_reader as factory_get
+    from omrg.compose import resolve_pdf_reader
+    from omrg.integrations.pdf.factory import get_pdf_reader as factory_get
 
     class_by_name = {
         "pypdf": "PyPDFReader",
@@ -183,7 +183,7 @@ def test_factory_logs_backend_once_per_name(caplog):
     """The backend log line fires once per distinct reader name."""
     import logging
 
-    with caplog.at_level(logging.INFO, logger="rag_mcp.integrations.pdf.factory"):
+    with caplog.at_level(logging.INFO, logger="omrg.integrations.pdf.factory"):
         get_pdf_reader("pypdf")
         get_pdf_reader("pypdf")
     backend_lines = [r for r in caplog.records if "PDF reader backend" in r.message]
@@ -206,9 +206,9 @@ def test_factory_logs_backend_once_per_name(caplog):
 # that contract. These tests are the failing coverage for the finding.
 
 _ALIAS = "enterprise_pdf"  # no importable top-level module shares this name
-_ALIAS_PATH = "rag_mcp.integrations.pdf.pypdf:PyPDFReader"
+_ALIAS_PATH = "omrg.integrations.pdf.pypdf:PyPDFReader"
 _GHOST = "ghost_pdf_alias"  # imports fine; its registry module does not exist
-_GHOST_PATH = "rag_mcp.integrations.pdf.ghost_module:GhostReader"
+_GHOST_PATH = "omrg.integrations.pdf.ghost_module:GhostReader"
 
 
 @pytest.fixture
@@ -219,7 +219,7 @@ def pdf_registry_sandbox():
     ``test_strategy_registration_inventory.py`` (which asserts the exact
     advertised name set), so alias registrations must never leak.
     """
-    from rag_mcp.integrations.pdf import registry as pdf_registry
+    from omrg.integrations.pdf import registry as pdf_registry
 
     state_attrs = ("_registry", "_probe_modules", "_text_formats", "_page_provenance", "_cache")
     saved = {attr: dict(getattr(pdf_registry, attr)) for attr in state_attrs}
@@ -248,11 +248,11 @@ def test_registered_alias_resolves_via_registry_metadata(pdf_registry_sandbox, m
     name that is itself unimportable must still resolve when its
     registered adapter module exists.
     """
-    import rag_mcp.compose as compose
+    import omrg.compose as compose
 
     pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH, text_format="plain", page_provenance=True)
     # Poison the name: `import enterprise_pdf` raises ImportError, while
-    # the registry-owned path rag_mcp.integrations.pdf.pypdf imports fine.
+    # the registry-owned path omrg.integrations.pdf.pypdf imports fine.
     monkeypatch.setitem(sys.modules, _ALIAS, None)
 
     assert compose.resolve_pdf_reader(_reader_settings(_ALIAS)) == _ALIAS
@@ -274,12 +274,12 @@ def test_alias_with_missing_registry_module_falls_back_to_pypdf_with_error(
     import logging
     import types
 
-    import rag_mcp.compose as compose
+    import omrg.compose as compose
 
     pdf_registry_sandbox.register(_GHOST, _GHOST_PATH, text_format="plain", page_provenance=True)
     monkeypatch.setitem(sys.modules, _GHOST, types.ModuleType(_GHOST))
 
-    with caplog.at_level(logging.ERROR, logger="rag_mcp.compose"):
+    with caplog.at_level(logging.ERROR, logger="omrg.compose"):
         assert compose.resolve_pdf_reader(_reader_settings(_GHOST)) == "pypdf"
     assert any(_GHOST in record.message and "pypdf" in record.message for record in caplog.records)
 
@@ -296,7 +296,7 @@ def test_factory_dispatches_registered_alias_via_registry_metadata(
     even when the alias itself is not importable. Pins that the
     name-coupling violation is localised to the composition root.
     """
-    from rag_mcp.integrations.pdf.pypdf import PyPDFReader
+    from omrg.integrations.pdf.pypdf import PyPDFReader
 
     pdf_registry_sandbox.register(_ALIAS, _ALIAS_PATH, text_format="plain", page_provenance=True)
     monkeypatch.setitem(sys.modules, _ALIAS, None)
@@ -318,8 +318,8 @@ def test_compose_auto_stays_liteparse_first_with_pypdfium2_available(monkeypatch
     """
     import types
 
-    import rag_mcp.compose as compose
-    from rag_mcp.integrations.pdf.liteparse import LiteParseReader
+    import omrg.compose as compose
+    from omrg.integrations.pdf.liteparse import LiteParseReader
 
     monkeypatch.setitem(sys.modules, "liteparse", types.ModuleType("liteparse"))
     monkeypatch.setitem(sys.modules, "pypdfium2", types.ModuleType("pypdfium2"))

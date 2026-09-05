@@ -30,15 +30,15 @@ import pytest
 from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 # ── Helpers ─────────────────────────────────────────────────────────────
 
 
 def _norm_guard():
     """Import the guard module lazily (red run: module does not exist yet)."""
-    from rag_mcp.core import norm_guard
+    from omrg.core import norm_guard
 
     return norm_guard
 
@@ -48,12 +48,12 @@ def _reset_guard_state():
     """Reset warn-once state and the query-embedding cache per test."""
     yield
     try:
-        from rag_mcp.core import norm_guard
+        from omrg.core import norm_guard
 
         norm_guard.reset_warned_norm_models()
     except ImportError:
         pass
-    from rag_mcp.core.retrieval.dense import _cached_query_embedding
+    from omrg.core.retrieval.dense import _cached_query_embedding
 
     _cached_query_embedding.cache_clear()
 
@@ -201,7 +201,7 @@ class TestNormHelper:
         import logging
 
         guard = _norm_guard()
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.norm_guard"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.norm_guard"):
             for _ in range(3):
                 guard.check_query_vector(_vec(0.7), model_name="m", tolerance=0.001)
             # A different model warns again.
@@ -238,7 +238,7 @@ async def _replace(
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
 ):
-    from rag_mcp.core.ingestion.replacement import replace_source_nodes_async
+    from omrg.core.ingestion.replacement import replace_source_nodes_async
 
     return await replace_source_nodes_async(
         _nodes(vectors),
@@ -274,7 +274,7 @@ class TestIngestBoundary:
         self, store: LanceVectorStore, bad_norm: float
     ) -> None:
         """Spec: norm 0.7/1.4 aborts before write; previous version searchable."""
-        from rag_mcp.core.ingestion.replacement import IngestionStageError
+        from omrg.core.ingestion.replacement import IngestionStageError
 
         await _replace(store, "norm-safe", [_vec(1.0)], source_id="src-a")
         generation = store.get_generation("norm-safe")
@@ -308,7 +308,7 @@ class TestIngestBoundary:
             _FixedNormEmbedding(embed_dim=2, norm=0.7),
         )
         nodes = [TextNode(text="chunk", metadata={"file_path": "doc.txt"})]
-        from rag_mcp.core.ingestion.replacement import (
+        from omrg.core.ingestion.replacement import (
             IngestionStageError,
             replace_source_nodes_async,
         )
@@ -384,7 +384,7 @@ class TestQueryBoundary:
         monkeypatch.setattr(Settings, "embed_model", _FixedNormEmbedding(embed_dim=2, norm=0.7))
         guard = _norm_guard()
         guard.reset_warned_norm_models()
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.norm_guard"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.norm_guard"):
             first = search(
                 "unique-off-norm-query",
                 store=store,
@@ -443,7 +443,7 @@ class TestQueryBoundary:
 
         self._seed(store)
         monkeypatch.setattr(Settings, "embed_model", _FixedNormEmbedding(embed_dim=2, norm=1.0))
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.norm_guard"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.norm_guard"):
             results = search(
                 "unique-silent-query",
                 store=store,
@@ -468,7 +468,7 @@ class TestQueryBoundary:
         monkeypatch.setattr(Settings, "embed_model", _FixedNormEmbedding(embed_dim=2, norm=0.7))
         guard = _norm_guard()
         guard.reset_warned_norm_models()
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.norm_guard"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.norm_guard"):
             results = search(
                 "unique-disabled-query",
                 store=store,
@@ -497,14 +497,14 @@ class TestGuardConfiguration:
         """
         monkeypatch.setenv("EMBEDDING__NORM_GUARD_ENABLED", "false")
         monkeypatch.setenv("EMBEDDING__NORM_TOLERANCE", "0.05")
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         settings = Settings()
         assert settings.embedding.norm_guard_enabled is False
         assert settings.embedding.norm_tolerance == 0.05
 
     def test_defaults(self) -> None:
-        from rag_mcp.core.settings import EmbeddingSettings
+        from omrg.core.settings import EmbeddingSettings
 
         block = EmbeddingSettings()
         assert block.norm_guard_enabled is True
@@ -513,7 +513,7 @@ class TestGuardConfiguration:
     def test_tolerance_must_be_positive(self) -> None:
         from pydantic import ValidationError
 
-        from rag_mcp.core.settings import EmbeddingSettings
+        from omrg.core.settings import EmbeddingSettings
 
         with pytest.raises(ValidationError):
             EmbeddingSettings(norm_tolerance=0)
@@ -528,26 +528,26 @@ class TestGuardConfiguration:
     def test_startup_logs_when_disabled(self, caplog: pytest.LogCaptureFixture) -> None:
         import logging
 
-        from rag_mcp.compose import _log_norm_guard_state
-        from rag_mcp.config import Settings
+        from omrg.compose import _log_norm_guard_state
+        from omrg.config import Settings
 
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.WARNING, logger="omrg.compose"):
             _log_norm_guard_state(Settings(embedding={"norm_guard_enabled": False}))
         assert any("EMBEDDING__NORM_GUARD_ENABLED" in r.getMessage() for r in caplog.records)
 
     def test_startup_silent_when_enabled(self, caplog: pytest.LogCaptureFixture) -> None:
         import logging
 
-        from rag_mcp.compose import _log_norm_guard_state
-        from rag_mcp.config import Settings
+        from omrg.compose import _log_norm_guard_state
+        from omrg.config import Settings
 
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.compose"):
+        with caplog.at_level(logging.WARNING, logger="omrg.compose"):
             _log_norm_guard_state(Settings())
         assert not caplog.records
 
 
 def search(*args, **kwargs):  # noqa: ANN001, ANN202 - resolved below
     """Lazily import the retrieval entry point (keeps module import cheap)."""
-    from rag_mcp.core.retrieval.pipeline import search as _search
+    from omrg.core.retrieval.pipeline import search as _search
 
     return _search(*args, **kwargs)

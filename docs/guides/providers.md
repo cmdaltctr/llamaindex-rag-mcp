@@ -145,7 +145,7 @@ Registered LLM providers: `ollama`, `llamacpp`, `openrouter`.
 ### Adding a new provider
 
 1. Add `core/providers/<kind>/<name>.py` exposing `build(settings)` (match the signature of `ollama.py` or `llamacpp.py`).
-2. Add one `register("<name>", "rag_mcp.core.providers.<kind>.<name>:build")` line at the bottom of that registry.
+2. Add one `register("<name>", "omrg.core.providers.<kind>.<name>:build")` line at the bottom of that registry.
 3. Add the optional-dependency extra in `pyproject.toml` and, if it is an extra, an entry in `_PROVIDER_EXTRAS` (`core/providers/llm/registry.py`).
 4. Add env vars to `.env.example`.
 5. Add the name to the `<!-- registry-names -->` block above.
@@ -159,5 +159,5 @@ ChromaDB locks the vector dimension at collection creation time. Switching from 
 
 ```bash
 rm -rf chroma_db
-rag-mcp ingest /path/to/docs/
+omrg ingest /path/to/docs/
 ```

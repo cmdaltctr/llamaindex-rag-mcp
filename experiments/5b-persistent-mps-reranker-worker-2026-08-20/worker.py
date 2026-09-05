@@ -154,7 +154,7 @@ def load_production_reranker(model_id: str, device: str) -> tuple[Any, bool]:
     )
     if device == "cpu":
         torch.backends.mps.is_available = lambda: False  # noqa: B010 — Exp 5 seam
-    from rag_mcp.core.retrieval.reranker_torch import SentenceTransformerReranker
+    from omrg.core.retrieval.reranker_torch import SentenceTransformerReranker
 
     reranker = SentenceTransformerReranker(model_id=model_id)
     probe = [{"text": "probe passage", "score": 0.0, "doc_id": "probe"}]

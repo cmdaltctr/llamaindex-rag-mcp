@@ -108,8 +108,8 @@ def run_experiment(
     top_k: int = 5,
 ) -> list[QueryResult]:
     """Run all QA pairs through the retrieval pipeline with given params."""
-    from rag_mcp.ingestion import ingest_path
-    from rag_mcp.retrieval import search
+    from omrg.ingestion import ingest_path
+    from omrg.retrieval import search
 
     # Ingest fixtures
     print(f"  Ingesting fixtures from {FIXTURES_DIR}...")
@@ -248,7 +248,7 @@ def main() -> None:
     # Patch module-level constants for modules already loaded
     import sys as _sys
 
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval"):
         mod = _sys.modules.get(mod_name)
         if mod is not None:
             mod.CHROMA_PERSIST_DIR = tmp_dir

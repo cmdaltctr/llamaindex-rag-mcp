@@ -21,7 +21,7 @@ the script automatically tightens to `(30, 6)` per design Decision 2.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -145,7 +145,7 @@ def _setup_environment(max_fetch: int, multiplier: int, tmp_dir: str) -> None:
     os.environ["EMBED_MODEL"] = "nomic-embed-text"  # match Exp 1 lineage
 
     # Patch already-imported modules.
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -158,7 +158,7 @@ def _setup_environment(max_fetch: int, multiplier: int, tmp_dir: str) -> None:
 
     # Reset reranker singleton — required by AGENTS.md.
     try:
-        from rag_mcp.reranker import CrossEncoderReranker
+        from omrg.reranker import CrossEncoderReranker
 
         CrossEncoderReranker._instance = None  # type: ignore[attr-defined]
     except Exception:
@@ -185,8 +185,8 @@ def _evaluate_config(
     import asyncio
     import random
 
-    from rag_mcp.ingestion import ingest_path_async
-    from rag_mcp.retrieval import search
+    from omrg.ingestion import ingest_path_async
+    from omrg.retrieval import search
 
     tmp_dir = tempfile.mkdtemp(prefix=f"rag_pool_{config['max_fetch']}_")
     _setup_environment(config["max_fetch"], config["multiplier"], tmp_dir)
@@ -371,8 +371,8 @@ def main() -> None:
     print(f"  P95 budget: {P95_BUDGET_MS} ms")
 
     # Ensure ingestion/retrieval modules are imported up front so we can patch.
-    import rag_mcp.ingestion  # noqa: F401
-    import rag_mcp.retrieval  # noqa: F401
+    import omrg.ingestion  # noqa: F401
+    import omrg.retrieval  # noqa: F401
 
     results: list[ConfigResult] = []
     for config in SWEEP_CONFIGS:

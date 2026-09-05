@@ -1,4 +1,4 @@
-"""CLI transport tests for ``rag-mcp answer`` (tasks 5.1-5.3).
+"""CLI transport tests for ``omrg answer`` (tasks 5.1-5.3).
 
 Exercises the Typer command through the in-process CliRunner, matching
 the established ``tests/test_cli.py`` pattern: the happy path with a
@@ -17,7 +17,7 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from rag_mcp.transports.cli import app
+from omrg.transports.cli import app
 
 runner = CliRunner()
 
@@ -58,7 +58,7 @@ def _ingest(tmp_path: Path) -> Path:
 
 def _install_llm(monkeypatch: pytest.MonkeyPatch, llm: Any) -> None:
     """Redirect the composition-root answer builder to a stand-in."""
-    monkeypatch.setattr("rag_mcp.compose.build_answer_llm", lambda settings=None: llm)
+    monkeypatch.setattr("omrg.compose.build_answer_llm", lambda settings=None: llm)
 
 
 # ── Task 5.3: actionable message when no provider is configured ───────────
@@ -143,7 +143,7 @@ def test_answer_hybrid_omitted_defers_to_profile(
             "completion_source": "none",
         }
 
-    monkeypatch.setattr("rag_mcp.core.answer.answer", fake_answer)
+    monkeypatch.setattr("omrg.core.answer.answer", fake_answer)
     _install_llm(monkeypatch, _FakeLLM())
 
     result = runner.invoke(app, ["answer", "anything", "--collection", _COLLECTION])
@@ -290,16 +290,16 @@ def _install_core_answer(
             raise result
         return result
 
-    monkeypatch.setattr("rag_mcp.core.answer.answer", _fake_answer)
+    monkeypatch.setattr("omrg.core.answer.answer", _fake_answer)
 
 
 def test_answer_profile_resolution_failure_json(monkeypatch: pytest.MonkeyPatch) -> None:
     """A profile-resolution failure emits the standard JSON error on stderr."""
 
-    def _boom() -> Any:
+    def _boom(_settings: Any = None) -> Any:
         raise ValueError("profile 'bogus' is not registered")
 
-    monkeypatch.setattr("rag_mcp.compose.build_profile_resolver", _boom)
+    monkeypatch.setattr("omrg.compose.build_profile_resolver", _boom)
 
     result = runner.invoke(app, ["answer", "lantern", "--json"])
 
@@ -314,10 +314,10 @@ def test_answer_profile_resolution_failure_json(monkeypatch: pytest.MonkeyPatch)
 def test_answer_profile_resolution_failure_human(monkeypatch: pytest.MonkeyPatch) -> None:
     """A profile-resolution failure reports on the stderr console."""
 
-    def _boom() -> Any:
+    def _boom(_settings: Any = None) -> Any:
         raise ValueError("profile 'bogus' is not registered")
 
-    monkeypatch.setattr("rag_mcp.compose.build_profile_resolver", _boom)
+    monkeypatch.setattr("omrg.compose.build_profile_resolver", _boom)
 
     result = runner.invoke(app, ["answer", "lantern"])
 
@@ -334,7 +334,7 @@ def test_answer_provider_builder_failure_is_structured(
     def _raise(settings: Any = None) -> Any:
         raise ValueError("ANSWER__PROVIDER='bogus' is not a registered LLM provider.")
 
-    monkeypatch.setattr("rag_mcp.compose.build_answer_llm", _raise)
+    monkeypatch.setattr("omrg.compose.build_answer_llm", _raise)
 
     result = runner.invoke(app, ["answer", "lantern", "--json"])
 
@@ -352,7 +352,7 @@ def test_answer_connection_error_json_names_ollama(
     def _conn(*args: Any, **kwargs: Any) -> dict[str, Any]:
         raise ConnectionError("dial tcp 127.0.0.1:11434: connection refused")
 
-    monkeypatch.setattr("rag_mcp.core.answer.answer", _conn)
+    monkeypatch.setattr("omrg.core.answer.answer", _conn)
     _install_llm(monkeypatch, _FakeLLM())
 
     result = runner.invoke(app, ["answer", "lantern", "--json"])
@@ -372,7 +372,7 @@ def test_answer_connection_error_human_names_ollama(
     def _conn(*args: Any, **kwargs: Any) -> dict[str, Any]:
         raise ConnectionError("dial tcp 127.0.0.1:11434: connection refused")
 
-    monkeypatch.setattr("rag_mcp.core.answer.answer", _conn)
+    monkeypatch.setattr("omrg.core.answer.answer", _conn)
     _install_llm(monkeypatch, _FakeLLM())
 
     result = runner.invoke(app, ["answer", "lantern"])
@@ -428,7 +428,7 @@ def test_answer_verification_skipped_prints_reason_when_no_judge(
     """No usable judge → the answer stays ok and names the skip reason."""
     _ingest(tmp_path)
     _install_llm(monkeypatch, _FakeLLM())
-    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", lambda *a, **k: None)
+    monkeypatch.setattr("omrg.compose.build_verify_llm", lambda *a, **k: None)
     monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
 
     result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])
@@ -450,7 +450,7 @@ def test_answer_unverified_claims_warns_in_human_mode(
 
     _ingest(tmp_path)
     _install_llm(monkeypatch, _FakeLLM())
-    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", lambda *a, **k: _JudgeLLM())
+    monkeypatch.setattr("omrg.compose.build_verify_llm", lambda *a, **k: _JudgeLLM())
     monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
 
     result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])
@@ -471,7 +471,7 @@ def test_answer_verification_build_failure_degrades_to_skipped(
 
     _ingest(tmp_path)
     _install_llm(monkeypatch, _FakeLLM())
-    monkeypatch.setattr("rag_mcp.compose.build_verify_llm", _raise)
+    monkeypatch.setattr("omrg.compose.build_verify_llm", _raise)
     monkeypatch.setenv("ANSWER__VERIFY_CLAIMS", "true")
 
     result = runner.invoke(app, ["answer", "lantern calibration", "--collection", _COLLECTION])

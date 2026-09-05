@@ -15,9 +15,9 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
-from rag_mcp.core.retrieval.pipeline import RERANK_SCORE_KIND
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import search
+from omrg.core.retrieval.pipeline import RERANK_SCORE_KIND
 
 _COLLECTION = "lineage_docs"
 _FILE_TEXT = "lineage sentinel paragraph about quantum foxes " * 240

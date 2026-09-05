@@ -9,7 +9,7 @@
 3. Fill in:
    - Name: `rag-docs`
    - Transport: **Local / stdio**
-   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/llamaindex-rag-mcp` / `rag-mcp`
+   - Command (one token per line): `uv` / `run` / `--project` / `/absolute/path/to/llamaindex-rag-mcp` / `omrg`
 4. Environment variables:
    - `EMBED_MODEL` = `nomic-embed-text`
    - `OLLAMA_BASE_URL` = `http://localhost:11434`
@@ -26,7 +26,7 @@ Add this block to `~/.opencode/opencode.json` (available in all projects) or `<p
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "rag-mcp"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrg"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
@@ -63,7 +63,7 @@ Put a per-project `opencode.json` inside each project with its own `LANCEDB_URI`
   "mcp": {
     "rag-docs": {
       "type": "local",
-      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "rag-mcp"],
+      "command": ["uv", "run", "--project", "/absolute/path/to/llamaindex-rag-mcp", "omrg"],
       "environment": {
         "EMBED_MODEL": "nomic-embed-text",
         "OLLAMA_BASE_URL": "http://localhost:11434",
@@ -89,11 +89,11 @@ Use the built-in `collection` parameter to keep different projects isolated as
 separate LanceDB tables:
 
 ```bash
-rag-mcp ingest /path/to/project-a/docs/ --collection project-a
-rag-mcp ingest /path/to/project-b/docs/ --collection project-b
+omrg ingest /path/to/project-a/docs/ --collection project-a
+omrg ingest /path/to/project-b/docs/ --collection project-b
 
-rag-mcp search "quantum computing" --collection project-a
-rag-mcp list-collections
+omrg search "quantum computing" --collection project-a
+omrg list-collections
 ```
 
 Collections are created automatically on first ingest. No extra directories or environment configs needed.
@@ -125,7 +125,7 @@ cp .env.example .env
 uv sync
 
 # Verify
-uv run rag-mcp
+uv run omrg
 # No output = working. Ctrl-C to stop.
 ```
 

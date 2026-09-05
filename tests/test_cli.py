@@ -19,13 +19,13 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from rag_mcp.core.retrieval.reranker import CrossEncoderReranker
-from rag_mcp.transports.cli import (
+from omrg.core.retrieval.reranker import CrossEncoderReranker
+from omrg.transports.cli import (
     _print_ollama_error,
     _sanitise_display_name,
     app,
 )
-from rag_mcp.transports.cli.ingest import _make_plain_callback
+from omrg.transports.cli.ingest import _make_plain_callback
 
 runner = CliRunner()
 
@@ -42,7 +42,7 @@ def _reset_runtime_details_flag(monkeypatch: pytest.MonkeyPatch) -> None:
     --json parsers. In production the CLI is a one-shot process, so the
     module-level flag never survives a command boundary.
     """
-    import rag_mcp.transports.cli as cli_module
+    import omrg.transports.cli as cli_module
 
     monkeypatch.setattr(cli_module, "_runtime_details_enabled", False)
 
@@ -62,7 +62,7 @@ class TestEntryPoint:
         """--version prints version and exits with code 0."""
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "rag-mcp" in result.output
+        assert "omrg" in result.output
 
     def test_help_flag(self) -> None:
         """--help lists all subcommands and exits with code 0."""
@@ -74,7 +74,7 @@ class TestEntryPoint:
 
     def test_help_does_not_initialise_runtime(self) -> None:
         """--help does not construct embedding or vector-store dependencies."""
-        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+        with patch("omrg.transports.cli.compose.ensure_runtime_setup") as mock_setup:
             result = runner.invoke(app, ["--help"], env={"EMBED_PROVIDER": "not-a-provider"})
 
         assert result.exit_code == 0
@@ -83,7 +83,7 @@ class TestEntryPoint:
     def test_help_accepts_invalid_provider_in_fresh_process(self) -> None:
         """--help does not validate providers before Click handles the request."""
         result = subprocess.run(
-            [str(Path(sys.executable).with_name("rag-mcp")), "--help"],
+            [str(Path(sys.executable).with_name("omrg")), "--help"],
             env={**os.environ, "EMBED_PROVIDER": "not-a-provider"},
             capture_output=True,
             text=True,
@@ -94,7 +94,7 @@ class TestEntryPoint:
 
     def test_bad_provider_fails_at_server_startup_without_traceback(self) -> None:
         """Invalid provider configuration fails before the server starts."""
-        with patch("rag_mcp.transports.mcp.mcp.run") as mock_run:
+        with patch("omrg.transports.mcp.mcp.run") as mock_run:
             result = runner.invoke(app, [], env={"EMBED_PROVIDER": "not-a-provider"})
 
         assert result.exit_code == 1
@@ -136,7 +136,7 @@ class TestPrintOllamaError:
 
     def test_console_output(self) -> None:
         """Console mode prints to Rich console with 'Ollama' in message."""
-        with patch("rag_mcp.transports.cli.console.print") as mock_print:
+        with patch("omrg.transports.cli.console.print") as mock_print:
             _print_ollama_error("Connection refused")
             mock_print.assert_called_once()
             call_arg = str(mock_print.call_args)
@@ -157,7 +157,7 @@ class TestPrintOllamaError:
 
     def test_includes_detail(self) -> None:
         """Detail string is included in the error message."""
-        with patch("rag_mcp.transports.cli.console.print") as mock_print:
+        with patch("omrg.transports.cli.console.print") as mock_print:
             _print_ollama_error("Connection refused")
             call_arg = str(mock_print.call_args)
             assert "Connection refused" in call_arg
@@ -169,10 +169,10 @@ class TestPrintOllamaError:
 class TestIngestCLI:
     """Tests for the ingest subcommand."""
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_single_txt_file(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Ingesting a valid .txt file initialises runtime and exits 0."""
-        with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup") as mock_setup:
+        with patch("omrg.transports.cli.compose.ensure_runtime_setup") as mock_setup:
             result = runner.invoke(app, ["ingest", str(sample_txt)])
 
         assert result.exit_code == 0
@@ -182,13 +182,13 @@ class TestIngestCLI:
         output = result.output or ""
         assert "Indexed" in output or "1 file(s)" in output or "✓" in output
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_path_not_found(self, mock_signal: MagicMock) -> None:
         """Non-existent path exits 1 with an error message."""
         result = runner.invoke(app, ["ingest", "/nonexistent/path"])
         assert result.exit_code == 1
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_unsupported_extension(self, mock_signal: MagicMock, tmp_path: Path) -> None:
         """Unsupported file extension exits with error."""
         bad_file = tmp_path / "test.xyz"
@@ -196,7 +196,7 @@ class TestIngestCLI:
         result = runner.invoke(app, ["ingest", str(bad_file)])
         assert result.exit_code != 0
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_json_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--json flag produces valid JSON with expected keys."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
@@ -206,7 +206,7 @@ class TestIngestCLI:
         assert "files_indexed" in data
         assert "chunks_created" in data
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_json_output_on_error(self, mock_signal: MagicMock) -> None:
         """--json with non-existent path exits with error code."""
         result = runner.invoke(app, ["ingest", "/nonexistent", "--json"])
@@ -221,19 +221,19 @@ class TestIngestCLI:
         assert result.exit_code != 0
         assert "No such option" in result.output
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_with_chunk_size(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--chunk-size override is accepted."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--chunk-size", "128"])
         assert result.exit_code == 0
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_with_chunk_overlap(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--chunk-overlap override is accepted."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--chunk-overlap", "32"])
         assert result.exit_code == 0
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_success_message(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Success output contains indexed file count."""
         result = runner.invoke(app, ["ingest", str(sample_txt)])
@@ -242,13 +242,13 @@ class TestIngestCLI:
         # Rich renders via console.print, check for key content
         assert "1 file(s)" in output or "Indexed" in output
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_exit_code_success(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Valid file produces exit code 0."""
         result = runner.invoke(app, ["ingest", str(sample_txt)])
         assert result.exit_code == 0
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_exit_code_error(self, mock_signal: MagicMock) -> None:
         """Invalid path produces exit code 1."""
         result = runner.invoke(app, ["ingest", "/nonexistent"])
@@ -284,7 +284,7 @@ class TestSearchCLI:
         assert result.exit_code == 0
         assert result.stderr.strip() == "[]"
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_search_json_results(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Search after ingest returns valid JSON results."""
         # First ingest
@@ -319,7 +319,7 @@ class TestSearchCLI:
         finally:
             CrossEncoderReranker._instance = None
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_search_rich_table_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Default (non-JSON) search renders a table with column headers."""
         runner.invoke(app, ["ingest", str(sample_txt)])
@@ -353,7 +353,7 @@ class TestSearchCLI:
                 "reranked": False,
             },
         ]
-        with patch("rag_mcp.core.retrieval.search", return_value=payload):
+        with patch("omrg.core.retrieval.search", return_value=payload):
             result = runner.invoke(app, ["search", "whole file query"])
 
         assert result.exit_code == 0
@@ -379,7 +379,7 @@ class TestSearchCLI:
                 "reranked": False,
             },
         ]
-        with patch("rag_mcp.core.retrieval.search", return_value=payload):
+        with patch("omrg.core.retrieval.search", return_value=payload):
             result = runner.invoke(app, ["search", "paged query"])
 
         assert result.exit_code == 0
@@ -418,7 +418,7 @@ class TestListCLI:
         assert result.exit_code == 0
         assert result.stderr.strip() == "[]"
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_list_json_with_docs(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """List --json after ingest shows documents with source and chunks."""
         runner.invoke(app, ["ingest", str(sample_txt)])
@@ -431,7 +431,7 @@ class TestListCLI:
             assert "source" in doc
             assert "chunks" in doc
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_list_rich_table_output(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Default (non-JSON) list renders table with Source and Chunks."""
         runner.invoke(app, ["ingest", str(sample_txt)])
@@ -448,7 +448,7 @@ class TestListCLI:
             {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
         ]
 
-        with patch("rag_mcp.core.ingestion.list_documents", return_value=rows):
+        with patch("omrg.core.ingestion.list_documents", return_value=rows):
             result = runner.invoke(app, ["list"])
 
         assert result.exit_code == 0
@@ -465,7 +465,7 @@ class TestListCLI:
             {"source": "legacy.txt", "source_id": None, "chunks": 3, "orphaned": None},
         ]
 
-        with patch("rag_mcp.core.ingestion.list_documents", return_value=rows):
+        with patch("omrg.core.ingestion.list_documents", return_value=rows):
             result = runner.invoke(app, ["list", "--json"])
 
         assert result.exit_code == 0
@@ -478,7 +478,7 @@ class TestListCLI:
         assert result.exit_code == 0
         assert "missing on this machine" in _strip_ansi(result.output)
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_list_shows_total(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """List output includes document and chunk total summary."""
         runner.invoke(app, ["ingest", str(sample_txt)])
@@ -519,16 +519,14 @@ class TestProgressReporting:
         """Rich progress callback creates and updates tasks correctly."""
         from unittest.mock import AsyncMock
 
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
                 "chunks_created": 3,
             }
 
-            from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
+            from omrg.transports.cli.ingest import _run_ingest_with_rich_progress
 
             _run_ingest_with_rich_progress("/fake", {})
 
@@ -538,7 +536,7 @@ class TestProgressReporting:
             assert "progress_callback" in call_kwargs.kwargs
             assert callable(call_kwargs.kwargs["progress_callback"])
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_json_suppresses_progress(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """--json mode does not include progress messages in output."""
         result = runner.invoke(app, ["ingest", str(sample_txt), "--json"])
@@ -553,55 +551,45 @@ class TestProgressReporting:
 class TestIngestErrorHandling:
     """Tests for error handling and interrupt paths in ingest."""
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_ollama(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'ollama' in message triggers Ollama error."""
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("ollama service unavailable")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_embed(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'embed' in message triggers Ollama error."""
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("embed operation failed")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_other(self, mock_signal: MagicMock) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("Something went wrong")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_message_plain(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt during ingest shows interruption message."""
-        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+        from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         # Simulate: ingest succeeds but shutdown was requested
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -616,14 +604,12 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_message_json(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt during ingest with --json outputs JSON with interrupted flag."""
-        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+        from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -638,14 +624,12 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_interrupt_with_chunks(self, mock_signal: MagicMock, sample_txt: Path) -> None:
         """Interrupt message mentions chunks written before interruption."""
-        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+        from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -659,12 +643,10 @@ class TestIngestErrorHandling:
             finally:
                 _shutdown_requested.clear()
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error_json(self, mock_signal: MagicMock) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path", "--json"])
             assert result.exit_code == 1
@@ -688,7 +670,7 @@ class TestSearchErrorHandling:
             }
         ]
 
-        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("omrg.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
                 app,
                 [
@@ -721,7 +703,7 @@ class TestSearchErrorHandling:
 
     def test_search_cli_defaults_follow_policy_resolver(self) -> None:
         """CLI omitted rerank should pass None so retrieval resolves policy."""
-        from rag_mcp.config import get_settings as _gs
+        from omrg.config import get_settings as _gs
 
         result_payload = [
             {
@@ -733,7 +715,7 @@ class TestSearchErrorHandling:
             }
         ]
 
-        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("omrg.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(app, ["search", "cli query", "--json"])
 
         assert result.exit_code == 0
@@ -762,7 +744,7 @@ class TestSearchErrorHandling:
             }
         ]
 
-        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("omrg.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(app, ["search", "cli query", "--expand-window", "2", "--json"])
 
         assert result.exit_code == 0
@@ -781,8 +763,8 @@ class TestSearchErrorHandling:
         ]
 
         with (
-            patch("rag_mcp.core.retrieval.search", return_value=result_payload),
-            patch("rag_mcp.transports.cli.search._print_ollama_error") as mock_ollama,
+            patch("omrg.core.retrieval.search", return_value=result_payload),
+            patch("omrg.transports.cli.search._print_ollama_error") as mock_ollama,
         ):
             result = runner.invoke(app, ["search", "cli query"])
 
@@ -822,7 +804,7 @@ class TestSearchErrorHandling:
             arguments.append("--diagnostics")
         arguments.append("--json")
 
-        with patch("rag_mcp.core.retrieval.search", side_effect=_search):
+        with patch("omrg.core.retrieval.search", side_effect=_search):
             result = runner.invoke(app, arguments)
 
         assert result.exit_code == 0
@@ -846,7 +828,7 @@ class TestSearchErrorHandling:
             }
         ]
 
-        with patch("rag_mcp.core.retrieval.search", return_value=result_payload):
+        with patch("omrg.core.retrieval.search", return_value=result_payload):
             result = runner.invoke(app, ["search", "cli query", "--diagnostics"])
 
         assert result.exit_code == 0
@@ -858,7 +840,7 @@ class TestSearchErrorHandling:
         assert "Sparse rank" not in output
 
     def test_search_cli_hybrid_flag_passes_true(self) -> None:
-        """``rag-mcp search --hybrid`` delegates with ``hybrid=True``."""
+        """``omrg search --hybrid`` delegates with ``hybrid=True``."""
         result_payload = [
             {
                 "score": 0.8,
@@ -869,7 +851,7 @@ class TestSearchErrorHandling:
             }
         ]
 
-        with patch("rag_mcp.core.retrieval.search", return_value=result_payload) as mock_search:
+        with patch("omrg.core.retrieval.search", return_value=result_payload) as mock_search:
             result = runner.invoke(
                 app,
                 ["search", "cli query", "--hybrid", "--json"],
@@ -881,28 +863,28 @@ class TestSearchErrorHandling:
 
     def test_search_connection_error(self) -> None:
         """ConnectionError in search triggers Ollama error message."""
-        with patch("rag_mcp.core.retrieval.search") as mock_search:
+        with patch("omrg.core.retrieval.search") as mock_search:
             mock_search.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_generic_exception_ollama(self) -> None:
         """Generic exception with 'ollama' in search triggers Ollama error."""
-        with patch("rag_mcp.core.retrieval.search") as mock_search:
+        with patch("omrg.core.retrieval.search") as mock_search:
             mock_search.side_effect = Exception("ollama error occurred")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_generic_exception_other(self) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch("rag_mcp.core.retrieval.search") as mock_search:
+        with patch("omrg.core.retrieval.search") as mock_search:
             mock_search.side_effect = Exception("Something broke")
             result = runner.invoke(app, ["search", "test query"])
             assert result.exit_code == 1
 
     def test_search_connection_error_json(self) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch("rag_mcp.core.retrieval.search") as mock_search:
+        with patch("omrg.core.retrieval.search") as mock_search:
             mock_search.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["search", "test query", "--json"])
             assert result.exit_code == 1
@@ -915,9 +897,9 @@ class TestRunCli:
 
     def test_run_cli_delegates_to_app(self) -> None:
         """run_cli() delegates to the Typer app."""
-        from rag_mcp.transports.cli import run_cli
+        from omrg.transports.cli import run_cli
 
-        with patch("rag_mcp.transports.cli.app") as mock_app:
+        with patch("omrg.transports.cli.app") as mock_app:
             run_cli()
             mock_app.assert_called_once()
 
@@ -930,7 +912,7 @@ class TestRichProgressCallbackInternals:
 
     def test_rich_callback_read_phase(self) -> None:
         """Read phase creates and updates the read task."""
-        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
+        from omrg.transports.cli.ingest import _run_ingest_with_rich_progress
 
         _captured_callbacks: list[tuple[str, int, int]] = []
 
@@ -947,14 +929,14 @@ class TestRichProgressCallbackInternals:
             progress_callback("read", 3, 3)
             return {"status": "ok", "files_indexed": 3, "chunks_created": 9}
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("omrg.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
 
     def test_rich_callback_embed_start_phase(self) -> None:
         """embed_start phase completes read bar and creates embed bar."""
-        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
+        from omrg.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -967,7 +949,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 5, 5)
             return {"status": "ok", "files_indexed": 2, "chunks_created": 5}
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("omrg.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 5
@@ -976,7 +958,7 @@ class TestRichProgressCallbackInternals:
         self,
     ) -> None:
         """embed_start forces read bar to 100% if not yet complete."""
-        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
+        from omrg.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -989,14 +971,14 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 4, 4)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 4}
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("omrg.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["status"] == "ok"
 
     def test_rich_callback_embed_phase_updates(self) -> None:
         """embed phase updates the embed task progress."""
-        from rag_mcp.transports.cli.ingest import _run_ingest_with_rich_progress
+        from omrg.transports.cli.ingest import _run_ingest_with_rich_progress
 
         async def fake_ingest(
             path: str,
@@ -1009,7 +991,7 @@ class TestRichProgressCallbackInternals:
             progress_callback("embed", 10, 10)
             return {"status": "ok", "files_indexed": 1, "chunks_created": 10}
 
-        with patch("rag_mcp.core.ingestion.ingest_path_async", side_effect=fake_ingest):
+        with patch("omrg.core.ingestion.ingest_path_async", side_effect=fake_ingest):
             result = _run_ingest_with_rich_progress("/fake", {})
 
         assert result["chunks_created"] == 10
@@ -1018,19 +1000,17 @@ class TestRichProgressCallbackInternals:
 class TestSigintHandler:
     """Directly test the _on_sigint handler registered during ingest."""
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    @patch("rag_mcp.transports.cli.console.print")
+    @patch("omrg.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.console.print")
     def test_first_sigint_sets_shutdown_flag(
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
         """First SIGINT sets _shutdown_requested and prints message."""
-        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+        from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         _shutdown_requested.clear()
 
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -1067,19 +1047,17 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
-    @patch("rag_mcp.transports.cli.console.print")
+    @patch("omrg.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.console.print")
     def test_second_sigint_raises_keyboard_interrupt(
         self, mock_print: MagicMock, mock_signal: MagicMock
     ) -> None:
         """Second SIGINT raises KeyboardInterrupt."""
-        from rag_mcp.core.ingestion._state import shutdown_requested as _shutdown_requested
+        from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         _shutdown_requested.clear()
 
-        with patch(
-            "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -1113,14 +1091,12 @@ class TestSigintHandler:
 class TestConsoleIsTerminal:
     """Test the TTY path (console.is_terminal == True)."""
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_tty_path_uses_rich_progress(self, mock_signal: MagicMock) -> None:
         """When console.is_terminal is True, Rich progress is used."""
         with (
-            patch("rag_mcp.transports.cli.ingest.console") as mock_console,
-            patch(
-                "rag_mcp.core.ingestion.ingest_path_async", new_callable=AsyncMock
-            ) as mock_ingest,
+            patch("omrg.transports.cli.ingest.console") as mock_console,
+            patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
         ):
             mock_console.is_terminal = True
             mock_console.print = MagicMock()
@@ -1148,7 +1124,7 @@ class TestFileDetails:
 
     async def test_single_file_has_file_details(self, sample_txt: Path) -> None:
         """Single file ingest returns file_details with one indexed entry."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(sample_txt))
         assert result["status"] == "ok"
@@ -1161,7 +1137,7 @@ class TestFileDetails:
 
     async def test_folder_has_file_details(self, dir_with_docs: Path) -> None:
         """Folder ingest returns file_details for each file."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(dir_with_docs))
         assert result["status"] == "ok"
@@ -1173,7 +1149,7 @@ class TestFileDetails:
 
     async def test_corrupt_file_has_failed_status(self, corrupt_dir: Path) -> None:
         """Corrupt file in folder has status 'failed' with error message."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(corrupt_dir))
         assert "file_details" in result
@@ -1308,7 +1284,7 @@ class TestReportGeneration:
 class TestIntegrationWithPdfs:
     """Integration tests using real PDF fixtures."""
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_5_pdfs_report_json(
         self, mock_signal: MagicMock, pdf_dir: Path, tmp_path: Path
     ) -> None:
@@ -1338,7 +1314,7 @@ class TestIntegrationWithPdfs:
         assert indexed_with_chunks >= 3, f"Expected ≥3 PDFs with chunks, got {indexed_with_chunks}"
         assert report["summary"]["indexed"] == 5
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_5_pdfs_report_markdown(
         self, mock_signal: MagicMock, pdf_dir: Path, tmp_path: Path
     ) -> None:
@@ -1409,9 +1385,9 @@ class TestPerFileLogging:
     async def test_per_file_logging_on_folder(self, dir_with_docs: Path) -> None:
         """Folder ingest produces per-file INFO log lines."""
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
-        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
+        with patch("omrg.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(dir_with_docs))
             assert result["status"] == "ok"
 
@@ -1426,9 +1402,9 @@ class TestPerFileLogging:
 
     async def test_warning_logged_for_failure(self, corrupt_dir: Path) -> None:
         """Failed files produce WARNING-level log lines."""
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
-        with patch("rag_mcp.core.ingestion.pipeline.logger") as mock_logger:
+        with patch("omrg.core.ingestion.pipeline.logger") as mock_logger:
             result = await ingest_path_async(str(corrupt_dir))
             assert result["status"] == "ok"
             # The corrupt.pdf should at minimum appear in warnings
@@ -1452,7 +1428,7 @@ class TestUnsupportedFileExclusion:
         bad_file = tmp_path / "not_supported.xyz"
         bad_file.write_text("This file should be skipped.")
 
-        from rag_mcp.core.ingestion import ingest_path_async
+        from omrg.core.ingestion import ingest_path_async
 
         result = await ingest_path_async(str(tmp_path))
         assert "file_details" in result
@@ -1478,7 +1454,7 @@ class TestMakeFileDetail:
 
     def test_indexed_entry(self) -> None:
         """Indexed entry has file, status, chunks, no error."""
-        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
+        from omrg.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail("doc.pdf", "indexed", 15)
         assert fd == {"file": "doc.pdf", "status": "indexed", "chunks": 15}
@@ -1486,7 +1462,7 @@ class TestMakeFileDetail:
 
     def test_failed_entry(self) -> None:
         """Failed entry includes error message."""
-        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
+        from omrg.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail("bad.pdf", "failed", 0, error="Not a valid PDF")
         assert fd["file"] == "bad.pdf"
@@ -1496,7 +1472,7 @@ class TestMakeFileDetail:
 
     def test_skipped_entry(self) -> None:
         """Skipped entry has chunks=0 with an error reason."""
-        from rag_mcp.core.ingestion.loader import make_file_detail as _make_file_detail
+        from omrg.core.ingestion.loader import make_file_detail as _make_file_detail
 
         fd = _make_file_detail("data.exe", "skipped", 0, error="Unsupported extension: .exe")
         assert fd["status"] == "skipped"
@@ -1557,7 +1533,7 @@ class TestDeleteCLI:
         assert "Invalid --path" in output
         assert not isinstance(result.exception, ValueError)
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_delete_path_removes_chunks(
         self,
         mock_signal,
@@ -1580,7 +1556,7 @@ class TestDeleteCLI:
         assert result.exit_code == 0
         assert "Removed" in result.output or "chunk" in result.output
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_delete_path_json(
         self,
         mock_signal,
@@ -1601,12 +1577,12 @@ class TestDeleteCLI:
         # JSON output goes to stdout via typer.echo; RichHandler logs go to
         # stderr.  When mix_stderr=True, finding the JSON requires scanning.
         # Fallback: verify the operation worked via exit code + list check.
-        from rag_mcp.core.ingestion import list_documents
+        from omrg.core.ingestion import list_documents
 
         docs = list_documents()
         assert docs == []  # chunks were removed
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_delete_dry_run(
         self,
         mock_signal,
@@ -1626,7 +1602,7 @@ class TestDeleteCLI:
         assert result.exit_code == 0
         assert "Dry run" in result.output or "would_delete" in result.output
 
-    @patch("rag_mcp.transports.cli.ingest.signal.signal")
+    @patch("omrg.transports.cli.ingest.signal.signal")
     def test_delete_dry_run_json(
         self,
         mock_signal,
@@ -1646,7 +1622,7 @@ class TestDeleteCLI:
         )
         assert result.exit_code == 0
         # Verify chunks still exist (dry-run didn't delete)
-        from rag_mcp.core.ingestion import list_documents
+        from omrg.core.ingestion import list_documents
 
         docs = list_documents()
         assert len(docs) > 0
@@ -1822,7 +1798,7 @@ class TestBenchmarkCLI:
             # The CLI callback runs ensure_runtime_setup, which would
             # overwrite the failing mock with a real embed model. Patch it
             # so the warmup failure under test is the one that surfaces.
-            with patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"):
+            with patch("omrg.transports.cli.compose.ensure_runtime_setup"):
                 result = runner.invoke(
                     app,
                     [
@@ -1847,7 +1823,7 @@ class TestWatchCLI:
 
     def test_watch_delegates_to_watcher(self) -> None:
         """watch command delegates to watcher.watch_directory and exits 0."""
-        with patch("rag_mcp.daemon.runner.watch_directory") as mock_watch:
+        with patch("omrg.daemon.runner.watch_directory") as mock_watch:
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
         assert result.exit_code == 0
         mock_watch.assert_called_once()
@@ -1859,7 +1835,7 @@ class TestWatchCLI:
     def test_watch_system_exit_propagates(self) -> None:
         """SystemExit from watcher propagates as typer.Exit with matching code."""
         with patch(
-            "rag_mcp.daemon.runner.watch_directory",
+            "omrg.daemon.runner.watch_directory",
             side_effect=SystemExit(1),
         ):
             result = runner.invoke(app, ["watch", "/tmp/watchdir"])
@@ -1875,7 +1851,7 @@ class TestListCollectionsCLI:
     def test_list_collections_empty(self) -> None:
         """Empty result shows 'No collections found' message."""
         with patch(
-            "rag_mcp.core.retrieval.list_collections",
+            "omrg.core.retrieval.list_collections",
             return_value=[],
         ):
             result = runner.invoke(app, ["list-collections"])
@@ -1885,7 +1861,7 @@ class TestListCollectionsCLI:
     def test_list_collections_empty_json(self) -> None:
         """Empty result with --json outputs '[]'."""
         with patch(
-            "rag_mcp.core.retrieval.list_collections",
+            "omrg.core.retrieval.list_collections",
             return_value=[],
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
@@ -1899,7 +1875,7 @@ class TestListCollectionsCLI:
             {"name": "research", "document_count": 1, "chunk_count": 7},
         ]
         with patch(
-            "rag_mcp.core.retrieval.list_collections",
+            "omrg.core.retrieval.list_collections",
             return_value=fake_collections,
         ):
             result = runner.invoke(app, ["list-collections"])
@@ -1915,7 +1891,7 @@ class TestListCollectionsCLI:
             {"name": "documents", "document_count": 3, "chunk_count": 15},
         ]
         with patch(
-            "rag_mcp.core.retrieval.list_collections",
+            "omrg.core.retrieval.list_collections",
             return_value=fake_collections,
         ):
             result = runner.invoke(app, ["list-collections", "--json"])
@@ -1937,7 +1913,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_collection_with_yes_flag(self) -> None:
         """Delete --collection with --yes skips prompt and removes collection."""
         with patch(
-            "rag_mcp.core.ingestion.remove_collection",
+            "omrg.core.ingestion.remove_collection",
             return_value={"status": "ok", "collection": "test_coll"},
         ) as mock_remove:
             result = runner.invoke(
@@ -1957,7 +1933,7 @@ class TestDeleteConfirmationCLI:
         """Delete --collection with Confirm.ask returning True proceeds."""
         with (
             patch(
-                "rag_mcp.core.ingestion.remove_collection",
+                "omrg.core.ingestion.remove_collection",
                 return_value={"status": "ok", "collection": "test_coll"},
             ) as mock_remove,
             patch(
@@ -1994,7 +1970,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_metadata_real_execution(self) -> None:
         """Delete --metadata with valid JSON performs real removal."""
         with patch(
-            "rag_mcp.core.ingestion.remove_by_metadata",
+            "omrg.core.ingestion.remove_by_metadata",
             return_value={
                 "status": "ok",
                 "chunks_removed": 5,
@@ -2016,7 +1992,7 @@ class TestDeleteConfirmationCLI:
     def test_delete_error_result_display(self) -> None:
         """Delete with an error result displays the error and exits 1."""
         with patch(
-            "rag_mcp.core.ingestion.remove_document",
+            "omrg.core.ingestion.remove_document",
             return_value={
                 "status": "error",
                 "message": "boom",
@@ -2041,7 +2017,7 @@ class TestDeleteConfirmationCLI:
 class TestGpuAccelerationDetection:
     """Tests for _detect_gpu_acceleration and the _setup_logging DEBUG branch."""
 
-    _LOGGER = "rag_mcp.transports.cli"
+    _LOGGER = "omrg.transports.cli"
 
     @staticmethod
     def _patch_embed_model(embed_model: str = "nomic-embed-text"):
@@ -2052,7 +2028,7 @@ class TestGpuAccelerationDetection:
         on ambient environment state and can silently take the wrong branch.
         """
         return patch(
-            "rag_mcp.transports.cli.compose.runtime_summary",
+            "omrg.transports.cli.compose.runtime_summary",
             return_value=(embed_model, 32, 2),
         )
 
@@ -2060,13 +2036,13 @@ class TestGpuAccelerationDetection:
         """A non-zero ollama ps exit logs a debug message naming the exit code."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            patch("omrg.transports.cli.subprocess.run", return_value=mock_result),
             self._patch_embed_model(),
             caplog.at_level(logging.DEBUG, logger=self._LOGGER),
         ):
@@ -2077,7 +2053,7 @@ class TestGpuAccelerationDetection:
         """A Metal runner for the embed model logs a debug message naming the model."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -2093,7 +2069,7 @@ class TestGpuAccelerationDetection:
             }
         )
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            patch("omrg.transports.cli.subprocess.run", return_value=mock_result),
             self._patch_embed_model(),
             caplog.at_level(logging.DEBUG, logger=self._LOGGER),
         ):
@@ -2105,7 +2081,7 @@ class TestGpuAccelerationDetection:
         """GPU in details.runner with format empty logs a debug message."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -2121,7 +2097,7 @@ class TestGpuAccelerationDetection:
             }
         )
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            patch("omrg.transports.cli.subprocess.run", return_value=mock_result),
             self._patch_embed_model(),
             caplog.at_level(logging.DEBUG, logger=self._LOGGER),
         ):
@@ -2132,7 +2108,7 @@ class TestGpuAccelerationDetection:
         """A CPU runner for the embed model logs a warning naming the model and CPU."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -2148,7 +2124,7 @@ class TestGpuAccelerationDetection:
             }
         )
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            patch("omrg.transports.cli.subprocess.run", return_value=mock_result),
             self._patch_embed_model(),
             caplog.at_level(logging.WARNING, logger=self._LOGGER),
         ):
@@ -2160,7 +2136,7 @@ class TestGpuAccelerationDetection:
         """The embed model absent from running models logs a debug message."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -2168,7 +2144,7 @@ class TestGpuAccelerationDetection:
             {"models": [{"name": "llama3:latest", "details": {"format": "metal"}}]}
         )
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", return_value=mock_result),
+            patch("omrg.transports.cli.subprocess.run", return_value=mock_result),
             self._patch_embed_model(),
             caplog.at_level(logging.DEBUG, logger=self._LOGGER),
         ):
@@ -2179,10 +2155,10 @@ class TestGpuAccelerationDetection:
         """A missing ollama CLI logs a debug message without raising."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         with (
-            patch("rag_mcp.transports.cli.subprocess.run", side_effect=FileNotFoundError()),
+            patch("omrg.transports.cli.subprocess.run", side_effect=FileNotFoundError()),
             self._patch_embed_model(),
             caplog.at_level(logging.DEBUG, logger=self._LOGGER),
         ):
@@ -2194,11 +2170,11 @@ class TestGpuAccelerationDetection:
         import logging
         import subprocess
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         with (
             patch(
-                "rag_mcp.transports.cli.subprocess.run",
+                "omrg.transports.cli.subprocess.run",
                 side_effect=subprocess.TimeoutExpired(cmd="ollama", timeout=5),
             ),
             self._patch_embed_model(),
@@ -2211,11 +2187,11 @@ class TestGpuAccelerationDetection:
         """An unexpected exception logs a debug message containing the error."""
         import logging
 
-        from rag_mcp.transports.cli import _detect_gpu_acceleration
+        from omrg.transports.cli import _detect_gpu_acceleration
 
         with (
             patch(
-                "rag_mcp.transports.cli.subprocess.run",
+                "omrg.transports.cli.subprocess.run",
                 side_effect=RuntimeError("unexpected"),
             ),
             self._patch_embed_model(),
@@ -2230,24 +2206,24 @@ class TestGpuAccelerationDetection:
         """Runtime initialisation invokes GPU detection when debug logging is enabled."""
         import logging
 
-        from rag_mcp.transports.cli import _initialise_runtime
+        from omrg.transports.cli import _initialise_runtime
 
         monkeypatch.setattr(
-            "rag_mcp.transports.cli._runtime_details_enabled",
+            "omrg.transports.cli._runtime_details_enabled",
             True,
         )
         monkeypatch.setattr(
-            logging.getLogger("rag_mcp.transports.cli"),
+            logging.getLogger("omrg.transports.cli"),
             "isEnabledFor",
             lambda level: level == logging.DEBUG,
         )
         with (
-            patch("rag_mcp.transports.cli.compose.ensure_runtime_setup"),
+            patch("omrg.transports.cli.compose.ensure_runtime_setup"),
             patch(
-                "rag_mcp.transports.cli.compose.runtime_summary",
+                "omrg.transports.cli.compose.runtime_summary",
                 return_value=("nomic-embed-text", 32, 2),
             ),
-            patch("rag_mcp.transports.cli._detect_gpu_acceleration") as mock_detect,
+            patch("omrg.transports.cli._detect_gpu_acceleration") as mock_detect,
         ):
             _initialise_runtime()
         mock_detect.assert_called_once_with("nomic-embed-text")

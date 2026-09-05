@@ -4735,7 +4735,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rag-mcp"
+name = "omrg"
 version = "2.2.0"
 source = { editable = "." }
 dependencies = [

@@ -27,13 +27,13 @@ from typing import Any
 
 import pytest
 
-from rag_mcp.core.retrieval.sparse import (
+from omrg.core.retrieval.sparse import (
     _LOCAL_TOKEN_PREFIX,
     _MAX_BUILD_ATTEMPTS,
     BM25SparseRetriever,
     reset_fallback_warning_state,
 )
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _DURABLE_PREFIX = "lancedb-durable-v1"
 
@@ -148,7 +148,7 @@ def test_fallback_token_is_tagged_and_warns_once_per_collection(
     fallback_warnings = [
         record
         for record in caplog.records
-        if record.name == "rag_mcp.core.retrieval.sparse"
+        if record.name == "omrg.core.retrieval.sparse"
         and "process-local generation counter" in record.message
     ]
     assert len(fallback_warnings) == 1
@@ -167,7 +167,7 @@ def test_fallback_token_is_tagged_and_warns_once_per_collection(
             [
                 record
                 for record in caplog.records
-                if record.name == "rag_mcp.core.retrieval.sparse"
+                if record.name == "omrg.core.retrieval.sparse"
                 and "process-local generation counter" in record.message
             ]
         )
@@ -271,8 +271,8 @@ def test_continuous_mutation_exhausts_bounded_retries_and_publishes_nothing() ->
 _WRITER_SCRIPT = textwrap.dedent(
     """
     import sys
-    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     uri, collection, phase = sys.argv[1], sys.argv[2], sys.argv[3]
     vector = [1.0] + [0.0] * 383

@@ -35,9 +35,9 @@ from llama_index.core import Settings
 from llama_index.core.embeddings import MockEmbedding
 from llama_index.core.schema import BaseNode, TextNode
 
-from rag_mcp.core.vectordb.base import VectorStore
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.base import VectorStore
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _CHROMA_EXTRA = find_spec("chromadb") is not None
 
@@ -50,7 +50,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve the concrete class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     return ChromaVectorStore
 
@@ -71,7 +71,7 @@ def store(request: pytest.FixtureRequest, tmp_path) -> VectorStore:
 
 def _contract_error() -> type[Exception]:
     """Return the shared contract error class (lazy import, see module docstring)."""
-    from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
+    from omrg.core.vectordb.validation import EmbeddingWriteContractError
 
     return EmbeddingWriteContractError
 
@@ -85,7 +85,7 @@ def _validate(
     existing_dimension: int | None = None,
 ) -> None:
     """Invoke the shared structural validator (lazy import, see module docstring)."""
-    from rag_mcp.core.vectordb.validation import validate_embedding_batch
+    from omrg.core.vectordb.validation import validate_embedding_batch
 
     validate_embedding_batch(
         identifiers,
@@ -387,7 +387,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], [0.0, 1.0]]),
         )
-        from rag_mcp.core.ingestion.writer import embed_and_write_async
+        from omrg.core.ingestion.writer import embed_and_write_async
 
         written = await embed_and_write_async(
             [TextNode(text="one"), TextNode(text="two")],
@@ -415,7 +415,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=vectors),
         )
-        from rag_mcp.core.ingestion.writer import embed_and_write_async
+        from omrg.core.ingestion.writer import embed_and_write_async
 
         with pytest.raises(_contract_error()):
             await embed_and_write_async(
@@ -436,7 +436,7 @@ class TestIngestionWritePath:
             "embed_model",
             _CannedBatchEmbedding(embed_dim=2, batch_vectors=[[1.0, 0.0], []]),
         )
-        from rag_mcp.core.ingestion.writer import embed_and_write_async
+        from omrg.core.ingestion.writer import embed_and_write_async
 
         with pytest.raises(_contract_error()):
             await embed_and_write_async(
@@ -462,7 +462,7 @@ def _replacement_nodes(vectors: list[list[float]]) -> list[BaseNode]:
 
 
 async def _replace(store: VectorStore, collection: str, vectors: list[list[float]]):
-    from rag_mcp.core.ingestion.replacement import replace_source_nodes_async
+    from omrg.core.ingestion.replacement import replace_source_nodes_async
 
     return await replace_source_nodes_async(
         _replacement_nodes(vectors),
@@ -508,8 +508,8 @@ class TestReplacementWritePath:
         await _replace(store, "replace-safe", [[1.0, 0.0], [0.0, 1.0]])
         generation = store.get_generation("replace-safe")
 
-        from rag_mcp.core.ingestion.replacement import IngestionStageError
-        from rag_mcp.core.norm_guard import EmbeddingNormViolationError
+        from omrg.core.ingestion.replacement import IngestionStageError
+        from omrg.core.norm_guard import EmbeddingNormViolationError
 
         with pytest.raises(IngestionStageError) as excinfo:
             await _replace(store, "replace-safe", bad_vectors)
@@ -517,3 +517,70 @@ class TestReplacementWritePath:
         assert isinstance(excinfo.value.__cause__, EmbeddingNormViolationError)
         assert store.count_where("replace-safe", {"file_path": "doc.txt"}) == 2
         assert store.get_generation("replace-safe") == generation
+
+
+# ── Engine isolation: writes never fall back to the global embedder ──
+
+
+class _PoisonedGlobalEmbedding(MockEmbedding):
+    """Valid ``BaseEmbedding`` whose every embedding call fails.
+
+    Installed on the LlamaIndex global so any code path that embeds
+    through ``Settings.embed_model`` raises instead of silently
+    producing vectors from the wrong model.
+    """
+
+    def _get_query_embedding(self, query: str) -> list[float]:
+        raise AssertionError("the LlamaIndex global embedder embedded a query")
+
+    def get_text_embedding_batch(self, texts, **kwargs):  # noqa: ANN001, ARG002
+        raise AssertionError("the LlamaIndex global embedder embedded texts")
+
+
+class TestInjectedEmbedderNeverReadsGlobal:
+    """``write_nodes`` with an injected embedder never uses the global.
+
+    The LlamaIndex ``VectorStoreIndex`` constructor resolves
+    ``embed_model or Settings.embed_model`` before processing the
+    (already embedded) nodes, so the adapter must pass the injected
+    model through: omitting it resolves the global even though no
+    embedding happens inside the index.
+    """
+
+    def test_write_passes_injected_model_to_index(self, store: VectorStore) -> None:
+        nodes = [
+            TextNode(text="alpha", id_="global-forbidden-1"),
+            TextNode(text="beta", id_="global-forbidden-2"),
+        ]
+        embed = MockEmbedding(embed_dim=8, model_name="injected-write-model")
+
+        from llama_index.core.indices.vector_store.base import VectorStoreIndex
+
+        captured: dict = {}
+        real_init = VectorStoreIndex.__init__
+
+        def spy_init(index_self: object, *args: object, **kwargs: object) -> None:
+            captured.update(kwargs)
+            real_init(index_self, *args, **kwargs)  # type: ignore[arg-type]
+
+        previous = Settings.embed_model
+        Settings.embed_model = _PoisonedGlobalEmbedding(embed_dim=8)  # type: ignore[assignment]
+        try:
+            with pytest.MonkeyPatch.context() as mp:
+                mp.setattr(VectorStoreIndex, "__init__", spy_init)
+                store.write_nodes(nodes, "global_forbidden", embed_model=embed)
+        finally:
+            Settings.embed_model = previous
+
+        # Decisive: the adapter passed the injected model to the index
+        # constructor, so the global-resolution branch never runs.
+        assert captured.get("embed_model") is embed
+        assert store.count("global_forbidden") == 2
+
+    def test_close_clears_process_local_state(self, store: VectorStore) -> None:
+        """Closing drops generation counters; a second close is a no-op."""
+        _upsert(store, "close-state", ["row-1"], [[1.0, 0.0]])
+        assert store.get_generation("close-state") == 1
+        store.close()
+        assert store.get_generation("close-state") == 0
+        store.close()

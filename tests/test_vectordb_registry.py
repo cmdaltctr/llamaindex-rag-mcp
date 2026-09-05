@@ -24,18 +24,18 @@ from pathlib import Path
 import pytest
 
 _SRC_ROOT = Path(__file__).resolve().parent.parent / "src"
-_COMPOSE_PY = _SRC_ROOT / "rag_mcp" / "compose.py"
+_COMPOSE_PY = _SRC_ROOT / "omrg" / "compose.py"
 
 _FACTORY_MODULE = {
-    "chroma": "rag_mcp.core.vectordb.chroma",
-    "lancedb": "rag_mcp.core.vectordb.lancedb",
+    "chroma": "omrg.core.vectordb.chroma",
+    "lancedb": "omrg.core.vectordb.lancedb",
 }
 _CONCRETE_STORE_MODULES = frozenset(_FACTORY_MODULE.values())
 
 
 def test_available_lists_both_backends() -> None:
     """The registry must expose exactly chroma and lancedb, sorted."""
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     assert registry.available() == ["chroma", "lancedb"]
 
@@ -43,7 +43,7 @@ def test_available_lists_both_backends() -> None:
 @pytest.mark.parametrize("name", ["chroma", "lancedb"])
 def test_registered_name_resolves_to_its_factory(name: str) -> None:
     """``get(name)`` must resolve to that module's ``build_vector_store_from_settings``."""
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     factory = registry.get(name)
     assert callable(factory)
@@ -55,14 +55,14 @@ def test_registered_name_resolves_to_its_factory(name: str) -> None:
 @pytest.mark.parametrize("name", ["chroma", "lancedb"])
 def test_get_caches_the_resolved_factory(name: str) -> None:
     """A second ``get`` must return the cached same object."""
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     assert registry.get(name) is registry.get(name)
 
 
 def test_unknown_name_raises_key_error_listing_registered() -> None:
     """An unknown store name must fail with the registered names listed."""
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     with pytest.raises(KeyError) as excinfo:
         registry.get("nope")
@@ -75,7 +75,7 @@ def test_missing_backend_module_raises_import_error() -> None:
     """A backend whose module import fails raises a naming ImportError."""
     from unittest.mock import patch
 
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     registry._cache.clear()
     try:
@@ -102,7 +102,7 @@ def test_registry_is_lazy() -> None:
         import importlib
         import sys
 
-        importlib.import_module("rag_mcp.core.vectordb.registry")
+        importlib.import_module("omrg.core.vectordb.registry")
 
         eager = [m for m in {concrete!r} if m in sys.modules]
         if eager:
@@ -117,7 +117,7 @@ def test_registry_is_lazy() -> None:
         text=True,
     )
     assert proc.returncode == 0, (
-        "rag_mcp.core.vectordb.registry eagerly imported concrete store "
+        "omrg.core.vectordb.registry eagerly imported concrete store "
         f"modules on import: {proc.stdout.strip()}"
     )
 
@@ -148,16 +148,16 @@ def _module_level_concrete_imports(source: str) -> set[str]:
     """Return concrete store modules imported at module level in *source*.
 
     ``from X import Y`` aliases are expanded to their full module path,
-    so ``from rag_mcp.core.vectordb import chroma`` is caught even
+    so ``from omrg.core.vectordb import chroma`` is caught even
     though the ``from`` module alone names the parent package.
     """
 
     def _resolve(module: str, level: int) -> str:
-        # compose.py is ``rag_mcp.compose``: level 1 reaches ``rag_mcp``.
+        # compose.py is ``omrg.compose``: level 1 reaches ``omrg``.
         if level == 0:
             return module
         if level == 1:
-            return f"rag_mcp.{module}" if module else "rag_mcp"
+            return f"omrg.{module}" if module else "omrg"
         return module  # No level-2+ package contains compose.py.
 
     tree = ast.parse(source)
@@ -224,17 +224,17 @@ def test_compose_has_no_module_level_concrete_store_import() -> None:
     ("source", "expected"),
     [
         (
-            "from rag_mcp.core.vectordb import chroma",
-            {"rag_mcp.core.vectordb.chroma"},
+            "from omrg.core.vectordb import chroma",
+            {"omrg.core.vectordb.chroma"},
         ),
         (
-            "from rag_mcp.core.vectordb.chroma import build_chroma_vector_store",
-            {"rag_mcp.core.vectordb.chroma"},
+            "from omrg.core.vectordb.chroma import build_chroma_vector_store",
+            {"omrg.core.vectordb.chroma"},
         ),
-        ("from .core.vectordb import lancedb", {"rag_mcp.core.vectordb.lancedb"}),
-        ("from rag_mcp.core.vectordb import registry", set()),
+        ("from .core.vectordb import lancedb", {"omrg.core.vectordb.lancedb"}),
+        ("from omrg.core.vectordb import registry", set()),
         ("import lancedb", set()),
-        ("import rag_mcp.core.vectordb.chroma", {"rag_mcp.core.vectordb.chroma"}),
+        ("import omrg.core.vectordb.chroma", {"omrg.core.vectordb.chroma"}),
     ],
     ids=[
         "alias-import",
@@ -262,6 +262,6 @@ def test_no_backend_claims_cross_process_write_safety(name: str) -> None:
     experiment; none exists for either backend, so ``describe(name)``
     must report ``False`` for both.
     """
-    from rag_mcp.core.vectordb import registry
+    from omrg.core.vectordb import registry
 
     assert registry.describe(name)["cross_process_writes_safe"] is False

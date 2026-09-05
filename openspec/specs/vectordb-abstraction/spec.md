@@ -75,7 +75,7 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 #### Scenario: Single chromadb import site
 
-- **WHEN** `src/rag_mcp/` is searched for `import chromadb` or
+- **WHEN** `src/omrg/` is searched for `import chromadb` or
   `chromadb.PersistentClient`
 - **THEN** the only match MUST be in `core/vectordb/chroma.py`
 
@@ -95,7 +95,7 @@ including the codebase map, SHALL go through the `VectorStore` interface.
 
 #### Scenario: Existing tests pass against the implementation
 
-- **WHEN** `uv run pytest -m "not slow" --cov=rag_mcp` runs
+- **WHEN** `uv run pytest -m "not slow" --cov=omrg` runs
 - **THEN** all pre-existing tests MUST pass against the ChromaDB-backed
   implementation with no assertion changes beyond injected-settings plumbing
 

@@ -24,7 +24,7 @@ from experiments._lib.preflight import (
     assert_parser_invoked_before_embeddings,
 )
 
-from rag_mcp.core.vectordb.validation import EmbeddingWriteContractError
+from omrg.core.vectordb.validation import EmbeddingWriteContractError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXP14_DIR = REPO_ROOT / "experiments" / "14-liteparse-qasper-promotion-2026-06-29"
@@ -199,7 +199,7 @@ def test_run_cell_requests_diagnostics_and_persists_retrieval_ids(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Require diagnostic IDs for Qrels scoring in the evaluation harness."""
-    from rag_mcp.core import retrieval
+    from omrg.core import retrieval
 
     calls: list[dict[str, object]] = []
 
@@ -285,7 +285,7 @@ def test_source_page_count_distinct_from_emitted_document_count(
     change the recorded page count away from the true source page count,
     and the emission itself must be recorded in its own field.
     """
-    from rag_mcp.integrations.pdf import factory as pdf_factory
+    from omrg.integrations.pdf import factory as pdf_factory
 
     real = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
     stub = _StubAdapter([real["parsed_documents"][0]["text"], ""])
@@ -326,7 +326,7 @@ def test_token_count_is_not_emitted_document_count(
     token count must remain a positive text-derived number distinct
     from the emitted-document count of two.
     """
-    from rag_mcp.integrations.pdf import factory as pdf_factory
+    from omrg.integrations.pdf import factory as pdf_factory
 
     real = exp14.parse_corpus(FIXTURES_DIR, "pypdf")
     stub = _StubAdapter([real["parsed_documents"][0]["text"], ""])
@@ -349,7 +349,7 @@ def test_parse_failure_records_zero_tokens_and_unknown_pages(
     A parse failure has empty text, so its token count is zero; the
     source page count is unknowable without parsing, so it stays None.
     """
-    from rag_mcp.integrations.pdf import factory as pdf_factory
+    from omrg.integrations.pdf import factory as pdf_factory
 
     monkeypatch.setattr(pdf_factory, "get_pdf_reader", lambda reader: _RaisingAdapter())
     result = exp14.parse_corpus(FIXTURES_DIR, "pypdf")

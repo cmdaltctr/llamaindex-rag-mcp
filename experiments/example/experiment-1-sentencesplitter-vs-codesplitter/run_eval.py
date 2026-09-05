@@ -5,7 +5,7 @@ Executes the pre-registered protocol (``protocol.md`` v1.0) as written:
 - Two cells over the SAME 18 committed fixtures: ``S`` (sentence control,
   generic document path) and ``C`` (AST-aware CodeSplitter treatment via
   the production ``content_type`` dispatch in
-  ``rag_mcp.core.ingestion.chunker.read_and_chunk_file_async``).
+  ``omrg.core.ingestion.chunker.read_and_chunk_file_async``).
 - Structural-only execution; the optional H4 retrieval arm is NOT run
   (requires an embedding runtime; H1-H3 are the correctness gates).
 - Every cell builds a D13 runtime manifest and passes the D14 preflight
@@ -49,9 +49,9 @@ from experiments._lib import manifest as manifest_lib  # noqa: E402
 from experiments._lib import preflight, stats  # noqa: E402
 from experiments._lib.plan import ExperimentPlan  # noqa: E402
 
-from rag_mcp.core.chunking.code import CodeChunkResult  # noqa: E402
-from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async  # noqa: E402
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock  # noqa: E402
+from omrg.core.chunking.code import CodeChunkResult  # noqa: E402
+from omrg.core.ingestion.chunker import read_and_chunk_file_async  # noqa: E402
+from omrg.core.settings import EffectiveSettings, MetadataBlock  # noqa: E402
 
 EXPERIMENT_ID = "example-experiment-1-sentencesplitter-vs-codesplitter"
 PROTOCOL_VERSION = "1.0"

@@ -19,9 +19,9 @@ from pathlib import Path
 import pytest
 from tests.quality.runner import CORPUS_DIR, load_golden_queries
 
-from rag_mcp.compose import build_answer_llm
-from rag_mcp.core.answer import answer
-from rag_mcp.core.ingestion import ingest_path_async
+from omrg.compose import build_answer_llm
+from omrg.core.answer import answer
+from omrg.core.ingestion import ingest_path_async
 
 pytestmark = pytest.mark.slow
 

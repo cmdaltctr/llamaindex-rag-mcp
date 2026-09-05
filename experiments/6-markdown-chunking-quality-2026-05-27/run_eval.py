@@ -20,7 +20,7 @@ Both ChromaDB directories must already be populated by separate ingest runs
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -113,7 +113,7 @@ def _load_ground_truth() -> list[dict]:
 def _setup_chroma_dir(chroma_dir: str) -> None:
     """Point retrieval at the given ChromaDB directory."""
     os.environ["CHROMA_PERSIST_DIR"] = chroma_dir
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "CHROMA_PERSIST_DIR"):
             mod.CHROMA_PERSIST_DIR = chroma_dir
@@ -150,7 +150,7 @@ def _collect_chunk_stats(chroma_dir: str) -> ChunkStats:
 
 def _evaluate_chunker(label: str, chroma_dir: str, queries: list[dict]) -> ChunkerEvaluation:
     """Run all queries against one ChromaDB directory."""
-    from rag_mcp.retrieval import search
+    from omrg.retrieval import search
 
     _setup_chroma_dir(chroma_dir)
     eval_result = ChunkerEvaluation(label=label, chroma_dir=chroma_dir)
@@ -334,12 +334,12 @@ def main() -> None:
 
     # Reset reranker singleton just in case it was instantiated.
     try:
-        from rag_mcp.reranker import CrossEncoderReranker
+        from omrg.reranker import CrossEncoderReranker
         CrossEncoderReranker._instance = None  # type: ignore[attr-defined]
     except Exception:
         pass
 
-    import rag_mcp.retrieval  # noqa: F401
+    import omrg.retrieval  # noqa: F401
 
     print("\n  Evaluating baseline (SentenceSplitter only)...")
     baseline = _evaluate_chunker("baseline", baseline_dir, queries)

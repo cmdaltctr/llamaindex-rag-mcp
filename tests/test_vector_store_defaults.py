@@ -18,7 +18,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from rag_mcp.config import Settings, get_settings
+from omrg.config import Settings, get_settings
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,9 +42,9 @@ def _fresh_get_settings(monkeypatch: pytest.MonkeyPatch):
     """Resolve ``get_settings()`` against the CURRENT test environment.
 
     Copies the conftest ``_isolate_env`` cache-reset idiom: the resolved
-    singleton lives in the module global ``rag_mcp.config._settings``.
+    singleton lives in the module global ``omrg.config._settings``.
     """
-    import rag_mcp.config as config_mod
+    import omrg.config as config_mod
 
     monkeypatch.setattr(config_mod, "_settings", None, raising=False)
     return get_settings()
@@ -92,7 +92,7 @@ def test_yaml_defaults_surface_agrees() -> None:
 
     Spec: config-composition-root, scenario 'Default surfaces agree'.
     """
-    data = yaml.safe_load((_REPO_ROOT / "src" / "rag_mcp" / "config" / "defaults.yaml").read_text())
+    data = yaml.safe_load((_REPO_ROOT / "src" / "omrg" / "config" / "defaults.yaml").read_text())
     # The YAML file uses env-style (upper-case) keys, matching the env source.
     assert data["VECTOR_STORE"] == "lancedb"
 
@@ -110,7 +110,7 @@ def test_env_example_surface_agrees() -> None:
 
 def test_effective_settings_surface_agrees() -> None:
     """EffectiveSettings declares lancedb as the vector_store field default."""
-    from rag_mcp.core.settings import EffectiveSettings
+    from omrg.core.settings import EffectiveSettings
 
     default = EffectiveSettings.model_fields["vector_store"].default
     assert default == "lancedb"
@@ -213,7 +213,7 @@ def test_chroma_cloud_tenant_database_must_be_paired(
 
 def test_source_keys_tolerates_raising_and_none_sources() -> None:
     """A broken or empty settings source contributes no provenance keys."""
-    from rag_mcp.config import source_keys
+    from omrg.config import source_keys
 
     def unreadable_source():
         raise OSError("unreadable environment")

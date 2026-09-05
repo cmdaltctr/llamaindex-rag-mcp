@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from conftest import connected_client
-from rag_mcp.core.settings import EffectiveSettings
+from omrg.core.settings import EffectiveSettings
 
 # ── core/ingestion/chunker.py: the Azure document branch ────────────────
 
@@ -23,14 +23,14 @@ class TestAzureDocumentBranch:
     async def test_azure_backend_reads_and_chunks(self, tmp_path: Path) -> None:
         from llama_index.core import Document
 
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
         pdf = tmp_path / "paper.pdf"
         pdf.write_bytes(b"%PDF-1.4 stub")
 
         docs = [Document(text="Azure extracted prose. " * 40)]
         with patch(
-            "rag_mcp.integrations.azure.read_documents",
+            "omrg.integrations.azure.read_documents",
             AsyncMock(return_value=docs),
         ):
             nodes = await read_and_chunk_file_async(
@@ -52,13 +52,13 @@ class TestAzureDocumentBranch:
         backend at all (registry suffix gate); the RuntimeError stub stays
         as a belt-and-braces guard for any future suffix drift.
         """
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
         md = tmp_path / "notes.md"
         md.write_text("# Heading\n\n" + ("local fallback prose. " * 30))
 
         with patch(
-            "rag_mcp.integrations.azure.read_documents",
+            "omrg.integrations.azure.read_documents",
             AsyncMock(side_effect=RuntimeError("azure down")),
         ):
             nodes = await read_and_chunk_file_async(
@@ -68,8 +68,8 @@ class TestAzureDocumentBranch:
 
     async def test_markdown_uses_the_markdown_chunk_size(self, tmp_path: Path) -> None:
         """.md files use markdown_chunk_size, other files use chunk_size."""
-        from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
-        from rag_mcp.core.settings import ChunkingBlock
+        from omrg.core.ingestion.chunker import read_and_chunk_file_async
+        from omrg.core.settings import ChunkingBlock
 
         md = tmp_path / "big.md"
         md.write_text("# H\n\n" + ("word " * 2000))
@@ -98,7 +98,7 @@ class TestFetchAll:
     """The bulk read added for the document graph (task 6.1)."""
 
     def _store(self, collection):
-        from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(return_value=collection)
@@ -118,7 +118,7 @@ class TestFetchAll:
         assert self._store(collection).fetch_all("documents", ["metadatas"]) is None
 
     def test_missing_collection_returns_none(self) -> None:
-        from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+        from omrg.core.vectordb.chroma import ChromaVectorStore
 
         store = ChromaVectorStore(persist_dir="/tmp/x")
         store._get_collection = MagicMock(side_effect=Exception("no such collection"))
@@ -150,9 +150,9 @@ class TestMcpHandlersNeverRaise:
     ) -> None:
         """A core-layer exception becomes an error result, never a raise."""
         targets = {
-            "search_documents": "rag_mcp.transports.mcp.search.search",
-            "list_indexed_documents": "rag_mcp.transports.mcp.list._list_documents",
-            "get_codebase_map": ("rag_mcp.core.codebase.codebase_map.get_codebase_map_text"),
+            "search_documents": "omrg.transports.mcp.search.search",
+            "list_indexed_documents": "omrg.transports.mcp.list._list_documents",
+            "get_codebase_map": ("omrg.core.codebase.codebase_map.get_codebase_map_text"),
         }
         with patch(targets[tool], side_effect=RuntimeError("boom")):
             async with connected_client(mcp_server) as client:
@@ -173,7 +173,7 @@ class TestMcpProfileResolutionErrors:
 
     async def test_ingest_reports_invalid_profile_tag(self, mcp_server) -> None:
         with patch.object(
-            __import__("rag_mcp.transports.mcp", fromlist=["_profile_resolver"]),
+            __import__("omrg.transports.mcp", fromlist=["_profile_resolver"]),
             "_profile_resolver",
         ) as resolver:
             resolver.resolve.side_effect = ValueError("tagged 'hybrid'")
@@ -185,7 +185,7 @@ class TestMcpProfileResolutionErrors:
 
     async def test_search_reports_invalid_profile_tag(self, mcp_server) -> None:
         with patch.object(
-            __import__("rag_mcp.transports.mcp", fromlist=["_profile_resolver"]),
+            __import__("omrg.transports.mcp", fromlist=["_profile_resolver"]),
             "_profile_resolver",
         ) as resolver:
             resolver.resolve.side_effect = ValueError("tagged 'hybrid'")
@@ -201,7 +201,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_preview_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "rag_mcp.core.profiles.generate_safety_contract",
+            "omrg.core.profiles.generate_safety_contract",
             side_effect=RuntimeError("store unreachable"),
         ):
             async with connected_client(mcp_server) as client:
@@ -213,7 +213,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_apply_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "rag_mcp.core.profiles.apply_profile_change",
+            "omrg.core.profiles.apply_profile_change",
             side_effect=RuntimeError("write failed"),
         ):
             async with connected_client(mcp_server) as client:
@@ -225,7 +225,7 @@ class TestMcpProfileChangeErrors:
 
     async def test_list_collections_failure_returns_error(self, mcp_server) -> None:
         with patch(
-            "rag_mcp.core.retrieval.list_collections",
+            "omrg.core.retrieval.list_collections",
             side_effect=RuntimeError("no store"),
         ):
             async with connected_client(mcp_server) as client:

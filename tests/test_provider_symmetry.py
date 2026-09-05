@@ -13,8 +13,8 @@ nothing failed when it appeared."
 
 from __future__ import annotations
 
-from rag_mcp.core.metadata import registry as _metadata_registry
-from rag_mcp.core.providers.llm import registry as _llm_registry
+from omrg.core.metadata import registry as _metadata_registry
+from omrg.core.providers.llm import registry as _llm_registry
 
 # LLM-backed metadata backends — the ones that delegate to a specific LLM
 # sub-provider (ollama, llamacpp, openrouter).  Excludes keyword (regex,
@@ -62,7 +62,7 @@ class TestProviderSymmetry:
         backend implementation — only dispatch logic.  Every backend
         resolves to its own module.
         """
-        dispatch_prefix = "rag_mcp.core.metadata.extractor"
+        dispatch_prefix = "omrg.core.metadata.extractor"
         offenders = [
             name
             for name, path in _metadata_registry._registry.items()
@@ -99,7 +99,7 @@ class TestNoInlineLLMConstruction:
     def test_llamaindex_backend_constructs_no_llm_inline(self) -> None:
         import inspect
 
-        from rag_mcp.core.metadata import llamaindex
+        from omrg.core.metadata import llamaindex
 
         source = inspect.getsource(llamaindex)
         for forbidden in ("OpenAILike(", "Ollama("):
@@ -111,7 +111,7 @@ class TestNoInlineLLMConstruction:
     def test_llamaindex_backend_uses_the_registry(self) -> None:
         import inspect
 
-        from rag_mcp.core.metadata import llamaindex
+        from omrg.core.metadata import llamaindex
 
         assert "providers.llm.registry" in inspect.getsource(llamaindex)
 
@@ -120,15 +120,15 @@ class TestPipelineTimeoutIsSeparate:
     """The pipeline budget must not collapse into the classification one."""
 
     def test_defaults_differ(self) -> None:
-        from rag_mcp.core.settings import MetadataBlock
+        from omrg.core.settings import MetadataBlock
 
         block = MetadataBlock()
         assert block.classify_timeout == 30.0
         assert block.pipeline_timeout == 180.0
 
     def test_both_models_carry_the_field(self) -> None:
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.settings import MetadataBlock
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.settings import MetadataBlock
 
         for model in (MetadataSettings, MetadataBlock):
             assert "pipeline_timeout" in model.model_fields
@@ -144,7 +144,7 @@ class TestPipelineTimeoutIsSeparate:
             def __init__(self, **kwargs: object) -> None:
                 recorded.update(kwargs)
 
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         settings = Settings(_env_file=None)
 
@@ -158,7 +158,7 @@ class TestPipelineTimeoutIsSeparate:
             sys.modules["llama_index.llms.openai_like"] = stub_like
             sys.modules["llama_index.llms.ollama"] = stub_ollama
 
-            from rag_mcp.core.providers.llm import llamacpp, ollama, openrouter
+            from omrg.core.providers.llm import llamacpp, ollama, openrouter
 
             for module, key in (
                 (llamacpp, "timeout"),
@@ -185,14 +185,14 @@ class TestMetadataSettingsParity:
     """
 
     def test_field_names_match(self) -> None:
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.settings import MetadataBlock
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.settings import MetadataBlock
 
         assert set(MetadataSettings.model_fields) == set(MetadataBlock.model_fields)
 
     def test_field_defaults_match(self) -> None:
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.settings import MetadataBlock
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.settings import MetadataBlock
 
         for name, field in MetadataSettings.model_fields.items():
             other = MetadataBlock.model_fields[name]
@@ -203,8 +203,8 @@ class TestMetadataSettingsParity:
 
     def test_six_timeout_overrides_present_and_optional(self) -> None:
         """All six per-provider overrides exist on both models and default to None."""
-        from rag_mcp.core.metadata.settings import MetadataSettings
-        from rag_mcp.core.settings import MetadataBlock
+        from omrg.core.metadata.settings import MetadataSettings
+        from omrg.core.settings import MetadataBlock
 
         expected = {
             "llamacpp_classify_timeout_override",

@@ -35,7 +35,7 @@ from pathlib import Path
 import lancedb
 import pytest
 
-from rag_mcp.core.vectordb.lance_filter import (
+from omrg.core.vectordb.lance_filter import (
     _MAX_CLAUSE_COUNT,
     _MAX_FILTER_DEPTH,
     _MAX_FILTER_SQL_LENGTH,
@@ -405,7 +405,7 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
             # fail-closed check exists to stop.
             return str(self._value)
 
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _BrokenLit, raising=True)
+    monkeypatch.setattr("omrg.core.vectordb.lance_literal.lit", _BrokenLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": "x' OR '1'='1"})
 
@@ -423,7 +423,7 @@ def test_regressed_unparser_output_refused(monkeypatch: pytest.MonkeyPatch) -> N
 )
 def test_literal_forms_are_closed(value: object, pattern: str) -> None:
     """Engine literal serialisations match a closed form per type."""
-    from rag_mcp.core.vectordb.lance_literal import _literal_sql
+    from omrg.core.vectordb.lance_literal import _literal_sql
 
     assert re.fullmatch(pattern, _literal_sql(value))
 
@@ -599,7 +599,7 @@ def test_mismatched_scalar_refused(
     refuse the filter rather than emit a literal that matches the wrong
     rows.
     """
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _MismatchedLit, raising=True)
+    monkeypatch.setattr("omrg.core.vectordb.lance_literal.lit", _MismatchedLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": value})
 
@@ -611,7 +611,7 @@ def test_faithful_scalar_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
     of every supported scalar type pass the faithfulness check without
     false refusal.
     """
-    from rag_mcp.core.vectordb.lance_literal import _literal_sql
+    from omrg.core.vectordb.lance_literal import _literal_sql
 
     values: list[object] = [
         True,
@@ -689,7 +689,7 @@ def test_swapped_cast_target_type_refused(monkeypatch: pytest.MonkeyPatch) -> No
     but the SQL value class differs, so the translator must refuse the
     filter rather than emit a predicate against the wrong type.
     """
-    monkeypatch.setattr("rag_mcp.core.vectordb.lance_literal.lit", _SwappedCastLit, raising=True)
+    monkeypatch.setattr("omrg.core.vectordb.lance_literal.lit", _SwappedCastLit, raising=True)
     with pytest.raises(ValueError, match="literal"):
         translate_where({"tag": date(2026, 9, 2)})
     with pytest.raises(ValueError, match="literal"):
@@ -698,7 +698,7 @@ def test_swapped_cast_target_type_refused(monkeypatch: pytest.MonkeyPatch) -> No
 
 def test_cast_target_type_must_match_value_type() -> None:
     """Direct unit pins: the CAST target type must agree with the value."""
-    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+    from omrg.core.vectordb.lance_literal import _is_faithful_literal
 
     # Swapped target types are refused for both directions.
     assert not _is_faithful_literal(date(2026, 9, 2), "CAST('2026-09-02' AS TIMESTAMP)")
@@ -714,7 +714,7 @@ def test_cast_target_type_must_match_value_type() -> None:
 
 def test_literal_faithfulness_closed_branches() -> None:
     """Every verifier branch closes: no fragment shape is implicitly trusted."""
-    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+    from omrg.core.vectordb.lance_literal import _is_faithful_literal
 
     # bytes: faithful hex round-trip accepted; wrong bytes refused.
     assert _is_faithful_literal(b"hello", "X'68656C6C6F'")

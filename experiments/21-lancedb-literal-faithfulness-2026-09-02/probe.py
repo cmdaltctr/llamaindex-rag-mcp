@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 import lancedb  # noqa: E402
 from lancedb.expr import lit  # noqa: E402
 
-from rag_mcp.core.vectordb.lance_filter import translate_where  # noqa: E402
+from omrg.core.vectordb.lance_filter import translate_where  # noqa: E402
 
 # ── Hostile corpus: value classes that might break the engine ──────────
 
@@ -165,7 +165,7 @@ def _translate(value: object) -> tuple[str | None, str | None]:
 
 def _is_faithful(value: object, sql: str) -> bool:
     """Check if the engine output faithfully represents the value."""
-    from rag_mcp.core.vectordb.lance_literal import _is_faithful_literal
+    from omrg.core.vectordb.lance_literal import _is_faithful_literal
 
     return _is_faithful_literal(value, sql)
 

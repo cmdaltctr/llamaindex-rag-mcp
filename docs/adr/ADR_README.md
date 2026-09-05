@@ -65,6 +65,9 @@ development of the LlamaIndex RAG MCP Server.
 | [056](./056-lineage-navigation-replaces-a-document-store.md)   | Lineage Navigation Replaces a Document Store                                                 | 2026-09-02 | Accepted |
 | [057](./057-answering-is-additive-and-injected.md)           | Answering Is Additive and Injected                                                           | 2026-09-02 | Accepted |
 | [058](./058-lancedb-filter-policy-exception.md)              | LanceDB Filter Policy Exception                                                              | 2026-09-02 | Accepted |
+| [059](./059-claim-verification-stage.md)                     | Claim Verification Is an Opt-In Cloud Judge                                                  | 2026-09-04 | Accepted |
+| [060](./060-omrg-is-a-framework-mcp-is-a-transport.md)       | omrg Is a Framework; MCP Is a Transport                                                      | 2026-09-08 | Accepted |
+| [061](./061-engine-scoped-embedding-provider.md)             | Engine-Scoped Embedding Provider                                                             | 2026-09-08 | Accepted |
 
 ## Convention
 

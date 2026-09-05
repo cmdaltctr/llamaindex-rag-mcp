@@ -3,7 +3,7 @@
 Deterministic correctness experiment (protocol.md §1-20).  One fixed
 query runs against a five-row synthetic fixture (pre-registered in
 ``fixtures/manifest.json``) through the production ``search()`` path in
-``src/rag_mcp/core/retrieval/pipeline.py``.  Manipulated factors: mode
+``src/omrg/core/retrieval/pipeline.py``.  Manipulated factors: mode
 {dense, hybrid_bm25} × filter {none, category operators} × threshold
 {0.0, 0.3} × rerank {off, fake-success double, fake-failure double}.
 Assertions are exact, per protocol §15; branch-level candidate traces
@@ -110,15 +110,15 @@ def _resolve_runtime(fixture: dict[str, Any]) -> dict[str, Any]:
     import chromadb
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import Settings
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.compose import settings_to_effective
+    from omrg.config import Settings
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     client = chromadb.EphemeralClient(settings=chromadb.Settings(anonymized_telemetry=False))
     store = ChromaVectorStore(client=client)
     store.create_collection(COLLECTION_NAME)
     rows = fixture["rows"]
-    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
+    from omrg.core.vectordb.identity import EmbeddingIdentity
 
     fixture_identity = EmbeddingIdentity(
         provider="fixture", model="committed-fixture-vectors"
@@ -152,7 +152,7 @@ def _resolve_runtime(fixture: dict[str, Any]) -> dict[str, Any]:
     # The store's paged reads consult the composition-root default for
     # the scan page size; install our pinned instance the same way the
     # composition root would (AGENTS.md gotcha 8a).
-    from rag_mcp.core.settings import set_default_effective_settings
+    from omrg.core.settings import set_default_effective_settings
 
     set_default_effective_settings(effective)
     return {"store": store, "effective": effective}
@@ -165,7 +165,7 @@ def _fixture_sanity(fixture: dict[str, Any], store: Any) -> dict[str, Any]:
     decreasing canonical scores, per-row band membership under either L2
     reporting convention, and the 0.3 threshold membership bands.
     """
-    from rag_mcp.core.retrieval.dense import _dense_query_rows
+    from omrg.core.retrieval.dense import _dense_query_rows
 
     rows = _dense_query_rows(store, COLLECTION_NAME, fixture["query"]["text"], 5, None)
     observed_order = [row["id"] for row in rows]
@@ -255,7 +255,7 @@ def run_query(
     ``hybrid=True`` with the arm's rerank value; fake doubles inject
     through the ``reranker=`` seam.
     """
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     common: dict[str, Any] = {
         "query": query_text,
@@ -293,7 +293,7 @@ def _cell_manifest(
     """Build the per-cell D13 runtime manifest with preflight extensions."""
     from experiments._lib.manifest import build_runtime_manifest
 
-    from rag_mcp.core.vectordb.score import DENSE_SCORE_KIND
+    from omrg.core.vectordb.score import DENSE_SCORE_KIND
 
     mode = cell["factors"]["mode"]
     rerank = cell["factors"]["rerank"]
@@ -401,7 +401,7 @@ def _run_cell(
     """
     from experiments._lib import stats as stats_lib
 
-    from rag_mcp.core.retrieval.filters import matches_metadata_filter
+    from omrg.core.retrieval.filters import matches_metadata_filter
 
     cell_id = cell["id"]
     factors = cell["factors"]

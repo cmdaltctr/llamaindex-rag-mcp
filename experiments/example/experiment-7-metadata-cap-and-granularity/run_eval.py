@@ -8,7 +8,7 @@ Executes the pre-registered protocol (``protocol.md`` v1.0) as written:
   ``extraction_mode="llamaindex"`` and ``LLAMANDEX_EXTRACTOR_MAX_CHUNKS``
   set to the cell's cap.
 - Two harness-only seams (no production file is edited):
-  1. ``rag_mcp.core.providers.llm.registry.get`` is replaced with a
+  1. ``omrg.core.providers.llm.registry.get`` is replaced with a
      factory returning :class:`fake_llm.CountingMockLLM` — deterministic
      outputs, full call accounting, no network, no Ollama.
   2. ``llama_index.core.ingestion.IngestionPipeline.arun`` is wrapped to
@@ -48,8 +48,8 @@ from experiments._lib import preflight, stats  # noqa: E402
 from experiments._lib.plan import ExperimentPlan  # noqa: E402
 from fake_llm import CountingMockLLM, summarise_calls  # noqa: E402
 
-from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async  # noqa: E402
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock  # noqa: E402
+from omrg.core.ingestion.chunker import read_and_chunk_file_async  # noqa: E402
+from omrg.core.settings import EffectiveSettings, MetadataBlock  # noqa: E402
 
 EXPERIMENT_ID = "example-experiment-7-metadata-cap-and-granularity"
 PROTOCOL_VERSION = "1.0"
@@ -96,7 +96,7 @@ class HarnessPatches:
     def __enter__(self) -> HarnessPatches:
         from llama_index.core.ingestion import IngestionPipeline
 
-        import rag_mcp.core.providers.llm.registry as llm_registry
+        import omrg.core.providers.llm.registry as llm_registry
 
         original_get = llm_registry.get
         # ``arun`` carries a wrapt-style decorator, so class access yields a

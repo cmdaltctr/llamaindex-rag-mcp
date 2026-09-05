@@ -19,10 +19,10 @@ from typing import Any
 
 import pytest
 
-from rag_mcp.core.retrieval.lineage import is_adjacent, neighbours, span
-from rag_mcp.core.vectordb.base import VectorStore
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.retrieval.lineage import is_adjacent, neighbours, span
+from omrg.core.vectordb.base import VectorStore
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _COLLECTION = "lineage_nav"
 _ALPHA = "src_alpha"
@@ -36,7 +36,7 @@ def _store_class(backend: str) -> type[VectorStore]:
     """Resolve a concrete store class lazily (chromadb may be absent)."""
     if backend == "lancedb":
         return LanceVectorStore
-    from rag_mcp.core.vectordb.chroma import ChromaVectorStore
+    from omrg.core.vectordb.chroma import ChromaVectorStore
 
     return ChromaVectorStore
 
@@ -440,7 +440,7 @@ class TestModuleBoundaries:
 
     def test_lineage_module_imports_no_concrete_adapter(self) -> None:
         """No concrete adapter may be imported from the retrieval layer."""
-        from rag_mcp.core.retrieval import lineage
+        from omrg.core.retrieval import lineage
 
         source = inspect.getsource(lineage)
         assert "lancedb" not in source.lower()
@@ -448,7 +448,7 @@ class TestModuleBoundaries:
 
     def test_lineage_module_reads_through_the_filtered_contract(self) -> None:
         """The only store seam used is iter_filtered_documents."""
-        from rag_mcp.core.retrieval import lineage
+        from omrg.core.retrieval import lineage
 
         source = inspect.getsource(lineage)
         assert "iter_filtered_documents" in source

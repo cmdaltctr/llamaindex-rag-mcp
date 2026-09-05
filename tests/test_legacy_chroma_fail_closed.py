@@ -13,13 +13,13 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from rag_mcp.compose import reset_runtime_setup
-from rag_mcp.core.vectordb.legacy import (
+from omrg.compose import reset_runtime_setup
+from omrg.core.vectordb.legacy import (
     LegacyChromaDataError,
     classify_legacy_directory,
     evaluate_legacy_chroma_data,
 )
-from rag_mcp.transports.cli import app
+from omrg.transports.cli import app
 
 
 def _make_sqlite_marker_dir(tmp_path: Path) -> Path:

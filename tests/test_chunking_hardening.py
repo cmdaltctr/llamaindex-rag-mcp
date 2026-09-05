@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from llama_index.core.schema import TextNode
 
-from rag_mcp.core.chunking.code import chunk_code_file_async
-from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
+from omrg.core.chunking.code import chunk_code_file_async
+from omrg.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
 
 
 @pytest.mark.asyncio
@@ -110,7 +110,7 @@ async def test_code_splitter_preserves_distinct_top_level_boundaries(
 
 @pytest.mark.asyncio
 async def test_sentence_helper_honours_markdown_heading_prepend(monkeypatch) -> None:
-    from rag_mcp.core.chunking import sentence
+    from omrg.core.chunking import sentence
 
     node = TextNode(text="Body text", metadata={"header_path": "Section"})
     monkeypatch.setattr(sentence, "_split_documents_sync", lambda *args: [node])
@@ -128,7 +128,7 @@ async def test_sentence_helper_honours_markdown_heading_prepend(monkeypatch) -> 
 
 @pytest.mark.asyncio
 async def test_sentence_helper_honours_markdown_min_fraction(monkeypatch) -> None:
-    from rag_mcp.core.chunking import sentence
+    from omrg.core.chunking import sentence
 
     small = TextNode(text="tiny")
     large = TextNode(text="x" * 80)
@@ -155,8 +155,8 @@ async def test_markdown_helper_matches_main_ingestion_postprocessing(tmp_path, m
     """Both entry points must apply the same Markdown post-processing knobs."""
     from llama_index.core import Document
 
-    from rag_mcp.core.chunking import sentence
-    from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
+    from omrg.core.chunking import sentence
+    from omrg.core.ingestion.chunker import read_and_chunk_file_async
 
     def _fresh_nodes(*_args):
         return [

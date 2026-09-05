@@ -10,28 +10,28 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from rag_mcp.core.metadata.settings import MetadataSettings
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.metadata.settings import MetadataSettings
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 class TestYamlSourceDegradation:
     """A missing or malformed defaults.yaml must not abort resolution."""
 
     def test_missing_file_yields_empty_defaults(self, monkeypatch) -> None:
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         def _missing(_pkg):
             raise FileNotFoundError("no defaults.yaml")
 
         monkeypatch.setattr(sources, "files", _missing)
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         # Model field defaults still apply.
         assert Settings(_env_file=None).retrieval.top_k in (5, 10)
 
     def test_non_mapping_yaml_is_ignored(self, monkeypatch, tmp_path) -> None:
         """A YAML list where a mapping is expected degrades to no defaults."""
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         bad = tmp_path / "defaults.yaml"
         bad.write_text("- just\n- a\n- list\n")
@@ -49,7 +49,7 @@ class TestProfileBundleDegradation:
     """A malformed or missing bundle degrades to an empty override set."""
 
     def test_missing_bundle_returns_empty(self, monkeypatch) -> None:
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         def _missing(_pkg):
             raise FileNotFoundError("no bundle")
@@ -59,7 +59,7 @@ class TestProfileBundleDegradation:
 
     def test_invalid_yaml_returns_empty(self, monkeypatch, tmp_path) -> None:
         """Broken YAML is logged and ignored, not raised."""
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         bad = tmp_path / "documents.yaml"
         bad.write_text("retrieval: [unclosed\n")
@@ -72,7 +72,7 @@ class TestProfileBundleDegradation:
         assert sources._load_profile_bundle("documents") == {}
 
     def test_non_mapping_bundle_returns_empty(self, monkeypatch, tmp_path) -> None:
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         bad = tmp_path / "documents.yaml"
         bad.write_text("- a\n- b\n")
@@ -88,7 +88,7 @@ class TestProfileBundleDegradation:
         self, monkeypatch, tmp_path
     ) -> None:
         """An invalid default_profile resolves to documents, not an error."""
-        import rag_mcp.config.sources as sources
+        import omrg.config.sources as sources
 
         (tmp_path / "hybrid.yaml").write_text("default_profile: nonsense\n")
         (tmp_path / "documents.yaml").write_text("retrieval:\n  top_k: 10\n")
@@ -111,13 +111,13 @@ class TestClassifyKnobResolution:
         )
 
     def test_attempts_flow_through_helper(self) -> None:
-        from rag_mcp.core.metadata._common import _get_classify_max_attempts
+        from omrg.core.metadata._common import _get_classify_max_attempts
 
         assert _get_classify_max_attempts(self._settings()) == 7
 
     def test_timeout_flows_through_helper(self) -> None:
         """No per-provider override set — the resolver falls back to the shared value."""
-        from rag_mcp.core.metadata._common import _resolve_classify_timeout
+        from omrg.core.metadata._common import _resolve_classify_timeout
 
         assert _resolve_classify_timeout(self._settings(), "llamacpp") == 42.0
 
@@ -165,14 +165,14 @@ class TestChromaCloudSettingsSources:
 
     def test_chroma_mode_defaults_to_local(self, monkeypatch) -> None:
         """An unset CHROMA_MODE resolves to the local default."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.delenv("CHROMA_MODE", raising=False)
         assert Settings(_env_file=None).chroma_mode == "local"
 
     def test_chroma_mode_env_override(self, monkeypatch) -> None:
         """CHROMA_MODE=cloud flows from the environment into the model."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
@@ -181,7 +181,7 @@ class TestChromaCloudSettingsSources:
 
     def test_tenant_and_database_env_overrides(self, monkeypatch) -> None:
         """The optional identifiers resolve from the environment as a pair."""
-        from rag_mcp.config import Settings
+        from omrg.config import Settings
 
         monkeypatch.setenv("VECTOR_STORE", "chroma")
         monkeypatch.setenv("CHROMA_MODE", "cloud")
@@ -197,7 +197,7 @@ class TestChromaCloudSettingsSources:
         from pathlib import Path
 
         defaults = (
-            Path(__file__).resolve().parent.parent / "src" / "rag_mcp" / "config" / "defaults.yaml"
+            Path(__file__).resolve().parent.parent / "src" / "omrg" / "config" / "defaults.yaml"
         )
         # Case-insensitive: a lower-case YAML key would silently
         # reintroduce a secrets-in-defaults path.

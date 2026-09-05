@@ -93,34 +93,34 @@ IDs so an identical forced re-ingestion cannot overwrite durable rows early.
 
 ### Requirement: CLI delete subcommand
 
-The `rag-mcp` CLI SHALL provide a `delete` subcommand with three mutually-exclusive flags: `--path`, `--metadata`, and `--collection`. A `--dry-run` flag SHALL preview what would be deleted without executing. Only `--collection` SHALL require confirmation (it drops the entire collection), unless `--yes` is passed. Dry-run counts SHALL be produced by the same shared deletion preview logic used by the MCP delete tool.
+The `omrg` CLI SHALL provide a `delete` subcommand with three mutually-exclusive flags: `--path`, `--metadata`, and `--collection`. A `--dry-run` flag SHALL preview what would be deleted without executing. Only `--collection` SHALL require confirmation (it drops the entire collection), unless `--yes` is passed. Dry-run counts SHALL be produced by the same shared deletion preview logic used by the MCP delete tool.
 
 #### Scenario: Delete by file path via CLI
-- **WHEN** `rag-mcp delete --path /path/to/file.pdf --collection research` is executed
+- **WHEN** `omrg delete --path /path/to/file.pdf --collection research` is executed
 - **THEN** all chunks for that file SHALL be removed from the `"research"` collection
 - **THEN** the CLI SHALL display the number of chunks removed
 
 #### Scenario: Delete by metadata filter via CLI
-- **WHEN** `rag-mcp delete --metadata '{"category":"uncategorised"}'` is executed
+- **WHEN** `omrg delete --metadata '{"category":"uncategorised"}'` is executed
 - **THEN** all chunks matching that metadata SHALL be removed
 - **THEN** the CLI SHALL display the number of chunks removed
 
 #### Scenario: Drop collection via CLI
-- **WHEN** `rag-mcp delete --collection research` is executed
+- **WHEN** `omrg delete --collection research` is executed
 - **THEN** the CLI SHALL ask for confirmation: "Delete entire collection 'research'? This cannot be undone. [y/N]:"
 - **THEN** on confirmation, the collection SHALL be permanently dropped
 
 #### Scenario: Drop collection with --yes flag
-- **WHEN** `rag-mcp delete --collection research --yes` is executed
+- **WHEN** `omrg delete --collection research --yes` is executed
 - **THEN** the collection SHALL be dropped immediately without confirmation prompt
 
 #### Scenario: Dry run preview
-- **WHEN** `rag-mcp delete --path /file.pdf --dry-run` is executed
+- **WHEN** `omrg delete --path /file.pdf --dry-run` is executed
 - **THEN** the CLI SHALL display "Would delete N chunks" but SHALL NOT modify ChromaDB
 - **THEN** the count SHALL match the shared deletion preview helper for the same inputs
 
 #### Scenario: Validation — exactly one flag must be provided
-- **WHEN** `rag-mcp delete` is executed with no flags, or with multiple mutually-exclusive flags
+- **WHEN** `omrg delete` is executed with no flags, or with multiple mutually-exclusive flags
 - **THEN** the CLI SHALL print an error message and exit with a non-zero status code
 
 ### Requirement: MCP delete_documents tool

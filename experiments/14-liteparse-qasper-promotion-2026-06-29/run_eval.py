@@ -5,7 +5,7 @@
 Validates H1 (corpus validity), H2 (speed), H3 (reranker benefit).
 
 Migrated to the v2 surface (add-chroma-cloud-backend): retrieval goes
-through ``rag_mcp.core.retrieval.search`` with an injected store from
+through ``omrg.core.retrieval.search`` with an injected store from
 ``experiments/_lib/storage.py`` — no environment mutation or
 module-constant patching.  Works in local and cloud Chroma modes.
 """
@@ -128,7 +128,7 @@ def _resolve_cell_runtime(reader: str, rerank: bool) -> tuple[Any, str]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.core.vectordb import set_default_store
+    from omrg.core.vectordb import set_default_store
 
     # Pin the query embedder to the index identity; ambient Settings()
     # could select a different provider and query with incompatible vectors.
@@ -143,7 +143,7 @@ def _run_cell(
     qrels: dict[str, dict[str, int]],
     k_values: list[int],
 ) -> dict[str, Any]:
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     reader = cell["reader"]
     rerank = cell["rerank"]
@@ -210,9 +210,9 @@ def main() -> None:
     # (ADR-037); no entry point imported compose.  Install it explicitly
     # (mirrors 873e6d3 in the 10b harness) so search() can resolve a
     # default without raising.
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.settings import set_default_effective_settings
+    from omrg.compose import settings_to_effective
+    from omrg.config import get_settings
+    from omrg.core.settings import set_default_effective_settings
 
     set_default_effective_settings(settings_to_effective(get_settings()))
 

@@ -25,7 +25,7 @@ expands `--modes` × `[off, on]` automatically when `--rerank-cross` is set.
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -147,7 +147,7 @@ def _setup_environment(mode: str, rerank: bool, chroma_dir: str) -> None:
     os.environ["RERANK_FETCH_MULTIPLIER"] = str(DEFAULT_RERANK_FETCH_MULTIPLIER)
     os.environ["CHROMA_PERSIST_DIR"] = chroma_dir
 
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is None:
             continue
@@ -162,14 +162,14 @@ def _setup_environment(mode: str, rerank: bool, chroma_dir: str) -> None:
 
     # Reset reranker singleton.
     try:
-        from rag_mcp.reranker import CrossEncoderReranker
+        from omrg.reranker import CrossEncoderReranker
         CrossEncoderReranker._instance = None  # type: ignore[attr-defined]
     except Exception:
         pass
 
     # Reset BM25 cache if present.
     try:
-        from rag_mcp.sparse_retriever import BM25SparseRetriever  # type: ignore
+        from omrg.sparse_retriever import BM25SparseRetriever  # type: ignore
         BM25SparseRetriever.clear_all_caches()  # type: ignore[attr-defined]
     except Exception:
         pass
@@ -180,7 +180,7 @@ def _ingest_for_mode(mode: str) -> str:
 
     Returns the ChromaDB directory path.
     """
-    from rag_mcp.ingestion import ingest_path_async
+    from omrg.ingestion import ingest_path_async
 
     chroma_dir = tempfile.mkdtemp(prefix=f"rag_hybrid_{mode}_")
     _setup_environment(mode, rerank=False, chroma_dir=chroma_dir)
@@ -198,7 +198,7 @@ def _evaluate_cell(
     mode: str, rerank: bool, queries: list[dict], chroma_dir: str
 ) -> CellResult:
     """Run all queries against one (mode, rerank) cell."""
-    from rag_mcp.retrieval import search
+    from omrg.retrieval import search
 
     _setup_environment(mode, rerank, chroma_dir)
     cell = CellResult(mode=mode, rerank=rerank)
@@ -482,8 +482,8 @@ def main() -> None:
     queries = _load_ground_truth()
     print(f"  Ground-truth queries: {len(queries)}")
 
-    import rag_mcp.ingestion  # noqa: F401
-    import rag_mcp.retrieval as retrieval
+    import omrg.ingestion  # noqa: F401
+    import omrg.retrieval as retrieval
 
     if "hybrid" not in inspect.signature(retrieval.search).parameters:
         raise RuntimeError(

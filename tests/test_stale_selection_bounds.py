@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.ingestion import ingest_path_async
+from omrg.core.ingestion import ingest_path_async
 
 # Enough sentences per file that each source spans several chunks, so the
 # collection total is a clear multiple of one source's rows.
@@ -61,7 +61,7 @@ async def test_stale_selection_reads_rows_proportional_to_the_replaced_source(
     select stale rows is proportional to that source's row count
     AND the unfiltered ``iter_documents`` scan is not used at all.
     """
-    from rag_mcp.core.vectordb import get_default_store
+    from omrg.core.vectordb import get_default_store
 
     store = get_default_store()
     per_source_rows: list[int] = []

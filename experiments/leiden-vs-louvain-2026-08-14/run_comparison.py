@@ -20,7 +20,7 @@ import networkx as nx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from rag_mcp.core.community import partition_graph  # noqa: E402
+from omrg.core.community import partition_graph  # noqa: E402
 
 REPEATS = 5
 

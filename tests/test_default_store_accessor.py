@@ -19,14 +19,14 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.vectordb import (
+from omrg.core.vectordb import (
     get_default_store,
     reset_default_store,
     set_default_store,
 )
 
 _ACCESSOR_SOURCE = (
-    Path(__file__).resolve().parents[1] / "src" / "rag_mcp" / "core" / "vectordb" / "__init__.py"
+    Path(__file__).resolve().parents[1] / "src" / "omrg" / "core" / "vectordb" / "__init__.py"
 )
 
 

@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.config.legacy import _RETIRED_ENV_VARS
+from omrg.config.legacy import _RETIRED_ENV_VARS
 
 # Operator-facing paths: files an operator copies from or follows to
 # configure a deployment.  Historical records (CHANGELOG, ADRs, TDRs,

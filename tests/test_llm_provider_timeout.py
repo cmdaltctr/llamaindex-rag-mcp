@@ -63,7 +63,7 @@ class TestOpenAILikeTimeoutKeyword:
         recorded_openai_like: type[_RecordingOpenAILike],
         effective_settings,
     ) -> None:
-        from rag_mcp.core.providers.llm.llamacpp import build
+        from omrg.core.providers.llm.llamacpp import build
 
         # Pass an explicit timeout so the assertion pins the keyword the value
         # arrives under, independent of the provider's default (which now

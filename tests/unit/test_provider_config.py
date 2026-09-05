@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 # ── Config: provider selection ───────────────────────────────────────────
 
@@ -37,7 +37,7 @@ def test_unknown_provider_falls_back_to_local(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Unknown EMBED_PROVIDER value should warn and fall back to local."""
-    from rag_mcp import config
+    from omrg import config
 
     assert config.get_settings().embed_provider in {"local", "cloud"}
 
@@ -46,8 +46,8 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
     """Embedding provider llamacpp without optional deps raises ImportError."""
     import sys
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import Settings
+    from omrg.compose import build_embed_model
+    from omrg.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
     monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai_like", None)
@@ -69,8 +69,8 @@ def test_local_llamacpp_without_deps_raises(monkeypatch: pytest.MonkeyPatch) -> 
 @pytest.mark.asyncio
 async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPatch) -> None:
     """_extract_llamacpp_chat_async parses OpenAI /v1/chat/completions format."""
-    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
-    from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+    from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
+    from omrg.core.settings import EffectiveSettings, set_default_effective_settings
 
     set_default_effective_settings(
         EffectiveSettings(
@@ -103,7 +103,7 @@ async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPa
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_cls.return_value = mock_client
 
-        from rag_mcp.core.metadata import llamacpp as _llamacpp
+        from omrg.core.metadata import llamacpp as _llamacpp
 
         _llamacpp._retry_sleep = AsyncMock()
 
@@ -116,8 +116,8 @@ async def test_llamacpp_chat_parses_openai_response(monkeypatch: pytest.MonkeyPa
 @pytest.mark.asyncio
 async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     """_extract_llamacpp_chat_async falls back to uncategorised on retry exhaustion."""
-    from rag_mcp.core.metadata.llamacpp import _extract_llamacpp_chat_async
-    from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+    from omrg.core.metadata.llamacpp import _extract_llamacpp_chat_async
+    from omrg.core.settings import EffectiveSettings, set_default_effective_settings
 
     set_default_effective_settings(
         EffectiveSettings(
@@ -132,7 +132,7 @@ async def test_llamacpp_chat_retries_on_failure(monkeypatch: pytest.MonkeyPatch)
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_cls.return_value = mock_client
 
-        from rag_mcp.core.metadata import llamacpp as _llamacpp
+        from omrg.core.metadata import llamacpp as _llamacpp
 
         _llamacpp._retry_sleep = AsyncMock()
 
@@ -145,7 +145,7 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """extract_metadata_async with mode=local routes to llamacpp chat when LOCAL_BACKEND=llamacpp."""  # noqa: E501
-    from rag_mcp.core.metadata import extractor as _ext
+    from omrg.core.metadata import extractor as _ext
 
     _settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="local"),
@@ -154,7 +154,7 @@ async def test_local_mode_dispatches_to_llamacpp_when_configured(
     )
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
+    with patch("omrg.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
         mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
@@ -164,7 +164,7 @@ async def test_local_mode_dispatches_to_ollama_when_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """extract_metadata_async with mode=local routes to ollama when LOCAL_BACKEND=ollama."""
-    from rag_mcp.core.metadata import extractor as _ext
+    from omrg.core.metadata import extractor as _ext
 
     _settings = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="local"),
@@ -173,7 +173,7 @@ async def test_local_mode_dispatches_to_ollama_when_configured(
     )
 
     mock_fn = AsyncMock(return_value={"category": "test", "keywords": [], "summary": ""})
-    with patch("rag_mcp.core.metadata.ollama._extract_ollama_async", mock_fn):
+    with patch("omrg.core.metadata.ollama._extract_ollama_async", mock_fn):
         await _ext.extract_metadata_async("text", "file.txt", _settings)
         mock_fn.assert_called_once_with("text", "file.txt", _settings)
 
@@ -183,8 +183,8 @@ async def test_cloud_mode_dispatches_to_openrouter(
     monkeypatch: pytest.MonkeyPatch, effective_settings
 ) -> None:
     """extract_metadata_async with mode=local routes to openrouter when METADATA_LLM_PROVIDER=cloud."""  # noqa: E501
-    from rag_mcp.core.metadata import extractor as _ext
-    from rag_mcp.core.metadata import openrouter as _or
+    from omrg.core.metadata import extractor as _ext
+    from omrg.core.metadata import openrouter as _or
 
     # Set cloud_backend explicitly (rather than relying on its default) so
     # the test proves the intended OpenRouter route: compose.py selects the
@@ -206,7 +206,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """llamaindex mode with local llamacpp falls back to chat mode when OpenAILike not installed."""
-    from rag_mcp.core.metadata import llamaindex as _lli
+    from omrg.core.metadata import llamaindex as _lli
 
     # One injected EffectiveSettings drives both the LLM-class selection in
     # llamaindex.py and the fallback dispatch route in extractor.py.
@@ -224,7 +224,7 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(
         return real_import(name, *args, **kwargs)
 
     with (
-        patch("rag_mcp.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn),
+        patch("omrg.core.metadata.llamacpp._extract_llamacpp_chat_async", mock_fn),
         patch("builtins.__import__", side_effect=_failing_import),
     ):
         await _lli._extract_llamaindex_async("text", "file.txt", _settings)
@@ -236,8 +236,8 @@ async def test_llamaindex_mode_falls_back_to_local_chat_on_import_error(
 
 def test_cloud_openrouter_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Embedding provider openrouter with missing API key raises ValueError."""
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import Settings
+    from omrg.compose import build_embed_model
+    from omrg.config import Settings
 
     settings = Settings(
         embed_provider="cloud",
@@ -255,8 +255,8 @@ def test_cloud_openrouter_missing_optional_deps_raises(monkeypatch: pytest.Monke
     """Embedding provider openrouter without optional deps raises ImportError."""
     import sys
 
-    from rag_mcp.compose import build_embed_model
-    from rag_mcp.config import Settings
+    from omrg.compose import build_embed_model
+    from omrg.config import Settings
 
     # Simulate missing optional dependency by poisoning sys.modules.
     monkeypatch.setitem(sys.modules, "llama_index.embeddings.openai_like", None)
@@ -277,7 +277,7 @@ def test_metadata_llm_provider_defaults_to_local(monkeypatch: pytest.MonkeyPatch
     """METADATA_LLM_PROVIDER defaults to local without environment sources."""
     monkeypatch.delenv("METADATA_LLM_PROVIDER", raising=False)
 
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     assert Settings(_env_file=None).metadata_llm_provider == "local"
 
@@ -288,7 +288,7 @@ def test_unknown_embed_provider_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
     monkeypatch.setenv("EMBED_MODEL", "nomic-embed-text")
 
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     with pytest.raises(ValueError, match="EMBED_PROVIDER='nonexistent'"):
         Settings(_env_file=None)
@@ -301,7 +301,7 @@ def test_unknown_local_backend_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOCAL_BACKEND", "nonexistent")
     monkeypatch.setenv("LLAMACPP_EMBED_MODEL", "test-model")
 
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     with pytest.raises(ValueError, match="LOCAL_BACKEND='nonexistent'"):
         Settings(_env_file=None)
@@ -351,7 +351,7 @@ def test_empty_provider_value_resets_to_default(
     ``SETTING=`` in .env is how operators unset a knob.  Raising on it
     would be hostile.  The field is reset to its declared default.
     """
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv(env_name, "   ")
     settings = Settings(_env_file=None)
@@ -371,7 +371,7 @@ def test_whitespace_padded_valid_value_is_stripped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A whitespace-padded valid value resolves to the stripped value (§6.10)."""
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv(env_name, f"  {valid_value}  ")
     settings = Settings(_env_file=None)
@@ -388,7 +388,7 @@ def test_unknown_provider_value_raises_with_value_in_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Each raising branch names the offending value (§6.11)."""
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv(env_name, "totally-bogus")
     with pytest.raises(ValueError, match=f"{env_name}='totally-bogus'"):
@@ -403,7 +403,7 @@ def test_bad_embed_provider_reported_before_missing_embed_model(
     Guards the validator ordering: _validate_provider_selections runs
     before _validate_embed_model_required.
     """
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("EMBED_PROVIDER", "bogus")
     monkeypatch.setenv("LOCAL_BACKEND", "ollama")
@@ -420,7 +420,7 @@ def test_document_backend_azure_missing_credentials_falls_back_to_local(
     Regression guard for the deliberate graceful-degradation boundary
     this change must not cross.
     """
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("DOCUMENT_BACKEND", "azure")
     monkeypatch.delenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", raising=False)
@@ -438,7 +438,7 @@ def test_document_backend_whitespace_value_preserved_with_credentials(
     unknown-value raise moved to the composition boundary. Dummy
     credentials keep the credential degradation from firing.
     """
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("DOCUMENT_BACKEND", "  azure  ")
     monkeypatch.setenv("AZURE_DOC_INTELLIGENCE_ENDPOINT", "https://example.azure.com/")
@@ -456,8 +456,8 @@ def test_unknown_document_backend_defers_to_compose_validation(
     ``capabilities.validate_document_backend``, so this test fails until
     register-document-backend-strategies lands.
     """
-    from rag_mcp.capabilities import validate_document_backend
-    from rag_mcp.config import Settings
+    from omrg.capabilities import validate_document_backend
+    from omrg.config import Settings
 
     monkeypatch.setenv("DOCUMENT_BACKEND", "totally-bogus")
     settings = Settings(_env_file=None)
@@ -477,7 +477,7 @@ def test_sparse_backend_whitespace_idiom_stays_in_settings(
     monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
 ) -> None:
     """§6.10 survives the registry-ownership move: strip and reset (task 3.5)."""
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("RETRIEVAL__HYBRID_SPARSE_BACKEND", raw)
     settings = Settings(_env_file=None)
@@ -494,8 +494,8 @@ def test_unknown_sparse_backend_defers_to_compose_validation(
     plus the concrete registry). Validation lives in
     ``capabilities.validate_sparse_backend`` (task 3.5).
     """
-    from rag_mcp.capabilities import validate_sparse_backend
-    from rag_mcp.config import Settings
+    from omrg.capabilities import validate_sparse_backend
+    from omrg.config import Settings
 
     monkeypatch.setenv("RETRIEVAL__HYBRID_SPARSE_BACKEND", "totally-bogus")
     settings = Settings(_env_file=None)
@@ -515,7 +515,7 @@ def test_rag_profile_unknown_falls_back_to_documents(
 
     Regression guard: RAG_PROFILE is warn-and-fallback by design.
     """
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("RAG_PROFILE", "nonexistent")
     settings = Settings(_env_file=None)
@@ -527,8 +527,8 @@ def test_vector_store_unknown_raises_at_runtime_startup(monkeypatch: pytest.Monk
     from llama_index.core import Settings as LlamaIndexSettings
     from llama_index.core.embeddings import MockEmbedding
 
-    from rag_mcp import compose
-    from rag_mcp.config import Settings
+    from omrg import compose
+    from omrg.config import Settings
 
     monkeypatch.setenv("VECTOR_STORE", "faiss")
     settings = Settings(_env_file=None)
@@ -549,7 +549,7 @@ def test_vector_store_unknown_raises_at_runtime_startup(monkeypatch: pytest.Monk
 
 def test_pdf_reader_unknown_clamps_to_auto(monkeypatch: pytest.MonkeyPatch) -> None:
     """PDF_READER unknown-value behaviour is unchanged (§6.15)."""
-    from rag_mcp.config import Settings
+    from omrg.config import Settings
 
     monkeypatch.setenv("PDF_READER", "definitely-not-a-reader")
     settings = Settings(_env_file=None)

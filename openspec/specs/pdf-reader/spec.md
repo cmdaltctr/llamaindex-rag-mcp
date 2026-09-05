@@ -126,7 +126,7 @@ When the LiteParse adapter is in use, every emitted `Document` object SHALL carr
 ### Requirement: Reader factory SHALL be extensible without modifying ingestion code
 
 New reader adapters SHALL be addable by creating a single module in
-`src/rag_mcp/integrations/pdf/` and registering it with one
+`src/omrg/integrations/pdf/` and registering it with one
 `registry.register()` call. The shared contract is the duck-typed
 `load_data(file) -> list[Document]` method — there is no separate protocol
 module. The ingestion call sites SHALL NOT require modification when a new
@@ -136,7 +136,7 @@ caller: `get_pdf_reader(reader)`.
 
 #### Scenario: Adding a new adapter
 
-- **WHEN** a developer creates `src/rag_mcp/integrations/pdf/spdf.py` with a `load_data` method and adds `"spdf"` to the accepted values in `config/` plus one `register("spdf", "...")` call in the registry
+- **WHEN** a developer creates `src/omrg/integrations/pdf/spdf.py` with a `load_data` method and adds `"spdf"` to the accepted values in `config/` plus one `register("spdf", "...")` call in the registry
 - **THEN** no other source file SHALL require modification to make `PDF_READER=spdf` functional
 
 #### Scenario: Factory returns adapter, not reader instance

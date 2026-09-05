@@ -37,7 +37,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # capability added the red-first core (15), compose (4), MCP transport
 # (16), LM-free search guard (2), OpenAPI conformance (3) and the
 # seven-tool discovery rename, plus five CLI transport cases for
-# `rag-mcp answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
 # Re-baselined at add-grounded-answer-synthesis-3 review remediation:
 # the second review round added the MRTR split suite, filter-security
@@ -50,7 +50,19 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
 # plus the review round (trailing citations, delimiter escaping, CLI
 # degradation) added 39 counted cases (2398 -> 2437).
-_BASE_EXECUTED = 2437  # Includes document-backend registry + orchestrator pins,
+# Re-baselined at make-omrg-a-standalone-framework-4 review remediation:
+# the PR-85 review fixes added the engine-isolation suites — builder
+# validation and resolver wiring (legacy-env, fail-closed Chroma,
+# explicit-settings strategies, store/env snapshot), engine answer
+# threading and LLM-failure propagation, verify degradation, close
+# release/reject, profile-resolver store and env-snapshot cases,
+# injected-model cache cases, the write-contract global-forbidden and
+# adapter-close cases, the SearchRetriever forwarding case, and the
+# rewritten settings-guard fixtures, and the decisive two-engine
+# isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
+# cases (2468 -> 2508 executed, and the two new chroma-gated
+# write-contract cases add 2 base skips: 127 -> 129).
+_BASE_EXECUTED = 2508  # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -88,9 +100,9 @@ _BASE_EXECUTED = 2437  # Includes document-backend registry + orchestrator pins,
 # capability added the red-first core (15), compose (4), MCP transport
 # (16), LM-free search guard (2), OpenAPI conformance (3) and the
 # seven-tool discovery rename, plus five CLI transport cases for
-# `rag-mcp answer` (net +46; 2178 -> 2224). The slow golden-answer case
+# `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
+_BASE_SKIPPED = 129  # self-ignored run: base skips incl. chroma-gated files
 # (47 vectordb-contract, 19 chunk-lineage-navigation, 13
 # embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
 # plus the compose/metadata-extractor/lancedb/experiment/chroma-cloud
@@ -138,9 +150,9 @@ def test_project_requires_keep_chroma_behind_extra_marker() -> None:
 
     The wheel-level check (task 1.3) inspects the built artefact directly;
     this tripwire inspects the *installed* distribution metadata, which is
-    what a fresh ``pip install rag-mcp`` environment resolves against.
+    what a fresh ``pip install omrg`` environment resolves against.
     """
-    requires = metadata.requires("rag-mcp") or []
+    requires = metadata.requires("omrg") or []
     for req in requires:
         normalised = req.lower().replace("_", "-")
         assert not normalised.startswith("chromadb(") or "extra ==" in req, (
@@ -157,9 +169,9 @@ def test_project_requires_keep_chroma_behind_extra_marker() -> None:
 def test_default_runtime_loads_no_chroma_modules() -> None:
     """Importing the default runtime path must not load any Chroma module."""
     _scrub_chroma_modules()
-    import_module("rag_mcp.compose")
-    import_module("rag_mcp.core.retrieval")
-    import_module("rag_mcp.core.ingestion")
+    import_module("omrg.compose")
+    import_module("omrg.core.retrieval")
+    import_module("omrg.core.ingestion")
 
     import sys
 
@@ -175,7 +187,7 @@ def test_base_default_search_runs_without_chroma() -> None:
     install's default path is functional without the chroma extra.
     """
     _scrub_chroma_modules()
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     results = search("tripwire query", top_k=3, hybrid=False)
     assert results == []

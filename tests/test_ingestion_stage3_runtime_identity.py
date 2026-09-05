@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.core.ingestion import source_state
-from rag_mcp.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.ingestion import source_state
+from omrg.core.settings import EffectiveSettings, MetadataBlock
 
 
 def test_index_identity_tracks_actual_process_embedder(
@@ -17,7 +17,7 @@ def test_index_identity_tracks_actual_process_embedder(
     monkeypatch.setattr(
         source_state,
         "_runtime_embedding_identity",
-        lambda: {"class": "tests.Embedder", "model": "runtime-a"},
+        lambda embed_model=None: {"class": "tests.Embedder", "model": "runtime-a"},
     )
     first = source_state.build_index_identity(
         settings,
@@ -29,7 +29,7 @@ def test_index_identity_tracks_actual_process_embedder(
     monkeypatch.setattr(
         source_state,
         "_runtime_embedding_identity",
-        lambda: {"class": "tests.Embedder", "model": "runtime-b"},
+        lambda embed_model=None: {"class": "tests.Embedder", "model": "runtime-b"},
     )
     second = source_state.build_index_identity(
         settings,

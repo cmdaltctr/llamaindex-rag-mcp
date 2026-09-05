@@ -17,7 +17,7 @@ Run with:
 """
 
 # NOTE (v2.0.0): this script targets the PRE-v2.0.0 import surface
-# (rag_mcp.ingestion, rag_mcp.retrieval, rag_mcp.reranker, ...), which was
+# (omrg.ingestion, omrg.retrieval, omrg.reranker, ...), which was
 # removed by the architecture-v2 conformance change. It is an archived
 # historical artefact, is not run in CI, and is intentionally NOT repaired:
 # its results are already recorded in results.md, and rewriting it would
@@ -135,7 +135,7 @@ def _validate_evidence_density(queries: list[dict[str, Any]]) -> None:
 
 def _setup_chroma_dir(chroma_dir: str) -> None:
     os.environ["CHROMA_PERSIST_DIR"] = chroma_dir
-    for mod_name in ("rag_mcp.ingestion", "rag_mcp.retrieval", "rag_mcp.config"):
+    for mod_name in ("omrg.ingestion", "omrg.retrieval", "omrg.config"):
         mod = sys.modules.get(mod_name)
         if mod is not None and hasattr(mod, "CHROMA_PERSIST_DIR"):
             mod.CHROMA_PERSIST_DIR = chroma_dir
@@ -223,7 +223,7 @@ def _evaluate(
     top_k: int,
 ) -> Evaluation:
     """Run the full query set against one (overlap, top_k, rerank) cell."""
-    from rag_mcp.retrieval import search
+    from omrg.retrieval import search
 
     _setup_chroma_dir(chroma_dir)
     label = f"overlap={overlap}/top_k={top_k}/rerank={'on' if rerank else 'off'}"
@@ -531,7 +531,7 @@ def main() -> None:
                 # Reset reranker singleton between cells so each cell starts
                 # from a clean cross-encoder state.
                 try:
-                    from rag_mcp.reranker import CrossEncoderReranker
+                    from omrg.reranker import CrossEncoderReranker
                     CrossEncoderReranker._instance = None  # type: ignore[attr-defined]
                 except Exception:
                     pass

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rag_mcp.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
+from omrg.core.settings import ChunkingBlock, EffectiveSettings, MetadataBlock
 
 
 @pytest.mark.asyncio
@@ -13,8 +13,8 @@ async def test_llamaindex_extractors_receive_exact_max_chunk_budget(monkeypatch)
     from llama_index.core import extractors as extractor_module
     from llama_index.core import ingestion as ingestion_module
 
-    from rag_mcp.core.metadata.llamaindex import _extract_llamaindex_async
-    from rag_mcp.core.providers.llm import registry as llm_registry
+    from omrg.core.metadata.llamaindex import _extract_llamaindex_async
+    from omrg.core.providers.llm import registry as llm_registry
 
     monkeypatch.setenv("LLAMANDEX_EXTRACTOR_MAX_CHUNKS", "3")
     monkeypatch.setattr(llm_registry, "get", lambda _name: lambda *_a, **_kw: object())

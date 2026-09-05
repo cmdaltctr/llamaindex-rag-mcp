@@ -21,12 +21,12 @@ import lancedb
 import pyarrow as pa
 import pytest
 
-from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-from rag_mcp.core.vectordb.lance_epoch import (
+from omrg.core.vectordb.identity import EmbeddingIdentity
+from omrg.core.vectordb.lance_epoch import (
     durable_data_token,
     parse_durable_data_token,
 )
-from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+from omrg.core.vectordb.lancedb import LanceVectorStore
 
 _PRECOMPUTED_IDENTITY = EmbeddingIdentity(provider="test", model="mock")
 _EMBEDDING = [1.0, 0.0]
@@ -243,8 +243,8 @@ _REBUILDER_SCRIPT = textwrap.dedent(
     """
     import sys
 
-    from rag_mcp.core.vectordb.identity import EmbeddingIdentity
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.identity import EmbeddingIdentity
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     uri, collection = sys.argv[1], sys.argv[2]
     store = LanceVectorStore(uri=uri)

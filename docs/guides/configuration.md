@@ -11,7 +11,7 @@ Settings come from five places. Each beats the one above it:
 | # | Source | What belongs here |
 |---|---|---|
 | 1 | Model defaults, in the code | Last resort. You never edit these directly. |
-| 2 | `src/rag_mcp/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
+| 2 | `src/omrg/config/defaults.yaml` | Project-wide defaults. Committed. Shared by everyone. |
 | 3 | Profile YAML (`config/profiles/*.yaml`) | Per-collection behaviour |
 | 4 | `.env` | Your machine: tokens, URLs, paths |
 | 5 | Environment variables | Highest. Wins over everything. |
@@ -122,7 +122,7 @@ RAG_PROFILE=documents
 Per collection, which is the point of the feature:
 
 ```bash
-rag-mcp set-profile -c my_code -p codebase
+omrg set-profile -c my_code -p codebase
 ```
 
 Set `RAG_PROFILE=hybrid` to let each collection pick its own; untagged
@@ -219,7 +219,7 @@ experiment first.
 ### Chroma deployment mode
 
 Chroma is an explicit optional backend. Install it with `uv sync --extra chroma`
-in a source checkout, or `pip install "rag-mcp[chroma]"` from a package. Set
+in a source checkout, or `pip install "omrg[chroma]"` from a package. Set
 `VECTOR_STORE=chroma` before using its local or cloud modes. CVE-2026-45829
 (PYSEC-2026-311) is active for this optional dependency. Do not expose Chroma's
 Python FastAPI server through this project.
@@ -395,7 +395,7 @@ file replacement before any write), warn-and-continue at query (results stay ava
 
 ### Answering — `ANSWER__*`
 
-The grounded answering operation (`rag-mcp answer`, the `answer_documents`
+The grounded answering operation (`omrg answer`, the `answer_documents`
 MCP tool, and the HTTP contract). It performs one or more completion calls at
 query time. See [MCP tools](mcp-tools.md#answer_documents) and
 [ADR-057](../adr/057-answering-is-additive-and-injected.md).

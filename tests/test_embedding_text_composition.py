@@ -26,8 +26,8 @@ from pathlib import Path
 
 from llama_index.core.schema import MetadataMode
 
-from rag_mcp.core.ingestion.chunker import read_and_chunk_file_async
-from rag_mcp.core.ingestion.source_state import stamp_source_lineage
+from omrg.core.ingestion.chunker import read_and_chunk_file_async
+from omrg.core.ingestion.source_state import stamp_source_lineage
 
 #: Parser telemetry named by the spec scenario "Parser telemetry never
 #: reaches the embedding model".
@@ -183,7 +183,7 @@ class TestExclusionSetConstant:
 
     def test_constant_contains_every_declared_key(self) -> None:
         """All telemetry and bookkeeping keys from the spec are members."""
-        from rag_mcp.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+        from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
 
         members = set(EXCLUDED_EMBED_METADATA_KEYS)
         for key in (*TELEMETRY_KEYS, *BOOKKEEPING_KEYS):
@@ -195,7 +195,7 @@ class TestExclusionSetConstant:
 
     def test_constant_never_excludes_retained_keys(self) -> None:
         """Design D2: retained signal keys are absent from the exclusion set."""
-        from rag_mcp.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+        from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
 
         members = set(EXCLUDED_EMBED_METADATA_KEYS)
         for key in (*RETAINED_KEYS, "header_path", "document_title", "content_type"):
@@ -221,7 +221,7 @@ class TestExclusionSetParticipatesInIdentity:
 
     def test_fingerprint_is_sensitive_to_the_exclusion_set(self) -> None:
         """Removing one key changes the canonical fingerprint."""
-        from rag_mcp.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
+        from omrg.core.ingestion.source_state import EXCLUDED_EMBED_METADATA_KEYS
 
         baseline = self._fingerprint(EXCLUDED_EMBED_METADATA_KEYS)
         assert baseline == self._fingerprint(EXCLUDED_EMBED_METADATA_KEYS)
@@ -233,7 +233,7 @@ class TestExclusionSetParticipatesInIdentity:
 
     def test_identity_is_deterministic_for_identical_inputs(self, effective_settings) -> None:
         """Unchanged settings produce an unchanged identity (skip precondition)."""
-        from rag_mcp.core.ingestion.source_state import build_index_identity
+        from omrg.core.ingestion.source_state import build_index_identity
 
         settings = effective_settings()
         first = build_index_identity(settings, content_type=None, chunk_size=512, chunk_overlap=50)
@@ -252,8 +252,8 @@ class TestExclusionSetParticipatesInIdentity:
         source is reprocessed rather than reported
         ``skipped_unchanged``).
         """
-        import rag_mcp.core.ingestion.source_state as source_state
-        from rag_mcp.core.ingestion.source_state import (
+        import omrg.core.ingestion.source_state as source_state
+        from omrg.core.ingestion.source_state import (
             EXCLUDED_EMBED_METADATA_KEYS,
             build_index_identity,
         )

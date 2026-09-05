@@ -69,7 +69,7 @@ jobs:
 
       # Phase 5: validate the OpenAPI 3.1 contract on every push.
       - name: Validate OpenAPI contract
-        run: uv run --no-sync python -c "import yaml; from openapi_spec_validator import validate; validate(yaml.safe_load(open('src/rag_mcp/transports/api/openapi.yaml')))" && echo "OpenAPI contract valid"
+        run: uv run --no-sync python -c "import yaml; from openapi_spec_validator import validate; validate(yaml.safe_load(open('src/omrg/transports/api/openapi.yaml')))" && echo "OpenAPI contract valid"
 
       - name: Run tests (slow, liteparse on macOS)
         if: matrix.os == 'macos-latest'
@@ -268,7 +268,7 @@ jobs:
             echo "FAIL: Leiden packages found in the base installation" >&2
             exit 1
           fi
-          uv run --no-sync python -c "import sys; import rag_mcp.core.community; assert 'leidenalg' not in sys.modules and 'igraph' not in sys.modules"
+          uv run --no-sync python -c "import sys; import omrg.core.community; assert 'leidenalg' not in sys.modules and 'igraph' not in sys.modules"
           echo "OK: base install uses Louvain without importing Leiden packages"
 
   # Optional Leiden must install and pass its focused graph contracts on
@@ -431,7 +431,7 @@ jobs:
           METADATA_LLM_PROVIDER: local
         # This job deliberately installs optional extras to maximise coverage;
         # the exact clean-base skip manifest is asserted in the base jobs.
-        run: uv run --no-sync pytest -m "not slow" --ignore=tests/test_clean_base_tripwire.py --cov=rag_mcp --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        run: uv run --no-sync pytest -m "not slow" --ignore=tests/test_clean_base_tripwire.py --cov=omrg --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         # Pinned to SHA for security — codecov/codecov-action@v7.0.0
@@ -489,7 +489,7 @@ jobs:
           METADATA_LLM_PROVIDER: local
         run: |
           set -euo pipefail
-          uv run --no-sync pytest -m "not slow" --tb=short -q -rs --cov=rag_mcp.core.vectordb.chroma --cov-branch --cov-report=term-missing 2>&1 | tee pytest_chroma_extra.log
+          uv run --no-sync pytest -m "not slow" --tb=short -q -rs --cov=omrg.core.vectordb.chroma --cov-branch --cov-report=term-missing 2>&1 | tee pytest_chroma_extra.log
           if grep -q "chroma extra not installed" pytest_chroma_extra.log; then
             echo "::error::Tests skipped with the chroma-extra reason even though the extra is installed"
             exit 1

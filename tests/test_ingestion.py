@@ -10,7 +10,7 @@ from __future__ import annotations
 from asyncio import run as asyncio_run
 from pathlib import Path
 
-from rag_mcp.core.ingestion import ingest_path_async, list_documents
+from omrg.core.ingestion import ingest_path_async, list_documents
 
 # ── ingest_path validation ─────────────────────────────────────────────────
 
@@ -61,8 +61,8 @@ class TestListDocuments:
         pagination contract runs against the default tmp-path LanceDB
         store in the base install and Chroma in the chroma-extra job.
         """
-        from rag_mcp.core.ingestion import ingest_path_async, list_documents
-        from rag_mcp.core.settings import EffectiveSettings, set_default_effective_settings
+        from omrg.core.ingestion import ingest_path_async, list_documents
+        from omrg.core.settings import EffectiveSettings, set_default_effective_settings
 
         set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=2))
 
@@ -78,7 +78,7 @@ class TestListDocuments:
         # Force more than one scan page at page size 2.
         assert sum(created.values()) > 2
 
-        from rag_mcp.core.ingestion.source_state import build_source_id
+        from omrg.core.ingestion.source_state import build_source_id
 
         assert list_documents(collection_name="paged_docs") == [
             {
@@ -113,7 +113,7 @@ class TestCollectionRouting:
         assert result["files_indexed"] == 1
 
         # Verify the file is in the research collection, not documents
-        from rag_mcp.core.ingestion import list_documents
+        from omrg.core.ingestion import list_documents
 
         research_docs = list_documents(collection_name="research")
         assert len(research_docs) == 1
@@ -146,7 +146,7 @@ class TestCollectionRouting:
         assert result2["collection"] == "code"
 
         # Verify isolation
-        from rag_mcp.core.ingestion import list_documents
+        from omrg.core.ingestion import list_documents
 
         research = list_documents(collection_name="research")
         code = list_documents(collection_name="code")
@@ -170,7 +170,7 @@ class TestMetadataAttachment:
     ):
         """Metadata must be attached to chunks when METADATA_EXTRACTION_MODE=keyword."""
         # Enable keyword extraction for this test via injected settings.
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -194,7 +194,7 @@ class TestMetadataAttachment:
         # Verify category metadata through the store ABC (task 5.1 rewrite:
         # store-agnostic, runs on the default tmp-path LanceDB store in the
         # base install and on Chroma in the chroma-extra job).
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.vectordb import get_default_store
 
         categorised = get_default_store().count_where("test_metadata", {"category": "AI"})
         assert categorised == result["chunks_created"]
@@ -207,7 +207,7 @@ class TestMetadataAttachment:
     ):
         """When METADATA_EXTRACTION_MODE=disabled, no category metadata."""
         # Disable keyword extraction
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -225,7 +225,7 @@ class TestMetadataAttachment:
 
         # No chunk should carry category metadata (store-agnostic check,
         # task 5.1).
-        from rag_mcp.core.vectordb import get_default_store
+        from omrg.core.vectordb import get_default_store
 
         assert get_default_store().count_where("test_disabled_meta", {"category": "AI"}) == 0
 
@@ -240,7 +240,7 @@ class TestDocumentDeletion:
 
     async def test_preview_delete_path_counts_matching_chunks(self, sample_txt):
         """preview_delete path mode must count matching chunks."""
-        from rag_mcp.core.ingestion import preview_delete
+        from omrg.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
             str(sample_txt),
@@ -262,7 +262,7 @@ class TestDocumentDeletion:
 
     async def test_preview_delete_metadata_counts_matching_chunks(self, sample_txt):
         """preview_delete metadata mode must count matching chunks."""
-        from rag_mcp.core.ingestion import preview_delete
+        from omrg.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
             str(sample_txt),
@@ -282,7 +282,7 @@ class TestDocumentDeletion:
 
     async def test_preview_delete_collection_counts_all_chunks(self, sample_txt):
         """preview_delete collection mode must count all collection chunks."""
-        from rag_mcp.core.ingestion import preview_delete
+        from omrg.core.ingestion import preview_delete
 
         ingest_result = await ingest_path_async(
             str(sample_txt),
@@ -299,7 +299,7 @@ class TestDocumentDeletion:
 
     def test_preview_delete_missing_collection_returns_zero(self):
         """Dry-run preview on missing collections must return zero."""
-        from rag_mcp.core.ingestion import preview_delete
+        from omrg.core.ingestion import preview_delete
 
         result = preview_delete(
             path="/missing/file.pdf",
@@ -315,7 +315,7 @@ class TestDocumentDeletion:
 
     async def test_remove_document_deletes_existing_chunks(self, sample_txt):
         """remove_document must delete all chunks for an ingested file."""
-        from rag_mcp.core.ingestion import list_documents, remove_document
+        from omrg.core.ingestion import list_documents, remove_document
 
         # First ingest
         result = await ingest_path_async(str(sample_txt))
@@ -338,7 +338,7 @@ class TestDocumentDeletion:
 
     async def test_remove_document_non_existent_file(self, sample_txt):
         """remove_document on unknown file (collection exists) must return ok."""
-        from rag_mcp.core.ingestion import remove_document
+        from omrg.core.ingestion import remove_document
 
         # First create the collection by ingesting something
         await ingest_path_async(str(sample_txt))
@@ -350,7 +350,7 @@ class TestDocumentDeletion:
 
     def test_remove_document_non_existent_collection(self):
         """remove_document on non-existent collection must return error."""
-        from rag_mcp.core.ingestion import remove_document
+        from omrg.core.ingestion import remove_document
 
         result = remove_document("/some/file.pdf", collection_name="nonexistent_coll")
         assert result["status"] == "error"
@@ -360,7 +360,7 @@ class TestDocumentDeletion:
 
     async def test_remove_by_metadata_deletes_matching_chunks(self, tmp_path):
         """remove_by_metadata must delete chunks matching the filter."""
-        from rag_mcp.core.ingestion import (
+        from omrg.core.ingestion import (
             list_documents,
             remove_by_metadata,
         )
@@ -388,7 +388,7 @@ class TestDocumentDeletion:
 
     def test_remove_by_metadata_empty_filter(self):
         """remove_by_metadata with empty filter must return error."""
-        from rag_mcp.core.ingestion import remove_by_metadata
+        from omrg.core.ingestion import remove_by_metadata
 
         result = remove_by_metadata({})
         assert result["status"] == "error"
@@ -396,7 +396,7 @@ class TestDocumentDeletion:
 
     def test_remove_by_metadata_non_existent_collection(self):
         """remove_by_metadata on non-existent collection must return error."""
-        from rag_mcp.core.ingestion import remove_by_metadata
+        from omrg.core.ingestion import remove_by_metadata
 
         result = remove_by_metadata(
             {"category": "test"},
@@ -409,8 +409,8 @@ class TestDocumentDeletion:
 
     async def test_remove_collection_drops_collection(self, sample_txt):
         """remove_collection must permanently delete the collection."""
-        from rag_mcp.core.ingestion import remove_collection
-        from rag_mcp.core.retrieval import list_collections
+        from omrg.core.ingestion import remove_collection
+        from omrg.core.retrieval import list_collections
 
         # Ingest into a named collection
         result = await ingest_path_async(str(sample_txt), collection_name="test_drop_me")
@@ -432,7 +432,7 @@ class TestDocumentDeletion:
 
     def test_remove_collection_non_existent(self):
         """remove_collection on non-existent collection must return error."""
-        from rag_mcp.core.ingestion import remove_collection
+        from omrg.core.ingestion import remove_collection
 
         result = remove_collection("nonexistent_coll")
         assert result["status"] == "error"
@@ -442,7 +442,7 @@ class TestDocumentDeletion:
 
     async def test_reingestion_replaces_chunks(self, tmp_path):
         """Re-ingesting same file must replace old chunks (no duplicates)."""
-        from rag_mcp.core.ingestion import list_documents
+        from omrg.core.ingestion import list_documents
 
         test_file = tmp_path / "reingest.txt"
         test_file.write_text("First version of this document. " * 20)

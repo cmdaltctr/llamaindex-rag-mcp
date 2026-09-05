@@ -112,7 +112,7 @@ def _cell_manifest(
 def run(output_dir: Path, resume: bool) -> dict[str, Any]:
     # Store reads (paged iter_documents) resolve the default page size
     # through the process default settings; install a no-LLM default.
-    from rag_mcp.core.settings import (
+    from omrg.core.settings import (
         EffectiveSettings,
         MetadataBlock,
         set_default_effective_settings,

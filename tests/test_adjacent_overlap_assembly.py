@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from rag_mcp.core.ingestion import ingest_path_async
-from rag_mcp.core.retrieval import search
+from omrg.core.ingestion import ingest_path_async
+from omrg.core.retrieval import search
 
 # Sentences are long and individually unique so the only legitimate
 # source of a repeated sentence across chunks is the splitter's overlap.

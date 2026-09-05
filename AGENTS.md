@@ -6,10 +6,10 @@ Conventions, constraints, and workflow for AI agents. Only what you **cannot inf
 
 ```bash
 uv sync                          # Install deps (uv, not pip/poetry)
-uv run rag-mcp                   # Start MCP server (stdio)
-uv run rag-mcp ingest ./docs     # CLI ingest
+uv run omrg                   # Start MCP server (stdio)
+uv run omrg ingest ./docs     # CLI ingest
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
-uv run pytest --cov=rag_mcp      # Coverage
+uv run pytest --cov=omrg      # Coverage
 ```
 
 ## WHEN YOU WRITE
@@ -34,16 +34,17 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 → Full detail: [`docs/guides/architecture.md`](docs/guides/architecture.md)
 
 1. **`config/` is the single source of truth for settings data; `compose.py` constructs everything.** `config/` is a LEAF: it must not import `core/` business logic (only the pure-data `core/*/settings.py` models). There is **no** `config.settings` singleton and no `RESOLVED_*` constants — importing `config` resolves nothing. `compose.py` is the only production caller of `get_settings()`, and it owns the runtime capability probes (sparse backend, PDF reader).
-2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/rag_mcp/` holds only `__init__.py` and `compose.py` at the top level.
+2. **No cross-imports** between `core/ingestion/` and `core/retrieval/` — they share only settings. The v1 top-level shims (`ingestion.py`, `retrieval.py`, `server.py`, `cli.py`, `readers/`, …) were **deleted in v2.0.0**; `src/omrg/` holds only `__init__.py` and `compose.py` at the top level.
 3. **Transports are thin wrappers** — `transports/mcp/` (MCP server, split by tool), `transports/cli/` (CLI split by command group), and `transports/api/` (OpenAPI contract only) all delegate to `core/`. No transport contains business logic. The `core/` layer never imports from `transports/`.
 4. **All ingestion is async** — `ingest_path_async` is the sole entry point.
 5. **Balanced retrieval defaults are intentional** (ADR-018): `retrieval.top_k=10`, `chunking.chunk_overlap=100`. Read from the injected `EffectiveSettings`, never hardcode. Env vars are nested: `RETRIEVAL__TOP_K`, `CHUNKING__CHUNK_OVERLAP` (ADR-037). **Note:** the code default is `RERANK_ENABLED=false` (flipped off after Experiment 10, which showed the reranker degrades technical-workload retrieval by 19–27%). Phase 4 profiles restore ADR-018's balanced intent per use case: the `documents` profile sets `reranker_enabled: true` (semantic workloads benefit from the reranker), while the `codebase` profile keeps it `false` (speed-first for coding agents). The profile-level value takes precedence over the global default at operation time.
 6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
 7. **Azure SDK import is lazy** (ADR-024) — `integrations/azure.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
-9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen.
-10. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
-11. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
+9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen. `Engine` owns its embedder, store and settings; `EMBEDDING_PROVIDER_SCOPE = "engine"` (was `"process"`), so each engine gets an isolated embedder lifecycle.
+10. **`Engine` is the public API.** The public surface is `omrg.Engine`, `omrg.EffectiveSettings` and `omrg.__version__` — exported via PEP 562 lazy imports. There is no module-level default engine. `compose.build_engine()` is the single construction path; `ensure_runtime_setup()` is the legacy installer for pre-v2 callers.
+11. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
+12. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
 
 ## Critical Gotchas (silent breakage if violated)
 
@@ -76,7 +77,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
 | ✅ Always | Type annotations + `from __future__ import annotations` in new modules.                                                                             |
 | ✅ Always | Google-style docstrings on public functions and classes.                                                                                            |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=rag_mcp` before committing.                                                                          |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrg` before committing.                                                                          |
 
 ## Change Workflow
 
@@ -106,7 +107,7 @@ Releases via `python-semantic-release` on every push to `main`. `feat:` → mino
 | Orchestration | ≥85%     | `daemon/watcher`, `transports/cli`                                                                                                                      |
 | **Overall**   | **≥90%** | all (excluding deprecated compat shims — see below)                                                                                                     |
 
-> All modules under `src/rag_mcp/` are in the gate. The v1 compat-shim
+> All modules under `src/omrg/` are in the gate. The v1 compat-shim
 > `omit` list was removed with the shims themselves in v2.0.0 (ADR-037).
 >
 > Coverage is measured with branch coverage (`--cov-branch`), which scores

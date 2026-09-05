@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from rag_mcp.core.retrieval.reranker import (
+from omrg.core.retrieval.reranker import (
     TOKENIZER_MAX_LENGTH,
     CrossEncoderReranker,
     _select_onnx_variant,
@@ -74,13 +74,13 @@ class TestSelectOnnxVariant:
 
     def test_modernbert_prefers_quantized_on_arm64(self) -> None:
         """ModernBERT models prefer model_quantized.onnx on ARM64."""
-        with patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="arm64"):
+        with patch("omrg.core.retrieval.reranker.platform.machine", return_value="arm64"):
             result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
         assert result[0] == "onnx/model_quantized.onnx"
 
     def test_modernbert_prefers_quantized_on_x86(self) -> None:
         """ModernBERT models prefer model_quantized.onnx on x86_64."""
-        with patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="x86_64"):
+        with patch("omrg.core.retrieval.reranker.platform.machine", return_value="x86_64"):
             result = _select_onnx_variant("Alibaba-NLP/gte-reranker-modernbert-base")
         assert result[0] == "onnx/model_quantized.onnx"
 
@@ -113,25 +113,25 @@ class TestSelectOnnxVariant:
         assert result[0] == "onnx/model_quantized.onnx"
         assert "onnx/model.onnx" in result
 
-    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="aarch64")
+    @patch("omrg.core.retrieval.reranker.platform.machine", return_value="aarch64")
     def test_minilm_arm64_selects_quantised(self, mock_machine: MagicMock) -> None:
         """MiniLM on ARM64 selects the ARM-tuned quantised variant."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result[0] == "onnx/model_qint8_arm64.onnx"
 
-    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="aarch64")
+    @patch("omrg.core.retrieval.reranker.platform.machine", return_value="aarch64")
     def test_minilm_aarch64_selects_quantised(self, mock_machine: MagicMock) -> None:
         """MiniLM on AArch64 selects the ARM-tuned quantised variant."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result[0] == "onnx/model_qint8_arm64.onnx"
 
-    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="x86_64")
+    @patch("omrg.core.retrieval.reranker.platform.machine", return_value="x86_64")
     def test_minilm_x86_64_selects_generic(self, mock_machine: MagicMock) -> None:
         """MiniLM on x86_64 falls back to the generic fp32 model."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
         assert result == ["onnx/model.onnx"]
 
-    @patch("rag_mcp.core.retrieval.reranker.platform.machine", return_value="AMD64")
+    @patch("omrg.core.retrieval.reranker.platform.machine", return_value="AMD64")
     def test_minilm_unknown_platform_selects_generic(self, mock_machine: MagicMock) -> None:
         """MiniLM on unknown platforms falls back to the generic model."""
         result = _select_onnx_variant("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -146,7 +146,7 @@ class TestModuleDocstring:
 
     def test_docstring_references_default_model(self) -> None:
         """Module docstring must reference the default MiniLM model."""
-        import rag_mcp.core.retrieval.reranker as reranker_mod
+        import omrg.core.retrieval.reranker as reranker_mod
 
         assert reranker_mod.__doc__ is not None
         assert "ms-marco-MiniLM-L-6-v2" in reranker_mod.__doc__
@@ -185,8 +185,8 @@ class TestCrossEncoderRerankerSingleton:
         injects the model ID. The fallback exists for direct construction and
         MUST stay in step with ``RetrievalSettings.rerank_model``.
         """
-        from rag_mcp.core.retrieval.reranker import DEFAULT_RERANK_MODEL
-        from rag_mcp.core.retrieval.settings import RetrievalSettings
+        from omrg.core.retrieval.reranker import DEFAULT_RERANK_MODEL
+        from omrg.core.retrieval.settings import RetrievalSettings
 
         reranker = CrossEncoderReranker()
         assert reranker._model_id == DEFAULT_RERANK_MODEL
@@ -199,8 +199,8 @@ class TestCrossEncoderRerankerSingleton:
         and expected the reranker to observe it. That coupling is exactly what
         the DI refactor removed: the reranker no longer imports config at all.
         """
-        import rag_mcp.core.retrieval.reranker as reranker_mod
-        from rag_mcp import compose
+        import omrg.core.retrieval.reranker as reranker_mod
+        from omrg import compose
 
         assert not hasattr(reranker_mod, "settings"), (
             "reranker must not hold a module-level settings object"
@@ -224,13 +224,13 @@ class TestCrossEncoderRerankerSingleton:
         mock_tokenizer = MagicMock()
 
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+            "omrg.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         with patch(
-                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            "omrg.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             first = CrossEncoderReranker(model_id="cache-test/model")
@@ -240,7 +240,7 @@ class TestCrossEncoderRerankerSingleton:
 
         # Second instance, same model ID: must be served from the cache.
         second = CrossEncoderReranker(model_id="cache-test/model")
-        with patch("rag_mcp.core.retrieval.reranker._select_onnx_variant") as variant_mock:
+        with patch("omrg.core.retrieval.reranker._select_onnx_variant") as variant_mock:
             second._load_model()
             variant_mock.assert_not_called()
 
@@ -254,13 +254,13 @@ class TestCrossEncoderRerankerSingleton:
         mock_tokenizer = MagicMock()
 
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+            "omrg.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         with patch(
-                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            "omrg.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             first = CrossEncoderReranker(model_id="cache-reset/model")
@@ -271,13 +271,13 @@ class TestCrossEncoderRerankerSingleton:
 
         second = CrossEncoderReranker(model_id="cache-reset/model")
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+            "omrg.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ) as variant_mock:
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
                 with patch("tokenizers.Tokenizer.from_pretrained", return_value=mock_tokenizer):
                     with patch("onnxruntime.InferenceSession", return_value=mock_session):
                         with patch(
-                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            "omrg.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             second._load_model()
@@ -625,7 +625,7 @@ class TestCrossEncoderRerankerModelLoading:
         mock_tokenizer_cls = MagicMock()
 
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
+            "omrg.core.retrieval.reranker._select_onnx_variant", return_value=["onnx/model.onnx"]
         ):
             with patch(
                 "huggingface_hub.hf_hub_download",
@@ -640,7 +640,7 @@ class TestCrossEncoderRerankerModelLoading:
                         return_value=mock_session,
                     ):
                         with patch(
-                            "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                            "omrg.core.retrieval.reranker._read_max_position_embeddings",
                             return_value=512,
                         ):
                             reranker._load_model()
@@ -700,7 +700,7 @@ class TestFailureEscalation:
         """A single inference failure logs WARNING and falls back gracefully."""
         reranker = self._failing_reranker("boom")
 
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             out = reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
 
         assert out[0]["_reranked"] is False
@@ -709,7 +709,7 @@ class TestFailureEscalation:
 
     def test_repeated_same_error_escalates_to_error(self, caplog: pytest.LogCaptureFixture) -> None:
         """The same error signature repeated to the threshold escalates to ERROR."""
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             for _ in range(3):
                 reranker = self._failing_reranker("persistent boom")
                 reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
@@ -721,7 +721,7 @@ class TestFailureEscalation:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """A success between failures resets the counter; the next failure warns."""
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             for _ in range(2):
                 reranker = self._failing_reranker("flaky boom")
                 reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
@@ -740,7 +740,7 @@ class TestFailureEscalation:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """reset_model_cache() clears the failure counter (task 1.12)."""
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             for _ in range(2):
                 reranker = self._failing_reranker("cache-reset boom")
                 reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)
@@ -780,7 +780,7 @@ class TestCoreMLProviderGuard:
             return mock_session
 
         with patch(
-            "rag_mcp.core.retrieval.reranker._select_onnx_variant",
+            "omrg.core.retrieval.reranker._select_onnx_variant",
             return_value=["onnx/model.onnx"],
         ):
             with patch("huggingface_hub.hf_hub_download", return_value="/fake/model.onnx"):
@@ -797,7 +797,7 @@ class TestCoreMLProviderGuard:
                             side_effect=_capture_session,
                         ):
                             with patch(
-                                "rag_mcp.core.retrieval.reranker._read_max_position_embeddings",
+                                "omrg.core.retrieval.reranker._read_max_position_embeddings",
                                 return_value=512,
                             ):
                                 reranker._load_model()
@@ -859,7 +859,7 @@ class TestCacheHitDoesNotResetFailureStreak:
         cache-hit branch (no re-download).  Without the fix, each cache hit
         resets the streak and the level stays WARNING.
         """
-        from rag_mcp.core.retrieval.reranker import (
+        from omrg.core.retrieval.reranker import (
             _MODEL_CACHE,
             CrossEncoderReranker,
         )
@@ -883,7 +883,7 @@ class TestCacheHitDoesNotResetFailureStreak:
 
         # Build three fresh rerankers. Each _load_model() hits the cache,
         # picks up the failing session, then inference raises.
-        with caplog.at_level(logging.WARNING, logger="rag_mcp.core.retrieval.reranker"):
+        with caplog.at_level(logging.WARNING, logger="omrg.core.retrieval.reranker"):
             for _ in range(3):
                 reranker = CrossEncoderReranker()
                 reranker.rerank("query", [{"text": "doc", "score": 0.5}], top_k=5)

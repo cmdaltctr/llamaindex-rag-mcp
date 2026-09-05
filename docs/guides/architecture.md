@@ -190,7 +190,7 @@ guard before any mutation: rows for a canonical path that lack or disagree on
 or dual write exists. Listing, deletion preview, and path deletion derive the
 same `source_id` through one shared path rule. Retrieval reads lineage as
 plain metadata keys (`LINEAGE_METADATA_KEYS` in
-`src/rag_mcp/core/retrieval/dense.py`) and never imports the ingestion layer.
+`src/omrg/core/retrieval/dense.py`) and never imports the ingestion layer.
 
 ### `core/vectordb/` — the store boundary
 
@@ -310,7 +310,7 @@ specification: `openspec/changes/add-per-collection-persist-dirs/`.
 ### `transports/` — exposes it
 
 - `transports/mcp/` — the MCP server, eight tools, over stdio (split by tool)
-- `transports/cli/` — the `rag-mcp` command, one file per command group
+- `transports/cli/` — the `omrg` command, one file per command group
 - `transports/api/` — an OpenAPI contract for a future REST API. No code yet,
   deliberately: the contract is published before anything implements it.
 
@@ -355,7 +355,7 @@ argument instead of reading a global.
 2. Add one line to `core/chunking/registry.py`:
 
 ```python
-register("mystrategy", "rag_mcp.core.chunking.mystrategy:chunk_my_file_async")
+register("mystrategy", "omrg.core.chunking.mystrategy:chunk_my_file_async")
 ```
 
 That is the whole job. No other file changes. Same pattern for metadata
@@ -414,24 +414,24 @@ peers stays an integration.
 
 ### Integration inventory
 
-Every Python module under `src/rag_mcp/integrations/`, classified. A contract
+Every Python module under `src/omrg/integrations/`, classified. A contract
 test fails when a module is missing from this table.
 
 <!-- integration-inventory:start count=11 -->
 
 | Module                                   | Availability                                                   | Selector                                                            | Shared contract                               | Fallback owner                                                                    | Disposition                                                         |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `rag_mcp.integrations`                   | Native                                                         | None                                                                | Package facade                                | None                                                                              | Facade; exports stable integration APIs only                        |
-| `rag_mcp.integrations.azure`             | Optional `azure` extra                                         | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry            |
-| `rag_mcp.integrations.leidenalg`         | Optional `community-leiden` extra                              | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py`      | Flat partition callable                       | None; explicit selection fails startup                                            | External adapter behind the community registry                      |
-| `rag_mcp.integrations.magika`            | Optional executable                                            | `MAGIKA_BINARY` selects the binary path, not an implementation      | `FileEntry` detection results                 | `core/codebase/codebase_map.py` suffix detection                                  | Capability integration; remains unregistered                        |
-| `rag_mcp.integrations.pdf`               | Native                                                         | None                                                                | `get_pdf_reader(reader)`                      | None                                                                              | Public facade exposing the factory                                  |
-| `rag_mcp.integrations.pdf.factory`       | Native                                                         | `PDF_READER=auto`                                                   | Reader instance with `load_data`              | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers)   | Registry-backed factory; `auto` stays ordered capability resolution |
-| `rag_mcp.integrations.pdf.registry`      | Native                                                         | `PDF_READER` concrete values                                        | Reader class with `load_data`                 | None; unknown names raise                                                         | Lazy registry for concrete PDF readers                              |
-| `rag_mcp.integrations.pdf.liteparse`     | Base dependency (despite the stale docstring naming an extra)  | `PDF_READER=liteparse`                                              | `load_data`                                   | `compose.resolve_pdf_reader` `auto` probe                                         | Registered reader strategy                                          |
-| `rag_mcp.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050)              | `load_data`                                   | `compose.resolve_pdf_reader` missing-backend error → pypdf                        | Registered reader strategy; configuration-owned default             |
-| `rag_mcp.integrations.pdf.pypdf`         | Base, via `llama-index-readers-file`                           | `PDF_READER=pypdf`                                                  | `load_data`                                   | Terminal `auto` tier                                                              | Registered reader strategy                                          |
-| `rag_mcp.integrations.pdf.pypdfium`      | Optional `pdf-pypdfium2` extra                                 | `PDF_READER=pypdfium2`                                              | `load_data`                                   | None                                                                              | Registered reader strategy                                          |
+| `omrg.integrations`                   | Native                                                         | None                                                                | Package facade                                | None                                                                              | Facade; exports stable integration APIs only                        |
+| `omrg.integrations.azure`             | Optional `azure` extra                                         | `DOCUMENT_BACKEND=azure`, via `core/ingestion/backends/registry.py` | Async document read into LlamaIndex Documents | `core/ingestion/backends/orchestrator.py` (retry budget, then one local fallback) | Registered strategy behind the document-backend registry            |
+| `omrg.integrations.leidenalg`         | Optional `community-leiden` extra                              | `COMMUNITY_ALGORITHM=leiden`, via `core/community/registry.py`      | Flat partition callable                       | None; explicit selection fails startup                                            | External adapter behind the community registry                      |
+| `omrg.integrations.magika`            | Optional executable                                            | `MAGIKA_BINARY` selects the binary path, not an implementation      | `FileEntry` detection results                 | `core/codebase/codebase_map.py` suffix detection                                  | Capability integration; remains unregistered                        |
+| `omrg.integrations.pdf`               | Native                                                         | None                                                                | `get_pdf_reader(reader)`                      | None                                                                              | Public facade exposing the factory                                  |
+| `omrg.integrations.pdf.factory`       | Native                                                         | `PDF_READER=auto`                                                   | Reader instance with `load_data`              | Factory itself (LiteParse → pypdfium2 → pypdf probe, for direct `auto` callers)   | Registry-backed factory; `auto` stays ordered capability resolution |
+| `omrg.integrations.pdf.registry`      | Native                                                         | `PDF_READER` concrete values                                        | Reader class with `load_data`                 | None; unknown names raise                                                         | Lazy registry for concrete PDF readers                              |
+| `omrg.integrations.pdf.liteparse`     | Base dependency (despite the stale docstring naming an extra)  | `PDF_READER=liteparse`                                              | `load_data`                                   | `compose.resolve_pdf_reader` `auto` probe                                         | Registered reader strategy                                          |
+| `omrg.integrations.pdf.pdf_inspector` | Base dependency (compatibility `pdf-inspector` extra retained) | `PDF_READER=pdf_inspector` (packaged default, ADR-050)              | `load_data`                                   | `compose.resolve_pdf_reader` missing-backend error → pypdf                        | Registered reader strategy; configuration-owned default             |
+| `omrg.integrations.pdf.pypdf`         | Base, via `llama-index-readers-file`                           | `PDF_READER=pypdf`                                                  | `load_data`                                   | Terminal `auto` tier                                                              | Registered reader strategy                                          |
+| `omrg.integrations.pdf.pypdfium`      | Optional `pdf-pypdfium2` extra                                 | `PDF_READER=pypdfium2`                                              | `load_data`                                   | None                                                                              | Registered reader strategy                                          |
 
 <!-- integration-inventory:end -->
 

@@ -11,12 +11,13 @@ once" was not expressible.
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from rag_mcp.core.profiles.resolver import ProfileResolver
-from rag_mcp.core.settings import EffectiveSettings, RetrievalBlock
+from omrg.core.profiles.resolver import ProfileResolver
+from omrg.core.settings import EffectiveSettings, MetadataBlock, RetrievalBlock
 
 
 @pytest.fixture(autouse=True)
@@ -115,7 +116,7 @@ class TestNoGlobalMutation:
 
     def test_profile_difference_leaves_the_default_untouched(self) -> None:
         """Resolving profiles must not rewrite the composition-root default."""
-        from rag_mcp.core.settings import get_default_effective_settings
+        from omrg.core.settings import get_default_effective_settings
 
         before = get_default_effective_settings()
         store = _store_with({"docs": "documents", "code": "codebase"})
@@ -137,3 +138,62 @@ class TestNoGlobalMutation:
         resolver = ProfileResolver(store=store, server_profile="codebase", base=EffectiveSettings())
         effective = resolver.resolve("untagged")
         assert effective.retrieval.top_k == 20
+
+
+# ── Review fix: engine-level profile isolation over real stores ────────
+
+
+def test_engines_resolve_same_named_collection_from_their_own_stores(
+    tmp_path: Path,
+) -> None:
+    """Two engines resolve identically named tagged collections apart.
+
+    The profile tag is read from the ENGINE's store, never from the
+    process-default store (which may belong to another engine).
+    """
+    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.engine import Engine
+
+    base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+    engines: list[Engine] = []
+    try:
+        for name, tag in (("a", "codebase"), ("b", "documents")):
+            store = LanceVectorStore(uri=str(tmp_path / f"store-{name}"))
+            store.update_collection_metadata("shared", {"profile": tag})
+            engines.append(
+                Engine(
+                    base,
+                    store=store,
+                    embed_model=MagicMock(),
+                    profile_resolver=ProfileResolver(
+                        store=store, server_profile="documents", base=base
+                    ),
+                )
+            )
+
+        assert engines[0]._resolve_settings("shared").profile_name == "codebase"
+        assert engines[1]._resolve_settings("shared").profile_name == "documents"
+    finally:
+        for engine in engines:
+            engine.close()
+
+
+def test_engine_search_propagates_invalid_profile_tag(tmp_path: Path) -> None:
+    """An invalid tag on a collection surfaces from engine operations."""
+    from omrg.core.vectordb.lancedb import LanceVectorStore
+    from omrg.engine import Engine
+
+    base = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+    store = LanceVectorStore(uri=str(tmp_path / "store-invalid"))
+    store.update_collection_metadata("broken", {"profile": "hybrid"})
+    engine = Engine(
+        base,
+        store=store,
+        embed_model=MagicMock(),
+        profile_resolver=ProfileResolver(store=store, server_profile="documents", base=base),
+    )
+    try:
+        with pytest.raises(ValueError, match="hybrid"):
+            engine.search("query", collection_name="broken")
+    finally:
+        engine.close()

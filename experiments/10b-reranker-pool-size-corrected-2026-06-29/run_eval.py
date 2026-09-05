@@ -199,7 +199,7 @@ def run_query(
     {False, True}, so every other argument (fetch_k included) must stay
     a variable.
     """
-    from rag_mcp.core.retrieval import search
+    from omrg.core.retrieval import search
 
     factors = cell["factors"]
     if factors["retrieval"] == "dense" and factors["rerank"] is False:
@@ -265,7 +265,7 @@ def _effective_fetch_k(
     The manifest records the pool that actually ran — clamped to the
     collection size — rather than the requested override.
     """
-    from rag_mcp.core.retrieval.policy import _resolve_fetch_k
+    from omrg.core.retrieval.policy import _resolve_fetch_k
 
     chunk_count = store.count(collection_name) if store is not None else 0
     factors = cell["factors"]
@@ -299,7 +299,7 @@ def _cell_manifest(
     reranker_obj = None
     reranker_requested = None
     if factors["rerank"]:
-        from rag_mcp.core.retrieval.backend import build_reranker_from_settings
+        from omrg.core.retrieval.backend import build_reranker_from_settings
 
         reranker_requested = effective_settings.retrieval.rerank_backend
         reranker_obj = build_reranker_from_settings(effective_settings)
@@ -500,10 +500,10 @@ def _resolve_runtime(store_dir: Path) -> tuple[Any, str, str, Any]:
 
     from llama_index.core import Settings as LlamaIndexSettings
 
-    from rag_mcp.compose import settings_to_effective
-    from rag_mcp.config import get_settings
-    from rag_mcp.core.settings import set_default_effective_settings
-    from rag_mcp.core.vectordb import set_default_store
+    from omrg.compose import settings_to_effective
+    from omrg.config import get_settings
+    from omrg.core.settings import set_default_effective_settings
+    from omrg.core.vectordb import set_default_store
 
     LlamaIndexSettings.embed_model = identity_embed_model(model)
     set_default_store(store)
@@ -516,7 +516,7 @@ def _resolve_runtime(store_dir: Path) -> tuple[Any, str, str, Any]:
     set_default_effective_settings(effective_settings)
 
     try:
-        from rag_mcp.core.retrieval.dense import _cached_query_embedding
+        from omrg.core.retrieval.dense import _cached_query_embedding
 
         _cached_query_embedding.cache_clear()
     except Exception:

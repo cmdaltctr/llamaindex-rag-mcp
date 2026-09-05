@@ -52,8 +52,8 @@ def main() -> None:
         print(f"[build] {marker} present; skipping (pass --force to rebuild)", flush=True)
         return
 
-    from rag_mcp.compose import ensure_runtime_setup
-    from rag_mcp.core.ingestion import ingest_path_async
+    from omrg.compose import ensure_runtime_setup
+    from omrg.core.ingestion import ingest_path_async
 
     # Installs the embed model and the default EffectiveSettings the
     # ingestion entry point resolves at its boundary.
@@ -68,7 +68,7 @@ def main() -> None:
         stats["packs"][pack.name] = result  # type: ignore[index]
         print(f"[build]   -> {result}", flush=True)
 
-    from rag_mcp.core.vectordb.lancedb import LanceVectorStore
+    from omrg.core.vectordb.lancedb import LanceVectorStore
 
     store = LanceVectorStore(uri=str(STORE_URI))
     stats["chunk_count"] = store.count(COLLECTION)

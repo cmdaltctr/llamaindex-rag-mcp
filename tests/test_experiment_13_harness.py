@@ -109,8 +109,8 @@ def test_audit_literal_rerank_none_present() -> None:
 
 def test_run_query_dispatch_arms(monkeypatch) -> None:
     """run_query forwards literal rerank tri-state and settings per arm."""
-    import rag_mcp.core.retrieval as retrieval_pkg
-    from rag_mcp.core.settings import EffectiveSettings
+    import omrg.core.retrieval as retrieval_pkg
+    from omrg.core.settings import EffectiveSettings
 
     calls: list[dict[str, Any]] = []
 
@@ -142,7 +142,7 @@ def test_run_query_dispatch_arms(monkeypatch) -> None:
 
 def test_policy_cell_settings_carry_threshold() -> None:
     """threshold_effective_settings overlays the swept level, base intact."""
-    from rag_mcp.core.settings import EffectiveSettings
+    from omrg.core.settings import EffectiveSettings
 
     base = EffectiveSettings()
     effective = exp13.threshold_effective_settings(base, 0.5)

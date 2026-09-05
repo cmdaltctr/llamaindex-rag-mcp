@@ -50,7 +50,7 @@ RETRIEVAL__SIMILARITY_THRESHOLD=0.3   # optional default threshold
 **CLI**:
 
 ```bash
-rag-mcp search "machine learning" --rerank --threshold 0.3
+omrg search "machine learning" --rerank --threshold 0.3
 ```
 
 ## First-run download
@@ -104,7 +104,7 @@ Hybrid search fuses two rankings: dense embedding similarity and a sparse keywor
 | `bm25` (default) | In-process BM25, cached per store and collection, invalidated on every mutation | Base install, backend-agnostic |
 | `native` | LanceDB native full-text search over the stored `text` column | LanceDB only |
 
-The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`rag_mcp.core.vectordb.lance_fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
+The registry (`core/retrieval/sparse_registry.py`) maps backend names to implementations; adding a backend is one new file plus one `register()` line. `auto` is deliberately not a backend: the composition root resolves it before query time through the selected store's capability metadata plus a real native-FTS probe (`omrg.core.vectordb.lance_fts:probe_native_fts`). On LanceDB `auto` resolves to `native`. Chroma declares no native capability, so `auto` resolves to `bm25` there. An unknown concrete name fails startup listing `auto` plus the registered names.
 
 Scores are not comparable across backends. Native rows carry `score_kind` `native_fts_v1`, the engine's raw higher-is-better score. Only rank order feeds RRF, so the scale difference never affects fusion.
 

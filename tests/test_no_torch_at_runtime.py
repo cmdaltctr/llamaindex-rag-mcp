@@ -1,6 +1,6 @@
 """Runtime tripwire: torch must not be loaded after a default search (task 8.3).
 
-Asserts that importing rag_mcp and running a search with rerank=True on
+Asserts that importing omrg and running a search with rerank=True on
 the default backend does not load torch into sys.modules.
 
 This turns the existing prose requirement ("no PyTorch at runtime") into
@@ -32,13 +32,13 @@ def test_torch_absent_after_default_backend_search() -> None:
     onnxruntime. Neither can pull torch. If this test fails, a
     dependency change reintroduced torch into the default path.
     """
-    # Record the set of loaded modules before importing rag_mcp.
+    # Record the set of loaded modules before importing omrg.
     # We check torch specifically, not the full diff, because other
     # modules may load legitimately.
     sys.modules.pop("torch", None)
 
     # Import the ONNX reranker module — this is what the default path loads.
-    from rag_mcp.core.retrieval.reranker import CrossEncoderReranker  # noqa: F401
+    from omrg.core.retrieval.reranker import CrossEncoderReranker  # noqa: F401
 
     assert "torch" not in sys.modules, (
         "torch was imported on the default (ONNX) backend path. "
@@ -50,7 +50,7 @@ def test_torch_absent_after_registry_import() -> None:
     """Importing the retrieval registry SHALL NOT load torch."""
     sys.modules.pop("torch", None)
 
-    from rag_mcp.core.retrieval import registry  # noqa: F401
+    from omrg.core.retrieval import registry  # noqa: F401
 
     assert "torch" not in sys.modules, (
         "torch was imported when the retrieval registry was imported. "
@@ -62,7 +62,7 @@ def test_torch_absent_after_backend_module_import() -> None:
     """Importing the backend resolution module SHALL NOT load torch."""
     sys.modules.pop("torch", None)
 
-    from rag_mcp.core.retrieval.backend import resolve_reranker_backend  # noqa: F401
+    from omrg.core.retrieval.backend import resolve_reranker_backend  # noqa: F401
 
     assert "torch" not in sys.modules, (
         "torch was imported when the backend resolution module was imported. "
@@ -133,11 +133,11 @@ def test_torch_absent_after_full_search_subprocess() -> None:
         LlamaIndexSettings.embed_model = _UnitNormMockEmbedding(embed_dim=384)
 
         # ── Reset vector store singleton ──────────────────────────────
-        from rag_mcp.core.vectordb import reset_default_store, set_default_store
+        from omrg.core.vectordb import reset_default_store, set_default_store
         reset_default_store()
 
         # ── Install default EffectiveSettings (match conftest) ────────
-        from rag_mcp.core.settings import (
+        from omrg.core.settings import (
             EffectiveSettings,
             MetadataBlock,
             set_default_effective_settings,
@@ -159,8 +159,8 @@ def test_torch_absent_after_full_search_subprocess() -> None:
             # Task 2.3: get_default_store() is injected-only. Compose the
             # store explicitly through the production composition root rather
             # than relying on the pre-change accessor fallback.
-            from rag_mcp.compose import build_vector_store
-            from rag_mcp.config import Settings as AppSettings
+            from omrg.compose import build_vector_store
+            from omrg.config import Settings as AppSettings
 
             set_default_store(
                 build_vector_store(
@@ -170,8 +170,8 @@ def test_torch_absent_after_full_search_subprocess() -> None:
 
             # ── Ingest a small document ─────────────────────────────────
             import asyncio
-            from rag_mcp.core.ingestion import ingest_path_async
-            from rag_mcp.core.retrieval import search
+            from omrg.core.ingestion import ingest_path_async
+            from omrg.core.retrieval import search
 
             test_file = tempfile.NamedTemporaryFile(
                 mode="w", suffix=".md", delete=False, prefix="torch_tripwire_",

@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rag_mcp.integrations.azure import (
+from omrg.integrations.azure import (
     AzureDocReader,
     _format_table,
     _split_table_rows,
