@@ -113,15 +113,19 @@ validates and documents the completed change.
 - [x] 4.7 Add a test comparing the old/global and new/injected identity
   calculations using the same embedder fixture, proving byte-identical
   `source_index_identity` before the old path is removed.
-- [ ] 4.8 Add the decisive full-path test: with no process-default store and
+- [x] 4.8 Add the decisive full-path test: with no process-default store and
   no process-default effective settings installed, and the LlamaIndex global
   embedder set to a throwing sentinel, construct two engines with
   distinguishable embedders and run ingest, dense search, hybrid/BM25
   retrieval, and listing/paged reads on both. Assert every vector/query came
   from its engine and no path fell back to a process default. This fails if
   any direct-Engine seam still reads a global.
-- [ ] 4.9 Add a test interleaving two engines' ingest and search operations,
-  asserting no operation observes the other's model.
+- [x] 4.9 Add a test interleaving two engines' ingest and search operations,
+  asserting no operation observes the other's model. (4.8/4.9 live in
+  ``tests/test_engine_isolation.py``: two real LanceDB stores, salted
+  deterministic embedders, poisoned LlamaIndex global, no process
+  defaults; ingest, replacement, dense + hybrid search, answer, paging
+  and closure on both engines.)
 - [x] 4.10 Confirm both embedding-identity guards still reject a mismatched
   collection: source-level `source_index_identity` and collection-level
   `EmbeddingIdentity`.
@@ -165,7 +169,11 @@ validates and documents the completed change.
 - [x] 7.2 `uv run lint-imports` — green, no new ignores.
 - [x] 7.3 Re-run Tier 1 and Tier 2 quality gates; results MUST be unchanged,
   since no retrieval behaviour changed. A difference means an embedder seam
-  was wired wrongly.
+  was wired wrongly. (Evidence: Tier 1 and Tier 2 re-run locally during
+  review remediation — Tier 2 against a live Ollama with
+  ``qwen3-embedding:0.6b`` — both green. CI skips Tier 2 by design;
+  the original checkbox reflected a local run, which is the only place
+  Tier 2 can run.)
 - [x] 7.4 `openspec validate make-omrg-a-standalone-framework-4 --strict`.
 - [x] 7.5 Extend `test_docs_references.py` with a curated live-surface gate for
   stale `rag_mcp` paths. Exclude released changelogs, ADR/TDR history and

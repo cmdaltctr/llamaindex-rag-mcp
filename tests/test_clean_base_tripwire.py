@@ -50,7 +50,19 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # diagnostics, MRTR-prefetch, and transport-level judge-threading suites,
 # plus the review round (trailing citations, delimiter escaping, CLI
 # degradation) added 39 counted cases (2398 -> 2437).
-_BASE_EXECUTED = 2468  # Includes the 31 engine and public API cases added by PR 85,
+# Re-baselined at make-omrg-a-standalone-framework-4 review remediation:
+# the PR-85 review fixes added the engine-isolation suites — builder
+# validation and resolver wiring (legacy-env, fail-closed Chroma,
+# explicit-settings strategies, store/env snapshot), engine answer
+# threading and LLM-failure propagation, verify degradation, close
+# release/reject, profile-resolver store and env-snapshot cases,
+# injected-model cache cases, the write-contract global-forbidden and
+# adapter-close cases, the SearchRetriever forwarding case, and the
+# rewritten settings-guard fixtures, and the decisive two-engine
+# isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
+# cases (2468 -> 2508 executed, and the two new chroma-gated
+# write-contract cases add 2 base skips: 127 -> 129).
+_BASE_EXECUTED = 2508  # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
 # probe), exact-path detection, and ExpatError-skip pins; the
@@ -90,7 +102,7 @@ _BASE_EXECUTED = 2468  # Includes the 31 engine and public API cases added by PR
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 127  # self-ignored run: base skips incl. chroma-gated files
+_BASE_SKIPPED = 129  # self-ignored run: base skips incl. chroma-gated files
 # (47 vectordb-contract, 19 chunk-lineage-navigation, 13
 # embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
 # plus the compose/metadata-extractor/lancedb/experiment/chroma-cloud
