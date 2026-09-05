@@ -88,3 +88,33 @@ The change SHALL NOT require a new canonical document class or a second chunking
 - **WHEN** a PDF result is emitted
 - **THEN** metadata SHALL make it possible to distinguish whether OCR was required and whether OCR was actually used
 - **AND** a result produced only by `pdf-inspector` SHALL NOT claim that PaddleOCR processed the document
+
+### Requirement: The OCR routing gate SHALL be calibrated evidence expressed as injected configuration
+
+The threshold that selects the OCR fallback SHALL be a calibrated value carried in injected configuration, not a constant in the routing module. It SHALL follow the shape the existing PDF knobs already use: top-level fields on the effective settings beside `pdf_reader` and `liteparse_ocr_enabled`, resolved once at the composition root and passed downstream.
+
+The gate SHALL be calibrated on a committed fixture set disjoint from the fixtures used to evaluate whether the OCR fallback improves retrieval. Calibration SHALL report routing behaviour — text-based PDFs the gate would route to OCR, and OCR-required PDFs it would leave on the fast path — and SHALL NOT be the same run that measures downstream retrieval quality.
+
+The packaged default SHALL keep the fallback off until the promotion gates are met, so "the OCR capability is available" in the routing requirement above means the optional stack resolved **and** the operator enabled routing. `config/` SHALL NOT probe for the optional OCR stack, and no module SHALL read a settings singleton to obtain the gate.
+
+#### Scenario: Routing threshold is read from injected settings
+
+- **WHEN** the routing seam decides whether a PDF needs OCR
+- **THEN** it SHALL read the gate from the injected effective settings
+- **AND** the routing module SHALL NOT contain a hardcoded threshold constant
+
+#### Scenario: Calibration and evaluation fixtures are disjoint
+
+- **GIVEN** the committed PDF calibration fixtures and the committed PDF evaluation fixtures
+- **WHEN** the OCR routing gate is calibrated
+- **THEN** calibration SHALL use only the calibration fixtures
+- **AND** the evaluation fixtures SHALL remain unused until the Stage 5 ablation
+
+#### Scenario: Packaged default keeps the fallback off
+
+- **GIVEN** a fresh installation whose operator has set no OCR routing configuration
+- **AND** the optional OCR stack is installed and resolves
+- **WHEN** a scanned PDF is ingested
+- **THEN** the OCR fallback SHALL NOT be selected
+- **AND** the existing degraded `pdf-inspector` behaviour SHALL be preserved
+- **AND** enabling the fallback SHALL require an explicit operator setting until the promotion gates are met

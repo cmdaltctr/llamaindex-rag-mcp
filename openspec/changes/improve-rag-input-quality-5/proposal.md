@@ -16,7 +16,8 @@ The purpose of this change is therefore not to add another retrieval algorithm. 
 PDF understanding -> structured Markdown -> structure-aware chunks
 -> model-matched token budgeting -> document embeddings
 
-User query -> optional query-only instruction -> query embedding
+User query -> optional query-only instruction -> query embedding  (dense branch)
+User query -> raw query                                            (BM25 and reranker)
 ```
 
 The existing Qwen3-Embedding-4B model, vector store, dense retrieval, BM25, RRF, reranking policy, and grounded-answer work remain separate concerns.
@@ -72,7 +73,15 @@ Non-Markdown paths, including code and configuration chunking, remain unchanged.
 
 The existing `CHUNKING__MARKDOWN_CHUNK_SIZE` remains the initial budget. This proposal does not promote a new chunk-size default without an experiment.
 
-### 5. Add optional query-only embedding instructions
+### 5. Keep index identity and embedding text honest about the new inputs
+
+The additions above change the chunk text that gets stored, so they belong in the existing index-shaping identity that decides whether a source is `skipped_unchanged`. The identity SHALL gain the embedding-tokenizer identity and revision, the resolved active Markdown splitter, the OCR routing configuration, and the resolved OCR capability. It stays one identity: no parallel mechanism, no second change-detection path.
+
+The resolved values matter as much as the configured ones. A source indexed while the tokenizer could not be loaded, or while the OCR stack was absent, must not stay `skipped_unchanged` forever once that capability arrives — its chunks came from a path the operator has since replaced.
+
+The new OCR diagnostics are additive metadata, and they are parser telemetry: constant across every chunk of a document, carrying nothing a user query could match. `ocr_required`, `ocr_used`, `ocr_backend`, and `pages_needing_ocr` SHALL join the centrally owned embedding-text exclusion set, so they stay out of embedding vectors and LLM-visible text while remaining in stored metadata and retrieval results.
+
+### 6. Add optional query-only embedding instructions
 
 Add an embedding-query preparation seam that can prepend an instruction to **queries only**. Indexed document text remains unchanged.
 
@@ -100,9 +109,13 @@ Because Qwen retrieval documents remain un-instructed, enabling only the query i
 
 ### Stage 1 — Pin baselines and quality gates
 
-Create representative clean, multi-column/table, scanned, image-based, and mixed PDF fixtures. Record current `pdf-inspector` classification, confidence, `pages_needing_ocr`, emitted Markdown, chunk behaviour, retrieval evidence metrics, and latency. Add a raw-query Qwen retrieval baseline before introducing instructions.
+Create representative clean, multi-column/table, scanned, image-based, and mixed PDF fixtures, split into a **calibration** set and a disjoint **evaluation** set. Record current `pdf-inspector` classification, confidence, `pages_needing_ocr`, emitted Markdown, chunk behaviour, retrieval evidence metrics, and latency. Add a raw-query Qwen retrieval baseline before introducing instructions.
 
-This stage also defines measurable promotion gates. OCR routing thresholds, a new Markdown chunk-size default, and a default Qwen instruction SHALL NOT be guessed.
+This stage also freezes the promotion gates. Each experiment's quality, regression, and latency limits are written into its machine-readable plan and committed **before** any candidate is measured, because a limit chosen after the numbers are visible describes the winner rather than gating it. This proposal records no values for those limits; producing and freezing them is Stage 1 work and a precondition for Stage 5.
+
+The OCR routing threshold is calibrated in its own step, on the calibration fixtures only. Calibrating on the same PDFs that later measure whether OCR helped would fit the threshold to the evaluation set and report the fit as a gain.
+
+OCR routing thresholds, a new Markdown chunk-size default, and a default Qwen instruction SHALL NOT be guessed.
 
 ### Stage 2 — PDF routing and PaddleOCR fallback
 
@@ -112,11 +125,11 @@ Do not implement page-level stitching in this stage. Whole-document Paddle proce
 
 ### Stage 3 — Structure-aware, model-token-aware Markdown chunking
 
-Introduce `semantic-text-splitter` and Hugging Face `tokenizers`. Add explicit embedding-tokenizer identity to injected settings. When the model-matched tokenizer is configured, structured Markdown uses `MarkdownSplitter` with the real tokenizer budget. Preserve current heading metadata and recovery behaviour, but replace the Markdown four-character token approximation with actual token counts. Other chunking strategies are unchanged.
+Introduce `semantic-text-splitter` and Hugging Face `tokenizers`. Add explicit embedding-tokenizer identity and revision to injected settings. When the model-matched tokenizer is configured, structured Markdown uses `MarkdownSplitter` with the real tokenizer budget, truncation disabled, the configured overlap in tokenizer units, and heading paths derived from the source Markdown. Preserve current heading metadata and recovery behaviour, but replace the Markdown four-character token approximation with actual token counts. Other chunking strategies are unchanged.
 
 ### Stage 4 — Query-only Qwen instruction support
 
-Add an optional query instruction in embedding settings and apply it immediately before query embedding. Documents remain untouched. Keep `dense.py` free from Qwen-specific dispatch, and make the query-embedding cache key reflect the prepared query plus embedding model identity.
+Add an optional query instruction in embedding settings and apply it immediately before query embedding. Documents remain untouched, and so do the sparse and reranking branches: `search()` hands the same raw query string to the sparse runner and to the cross-encoder, so an instruction prefix reaching either would have BM25 score the instruction's own tokens and the reranker rank against a prompt. Keep `dense.py` free from Qwen-specific dispatch, and make the query-embedding cache key reflect the prepared query plus embedding model identity.
 
 Evaluate raw queries against the candidate Qwen instruction before promoting any default.
 
@@ -146,6 +159,8 @@ Only after the experiments pass their gates should a threshold, query instructio
 - `pdf-reader`: add `pdf-inspector`-driven routing to an optional PaddleOCR-VL fallback while preserving the fast text-based path and graceful degradation.
 - `markdown-aware-chunking`: add Rust structure-aware Markdown splitting using the configured embedding-model tokenizer and remove approximate Markdown token counting where the real tokenizer is available.
 - `query-embedding-cache`: cache the actual prepared query embedding input, not a raw query that may hide different instructions.
+- `async-ingestion`: extend the existing index-shaping identity with the tokenizer identity, the resolved active splitter, and the OCR routing configuration and resolved capability, so degraded ingestion recovers instead of staying `skipped_unchanged`.
+- `embedding-text-composition`: add the new OCR diagnostics to the centrally owned embedding-text exclusion set.
 
 ## Out of Scope
 
@@ -164,6 +179,6 @@ Only after the experiments pass their gates should a threshold, query instructio
 - **Quality:** fixes information loss before retrieval, where later ranking stages cannot reconstruct damaged reading order, tables, or omitted scanned content.
 - **Performance:** clean PDFs remain on the fast `pdf-inspector` path. Only OCR-required PDFs pay the PaddleOCR cost. Rust-backed Markdown splitting and tokenisation keep the CPU-side preparation path efficient.
 - **Dependencies:** `semantic-text-splitter` and Hugging Face `tokenizers` are proposed as chunking dependencies. PaddleOCR/PaddleX/PaddlePaddle belong to an optional OCR extra and must load lazily. Dependency floors must be recorded once the tested versions are known.
-- **Storage:** OCR or chunking changes alter chunk text/boundaries and therefore require re-ingestion to affect existing documents. Query-instruction-only changes do not require re-ingestion.
+- **Storage:** OCR or chunking changes alter chunk text/boundaries and therefore require re-ingestion to affect existing documents. Because the new inputs join the index identity, that re-ingestion is triggered automatically on the next run rather than needing a manual rebuild — including when the OCR stack or the tokenizer merely becomes available. Inclusion is unconditional, matching the existing conservative rule, so installing the optional OCR extra also invalidates non-PDF sources. Query-instruction-only changes do not require re-ingestion.
 - **Compatibility:** explicit non-`pdf_inspector` readers remain explicit overrides. Non-Markdown and code chunking remain unchanged. Existing retrieval and transport contracts remain unchanged.
 - **Architecture:** settings stay injected, runtime capability probes stay in the composition root, registries remain the dispatch mechanism, and no `core/ingestion` ↔ `core/retrieval` import is introduced.
