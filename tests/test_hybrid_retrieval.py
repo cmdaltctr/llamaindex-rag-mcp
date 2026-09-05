@@ -977,19 +977,11 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
         },
     ]
     collection = FakeCollection("paged_native", rows)
-    # Page size is read from the composition-root default, not the config
-    # singleton, now that core no longer imports config.
-    from omrg.core.settings import (
-        EffectiveSettings,
-        set_default_effective_settings,
-    )
-
-    set_default_effective_settings(EffectiveSettings(chroma_scan_page_size=1))
     client = FakePersistentClient({"paged_native": collection})
     monkeypatch.setattr(chromadb, "PersistentClient", lambda **_: client)
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
-    chroma_store = ChromaVectorStore(client=client)
+    chroma_store = ChromaVectorStore(client=client, scan_page_size=1)
     monkeypatch.setattr(
         _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
     )
