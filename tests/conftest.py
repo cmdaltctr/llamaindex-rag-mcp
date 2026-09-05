@@ -1,4 +1,4 @@
-"""Shared test fixtures for the RAG MCP server test suite.
+"""Shared test fixtures for the OMRG test suite.
 
 Provides:
 - Deterministic tmp-path LanceDB default store (task 5.3) plus matching

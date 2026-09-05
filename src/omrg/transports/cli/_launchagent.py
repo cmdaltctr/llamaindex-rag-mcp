@@ -1,4 +1,4 @@
-"""LaunchAgent primitives for ``rag-mcp install-login-watcher``.
+"""LaunchAgent primitives for ``omrg install-login-watcher``.
 
 Owns the macOS installer mechanics (design.md D3): watch-path
 validation, deterministic label generation, path layout, command
@@ -25,9 +25,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from xml.parsers.expat import ExpatError
 
-LABEL_PREFIX = "com.rag-mcp.watch."
+LABEL_PREFIX = "com.omrg.watch."
+LEGACY_LABEL_PREFIX = "com.rag-mcp.watch."
 _LAUNCHAGENTS_PARTS = ("Library", "LaunchAgents")
-_LOG_PARTS = ("Library", "Logs", "rag-mcp")
+_LOG_PARTS = ("Library", "Logs", "omrg")
 _LABEL_SLUG_MAX = 40
 _EMPTY_SLUG_FALLBACK = "watcher"
 
@@ -64,7 +65,7 @@ def slugify_label_part(text: str, max_length: int = _LABEL_SLUG_MAX) -> str:
     """Reduce *text* to a LaunchAgent-safe slug of hyphens and alphanumerics.
 
     Returns a non-empty fallback when nothing survives sanitising, so a
-    generated label can never end with a bare ``com.rag-mcp.watch.`` prefix.
+    generated label can never end with a bare ``com.omrg.watch.`` prefix.
     """
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     slug = slug[:max_length].strip("-")
@@ -74,7 +75,7 @@ def slugify_label_part(text: str, max_length: int = _LABEL_SLUG_MAX) -> str:
 def generate_label(watch_path: Path, collection: str, custom: str | None = None) -> str:
     """Derive a deterministic LaunchAgent label.
 
-    Default form: ``com.rag-mcp.watch.<slug>-<hash8>`` where *slug* comes
+    Default form: ``com.omrg.watch.<slug>-<hash8>`` where *slug* comes
     from the watch directory name and *hash8* from the resolved path plus
     collection — same folder and collection always rebuild the same label,
     while a second collection on the same folder stays distinct.
@@ -128,7 +129,7 @@ def compute_paths(label: str, home: Path | None = None) -> tuple[Path, Path, Pat
 
     ``home`` defaults to ``Path.home()``; the layout is
     ``~/Library/LaunchAgents/<label>.plist`` and
-    ``~/Library/Logs/rag-mcp/<label>.{out,err}.log`` (design.md D6).
+    ``~/Library/Logs/omrg/<label>.{out,err}.log`` (design.md D6).
     """
     base = Path.home() if home is None else home
     plist_path = base.joinpath(*_LAUNCHAGENTS_PARTS) / f"{label}.plist"
@@ -137,14 +138,15 @@ def compute_paths(label: str, home: Path | None = None) -> tuple[Path, Path, Pat
 
 
 def resolve_command_path(override: str | None = None) -> str:
-    """Resolve the absolute ``rag-mcp`` console executable (task 1.5).
+    """Resolve the absolute ``omrg`` console executable.
 
     An explicit override wins and is used verbatim (after ``~``
     expansion). Otherwise the executable is discovered via
     ``shutil.which`` — the install-time shell has the environment active —
     falling back to the script bin directory sibling of the running
     interpreter. Never ``sys.executable -m omrg.cli``: that module was
-    deleted in v2.0.0.
+    deleted in v2.0.0. Never resolves or falls back to the removed
+    ``rag-mcp`` alias.
 
     Raises:
         InstallerError: When no executable can be located.
@@ -156,18 +158,23 @@ def resolve_command_path(override: str | None = None) -> str:
             # relative executable would silently never start (audit F2).
             raise InstallerError(
                 f"--command-path must be absolute (got {override!r}). "
-                "Pass the full path to the rag-mcp console script."
+                "Pass the full path to the omrg console script."
             )
         return str(resolved)
-    found = shutil.which("rag-mcp")
+    found = shutil.which("omrg")
     if found:
-        return str(Path(found))
-    sibling = Path(sys.executable).parent / "rag-mcp"
+        # shutil.which() returns the path exactly as PATH constructs it —
+        # a relative PATH entry (e.g. "bin") yields a relative result
+        # (e.g. "bin/omrg"). launchd resolves ProgramArguments[0] against
+        # its own sparse default PATH, not the install-time shell's, so a
+        # relative path here would silently fail to start (CodeRabbit).
+        return str(Path(found).resolve())
+    sibling = Path(sys.executable).parent / "omrg"
     if sibling.exists():
         return str(sibling)
     raise InstallerError(
-        "Could not locate the installed rag-mcp executable. Pass "
-        "--command-path with the absolute path to the rag-mcp console script."
+        "Could not locate the installed omrg executable. Pass "
+        "--command-path with the absolute path to the omrg console script."
     )
 
 
@@ -236,17 +243,23 @@ def _plist_watches(plist_path: Path) -> Path | None:
 def find_existing_plist(plan: LaunchAgentPlan) -> Path | None:
     """Return a previously generated plist for this watch folder, if any.
 
-    Checks the exact planned path first, then any generated label whose
-    slug matches the watch directory. Slug candidates are verified via
-    :func:`_plist_watches` — the slug glob is a shortlist, never the
-    verdict, because ``docs`` also prefixes ``docs-backup``.
+    Checks the exact planned path first, then every plist under the
+    current ``com.omrg.watch.`` prefix or the legacy ``com.rag-mcp.watch.``
+    prefix. Every candidate under a prefix is examined, not only ones whose
+    filename shares the watch directory's slug — a custom ``--label``
+    (current or legacy) never shares that slug, and a slug-restricted glob
+    would leave it undiscovered (CodeRabbit). :func:`_plist_watches` is the
+    verdict for every candidate: it is what makes ``docs`` never match
+    ``docs-backup``. A matching legacy plist is surfaced the same way as a
+    matching current one, so it takes the existing different-label
+    confirmation-or-``--force`` removal flow rather than a separate path.
     """
     if plan.plist_path.exists():
         return plan.plist_path
-    slug = slugify_label_part(plan.watch_path.name)
-    for candidate in sorted(plan.plist_path.parent.glob(f"{LABEL_PREFIX}{slug}*.plist")):
-        if _plist_watches(candidate) == plan.watch_path:
-            return candidate
+    for prefix in (LABEL_PREFIX, LEGACY_LABEL_PREFIX):
+        for candidate in sorted(plan.plist_path.parent.glob(f"{prefix}*.plist")):
+            if _plist_watches(candidate) == plan.watch_path:
+                return candidate
     return None
 
 

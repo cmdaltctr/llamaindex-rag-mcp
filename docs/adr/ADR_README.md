@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 This directory records the significant architectural decisions made during the
-development of the LlamaIndex RAG MCP Server.
+development of OMRG — Opinionated Modular RAG.
 
 ## Index
 

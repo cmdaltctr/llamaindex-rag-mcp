@@ -352,7 +352,7 @@ async def run_synthesis(
 #: Unique sentinel reply that stops a planning replay: never produced by
 #: a real completion, so it can stand for "the pipeline asked for another
 #: round" without ambiguity.
-_STOP_REPLY = "__RAG_MCP_PLAN_STOP__"
+_STOP_REPLY = "__OMRG_PLAN_STOP__"
 
 
 async def plan_next_prompt(

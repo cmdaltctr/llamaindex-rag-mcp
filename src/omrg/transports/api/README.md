@@ -1,7 +1,7 @@
 # REST API Transport — Contract First, Implementation Later
 
 This directory contains the **OpenAPI 3.1 contract** for the future REST
-transport of the RAG MCP server. It ships as a versioned document
+transport of OMRG — Opinionated Modular RAG. It ships as a versioned document
 **before** any HTTP runtime code. The REST implementation is a separate
 follow-up OpenSpec change.
 

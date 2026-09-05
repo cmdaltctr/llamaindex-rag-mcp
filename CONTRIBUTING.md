@@ -1,4 +1,4 @@
-# Contributing to LlamaIndex RAG MCP Server
+# Contributing to OMRG — Opinionated Modular RAG
 
 Thanks for taking the time to contribute. This guide is the front door:
 it shows the path from "I have an idea" to "my PR is open" and points

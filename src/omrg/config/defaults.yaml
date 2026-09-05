@@ -1,4 +1,4 @@
-# Non-secret global defaults for the RAG MCP server.
+# Non-secret global defaults for OMRG — Opinionated Modular RAG.
 #
 # This file is loaded by the Settings resolver at a LOWER priority than
 # environment variables and .env.  Override any value by setting the

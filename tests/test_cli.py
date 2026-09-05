@@ -1747,7 +1747,7 @@ class TestBenchmarkCLI:
                 "benchmark",
                 "--text",
                 "This is a sample benchmark text used to measure embedding "
-                "throughput for the current embed model in the RAG MCP server.",
+                "throughput for the current embed model in OMRG.",
             ],
         )
         assert result.exit_code == 0

@@ -34,7 +34,7 @@ _runtime_details_enabled = False
 app = typer.Typer(
     name="omrg",
     help=(
-        "LlamaIndex RAG MCP server — document ingestion and semantic "
+        "OMRG — Opinionated Modular RAG: document ingestion and semantic "
         "retrieval. Run with no arguments to start the MCP stdio server."
     ),
     no_args_is_help=False,

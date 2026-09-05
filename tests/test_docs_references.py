@@ -78,12 +78,26 @@ _EXEMPT_DIRS: list[Path] = [
     _REPO_ROOT / "CHANGELOG.md",
 ]
 
-# Match the stale Python import path ``rag_mcp`` in live source and
-# documentation.  The distribution alias ``rag-mcp`` is intentionally kept
-# per task 1.3 (deprecated one-major console-script alias) and the
-# repository name ``llamaindex-rag-mcp`` must remain unchanged, so we do
-# not match the hyphenated form.
-_STALE_RE = re.compile(r"\brag_mcp\b")
+# Files exempt from the stale-reference gate: v3 legacy-watcher migration
+# code and its tests must literally name the removed ``rag-mcp`` executable
+# and ``com.rag-mcp.watch.`` label prefix to discover and migrate a v2-era
+# LaunchAgent (design.md Decision 3), and the packaging regression tests
+# must name it to assert its absence (task 1.3). Neither is stale residue —
+# both are deliberate, functioning references to the removed name.
+_LEGACY_MIGRATION_EXEMPT: list[Path] = [
+    _REPO_ROOT / "src" / "omrg" / "transports" / "cli" / "_launchagent.py",
+    _REPO_ROOT / "tests" / "unit" / "test_launchagent.py",
+    _REPO_ROOT / "tests" / "test_install_login_watcher.py",
+    _REPO_ROOT / "tests" / "test_package_metadata.py",
+]
+
+# Match the stale Python import path ``rag_mcp`` and the standalone
+# ``rag-mcp`` console-command/distribution name in live source and
+# documentation.  The unchanged GitHub repository identifier
+# ``llamaindex-rag-mcp`` is exempted via a negative lookbehind rather than
+# omitted entirely, so a bare ``rag-mcp`` next to unrelated text still
+# fails the guard.
+_STALE_RE = re.compile(r"\brag_mcp\b|(?<!llamaindex-)\brag-mcp\b")
 
 # Files to scan for stale references — live source, tests, and operator docs.
 _STALE_SCAN_GLOBS: list[str] = [
@@ -97,14 +111,14 @@ _STALE_SCAN_GLOBS: list[str] = [
 
 
 def _is_exempt(path: Path) -> bool:
-    """Return True when the path is inside an exempt directory."""
+    """Return True when the path is a historical record or legacy-migration file."""
     for exempt in _EXEMPT_DIRS:
         if exempt.is_dir():
             if exempt in path.parents or path == exempt:
                 return True
         elif path == exempt:
             return True
-    return False
+    return path in _LEGACY_MIGRATION_EXEMPT
 
 
 def test_no_stale_rag_mcp_references_in_live_surface() -> None:
@@ -112,8 +126,12 @@ def test_no_stale_rag_mcp_references_in_live_surface() -> None:
 
     Historical records (ADRs, TDRs, archived OpenSpec changes, released
     changelogs) are exempt — they describe the past and must not be
-    rewritten.  The deprecated ``rag-mcp`` console-script alias in
-    ``pyproject.toml`` is the sole permitted live occurrence.
+    rewritten. Legacy-watcher migration code and its tests, plus the
+    packaging regression tests asserting the name's absence, are exempt via
+    :data:`_LEGACY_MIGRATION_EXEMPT` — they are deliberate, functioning
+    references, not residue. The unchanged GitHub repository identifier
+    ``llamaindex-rag-mcp`` is exempted by the matcher itself, not either
+    list.
     """
     findings: list[str] = []
     for glob_pat in _STALE_SCAN_GLOBS:

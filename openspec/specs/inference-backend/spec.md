@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define how the RAG MCP server selects between inference backends (Ollama and llama.cpp) for embeddings and metadata extraction LLM calls.
+Define how OMRG selects between inference backends (Ollama and llama.cpp) for embeddings and metadata extraction LLM calls.
 ## Requirements
 ### Requirement: Inference backend selection
 

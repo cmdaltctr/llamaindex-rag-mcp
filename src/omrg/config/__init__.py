@@ -1,4 +1,4 @@
-"""Typed configuration resolver for the RAG MCP server.
+"""Typed configuration resolver for OMRG — Opinionated Modular RAG.
 
 This module is the **single source of truth** for resolved settings.
 It resolves values from (lowest → highest priority):
@@ -96,7 +96,7 @@ def _validate_provider_value(
 
 
 class Settings(StorageValidationMixin, BaseSettings):
-    """Resolved configuration for the RAG MCP server.
+    """Resolved configuration for OMRG — Opinionated Modular RAG.
 
     Composes the per-subpackage settings models by **nesting** (PROPOSAL
     §4.3), so defaults live near their code and each block owns its own

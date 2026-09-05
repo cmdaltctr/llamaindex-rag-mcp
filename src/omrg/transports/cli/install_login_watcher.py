@@ -1,7 +1,7 @@
-"""Install command group — ``rag-mcp install-login-watcher``.
+"""Install command group — ``omrg install-login-watcher``.
 
 Interactive wizard and non-interactive installer for a macOS per-user
-LaunchAgent that starts ``rag-mcp watch`` at login (OpenSpec change
+LaunchAgent that starts ``omrg watch`` at login (OpenSpec change
 ``add-login-watcher-installer``). Prompts, output, and exit codes live
 here; plist and launchctl mechanics live in ``_launchagent``.
 """
@@ -32,7 +32,7 @@ def _contention_warning(collection: str, *, adapter: str) -> str | None:
     """Return the duplicate-watcher warning for the active adapter.
 
     The internal ingestion write lock is process-local: a watcher
-    process and any other rag-mcp process never share it.  No backend
+    process and any other omrg process never share it.  No backend
     currently claims cross-process write safety — any such claim needs
     a two-process concurrent-write experiment — so the warning fires
     for every registered backend today.  Wording is vector-store
@@ -43,10 +43,10 @@ def _contention_warning(collection: str, *, adapter: str) -> str | None:
     if vectordb_registry.describe(adapter).get("cross_process_writes_safe"):
         return None
     return (
-        f"Separate processes do not share rag-mcp's internal write lock, "
+        f"Separate processes do not share omrg's internal write lock, "
         f"and concurrent writes from separate processes are unverified for "
         f"the {adapter} vector-store backend. Running this watcher alongside "
-        f"rag-mcp ingest or the MCP server can contend for collection "
+        f"omrg ingest or the MCP server can contend for collection "
         f"{collection!r}."
     )
 
@@ -186,7 +186,7 @@ def _print_plan(
 
 
 def _run_catchup_ingest(watch_path: Path, collection: str) -> dict:
-    """Run the initial catch-up ingest, mirroring ``rag-mcp ingest``.
+    """Run the initial catch-up ingest, mirroring ``omrg ingest``.
 
     Resolves the collection's profile ONCE via the composition root and
     injects the resulting effective settings (design.md D5). Fails
@@ -238,7 +238,7 @@ def install_login_watcher(
     command_path: str | None = typer.Option(
         None,
         "--command-path",
-        help="Absolute path to the rag-mcp executable (overrides resolution).",
+        help="Absolute path to the omrg executable (overrides resolution).",
     ),
     initial_ingest: bool = typer.Option(
         False, "--initial-ingest", help="Run a catch-up ingest before installing."
@@ -261,7 +261,7 @@ def install_login_watcher(
         False, "--yes", "-y", help="Assume yes; skip interactive confirmations."
     ),
 ) -> None:
-    """Install a macOS LaunchAgent that runs `rag-mcp watch` at login.
+    """Install a macOS LaunchAgent that runs `omrg watch` at login.
 
     Interactive terminals guide you through the setup; scripts pass
     options directly (add --yes to skip confirmations). Preview any

@@ -4,7 +4,7 @@ Two unfinished threads from the v2 migration, bundled because both are
 "the mechanism was described but never completed" and both want the open v3
 line.
 
-`_RETIRED_ENV_VARS` in `src/rag_mcp/config/legacy.py` holds 27 entries — 25
+`_RETIRED_ENV_VARS` in `src/omrg/config/legacy.py` holds 27 entries — 25
 pre-v2 flat names retired by v2.0.0, and 2 v2 nested names retired by the
 classify rename. `legacy.py`, CLAUDE.md gotcha #11, and ADR-037 all state the
 removal trigger as v3.0.0. The classify rename is itself a breaking change on

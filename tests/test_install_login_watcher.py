@@ -1,7 +1,7 @@
-"""CLI-level tests for ``rag-mcp install-login-watcher``.
+"""CLI-level tests for ``omrg install-login-watcher``.
 
 Covers OpenSpec change ``add-login-watcher-installer``:
-- Requirement: CLI subcommand ``rag-mcp install-login-watcher``
+- Requirement: CLI subcommand ``omrg install-login-watcher``
 - Requirement: Guided interactive setup
 - Requirement: Non-interactive installation
 - Requirement: LaunchAgent plist generation
@@ -54,7 +54,7 @@ def invoke_happy(tmp_path):
     def _run(watch_dir: Path, home: Path, extra_args: list[str] | None = None):
         fake_bin = tmp_path / "fakebin"
         fake_bin.mkdir(exist_ok=True)
-        stub_cmd = str(fake_bin / "rag-mcp")
+        stub_cmd = str(fake_bin / "omrg")
         with (
             patch("shutil.which", return_value=stub_cmd),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
@@ -203,7 +203,7 @@ class TestPlistGeneration:
         data = plistlib.loads(plists[0].read_bytes())
 
         label = data["Label"]
-        assert isinstance(label, str) and label.startswith("com.rag-mcp.watch.")
+        assert isinstance(label, str) and label.startswith("com.omrg.watch.")
         args = data["ProgramArguments"]
         assert Path(args[0]) in {
             Path(meta["stub_cmd"]),
@@ -219,7 +219,7 @@ class TestPlistGeneration:
         ]
         assert data["RunAtLoad"] is True
         assert data["KeepAlive"] is False
-        logs_root = home / "Library/Logs/rag-mcp"
+        logs_root = home / "Library/Logs/omrg"
         assert Path(data["StandardOutPath"]).parent == logs_root
         assert Path(data["StandardErrorPath"]).parent == logs_root
 
@@ -228,7 +228,7 @@ class TestPlistGeneration:
         home = macos_home(tmp_path / "h")
         watched = tmp_path / "docs2"
         watched.mkdir()
-        override = "/opt/homebrew/bin/rag-mcp"
+        override = "/opt/homebrew/bin/omrg"
         with (
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
@@ -287,14 +287,19 @@ class TestExistingWatcherSafety:
 class TestDifferentLabelReplacement:
     """A different label watching the same folder is a live duplicate.
 
-    Non-consented runs refuse with exact removal instructions; --force or
-    an interactive confirmation removes the old watcher (bootout + plist
-    delete) before installing the new one (CodeRabbit major finding).
+    Seeds a legacy ``com.rag-mcp.watch.`` plist running the removed
+    ``rag-mcp`` executable — the exact v2-era watcher a v3 upgrade must
+    migrate (task 2.4). Non-consented runs refuse with exact removal
+    instructions; --force or an interactive confirmation removes the old
+    watcher (bootout + plist delete) and installs a replacement using the
+    current ``omrg`` executable, ``com.omrg.watch.`` label, and OMRG log
+    paths (CodeRabbit major finding; OpenSpec scenario "Installed watchers
+    survive the command rename").
     """
 
     @staticmethod
-    def _seed_other_label(home: Path, watched: Path) -> Path:
-        """Seed a generated-style plist with a different label; return it."""
+    def _seed_legacy_watcher(home: Path, watched: Path) -> Path:
+        """Seed a v2-era ``com.rag-mcp.watch.`` plist; return its path."""
         label = f"com.rag-mcp.watch.{watched.name}-deadbeef"
         plist_path = home / "Library/LaunchAgents" / f"{label}.plist"
         plist_path.parent.mkdir(parents=True, exist_ok=True)
@@ -321,10 +326,10 @@ class TestDifferentLabelReplacement:
         home = macos_home(tmp_path / "hr")
         watched = tmp_path / "dl-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
@@ -355,10 +360,10 @@ class TestDifferentLabelReplacement:
         home = macos_home(tmp_path / "hq")
         watched = tmp_path / "df-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch(
@@ -396,10 +401,10 @@ class TestDifferentLabelReplacement:
         monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
         watched = tmp_path / "di-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         ok = subprocess.CompletedProcess(args=[], returncode=0)
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch(
@@ -426,10 +431,10 @@ class TestDifferentLabelReplacement:
         monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
         watched = tmp_path / "dn-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
@@ -458,10 +463,10 @@ class TestDifferentLabelReplacement:
         monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
         watched = tmp_path / "sd2-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.transports.cli._launchagent.run_launchctl", new=MagicMock()) as mock_lc,
@@ -486,10 +491,10 @@ class TestDifferentLabelReplacement:
         monkeypatch.setattr(_installer(), "_stdin_is_interactive", lambda: True)
         watched = tmp_path / "ig2-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch(
                 "omrg.core.ingestion.ingest_path_async",
                 new=AsyncMock(return_value={"status": "error", "message": "boom"}),
@@ -522,7 +527,7 @@ class TestDifferentLabelReplacement:
         home = macos_home(tmp_path / "hb")
         watched = tmp_path / "bl-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
         old_bytes = old_plist.read_bytes()
 
         def _launchctl(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -531,7 +536,7 @@ class TestDifferentLabelReplacement:
             return subprocess.CompletedProcess(args=cmd, returncode=rc)
 
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch(
@@ -555,13 +560,13 @@ class TestDifferentLabelReplacement:
         home = macos_home(tmp_path / "hu2")
         watched = tmp_path / "nl-docs"
         watched.mkdir()
-        old_plist = self._seed_other_label(home, watched)
+        old_plist = self._seed_legacy_watcher(home, watched)
 
         def _launchctl(cmd: list[str]) -> subprocess.CompletedProcess:
             return subprocess.CompletedProcess(args=cmd, returncode=1)
 
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch(
@@ -984,7 +989,7 @@ class TestContentionWarning:
     @staticmethod
     def _seed_existing(home: Path, watched: Path) -> Path:
         """Create a different-label plist watching the same folder; return it."""
-        label = f"com.rag-mcp.watch.{watched.name}"
+        label = f"com.omrg.watch.{watched.name}"
         existing = home / "Library/LaunchAgents" / f"{label}.plist"
         existing.parent.mkdir(parents=True, exist_ok=True)
         existing.write_bytes(
@@ -992,7 +997,7 @@ class TestContentionWarning:
                 {
                     "Label": label,
                     "ProgramArguments": [
-                        "/fake/bin/rag-mcp",
+                        "/fake/bin/omrg",
                         "watch",
                         str(watched.resolve()),
                         "--collection",
@@ -1012,7 +1017,7 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.compose._resolve_active_strategies"),
@@ -1052,7 +1057,7 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.compose._resolve_active_strategies"),
@@ -1088,7 +1093,7 @@ class TestContentionWarning:
         watched.mkdir()
         self._seed_existing(home, watched)
         with (
-            patch("shutil.which", return_value="/fake/bin/rag-mcp"),
+            patch("shutil.which", return_value="/fake/bin/omrg"),
             patch("omrg.core.ingestion.ingest_path_async", new=AsyncMock()),
             patch("omrg.compose.build_profile_resolver"),
             patch("omrg.compose._resolve_active_strategies"),
