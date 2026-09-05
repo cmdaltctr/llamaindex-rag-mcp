@@ -64,3 +64,70 @@ def test_documented_src_paths_exist() -> None:
         pytest.fail(
             "Documentation cites src/omrg/ paths that do not exist:\n" + "\n".join(findings)
         )
+
+
+# ── Stale rag_mcp / rag-mcp reference gate (task 7.5) ─────────────────
+
+
+# Directories exempt from the stale-reference gate: historical records
+# that legitimately cite the old package name.
+_EXEMPT_DIRS: list[Path] = [
+    _REPO_ROOT / "docs" / "adr",
+    _REPO_ROOT / "docs" / "tdr",
+    _REPO_ROOT / "openspec" / "changes" / "archive",
+    _REPO_ROOT / "CHANGELOG.md",
+]
+
+# Match the stale Python import path ``rag_mcp`` in live source and
+# documentation.  The distribution alias ``rag-mcp`` is intentionally kept
+# per task 1.3 (deprecated one-major console-script alias) and the
+# repository name ``llamaindex-rag-mcp`` must remain unchanged, so we do
+# not match the hyphenated form.
+_STALE_RE = re.compile(r"\brag_mcp\b")
+
+# Files to scan for stale references — live source, tests, and operator docs.
+_STALE_SCAN_GLOBS: list[str] = [
+    "src/omrg/**/*.py",
+    "tests/**/*.py",
+    "docs/guides/**/*.md",
+    "README.md",
+    "AGENTS.md",
+    "pyproject.toml",
+]
+
+
+def _is_exempt(path: Path) -> bool:
+    """Return True when the path is inside an exempt directory."""
+    for exempt in _EXEMPT_DIRS:
+        if exempt.is_dir():
+            if exempt in path.parents or path == exempt:
+                return True
+        elif path == exempt:
+            return True
+    return False
+
+
+def test_no_stale_rag_mcp_references_in_live_surface() -> None:
+    """No live source, test or operator doc references ``rag_mcp`` or ``rag-mcp``.
+
+    Historical records (ADRs, TDRs, archived OpenSpec changes, released
+    changelogs) are exempt — they describe the past and must not be
+    rewritten.  The deprecated ``rag-mcp`` console-script alias in
+    ``pyproject.toml`` is the sole permitted live occurrence.
+    """
+    findings: list[str] = []
+    for glob_pat in _STALE_SCAN_GLOBS:
+        for path in _REPO_ROOT.glob(glob_pat):
+            if _is_exempt(path):
+                continue
+            # Skip this test file itself — it legitimately mentions rag_mcp.
+            if path.name == "test_docs_references.py":
+                continue
+            text = path.read_text(encoding="utf-8")
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                for match in _STALE_RE.finditer(line):
+                    rel = path.relative_to(_REPO_ROOT)
+                    findings.append(f"  {rel}:{lineno}  {match.group()}: {line.strip()}")
+
+    if findings:
+        pytest.fail("Stale rag_mcp/rag-mcp references in live surface:\n" + "\n".join(findings))

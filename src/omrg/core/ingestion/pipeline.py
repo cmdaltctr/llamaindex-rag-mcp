@@ -16,6 +16,7 @@ from typing import Any
 
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
+from ..vectordb.base import VectorStore
 from ._state import shutdown_requested
 from .backends.orchestrator import resolve_declared_text_format
 from .chunker import read_and_chunk_file_async
@@ -86,6 +87,8 @@ async def ingest_path_async(
     progress_callback: Callable | None = None,
     collection_name: str = "documents",
     effective_settings: Any = None,
+    store: VectorStore | None = None,
+    embed_model: Any = None,
 ) -> dict:
     """Index a file or directory using bounded, failure-safe source units.
 
@@ -182,7 +185,7 @@ async def ingest_path_async(
             exc,
         )
 
-    store = get_default_store()
+    resolved_store = store if store is not None else get_default_store()
     files_indexed = 0
     files_skipped_unchanged = 0
     chunks_created_total = 0
@@ -237,20 +240,21 @@ async def ingest_path_async(
                 chunk_size=effective_chunk_size,
                 chunk_overlap=effective_chunk_overlap,
                 text_format=parser_text_format,
+                embed_model=embed_model,
             )
             source_version = build_source_version(content_hash, index_identity)
             # Reject pre-lineage rows for this path before any parse,
             # embedding, or store mutation so schemas never mix silently.
             await asyncio.to_thread(
                 assert_source_lineage_compatible,
-                store,
+                resolved_store,
                 collection_name,
                 file_path=canonical_file_path,
                 source_id=source_id,
             )
             unchanged, existing_chunks = await asyncio.to_thread(
                 is_complete_current_version,
-                store,
+                resolved_store,
                 collection_name,
                 source_id=source_id,
                 content_hash=content_hash,
@@ -307,7 +311,8 @@ async def ingest_path_async(
                 source_version=source_version,
                 progress_callback=progress_callback,
                 collection_name=collection_name,
-                store=store,
+                store=resolved_store,
+                embed_model=embed_model,
                 embed_concurrency=resolved_settings.ingestion.embed_concurrency,
                 norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
                 norm_tolerance=resolved_settings.embedding.norm_tolerance,

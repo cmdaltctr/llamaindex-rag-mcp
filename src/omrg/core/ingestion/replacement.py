@@ -16,6 +16,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from llama_index.core import Settings as LlamaIndexSettings
 from llama_index.core.schema import BaseNode, MetadataMode
@@ -82,13 +83,13 @@ def _resolve_store(store: VectorStore | None) -> VectorStore:
     return store if store is not None else get_default_store()
 
 
-def _embed_model_name() -> str:
+def _embed_model_name(embed_model: Any = None) -> str:
     """Return a diagnostic model name without assuming one provider shape."""
-    model = LlamaIndexSettings.embed_model
+    model = embed_model if embed_model is not None else LlamaIndexSettings.embed_model
     return str(getattr(model, "model_name", type(model).__name__))
 
 
-def _embed_missing_nodes(nodes: list[BaseNode]) -> None:
+def _embed_missing_nodes(nodes: list[BaseNode], embed_model: Any = None) -> None:
     """Populate missing embeddings using VectorStoreIndex's embedding text.
 
     Pre-embedding is required only to distinguish embedding wall time from
@@ -98,7 +99,8 @@ def _embed_missing_nodes(nodes: list[BaseNode]) -> None:
     missing = [node for node in nodes if node.embedding is None]
     if not missing:
         return
-    embed_model = LlamaIndexSettings.embed_model
+    if embed_model is None:
+        embed_model = LlamaIndexSettings.embed_model
     texts = [node.get_content(metadata_mode=MetadataMode.EMBED) for node in missing]
     embeddings = embed_model.get_text_embedding_batch(texts, show_progress=False)
     if len(embeddings) != len(missing):
@@ -152,6 +154,7 @@ async def replace_source_nodes_async(
     progress_callback: Callable | None = None,
     collection_name: str = "documents",
     store: VectorStore | None = None,
+    embed_model: Any = None,
     embed_concurrency: int = 2,
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
@@ -234,12 +237,12 @@ async def replace_source_nodes_async(
                 logger.info(
                     "Embedding %d chunks via %s...",
                     len(nodes),
-                    _embed_model_name(),
+                    _embed_model_name(embed_model),
                 )
-                _embed_missing_nodes(nodes)
+                _embed_missing_nodes(nodes, embed_model)
             norm_band = check_ingest_vectors(
                 [node.embedding for node in nodes if node.embedding is not None],
-                model_name=_embed_model_name(),
+                model_name=_embed_model_name(embed_model),
                 enabled=norm_guard_enabled,
                 tolerance=norm_tolerance,
             )
@@ -274,7 +277,7 @@ async def replace_source_nodes_async(
 
             write_started = time.perf_counter()
             try:
-                resolved_store.write_nodes(nodes, collection_name)
+                resolved_store.write_nodes(nodes, collection_name, embed_model=embed_model)
             except ConnectionError:
                 raise
             except Exception as exc:

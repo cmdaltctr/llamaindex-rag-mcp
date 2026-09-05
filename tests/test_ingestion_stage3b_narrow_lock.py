@@ -133,7 +133,7 @@ def test_embedding_proceeds_while_lock_is_held_elsewhere(
     embed_started = threading.Event()
     allow_proceed = threading.Event()
 
-    def blocking_embed(replacement_nodes: list[Any]) -> None:
+    def blocking_embed(replacement_nodes: list[Any], embed_model: Any = None) -> None:
         embed_started.set()
         allow_proceed.wait(timeout=_STUB_BLOCK_TIMEOUT)
         _assign_stub_embeddings(replacement_nodes)
@@ -178,7 +178,7 @@ def test_concurrent_replacements_overlap_embedding(
     state_lock = threading.Lock()
     embed_state = {"current": 0, "peak": 0}
 
-    def counting_embed(replacement_nodes: list[Any]) -> None:
+    def counting_embed(replacement_nodes: list[Any], embed_model: Any = None) -> None:
         with state_lock:
             embed_state["current"] += 1
             embed_state["peak"] = max(embed_state["peak"], embed_state["current"])
@@ -287,9 +287,11 @@ class _WriteRecordingStore:
         self._inner = inner
         self.write_attempted = threading.Event()
 
-    def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
+    def write_nodes(
+        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+    ) -> None:
         self.write_attempted.set()
-        self._inner.write_nodes(nodes, collection_name)
+        self._inner.write_nodes(nodes, collection_name, embed_model=embed_model)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._inner, name)
@@ -308,7 +310,7 @@ def test_write_verify_cleanup_still_inside_lock_after_hoist(
     """
     store = _WriteRecordingStore(get_default_store())
 
-    def instant_embed(replacement_nodes: list[Any]) -> None:
+    def instant_embed(replacement_nodes: list[Any], embed_model: Any = None) -> None:
         _assign_stub_embeddings(replacement_nodes)
 
     monkeypatch.setattr(replacement, "_embed_missing_nodes", instant_embed)

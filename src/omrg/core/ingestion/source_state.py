@@ -119,15 +119,15 @@ def _configured_embedding(settings: Any) -> tuple[str, str]:
     return provider, models.get(provider, settings.embed_model)
 
 
-def _runtime_embedding_identity() -> dict[str, str | None]:
-    """Fingerprint the process-global embedder that actually creates vectors.
+def _runtime_embedding_identity(embed_model: Any = None) -> dict[str, str | None]:
+    """Fingerprint the embedder that actually creates vectors.
 
-    ADR-047 makes embedding-provider selection process scoped because
-    LlamaIndex exposes one global ``Settings.embed_model``. The source identity
-    therefore includes that concrete runtime object, not only per-call/profile
-    selectors that cannot swap the active embedder.
+    When embed_model is None, falls back to the LlamaIndex global
+    ``Settings.embed_model`` (legacy transport path). The engine-scoped
+    path passes its owned embedder so the identity reflects the
+    injected model, not the process global.
     """
-    model = LlamaIndexSettings.embed_model
+    model = embed_model if embed_model is not None else LlamaIndexSettings.embed_model
     cls = type(model)
     selector = None
     for attr in ("model_name", "model", "model_path", "embed_model_name"):
@@ -148,6 +148,7 @@ def build_index_identity(
     chunk_size: int,
     chunk_overlap: int,
     text_format: str | None = None,
+    embed_model: Any = None,
 ) -> str:
     """Hash the complete index-shaping configuration for one source.
 
@@ -162,7 +163,7 @@ def build_index_identity(
     payload = {
         "schema": _INDEX_IDENTITY_SCHEMA,
         "embedding": {
-            "runtime": _runtime_embedding_identity(),
+            "runtime": _runtime_embedding_identity(embed_model),
             "configured_provider": configured_provider,
             "configured_model": configured_model,
         },

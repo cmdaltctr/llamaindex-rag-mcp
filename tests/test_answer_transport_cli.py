@@ -296,7 +296,7 @@ def _install_core_answer(
 def test_answer_profile_resolution_failure_json(monkeypatch: pytest.MonkeyPatch) -> None:
     """A profile-resolution failure emits the standard JSON error on stderr."""
 
-    def _boom() -> Any:
+    def _boom(_settings: Any = None) -> Any:
         raise ValueError("profile 'bogus' is not registered")
 
     monkeypatch.setattr("omrg.compose.build_profile_resolver", _boom)
@@ -314,7 +314,7 @@ def test_answer_profile_resolution_failure_json(monkeypatch: pytest.MonkeyPatch)
 def test_answer_profile_resolution_failure_human(monkeypatch: pytest.MonkeyPatch) -> None:
     """A profile-resolution failure reports on the stderr console."""
 
-    def _boom() -> Any:
+    def _boom(_settings: Any = None) -> Any:
         raise ValueError("profile 'bogus' is not registered")
 
     monkeypatch.setattr("omrg.compose.build_profile_resolver", _boom)

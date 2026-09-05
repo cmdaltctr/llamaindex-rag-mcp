@@ -41,9 +41,10 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 6. **Codebase/document graph modules live under `core/`** — `core/codebase/{codebase_map,code_graph,ast_extract,communities,cache,format}.py` and `core/documents/{doc_graph,similarity}.py` (ADR-037). They have no cross-imports with `core/ingestion/` or `core/retrieval/`. Magika detection lives in `integrations/magika.py` and does **not** import back into the codebase map.
 7. **Azure SDK import is lazy** (ADR-024) — `integrations/azure.py` never imports `azure-ai-documentintelligence` at module top-level. Import happens inside `_get_client()`.
 8. **Graph construction is deterministic** — no LLM involvement in code graph, document graph, or community detection.
-9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen.
-10. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
-11. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
+9. **Settings are injected, never global** (ADR-037). `core/` and `integrations/` MUST NOT import a settings singleton. Entry points (`search`, `ingest_path_async`) resolve `EffectiveSettings` **once at the boundary**; everything below takes it as a parameter. `EffectiveSettings` and all four of its blocks are frozen. `Engine` owns its embedder, store and settings; `EMBEDDING_PROVIDER_SCOPE = "engine"` (was `"process"`), so each engine gets an isolated embedder lifecycle.
+10. **`Engine` is the public API.** The public surface is `omrg.Engine`, `omrg.EffectiveSettings` and `omrg.__version__` — exported via PEP 562 lazy imports. There is no module-level default engine. `compose.build_engine()` is the single construction path; `ensure_runtime_setup()` is the legacy installer for pre-v2 callers.
+11. **Registries are the dispatch mechanism** (PROPOSAL §4.4). A new strategy = one new file + one `register()` line. Dispatch modules MUST NOT import concrete strategy modules at module level, and MUST NOT branch `if/elif` over strategy names.
+12. **No file exceeds 500 lines.** Enforced by `tests/test_file_size_ceiling.py`.
 
 ## Critical Gotchas (silent breakage if violated)
 

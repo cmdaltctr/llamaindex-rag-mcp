@@ -359,3 +359,16 @@ def _read_collection_rows(store: Any, collection_name: str) -> list[_ChunkRow]:
     for doc_id, text, metadata in store.iter_documents(collection_name):
         rows.append(_ChunkRow(doc_id, text, metadata))
     return rows
+
+
+def evict_bm25_cache(cache_identity: object) -> None:
+    """Evict all BM25 cache entries for one store identity.
+
+    Called by ``Engine.close()`` to release derivative sparse-cache state
+    in this engine's store identity namespace without clearing another
+    engine's entries.
+    """
+    with BM25SparseRetriever._cache_lock:
+        stale = [key for key in BM25SparseRetriever._cache if key[0] == cache_identity]
+        for key in stale:
+            del BM25SparseRetriever._cache[key]

@@ -347,6 +347,8 @@ def _fixed_dense_rows(rows: list[dict]):
         norm_tolerance=0.001,
         attach_norm_diagnostic=False,
         timing_report=None,
+        embed_model=None,
+        cache=None,
     ):
         return [dict(r) for r in rows]
 

@@ -39,11 +39,11 @@ requires_chroma = pytest.mark.skipif(
 )
 
 
-def test_embedding_provider_scope_is_process_global() -> None:
-    """Profiles must not imply concurrent per-collection embed providers."""
+def test_embedding_provider_scope_is_engine_scoped() -> None:
+    """Each Engine owns its embedder; multiple engines coexist in one process."""
     import omrg.compose as compose
 
-    assert compose.EMBEDDING_PROVIDER_SCOPE == "process"
+    assert compose.EMBEDDING_PROVIDER_SCOPE == "engine"
 
 
 # Subpackage field -> the nested block that owns it (v2.0.0 schema).

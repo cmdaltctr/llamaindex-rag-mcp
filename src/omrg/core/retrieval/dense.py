@@ -50,31 +50,47 @@ def _cached_query_embedding(
     return tuple(vec)
 
 
-def _embed_query(query: str) -> list[float]:
-    """Embed a query, using the LRU cache when available.
+def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list[float]:
+    """Embed a query, using the provided cache when available.
 
-    Falls back gracefully to a direct embed call if the configured
-    embed model does not expose ``model_name`` (rare; e.g. some test
-    mocks).  Returns a fresh list so callers may safely mutate it.
+    Falls back to the LlamaIndex global ``Settings.embed_model`` when
+    embed_model is None (legacy transport path), and to the module-level
+    LRU cache when cache is None.
 
     Args:
         query: The user's search query string.
+        embed_model: Optional injected embedding model.  When ``None``,
+            the LlamaIndex global is read (legacy transport path).
+        cache: Optional ``OrderedDict``-shaped cache keyed by
+            ``(query, model_name)``.  When ``None``, the module-level
+            LRU cache is used (legacy path).
 
     Returns:
         Embedding vector as a list of floats.
     """
-    embed_model = Settings.embed_model
+    if embed_model is None:
+        embed_model = Settings.embed_model
     model_name = getattr(embed_model, "model_name", None)
     if model_name is None:
         # Uncacheable model — bypass the cache rather than risk
         # collisions across instances.
         return list(embed_model.get_query_embedding(query))
+    if cache is not None:
+        key = (query, model_name)
+        if key in cache:
+            cache.move_to_end(key)
+            return list(cache[key])
+        vec = tuple(embed_model.get_query_embedding(query))
+        cache[key] = vec
+        if len(cache) > _QUERY_EMBED_CACHE_MAXSIZE:
+            cache.popitem(last=False)
+        return list(vec)
     return list(_cached_query_embedding(query, model_name))
 
 
-def _embed_model_name() -> str:
+def _embed_model_name(embed_model: Any = None) -> str:
     """Return a diagnostic model name without assuming one provider shape."""
-    model = Settings.embed_model
+    model = embed_model if embed_model is not None else Settings.embed_model
     return str(getattr(model, "model_name", type(model).__name__))
 
 
@@ -108,6 +124,8 @@ def _dense_query_rows(
     fetch_k: int,
     metadata_filter: dict | None = None,
     *,
+    embed_model: Any = None,
+    cache: Any = None,
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
     attach_norm_diagnostic: bool = False,
@@ -145,13 +163,13 @@ def _dense_query_rows(
         in diagnostics mode with the guard enabled, ``norm_guard``.
     """
     t0 = time.perf_counter()
-    query_embedding = _embed_query(query)
+    query_embedding = _embed_query(query, embed_model, cache)
     t1 = time.perf_counter()
     if timing_report is not None:
         timing_report["embedding_seconds"] = timing_report.get("embedding_seconds", 0.0) + (t1 - t0)
     norm_check: NormCheck | None = check_query_vector(
         query_embedding,
-        model_name=_embed_model_name(),
+        model_name=_embed_model_name(embed_model),
         enabled=norm_guard_enabled,
         tolerance=norm_tolerance,
     )

@@ -1,29 +1,51 @@
-# LlamaIndex RAG MCP Server
+# omrg — a standalone retrieval framework
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Requires llama.cpp, Ollama, or OpenRouter](https://img.shields.io/badge/requires-llama.cpp_or_Ollama_or_OpenRouter-000000)](https://github.com/ggml-org/llama.cpp)
 
-A local document search server for AI assistants. Point it at your files, such as PDFs,
-Word docs, notes, papers, source code — and your AI can search them by meaning
-rather than keywords.
+`omrg` is a local-first retrieval framework. Point it at your files — PDFs,
+Word docs, notes, papers, source code — and search them by meaning rather
+than keywords.
 
-Everything runs on your machine by default. No cloud, no API keys, no recurring
-costs. Cloud providers are available if you want them, never required.
+It exposes an `Engine` API as the core product, and ships three transports
+that wrap it: an [MCP](https://modelcontextprotocol.io) server, a CLI, and a
+file watcher. MCP is one transport, not the product identity.
 
-**What it is:** an [MCP](https://modelcontextprotocol.io) server that lets AI
-assistants: OpenCode, Claude, GPT, Cursor and others, search your documents in natural
-language.
+Everything runs on your machine by default. No cloud, no API keys, no
+recurring costs. Cloud providers are available if you want them, never
+required.
 
-**What it isn't:** a chatbot, a cloud service, or a replacement for your file
-system. It is a search layer. Your AI asks it questions; it finds the relevant
-passages.
+**What it is:** a retrieval framework that exposes an `Engine` API and ships
+MCP, CLI, and watcher transports. Your AI assistant, your terminal, or your
+own code calls the same engine.
+
+**What it isn't:** a chatbot, a cloud service, or a replacement for your
+file system. It is a search layer. Something asks it questions; it finds the
+relevant passages.
 
 ---
 
-## Two jobs, one server
+## Library usage
 
-The same server handles two quite different tasks, and they want opposite
+```python
+from omrg import Engine
+
+engine = Engine.from_environment()
+engine.ingest("./docs", collection_name="docs")
+results = engine.search("query", collection_name="docs")
+engine.close()
+```
+
+`Engine.from_environment()` reads `.env` and `defaults.yaml` exactly as the
+transports do, so a script and the MCP server share one configuration
+surface.
+
+---
+
+## Two jobs, one engine
+
+The same engine handles two quite different tasks, and they want opposite
 settings. You pick per collection.
 
 |                  | Document grounding                    | Codebase context                      |
@@ -39,7 +61,7 @@ omrg set-profile -c my_papers -p documents
 omrg set-profile -c my_code   -p codebase
 ```
 
-Both collections then behave correctly in the same running server. See
+Both collections then behave correctly in the same running engine. See
 [Configuration](docs/guides/configuration.md#profiles).
 
 ---
@@ -65,6 +87,8 @@ No output means it is working — it waits silently for MCP messages on stdin.
 
 Then register it with your AI client: [MCP client setup](docs/guides/mcp-client-setup.md).
 
+> The console alias `rag-mcp` still works but is deprecated; use `omrg`.
+
 ### What goes in `.env`
 
 Connection details, vector-store selection, and secrets.
@@ -81,13 +105,15 @@ OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 Tuning belongs in `src/omrg/config/defaults.yaml`; per-collection behaviour
-belongs in a profile. Putting tuning in `.env` silently overrides your profiles
-— see [Configuration](docs/guides/configuration.md) for the precedence rules.
+belongs in a profile. Putting tuning in `.env` silently overrides your
+profiles — see [Configuration](docs/guides/configuration.md) for the
+precedence rules.
 
 ### Vector store and legacy data
 
 LanceDB is the base-install default. It stores each collection under
-`LANCEDB_URI`. To use Chroma, install the optional extra in a source checkout:
+`LANCEDB_URI`. To use Chroma, install the optional extra in a source
+checkout:
 
 ```bash
 uv sync --extra chroma
@@ -95,23 +121,26 @@ uv sync --extra chroma
 
 For an installed package, use `pip install "omrg[chroma]"`. Then set
 `VECTOR_STORE=chroma`. CVE-2026-45829 (PYSEC-2026-311) remains active for
-this optional dependency. Do not expose Chroma's Python FastAPI server through
-this project.
+this optional dependency. Do not expose Chroma's Python FastAPI server
+through this project.
 
-Recognised legacy Chroma data stops default-derived LanceDB startup. Keep it by
-installing the extra and explicitly setting `VECTOR_STORE=chroma`, or explicitly
-set `VECTOR_STORE=lancedb` and re-ingest source files. The server never moves,
-deletes, or migrates the Chroma directory.
+Recognised legacy Chroma data stops default-derived LanceDB startup. Keep
+it by installing the extra and explicitly setting `VECTOR_STORE=chroma`, or
+explicitly set `VECTOR_STORE=lancedb` and re-ingest source files. The engine
+never moves, deletes, or migrates the Chroma directory.
 
-A store change requires re-ingestion. Before reverting after LanceDB ingestion,
-set and verify `VECTOR_STORE=lancedb`. Keep that pin during the revert. An
-older release can otherwise select Chroma and make LanceDB data appear missing.
+A store change requires re-ingestion. Before reverting after LanceDB
+ingestion, set and verify `VECTOR_STORE=lancedb`. Keep that pin during the
+revert. An older release can otherwise select Chroma and make LanceDB data
+appear missing.
 
 ---
 
-## MCP tools
+## Transports
 
-Seven tools your AI can call:
+### MCP server
+
+The MCP transport exposes seven tools your AI can call:
 
 | Tool                        | What it does                                                                           |
 | --------------------------- | -------------------------------------------------------------------------------------- |
@@ -125,9 +154,7 @@ Seven tools your AI can call:
 
 Details: [MCP tools reference](docs/guides/mcp-tools.md).
 
----
-
-## CLI
+### CLI
 
 The same `omrg` command is both the MCP server and a terminal tool.
 
@@ -146,6 +173,12 @@ The same `omrg` command is both the MCP server and a terminal tool.
 
 Every flag and example: [CLI reference](docs/guides/cli-reference.md).
 
+### Watcher
+
+`omrg watch` monitors a directory and auto-ingests new and changed files.
+`omrg install-login-watcher` installs a macOS launch agent so the watcher
+starts at login. Both delegate to the same `Engine` as the other transports.
+
 ---
 
 ## Supported files
@@ -159,9 +192,9 @@ parsing across around 16 languages.
 
 ## Optional extras
 
-**Hybrid search** — combines keyword matching with embedding search. Worth it
-for exact identifiers, error codes, product names, citations. On by default in
-the `codebase` profile.
+**Hybrid search** — combines keyword matching with embedding search. Worth
+it for exact identifiers, error codes, product names, citations. On by
+default in the `codebase` profile.
 
 ```bash
 uv run omrg search "What fixes MCP-1138?" --hybrid
@@ -196,8 +229,8 @@ OPENROUTER_EMBED_MODEL=text-embedding-3-small
 ```
 
 Switching embedding provider can change the vector dimension. Both supported
-stores lock their collection dimension on first write. Re-ingest source files
-into a fresh collection after a dimension change.
+stores lock their collection dimension on first write. Re-ingest source
+files into a fresh collection after a dimension change.
 
 **Azure Document Intelligence** for complex PDFs (`uv sync --extra azure`).
 Opt-in, and falls back to local parsing if unreachable.
@@ -228,19 +261,19 @@ Full setup for each: [Providers](docs/guides/providers.md).
 
 ## Version 2.0.0
 
-v2 restructured the codebase into a modular framework and, in doing so, broke
-three things. If you are coming from v1:
+v2 restructured the codebase into a modular framework and, in doing so,
+broke three things. If you are coming from v1:
 
-- **Settings are renamed.** `TOP_K` is now `RETRIEVAL__TOP_K`, `CHUNK_SIZE` is
-  `CHUNKING__CHUNK_SIZE`, and so on. The server refuses to start on an old name
-  and tells you the replacement rather than silently ignoring it.
+- **Settings are renamed.** `TOP_K` is now `RETRIEVAL__TOP_K`, `CHUNK_SIZE`
+  is `CHUNKING__CHUNK_SIZE`, and so on. The engine refuses to start on an
+  old name and tells you the replacement rather than silently ignoring it.
 - **Old import paths are gone.** `omrg.server`, `omrg.cli`,
   `omrg.ingestion` and the rest now live under `omrg.core.*`,
   `omrg.transports.*` and `omrg.integrations.*`.
 - **Custom profile YAML needs converting** to nested blocks.
 
-Your ChromaDB collections, CLI commands and MCP tool signatures are unchanged,
-and rolling back is code-only — no data migration either way.
+Your ChromaDB collections, CLI commands and MCP tool signatures are
+unchanged, and rolling back is code-only — no data migration either way.
 
 The migration table and the full reasoning are in
 [ADR-037](docs/adr/037-architecture-v2-conformance.md).

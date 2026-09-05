@@ -28,7 +28,7 @@ def _stdin_is_interactive() -> bool:
     return sys.stdin.isatty()
 
 
-def _contention_warning(collection: str) -> str | None:
+def _contention_warning(collection: str, *, adapter: str) -> str | None:
     """Return the duplicate-watcher warning for the active adapter.
 
     The internal ingestion write lock is process-local: a watcher
@@ -38,10 +38,8 @@ def _contention_warning(collection: str) -> str | None:
     for every registered backend today.  Wording is vector-store
     neutral.
     """
-    from ...config import get_settings
     from ...core.vectordb import registry as vectordb_registry
 
-    adapter = get_settings().vector_store
     if vectordb_registry.describe(adapter).get("cross_process_writes_safe"):
         return None
     return (
@@ -343,7 +341,9 @@ def install_login_watcher(
     pending_removal: Path | None = None
     existing = _launchagent.find_existing_plist(plan)
     if existing is not None:
-        warning = _contention_warning(collection)
+        from ... import compose
+
+        warning = _contention_warning(collection, adapter=compose.configured_vector_store())
         if warning:
             console.print(f"[yellow]⚠ An existing watcher was detected. {warning}[/yellow]")
         if existing == plan.plist_path:

@@ -59,6 +59,8 @@ def _hybrid_query_rows(
     sparse_report: dict | None = None,
     *,
     timing_report: dict | None = None,
+    embed_model: Any = None,
+    cache: Any = None,
 ) -> list[dict]:
     backend = _selected_sparse_backend(settings)
     _dense_query_rows = _retrieval_get("dense")
@@ -78,6 +80,8 @@ def _hybrid_query_rows(
             norm_tolerance=settings.embedding.norm_tolerance,
             attach_norm_diagnostic=include_norm_diagnostic,
             timing_report=timing_report,
+            embed_model=embed_model,
+            cache=cache,
         )
         sparse_future = executor.submit(
             sparse_runner,
@@ -143,6 +147,8 @@ def search(
     reranker: Any = None,
     store: VectorStore | None = None,
     effective_settings: Any = None,
+    embed_model: Any = None,
+    query_cache: Any | None = None,
 ) -> list[dict]:
     """Run a semantic similarity search over every indexed document.
 
@@ -299,6 +305,8 @@ def search(
             include_norm_diagnostic=include_diagnostics,
             sparse_report=sparse_report,
             timing_report=timing_report,
+            embed_model=embed_model,
+            cache=query_cache,
         )
     else:
         results = _dense_query_rows(
@@ -311,6 +319,8 @@ def search(
             norm_tolerance=resolved_settings.embedding.norm_tolerance,
             attach_norm_diagnostic=include_diagnostics,
             timing_report=timing_report,
+            embed_model=embed_model,
+            cache=query_cache,
         )
 
     # Optional: re-score with cross-encoder reranker.
@@ -367,6 +377,8 @@ def search(
             similarity_threshold,
             sparse_report=sparse_report,
             timing_report=timing_report,
+            embed_model=embed_model,
+            cache=query_cache,
         )
 
     threshold_score_kind = RERANK_SCORE_KIND if rerank_succeeded else DENSE_SCORE_KIND

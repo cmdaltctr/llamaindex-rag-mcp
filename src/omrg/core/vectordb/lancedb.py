@@ -78,6 +78,7 @@ class LanceVectorStore(
         uri: str | None = None,
         connection: Any | None = None,
         embedding_identity: EmbeddingIdentity | None = None,
+        scan_page_size: int | None = None,
     ) -> None:
         """Initialise the store with an optional injected connection.
 
@@ -93,10 +94,12 @@ class LanceVectorStore(
                 into table metadata and enforced on write/query.
                 ``None`` (the direct-call path) keeps the legacy
                 behaviour: no stamping, no checks.
+            scan_page_size: Bounded scan page size (defaults to 10000).
         """
         self._uri = uri
         self._connection = connection
         self._identity = embedding_identity
+        self._scan_page_size = scan_page_size or 10000
         # Process-local generation counters (BM25 cache invalidation).
         self._generations: dict[str, int] = {}
         # Collections created via create_collection but not yet written.
@@ -109,13 +112,7 @@ class LanceVectorStore(
     def _get_connection(self) -> Any:
         """Return the LanceDB connection, constructing it lazily."""
         if self._connection is None:
-            if self._uri is None:
-                from ..settings import get_default_effective_settings
-
-                uri = get_default_effective_settings().lancedb_uri
-            else:
-                uri = self._uri
-            self._connection = lancedb.connect(uri)
+            self._connection = lancedb.connect(self._uri)
         return self._connection
 
     def _list_table_names(self) -> list[str]:
@@ -147,10 +144,8 @@ class LanceVectorStore(
             raise
 
     def _default_page_size(self) -> int:
-        """Return the composition root's default scan page size."""
-        from ..settings import get_default_effective_settings
-
-        return get_default_effective_settings().chroma_scan_page_size
+        """Return the construction-time scan page size."""
+        return self._scan_page_size
 
     # ── Collection lifecycle ────────────────────────────────────────
 
@@ -202,7 +197,9 @@ class LanceVectorStore(
 
     # ── Document write ──────────────────────────────────────────────
 
-    def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
+    def write_nodes(
+        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+    ) -> None:
         """Embed and write nodes via LlamaIndex's LanceDB adapter.
 
         The embedding uses the LlamaIndex global ``Settings.embed_model``
@@ -215,9 +212,10 @@ class LanceVectorStore(
         gain nulls); the adapter's internal keys are included because
         the adapter writes them into the same struct.
         """
-        from llama_index.core import Settings
+        if embed_model is None:
+            from llama_index.core import Settings
 
-        embed_model = Settings.embed_model
+            embed_model = Settings.embed_model
         identity = self._identity or EmbeddingIdentity(
             provider=type(embed_model).__name__,
             model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
@@ -476,6 +474,9 @@ class LanceVectorStore(
 
     # ── Generation counter (BM25 cache invalidation) ───────────────
 
+    def close(self) -> None:
+        """Release backend resources. Embedded LanceDB needs no explicit release."""
+
     def bump_generation(self, collection_name: str) -> None:
         """Advance the process-local generation counter."""
         self._generations[collection_name] = self._generations.get(collection_name, 0) + 1
@@ -497,4 +498,5 @@ def build_vector_store_from_settings(settings: Any) -> LanceVectorStore:
     return LanceVectorStore(
         uri=settings.lancedb_uri,
         embedding_identity=embedding_identity_from_settings(settings),
+        scan_page_size=settings.chroma_scan_page_size,
     )

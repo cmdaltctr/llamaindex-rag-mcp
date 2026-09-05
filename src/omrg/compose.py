@@ -14,8 +14,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from llama_index.core import Settings as LlamaIndexSettings
-
 from .capabilities import (  # noqa: F401  (re-exported for existing callers/tests)
     _resolve_sparse_backend_for,
     resolve_document_backend,
@@ -29,11 +27,12 @@ from .core.providers.embeddings import registry as embed_registry
 
 logger = logging.getLogger(__name__)
 
-# LlamaIndex exposes one process-global embed model. Vector stores and
-# collection profiles are runtime-swappable, but embedding-provider selection
-# is deliberately deployment/process scoped until an explicit per-operation
-# embedding context replaces this global assignment.
-EMBEDDING_PROVIDER_SCOPE = "process"
+# Embedding-provider selection is engine scoped: each Engine owns its
+# embedder, store and settings, and multiple engines with different
+# providers coexist in one process. The legacy ``ensure_runtime_setup``
+# path still installs one engine as the process default for transport
+# compatibility, but direct Engine construction never mutates the global.
+EMBEDDING_PROVIDER_SCOPE = "engine"
 
 # ── Runtime setup state ─────────────────────────────────────────────
 
@@ -431,18 +430,14 @@ def _log_norm_guard_state(settings: Settings) -> None:
 
 
 def ensure_runtime_setup() -> None:
-    """Assign ``LlamaIndexSettings.embed_model`` and the default vector store.
+    """Build the default engine from the environment and install it as the process default.
 
-    Replaces the import-time side effect previously in ``config.py``.
-    Constructs the vector store from the ``VECTOR_STORE`` setting and
-    registers it as the process-wide default so all pipeline callers
-    share one instance (and one generation counter dict).  Safe to call
-    multiple times — only runs once.
+    Delegates construction to ``compose.build_engine()`` (the single
+    construction path), then installs the result as the process default
+    store, default effective settings, and LlamaIndex global embed model
+    for legacy transport compatibility. The builder itself installs nothing.
 
-    Construction failures (``ImportError`` for missing optional deps,
-    ``ValueError`` for missing credentials) propagate instead of being
-    swallowed. Entry points call this function at startup so failures have
-    a controlled error boundary.
+    Safe to call multiple times — only runs once.
     """
     global _runtime_setup_done
     if _runtime_setup_done:
@@ -467,20 +462,9 @@ def ensure_runtime_setup() -> None:
         settings.vector_store,
         settings.vector_store_provenance,
     )
-    # Construction failures propagate instead of being swallowed.  A process
-    # that reports successful startup MUST have a working embed model and a
-    # registered default vector store — leaving either unset and continuing
-    # turns a construction failure into a confusing downstream error (or
-    # silent misbehaviour) instead of a clear startup failure.  Because
-    LlamaIndexSettings.embed_model = build_embed_model(settings)
-    from .core.vectordb import set_default_store
 
-    set_default_store(build_vector_store(settings))
-    # Install the process-wide default EffectiveSettings so core entry points
-    # have a composition-root-provided fallback when no instance is passed.
-    from .core.settings import set_default_effective_settings
-
-    set_default_effective_settings(settings_to_effective(settings))
+    engine = build_engine(settings)
+    engine._install_as_process_default()
     # Resolve the configured strategies so a bad import string fails fast.
     _resolve_active_strategies(settings)
     _runtime_setup_done = True
@@ -493,3 +477,10 @@ def reset_runtime_setup() -> None:
     """
     global _runtime_setup_done
     _runtime_setup_done = False
+
+
+# Engine construction lives in a sibling module (this module sits at the
+# 500-line ceiling); re-exported here because the composition root is the
+# sanctioned construction surface.  configured_vector_store exposes the
+# adapter name for transports without a direct get_settings() call.
+from .compose_engine import build_engine, configured_vector_store  # noqa: E402,F401

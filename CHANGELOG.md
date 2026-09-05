@@ -2,6 +2,48 @@
 
 <!-- version list -->
 
+## Unreleased
+
+### Breaking Changes
+
+- **package**: Renamed the distribution and import package from `rag-mcp` /
+  `rag_mcp` to `omrg`. The import path is now `from omrg import Engine`.
+  The `rag-mcp` console-script alias is kept as a deprecated one-major
+  alias. Stored vector data is unaffected — no migration or re-ingestion
+  is required. MCP, CLI and watcher transports continue to work through
+  the `ensure_runtime_setup()` compatibility path.
+
+### Features
+
+- **engine**: Added `omrg.Engine` as the public library API. Each engine
+  owns its embedder, vector store, settings and query-embedding cache.
+  Multiple engines with different stores and embedding models coexist
+  safely in one process. `EMBEDDING_PROVIDER_SCOPE` is now `"engine"`
+  (was `"process"`).
+- **engine**: Added `compose.build_engine()` as the single construction
+  path. `Engine.from_environment()` delegates to it. Direct construction
+  does not mutate process-global state; `ensure_runtime_setup()` remains
+  the legacy installer for transport compatibility.
+- **engine**: Added `Engine.close()` for lifecycle management — clears
+  the engine-owned query cache, evicts BM25 cache entries scoped to the
+  engine's store identity, and closes the owned store.
+- **vectordb**: Added `VectorStore.close()` with a safe default no-op on
+  the ABC and backend-specific release on both adapters.
+- **vectordb**: Stores now receive scan page size at construction time;
+  store operations no longer read process-global effective settings.
+- **retrieval**: Dense query embedding accepts an injected `embed_model`
+  and optional query cache, removing the `Settings.embed_model` global
+  read from the dense retrieval path.
+- **ingestion**: `ingest_path_async()` accepts injected `store` and
+  `embed_model` parameters; source identity fingerprints the injected
+  embedder.
+- **settings**: Widened the no-global-settings-reads guard to scan the
+  full production package, permitting only `compose.py`,
+  `compose_answer.py` and `compose_engine.py`.
+- **docs**: Added `docs/guides/library-usage.md` covering `Engine`,
+  explicit settings, two-engine usage and `close()`.
+
+
 ## v2.2.0 (2026-08-07)
 
 ### Bug Fixes

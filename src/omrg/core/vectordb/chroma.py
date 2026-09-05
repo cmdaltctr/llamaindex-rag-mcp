@@ -78,6 +78,7 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         persist_dir: str | None = None,
         client: chromadb.api.ClientAPI | None = None,
         embedding_identity: EmbeddingIdentity | None = None,
+        scan_page_size: int | None = None,
     ) -> None:
         """Initialise the store with an optional injected client.
 
@@ -92,10 +93,13 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
                 into collection metadata and enforced on write/query.
                 ``None`` (the default, direct-call path) keeps the
                 pre-cloud behaviour: no stamping, no checks.
+            scan_page_size: Bounded scan page size resolved at
+                construction time.  Defaults to 10000 when omitted.
         """
         self._persist_dir = persist_dir
         self._client = client
         self._identity = embedding_identity
+        self._scan_page_size = scan_page_size or 10000
         # Process-local generation counters (BM25 cache invalidation).
         # Formerly lived in ``core/ingestion/_state.py``; moved here so
         # the store owns the write→invalidate contract end-to-end.
@@ -111,15 +115,9 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         during tests, so this returns the shared in-memory client.
         """
         if self._client is None:
-            if self._persist_dir is None:
-                from ..settings import get_default_effective_settings
-
-                persist_dir = get_default_effective_settings().chroma_persist_dir
-            else:
-                persist_dir = self._persist_dir
             import chromadb
 
-            self._client = chromadb.PersistentClient(path=persist_dir)
+            self._client = chromadb.PersistentClient(path=self._persist_dir)
         return self._client
 
     def _get_collection(self, name: str):
@@ -145,10 +143,8 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
             raise
 
     def _default_page_size(self) -> int:
-        """Return the composition root's default scan page size."""
-        from ..settings import get_default_effective_settings
-
-        return get_default_effective_settings().chroma_scan_page_size
+        """Return the construction-time scan page size."""
+        return self._scan_page_size
 
     # ── Collection lifecycle ────────────────────────────────────────
 
@@ -178,7 +174,9 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
     # ── Document write (upsert via LlamaIndex) ─────────────────────
 
-    def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
+    def write_nodes(
+        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+    ) -> None:
         """Embed and write nodes via LlamaIndex's ChromaVectorStore adapter.
 
         The embedding uses the LlamaIndex global ``Settings.embed_model``
@@ -186,9 +184,10 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
         embedding identity is attached, the collection's stored identity
         is stamped (legacy collections) or verified first.
         """
-        from llama_index.core import Settings
+        if embed_model is None:
+            from llama_index.core import Settings
 
-        embed_model = Settings.embed_model
+            embed_model = Settings.embed_model
         identity = self._identity or EmbeddingIdentity(
             provider=type(embed_model).__name__,
             model=str(getattr(embed_model, "model_name", type(embed_model).__name__)),
@@ -370,6 +369,9 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
     # ── Generation counter (BM25 cache invalidation) ───────────────
 
+    def close(self) -> None:
+        """Release backend resources. ChromaDB clients need no explicit release."""
+
     def bump_generation(self, collection_name: str) -> None:
         """Advance the process-local generation counter."""
         self._generations[collection_name] = self._generations.get(collection_name, 0) + 1
@@ -383,12 +385,8 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
 
 def _resolve_local_persist_dir(persist_dir: str | None) -> str:
-    """Resolve the local persist directory, defaulting to the composition root."""
-    if persist_dir is not None:
-        return persist_dir
-    from ..settings import get_default_effective_settings
-
-    return get_default_effective_settings().chroma_persist_dir
+    """Return the local persist directory (resolved at construction time)."""
+    return persist_dir  # type: ignore[return-value]
 
 
 def build_chroma_vector_store(
@@ -399,6 +397,7 @@ def build_chroma_vector_store(
     cloud_tenant: str | None = None,
     cloud_database: str | None = None,
     embedding_identity: EmbeddingIdentity | None = None,
+    scan_page_size: int | None = None,
 ) -> ChromaVectorStore:
     """Construct a :class:`ChromaVectorStore` from resolved settings.
 
@@ -430,13 +429,21 @@ def build_chroma_vector_store(
     """
     if mode == "cloud":
         client = construct_cloud_client(cloud_api_key, cloud_tenant, cloud_database)
-        return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
+        return ChromaVectorStore(
+            client=client,
+            embedding_identity=embedding_identity,
+            scan_page_size=scan_page_size,
+        )
     if mode != "local":
         raise ValueError(f"CHROMA_MODE={mode!r} is not recognised. Accepted values: local, cloud.")
     import chromadb
 
     client = chromadb.PersistentClient(path=_resolve_local_persist_dir(persist_dir))
-    return ChromaVectorStore(client=client, embedding_identity=embedding_identity)
+    return ChromaVectorStore(
+        client=client,
+        embedding_identity=embedding_identity,
+        scan_page_size=scan_page_size,
+    )
 
 
 def build_vector_store_from_settings(settings: Any) -> ChromaVectorStore:
@@ -452,4 +459,5 @@ def build_vector_store_from_settings(settings: Any) -> ChromaVectorStore:
         cloud_tenant=settings.chroma_cloud_tenant or None,
         cloud_database=settings.chroma_cloud_database or None,
         embedding_identity=embedding_identity_from_settings(settings),
+        scan_page_size=settings.chroma_scan_page_size,
     )

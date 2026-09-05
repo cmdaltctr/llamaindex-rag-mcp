@@ -368,7 +368,7 @@ class TestHybridNativePipeline:
 
         # Unit-norm so the (default-on) embedding norm guard admits it.
         value = [1.0 / (dim**0.5)] * dim
-        monkeypatch.setattr(dense, "_embed_query", lambda _query: value)
+        monkeypatch.setattr(dense, "_embed_query", lambda _q, _em=None, _c=None: value)
 
     def test_native_selected_and_supported_executes_native(
         self, tmp_path, monkeypatch, effective_settings

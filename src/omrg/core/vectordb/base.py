@@ -55,8 +55,18 @@ class VectorStore(ABC):
     # Writes.
 
     @abstractmethod
-    def write_nodes(self, nodes: list[Any], collection_name: str) -> None:
-        """Embed/write LlamaIndex nodes and bump generation exactly once."""
+    def write_nodes(
+        self, nodes: list[Any], collection_name: str, *, embed_model: Any = None
+    ) -> None:
+        """Embed/write LlamaIndex nodes and bump generation exactly once.
+
+        Args:
+            nodes: LlamaIndex nodes to embed and write.
+            collection_name: Target collection name.
+            embed_model: Optional injected embedding model. When None, the
+                adapter falls back to the LlamaIndex global (legacy
+                transport path).
+        """
 
     def upsert_precomputed(
         self,
@@ -261,3 +271,11 @@ class VectorStore(ABC):
             the collection is absent.
         """
         return None
+
+    def close(self) -> None:  # noqa: B027
+        """Release backend resources.
+
+        Default no-op; adapters override when supported. Marked
+        ``no-op`` intentionally so third-party stores remain
+        instantiable without implementing lifecycle support.
+        """
