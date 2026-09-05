@@ -714,7 +714,9 @@ def test_hybrid_false_matches_dense_only_result_shape(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
 
     implicit = retrieval.search("query", top_k=1, rerank=False, store=chroma_store)
     explicit = retrieval.search("query", top_k=1, rerank=False, hybrid=False, store=chroma_store)
@@ -750,7 +752,9 @@ def test_hybrid_rerank_receives_fused_sparse_candidate(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     from omrg.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
@@ -815,7 +819,9 @@ def test_hybrid_public_shape_strips_rank_diagnostics(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     from omrg.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
@@ -863,7 +869,9 @@ def test_hybrid_diagnostics_are_available_for_experiments(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     from omrg.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
@@ -912,7 +920,9 @@ def test_native_mixed_coverage_warning_is_one_shot(monkeypatch, caplog) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     from omrg.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
@@ -980,7 +990,9 @@ def test_mixed_coverage_warning_uses_paged_metadata_scan(monkeypatch, caplog) ->
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_collections.clear()
     retrieval._warned_native_fallback_collections.clear()
@@ -1039,7 +1051,9 @@ def test_native_sparse_placeholder_falls_back_to_bm25_not_dense_only(monkeypatch
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "native")
     retrieval._warned_native_fallback_collections.clear()
 
@@ -1084,7 +1098,9 @@ def test_bm25_path_suppresses_mixed_coverage_warning(monkeypatch, caplog) -> Non
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     monkeypatch.setattr(retrieval, "_selected_sparse_backend", lambda _s: "bm25")
 
     with caplog.at_level(logging.WARNING):
@@ -1223,7 +1239,9 @@ def test_colosseum_style_dense_miss_recovers_with_hybrid(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
     from omrg.core.settings import (
         EffectiveSettings,
         RetrievalBlock,
@@ -1292,7 +1310,9 @@ def test_default_reranker_is_constructed_via_registry(monkeypatch) -> None:
     from omrg.core.vectordb.chroma import ChromaVectorStore
 
     chroma_store = ChromaVectorStore(client=client)
-    monkeypatch.setattr(_dense, "_embed_query", lambda query: [0.0] * 384)
+    monkeypatch.setattr(
+        _dense, "_embed_query", lambda query, embed_model=None, cache=None: [0.0] * 384
+    )
 
     constructed: list[str] = []
 

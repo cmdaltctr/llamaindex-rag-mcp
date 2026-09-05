@@ -105,8 +105,12 @@ Construct two engines with different stores and embedders. They do not share sta
 from omrg import Engine, EffectiveSettings
 from omrg.core.vectordb.lancedb import LanceVectorStore
 
-docs = Engine(EffectiveSettings(...), store=LanceVectorStore(uri="./docs.lance"), embed_model=doc_embedder)
-code = Engine(EffectiveSettings(...), store=LanceVectorStore(uri="./code.lance"), embed_model=code_embedder)
+docs = Engine(
+    EffectiveSettings(...), store=LanceVectorStore(uri="./docs.lance"), embed_model=doc_embedder
+)
+code = Engine(
+    EffectiveSettings(...), store=LanceVectorStore(uri="./code.lance"), embed_model=code_embedder
+)
 ```
 
 Each engine owns its own store, embedder and query cache. Ingesting into

@@ -519,9 +519,7 @@ class TestProgressReporting:
         """Rich progress callback creates and updates tasks correctly."""
         from unittest.mock import AsyncMock
 
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 1,
@@ -556,9 +554,7 @@ class TestIngestErrorHandling:
     @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error(self, mock_signal: MagicMock) -> None:
         """ConnectionError from Ollama triggers friendly error message."""
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -566,9 +562,7 @@ class TestIngestErrorHandling:
     @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_ollama(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'ollama' in message triggers Ollama error."""
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("ollama service unavailable")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -576,9 +570,7 @@ class TestIngestErrorHandling:
     @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_embed(self, mock_signal: MagicMock) -> None:
         """Generic exception with 'embed' in message triggers Ollama error."""
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("embed operation failed")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -586,9 +578,7 @@ class TestIngestErrorHandling:
     @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_generic_exception_other(self, mock_signal: MagicMock) -> None:
         """Generic exception without ollama/embed triggers generic error."""
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = Exception("Something went wrong")
             result = runner.invoke(app, ["ingest", "/fake/path"])
             assert result.exit_code == 1
@@ -599,9 +589,7 @@ class TestIngestErrorHandling:
         from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
         # Simulate: ingest succeeds but shutdown was requested
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -621,9 +609,7 @@ class TestIngestErrorHandling:
         """Interrupt during ingest with --json outputs JSON with interrupted flag."""
         from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -643,9 +629,7 @@ class TestIngestErrorHandling:
         """Interrupt message mentions chunks written before interruption."""
         from omrg.core.ingestion._state import shutdown_requested as _shutdown_requested
 
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 2,
@@ -662,9 +646,7 @@ class TestIngestErrorHandling:
     @patch("omrg.transports.cli.ingest.signal.signal")
     def test_ingest_connection_error_json(self, mock_signal: MagicMock) -> None:
         """ConnectionError with --json outputs JSON error."""
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.side_effect = ConnectionError("Connection refused")
             result = runner.invoke(app, ["ingest", "/fake/path", "--json"])
             assert result.exit_code == 1
@@ -1028,9 +1010,7 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -1077,9 +1057,7 @@ class TestSigintHandler:
 
         _shutdown_requested.clear()
 
-        with patch(
-            "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-        ) as mock_ingest:
+        with patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest:
             mock_ingest.return_value = {
                 "status": "ok",
                 "files_indexed": 0,
@@ -1118,9 +1096,7 @@ class TestConsoleIsTerminal:
         """When console.is_terminal is True, Rich progress is used."""
         with (
             patch("omrg.transports.cli.ingest.console") as mock_console,
-            patch(
-                "omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock
-            ) as mock_ingest,
+            patch("omrg.core.ingestion.ingest_path_async", new_callable=AsyncMock) as mock_ingest,
         ):
             mock_console.is_terminal = True
             mock_console.print = MagicMock()

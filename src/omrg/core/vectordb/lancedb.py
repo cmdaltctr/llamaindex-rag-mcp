@@ -13,7 +13,6 @@ or a schema, so the vector dimension is fixed on first write exactly
 as the ChromaDB dimension lock behaves.  ``create_collection``
 records intent (a process-local set) so existence checks and
 listings match ChromaDB's create-on-demand semantics.
-
 Collection metadata (profile tags and the embedding-identity triple)
 lives in the table's durable Arrow schema metadata, written through
 pylance's ``update_schema_metadata`` (read-merge-write); that seam
@@ -206,7 +205,6 @@ class LanceVectorStore(
         (assigned by ``compose.ensure_runtime_setup``).  stdout is
         redirected because the adapter prints a notice when it lazily
         creates a table — stdout is the MCP protocol channel.
-
         The ``metadata`` struct is fixed on the first write, so a batch
         introducing new metadata keys grows the struct first (old rows
         gain nulls); the adapter's internal keys are included because

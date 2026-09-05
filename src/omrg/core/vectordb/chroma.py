@@ -385,8 +385,12 @@ class ChromaVectorStore(IdentityGuardMixin, PagedReadMixin, VectorStore):
 
 
 def _resolve_local_persist_dir(persist_dir: str | None) -> str:
-    """Return the local persist directory (resolved at construction time)."""
-    return persist_dir  # type: ignore[return-value]
+    """Resolve the local persist directory, defaulting to the composition root."""
+    if persist_dir is not None:
+        return persist_dir
+    from ..settings import get_default_effective_settings
+
+    return get_default_effective_settings().chroma_persist_dir
 
 
 def build_chroma_vector_store(

@@ -148,9 +148,7 @@ class TestBinarySkip:
         )
         with (
             patch("omrg.integrations.magika._is_magika_available", return_value=False),
-            patch(
-                "omrg.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory
-            ),
+            patch("omrg.core.codebase.codebase_map.detect_file_types", return_value=mock_inventory),
             patch(
                 "omrg.core.ingestion.pipeline.gather_supported_files",
                 return_value=([tmp_path / "app.py", tmp_path / "image.png"], []),
