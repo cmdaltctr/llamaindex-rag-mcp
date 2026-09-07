@@ -36,10 +36,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any
@@ -48,8 +50,10 @@ import provision
 
 WORKER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = WORKER_DIR.parent
+MODEL_CACHE_DIR = WORKER_DIR / ".model-cache"
+EVIDENCE_DIR = WORKER_DIR / "smoke_evidence"
 DEFAULT_FIXTURE = (
-    REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_scanned.pdf"
+    REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
 )
 
 #: The three Paddle distributions that must NEVER enter the main OMRG
@@ -217,6 +221,32 @@ def check_interpreter_available(version: tuple[int, int] | str) -> tuple[bool, s
     return False, f"no installed interpreter matches Python {text}"
 
 
+def _worker_environment() -> dict[str, str]:
+    """Return the worker environment pinned to worker-owned targets.
+
+    The uv selectors are FORCED to the worker project and worker venv:
+    an inherited ``UV_PROJECT``/``UV_PROJECT_ENVIRONMENT`` (an absolute
+    path overrides the working directory) would otherwise let the exact
+    ``uv sync --locked`` install Paddle into — and prune — an
+    environment outside ``ocr-worker/``, typically the root project's.
+    """
+    environment = os.environ.copy()
+    environment["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)
+    environment["PADDLE_PDX_CACHE_HOME"] = str(MODEL_CACHE_DIR)
+    environment["UV_PROJECT"] = str(WORKER_DIR)
+    environment["UV_PROJECT_ENVIRONMENT"] = str(WORKER_DIR / ".venv")
+    return environment
+
+
+def _directory_size(path: Path) -> int:
+    """Return the size of regular files below a worker-owned directory."""
+    total = 0
+    for child in path.rglob("*"):
+        if child.is_file() and not child.is_symlink():
+            total += child.stat().st_size
+    return total
+
+
 def _print_plan(plan: dict[str, Any], interpreter: tuple[bool, str]) -> None:
     """Print the resolved plan (dry-run output)."""
     print(f"smoke-test plan ({plan['mode']} mode)")
@@ -321,24 +351,49 @@ def _validate_parse_response(line: str, pdf_path: str) -> str:
 
 def _run_provisioned(plan: dict[str, Any]) -> int:
     """Provision, probe, and parse once. Operator-approved path only."""
+    environment = _worker_environment()
+    size_before = _directory_size(WORKER_DIR)
+    provision_started = time.perf_counter()
     completed = subprocess.run(  # noqa: S603 - fixed argv, no shell
-        plan["provision_command"], cwd=WORKER_DIR, check=False
+        plan["provision_command"],
+        cwd=WORKER_DIR,
+        env=environment,
+        check=False,
     )
+    provision_seconds = time.perf_counter() - provision_started
+    size_after_provision = _directory_size(WORKER_DIR)
+    print(f"provision elapsed seconds: {provision_seconds:.2f}")
+    print(f"worker bytes before/after provision: {size_before}/{size_after_provision}")
     if completed.returncode != 0:
         print("error: provisioning failed; see the output above", file=sys.stderr)
         return completed.returncode
 
+    probe_started = time.perf_counter()
     probe = subprocess.run(  # noqa: S603 - fixed argv, no shell
-        plan["probe_command"], capture_output=True, text=True, check=False, timeout=60
+        plan["probe_command"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+        cwd=WORKER_DIR,
+        env=environment,
     )
+    print(f"capability probe elapsed seconds: {time.perf_counter() - probe_started:.2f}")
+    if probe.stderr:
+        print("capability probe stderr:", file=sys.stderr)
+        print(probe.stderr.rstrip(), file=sys.stderr)
     if probe.returncode != 0 or not probe.stdout.strip():
+        print(f"capability probe stdout: {probe.stdout!r}", file=sys.stderr)
         print("error: capability probe failed or printed nothing", file=sys.stderr)
         return 1
     try:
-        _validate_fingerprint(json.loads(probe.stdout.splitlines()[0]))
+        fingerprint = json.loads(probe.stdout.splitlines()[0])
+        _validate_fingerprint(fingerprint)
     except (json.JSONDecodeError, SmokeTestError) as exc:
+        print(f"capability probe stdout: {probe.stdout!r}", file=sys.stderr)
         print(f"error: capability fingerprint invalid: {exc}", file=sys.stderr)
         return 1
+    print(f"capability fingerprint: {json.dumps(fingerprint, sort_keys=True)}")
     print("capability probe valid: protocol, packages, pipeline, model, output schema")
 
     request = json.dumps(
@@ -351,38 +406,60 @@ def _run_provisioned(plan: dict[str, Any]) -> int:
         sort_keys=True,
         separators=(",", ":"),
     )
-    worker = subprocess.Popen(  # noqa: S603 - fixed argv, no shell
-        plan["parse_command"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        cwd=WORKER_DIR,
-    )
-    stdin, stdout = worker.stdin, worker.stdout
-    if stdin is None or stdout is None:
-        worker.terminate()
-        worker.wait(timeout=30)
-        print("error: worker pipes unavailable", file=sys.stderr)
-        return 1
+    parse_started = time.perf_counter()
     try:
-        stdin.write(request + "\n")
-        stdin.flush()
-        stdin.close()
-        line = stdout.readline()
-    finally:
-        worker.terminate()
-        worker.wait(timeout=30)
-    if not line.strip():
-        print("error: worker closed output without responding", file=sys.stderr)
+        parse = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            plan["parse_command"],
+            input=request + "\n",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=WORKER_DIR,
+            env=environment,
+            timeout=1800,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(f"parse elapsed seconds: {time.perf_counter() - parse_started:.2f}")
+        print(f"error: parse timed out after {exc.timeout} seconds", file=sys.stderr)
         return 1
+    parse_seconds = time.perf_counter() - parse_started
+    size_after_parse = _directory_size(WORKER_DIR)
+    print(f"parse elapsed seconds: {parse_seconds:.2f}")
+    print(f"worker bytes after parse: {size_after_parse}")
+    if parse.stderr:
+        print("worker stderr:", file=sys.stderr)
+        print(parse.stderr.rstrip(), file=sys.stderr)
+    response_lines = [line for line in parse.stdout.splitlines() if line.strip()]
+    if parse.returncode != 0 or len(response_lines) != 1:
+        print(f"worker exit status: {parse.returncode}", file=sys.stderr)
+        print(f"worker stdout: {parse.stdout!r}", file=sys.stderr)
+        print("error: worker did not emit exactly one response line", file=sys.stderr)
+        return 1
+    line = response_lines[0]
     try:
+        response = json.loads(line)
         markdown = _validate_parse_response(line, plan["fixture"])
-    except SmokeTestError as exc:
+    except (json.JSONDecodeError, SmokeTestError) as exc:
+        print(f"parse response line: {line}", file=sys.stderr)
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+    evidence_name = plan["python_version"].replace(".", "-")
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    (EVIDENCE_DIR / f"parse-python-{evidence_name}.json").write_text(
+        json.dumps(response, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (EVIDENCE_DIR / f"parse-python-{evidence_name}.md").write_text(
+        markdown,
+        encoding="utf-8",
+    )
+    response_without_markdown = dict(response)
+    response_without_markdown.pop("markdown", None)
+    print(f"parse response framing: {json.dumps(response_without_markdown, sort_keys=True)}")
     print(f"parse response valid; extracted {len(markdown)} characters of Markdown")
+    print(f"worker disk delta bytes: {size_after_parse - size_before}")
     print("OCR worker smoke test PASSED")
     return 0
 
@@ -424,7 +501,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    fixture = Path(args.fixture) if args.fixture else DEFAULT_FIXTURE
+    fixture = Path(args.fixture).expanduser().resolve() if args.fixture else DEFAULT_FIXTURE
     try:
         plan = build_plan(args.python, fixture, provision_requested=args.provision)
     except (SmokeTestError, provision.UnsupportedPythonError) as exc:

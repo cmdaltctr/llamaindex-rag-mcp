@@ -21,6 +21,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKER_DIR = REPO_ROOT / "ocr-worker"
 CAL_SCANNED = REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_scanned.pdf"
+CAL_TABLE_TEXT = (
+    REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
+)
 
 
 def _load_smoke_module() -> Any:
@@ -76,8 +79,8 @@ def test_dry_run_plan_resolves_every_command() -> None:
     """The plan carries provision, probe, and parse commands plus the fixture.
 
     Probe and parse must target the WORKER venv interpreter — never the
-    main environment — and the default fixture is the calibration
-    scanned PDF.
+    main environment — and the fixture must match the supplied
+    calibration scanned PDF.
     """
     plan = smoke.build_plan("3.12", CAL_SCANNED, provision_requested=False)
     assert plan["fixture"] == str(CAL_SCANNED)
@@ -133,6 +136,23 @@ def test_main_defaults_to_no_provision(
 
     assert exit_code == 0
     assert "dry-run mode" in capsys.readouterr().out
+
+
+def test_bare_provision_uses_structured_markdown_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bare ``--provision`` selects the fixture from successful smoke evidence."""
+    captured_plan: dict[str, Any] = {}
+    monkeypatch.setattr(smoke, "assert_main_environment_paddle_free", lambda: None)
+    monkeypatch.setattr(smoke, "check_interpreter_available", lambda v: (True, "stub-listing"))
+    monkeypatch.setattr(
+        smoke,
+        "_run_provisioned",
+        lambda plan: captured_plan.update(plan) or 0,
+    )
+
+    assert smoke.main(["--python", "3.12", "--provision"]) == 0
+    assert captured_plan["fixture"] == str(CAL_TABLE_TEXT)
 
 
 def test_main_rejects_unsupported_python_with_exit_two(
@@ -244,3 +264,26 @@ def test_fingerprint_validator_rejects_wrong_protocol() -> None:
                 },
             }
         )
+
+
+# ── Provisioning target safety ────────────────────────────────────────────
+
+
+def test_worker_environment_overrides_inherited_uv_targets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Inherited uv project selectors cannot redirect provisioning.
+
+    An absolute ``UV_PROJECT_ENVIRONMENT`` overrides the working
+    directory, so an inherited value could aim the exact ``uv sync
+    --locked`` at another environment — installing Paddle into it and
+    pruning its extraneous packages. The worker environment must pin
+    both selectors to worker-owned targets.
+    """
+    monkeypatch.setenv("UV_PROJECT", "/elsewhere/omrg-test/root")
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", "/elsewhere/omrg-test/root/.venv")
+    environment = smoke._worker_environment()
+    assert environment["UV_PROJECT"] == str(smoke.WORKER_DIR)
+    assert environment["UV_PROJECT_ENVIRONMENT"] == str(smoke.WORKER_DIR / ".venv")
+    assert environment["PADDLE_OCR_BASE_DIR"] == str(smoke.MODEL_CACHE_DIR)
+    assert environment["PADDLE_PDX_CACHE_HOME"] == str(smoke.MODEL_CACHE_DIR)

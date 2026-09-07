@@ -68,6 +68,7 @@ development of OMRG — Opinionated Modular RAG.
 | [059](./059-claim-verification-stage.md)                     | Claim Verification Is an Opt-In Cloud Judge                                                  | 2026-09-04 | Accepted |
 | [060](./060-omrg-is-a-framework-mcp-is-a-transport.md)       | omrg Is a Framework; MCP Is a Transport                                                      | 2026-09-08 | Accepted |
 | [061](./061-engine-scoped-embedding-provider.md)             | Engine-Scoped Embedding Provider                                                             | 2026-09-08 | Accepted |
+| [062](./062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) | Isolate PaddleOCR-VL in a Versioned OCR Worker                                             | 2026-09-07 | Proposed |
 | [063](./063-model-token-aware-markdown-chunking.md)          | Model-Token-Aware Markdown Chunking                                                          | 2026-09-07 | Proposed |
 
 ## Convention

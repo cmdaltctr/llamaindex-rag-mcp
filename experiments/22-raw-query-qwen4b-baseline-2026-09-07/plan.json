@@ -1,0 +1,60 @@
+{
+  "experiment_id": "22-raw-query-qwen4b-baseline",
+  "protocol_version": "2.0",
+  "experimental_unit": "one fixed freshstack query evaluated under each declared retrieval arm",
+  "primary_metric": "recall_at_5",
+  "manipulated_factors": [
+    {
+      "name": "arm",
+      "levels": ["dense_only", "hybrid"]
+    }
+  ],
+  "controlled_variables": {
+    "query_path": "raw (no instruction)",
+    "embedding_provider": "openrouter",
+    "embedding_model": "qwen/qwen3-embedding-4b",
+    "embedding_dims": 2560,
+    "rerank": false,
+    "top_k": 50,
+    "k_values": [1, 3, 5, 10, 20, 50],
+    "seed": 20260530,
+    "corpus": "freshstack-langchain (9a re-export, prepare_freshstack.py defaults)",
+    "vector_store": "lancedb"
+  },
+  "cells": [
+    {
+      "id": "dense_only__raw",
+      "factors": {"arm": "dense_only"}
+    },
+    {
+      "id": "hybrid__raw",
+      "factors": {"arm": "hybrid"}
+    }
+  ],
+  "preflight_assertions": [
+    {
+      "manifest_field": "embedding.model",
+      "operator": "eq",
+      "expected": "qwen/qwen3-embedding-4b"
+    },
+    {
+      "manifest_field": "retrieval.top_k",
+      "operator": "eq",
+      "expected": 50
+    },
+    {
+      "manifest_field": "retrieval.rerank_enabled",
+      "operator": "eq",
+      "expected": false
+    },
+    {
+      "manifest_field": "corpus.qrels_sha256",
+      "operator": "not_null"
+    }
+  ],
+  "vector_store_policy": {
+    "source": "ADR-049",
+    "policy": "baseline runs on the LanceDB default; vector store is not a manipulated factor"
+  },
+  "baseline_role": "OpenSpec improve-rag-input-quality-5 task 1.5; numbers feed the task 1.6 gate freeze"
+}

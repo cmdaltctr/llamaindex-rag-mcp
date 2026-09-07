@@ -27,21 +27,24 @@ from .protocol import OUTPUT_SCHEMA_ID, OUTPUT_SCHEMA_VERSION, PROTOCOL_VERSION
 #: Every package whose exact version belongs in the fingerprint. The
 #: worker owns these through its lockfile (D2.1); a package that is
 #: somehow missing reports ``not-installed`` rather than lying by
-#: omission.
+#: omission. PaddleX is declared even though ``paddleocr`` pulls it in
+#: transitively: ``PaddleOCRVL`` delegates prediction and page
+#: restructuring to PaddleX, so a PaddleX-only change can alter the
+#: emitted Markdown and must change the worker identity.
 DECLARED_PACKAGES: tuple[str, ...] = (
     "omrg-ocr-worker",
     "paddleocr",
+    "paddlex",
     "paddlepaddle",
 )
 
-#: Static pipeline/model declarations. Task 2.2 (the real pipeline
-#: wiring) updates these to the provisioned pipeline and checkpoint
-#: identities; until then the revisions stay at the pre-wiring marker
-#: so a fingerprint change is visible the moment the wiring lands.
+#: Static pipeline/model declarations matching the worker's wired path.
+#: The package versions remain in ``packages`` so a lockfile change also
+#: changes the resolved worker identity.
 PIPELINE_IDENTITY = "paddleocr-vl"
-PIPELINE_REVISION = "pre-wiring"
+PIPELINE_REVISION = "predict+restructure_pages"
 MODEL_IDENTITY = "PaddleOCR-VL"
-MODEL_REVISION = "pre-wiring"
+MODEL_REVISION = "1.6"
 
 
 def fingerprint_payload() -> dict[str, object]:
