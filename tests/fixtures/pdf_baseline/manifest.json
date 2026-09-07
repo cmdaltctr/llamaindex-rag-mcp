@@ -1,0 +1,80 @@
+{
+  "change": "improve-rag-input-quality-5",
+  "tasks": ["1.1", "1.2"],
+  "licence": "All fixture content is self-authored for this repository; no third-party material.",
+  "sets": {
+    "calibration": {
+      "role": "OCR routing gate calibration only (design D7.2); never used for Stage 5 evaluation.",
+      "files": {
+        "calibration/cal_clean_text.pdf": "clean single-column text",
+        "calibration/cal_table_text.pdf": "table-like positioned text (text layer present)",
+        "calibration/cal_scanned.pdf": "scanned page (no text layer)"
+      }
+    },
+    "evaluation": {
+      "role": "Held-out evaluation set for the Stage 5 ablation; untouched by calibration.",
+      "files": {
+        "evaluation/eval_clean_text.pdf": "clean single-column text",
+        "evaluation/eval_two_column.pdf": "two-column text on one page",
+        "evaluation/eval_scanned.pdf": "scanned page (no text layer)",
+        "evaluation/eval_image.pdf": "image-only page (no text layer)",
+        "evaluation/eval_mixed.pdf": "mixed: text page + image-only page"
+      }
+    }
+  },
+  "observed_baseline": {
+    "tool": "pdf-inspector",
+    "recorded": "2026-09-06",
+    "note": "Pinned by tests/unit/test_pdf_baseline_fixtures.py; a diff after a pdf-inspector bump is a visible baseline change.",
+    "files": {
+      "calibration/cal_clean_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "calibration/cal_table_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "calibration/cal_scanned.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.9,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_clean_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "evaluation/eval_two_column.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "evaluation/eval_scanned.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.9,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_image.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.9,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_mixed.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 0.5,
+        "page_count": 2,
+        "pages_needing_ocr": []
+      }
+    }
+  }
+}
