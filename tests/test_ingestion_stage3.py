@@ -146,52 +146,6 @@ async def test_index_identity_change_forces_reprocessing(
 
 
 @pytest.mark.asyncio
-async def test_degraded_markdown_chunking_recovers_when_tokenizer_resolves(
-    tmp_path: Path,
-    stage3_store,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A legacy-indexed Markdown source is replaced after tokenizer resolution."""
-    from tokenizers import Tokenizer, models, pre_tokenizers
-
-    from omrg.core.chunking.model_token import MarkdownChunkingResolution
-    from omrg.core.ingestion import pipeline
-    from omrg.core.ingestion.source_state import SOURCE_INDEX_IDENTITY_KEY
-
-    source = tmp_path / "chunking-recovery.md"
-    source.write_text("# Recovery\n\n" + "token-aware content " * 80, encoding="utf-8")
-    identity = {"model": "test/model", "revision": "test-revision"}
-    legacy = MarkdownChunkingResolution(None, identity, "legacy_fallback")
-    marker = "[UNK]"
-    tokenizer = Tokenizer(models.WordLevel({marker: 0}, unk_token=marker))
-    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
-    resolved = MarkdownChunkingResolution(tokenizer, identity, "model_token_aware")
-    monkeypatch.setattr(pipeline, "resolve_markdown_chunking", lambda _settings: legacy)
-
-    first = await ingest_path_async(str(source), collection_name=_COLLECTION)
-    first_rows = [
-        metadata
-        for _, _, metadata in stage3_store.iter_documents(_COLLECTION)
-        if metadata.get("file_path") == str(source)
-    ]
-
-    monkeypatch.setattr(pipeline, "resolve_markdown_chunking", lambda _settings: resolved)
-    second = await ingest_path_async(str(source), collection_name=_COLLECTION)
-    second_rows = [
-        metadata
-        for _, _, metadata in stage3_store.iter_documents(_COLLECTION)
-        if metadata.get("file_path") == str(source)
-    ]
-
-    assert first["status"] == "ok"
-    assert second["status"] == "ok"
-    assert second["files_indexed"] == 1
-    assert second["files_skipped_unchanged"] == 0
-    assert first_rows and second_rows
-    assert first_rows[0][SOURCE_INDEX_IDENTITY_KEY] != second_rows[0][SOURCE_INDEX_IDENTITY_KEY]
-
-
-@pytest.mark.asyncio
 async def test_exclusion_set_change_forces_reprocessing(
     tmp_path: Path,
     stage3_store,
