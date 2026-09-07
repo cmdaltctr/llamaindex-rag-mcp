@@ -34,14 +34,13 @@ DECLARED_PACKAGES: tuple[str, ...] = (
     "paddlepaddle",
 )
 
-#: Static pipeline/model declarations. Task 2.2 (the real pipeline
-#: wiring) updates these to the provisioned pipeline and checkpoint
-#: identities; until then the revisions stay at the pre-wiring marker
-#: so a fingerprint change is visible the moment the wiring lands.
+#: Static pipeline/model declarations matching the worker's wired path.
+#: The package versions remain in ``packages`` so a lockfile change also
+#: changes the resolved worker identity.
 PIPELINE_IDENTITY = "paddleocr-vl"
-PIPELINE_REVISION = "pre-wiring"
+PIPELINE_REVISION = "predict+restructure_pages"
 MODEL_IDENTITY = "PaddleOCR-VL"
-MODEL_REVISION = "pre-wiring"
+MODEL_REVISION = "1.6"
 
 
 def fingerprint_payload() -> dict[str, object]:

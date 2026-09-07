@@ -313,9 +313,10 @@ def test_worker_loop_invalid_path_uses_real_seam(
 def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path) -> None:
     """The real ``python -m omrg_ocr_worker`` keeps stdout protocol-only.
 
-    The parse seam is unwired in this wave, so the terminal envelope is
-    a ``pipeline_not_wired`` error — which still proves the framing:
-    exactly one JSON line on stdout, logs on stderr, exit status 0.
+    The main environment has no Paddle worker dependencies, so the
+    terminal envelope is a ``paddle_unavailable`` error. This still
+    proves the framing: exactly one JSON line on stdout, logs on stderr,
+    exit status 0.
     """
     request = omrg_protocol.make_request("req-sub-1", str(small_pdf))
     completed = subprocess.run(
@@ -333,7 +334,7 @@ def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path) -> None:
     assert len(stdout_lines) == 1
     decoded = omrg_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-1")
     assert isinstance(decoded, omrg_protocol.ParseFailure)
-    assert decoded.error.code == "pipeline_not_wired"
+    assert decoded.error.code == "paddle_unavailable"
     # Worker logs travel on stderr only.
     assert "starting" in completed.stderr
 
