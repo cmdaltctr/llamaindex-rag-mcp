@@ -76,6 +76,9 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     if settings is None:
         settings = get_settings()
 
+    if settings.chunking.chunk_overlap >= settings.chunking.markdown_chunk_size:
+        raise ValueError("CHUNKING__CHUNK_OVERLAP must be less than CHUNKING__MARKDOWN_CHUNK_SIZE")
+
     # The nested Settings blocks map 1:1 onto the EffectiveSettings blocks,
     # so this is a straight copy plus the cross-cutting fields. Before the
     # nested schema this function had to restate ~30 flat field names.

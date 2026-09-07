@@ -70,7 +70,7 @@ class IngestionBlock(BaseModel):
 
 
 class EmbeddingSettings(BaseModel):
-    """Config-facing embedding norm-guard knobs (env prefix ``EMBEDDING__``).
+    """Config-facing embedding knobs (env prefix ``EMBEDDING__``).
 
     The Settings twin of :class:`EmbeddingBlock`. Lives here — next to its
     Block, in the pure-data settings module — rather than under
@@ -83,6 +83,14 @@ class EmbeddingSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Optional model-specific query prefix. Empty preserves the caller's
+    # query verbatim, including for generic embedding models.
+    query_instruction: str = ""
+    # Explicit tokenizer identity prevents inference-server aliases from
+    # selecting a mismatched size calculator. Empty keeps legacy chunking.
+    tokenizer_model: str = ""
+    tokenizer_revision: str = ""
+
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
     # default.
@@ -93,7 +101,7 @@ class EmbeddingSettings(BaseModel):
 
 
 class EmbeddingBlock(BaseModel):
-    """Embedding norm-guard knobs in :attr:`EffectiveSettings.embedding`.
+    """Embedding knobs in :attr:`EffectiveSettings.embedding`.
 
     The dense path ranks by L2 distance and converts to cosine-like
     similarity at the store boundary — rank-equivalent to cosine only for
@@ -105,6 +113,14 @@ class EmbeddingBlock(BaseModel):
     # instances by reference between overlays, so a mutable block would
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
+
+    # Kept empty for generic models. The dense query path applies the
+    # instruction immediately before query embedding only.
+    query_instruction: str = ""
+    # These selectors describe the exact local tokenizer used for Markdown
+    # sizing. Empty values keep the existing splitter path.
+    tokenizer_model: str = ""
+    tokenizer_revision: str = ""
 
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
