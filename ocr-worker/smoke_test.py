@@ -53,7 +53,7 @@ REPO_ROOT = WORKER_DIR.parent
 MODEL_CACHE_DIR = WORKER_DIR / ".model-cache"
 EVIDENCE_DIR = WORKER_DIR / "smoke_evidence"
 DEFAULT_FIXTURE = (
-    REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_scanned.pdf"
+    REPO_ROOT / "tests" / "fixtures" / "pdf_baseline" / "calibration" / "cal_table_text.pdf"
 )
 
 #: The three Paddle distributions that must NEVER enter the main OMRG

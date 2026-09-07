@@ -10,19 +10,11 @@ Worker commit before results: `e01994c`
 
 The smoke runner is separate from the main OMRG test suite.
 
-The required commands ran sequentially:
+The initial bare provisioned runs selected the default scanned fixture. That 605-byte one-page PDF has no embedded image data. PaddleOCR-VL returned an image placeholder, so the runner rejected it for lacking a heading, list, or table marker. The same provisioned environments then ran the licence-safe calibration table fixture with an explicit `--fixture` argument.
 
-```text
-uv run python ocr-worker/smoke_test.py --python 3.12 --provision
-uv run python ocr-worker/smoke_test.py --python 3.11 --provision
-uv run python ocr-worker/smoke_test.py --python 3.13 --provision
-```
+Bare provisioned runs now select the calibration table fixture. This fixture produces structured Markdown and validates the runner's required output marker check.
 
-The default calibration scanned fixture is a 605-byte one-page PDF with no embedded image data. PaddleOCR-VL returned an image placeholder for this fixture. The response framing and schema were valid, but the runner correctly rejected the result because it had no heading, list, or table marker.
-
-The same provisioned environments then ran the licence-safe calibration table fixture with an explicit `--fixture` argument. This fixture produced structured Markdown and supplied the committed parse evidence.
-
-## Per-Python outcomes
+## Initial per-Python outcomes
 
 | Python | Provision | Required default fixture | Structured validation fixture | Provision time | Parse time | Worker bytes after parse |
 | --- | --- | --- | --- | ---: | ---: | ---: |
@@ -98,9 +90,27 @@ the provisioned Python 3.13 environment; no model load) reported:
 }
 ```
 
-This differs from the recorded per-Python evidence above by the added
-`paddlex` entry, which is the intended identity change. The parse
-evidence files are unaffected: parse behaviour did not change.
+This differs from the initial per-Python evidence above by the added
+`paddlex` entry, which is the intended identity change. The table-fixture
+parse evidence files remain valid.
+
+### Bare provisioned smoke matrix addendum (2026-09-07)
+
+This addendum supersedes the initial default-fixture result. `DEFAULT_FIXTURE`
+now selects `calibration/cal_table_text.pdf`, which produces structured
+Markdown. The image-only `calibration/cal_scanned.pdf` result remains
+available through an explicit `--fixture` argument.
+
+| Python | Provision | Parse | Disk delta | Result |
+| --- | ---: | ---: | ---: | --- |
+| 3.11 | 3.97 s | 129.41 s | +6,305,517 bytes | PASS |
+| 3.12 | 4.81 s | 135.67 s | -4,618,747 bytes | PASS |
+| 3.13 | 4.67 s | 146.17 s | -1,686,780 bytes | PASS |
+
+Each run used `uv sync --locked` in `ocr-worker/.venv`, returned a valid
+fingerprint containing `paddlex: 3.7.2`, and produced 1,035 characters
+of structured Markdown. PaddleOCR-VL loaded weights from
+`ocr-worker/.model-cache`; no model download occurred.
 
 ## Parse evidence
 
@@ -129,7 +139,7 @@ ocr-worker/smoke_evidence/parse-python-3-13.json
 ocr-worker/smoke_evidence/parse-python-3-13.md
 ```
 
-The default scanned-fixture failure was:
+The initial default scanned-fixture result was:
 
 ```text
 parse response markdown has no heading, list, or table marker — not structured text
@@ -159,6 +169,14 @@ The cache was moved into `ocr-worker/.model-cache`, the global directory was rem
 ## Platform caveat
 
 The host is Apple Silicon M1 Pro. Paddle's official Apple Silicon inference testing targets M4 hardware. CPU inference completed on this M1 Pro for Python 3.11, 3.12, and 3.13. This result is local validation on the stated machine, not an official Paddle hardware-support claim.
+
+## Security scan
+
+The post-fix Aikido ruleset scan covered `ocr-worker/smoke_test.py`,
+`tests/test_ocr_worker_smoke_runner.py`, and this record. It reported two
+existing `AIK_py_LFI` alerts at the evidence-write calls in
+`smoke_test.py` lines 450 and 454. The current diff changes only
+`DEFAULT_FIXTURE` at line 56, so both alerts are outside this change.
 
 ## Main-environment boundary
 
