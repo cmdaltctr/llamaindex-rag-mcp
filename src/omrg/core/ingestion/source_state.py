@@ -26,6 +26,7 @@ from llama_index.core.schema import (
 )
 
 from ..vectordb.base import VectorStore
+from .ocr_identity import ocr_fingerprint_payload, ocr_routing_payload
 
 SOURCE_CONTENT_HASH_KEY = "source_content_hash"
 SOURCE_ID_KEY = "source_id"
@@ -36,7 +37,11 @@ SOURCE_ATTEMPT_KEY = "source_attempt"
 SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
-_INDEX_IDENTITY_SCHEMA = 3
+# Schema 4: the ONE bump for the shared Stage 2/3 payload change (task
+# 2.13 + future 3.11) — OCR routing and the resolved worker fingerprint
+# join unconditionally now; tokenizer identity and resolved splitter
+# extend the SAME payload later, additively. Schema 3 had none of these.
+_INDEX_IDENTITY_SCHEMA = 4
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
     SOURCE_ID_KEY,
@@ -153,6 +158,8 @@ def build_index_identity(
     chunk_overlap: int,
     text_format: str | None = None,
     embed_model: Any = None,
+    ocr_routing: dict[str, Any] | None = None,
+    ocr_worker_fingerprint: Any = None,
 ) -> str:
     """Hash the complete index-shaping configuration for one source.
 
@@ -162,6 +169,8 @@ def build_index_identity(
     ``text_format`` is the reader's DECLARED emitted-text format resolved
     before the read (design D3/D6): it decides Markdown routing, so a
     declaration change must invalidate exactly like a chunk-size change.
+    ``ocr_routing``/``ocr_worker_fingerprint`` (task 2.13, design D8) join
+    unconditionally; ``None`` yields the stable unavailable payload.
     """
     configured_provider, configured_model = _configured_embedding(settings)
     payload = {
@@ -192,6 +201,9 @@ def build_index_identity(
             "effective_chunk_size": chunk_size,
             "effective_chunk_overlap": chunk_overlap,
         },
+        # Task 2.13 (design D8): unconditional members — see ocr_identity.
+        "ocr_routing": ocr_routing_payload(settings) if ocr_routing is None else ocr_routing,
+        "ocr_worker_fingerprint": ocr_fingerprint_payload(ocr_worker_fingerprint),
         # Extracted metadata participates in LlamaIndex embedding text unless a
         # strategy excludes it. Timeouts and retry budgets decide whether a
         # real ingest completes extraction or falls back to degraded/local
