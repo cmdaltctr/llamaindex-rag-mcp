@@ -45,8 +45,26 @@ async def read_documents(
             input_files=[str(file_path)],
             filename_as_id=True,
             file_extractor={".pdf": pdf_reader},
+            # Surface real reader failures (including the OCR seam's
+            # structured post-dispatch errors, task 2.9) instead of
+            # letting SimpleDirectoryReader swallow them into an empty
+            # document list: the per-file error boundary needs the
+            # cause, and the backend contract says exceptions propagate.
+            raise_on_error=True,
         )
-        return reader.load_data()
+        try:
+            return reader.load_data()
+        except Exception as exc:
+            # SimpleDirectoryReader wraps extractor failures in a bare
+            # ``Exception("Error loading file")`` whose only payload is
+            # the chained cause (llama-index 0.14 file/base.py). Raise
+            # the cause instead so the per-file error boundary sees the
+            # real failure — task 2.9 requires the structured worker
+            # error, not a generic wrapper message.
+            cause = exc.__cause__
+            if cause is not None and str(exc) == "Error loading file":
+                raise cause from None
+            raise
 
     # Blocking parser work runs in a worker thread so the event loop
     # stays responsive (spec: "no event-loop blocking").
