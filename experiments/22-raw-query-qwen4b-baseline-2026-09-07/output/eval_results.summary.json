@@ -1,0 +1,153 @@
+{
+  "experiment": "22-raw-query-qwen4b-baseline-2026-09-07",
+  "metrics_by_cell": {
+    "dense_only__raw": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.724546,
+        "alpha_ndcg_at_10": 0.412263,
+        "hit_at_5": 0.695067,
+        "hit_at_10": 0.757848,
+        "mrr_at_10": 0.557248,
+        "recall_at_1": 0.128602,
+        "recall_at_3": 0.190483,
+        "recall_at_5": 0.226584,
+        "recall_at_10": 0.295773,
+        "recall_at_20": 0.400696,
+        "recall_at_50": 0.48468,
+        "mean_latency_ms": 1590.53,
+        "p95_latency_ms": 5487.7
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.712869,
+        "alpha_ndcg_at_10": 0.369335,
+        "hit_at_5": 0.685,
+        "hit_at_10": 0.755,
+        "mrr_at_10": 0.533831,
+        "recall_at_1": 0.058391,
+        "recall_at_3": 0.1268,
+        "recall_at_5": 0.166759,
+        "recall_at_10": 0.243611,
+        "recall_at_20": 0.355012,
+        "recall_at_50": 0.446351,
+        "mean_latency_ms": 1678.91,
+        "p95_latency_ms": 6275.1
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.333333,
+        "alpha_ndcg_at_10": 0.186255,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.039216,
+        "recall_at_5": 0.058824,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.117647,
+        "recall_at_50": 0.271148,
+        "mean_latency_ms": 975.63,
+        "p95_latency_ms": 1151.3
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.9,
+        "alpha_ndcg_at_10": 0.875445,
+        "hit_at_5": 0.85,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.85,
+        "recall_at_1": 0.85,
+        "recall_at_3": 0.85,
+        "recall_at_5": 0.85,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.9,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 798.95,
+        "p95_latency_ms": 1147.3
+      }
+    },
+    "hybrid__raw": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.754068,
+        "alpha_ndcg_at_10": 0.435028,
+        "hit_at_5": 0.753363,
+        "hit_at_10": 0.816143,
+        "mrr_at_10": 0.578634,
+        "recall_at_1": 0.121354,
+        "recall_at_3": 0.193299,
+        "recall_at_5": 0.255884,
+        "recall_at_10": 0.327389,
+        "recall_at_20": 0.417649,
+        "recall_at_50": 0.515288,
+        "mean_latency_ms": 1023.07,
+        "p95_latency_ms": 1984.2
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.749119,
+        "alpha_ndcg_at_10": 0.405893,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.82,
+        "mrr_at_10": 0.569177,
+        "recall_at_1": 0.06531,
+        "recall_at_3": 0.145234,
+        "recall_at_5": 0.199723,
+        "recall_at_10": 0.278862,
+        "recall_at_20": 0.378209,
+        "recall_at_50": 0.479773,
+        "mean_latency_ms": 1024.66,
+        "p95_latency_ms": 1900.1
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.144644,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.318207,
+        "mean_latency_ms": 812.47,
+        "p95_latency_ms": 900.1
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.769936,
+        "hit_at_5": 0.85,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.735,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.7,
+        "recall_at_5": 0.85,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 1038.7,
+        "p95_latency_ms": 1984.2
+      }
+    }
+  },
+  "runtime_manifest": {
+    "embedding_model": "qwen/qwen3-embedding-4b",
+    "embedding_provider": "openrouter (cloud)",
+    "embedding_dims": 2560,
+    "digest_note": "cloud inference cannot pin a model digest; slug + date recorded",
+    "measurement_date": "2026-09-07",
+    "vector_store": "lancedb",
+    "chunk_count": 32631,
+    "corpus_docs": {
+      "freshstack": 10009,
+      "continuity": 15
+    },
+    "qrels_sha256": "ccd3bc5732d69a3715a322c8557261f4f7c46ca72951ac6dce160e666e4b2c57",
+    "latency_note": "query latency includes network round-trip to OpenRouter",
+    "index_note": "omrg production ingestion (default chunking); relevance is path-level, not char-offset-level"
+  }
+}
