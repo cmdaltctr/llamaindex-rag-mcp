@@ -245,6 +245,25 @@ equal to the capacity, so the composition boundary validates
 `chunk_overlap < markdown_chunk_size` and fails with a named setting rather
 than surfacing a library error mid-ingest.
 
+The composition-boundary check above validates the two settings as
+configured, unreduced. It cannot account for what heading prepend does to the
+capacity a chunk actually has left: once a heading prefix is reserved (D4.3),
+a chunk's usable content capacity is `markdown_chunk_size` minus that
+prefix's token length, and this reduced capacity is what the requested
+overlap must fit — not the configured `markdown_chunk_size`. A short
+`markdown_chunk_size`, a long heading path, or both together can push the
+reduced capacity down to or below `CHUNKING__CHUNK_OVERLAP`, even when the
+unreduced settings passed the composition-boundary check.
+
+Silently clamping the overlap to whatever the reduced capacity allowed was
+the pre-fix behaviour: the splitter accepted any overlap that fit and emitted
+chunks whose actual overlap had quietly fallen below the configured value,
+with no signal that the requested overlap had been ignored. The fix evaluates
+the reduced capacity before it is used and fails for that source, naming
+`CHUNKING__MARKDOWN_CHUNK_SIZE`, `CHUNKING__CHUNK_OVERLAP`, and
+`CHUNKING__MARKDOWN_HEADING_PREPEND`, instead of emitting chunks that diverge
+from the configured contract unannounced.
+
 #### D4.3 The cap governs the finalised chunk text
 
 The token cap is the size of the text the chunk carries after
@@ -269,6 +288,17 @@ embedding model's context limit is visible evidence rather than an assumption.
 Folding metadata into the cap is deliberately out of scope: it would couple the
 chunker to the extraction pipeline's output, which is not known when the
 splitter runs.
+
+Third, a chunk that cannot be reduced below the cap is never emitted
+oversized, and the splitter's own recursion limit or a raw library exception
+is never allowed to surface directly. Splitting shrinks the capacity in
+single-token steps, holding the requested overlap fixed, until either the
+splitter makes further progress or the capacity reaches the requested
+overlap with no progress possible. A chunk that still does not fit at that
+point fails for that source, naming `CHUNKING__MARKDOWN_CHUNK_SIZE`, through
+the same per-file failure path that a parse or embedding failure already
+uses: that source is reported `status="failed"` with the error recorded, and
+the rest of the ingestion batch continues.
 
 #### D4.4 Tokenizer resolution is exact, pinned, and offline-capable
 
