@@ -17,8 +17,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
+import tempfile
 from pathlib import Path
+from typing import Any
 
 from .protocol import (
     PROTOCOL_VERSION,
@@ -29,9 +32,12 @@ from .protocol import (
     decode_request_line,
     encode_line,
     make_failure,
+    make_success,
 )
 
 WORKER_BACKEND = "paddleocr-vl"
+WORKER_DIR = Path(__file__).resolve().parents[2]
+MODEL_CACHE_DIR = WORKER_DIR / ".model-cache"
 
 logger = logging.getLogger("omrg_ocr_worker")
 _logger_configured = False
@@ -73,38 +79,138 @@ def parse_document(request: ParseRequest) -> ParseSuccess:
     pdf_path = Path(request.pdf_path)
     if not pdf_path.is_file():
         raise WorkerParseError("invalid_pdf_path", f"no readable PDF at {request.pdf_path}")
-    return _run_document_pipeline(pdf_path)
+    return _run_document_pipeline(pdf_path, request.id)
 
 
-def _run_document_pipeline(pdf_path: Path) -> ParseSuccess:
-    """Invoke the PaddleOCR-VL document pipeline inside the worker env.
+#: Process-wide pipeline singleton (design D2.2): the long-lived worker
+#: loads the document pipeline and model once, then reuses them for
+#: every later OCR-required file it accepts.
+_PIPELINE_SINGLETON: Any | None = None
+
+
+def _reset_pipeline_cache() -> None:
+    """Drop the cached pipeline.
+
+    Production code never calls this; tests use it to isolate module
+    state without importing Paddle.
+    """
+    global _PIPELINE_SINGLETON
+    _PIPELINE_SINGLETON = None
+
+
+def _apply_worker_cache_env() -> None:
+    """Force both Paddle cache variables to the worker-local directory.
+
+    Assignment, not ``setdefault``: an inherited value pointing outside
+    ``ocr-worker/`` would direct model reads and downloads to a path
+    outside the worker-owned, git-ignored cache. Both variables are set
+    before any Paddle import because PaddleOCR and PaddleX read them at
+    import and initialisation time.
+    """
+    os.environ["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)
+    os.environ["PADDLE_PDX_CACHE_HOME"] = str(MODEL_CACHE_DIR)
+
+
+def _load_pipeline() -> Any:
+    """Return the process-wide PaddleOCR-VL pipeline, constructing it once.
 
     The lazy import is load-bearing. This module must stay importable
     and testable in a Paddle-free environment, so the Paddle packages
     are only ever touched inside this function, never at module level.
-    When wired with the provisioned smoke test (task 2.15) the body
-    follows the official API shape::
 
-        from paddleocr import PaddleOCRVL  # lazy, worker-env only
-        pipeline = PaddleOCRVL()
-        results = pipeline.predict(input=str(pdf_path))
+    Raises:
+        WorkerParseError: If PaddleOCR-VL is unavailable in this
+            environment. No cache entry is created, so a later request
+            retries the import.
+    """
+    global _PIPELINE_SINGLETON
+    _apply_worker_cache_env()
+    if _PIPELINE_SINGLETON is None:
+        try:
+            from paddleocr import PaddleOCRVL  # lazy, worker-env only
+        except (ImportError, ModuleNotFoundError) as exc:
+            raise WorkerParseError(
+                "paddle_unavailable", f"PaddleOCR-VL import failed: {exc}"
+            ) from exc
+        _PIPELINE_SINGLETON = PaddleOCRVL(
+            device="cpu",
+            use_ocr_for_image_block=True,
+            format_block_content=True,
+        )
+    return _PIPELINE_SINGLETON
+
+
+def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
+    """Invoke the full PaddleOCR-VL document pipeline inside the worker env.
+
+    The pipeline is loaded once per worker process (design D2.2) and
+    performs layout analysis, reading-order handling, recognition, and
+    Markdown assembly before the worker creates its protocol envelope.
 
     Args:
         pdf_path: The validated PDF path from the request.
+        request_id: Correlation identifier for the terminal response.
 
     Returns:
         The assembled success envelope with pipeline metadata.
 
     Raises:
-        WorkerParseError: Always in this wave, naming the pending
-            wiring, so a real pipeline call is never faked.
+        WorkerParseError: If PaddleOCR-VL is unavailable or the pipeline
+            returns no usable structured Markdown.
     """
-    raise WorkerParseError(
-        "pipeline_not_wired",
-        "the PaddleOCR-VL pipeline call is completed with the provisioned "
-        "smoke test (change task 2.15); this build carries protocol "
-        "framing only",
+    pipeline = _load_pipeline()
+
+    try:
+        page_results = list(pipeline.predict(input=str(pdf_path)))
+        if not page_results:
+            raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")
+        structured_results = list(
+            pipeline.restructure_pages(
+                page_results,
+                merge_tables=True,
+                relevel_titles=True,
+                concatenate_pages=True,
+            )
+        )
+        markdown = _save_markdown_results(structured_results)
+    except WorkerParseError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors
+        raise WorkerParseError("pipeline_error", f"{type(exc).__name__}: {exc}") from exc
+
+    return make_success(
+        request_id,
+        markdown,
+        ocr_backend=WORKER_BACKEND,
+        page_count=len(page_results),
+        extra_metadata={
+            "reader": WORKER_BACKEND,
+            "ocr_used": True,
+            "pipeline": "PaddleOCRVL",
+            "pipeline_revision": "predict+restructure_pages",
+            "model": "PaddleOCR-VL",
+            "model_revision": "1.6",
+        },
     )
+
+
+def _save_markdown_results(results: list[Any]) -> str:
+    """Extract official Markdown output without writing persistent artefacts."""
+    with tempfile.TemporaryDirectory(prefix=".ocr-output-", dir=WORKER_DIR) as output_dir:
+        output_path = Path(output_dir)
+        for result in results:
+            result.save_to_markdown(save_path=str(output_path))
+        markdown_files = sorted(output_path.rglob("*.md"))
+        if not markdown_files:
+            raise WorkerParseError(
+                "missing_markdown", "PaddleOCR-VL produced no Markdown result files"
+            )
+        markdown = "\n\n".join(
+            path.read_text(encoding="utf-8").strip() for path in markdown_files
+        ).strip()
+    if not markdown:
+        raise WorkerParseError("empty_markdown", "PaddleOCR-VL produced empty Markdown")
+    return markdown
 
 
 # ── Entry loop ─────────────────────────────────────────────────────────────

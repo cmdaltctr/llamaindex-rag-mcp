@@ -172,3 +172,19 @@ def test_real_worker_fingerprint_via_probe(monkeypatch: pytest.MonkeyPatch) -> N
     assert fingerprint.available is True
     assert fingerprint.protocol_version == "1.0"
     assert "omrg-ocr-worker" in dict(fingerprint.packages)
+
+
+def test_real_worker_fingerprint_declares_paddlex(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fingerprint carries PaddleX, the pipeline's delegation target.
+
+    ``PaddleOCRVL.predict`` and ``restructure_pages`` delegate to the
+    installed PaddleX package, so a PaddleX-only change can alter the
+    emitted Markdown. Its version must therefore participate in the
+    worker identity; a Paddle-free environment reports
+    ``not-installed`` for it, which is still a stable fingerprint value.
+    """
+    worker_src = REPO_ROOT / "ocr-worker" / "src"
+    monkeypatch.setenv("PYTHONPATH", str(worker_src))
+    fingerprint = probe_ocr_worker([sys.executable, "-m", "omrg_ocr_worker"], timeout=PROBE_TIMEOUT)
+    assert fingerprint.available is True
+    assert "paddlex" in dict(fingerprint.packages)

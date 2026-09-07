@@ -10,8 +10,10 @@ standard error only).
 from __future__ import annotations
 
 import io
+import os
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -313,9 +315,10 @@ def test_worker_loop_invalid_path_uses_real_seam(
 def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path) -> None:
     """The real ``python -m omrg_ocr_worker`` keeps stdout protocol-only.
 
-    The parse seam is unwired in this wave, so the terminal envelope is
-    a ``pipeline_not_wired`` error — which still proves the framing:
-    exactly one JSON line on stdout, logs on stderr, exit status 0.
+    The main environment has no Paddle worker dependencies, so the
+    terminal envelope is a ``paddle_unavailable`` error. This still
+    proves the framing: exactly one JSON line on stdout, logs on stderr,
+    exit status 0.
     """
     request = omrg_protocol.make_request("req-sub-1", str(small_pdf))
     completed = subprocess.run(
@@ -333,7 +336,7 @@ def test_worker_subprocess_stdout_is_pure_json_lines(small_pdf: Path) -> None:
     assert len(stdout_lines) == 1
     decoded = omrg_protocol.decode_response_line(stdout_lines[0], expected_id="req-sub-1")
     assert isinstance(decoded, omrg_protocol.ParseFailure)
-    assert decoded.error.code == "pipeline_not_wired"
+    assert decoded.error.code == "paddle_unavailable"
     # Worker logs travel on stderr only.
     assert "starting" in completed.stderr
 
@@ -375,3 +378,64 @@ def test_worker_subprocess_exits_on_uncorrelatable_line() -> None:
     assert completed.returncode == 2
     assert completed.stdout == ""
     assert "stopping" in completed.stderr
+
+
+# ── Pipeline reuse and worker-local cache env (review fixes) ──────────────
+
+
+def test_pipeline_is_constructed_once_across_requests(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path
+) -> None:
+    """Two accepted requests in one worker process share one pipeline.
+
+    Design D2.2 keeps the worker long-lived so later OCR-required files
+    reuse the loaded pipeline; reconstructing it per request would repeat
+    model initialisation for every document.
+    """
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    worker._reset_pipeline_cache()
+    constructed: list[dict] = []
+
+    class FakePaddleOCRVL:
+        def __init__(self, **kwargs: object) -> None:
+            constructed.append(dict(kwargs))
+
+        def predict(self, *, input: str) -> list[object]:
+            return [object()]
+
+        def restructure_pages(self, *args: object, **kwargs: object) -> list[object]:
+            return [object()]
+
+    monkeypatch.setitem(
+        sys.modules, "paddleocr", types.SimpleNamespace(PaddleOCRVL=FakePaddleOCRVL)
+    )
+    monkeypatch.setattr(worker, "_save_markdown_results", lambda results: "# Parsed")
+
+    try:
+        first = worker.parse_document(worker_protocol.make_request("req-pipe-1", str(small_pdf)))
+        second = worker.parse_document(worker_protocol.make_request("req-pipe-2", str(small_pdf)))
+    finally:
+        worker._reset_pipeline_cache()
+
+    assert first.markdown == "# Parsed"
+    assert second.markdown == "# Parsed"
+    assert len(constructed) == 1, "the pipeline must be constructed once per worker process"
+
+
+def test_worker_forces_worker_local_paddle_cache_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Inherited PADDLE cache variables cannot escape the worker directory.
+
+    A ``setdefault``-style application would keep an inherited value
+    pointing outside ``ocr-worker/``, directing model reads and downloads
+    to a location outside the worker-owned, git-ignored cache.
+    """
+    worker = _load_worker_module(monkeypatch)
+    monkeypatch.setenv("PADDLE_OCR_BASE_DIR", "/elsewhere/omrg-test/ocr")
+    monkeypatch.setenv("PADDLE_PDX_CACHE_HOME", "/elsewhere/omrg-test/pdx")
+    worker._apply_worker_cache_env()
+    assert os.environ["PADDLE_OCR_BASE_DIR"] == str(worker.MODEL_CACHE_DIR)
+    assert os.environ["PADDLE_PDX_CACHE_HOME"] == str(worker.MODEL_CACHE_DIR)
