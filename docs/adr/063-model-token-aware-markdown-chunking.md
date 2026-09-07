@@ -1,4 +1,4 @@
-# ADR-062: Model-Token-Aware Markdown Chunking
+# ADR-063: Model-Token-Aware Markdown Chunking
 
 **Date:** 2026-09-07
 **Status:** Proposed
