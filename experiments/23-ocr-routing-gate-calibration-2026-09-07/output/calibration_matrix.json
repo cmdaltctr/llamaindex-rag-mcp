@@ -1,0 +1,649 @@
+{
+  "calibration_files": [
+    "calibration/cal_clean_text.pdf",
+    "calibration/cal_scanned.pdf",
+    "calibration/cal_table_text.pdf"
+  ],
+  "grid": [
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.5,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.6,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.7,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.8,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.85,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.9,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 0.95,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 0.0,
+      "routed_to_ocr": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_scanned.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "kept_on_fast_path": [],
+      "text_based_routed_fp": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 0.1,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 0.25,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 0.5,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 0.75,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    },
+    {
+      "min_confidence": 1.0,
+      "page_fraction": 1.0,
+      "routed_to_ocr": [
+        "calibration/cal_scanned.pdf"
+      ],
+      "kept_on_fast_path": [
+        "calibration/cal_clean_text.pdf",
+        "calibration/cal_table_text.pdf"
+      ],
+      "text_based_routed_fp": [],
+      "ocr_required_left_fp": []
+    }
+  ]
+}
