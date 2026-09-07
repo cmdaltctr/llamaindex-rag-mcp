@@ -52,16 +52,14 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     """Produce the server-default :class:`EffectiveSettings` from resolved ``Settings``.
 
     This is the adapter that bridges the config layer (flat ``Settings``)
-    and the core layer (frozen ``EffectiveSettings``).  The
-    :class:`ProfileResolver` overlays only the profile-owned levers onto
-    the instance this function produces (task 4.4).
+    and the core layer (frozen ``EffectiveSettings``). The
+    :class:`ProfileResolver` overlays only profile-owned levers (task 4.4).
 
     Args:
         settings: Resolved settings (defaults to the singleton).
 
     Returns:
-        A frozen :class:`EffectiveSettings` with all cross-cutting fields
-        populated from *settings*.
+        A frozen :class:`EffectiveSettings` with cross-cutting fields.
     """
     from .core.settings import (
         AnswerBlock,
@@ -79,9 +77,8 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
     if settings.chunking.chunk_overlap >= settings.chunking.markdown_chunk_size:
         raise ValueError("CHUNKING__CHUNK_OVERLAP must be less than CHUNKING__MARKDOWN_CHUNK_SIZE")
 
-    # The nested Settings blocks map 1:1 onto the EffectiveSettings blocks,
-    # so this is a straight copy plus the cross-cutting fields. Before the
-    # nested schema this function had to restate ~30 flat field names.
+    # Nested Settings blocks map 1:1 onto EffectiveSettings blocks — a
+    # straight copy plus cross-cutting fields (pre-nested-schema: ~30 names).
     return EffectiveSettings(
         chunking=ChunkingBlock(**settings.chunking.model_dump()),
         ingestion=IngestionBlock(**settings.ingestion.model_dump()),
