@@ -21,6 +21,7 @@ The change should use those seams rather than create a second ingestion or retri
 3. Chunk Markdown on semantic structure while enforcing the embedding model's real token budget.
 4. Support Qwen-style query instructions without changing document embedding text.
 5. Keep the implementation registry-driven, settings-injected, and easy to benchmark stage by stage.
+6. Keep every Paddle package and import outside OMRG's main environment.
 
 ## Non-goals
 
@@ -51,12 +52,15 @@ The change should use those seams rather than create a second ingestion or retri
        extractable          OCR required
        text-based         scanned/image/mixed/
        PDF                  failed-quality gate
-            │                   │
-            ▼                   ▼
-     pdf-inspector          PaddleOCR-VL
-            │              full document pipeline
-            │                   │
-            └─────────┬─────────┘
+             │                   │
+             ▼                   ▼
+      pdf-inspector       JSON Lines request
+             │                   │
+             │                   ▼
+             │         isolated PaddleOCR-VL worker
+             │          full document pipeline
+             │                   │
+             └─────────┬─────────┘
                       ▼
               STRUCTURED MARKDOWN
                       │
@@ -129,15 +133,52 @@ A text-based document is not sent to Paddle merely because it is visually sophis
 
 The OCR branch is entered only from explicit inspection evidence or a calibrated extraction-quality gate.
 
-### D2. OCR-required PDFs use the full PaddleOCR-VL document pipeline
+### D2. OCR-required PDFs use the full PaddleOCR-VL pipeline in an isolated worker
 
-The fallback uses PaddleOCR/PaddleX as a document parser, not merely the VLM checkpoint as a raw OCR function. The adapter must retain layout/reading-order/table information that can be represented downstream.
+The fallback uses PaddleOCR/PaddleX as a document parser, not merely the VLM checkpoint as a raw OCR function. The worker must retain layout, reading-order, and table information that can be represented downstream.
 
-For the first implementation, route the whole PDF when OCR is required. Page-level stitching looks attractive but creates difficult ordering, metadata, and boundary rules and is not required to solve the current failure mode.
+For the first implementation, route the whole PDF when OCR is required. Page-level stitching creates difficult ordering, metadata, and boundary rules. It is not required to solve the current failure mode.
 
-Paddle is optional and lazy. The composition root owns the runtime availability probe and injects the resolved capability. `config/` remains pure settings data.
+#### D2.1 The worker owns the Paddle environment
 
-If Paddle is unavailable, the system keeps `pdf-inspector`'s existing partial Markdown and marks the degraded result honestly.
+The worker has a separate project and lockfile. Its declared Python range is `>=3.11,<3.14`. The locked environment owns PaddleOCR, PaddleX, PaddlePaddle, model-runtime packages, and accelerator packages.
+
+OMRG's main project and lockfile contain none of those packages. No OMRG module imports Paddle code, including inside lazy branches. The OMRG side depends only on its worker client, injected settings, standard process control, and the protocol contract.
+
+The worker command and environment location come from injected configuration. No source file contains a machine-specific path. `config/` remains pure settings data, while the composition boundary resolves the worker capability and injects the client.
+
+#### D2.2 The worker is lazy, long-lived, and owner-scoped
+
+Composition creates a cheap client without starting the long-lived worker or loading its model. `pdf-inspector` runs first. A clean or otherwise extractable PDF returns on that path and never starts the worker.
+
+The first OCR-required dispatch starts one worker for that client. The worker loads the document pipeline and model inside its isolated process, handles the request, and stays alive for later OCR-required PDFs owned by the same runtime.
+
+The runtime owner closes the client through its normal resource lifecycle. Closing stops new requests, closes the input pipe, waits for a bounded graceful exit, and terminates the process if it does not exit. Host-process shutdown provides the final cleanup boundary.
+
+If the process crashes, times out, reaches unexpected end-of-file, or violates the protocol, the client marks it unusable and discards the handle. The failed request is not replayed automatically. A later OCR-required file may lazily start a new worker.
+
+#### D2.3 Standard input and output carry a versioned JSON Lines protocol
+
+The transport uses UTF-8 JSON Lines. Each request is one complete JSON object terminated by one newline. While healthy, the worker returns exactly one terminal response JSON object on one line for each accepted request. Each envelope carries a request identifier and protocol version. A successful response carries structured Markdown plus metadata under a versioned output schema; an error response carries a bounded, structured error without protocol-breaking traceback text.
+
+Standard output is protocol-only. Worker logs, warnings, progress, and tracebacks go to standard error. The client drains standard error independently so a full log pipe cannot block the worker. Any non-JSON line, extra response line, mismatched request identifier, or unsupported protocol version is a protocol failure.
+
+#### D2.4 Capability discovery does not load the model
+
+The worker distribution exposes a metadata-only capability probe. It reports a canonical fingerprint containing:
+
+```text
+availability
+protocol version
+worker package names and exact versions
+document-pipeline identity and revision
+model identity and revision
+output-schema identity and version
+```
+
+The probe reads environment metadata and static worker declarations. It must not initialise Paddle, load model weights, download assets, or start the long-lived worker. The composition boundary can therefore obtain the fingerprint before file reading while keeping model cost lazy. Missing files, an unusable worker environment, malformed probe output, or an incompatible protocol produce a stable unavailable fingerprint.
+
+If the worker is unavailable before dispatch, the system keeps `pdf-inspector`'s existing partial Markdown and marks the degraded result honestly. Dispatch occurs when the client writes and flushes the complete request line. After that point, a worker crash, timeout, protocol failure, or structured worker error is a per-file ingestion failure. The system does not replace that failure with partial Markdown and does not mark the source current.
 
 ### D3. Structured Markdown is the canonical boundary
 
@@ -335,7 +376,7 @@ Once calibrated, the threshold is not a constant in the routing module. It
 follows the shape the existing PDF knobs already use: top-level fields on
 `EffectiveSettings` next to `pdf_reader` and `liteparse_ocr_enabled`, resolved
 once at the composition root and injected downstream. `config/` never probes
-for the OCR stack, no module reads a settings singleton, and the packaged
+for the OCR worker, no module reads a settings singleton, and the packaged
 default keeps the fallback off until Stage 6 promotes it. New names must not
 collide with an entry in the retired-variable tripwire.
 
@@ -343,8 +384,8 @@ collide with an entry in the retired-variable tripwire.
 
 `build_index_identity` in `core/ingestion/source_state.py` already hashes every
 input that can change stored chunks or vectors, and `is_complete_current_version`
-uses that hash to decide `skipped_unchanged`. This change adds four inputs that
-change emitted chunks, so all four join that payload. No second identity
+uses that hash to decide `skipped_unchanged`. This change adds four input groups
+that can change emitted chunks, so all four join that payload. No second identity
 mechanism is introduced and `_INDEX_IDENTITY_SCHEMA` is bumped once for the new
 payload shape.
 
@@ -357,24 +398,43 @@ keyword arguments:
 embedding tokenizer identity   configured tokenizer repository + revision
 active Markdown splitter       resolved: model-token-aware or legacy fallback
 OCR routing configuration      the calibrated gate's settings values
-OCR capability                 resolved: fallback available or absent
+OCR worker fingerprint         resolved metadata-only capability object
 ```
 
-Two of those are *resolved* rather than *configured*, and that distinction is
-the point. A configured-but-unresolvable tokenizer runs the legacy splitter; a
-configured-but-uninstalled OCR stack runs `pdf-inspector` alone. If identity
-recorded only the configuration, a corpus indexed while degraded would keep
-matching after the capability arrived, and every one of those files would stay
-`skipped_unchanged` forever — with no signal that its chunks came from the path
-the operator has since replaced. Recording what actually resolved makes the
-capability transition an identity change, and the existing failure-safe
-replacement path then re-ingests the affected sources on the next run.
+The worker fingerprint has one canonical shape:
+
+```text
+availability
+protocol version
+worker package names and exact versions
+document-pipeline identity and revision
+model identity and revision
+output-schema identity and version
+```
+
+The fingerprint is resolved before the file is read. Its metadata-only probe
+does not load Paddle or the model and does not start the long-lived worker. An
+unavailable, protocol-incompatible, or output-schema-incompatible worker
+produces a stable unavailable fingerprint rather than omitting the field. The
+fingerprint excludes transient process details such as process identifiers and
+timestamps.
+
+The active splitter and worker fingerprint are *resolved* rather than only
+configured, and that distinction is the point. A configured-but-unresolvable
+tokenizer runs the legacy splitter; an unavailable worker runs `pdf-inspector`
+alone. If identity recorded only the configuration, a corpus indexed while
+degraded would keep matching after the capability arrived, and every one of
+those files would stay `skipped_unchanged` forever. Recording what actually
+resolved makes the capability transition an identity change. Changes to the
+worker protocol, package set, pipeline, model, or output schema also change the
+identity because each can alter the returned Markdown. The existing
+failure-safe replacement path then re-ingests affected sources on the next run.
 
 Inclusion is unconditional, matching the doctrine already stated in
 `build_index_identity`: parser selectors are hashed even for file types that
 cannot use them, because unnecessary reprocessing is safer than reusing stale
-vectors. Installing the OCR extra will therefore invalidate non-PDF sources
-too. That cost is accepted rather than engineered around; a conditional
+vectors. Provisioning or changing the worker will therefore invalidate non-PDF
+sources too. That cost is accepted rather than engineered around; a conditional
 identity would have to know which selectors a file will use before the file is
 read.
 
@@ -420,16 +480,19 @@ EMBEDDING__QUERY_INSTRUCTION
 
 `EMBEDDING__QUERY_INSTRUCTION` is empty by default until the experiment justifies a production default. It affects query embeddings only and stays out of the document index identity (D8).
 
-The OCR routing gate adds top-level fields beside the existing `PDF_READER` and `LITEPARSE_OCR_ENABLED` knobs rather than a new block, because that is the shape the PDF settings already have. Their names and calibrated values are Stage 1 output (D7.2, D7.3), so this proposal fixes only their shape:
+The OCR routing gate adds top-level fields beside the existing `PDF_READER` and `LITEPARSE_OCR_ENABLED` knobs rather than a new block, because that is the shape the PDF settings already have. Task 1.8 fixes the concrete names; calibrated values remain Stage 1/5 output (D7.2, D7.3):
 
 ```text
-one enable/mode field  packaged default keeps the fallback off
-the calibrated gate    threshold values, no hardcoded constant in the router
+OCR_FALLBACK_ENABLED           packaged default False until Stage 6 promotion
+OCR_FALLBACK_MIN_CONFIDENCE    route to OCR when inspection confidence is below this
+OCR_FALLBACK_PAGE_FRACTION     route to OCR when pages_needing_ocr / page_count is at or above this
 ```
 
-No new flat compatibility variables are added, and no new name may collide with an entry in the retired-variable tripwire.
+Routing semantics: `pdf_type` of scanned or image-based is OCR-required unconditionally; mixed classification, a confidence below `OCR_FALLBACK_MIN_CONFIDENCE`, or an OCR-page proportion at or above `OCR_FALLBACK_PAGE_FRACTION` makes a text-extractable PDF OCR-eligible. Packaged threshold defaults are `0.0` (never additionally triggered), so with the fallback disabled or thresholds untouched the gate routes by classification only. All three names are absent from the retired-variable tripwire in `config/legacy.py` (checked 2026-09-07); no new flat compatibility aliases are added.
 
-OCR availability is a runtime capability, not a secret or model-choice setting. The heavy OCR stack lives in an optional extra and is resolved at the composition boundary. The resolved capability is injected, and it is part of the index identity precisely because it decides which extraction path actually ran (D8).
+OCR worker location, launch command, and request timeout are injected operational settings. They are not routing-promotion gates. No machine-specific path is hardcoded, and `config/` performs no capability probe.
+
+Worker availability is a runtime capability, not a secret or model-choice setting. The composition boundary resolves the metadata-only fingerprint and injects the client. The fingerprint participates in `source_index_identity` because it describes the extraction path and output contract that can shape stored text (D8).
 
 ## Dependencies
 
@@ -440,21 +503,24 @@ OCR availability is a runtime capability, not a secret or model-choice setting. 
 
 Both need dependency-floor entries once the implementation experiment selects tested versions.
 
-### Optional OCR
+### Isolated OCR worker
 
-A new optional OCR extra contains the tested PaddleOCR/PaddleX/PaddlePaddle combination. The exact package floors should be recorded from the implementation environment rather than guessed in this proposal.
+The worker owns a separate lockfile and Python `>=3.11,<3.14` environment. That lockfile contains the tested PaddleOCR, PaddleX, PaddlePaddle, model-runtime, and accelerator package versions. Exact versions come from the isolated implementation environment and enter the capability fingerprint.
+
+OMRG's main dependency declarations and lockfile contain no Paddle package. OMRG source imports no Paddle module. Process control and JSON Lines framing use the main environment's existing Python facilities.
 
 No new cloud API or API key is required.
 
 ## Failure behaviour
 
 1. `pdf-inspector` fails: preserve the existing per-file ingestion error boundary.
-2. OCR is required and Paddle is installed: use Paddle and emit structured Markdown.
-3. OCR is required and Paddle is absent: keep the partial `pdf-inspector` result, set a clear degraded diagnostic, and continue.
-4. Paddle fails for one file: return a structured per-file failure or the explicitly defined safe fallback; never crash the MCP boundary.
-5. Model tokenizer cannot be loaded: do not claim exact model-token chunking. Use the existing splitter path with a clear diagnostic unless the operator explicitly selected a fail-closed experimental mode later. The fallback is the *resolved* splitter state, so it enters the index identity and a source indexed under it is re-ingested once the tokenizer resolves (D8).
-6. Configured overlap is greater than or equal to the Markdown chunk size: fail at the composition boundary naming both settings, rather than letting the splitter raise part-way through a batch.
-7. Query instruction is empty: preserve current query embedding behaviour exactly.
+2. OCR is required and the worker is unavailable before dispatch: keep the partial `pdf-inspector` result, set a clear degraded diagnostic, and continue.
+3. OCR is required and the worker accepts the request: use one JSON Lines response and emit its structured Markdown.
+4. The worker crashes, times out, closes its output, returns malformed protocol data, or reports an error after dispatch: invalidate the process and return a structured per-file ingestion error. Do not substitute the partial `pdf-inspector` output, do not mark the source current, and preserve any prior current source version through the existing failure-safe replacement boundary.
+5. A later OCR-required file after worker failure: start a fresh worker lazily. Do not replay the failed request automatically.
+6. Model tokenizer cannot be loaded: do not claim exact model-token chunking. Use the existing splitter path with a clear diagnostic unless the operator explicitly selected a fail-closed experimental mode later. The fallback is the *resolved* splitter state, so it enters the index identity and a source indexed under it is re-ingested once the tokenizer resolves (D8).
+7. Configured overlap is greater than or equal to the Markdown chunk size: fail at the composition boundary naming both settings, rather than letting the splitter raise part-way through a batch.
+8. Query instruction is empty: preserve current query embedding behaviour exactly.
 
 ## Evaluation
 
