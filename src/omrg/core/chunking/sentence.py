@@ -19,6 +19,11 @@ from .markdown import (
     drop_small_markdown_chunks,
     ensure_heading_metadata,
 )
+from .model_token import (
+    MarkdownChunkingResolution,
+    resolve_markdown_chunking,
+    split_markdown_documents,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +33,8 @@ def _split_documents_sync(
     is_markdown: bool,
     chunk_size: int,
     chunk_overlap: int,
+    markdown_chunking: MarkdownChunkingResolution | None = None,
+    heading_prepend: bool = False,
 ) -> list:
     """Synchronous document splitting — called via ``asyncio.to_thread``.
 
@@ -40,6 +47,15 @@ def _split_documents_sync(
     Returns:
         List of LlamaIndex Node objects.
     """
+    if is_markdown and markdown_chunking and markdown_chunking.model_token_aware:
+        return split_markdown_documents(
+            documents,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            resolution=markdown_chunking,
+            heading_prepend=heading_prepend,
+        )
+
     splitter = SentenceSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -58,6 +74,7 @@ async def chunk_sentence_file_async(
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
     settings: object | None = None,
+    markdown_chunking: MarkdownChunkingResolution | None = None,
 ) -> list:
     """Chunk documents using SentenceSplitter (and MarkdownNodeParser for .md).
 
@@ -85,6 +102,7 @@ async def chunk_sentence_file_async(
     effective_overlap = (
         chunk_overlap if chunk_overlap is not None else resolved.chunking.chunk_overlap
     )
+    resolution = markdown_chunking or resolve_markdown_chunking(resolved) if is_markdown else None
 
     nodes = await asyncio.to_thread(
         _split_documents_sync,
@@ -92,15 +110,33 @@ async def chunk_sentence_file_async(
         is_markdown,
         effective_chunk_size,
         effective_overlap,
+        resolution,
+        resolved.chunking.markdown_heading_prepend,
     )
 
     if is_markdown:
-        ensure_heading_metadata(nodes)
-        apply_heading_prepend(nodes, resolved.chunking.markdown_heading_prepend)
-        nodes = drop_small_markdown_chunks(
+        nodes = _postprocess_markdown_nodes(
             nodes,
+            resolved,
+            resolution,
             effective_chunk_size,
-            resolved.chunking.markdown_min_chunk_fraction,
         )
 
     return nodes
+
+
+def _postprocess_markdown_nodes(
+    nodes: list,
+    settings: object,
+    resolution: MarkdownChunkingResolution | None = None,
+    chunk_size: int | None = None,
+) -> list:
+    """Apply the shared Markdown recovery hooks to emitted nodes."""
+    ensure_heading_metadata(nodes)
+    apply_heading_prepend(nodes, settings.chunking.markdown_heading_prepend)
+    return drop_small_markdown_chunks(
+        nodes,
+        chunk_size if chunk_size is not None else settings.chunking.markdown_chunk_size,
+        settings.chunking.markdown_min_chunk_fraction,
+        tokenizer=resolution.tokenizer if resolution and resolution.model_token_aware else None,
+    )

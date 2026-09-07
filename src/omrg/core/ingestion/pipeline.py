@@ -14,6 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from ..chunking.model_token import resolve_markdown_chunking
 from ..settings import resolve_effective_settings
 from ..vectordb import get_default_store
 from ..vectordb.base import VectorStore
@@ -182,6 +183,9 @@ async def ingest_path_async(
             "peak_rss_bytes": sample_peak_rss_bytes(),
         }
 
+    # Resolve tokenizer capability once before the per-file unchanged checks.
+    markdown_chunking = resolve_markdown_chunking(resolved_settings)
+
     # Type-aware ingestion: detect file types via Magika. Failure degrades to
     # extension-based routing exactly as before.
     from ..codebase.codebase_map import detect_file_types
@@ -280,6 +284,8 @@ async def ingest_path_async(
                     embed_model=embed_model,
                     ocr_routing=resolved_ocr_routing,
                     ocr_worker_fingerprint=resolved_ocr_fingerprint,
+                    tokenizer=markdown_chunking.tokenizer_identity,
+                    resolved_splitter=markdown_chunking.resolved_splitter,
                 )
                 source_version = build_source_version(content_hash, index_identity)
                 # Reject pre-lineage rows for this path before any parse,
@@ -328,6 +334,7 @@ async def ingest_path_async(
                     taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
                     settings=resolved_settings,
                     ocr_client=ocr_client,
+                    markdown_chunking=markdown_chunking,
                 )
                 unit_timings["parse_chunk_seconds"] = time.perf_counter() - parse_started
                 if not nodes:

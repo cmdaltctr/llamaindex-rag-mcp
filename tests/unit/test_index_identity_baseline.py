@@ -1,9 +1,9 @@
 """Baseline record for ``source_index_identity`` (task 1.9, updated by 2.13).
 
 Pins the CURRENT payload shape emitted by ``build_index_identity`` and the
-current ``_INDEX_IDENTITY_SCHEMA`` value, so later identity extensions
-(tokenizer/splitter in task 3.11) land as a visible, reviewable diff
-instead of an incidental change. Task 2.13 itself was reviewed exactly
+current ``_INDEX_IDENTITY_SCHEMA`` value, so the tokenizer and resolved
+splitter extension remains a visible, reviewable diff instead of an
+incidental change. Task 2.13 itself was reviewed exactly
 this way: the pre-change pin recorded schema 3 with top-level keys
 ``schema/embedding/embedding_text/parser/chunking/metadata_shape`` and
 neither OCR block; the diff to this file shows the schema-4 extension
@@ -28,6 +28,8 @@ EXPECTED_TOP_LEVEL_KEYS = {
     "schema",
     "embedding",
     "embedding_text",
+    "tokenizer",
+    "resolved_splitter",
     "parser",
     "chunking",
     "ocr_routing",
@@ -36,6 +38,7 @@ EXPECTED_TOP_LEVEL_KEYS = {
 }
 EXPECTED_EMBEDDING_KEYS = {"runtime", "configured_provider", "configured_model"}
 EXPECTED_EMBEDDING_TEXT_KEYS = {"excluded_keys"}
+EXPECTED_TOKENIZER_KEYS = {"model", "revision"}
 EXPECTED_PARSER_KEYS = {
     "content_type",
     "text_format",
@@ -129,20 +132,15 @@ def test_index_identity_schema_value_is_pinned() -> None:
 
 
 def test_index_identity_payload_shape_is_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin the exact key structure of the schema-4 payload (task 2.13).
-
-    The two OCR blocks joined as UNCONDITIONAL members (design D8): they
-    are hashed for every file type, so a later conditional removal or
-    re-shaping of either block is a reviewable schema change, not an
-    incidental diff. Task 3.11's tokenizer/splitter blocks will extend
-    this same pin.
-    """
+    """Pin the exact key structure of the schema-4 payload after Stage 3."""
     payload, _ = _baseline_payload(monkeypatch)
 
     assert set(payload) == EXPECTED_TOP_LEVEL_KEYS
     assert payload["schema"] == 4
     assert set(payload["embedding"]) == EXPECTED_EMBEDDING_KEYS
     assert set(payload["embedding_text"]) == EXPECTED_EMBEDDING_TEXT_KEYS
+    assert set(payload["tokenizer"]) == EXPECTED_TOKENIZER_KEYS
+    assert payload["resolved_splitter"] == "legacy_fallback"
     assert set(payload["parser"]) == EXPECTED_PARSER_KEYS
     assert set(payload["chunking"]) == EXPECTED_CHUNKING_KEYS
     assert set(payload["chunking"]["settings"]) == EXPECTED_CHUNKING_SETTINGS_KEYS
@@ -162,6 +160,7 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
     assert payload["embedding_text"]["excluded_keys"] == sorted(
         source_state.EXCLUDED_EMBED_METADATA_KEYS
     )
+    assert payload["tokenizer"] == {"model": "", "revision": ""}
     # Direct callers that pass no OCR keyword arguments still get the
     # complete identity: routing falls back to the settings values and
     # the fingerprint contributes the stable unavailable payload.
@@ -174,6 +173,40 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
     assert fingerprint["available"] is False
     assert fingerprint["protocol_version"] == ""
     assert fingerprint["packages"] == ()
+
+
+def test_index_identity_tracks_resolved_markdown_chunking() -> None:
+    """Tokenizer identity and the resolved splitter change the index identity."""
+    settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+    )
+    legacy = source_state.build_index_identity(
+        settings,
+        content_type="text/markdown",
+        chunk_size=512,
+        chunk_overlap=100,
+        tokenizer={"model": "Qwen/Qwen3-Embedding-4B", "revision": "r1"},
+        resolved_splitter="legacy_fallback",
+    )
+    model_aware = source_state.build_index_identity(
+        settings,
+        content_type="text/markdown",
+        chunk_size=512,
+        chunk_overlap=100,
+        tokenizer={"model": "Qwen/Qwen3-Embedding-4B", "revision": "r1"},
+        resolved_splitter="model_token_aware",
+    )
+    different_revision = source_state.build_index_identity(
+        settings,
+        content_type="text/markdown",
+        chunk_size=512,
+        chunk_overlap=100,
+        tokenizer={"model": "Qwen/Qwen3-Embedding-4B", "revision": "r2"},
+        resolved_splitter="model_token_aware",
+    )
+
+    assert legacy != model_aware
+    assert model_aware != different_revision
 
 
 def test_recorded_payload_is_exactly_what_is_hashed(monkeypatch: pytest.MonkeyPatch) -> None:
