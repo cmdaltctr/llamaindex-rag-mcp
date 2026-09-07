@@ -16,6 +16,13 @@ argument selects a failure or noise behaviour:
 
 ``--stderr-lines N`` writes N noise lines to standard error before
 each response, so tests can prove independent drainage.
+
+``--capabilities MODE`` answers the metadata-only capability probe
+(design D2.4) instead of entering the request loop: print one JSON
+fingerprint line and exit. Modes: ``json`` (a wire-valid fingerprint),
+``bad-json`` (garbage on standard output), ``wrong-protocol`` /
+``wrong-schema`` (incompatible identities), ``fail`` (exit status 1
+without output), ``hang`` (never answer).
 """
 
 from __future__ import annotations
@@ -28,6 +35,20 @@ import time
 
 PROTOCOL_VERSION = "1.0"
 OUTPUT_SCHEMA = {"id": "omrg.ocr.parse_output", "version": "1"}
+
+CAPABILITY_MODES = ("json", "bad-json", "wrong-protocol", "wrong-schema", "fail", "hang")
+
+
+def stub_fingerprint_payload() -> dict:
+    """Build the stub worker's wire-valid capability fingerprint."""
+    return {
+        "protocol_version": PROTOCOL_VERSION,
+        "packages": {"stub-worker": "1.0"},
+        "pipeline": {"identity": "stub-pipeline", "revision": "1"},
+        "model": {"identity": "stub-model", "revision": "1"},
+        "output_schema": dict(OUTPUT_SCHEMA),
+    }
+
 
 MODES = (
     "echo",
@@ -83,12 +104,58 @@ def _failure(request_id: str) -> dict:
     }
 
 
+def _run_capabilities(mode: str) -> int:
+    """Answer the metadata-only capability probe, then exit.
+
+    The ``json`` mode prints a wire-valid fingerprint; every other mode
+    simulates one unavailability class the OMRG probe must collapse to
+    the stable unavailable fingerprint.
+    """
+    if mode == "json":
+        _emit(stub_fingerprint_payload())
+        return 0
+    if mode == "bad-json":
+        sys.stdout.write("this is not json {{{\n")
+        sys.stdout.flush()
+        return 0
+    if mode == "wrong-protocol":
+        payload = stub_fingerprint_payload()
+        payload["protocol_version"] = "0.9"
+        _emit(payload)
+        return 0
+    if mode == "wrong-schema":
+        payload = stub_fingerprint_payload()
+        payload["output_schema"] = {"id": "somebody.elses.schema", "version": "9"}
+        _emit(payload)
+        return 0
+    if mode == "fail":
+        sys.stderr.write("stub-worker capabilities failing on purpose\n")
+        sys.stderr.flush()
+        return 1
+    # hang: never answer; the probe's own timeout is under test.
+    sys.stderr.write("stub-worker capabilities hanging on purpose\n")
+    sys.stderr.flush()
+    time.sleep(30)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the stub loop selected by the mode argument."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--mode", choices=MODES, default="echo")
     parser.add_argument("--stderr-lines", type=int, default=0)
+    parser.add_argument(
+        "--capabilities",
+        choices=CAPABILITY_MODES,
+        default=None,
+        nargs="?",
+        const="json",
+        help="answer the capability probe and exit (default mode: json)",
+    )
     args = parser.parse_args(argv)
+
+    if args.capabilities is not None:
+        return _run_capabilities(args.capabilities)
 
     for raw_line in sys.stdin:
         line = raw_line.strip()
