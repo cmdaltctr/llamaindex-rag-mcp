@@ -1,0 +1,47 @@
+{
+  "tool": "pdf_inspector.process_pdf",
+  "reps": 20,
+  "files": {
+    "calibration/cal_clean_text.pdf": {
+      "mean_ms": 1.196,
+      "p95_ms": 1.566,
+      "max_ms": 15.122
+    },
+    "calibration/cal_scanned.pdf": {
+      "mean_ms": 0.15,
+      "p95_ms": 0.383,
+      "max_ms": 0.525
+    },
+    "calibration/cal_table_text.pdf": {
+      "mean_ms": 1.054,
+      "p95_ms": 2.057,
+      "max_ms": 8.685
+    },
+    "evaluation/eval_clean_text.pdf": {
+      "mean_ms": 0.785,
+      "p95_ms": 1.677,
+      "max_ms": 5.233
+    },
+    "evaluation/eval_image.pdf": {
+      "mean_ms": 0.431,
+      "p95_ms": 2.26,
+      "max_ms": 2.556
+    },
+    "evaluation/eval_mixed.pdf": {
+      "mean_ms": 0.439,
+      "p95_ms": 0.576,
+      "max_ms": 0.802
+    },
+    "evaluation/eval_scanned.pdf": {
+      "mean_ms": 0.111,
+      "p95_ms": 0.191,
+      "max_ms": 0.235
+    },
+    "evaluation/eval_two_column.pdf": {
+      "mean_ms": 0.47,
+      "p95_ms": 0.807,
+      "max_ms": 0.92
+    }
+  },
+  "worst_case_p95_ms": 2.26
+}
