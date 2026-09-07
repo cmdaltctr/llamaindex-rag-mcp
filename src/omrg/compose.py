@@ -40,12 +40,9 @@ _runtime_setup_done: bool = False
 
 
 # ── Runtime capability probes ────────────────────────────────────────
-# resolve_sparse_backend / resolve_pdf_reader / _resolve_sparse_backend_for
-# moved to .capabilities (register-document-backend-strategies, task 2.4:
-# this module sits at the 500-line ceiling and must not grow inline).
-# resolve_document_backend (azure→local SDK degradation) and
-# validate_document_backend (registry-owned name validation at startup)
-# live there too; both are re-exported above.
+# The runtime probes (sparse/PDF reader/document backend) live in
+# .capabilities and are re-exported above: this module sits at the
+# 500-line ceiling and must not grow inline.
 
 
 def settings_to_effective(settings: Settings | None = None) -> Any:
@@ -86,9 +83,8 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         retrieval=RetrievalBlock(
             **{
                 **settings.retrieval.model_dump(),
-                # Bake the RESOLVED backend in: the `auto` capability probe
-                # runs once here, so core/ performs a plain read instead of
-                # probing at query time (task 7.10).
+                # Bake the RESOLVED backend in: the `auto` probe runs
+                # once here, so core/ performs a plain read (task 7.10).
                 "hybrid_sparse_backend": _resolve_sparse_backend_for(settings),
             }
         ),
@@ -113,11 +109,16 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         openrouter_llm_model=settings.openrouter_llm_model,
         ollama_base_url=settings.ollama_base_url,
         embed_model=settings.embed_model,
-        # Bake the RESOLVED reader in: the `auto` probe (is LiteParse
-        # installed?) runs once here, not on every PDF read.
+        # Bake the RESOLVED reader in: the `auto` probe runs once here.
         pdf_reader=resolve_pdf_reader(settings),
         liteparse_num_workers=settings.liteparse_num_workers,
         liteparse_ocr_enabled=settings.liteparse_ocr_enabled,
+        ocr_fallback_enabled=settings.ocr_fallback_enabled,
+        ocr_fallback_min_confidence=settings.ocr_fallback_min_confidence,
+        ocr_fallback_page_fraction=settings.ocr_fallback_page_fraction,
+        ocr_worker_command=settings.ocr_worker_command,
+        ocr_worker_env_dir=settings.ocr_worker_env_dir,
+        ocr_worker_request_timeout=settings.ocr_worker_request_timeout,
         magika_binary=settings.magika_binary,
         doc_similarity_threshold=settings.doc_similarity_threshold,
         codebase_map_cache_dir=settings.codebase_map_cache_dir,
@@ -126,9 +127,8 @@ def settings_to_effective(settings: Settings | None = None) -> Any:
         community_algorithm=settings.community_algorithm.strip() or "louvain",
         community_seed=settings.community_seed,
         # Bake the RESOLVED backend in: azure without the optional SDK
-        # degrades to local here (with a diagnostic naming the missing
-        # dependency), so ingestion performs a plain registry read
-        # instead of probing at read time (task 2.4).
+        # degrades to local here, so ingestion performs a plain registry
+        # read instead of probing at read time (task 2.4).
         document_backend=resolve_document_backend(settings),
         azure_doc_intelligence_endpoint=settings.azure_doc_intelligence_endpoint,
         azure_doc_intelligence_key=settings.azure_doc_intelligence_key,

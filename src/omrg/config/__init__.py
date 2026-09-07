@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 
 from dotenv import load_dotenv
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from ..core.answer.settings import AnswerSettings
@@ -184,6 +184,27 @@ class Settings(StorageValidationMixin, BaseSettings):
     pdf_reader: str = "pdf_inspector"
     liteparse_num_workers: int | None = None
     liteparse_ocr_enabled: LegacyBool = False
+
+    # ── OCR routing gate (design D7.3, improve-rag-input-quality-5) ──
+    # Top-level fields beside the PDF knobs, matching the shape the
+    # existing PDF settings already have. The packaged default keeps
+    # the fallback off until the Stage 6 promotion gates are met, and
+    # the 0.0 thresholds keep routing classification-only — enabling
+    # the fallback alone must not reroute text-based PDFs without
+    # calibrated values.
+    ocr_fallback_enabled: LegacyBool = False
+    ocr_fallback_min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    ocr_fallback_page_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    # ── OCR worker operation (task 2.6b) ──────────────────────────
+    # Operational settings, separate from the calibrated gate above:
+    # how to reach the worker, not which PDFs deserve it. Empty
+    # command = worker unavailable (stable fingerprint). No
+    # machine-specific path is ever hardcoded; everything arrives via
+    # the environment.
+    ocr_worker_command: str = ""
+    ocr_worker_env_dir: str = ""
+    ocr_worker_request_timeout: float = Field(default=300.0, gt=0)
 
     # ── Codebase map ──────────────────────────────────────────────
     magika_binary: str = "magika"
