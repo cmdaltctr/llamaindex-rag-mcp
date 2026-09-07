@@ -50,6 +50,14 @@ def test_base_dependencies_exclude_torch_ecosystem() -> None:
         )
 
 
+def test_base_dependencies_include_semantic_markdown_splitter() -> None:
+    """Stage 3 requires the Rust-backed Markdown splitter in the base install."""
+    deps = _read_base_dependencies()
+    deps_lower = [d.lower() for d in deps]
+
+    assert any(d.startswith("semantic-text-splitter") for d in deps_lower)
+
+
 def test_base_dependencies_include_tokenizers() -> None:
     """Base dependencies SHALL include tokenizers (the torch-free tokeniser)."""
     deps = _read_base_dependencies()

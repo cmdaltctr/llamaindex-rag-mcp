@@ -14,8 +14,6 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from llama_index.core.node_parser import SentenceSplitter
-
 from ..chunking.registry import get as _chunking_get
 from ..codebase.ast_extract import MAGIKA_LABEL_TO_TREESITTER
 from ..settings import resolve_effective_settings
@@ -41,6 +39,7 @@ async def read_and_chunk_file_async(
     taxonomy_mode: str | None = None,
     settings: Any = None,
     ocr_client: Any = None,
+    markdown_chunking: Any = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
@@ -110,17 +109,37 @@ async def read_and_chunk_file_async(
     # the declaration, never the source extension alone, so reader-produced
     # Markdown keeps its heading structure.
     is_markdown = file_path.suffix.lower() == ".md" or backend_read.text_format == "markdown"
+    if is_markdown and markdown_chunking is None:
+        from ..chunking.model_token import resolve_markdown_chunking
+
+        markdown_chunking = resolve_markdown_chunking(resolved)
     if backend_read.structured:
         documents = backend_read.documents
         if content_type:
             for doc in documents:
                 doc.metadata.setdefault("content_type", content_type)
         effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
-        splitter = SentenceSplitter(
-            chunk_size=effective_chunk_size,
-            chunk_overlap=chunk_overlap,
+        from ..chunking.sentence import (
+            _postprocess_markdown_nodes,
+            _split_documents_sync,
         )
-        nodes = await asyncio.to_thread(lambda: splitter.get_nodes_from_documents(documents))
+
+        nodes = await asyncio.to_thread(
+            _split_documents_sync,
+            documents,
+            is_markdown,
+            effective_chunk_size,
+            chunk_overlap,
+            markdown_chunking,
+            resolved.chunking.markdown_heading_prepend,
+        )
+        if is_markdown:
+            nodes = _postprocess_markdown_nodes(
+                nodes,
+                resolved,
+                markdown_chunking,
+                effective_chunk_size,
+            )
         if content_type:
             for node in nodes:
                 node.metadata.setdefault("content_type", content_type)
@@ -149,7 +168,7 @@ async def read_and_chunk_file_async(
 
     effective_chunk_size = markdown_chunk_size if is_markdown else chunk_size
 
-    from ..chunking.sentence import _split_documents_sync
+    from ..chunking.sentence import _postprocess_markdown_nodes, _split_documents_sync
 
     nodes = await asyncio.to_thread(
         _split_documents_sync,
@@ -157,21 +176,16 @@ async def read_and_chunk_file_async(
         is_markdown,
         effective_chunk_size,
         chunk_overlap,
+        markdown_chunking,
+        resolved.chunking.markdown_heading_prepend,
     )
 
     if is_markdown:
-        from ..chunking.markdown import (
-            apply_heading_prepend,
-            drop_small_markdown_chunks,
-            ensure_heading_metadata,
-        )
-
-        ensure_heading_metadata(nodes)
-        apply_heading_prepend(nodes, resolved.chunking.markdown_heading_prepend)
-        nodes = drop_small_markdown_chunks(
+        nodes = _postprocess_markdown_nodes(
             nodes,
+            resolved,
+            markdown_chunking,
             effective_chunk_size,
-            resolved.chunking.markdown_min_chunk_fraction,
         )
 
     if content_type:

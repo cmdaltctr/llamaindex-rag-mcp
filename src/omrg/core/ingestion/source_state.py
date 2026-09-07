@@ -1,12 +1,8 @@
 """Source-version identity and metadata for failure-safe ingestion.
 
-A stored source is identified by both its byte content and every input that can
-change emitted chunks or vectors. Each replacement attempt uses a unique id so
-old and new rows can coexist until durability is verified. On top of that
-attempt-scoped identity, every source carries a stable ``source_id`` derived
-from its canonical path and every stored chunk a stable ``chunk_id`` derived
-from its text, ordinal, and source version, so citations and reconstruction
-survive replacement attempts.
+A source identity covers bytes and every input that changes emitted chunks or
+vectors. Replacement attempts keep prior durable rows searchable until the
+new rows are verified.
 """
 
 from __future__ import annotations
@@ -37,10 +33,8 @@ SOURCE_ATTEMPT_KEY = "source_attempt"
 SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
-# Schema 4: the ONE bump for the shared Stage 2/3 payload change (task
-# 2.13 + future 3.11) — OCR routing and the resolved worker fingerprint
-# join unconditionally now; tokenizer identity and resolved splitter
-# extend the SAME payload later, additively. Schema 3 had none of these.
+# Schema 4 is the single shared Stage 2/3 payload bump. OCR, tokenizer, and
+# resolved splitter fields extend this payload additively.
 _INDEX_IDENTITY_SCHEMA = 4
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
@@ -160,17 +154,13 @@ def build_index_identity(
     embed_model: Any = None,
     ocr_routing: dict[str, Any] | None = None,
     ocr_worker_fingerprint: Any = None,
+    tokenizer: dict[str, str] | None = None,
+    resolved_splitter: str = "legacy_fallback",
 ) -> str:
     """Hash the complete index-shaping configuration for one source.
 
-    The payload is deliberately conservative. Parser selectors are included
-    even when a file type may not use every selector, because unnecessary
-    reprocessing is safer than incorrectly reusing stale chunks or vectors.
-    ``text_format`` is the reader's DECLARED emitted-text format resolved
-    before the read (design D3/D6): it decides Markdown routing, so a
-    declaration change must invalidate exactly like a chunk-size change.
-    ``ocr_routing``/``ocr_worker_fingerprint`` (task 2.13, design D8) join
-    unconditionally; ``None`` yields the stable unavailable payload.
+    Parser selectors and resolved capabilities are included conservatively,
+    because reprocessing is safer than reusing stale chunks or vectors.
     """
     configured_provider, configured_model = _configured_embedding(settings)
     payload = {
@@ -204,6 +194,15 @@ def build_index_identity(
         # Task 2.13 (design D8): unconditional members — see ocr_identity.
         "ocr_routing": ocr_routing_payload(settings) if ocr_routing is None else ocr_routing,
         "ocr_worker_fingerprint": ocr_fingerprint_payload(ocr_worker_fingerprint),
+        "tokenizer": (
+            tokenizer
+            if tokenizer is not None
+            else {
+                "model": settings.embedding.tokenizer_model,
+                "revision": settings.embedding.tokenizer_revision,
+            }
+        ),
+        "resolved_splitter": resolved_splitter,
         # Extracted metadata participates in LlamaIndex embedding text unless a
         # strategy excludes it. Timeouts and retry budgets decide whether a
         # real ingest completes extraction or falls back to degraded/local

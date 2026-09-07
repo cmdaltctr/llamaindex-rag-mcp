@@ -8,6 +8,7 @@ original ``ingestion.py`` monolith as part of Phase 1.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -57,19 +58,24 @@ def apply_heading_prepend(nodes: list, heading_prepend: bool = False) -> None:
 
 
 def drop_small_markdown_chunks(
-    nodes: list, chunk_size: int, min_chunk_fraction: float = 0.0
+    nodes: list,
+    chunk_size: int,
+    min_chunk_fraction: float = 0.0,
+    tokenizer: Any | None = None,
 ) -> list:
     """Optionally drop tiny Markdown chunks before embedding.
 
     Experiment 6c recovery knob controlled by
-    ``MARKDOWN_MIN_CHUNK_FRACTION``.  Disabled by default.  Uses the same
-    four-characters-per-token estimate used in the 6b/6c chunk-size reports.
+    ``MARKDOWN_MIN_CHUNK_FRACTION``. Disabled by default. The model-aware
+    path uses the injected tokenizer; the legacy path keeps the character
+    estimate used in the 6b/6c chunk-size reports.
 
     Args:
         nodes: Markdown nodes to filter.
         chunk_size: Effective Markdown chunk size for this ingestion run.
         min_chunk_fraction: Minimum-size floor as a fraction of chunk_size,
             from the injected settings. ``<= 0`` disables the filter.
+        tokenizer: Optional resolved model tokenizer for exact token counting.
 
     Returns:
         The original node list when disabled, otherwise only nodes meeting
@@ -77,8 +83,16 @@ def drop_small_markdown_chunks(
     """
     if min_chunk_fraction <= 0:
         return nodes
-    min_chars = int(chunk_size * 4 * min_chunk_fraction)
-    kept = [node for node in nodes if len(getattr(node, "text", "")) >= min_chars]
+    if tokenizer is None:
+        minimum_chars = int(chunk_size * 4 * min_chunk_fraction)
+        kept = [node for node in nodes if len(getattr(node, "text", "")) >= minimum_chars]
+    else:
+        minimum_tokens = chunk_size * min_chunk_fraction
+        kept = [
+            node
+            for node in nodes
+            if len(tokenizer.encode(getattr(node, "text", "")).ids) >= minimum_tokens
+        ]
     dropped = len(nodes) - len(kept)
     if dropped:
         logger.info("Dropped %d Markdown chunk(s) below min-size floor", dropped)
