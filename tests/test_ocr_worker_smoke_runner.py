@@ -244,3 +244,26 @@ def test_fingerprint_validator_rejects_wrong_protocol() -> None:
                 },
             }
         )
+
+
+# ── Provisioning target safety ────────────────────────────────────────────
+
+
+def test_worker_environment_overrides_inherited_uv_targets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Inherited uv project selectors cannot redirect provisioning.
+
+    An absolute ``UV_PROJECT_ENVIRONMENT`` overrides the working
+    directory, so an inherited value could aim the exact ``uv sync
+    --locked`` at another environment — installing Paddle into it and
+    pruning its extraneous packages. The worker environment must pin
+    both selectors to worker-owned targets.
+    """
+    monkeypatch.setenv("UV_PROJECT", "/elsewhere/omrg-test/root")
+    monkeypatch.setenv("UV_PROJECT_ENVIRONMENT", "/elsewhere/omrg-test/root/.venv")
+    environment = smoke._worker_environment()
+    assert environment["UV_PROJECT"] == str(smoke.WORKER_DIR)
+    assert environment["UV_PROJECT_ENVIRONMENT"] == str(smoke.WORKER_DIR / ".venv")
+    assert environment["PADDLE_OCR_BASE_DIR"] == str(smoke.MODEL_CACHE_DIR)
+    assert environment["PADDLE_PDX_CACHE_HOME"] == str(smoke.MODEL_CACHE_DIR)

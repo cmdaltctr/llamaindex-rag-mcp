@@ -61,6 +61,47 @@ Every provisioned probe returned this complete fingerprint:
 
 The probe printed one JSON line and exited without initialising PaddleOCR-VL or loading model weights.
 
+### Post-review fingerprint addendum (2026-09-07)
+
+The branch review found that the fingerprint omitted PaddleX, the
+package `PaddleOCRVL` delegates prediction and page restructuring to.
+`DECLARED_PACKAGES` now declares it, so a PaddleX-only change invalidates
+the worker identity. The same review hardened the worker-local cache
+environment (forced assignment instead of `setdefault`) and made the
+smoke runner pin `UV_PROJECT`/`UV_PROJECT_ENVIRONMENT` to the worker
+project so inherited values cannot redirect provisioning.
+
+A metadata-only probe with the amended code (worktree `PYTHONPATH` over
+the provisioned Python 3.13 environment; no model load) reported:
+
+```json
+{
+  "model": {
+    "identity": "PaddleOCR-VL",
+    "revision": "1.6"
+  },
+  "output_schema": {
+    "id": "omrg.ocr.parse_output",
+    "version": "1"
+  },
+  "packages": {
+    "omrg-ocr-worker": "0.1.0",
+    "paddleocr": "3.7.0",
+    "paddlepaddle": "3.3.1",
+    "paddlex": "3.7.2"
+  },
+  "pipeline": {
+    "identity": "paddleocr-vl",
+    "revision": "predict+restructure_pages"
+  },
+  "protocol_version": "1.0"
+}
+```
+
+This differs from the recorded per-Python evidence above by the added
+`paddlex` entry, which is the intended identity change. The parse
+evidence files are unaffected: parse behaviour did not change.
+
 ## Parse evidence
 
 The successful table-fixture responses were identical across Python versions:
@@ -110,7 +151,7 @@ The final worker directory size measured by the smoke runner was `3,068,370,967`
 The first Python 3.12 run revealed that `PADDLE_OCR_BASE_DIR` controls PaddleOCR's legacy model directory, while PaddleX uses `PADDLE_PDX_CACHE_HOME`. The initial model download therefore went to:
 
 ```text
-/Users/aizat/.paddlex
+$HOME/.paddlex
 ```
 
 The cache was moved into `ocr-worker/.model-cache`, the global directory was removed, and the runner and worker now set both variables before any Paddle import. Later runs confirmed model loads from the worker-local path. No model weights or virtual environments are tracked by Git.

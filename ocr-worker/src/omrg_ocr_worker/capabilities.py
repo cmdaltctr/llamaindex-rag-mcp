@@ -27,10 +27,14 @@ from .protocol import OUTPUT_SCHEMA_ID, OUTPUT_SCHEMA_VERSION, PROTOCOL_VERSION
 #: Every package whose exact version belongs in the fingerprint. The
 #: worker owns these through its lockfile (D2.1); a package that is
 #: somehow missing reports ``not-installed`` rather than lying by
-#: omission.
+#: omission. PaddleX is declared even though ``paddleocr`` pulls it in
+#: transitively: ``PaddleOCRVL`` delegates prediction and page
+#: restructuring to PaddleX, so a PaddleX-only change can alter the
+#: emitted Markdown and must change the worker identity.
 DECLARED_PACKAGES: tuple[str, ...] = (
     "omrg-ocr-worker",
     "paddleocr",
+    "paddlex",
     "paddlepaddle",
 )
 

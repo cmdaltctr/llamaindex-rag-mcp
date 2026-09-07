@@ -82,14 +82,70 @@ def parse_document(request: ParseRequest) -> ParseSuccess:
     return _run_document_pipeline(pdf_path, request.id)
 
 
-def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
-    """Invoke the full PaddleOCR-VL document pipeline inside the worker env.
+#: Process-wide pipeline singleton (design D2.2): the long-lived worker
+#: loads the document pipeline and model once, then reuses them for
+#: every later OCR-required file it accepts.
+_PIPELINE_SINGLETON: Any | None = None
+
+
+def _reset_pipeline_cache() -> None:
+    """Drop the cached pipeline.
+
+    Production code never calls this; tests use it to isolate module
+    state without importing Paddle.
+    """
+    global _PIPELINE_SINGLETON
+    _PIPELINE_SINGLETON = None
+
+
+def _apply_worker_cache_env() -> None:
+    """Force both Paddle cache variables to the worker-local directory.
+
+    Assignment, not ``setdefault``: an inherited value pointing outside
+    ``ocr-worker/`` would direct model reads and downloads to a path
+    outside the worker-owned, git-ignored cache. Both variables are set
+    before any Paddle import because PaddleOCR and PaddleX read them at
+    import and initialisation time.
+    """
+    os.environ["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)
+    os.environ["PADDLE_PDX_CACHE_HOME"] = str(MODEL_CACHE_DIR)
+
+
+def _load_pipeline() -> Any:
+    """Return the process-wide PaddleOCR-VL pipeline, constructing it once.
 
     The lazy import is load-bearing. This module must stay importable
     and testable in a Paddle-free environment, so the Paddle packages
-    are only ever touched inside this function. The pipeline performs
-    layout analysis, reading-order handling, recognition, and Markdown
-    assembly before the worker creates its protocol envelope.
+    are only ever touched inside this function, never at module level.
+
+    Raises:
+        WorkerParseError: If PaddleOCR-VL is unavailable in this
+            environment. No cache entry is created, so a later request
+            retries the import.
+    """
+    global _PIPELINE_SINGLETON
+    _apply_worker_cache_env()
+    if _PIPELINE_SINGLETON is None:
+        try:
+            from paddleocr import PaddleOCRVL  # lazy, worker-env only
+        except (ImportError, ModuleNotFoundError) as exc:
+            raise WorkerParseError(
+                "paddle_unavailable", f"PaddleOCR-VL import failed: {exc}"
+            ) from exc
+        _PIPELINE_SINGLETON = PaddleOCRVL(
+            device="cpu",
+            use_ocr_for_image_block=True,
+            format_block_content=True,
+        )
+    return _PIPELINE_SINGLETON
+
+
+def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
+    """Invoke the full PaddleOCR-VL document pipeline inside the worker env.
+
+    The pipeline is loaded once per worker process (design D2.2) and
+    performs layout analysis, reading-order handling, recognition, and
+    Markdown assembly before the worker creates its protocol envelope.
 
     Args:
         pdf_path: The validated PDF path from the request.
@@ -102,19 +158,9 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
         WorkerParseError: If PaddleOCR-VL is unavailable or the pipeline
             returns no usable structured Markdown.
     """
-    os.environ.setdefault("PADDLE_OCR_BASE_DIR", str(MODEL_CACHE_DIR))
-    os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(MODEL_CACHE_DIR))
-    try:
-        from paddleocr import PaddleOCRVL  # lazy, worker-env only
-    except (ImportError, ModuleNotFoundError) as exc:
-        raise WorkerParseError("paddle_unavailable", f"PaddleOCR-VL import failed: {exc}") from exc
+    pipeline = _load_pipeline()
 
     try:
-        pipeline = PaddleOCRVL(
-            device="cpu",
-            use_ocr_for_image_block=True,
-            format_block_content=True,
-        )
         page_results = list(pipeline.predict(input=str(pdf_path)))
         if not page_results:
             raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")

@@ -222,10 +222,19 @@ def check_interpreter_available(version: tuple[int, int] | str) -> tuple[bool, s
 
 
 def _worker_environment() -> dict[str, str]:
-    """Return the worker environment with a worker-local model cache."""
+    """Return the worker environment pinned to worker-owned targets.
+
+    The uv selectors are FORCED to the worker project and worker venv:
+    an inherited ``UV_PROJECT``/``UV_PROJECT_ENVIRONMENT`` (an absolute
+    path overrides the working directory) would otherwise let the exact
+    ``uv sync --locked`` install Paddle into — and prune — an
+    environment outside ``ocr-worker/``, typically the root project's.
+    """
     environment = os.environ.copy()
     environment["PADDLE_OCR_BASE_DIR"] = str(MODEL_CACHE_DIR)
     environment["PADDLE_PDX_CACHE_HOME"] = str(MODEL_CACHE_DIR)
+    environment["UV_PROJECT"] = str(WORKER_DIR)
+    environment["UV_PROJECT_ENVIRONMENT"] = str(WORKER_DIR / ".venv")
     return environment
 
 
