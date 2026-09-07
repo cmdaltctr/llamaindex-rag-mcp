@@ -32,9 +32,9 @@ _DRIFT_EXEMPT: dict[str, str] = {
     # ADR-040: 1.0 was the only relevant break (requests→httpx, removed
     # legacy params); all 1.x minors are compatible.
     "huggingface-hub": "ADR-040: 1.0 was the only relevant break; all 1.x compatible",
-    # Transitive only, not imported directly; 0.21.0 break was dropping
-    # Python 3.7/3.8 (below this project's floor).
-    "tokenizers": "transitive only, not imported directly; 0.21.0 dropped Python 3.7/3.8",
+    # Existing ONNX reranker and Stage 3 chunking APIs support the retained
+    # >=0.20 floor; the locked version is 0.22.2.
+    "tokenizers": "existing reranker/chunking API supports >=0.20; lower floor retained",
     # Gap too small to carry signal; no API break in 0.25→0.27.
     "typer": "gap too small to carry signal; no API break in range",
     # Stable ``load_dotenv`` across 1.x.
