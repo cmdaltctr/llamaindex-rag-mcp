@@ -1,0 +1,27 @@
+# Isolated PaddleOCR-VL worker project (OpenSpec change
+# improve-rag-input-quality-5, tasks 2.1/2.1a). This project owns every
+# Paddle package; nothing here may enter OMRG's main environment,
+# root lockfile, or import graph. Provision with provision.py, never
+# with a bare `uv sync` from the repository root.
+[project]
+name = "omrg-ocr-worker"
+version = "0.1.0"
+description = "Isolated PaddleOCR-VL document-parsing worker for OMRG"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    # Full PaddleOCR-VL document pipeline: layout, reading order,
+    # recognition, and result assembly. paddleocr pulls paddlex
+    # transitively, so paddlex is deliberately not declared here.
+    "paddleocr[doc-parser]",
+    # CPU PaddlePaddle runtime. Accelerator packages (for example GPU
+    # variants) are not declared until a provisioned environment has
+    # validated them.
+    "paddlepaddle",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omrg_ocr_worker"]
