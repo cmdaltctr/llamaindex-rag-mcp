@@ -170,13 +170,18 @@ def _verify_text_format(
     )
 
 
-async def read_document(file_path: Path, *, settings: EffectiveSettings) -> BackendRead:
+async def read_document(
+    file_path: Path, *, settings: EffectiveSettings, ocr_client: Any = None
+) -> BackendRead:
     """Read *file_path* through the configured document backend.
 
     Args:
         file_path: File to read.
         settings: Injected effective settings; ``settings.document_backend``
             selects the registered backend name.
+        ocr_client: Injected managed OCR worker client, forwarded to
+            the reader chain for OCR routing (ignored by backends
+            without a PDF reader chain).
 
     Returns:
         A :class:`BackendRead` carrying the parsed documents, the
@@ -194,7 +199,7 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
 
     if fallback_name is None:
         # Base-install path: one attempt, exceptions propagate.
-        documents = await reader(file_path, settings=settings)
+        documents = await reader(file_path, settings=settings, ocr_client=ocr_client)
         text_format = _declared_text_format(meta, file_path, settings)
         _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=False)
         return BackendRead(documents, meta["structured_output"], text_format)
@@ -202,7 +207,7 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
     unavailable = False
     for attempt in range(MAX_RETRIES + 1):
         try:
-            documents = await reader(file_path, settings=settings)
+            documents = await reader(file_path, settings=settings, ocr_client=ocr_client)
             text_format = _declared_text_format(meta, file_path, settings)
             _verify_text_format(text_format, file_path=file_path, settings=settings, degraded=False)
             return BackendRead(documents, meta["structured_output"], text_format)
@@ -240,7 +245,7 @@ async def read_document(file_path: Path, *, settings: EffectiveSettings) -> Back
                 )
 
     fallback_reader: DocumentBackend = get(fallback_name)
-    documents = await fallback_reader(file_path, settings=settings)
+    documents = await fallback_reader(file_path, settings=settings, ocr_client=ocr_client)
     if unavailable:
         # Wholesale degradation: the FALLBACK's semantics apply, including
         # its (possibly dynamic) text format.

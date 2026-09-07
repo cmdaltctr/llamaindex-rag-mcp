@@ -60,6 +60,7 @@ class Engine:
         profile_resolver_factory: Callable[[], ProfileResolver] | None = None,
         answer_llm_factory: Callable[[], Any] | None = None,
         verify_llm_factory: Callable[[Any], Any] | None = None,
+        ocr_client: Any = None,
     ) -> None:
         """Own already-composed dependencies; construct nothing.
 
@@ -78,6 +79,10 @@ class Engine:
             verify_llm_factory: Optional callable taking an answer block
                 and returning the verify LLM (a construction failure
                 degrades to ``verification_skipped``, never an error).
+            ocr_client: Optional managed OCR worker client (task 2.6a).
+                The engine owns its lifecycle: OCR-required PDFs dispatched
+                by this engine's ingests reuse its lazily-started
+                subprocess, and :meth:`close` closes it.
         """
         self._effective_settings = effective_settings
         self._store = store
@@ -87,6 +92,7 @@ class Engine:
         self._profile_resolver_factory = profile_resolver_factory
         self._answer_llm_factory = answer_llm_factory
         self._verify_llm_factory = verify_llm_factory
+        self._ocr_client = ocr_client
         self._answer_llm: Any = None
         # Engine-owned query embedding cache: keyed by (query, model_name),
         # shared between filtered/unfiltered search within this engine,
@@ -132,6 +138,7 @@ class Engine:
             effective_settings=effective,
             store=self._store,
             embed_model=self._embed_model,
+            ocr_client=self._ocr_client,
         )
 
     def search(
@@ -287,6 +294,19 @@ class Engine:
                 exc,
                 exc_info=True,
             )
+        # Close the owned OCR worker client (task 2.6a): stop accepting
+        # requests, close stdin, bounded graceful wait, then terminate.
+        # A failure is logged, not raised, mirroring the store release.
+        if self._ocr_client is not None:
+            try:
+                self._ocr_client.close()
+            except Exception as exc:
+                logger.warning(
+                    "OCR worker client close() failed during engine close: %s: %s",
+                    type(exc).__name__,
+                    exc,
+                    exc_info=True,
+                )
         # Release owned references (ADR-061: the embedder reference must
         # go so a closed engine never pins model resources). Shared
         # process-wide caches (reranker model cache) are untouched.
@@ -298,6 +318,7 @@ class Engine:
         self._answer_llm = None
         self._answer_llm_factory = None
         self._verify_llm_factory = None
+        self._ocr_client = None
 
     # ── Internal helpers ───────────────────────────────────────────
 

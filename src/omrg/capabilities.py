@@ -386,12 +386,17 @@ def build_managed_ocr_client(settings: Any) -> Any:
 
     from .integrations.ocr_worker.managed import ManagedOcrClient
 
-    command = shlex.split(getattr(settings, "ocr_worker_command", "") or "")
-    if not getattr(settings, "ocr_fallback_enabled", False) or not command:
+    # isinstance guards keep duck-typed settings objects (tests, fakes)
+    # on the unavailable path instead of exploding inside shlex.
+    raw_command = getattr(settings, "ocr_worker_command", "")
+    command = shlex.split(raw_command) if isinstance(raw_command, str) else []
+    enabled = bool(getattr(settings, "ocr_fallback_enabled", False))
+    if not enabled or not command:
         fingerprint: Any = UNAVAILABLE_OCR_WORKER_FINGERPRINT
     else:
         fingerprint = probe_ocr_worker(command)
-    env_dir = (getattr(settings, "ocr_worker_env_dir", "") or "").strip() or None
+    raw_env_dir = getattr(settings, "ocr_worker_env_dir", "")
+    env_dir = raw_env_dir.strip() or None if isinstance(raw_env_dir, str) else None
     return ManagedOcrClient(
         fingerprint=fingerprint,
         command=command,

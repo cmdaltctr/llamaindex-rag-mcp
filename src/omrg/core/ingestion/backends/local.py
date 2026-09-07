@@ -17,13 +17,19 @@ from typing import Any
 from ...settings import EffectiveSettings
 
 
-async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> list[Any]:
+async def read_documents(
+    file_path: Path, *, settings: EffectiveSettings, ocr_client: Any = None
+) -> list[Any]:
     """Read *file_path* with the local reader chain.
 
     Args:
         file_path: File to read.
         settings: Injected effective settings; ``settings.pdf_reader``
             selects the concrete PDF parser via the factory.
+        ocr_client: Injected managed OCR worker client, threaded to
+            the PDF factory so the OCR routing seam can dispatch
+            OCR-required PDFs (task 2.6a). ``None`` degrades
+            OCR-required files deterministically.
 
     Returns:
         LlamaIndex ``Document`` objects carrying ``file_path`` metadata.
@@ -32,12 +38,13 @@ async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> lis
     def _read_sync() -> list[Any]:
         from llama_index.core import SimpleDirectoryReader
 
-        from omrg.integrations.pdf import get_pdf_reader
+        from omrg.integrations.pdf import build_pdf_reader
 
+        pdf_reader = build_pdf_reader(settings.pdf_reader, settings, ocr_client=ocr_client)
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],
             filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader(settings.pdf_reader)},
+            file_extractor={".pdf": pdf_reader},
         )
         return reader.load_data()
 

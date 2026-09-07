@@ -10,6 +10,16 @@ ADR-020 for the adoption rationale.
 
 from __future__ import annotations
 
-from .factory import declared_text_format, get_pdf_reader, resolve_reader_name
+from .factory import (
+    build_pdf_reader,
+    declared_text_format,
+    get_pdf_reader,
+    resolve_reader_name,
+)
 
-__all__ = ["declared_text_format", "get_pdf_reader", "resolve_reader_name"]
+__all__ = [
+    "build_pdf_reader",
+    "declared_text_format",
+    "get_pdf_reader",
+    "resolve_reader_name",
+]

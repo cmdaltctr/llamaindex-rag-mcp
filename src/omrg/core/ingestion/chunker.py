@@ -40,6 +40,7 @@ async def read_and_chunk_file_async(
     fallback_strategy: str | None = None,
     taxonomy_mode: str | None = None,
     settings: Any = None,
+    ocr_client: Any = None,
 ) -> list:
     """Read and chunk a file, dispatching strategy based on content_type.
 
@@ -102,7 +103,7 @@ async def read_and_chunk_file_async(
     # structured flag: cloud parsers return pre-structured documents
     # (paragraphs/tables) that split directly, while the local chain
     # feeds file-level metadata extraction below.
-    backend_read = await read_document(file_path, settings=resolved)
+    backend_read = await read_document(file_path, settings=resolved, ocr_client=ocr_client)
     # Text counts as Markdown when the source file has extension `.md`, OR
     # when the reader that produced it declares its emitted text format as
     # `markdown` (spec markdown-aware-chunking; design D3). Routing follows

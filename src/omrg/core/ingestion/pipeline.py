@@ -89,6 +89,7 @@ async def ingest_path_async(
     effective_settings: Any = None,
     store: VectorStore | None = None,
     embed_model: Any = None,
+    ocr_client: Any = None,
 ) -> dict:
     """Index a file or directory using bounded, failure-safe source units.
 
@@ -99,10 +100,20 @@ async def ingest_path_async(
     Args:
         path: Absolute or relative path to a file or directory.
         chunk_size: Optional chunk-size override for this ingestion.
-        chunk_overlap: Optional chunk-overlap override.
+        chunk_overlap: Optional chunk-override override.
         progress_callback: Optional callable ``(phase, current, total)``.
         collection_name: Target vector-store collection.
         effective_settings: Optional resolved :class:`EffectiveSettings`.
+        store: Optional injected vector store (defaults to the
+            process-wide default the composition root installed).
+        embed_model: Optional injected embedding model.
+        ocr_client: Optional injected managed OCR worker client
+            (task 2.6a). When omitted and the operator enabled the OCR
+            fallback, ONE operation-owned client is composed at this
+            boundary from the resolved settings and closed when the
+            batch finishes — the entry-point resolution pattern the
+            settings boundary already uses. Engine callers inject the
+            engine-owned client instead.
 
     Returns:
         Backward-compatible ingestion result with additive change-detection
@@ -186,6 +197,15 @@ async def ingest_path_async(
         )
 
     resolved_store = store if store is not None else get_default_store()
+    # Owner-scoped OCR client (task 2.6a): an injected client keeps its
+    # owner (the Engine) responsible for closing it; only an omitted
+    # client under an enabled fallback gets an operation-owned one,
+    # closed when this batch finishes.
+    owns_ocr_client = ocr_client is None and resolved_settings.ocr_fallback_enabled
+    if owns_ocr_client:
+        from omrg.capabilities import build_managed_ocr_client
+
+        ocr_client = build_managed_ocr_client(resolved_settings)
     files_indexed = 0
     files_skipped_unchanged = 0
     chunks_created_total = 0
@@ -196,196 +216,206 @@ async def ingest_path_async(
     file_details: list[dict] = []
     aggregate_timings = _new_timings()
 
-    for index, file_path in enumerate(files_to_index):
-        if shutdown_requested.is_set():
-            break
+    try:
+        for index, file_path in enumerate(files_to_index):
+            if shutdown_requested.is_set():
+                break
 
-        try:
-            rel_path = str(file_path.relative_to(path_obj))
-        except ValueError:
-            rel_path = str(file_path)
-        content_type = content_type_map.get(rel_path)
+            try:
+                rel_path = str(file_path.relative_to(path_obj))
+            except ValueError:
+                rel_path = str(file_path)
+            content_type = content_type_map.get(rel_path)
 
-        if content_type and content_type.startswith("binary"):
-            file_details.append(
-                make_file_detail(
-                    file_name=file_path.name,
-                    status="skipped",
-                    chunks=0,
+            if content_type and content_type.startswith("binary"):
+                file_details.append(
+                    make_file_detail(
+                        file_name=file_path.name,
+                        status="skipped",
+                        chunks=0,
+                    )
                 )
-            )
-            logger.info("SKIP %s - binary file skipped", file_path.name)
-            if progress_callback:
-                progress_callback("read", index + 1, len(files_to_index))
-            continue
+                logger.info("SKIP %s - binary file skipped", file_path.name)
+                if progress_callback:
+                    progress_callback("read", index + 1, len(files_to_index))
+                continue
 
-        unit_started = time.perf_counter()
-        unit_timings = _new_timings()
-        nodes = None
-        source_version = None
+            unit_started = time.perf_counter()
+            unit_timings = _new_timings()
+            nodes = None
+            source_version = None
 
-        try:
-            detection_started = time.perf_counter()
-            canonical_file_path = canonical_source_path(file_path)
-            source_id = build_source_id(canonical_file_path)
-            content_hash = await asyncio.to_thread(sha256_file, file_path)
-            # Resolve the declared parser text format BEFORE the unchanged
-            # check (design D3): the declaration decides Markdown routing,
-            # so it belongs in the identity. The later BackendRead carries
-            # the same resolution and verifies agreement inside the read.
-            parser_text_format = resolve_declared_text_format(file_path, settings=resolved_settings)
-            index_identity = build_index_identity(
-                resolved_settings,
-                content_type=content_type,
-                chunk_size=effective_chunk_size,
-                chunk_overlap=effective_chunk_overlap,
-                text_format=parser_text_format,
-                embed_model=embed_model,
-            )
-            source_version = build_source_version(content_hash, index_identity)
-            # Reject pre-lineage rows for this path before any parse,
-            # embedding, or store mutation so schemas never mix silently.
-            await asyncio.to_thread(
-                assert_source_lineage_compatible,
-                resolved_store,
-                collection_name,
-                file_path=canonical_file_path,
-                source_id=source_id,
-            )
-            unchanged, existing_chunks = await asyncio.to_thread(
-                is_complete_current_version,
-                resolved_store,
-                collection_name,
-                source_id=source_id,
-                content_hash=content_hash,
-                index_identity=index_identity,
-                source_version=source_version,
-            )
-            unit_timings["change_detection_seconds"] = time.perf_counter() - detection_started
+            try:
+                detection_started = time.perf_counter()
+                canonical_file_path = canonical_source_path(file_path)
+                source_id = build_source_id(canonical_file_path)
+                content_hash = await asyncio.to_thread(sha256_file, file_path)
+                # Resolve the declared parser text format BEFORE the unchanged
+                # check (design D3): the declaration decides Markdown routing,
+                # so it belongs in the identity. The later BackendRead carries
+                # the same resolution and verifies agreement inside the read.
+                parser_text_format = resolve_declared_text_format(
+                    file_path, settings=resolved_settings
+                )
+                index_identity = build_index_identity(
+                    resolved_settings,
+                    content_type=content_type,
+                    chunk_size=effective_chunk_size,
+                    chunk_overlap=effective_chunk_overlap,
+                    text_format=parser_text_format,
+                    embed_model=embed_model,
+                )
+                source_version = build_source_version(content_hash, index_identity)
+                # Reject pre-lineage rows for this path before any parse,
+                # embedding, or store mutation so schemas never mix silently.
+                await asyncio.to_thread(
+                    assert_source_lineage_compatible,
+                    resolved_store,
+                    collection_name,
+                    file_path=canonical_file_path,
+                    source_id=source_id,
+                )
+                unchanged, existing_chunks = await asyncio.to_thread(
+                    is_complete_current_version,
+                    resolved_store,
+                    collection_name,
+                    source_id=source_id,
+                    content_hash=content_hash,
+                    index_identity=index_identity,
+                    source_version=source_version,
+                )
+                unit_timings["change_detection_seconds"] = time.perf_counter() - detection_started
 
-            if unchanged:
-                files_skipped_unchanged += 1
+                if unchanged:
+                    files_skipped_unchanged += 1
+                    detail = make_file_detail(
+                        file_name=file_path.name,
+                        status="skipped_unchanged",
+                        chunks=0,
+                    )
+                    detail["existing_chunks"] = existing_chunks
+                    detail["source_version"] = source_version
+                    unit_timings["total_seconds"] = time.perf_counter() - unit_started
+                    detail["timings"] = unit_timings
+                    detail["peak_rss_bytes"] = sample_peak_rss_bytes()
+                    file_details.append(detail)
+                    logger.info("SKIP %s - unchanged source/index version", file_path.name)
+                    continue
+
+                parse_started = time.perf_counter()
+                nodes = await read_and_chunk_file_async(
+                    file_path,
+                    chunk_size=effective_chunk_size,
+                    chunk_overlap=effective_chunk_overlap,
+                    content_type=content_type,
+                    fallback_strategy=resolved_settings.chunking.strategy_fallback,
+                    taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
+                    settings=resolved_settings,
+                    ocr_client=ocr_client,
+                )
+                unit_timings["parse_chunk_seconds"] = time.perf_counter() - parse_started
+                if not nodes:
+                    raise IngestionStageError(
+                        "parse_chunk",
+                        f"No chunks were produced for '{file_path}'.",
+                    )
+
+                file_metadata_degraded = getattr(nodes, "metadata_degraded", False)
+                # Count degradation on observation, not on replacement success:
+                # an embedding/store failure after degraded extraction must not
+                # hide that degradation from the caller.
+                if file_metadata_degraded:
+                    metadata_degraded_count += 1
+                outcome = await replace_source_nodes_async(
+                    nodes,
+                    file_path=canonical_file_path,
+                    source_id=source_id,
+                    content_hash=content_hash,
+                    index_identity=index_identity,
+                    source_version=source_version,
+                    progress_callback=progress_callback,
+                    collection_name=collection_name,
+                    store=resolved_store,
+                    embed_model=embed_model,
+                    embed_concurrency=resolved_settings.ingestion.embed_concurrency,
+                    norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
+                    norm_tolerance=resolved_settings.embedding.norm_tolerance,
+                )
+                unit_timings.update(outcome.timings.as_dict())
+                chunks_created_total += outcome.chunks_written
+                chunks_removed_total += outcome.chunks_removed
+                files_indexed += 1
+
                 detail = make_file_detail(
                     file_name=file_path.name,
-                    status="skipped_unchanged",
-                    chunks=0,
+                    status="indexed",
+                    chunks=outcome.chunks_written,
+                    metadata_degraded=file_metadata_degraded,
                 )
-                detail["existing_chunks"] = existing_chunks
                 detail["source_version"] = source_version
+                # Effective chunking strategy, when the result carries one
+                # (CodeChunkResult): makes the AST-aware code path observable
+                # per file (spec type-aware-ingestion: "files with a
+                # tree-sitter mapping SHALL be chunked by the AST-aware code
+                # strategy") instead of only through stored metadata.
+                effective_strategy = getattr(nodes, "chunk_strategy_effective", None)
+                if effective_strategy is not None:
+                    detail["effective_strategy"] = effective_strategy
+                if outcome.norm_band is not None:
+                    # Observed embedding-vector norm band for this source —
+                    # the guard's evidence trail in the ingest report (spec:
+                    # "records the observed norm band"). Absent when the guard
+                    # is disabled: report what ran, not what did not.
+                    detail["embedding_norm_band"] = {
+                        "min": outcome.norm_band[0],
+                        "max": outcome.norm_band[1],
+                    }
                 unit_timings["total_seconds"] = time.perf_counter() - unit_started
                 detail["timings"] = unit_timings
                 detail["peak_rss_bytes"] = sample_peak_rss_bytes()
                 file_details.append(detail)
-                logger.info("SKIP %s - unchanged source/index version", file_path.name)
-                continue
-
-            parse_started = time.perf_counter()
-            nodes = await read_and_chunk_file_async(
-                file_path,
-                chunk_size=effective_chunk_size,
-                chunk_overlap=effective_chunk_overlap,
-                content_type=content_type,
-                fallback_strategy=resolved_settings.chunking.strategy_fallback,
-                taxonomy_mode=resolved_settings.metadata.taxonomy_mode,
-                settings=resolved_settings,
-            )
-            unit_timings["parse_chunk_seconds"] = time.perf_counter() - parse_started
-            if not nodes:
-                raise IngestionStageError(
-                    "parse_chunk",
-                    f"No chunks were produced for '{file_path}'.",
+                logger.info(
+                    "OK %s - %d verified chunk(s)",
+                    file_path.name,
+                    outcome.chunks_written,
                 )
+            except Exception as exc:
+                failure_type = _error_type(exc)
+                failure_types.append(failure_type)
+                errors.append(f"{file_path.name}: {exc}")
+                unit_timings["total_seconds"] = time.perf_counter() - unit_started
+                detail = make_file_detail(
+                    file_name=file_path.name,
+                    status="failed",
+                    chunks=0,
+                    error=str(exc),
+                )
+                if source_version is not None:
+                    detail["source_version"] = source_version
+                detail["failure_stage"] = (
+                    exc.stage if isinstance(exc, IngestionStageError) else failure_type
+                )
+                if nodes is not None and getattr(nodes, "metadata_degraded", False):
+                    detail["metadata_degraded"] = True
+                detail["timings"] = unit_timings
+                detail["peak_rss_bytes"] = sample_peak_rss_bytes()
+                file_details.append(detail)
+                logger.warning("FAIL %s - %s", file_path.name, exc)
+            finally:
+                # Explicitly drop the bounded node set before the next source's
+                # parser starts. This matters because Python evaluates the RHS of
+                # the next assignment before replacing the previous local value.
+                if nodes is not None:
+                    del nodes
+                _accumulate_timings(aggregate_timings, unit_timings)
+                if progress_callback:
+                    progress_callback("read", index + 1, len(files_to_index))
 
-            file_metadata_degraded = getattr(nodes, "metadata_degraded", False)
-            # Count degradation on observation, not on replacement success:
-            # an embedding/store failure after degraded extraction must not
-            # hide that degradation from the caller.
-            if file_metadata_degraded:
-                metadata_degraded_count += 1
-            outcome = await replace_source_nodes_async(
-                nodes,
-                file_path=canonical_file_path,
-                source_id=source_id,
-                content_hash=content_hash,
-                index_identity=index_identity,
-                source_version=source_version,
-                progress_callback=progress_callback,
-                collection_name=collection_name,
-                store=resolved_store,
-                embed_model=embed_model,
-                embed_concurrency=resolved_settings.ingestion.embed_concurrency,
-                norm_guard_enabled=resolved_settings.embedding.norm_guard_enabled,
-                norm_tolerance=resolved_settings.embedding.norm_tolerance,
-            )
-            unit_timings.update(outcome.timings.as_dict())
-            chunks_created_total += outcome.chunks_written
-            chunks_removed_total += outcome.chunks_removed
-            files_indexed += 1
-
-            detail = make_file_detail(
-                file_name=file_path.name,
-                status="indexed",
-                chunks=outcome.chunks_written,
-                metadata_degraded=file_metadata_degraded,
-            )
-            detail["source_version"] = source_version
-            # Effective chunking strategy, when the result carries one
-            # (CodeChunkResult): makes the AST-aware code path observable
-            # per file (spec type-aware-ingestion: "files with a
-            # tree-sitter mapping SHALL be chunked by the AST-aware code
-            # strategy") instead of only through stored metadata.
-            effective_strategy = getattr(nodes, "chunk_strategy_effective", None)
-            if effective_strategy is not None:
-                detail["effective_strategy"] = effective_strategy
-            if outcome.norm_band is not None:
-                # Observed embedding-vector norm band for this source —
-                # the guard's evidence trail in the ingest report (spec:
-                # "records the observed norm band"). Absent when the guard
-                # is disabled: report what ran, not what did not.
-                detail["embedding_norm_band"] = {
-                    "min": outcome.norm_band[0],
-                    "max": outcome.norm_band[1],
-                }
-            unit_timings["total_seconds"] = time.perf_counter() - unit_started
-            detail["timings"] = unit_timings
-            detail["peak_rss_bytes"] = sample_peak_rss_bytes()
-            file_details.append(detail)
-            logger.info(
-                "OK %s - %d verified chunk(s)",
-                file_path.name,
-                outcome.chunks_written,
-            )
-        except Exception as exc:
-            failure_type = _error_type(exc)
-            failure_types.append(failure_type)
-            errors.append(f"{file_path.name}: {exc}")
-            unit_timings["total_seconds"] = time.perf_counter() - unit_started
-            detail = make_file_detail(
-                file_name=file_path.name,
-                status="failed",
-                chunks=0,
-                error=str(exc),
-            )
-            if source_version is not None:
-                detail["source_version"] = source_version
-            detail["failure_stage"] = (
-                exc.stage if isinstance(exc, IngestionStageError) else failure_type
-            )
-            if nodes is not None and getattr(nodes, "metadata_degraded", False):
-                detail["metadata_degraded"] = True
-            detail["timings"] = unit_timings
-            detail["peak_rss_bytes"] = sample_peak_rss_bytes()
-            file_details.append(detail)
-            logger.warning("FAIL %s - %s", file_path.name, exc)
-        finally:
-            # Explicitly drop the bounded node set before the next source's
-            # parser starts. This matters because Python evaluates the RHS of
-            # the next assignment before replacing the previous local value.
-            if nodes is not None:
-                del nodes
-            _accumulate_timings(aggregate_timings, unit_timings)
-            if progress_callback:
-                progress_callback("read", index + 1, len(files_to_index))
+    finally:
+        # Release the operation-owned OCR worker (task 2.6a): an
+        # injected client stays with its owner (the Engine closes it).
+        if owns_ocr_client and ocr_client is not None:
+            ocr_client.close()
 
     all_details = file_details + skipped_details
     aggregate_timings["total_seconds"] = time.perf_counter() - operation_started

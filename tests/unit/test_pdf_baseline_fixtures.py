@@ -151,7 +151,7 @@ def test_baseline_degraded_behaviour_pinned() -> None:
 
 
 def test_adapter_metadata_contract_on_text_pdf(fixtures_dir, caplog) -> None:
-    """The adapter maps exactly the current six metadata keys on a text PDF."""
+    """The adapter maps exactly the current seven metadata keys on a text PDF."""
     from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
     pdf = fixtures_dir / "pdf_baseline" / "evaluation" / "eval_clean_text.pdf"
@@ -165,6 +165,7 @@ def test_adapter_metadata_contract_on_text_pdf(fixtures_dir, caplog) -> None:
         "pdf_type",
         "pdf_confidence",
         "page_count",
+        "pages_needing_ocr",
         "file_path",
         "file_name",
     }
@@ -182,10 +183,11 @@ def test_adapter_metadata_contract_on_text_pdf(fixtures_dir, caplog) -> None:
 def test_adapter_degraded_ocr_path_pinned(fixtures_dir, caplog) -> None:
     """Scanned fixture: document still emitted, empty markdown, logged warning.
 
-    Records the current degraded path end to end: the adapter returns a
-    Document even when the markdown is empty, keeps the classification in
-    metadata, logs the "may need OCR" info line, and does NOT store
-    ``pages_needing_ocr`` anywhere — the library-level list is log-only.
+    Records the degraded path end to end after task 2.10: the adapter
+    returns a Document even when the markdown is empty, keeps the
+    classification in metadata, logs the "may need OCR" info line, and
+    stores ``pages_needing_ocr`` as the SCALAR COUNT (never the
+    library's page list — vector-store metadata values are scalars).
     """
     from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader
 
@@ -203,11 +205,12 @@ def test_adapter_degraded_ocr_path_pinned(fixtures_dir, caplog) -> None:
     assert "may need OCR" in caplog.text
     assert "cal_scanned.pdf" in caplog.text
 
-    assert "pages_needing_ocr" not in doc.metadata, (
-        "baseline gap: pages_needing_ocr is log-only; task 2.10 adds it as a scalar"
+    assert doc.metadata["pages_needing_ocr"] == 1, (
+        "task 2.10: the adapter stores the scalar count, not the page list"
     )
+    assert not isinstance(doc.metadata["pages_needing_ocr"], list)
 
     library_result = pdf_inspector.process_pdf(str(pdf))
     assert list(library_result.pages_needing_ocr or []) == [1], (
-        "the library does report page 1; only the adapter drops it"
+        "the library still reports the page list; only the adapter reduces it"
     )
