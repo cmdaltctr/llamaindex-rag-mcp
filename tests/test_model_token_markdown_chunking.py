@@ -331,6 +331,39 @@ async def test_skipped_heading_levels_produce_sibling_paths(
 
 
 @pytest.mark.asyncio
+async def test_heading_ancestry_survives_multibyte_offsets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Header paths stay correct when multi-byte text precedes and fills headings.
+
+    ``chunk_indices`` reports Python character offsets, and
+    ``_heading_positions`` must accumulate offsets the same way. If heading
+    offsets were ever computed in UTF-8 bytes instead, multi-byte characters
+    before a heading would inflate its recorded position past the character
+    offset of chunks that immediately follow it, dropping that heading from
+    their ancestry.
+    """
+    settings, _ = _stub_settings(monkeypatch, chunk_size=12)
+    preface = "Préface — éèê " * 8
+    text = (
+        preface + "\n\n"
+        "# Café — Überblick\n\n" + "intro detail " * 20 + "\n\n"
+        "## Résumé\n\n" + "résumé detail " * 20
+    )
+
+    nodes = await chunk_sentence_file_async(
+        [Document(text=text)], "doc.md", True, settings=settings
+    )
+
+    intro = [node for node in nodes if "intro detail" in node.text]
+    resume = [node for node in nodes if "résumé detail" in node.text]
+    assert len(intro) > 1
+    assert len(resume) > 1
+    assert all(node.metadata["header_path"] == "/Café — Überblick/" for node in intro)
+    assert all(node.metadata["header_path"] == "/Café — Überblick/Résumé/" for node in resume)
+
+
+@pytest.mark.asyncio
 async def test_small_chunk_filter_uses_exact_model_tokens(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
