@@ -5,9 +5,15 @@ baseline before the OCR routing work lands in stage 2.
 
 ## Licence
 
-All fixture content is self-authored for this repository. No third-party
-material, no derived works, no licence obligations beyond the project
-licence. Safe to commit.
+Fixtures are self-authored for this repository — no third-party material
+— with one exception added at the 2026-09-08 repair: `eval_scanned.pdf`
+and `eval_image.pdf` embed rasterised pages from a **CC0 public-domain**
+paper (Dashnow, Lonsdale, Bourne 2014, PLoS Comput Biol 10(10): e1003858,
+doi:10.1371/journal.pcbi.1003858 — "free of all copyright, usable by
+anyone for any lawful purpose"). Full provenance, source sha256, and the
+ground-truth text files (`*.expected.txt`) are recorded in
+`manifest.json`. The originals were 605-byte blank PDFs with nothing to
+extract; see experiment 24 run 1.
 
 ## Calibration vs evaluation disjointness
 

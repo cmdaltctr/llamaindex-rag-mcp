@@ -76,9 +76,16 @@ def test_manifest_matches_disk_and_sets_are_disjoint() -> None:
 
 
 def test_fixture_sets_stay_compact() -> None:
-    """Fixtures stay small enough to commit: every PDF is under 4 KiB."""
+    """Fixtures stay small enough to commit: every PDF is under 1 MiB.
+
+    The original 4 KiB budget assumed hand-built micro-PDFs. The 2026-09-08
+    fixture repair (experiment 24 run 1 FAIL) replaced the two blank
+    scanned/image fixtures with rasterised CC0 pages (~450 KB each at
+    200 DPI — see manifest.json provenance); a genuine scanned page cannot
+    fit in 4 KiB. 1 MiB still catches accidental content blobs.
+    """
     for pdf in PDF_BASELINE_DIR.rglob("*.pdf"):
-        assert pdf.stat().st_size < 4096, f"{pdf.name} exceeds the compactness budget"
+        assert pdf.stat().st_size < 1024 * 1024, f"{pdf.name} exceeds the compactness budget"
 
 
 def test_readme_documents_sets_and_licence() -> None:
