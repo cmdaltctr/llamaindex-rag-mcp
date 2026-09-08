@@ -99,3 +99,6 @@ Thumbs.db
 
 # Security-scanner scratch output (a-security audits) — never commit
 .security/
+
+# machine-local corpus symlink for exp 25 (points at the preserved DATA copy)
+experiments/25-token-chunking-ablation-2026-09-08/corpus
