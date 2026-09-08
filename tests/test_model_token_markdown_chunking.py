@@ -97,8 +97,12 @@ def _qwen_settings(
 
 
 def _token_count(tokenizer: object, text: str) -> int:
-    """Count tokens through a Hugging Face tokenizer."""
-    return len(tokenizer.encode(text).ids)
+    """Count tokens through a Hugging Face tokenizer.
+
+    Mirrors production ``_token_count``: no post-processor special tokens,
+    matching semantic-text-splitter's capacity semantics.
+    """
+    return len(tokenizer.encode(text, add_special_tokens=False).ids)
 
 
 def _token_overlap(tokenizer: object, left: str, right: str) -> int:
@@ -445,8 +449,39 @@ async def test_cached_qwen_tokenizer_caps_finalised_chunks() -> None:
     )
 
     assert nodes
-    assert all(node.text.startswith("[/Report/Findings/] ") for node in nodes)
+    # Corrected no-specials counting lets a boundary land between the two
+    # headings; that chunk's ancestry is legitimately [/Report/].
+    assert all(node.text.startswith(("[/Report/] ", "[/Report/Findings/] ")) for node in nodes)
     assert all(_token_count(tokenizer, node.text) <= 48 for node in nodes)
+
+
+@pytest.mark.asyncio
+async def test_boundary_chunk_at_exact_cap_does_not_fail_on_special_tokens() -> None:
+    """A chunk landing exactly on the cap must verify, not hard-fail the file.
+
+    Regression (found by experiment 25 token accounting): ``_token_count``
+    encoded with post-processor specials while ``semantic-text-splitter``
+    counts without them, so chunks the splitter sized to exactly the cap
+    verified one token over and raised a cap ValueError for ~12% of real
+    Markdown sources (e.g. 1025 vs 1024).
+    """
+    settings, tokenizer = _qwen_settings(chunk_size=64, heading_prepend=False)
+    cap = settings.chunking.markdown_chunk_size
+
+    def plain_count(text: str) -> int:
+        return len(tokenizer.encode(text, add_special_tokens=False).ids)
+
+    text = "# Report\n\na"
+    while plain_count(text) < cap:
+        text += " a"
+    assert plain_count(text) == cap, "grower must land exactly on the cap"
+
+    nodes = await chunk_sentence_file_async(
+        [Document(text=text)], "doc.md", True, settings=settings
+    )
+
+    assert nodes
+    assert all(plain_count(node.text) <= cap for node in nodes)
 
 
 def test_unresolvable_configured_tokenizer_uses_legacy_with_diagnostic(

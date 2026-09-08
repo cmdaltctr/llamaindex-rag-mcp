@@ -425,5 +425,12 @@ def _header_path_at(headings: list[tuple[int, int, str]], offset: int) -> str:
 
 
 def _token_count(tokenizer: Any, text: str) -> int:
-    """Count tokens without allowing tokenizer truncation to affect sizing."""
-    return len(tokenizer.encode(text).ids)
+    """Count tokens without allowing tokenizer truncation to affect sizing.
+
+    Counts exclude post-processor special tokens: semantic-text-splitter's
+    ``from_huggingface_tokenizer`` capacity counts without them, and the
+    Qwen tokenizers carry a Sequence post-processor that adds specials on
+    ``encode`` — counting with specials made boundary chunks verify one
+    token over the cap the splitter itself enforced (experiment 25).
+    """
+    return len(tokenizer.encode(text, add_special_tokens=False).ids)
