@@ -53,5 +53,9 @@
     "eval_clean_text.pdf",
     "eval_mixed.pdf",
     "eval_two_column.pdf"
-  ]
+  ],
+  "cross_engine_mistral_word_recall": {
+    "eval_image.pdf": 0.9503,
+    "eval_scanned.pdf": 0.9681
+  }
 }

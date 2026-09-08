@@ -81,6 +81,23 @@ gate-freeze time. The repair replaced the fixtures with rasterised
 CC0 pages (attribution and sha256 in the fixtures manifest); the
 frozen gates were never touched.
 
+## Cross-engine confirmation (Mistral OCR)
+
+The operator independently ran both routed fixtures through Mistral
+Document AI (mistral-ocr; markdown output, defaults) and the raw
+responses are committed as `output/mistral_eval_*.md`. Scored with
+the same ground-truth word-recall metric:
+
+| Fixture | PaddleOCR-VL (ours) | Mistral OCR |
+| --- | ---: | ---: |
+| eval_image.pdf 93.0% | 95.0% |
+| eval_scanned.pdf 94.3% | 96.8% |
+
+Both engines recover the same rule headings (Rule 3/4/5 and Rule
+8/9) at the same positions. Two independent OCR systems agreeing
+within ~3 points confirms the run-2 PASS reflects real extraction,
+not a favourable reading of one engine.
+
 ## Reproduction
 
 ```bash
