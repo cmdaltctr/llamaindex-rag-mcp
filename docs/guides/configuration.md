@@ -371,10 +371,18 @@ unit-normalised. The guard enforces the contract: fail-closed at ingest (a bad v
 file replacement before any write), warn-and-continue at query (results stay available, a
 `norm_guard` diagnostic appears with diagnostics enabled).
 
+The two `tokenizer_*` fields carry the Markdown chunking budget identity
+([ADR-063](../adr/063-model-token-aware-markdown-chunking.md), promoted to packaged default
+after experiment 25 passed all four frozen gates). The tokenizer is resolved from the local
+Hugging Face cache only — it is independent of the embedding inference provider, and the
+system never infers it from an Ollama, llama.cpp, or OpenRouter alias.
+
 | Field | Default | What it does |
 |---|---|---|
 | `norm_guard_enabled` | `true` | Verify vector norms at both boundaries. Disabling is logged at startup |
 | `norm_tolerance` | `0.001` | Maximum permitted `abs(norm − 1.0)`, inclusive. Must be positive |
+| `tokenizer_model` | `Qwen/Qwen3-Embedding-4B` | Hugging Face identity used to budget Markdown chunks in real token units. Both fields empty → legacy character-budgeted path. Uncached revision → warning + the same legacy fallback |
+| `tokenizer_revision` | `5cf2132abc99cad020ac570b19d031efec650f2b` | Pinned revision; must be present in the local cache for the model-token path to activate. Changing either field changes the source index identity, so Markdown sources re-chunk on the next ingest |
 
 ### Retrieval — `RETRIEVAL__*`
 

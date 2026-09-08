@@ -284,7 +284,13 @@ omrg ingest /path/to/docs/
 
 ## Chunk size guide
 
-`--chunk-size` controls how many **characters** go into each chunk. The embedding model has a **context length** in **tokens**. A rough guide: ~4 characters ≈ 1 token for English.
+Two budgets apply, depending on the source.
+
+### Non-Markdown sources: character budget
+
+`--chunk-size` controls how many **characters** go into each chunk for plain text and other
+non-Markdown sources. The embedding model has a **context length** in **tokens**. A rough guide:
+~4 characters ≈ 1 token for English.
 
 | Model                | Context (tokens) | Max safe chunk-size | Default 512 safe? |
 | -------------------- | ---------------- | ------------------- | ----------------- |
@@ -299,6 +305,50 @@ The default 512-character chunk size is safe for all models. For models with lar
 # 2048-char chunks are fine (2048 × 0.25 = 512 tokens)
 omrg ingest /path/to/docs/ --chunk-size 2048
 ```
+
+### Markdown sources: token budget (default since ADR-063 promotion)
+
+Markdown files (`.md`, or any reader that declares its output as Markdown, such as the PDF
+text path) are chunked by the Rust-backed `semantic-text-splitter` using the configured
+embedding tokenizer — real token units, not a characters-per-token guess
+([ADR-063](../adr/063-model-token-aware-markdown-chunking.md); promoted to the packaged
+default after [experiment 25](../../experiments/25-token-chunking-ablation-2026-09-08/results.md)
+passed all four frozen gates: retrieval neutral, embedded tokens −2.5%, largest chunk
+halved).
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `EMBEDDING__TOKENIZER_MODEL` | `Qwen/Qwen3-Embedding-4B` | Tokenizer identity for the budget |
+| `EMBEDDING__TOKENIZER_REVISION` | `5cf2132abc99cad020ac570b19d031efec650f2b` | Pinned revision; must be in the local Hugging Face cache |
+| `CHUNKING__MARKDOWN_CHUNK_SIZE` | `1024` | Maximum chunk size in tokenizer units |
+| `CHUNKING__MARKDOWN_HEADING_PREPEND` | `false` | Prepend the heading path to each chunk. When on, the prepended text counts against the token cap |
+| `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` | `0.0` | Filter chunks below this fraction of the cap (measured in real tokens on this path) |
+
+The contract, in short:
+
+- The splitter prefers structural boundaries — headings, sections, tables, lists, paragraphs —
+  and only then splits smaller. Nothing is emitted over the cap.
+- The cap governs the finalised chunk text. A heading prefix that would push a chunk over the
+  cap reduces the space for content instead of being dropped or overflowing; a Markdown
+  structure that cannot fit at all fails that one file (`status="failed"`), never the batch.
+- The tokenizer is a **local cache artefact** and is independent of the embedding inference
+  provider: whether embeddings run through Ollama, llama.cpp, or OpenRouter, the budget uses
+  the pinned Hugging Face tokenizer, never an inference-server alias.
+
+Cache the tokenizer once (offline thereafter):
+
+```bash
+hf download Qwen/Qwen3-Embedding-4B tokenizer.json \
+  --revision 5cf2132abc99cad020ac570b19d031efec650f2b
+```
+
+If the revision is not cached, ingestion logs a warning naming the failure and falls back to
+the legacy character-budgeted splitter for that run. Setting both `EMBEDDING__TOKENIZER_*`
+fields empty makes the legacy path permanent (explicit opt-out).
+
+The resolved tokenizer identity and splitter participate in the source index identity, so
+changing the identity, revision, or cache availability re-chunks every Markdown source on
+the next ingest — by design, so one collection never mixes chunking strategies.
 
 ## Progress and interruption
 
