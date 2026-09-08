@@ -17,6 +17,11 @@ file_details exactly. Strict rejection: missing index, missing build record,
 missing _node_content, per-file mismatch, tokenizer fallback, or incomplete
 coverage.
 
+payload_tokens/max_payload_tokens count MetadataMode.EMBED text before the
+adapter. request_tokens/max_request_tokens count that text after the installed
+OpenAI batch helpers replace each newline with a space. Both use the pinned
+local tokenizer without special tokens; neither verifies provider billing or retries.
+
 Usage:
     uv run python verify_accounting.py --side baseline
     uv run python verify_accounting.py --side candidate
@@ -75,8 +80,10 @@ def main() -> None:
     table = lancedb.connect(str(side["uri"])).open_table(side["table"])
     rows = table.to_arrow().to_pylist()
 
-    total_tokens = 0
+    payload_tokens = 0
     max_payload_tokens = 0
+    request_tokens = 0
+    max_request_tokens = 0
     per_file_chunks: Counter[str] = Counter()
     for row in rows:
         metadata = row.get("metadata") or {}
@@ -86,8 +93,14 @@ def main() -> None:
         node = TextNode.from_json(node_content)
         payload = node.get_content(metadata_mode=MetadataMode.EMBED)
         count = len(tokenizer.encode(payload, add_special_tokens=False).ids)
-        total_tokens += count
+        payload_tokens += count
         max_payload_tokens = max(max_payload_tokens, count)
+        # OpenAILikeEmbedding inherits this transformation in sync/async batch helpers.
+        request_count = len(
+            tokenizer.encode(payload.replace("\n", " "), add_special_tokens=False).ids
+        )
+        request_tokens += request_count
+        max_request_tokens = max(max_request_tokens, request_count)
         per_file_chunks[str(node.metadata.get("file_path", "unknown"))] += 1
 
     # Per-file cross-check against the build's own record.
@@ -112,8 +125,17 @@ def main() -> None:
         "tokenizer": {"model": TOKENIZER_MODEL, "revision": TOKENIZER_REVISION},
         "files": files_covered,
         "chunks": stored_total,
-        "payload_tokens": total_tokens,
+        "token_definitions": {
+            "payload_tokens": "sum of MetadataMode.EMBED text tokens before the adapter",
+            "max_payload_tokens": "largest per-node EMBED text token count",
+            "request_tokens": "sum after EMBED text.replace('\\n', ' ') in the adapter",
+            "max_request_tokens": "largest per-node normalised request text token count",
+            "scope": "local tokenizer, no special tokens; excludes provider billing and retries",
+        },
+        "payload_tokens": payload_tokens,
         "max_payload_tokens": max_payload_tokens,
+        "request_tokens": request_tokens,
+        "max_request_tokens": max_request_tokens,
         "per_file_mismatches": mismatches[:10],
         "mismatch_count": len(mismatches),
         "recorded_files": len(recorded),

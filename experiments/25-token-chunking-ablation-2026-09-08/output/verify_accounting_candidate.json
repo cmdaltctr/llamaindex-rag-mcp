@@ -7,8 +7,17 @@
   },
   "files": 10024,
   "chunks": 22281,
+  "token_definitions": {
+    "payload_tokens": "sum of MetadataMode.EMBED text tokens before the adapter",
+    "max_payload_tokens": "largest per-node EMBED text token count",
+    "request_tokens": "sum after EMBED text.replace('\\n', ' ') in the adapter",
+    "max_request_tokens": "largest per-node normalised request text token count",
+    "scope": "local tokenizer, no special tokens; excludes provider billing and retries"
+  },
   "payload_tokens": 13622856,
   "max_payload_tokens": 1120,
+  "request_tokens": 13521230,
+  "max_request_tokens": 1189,
   "per_file_mismatches": [],
   "mismatch_count": 0,
   "recorded_files": 10024

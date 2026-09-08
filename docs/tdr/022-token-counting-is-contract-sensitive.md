@@ -1,9 +1,26 @@
 # TDR-022: Token counting is contract-sensitive — three traps in the exp 25 pre-build gate
 
 **Date:** 2026-09-08
-**Status:** Accepted (extended by TDR-023 — deserialise `_node_content`, never reconstruct)
+**Status:** Partially superseded by [TDR-023](023-reconstructed-nodes-are-not-stored-nodes.md): accounting method, totals and pre-spend approval
 **Deciders:** Aizat
 **Tags:** experiments | chunking | tokenization | embedding-cost | gates
+
+## Current accounting status (2026-09-08)
+
+The original decision and results below remain as historical evidence.
+The node-reconstruction instructions, 0.980 ratio, 1,125-token maximum and
+±1.4% tolerance are superseded by TDR-023. Do not use them for accounting.
+
+The verifier now deserialises `metadata["_node_content"]`. It counts EMBED
+text separately from request text after the installed adapter replaces
+newlines with spaces. Request totals are **13,869,272 baseline** and
+**13,521,230 candidate**: ratio **0.974906**, below the 1.15 limit.
+Maximum request sizes are **2,087 baseline** and **1,189 candidate**.
+These are local counts; provider billing and retries remain unverified.
+
+`build_index.py` refuses new paid builds. The verifier checks completed
+indexes only. Future estimates must reuse production preparation and prove
+request-text parity offline; no new ingestion framework is required.
 
 ## Context
 

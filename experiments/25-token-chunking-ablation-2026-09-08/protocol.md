@@ -19,15 +19,25 @@ all candidate nodes) rendered into rebuilt payloads and inflated totals by
 `metadata["_node_content"]`; it reproduces the audit's reference totals to
 the token:
 
-| Side | Files | Chunks | Real payload tokens | Max payload |
-| --- | ---: | ---: | ---: | ---: |
-| Baseline (exp 22 store) | 10,024 | 32,631 | 13,969,694 | 2,087 |
-| Candidate (exp 25 store) | 10,024 | 22,281 | 13,622,856 | 1,120 |
+| Side | Files | Chunks | EMBED payload tokens | Max payload | Request tokens | Max request |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Baseline (exp 22 store) | 10,024 | 32,631 | 13,969,694 | 2,087 | 13,869,272 | 2,087 |
+| Candidate (exp 25 store) | 10,024 | 22,281 | 13,622,856 | 1,120 | 13,521,230 | 1,189 |
 
-Cost gate (≤ 1.15 × baseline): **0.975 — PASS**. Note: the installed
-embedding adapter performs no newline replacement (verified in
-site-packages); any "after normalisation" totals are hypothetical. The
-defective pre-spend approval path is disabled in `build_index.py`;
+`payload_tokens` and `max_payload_tokens` count `MetadataMode.EMBED` text
+before adapter processing. `request_tokens` and `max_request_tokens` count
+`payload.replace("\n", " ")`, with each maximum taken across individual nodes.
+The installed `llama_index/embeddings/openai/base.py` batch helpers
+`get_embeddings` (line 170) and `aget_embeddings` (line 194) apply this
+transformation. `OpenAILikeEmbedding` inherits both paths. The earlier
+claim that this adapter does not replace newlines was incorrect.
+
+Retrospective cost gate (≤ 1.15 × baseline): request ratio
+**0.974906 — PASS**; pre-adapter EMBED ratio **0.975172 — PASS**.
+Both counts use the pinned local tokenizer without special tokens.
+They do not verify provider billing, retries or historical network traffic.
+Offline regeneration reconciled all files with zero mismatches on both sides.
+The defective pre-spend approval path remains disabled in `build_index.py`;
 `verify_accounting.py` is retrospective verification only (TDR-022).
 
 **Relation**: `improve-rag-input-quality-5` task 5.2; ADR-063 (Proposed); experiment 22 baseline
