@@ -3,7 +3,28 @@
 **ID**: `25-token-chunking-ablation-2026-09-08`
 **Date planned**: 2026-09-08
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PLANNED (validity gates frozen 2026-09-08, task 1.6)
+**Status**: PLANNED → candidate index BUILT (2026-09-08, 6.44 h, 22,281 chunks); cost gate PASSED on corrected accounting (see `output/verify_accounting_*.json`); evaluation cells pending
+
+## Accounting correction (2026-09-08, external review)
+
+The original pre-build counter (`token_accounting.py`, now deprecated with
+its defects documented) was proven wrong: it included the corpus manifest
+jsonl production never selects, counted body text rather than the composed
+`MetadataMode.EMBED` payload, and its shared additive contamination did
+not cancel in the ratio. Corrected verdict from `verify_accounting.py`
+(reads the actual stored rows, reconstructs production payloads, and
+reconciles per-file chunk counts against both builds' records exactly):
+
+| Side | Files | Chunks | Payload tokens | Max payload |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline (exp 22 store) | 10,024 | 32,631 | 14,066,499 | 2,087 |
+| Candidate (exp 25 store) | 10,024 | 22,281 | 13,780,416 | 1,125 |
+
+Cost gate (≤ 1.15 × baseline): **0.980 — PASS**. Side finding: the
+model-token chunker cut the worst-case embedding payload from 2,087 to
+1,125 tokens (body cap 1,024 + retained metadata). Regression tests for
+the counter defects: `tests/test_exp25_accounting_contracts.py`.
+
 **Relation**: `improve-rag-input-quality-5` task 5.2; ADR-063 (Proposed); experiment 22 baseline
 
 ## Why this experiment exists
