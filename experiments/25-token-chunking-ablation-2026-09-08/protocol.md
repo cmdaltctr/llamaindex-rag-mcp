@@ -5,25 +5,30 @@
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
 **Status**: PLANNED → candidate index BUILT (2026-09-08, 6.44 h, 22,281 chunks); cost gate PASSED on corrected accounting (see `output/verify_accounting_*.json`); evaluation cells pending
 
-## Accounting correction (2026-09-08, external review)
+## Accounting correction (2026-09-08, external review; definitive revision same day)
 
-The original pre-build counter (`token_accounting.py`, now deprecated with
-its defects documented) was proven wrong: it included the corpus manifest
-jsonl production never selects, counted body text rather than the composed
-`MetadataMode.EMBED` payload, and its shared additive contamination did
-not cancel in the ratio. Corrected verdict from `verify_accounting.py`
-(reads the actual stored rows, reconstructs production payloads, and
-reconciles per-file chunk counts against both builds' records exactly):
+The original pre-build counter (`token_accounting.py`, deprecated with its
+defects documented) was proven wrong: it included the corpus manifest jsonl
+production never selects, counted body text rather than the composed
+`MetadataMode.EMBED` payload, and its shared additive contamination did not
+cancel in the ratio. A second review round then caught that my first
+correction reconstructed nodes from row text+metadata — null-valued retained
+keys (`content_type: None` on 19,361 baseline nodes, `header_path: None` on
+all candidate nodes) rendered into rebuilt payloads and inflated totals by
+~0.7–1.2%. The definitive method deserialises the real pre-store nodes from
+`metadata["_node_content"]`; it reproduces the audit's reference totals to
+the token:
 
-| Side | Files | Chunks | Payload tokens | Max payload |
+| Side | Files | Chunks | Real payload tokens | Max payload |
 | --- | ---: | ---: | ---: | ---: |
-| Baseline (exp 22 store) | 10,024 | 32,631 | 14,066,499 | 2,087 |
-| Candidate (exp 25 store) | 10,024 | 22,281 | 13,780,416 | 1,125 |
+| Baseline (exp 22 store) | 10,024 | 32,631 | 13,969,694 | 2,087 |
+| Candidate (exp 25 store) | 10,024 | 22,281 | 13,622,856 | 1,120 |
 
-Cost gate (≤ 1.15 × baseline): **0.980 — PASS**. Side finding: the
-model-token chunker cut the worst-case embedding payload from 2,087 to
-1,125 tokens (body cap 1,024 + retained metadata). Regression tests for
-the counter defects: `tests/test_exp25_accounting_contracts.py`.
+Cost gate (≤ 1.15 × baseline): **0.975 — PASS**. Note: the installed
+embedding adapter performs no newline replacement (verified in
+site-packages); any "after normalisation" totals are hypothetical. The
+defective pre-spend approval path is disabled in `build_index.py`;
+`verify_accounting.py` is retrospective verification only (TDR-022).
 
 **Relation**: `improve-rag-input-quality-5` task 5.2; ADR-063 (Proposed); experiment 22 baseline
 

@@ -1,12 +1,13 @@
 {
   "side": "baseline",
+  "method": "deserialised _node_content (real pre-store nodes)",
   "tokenizer": {
     "model": "Qwen/Qwen3-Embedding-4B",
     "revision": "5cf2132abc99cad020ac570b19d031efec650f2b"
   },
   "files": 10024,
   "chunks": 32631,
-  "payload_tokens": 14066499,
+  "payload_tokens": 13969694,
   "max_payload_tokens": 2087,
   "per_file_mismatches": [],
   "mismatch_count": 0,

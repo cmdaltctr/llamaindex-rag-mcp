@@ -1,18 +1,21 @@
-"""Experiment 25 corrected accounting: verify built indexes, count real payloads.
+"""Experiment 25 RETROSPECTIVE accounting: verify built indexes, count real payloads.
 
-Replaces the standalone re-chunking counter (which double-counted the
-manifest and body-only text). This verifier reads the ACTUAL stored rows,
-reconstructs the exact embedding payload production composed — body text
-plus retained metadata under MetadataMode.EMBED, with the production
-excluded-key set from source_state — and tokenises with the pinned Qwen
-tokenizer.
+Retrospective verification of COMPLETED builds — it can never authorise a
+future paid build (that path is disabled in build_index.py until a corrected
+pre-spend estimator exists; see TDR-022).
 
-Per-file cross-check: grouped chunk counts must match the build's
-recorded file_details exactly. Strict rejection: missing index, missing
-build record, per-file mismatch, tokenizer fallback, or incomplete file
-coverage (production selects langchain/ and continuity/ only — the
-manifest jsonl is excluded by construction because it is not read from
-a store).
+Definitive method: each stored row carries the serialised pre-store node in
+metadata["_node_content"] (adapter-injected). Deserialising it recovers the
+real metadata, excluded-key sets, and templates the pipeline embedded — no
+reconstruction. Reconstruction from row text+metadata is NOT equivalent:
+null-valued retained keys (e.g. "content_type": None on 19,361 baseline
+nodes, "header_path": None on all candidate nodes) render into a rebuilt
+payload and inflate totals by ~0.7-1.2%.
+
+Per-file cross-check: grouped chunk counts must match the build's recorded
+file_details exactly. Strict rejection: missing index, missing build record,
+missing _node_content, per-file mismatch, tokenizer fallback, or incomplete
+coverage.
 
 Usage:
     uv run python verify_accounting.py --side baseline
@@ -61,7 +64,6 @@ def main() -> None:
     import lancedb
     from llama_index.core.schema import MetadataMode, TextNode
 
-    from omrg.core.ingestion.source_state import _RETAINED_EMBED_METADATA_KEYS
     from omrg.integrations.tokenizer import load_tokenizer
 
     side = SIDES[args.side]
@@ -73,19 +75,20 @@ def main() -> None:
     table = lancedb.connect(str(side["uri"])).open_table(side["table"])
     rows = table.to_arrow().to_pylist()
 
-    retained = set(_RETAINED_EMBED_METADATA_KEYS)
     total_tokens = 0
     max_payload_tokens = 0
     per_file_chunks: Counter[str] = Counter()
     for row in rows:
         metadata = row.get("metadata") or {}
-        node = TextNode(text=row["text"], metadata=dict(metadata))
-        node.excluded_embed_metadata_keys = sorted(set(metadata) - retained)
+        node_content = metadata.get("_node_content")
+        if node_content is None:
+            sys.exit("[verify] row without _node_content — cannot recover real payload")
+        node = TextNode.from_json(node_content)
         payload = node.get_content(metadata_mode=MetadataMode.EMBED)
         count = len(tokenizer.encode(payload, add_special_tokens=False).ids)
         total_tokens += count
         max_payload_tokens = max(max_payload_tokens, count)
-        per_file_chunks[str(metadata.get("file_path", "unknown"))] += 1
+        per_file_chunks[str(node.metadata.get("file_path", "unknown"))] += 1
 
     # Per-file cross-check against the build's own record.
     recorded: Counter[str] = Counter()
@@ -105,6 +108,7 @@ def main() -> None:
     stored_total = len(rows)
     result = {
         "side": args.side,
+        "method": "deserialised _node_content (real pre-store nodes)",
         "tokenizer": {"model": TOKENIZER_MODEL, "revision": TOKENIZER_REVISION},
         "files": files_covered,
         "chunks": stored_total,

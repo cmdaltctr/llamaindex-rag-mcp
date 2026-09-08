@@ -49,28 +49,25 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
 def _preflight_cost_gate() -> dict:
-    """Refuse to build if the frozen token-cost gate would be breached."""
-    plan = json.loads((EXP_DIR / "plan.json").read_text(encoding="utf-8"))
-    cost_gate = next(g for g in plan["validity_gates"] if g["kind"] == "cost")
-    cap = cost_gate["threshold_ratio_to_baseline"]
-    baseline = json.loads(
-        (EXP_DIR / "output/token_accounting_baseline.json").read_text(encoding="utf-8")
+    """Refuse paid builds until a corrected pre-spend estimator exists.
+
+    The original preflight read token_accounting_*.json from the deprecated
+    standalone counter, which an external review proved defective (manifest
+    contamination, body-only counting, non-cancelling ratio — TDR-022).
+    That approval path is DISABLED: the defective counter must never
+    authorise embedding spend again. Cost verdicts for completed builds
+    come from verify_accounting.py (retrospective, deserialises real
+    stored nodes). A future pre-spend estimator must reuse production
+    preparation with an in-memory store and a network-blocked request
+    recorder before this refusal is lifted.
+    """
+    print(
+        "[gate] pre-spend accounting is unavailable in a corrected form;\n"
+        "       refusing to start a paid build (TDR-022). Cost verdicts for\n"
+        "       completed builds: uv run python verify_accounting.py --side <side>",
+        flush=True,
     )
-    candidate = json.loads(
-        (EXP_DIR / "output/token_accounting_candidate.json").read_text(encoding="utf-8")
-    )
-    ratio = candidate["embedded_tokens"] / baseline["embedded_tokens"]
-    verdict = {
-        "baseline_tokens": baseline["embedded_tokens"],
-        "candidate_tokens": candidate["embedded_tokens"],
-        "ratio": round(ratio, 4),
-        "cap": cap,
-    }
-    if ratio > cap:
-        print(f"[gate] COST GATE BREACH: {verdict}", flush=True)
-        sys.exit(1)
-    print(f"[gate] cost gate ok: {verdict}", flush=True)
-    return verdict
+    sys.exit(1)
 
 
 def main() -> None:
