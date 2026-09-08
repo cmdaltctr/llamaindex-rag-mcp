@@ -1,7 +1,7 @@
 # TDR-022: Token counting is contract-sensitive — three traps in the exp 25 pre-build gate
 
 **Date:** 2026-09-08
-**Status:** Accepted
+**Status:** Accepted (extended by TDR-023 — deserialise `_node_content`, never reconstruct)
 **Deciders:** Aizat
 **Tags:** experiments | chunking | tokenization | embedding-cost | gates
 
