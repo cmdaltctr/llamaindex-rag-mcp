@@ -15,6 +15,12 @@ evaluated on the frozen Experiment 22 index with no re-ingestion. Its
 effect on identifier-heavy technical queries is unknown and could be
 negative (preamble dilutes identifier tokens).
 
+**In plain terms:** before sending your question to the search, wrap it
+in an instruction sentence ("find documentation matching this query: …").
+Same index, same questions, plain vs wrapped. Passes if: wrapped finds
+at least 3% more relevant documents, doesn't break the code-lookup
+questions, and isn't slower.
+
 ## Hypothesis
 
 > Wrapping raw queries in the candidate instruction lifts paired mean

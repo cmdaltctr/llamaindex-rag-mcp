@@ -15,6 +15,13 @@ routing gate (0.5/0.5) was calibrated on the calibration fixtures only
 on the five held-out evaluation fixtures against the pinned fast-path
 baseline, before any default changes (ADR-062 stays Proposed until then).
 
+**In plain terms:** take the 5 PDFs we locked away at the start. Run them
+the old way and the new way (scanned ones go to the OCR worker). Passes
+if: every OCR'd PDF comes out with real readable text (headings/tables,
+nothing missing), the clean PDFs are touched zero (bit-for-bit identical
+to today), and OCR takes under 3 minutes per page. The go/no-go check
+itself is near-instant — one to two milliseconds, already measured.
+
 ## Hypothesis
 
 > Routing OCR-required evaluation PDFs through the isolated worker

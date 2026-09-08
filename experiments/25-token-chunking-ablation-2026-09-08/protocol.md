@@ -15,6 +15,14 @@ is unmeasured. This experiment rebuilds the Experiment 22 corpus index
 with the candidate chunker and compares on identical queries and qrels,
 before any chunk-size default changes.
 
+**In plain terms:** the search index chops documents into pieces. The
+new splitter counts words the way the AI model actually does, instead of
+guessing. Rebuild the whole index with the new splitter, ask the same
+223 questions. Passes if: it finds at least as much as the old splitter
+(allowed to be up to 2.5% worse, which is measurement luck), doesn't
+cost more than 15% extra in embedding API money, and answers just as
+fast.
+
 ## Hypothesis
 
 > An index built with model-token-aware Markdown chunking is
