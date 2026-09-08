@@ -1,29 +1,26 @@
 {
   "experiment": "24-ocr-routing-eval-2026-09-08",
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "gates": {
     "quality_zero_structured_failures": {
       "pass": true,
       "measured": 0
     },
     "quality_structure_markers": {
-      "pass": false,
+      "pass": true,
       "measured": {
         "eval_image.pdf": {
-          "headings": 0,
+          "headings": 2,
           "list_items": 0,
           "tables": 0
         },
         "eval_scanned.pdf": {
-          "headings": 0,
+          "headings": 3,
           "list_items": 0,
           "tables": 0
         }
       },
-      "failed_fixtures": [
-        "eval_image.pdf",
-        "eval_scanned.pdf"
-      ]
+      "failed_fixtures": []
     },
     "regression_fast_path_byte_identical": {
       "pass": true,
@@ -31,7 +28,7 @@
     },
     "latency_worker_p95_s_per_page": {
       "pass": true,
-      "measured": 104.627,
+      "measured": 156.91,
       "threshold": 180.0
     },
     "latency_routing_p95_ms": {
@@ -41,8 +38,12 @@
     }
   },
   "worker_per_page_s": {
-    "eval_image.pdf": 104.37,
-    "eval_scanned.pdf": 104.627
+    "eval_image.pdf": 156.91,
+    "eval_scanned.pdf": 156.33
+  },
+  "ground_truth_word_recall": {
+    "eval_image.pdf": 0.9305,
+    "eval_scanned.pdf": 0.9433
   },
   "routed_fixtures": [
     "eval_image.pdf",

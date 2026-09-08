@@ -81,6 +81,7 @@ def _run_cell(cell: str) -> dict:
                 {
                     "documents": len(docs),
                     "markdown_chars": len(text),
+                    "markdown": text,
                     "markdown_sha256": __import__("hashlib")
                     .sha256(text.encode("utf-8"))
                     .hexdigest(),
