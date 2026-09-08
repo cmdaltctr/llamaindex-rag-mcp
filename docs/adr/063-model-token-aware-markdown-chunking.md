@@ -1,7 +1,8 @@
 # ADR-063: Model-Token-Aware Markdown Chunking
 
 **Date:** 2026-09-07
-**Status:** Proposed
+**Accepted:** 2026-09-09
+**Status:** Accepted (task 5.5 promotion; evidence: Experiment 25, all four frozen gates PASS)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -104,6 +105,11 @@ workaround.
 - Chunk sizes are exact in the embedding model's own token units instead of
   a four-characters-per-token estimate, removing a source of
   retrieval-quality drift from over/under-sized chunks.
+- Measured at promotion (Experiment 25): embedded request tokens −2.5%
+  (0.975 × baseline), largest chunk halved (2,087 → 1,120 EMBED payload
+  tokens), retrieval neutral (mean R@5 −2.0 pp, inside the frozen ±2.48 pp
+  noise band; identifier-heavy R@10 −0.14 pp). The benefit is cost and
+  input-contract correctness, not a quality win.
 - `header_path` is derived directly from source-Markdown character offsets,
   correct for nested and skipped heading levels and immune to fenced-code
   false positives, without depending on a LlamaIndex parent-node
@@ -122,9 +128,15 @@ workaround.
   rotating tokenizer configuration.
 - Two Markdown code paths (model-token-aware and legacy character-based)
   must be kept correct and tested. This is deliberate (design D4: "preserve
-  the current path rather than silently pretending"), but it is added
-  maintenance surface until Stage 5 evidence promotes one path as the
-  shipped default.
+  the current path rather than silently pretending"). Experiment 25
+  promoted the model-token path to the shipped packaged default
+  (2026-09-09); the legacy path remains as the explicit operator opt-out
+  and the cache-miss fallback, so the added maintenance surface stays.
+- Known latency cost of the promotion: mean query latency rose from
+  1,023 ms to 1,593 ms in Experiment 25 (fewer, fuller chunks cost more to
+  score per query); p95 2,183 ms stays inside the frozen 2,850 ms cap. If
+  interactive agents find this too slow, the remedy is a smaller
+  `CHUNKING__MARKDOWN_CHUNK_SIZE`, not a return to character budgeting.
 - The `tokenizers>=0.20` floor is unproven below the locked `0.22.2`; an
   environment that resolves close to `0.20.0` has no verified guarantee of
   correct `from_huggingface_tokenizer()`/`no_truncation()` behaviour.
@@ -145,6 +157,29 @@ workaround.
 | **Silently clamp overlap or emit an oversized chunk when a heading prefix crowds the budget** | This was the pre-fix behaviour (before commit `d713df0`); it lets the emitted chunking quietly diverge from the configured contract with no signal — the exact defect the token-cap/overlap contract in this ADR closes. |
 | **Recover `header_path` via the existing `ensure_heading_metadata` helper** | That helper copies heading metadata from a parent LlamaIndex node; the Rust splitter emits plain strings with no parent node, so there is nothing for it to copy on this path (design D4.1). |
 | **Fold retained metadata token overhead into the enforced cap** | Couples the chunker to the extraction pipeline's output, which is not known when the splitter runs; measured instead and reported as experiment evidence (design D4.3). |
+
+## Evidence
+
+- **Experiment 25** (`experiments/25-token-chunking-ablation-2026-09-08/`,
+  task 5.2): rebuilt the Experiment 22 FreshStack index with this chunker
+  (22,281 chunks vs 32,631) and evaluated the identical 223 raw queries
+  under identical hybrid retrieval. All four frozen gates PASSED — quality
+  R@5 0.2362 ≥ 0.2310; identifier-heavy R@10 0.2775 ≥ 0.2583; token ratio
+  0.9749 ≤ 1.15; query p95 2,183 ms ≤ 2,850 ms. Full discussion in the
+  experiment's `results.md`.
+- Caveat carried forward: the R@5 point estimate sits 2.0 pp below
+  baseline, inside the ±2.48 pp bootstrap noise band. One non-inferiority
+  result is evidence of a wash; a second measurement below baseline should
+  be treated as a trend, not luck.
+- **Promotion action (task 5.5, 2026-09-09):** the packaged defaults became
+  `EMBEDDING__TOKENIZER_MODEL=Qwen/Qwen3-Embedding-4B` and
+  `EMBEDDING__TOKENIZER_REVISION=5cf2132abc99cad020ac570b19d031efec650f2b`
+  in `core/settings.py`. The Qwen3 embedding family shares one
+  151,669-token vocabulary, so the identity is model-matched for every
+  shipped embedding size (0.6b local, 4b cloud). Explicit empty values opt
+  back into the legacy path. Operational consequence: existing Markdown
+  sources re-chunk on the next ingest, because the resolved splitter
+  participates in the source index identity (decision 5).
 
 ## References
 

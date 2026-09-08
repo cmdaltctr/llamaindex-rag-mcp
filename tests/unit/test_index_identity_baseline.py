@@ -22,7 +22,7 @@ import json
 import pytest
 
 from omrg.core.ingestion import source_state
-from omrg.core.settings import EffectiveSettings, MetadataBlock
+from omrg.core.settings import EmbeddingBlock, EffectiveSettings, MetadataBlock
 
 EXPECTED_TOP_LEVEL_KEYS = {
     "schema",
@@ -106,7 +106,14 @@ class _RecordingJSON:
 
 
 def _baseline_payload(monkeypatch: pytest.MonkeyPatch) -> tuple[dict, str]:
-    settings = EffectiveSettings(metadata=MetadataBlock(extraction_mode="disabled"))
+    # The tokenizer fields pin the empty legacy identity: this baseline
+    # pins the schema-4 payload shape deterministically, and the promoted
+    # packaged default (ADR-063) would otherwise resolve against the
+    # machine's Hugging Face cache, varying the payload between machines.
+    settings = EffectiveSettings(
+        metadata=MetadataBlock(extraction_mode="disabled"),
+        embedding=EmbeddingBlock(tokenizer_model="", tokenizer_revision=""),
+    )
     recorder = _RecordingJSON()
     monkeypatch.setattr(source_state, "json", recorder)
 

@@ -87,9 +87,14 @@ class EmbeddingSettings(BaseModel):
     # query verbatim, including for generic embedding models.
     query_instruction: str = ""
     # Explicit tokenizer identity prevents inference-server aliases from
-    # selecting a mismatched size calculator. Empty keeps legacy chunking.
-    tokenizer_model: str = ""
-    tokenizer_revision: str = ""
+    # selecting a mismatched size calculator. Promoted packaged default
+    # (task 5.5, exp 25 PASS, ADR-063 Accepted): the evaluated Qwen
+    # tokenizer. The Qwen3 embedding family shares one 151,669-token
+    # vocabulary, so the identity matches every shipped embedding size.
+    # Set both fields empty to return to the legacy character-budgeted
+    # path; an uncached revision also falls back with a warning.
+    tokenizer_model: str = "Qwen/Qwen3-Embedding-4B"
+    tokenizer_revision: str = "5cf2132abc99cad020ac570b19d031efec650f2b"
 
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
@@ -118,9 +123,12 @@ class EmbeddingBlock(BaseModel):
     # instruction immediately before query embedding only.
     query_instruction: str = ""
     # These selectors describe the exact local tokenizer used for Markdown
-    # sizing. Empty values keep the existing splitter path.
-    tokenizer_model: str = ""
-    tokenizer_revision: str = ""
+    # sizing. Promoted packaged default (task 5.5, exp 25 PASS, ADR-063
+    # Accepted): the evaluated Qwen identity; see EmbeddingSettings for the
+    # opt-out and cache-miss fallback semantics. Explicit empty values
+    # return to the legacy character-budgeted splitter path.
+    tokenizer_model: str = "Qwen/Qwen3-Embedding-4B"
+    tokenizer_revision: str = "5cf2132abc99cad020ac570b19d031efec650f2b"
 
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
