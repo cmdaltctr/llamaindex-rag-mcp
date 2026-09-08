@@ -1,0 +1,201 @@
+{
+  "experiment": "25-token-chunking-ablation-2026-09-08",
+  "metrics_by_cell": {
+    "baseline_splitter": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.754068,
+        "alpha_ndcg_at_10": 0.435028,
+        "hit_at_5": 0.753363,
+        "hit_at_10": 0.816143,
+        "mrr_at_10": 0.578634,
+        "recall_at_1": 0.121354,
+        "recall_at_3": 0.193299,
+        "recall_at_5": 0.255884,
+        "recall_at_10": 0.327389,
+        "recall_at_20": 0.417649,
+        "recall_at_50": 0.515288,
+        "mean_latency_ms": 1023.07,
+        "p95_latency_ms": 1984.2
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.749119,
+        "alpha_ndcg_at_10": 0.405893,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.82,
+        "mrr_at_10": 0.569177,
+        "recall_at_1": 0.06531,
+        "recall_at_3": 0.145234,
+        "recall_at_5": 0.199723,
+        "recall_at_10": 0.278862,
+        "recall_at_20": 0.378209,
+        "recall_at_50": 0.479773,
+        "mean_latency_ms": 1024.66,
+        "p95_latency_ms": 1900.1
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.144644,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.318207,
+        "mean_latency_ms": 812.47,
+        "p95_latency_ms": 900.1
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.769936,
+        "hit_at_5": 0.85,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.735,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.7,
+        "recall_at_5": 0.85,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 1038.7,
+        "p95_latency_ms": 1984.2
+      }
+    },
+    "model_token_markdown": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.740914,
+        "alpha_ndcg_at_10": 0.427487,
+        "hit_at_5": 0.753363,
+        "hit_at_10": 0.820628,
+        "mrr_at_10": 0.570763,
+        "recall_at_1": 0.113235,
+        "recall_at_3": 0.188936,
+        "recall_at_5": 0.236226,
+        "recall_at_10": 0.322316,
+        "recall_at_20": 0.418892,
+        "recall_at_50": 0.521888,
+        "mean_latency_ms": 1593.31,
+        "p95_latency_ms": 2183.1
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.733619,
+        "alpha_ndcg_at_10": 0.39864,
+        "hit_at_5": 0.755,
+        "hit_at_10": 0.825,
+        "mrr_at_10": 0.559776,
+        "recall_at_1": 0.056257,
+        "recall_at_3": 0.135075,
+        "recall_at_5": 0.186804,
+        "recall_at_10": 0.2775,
+        "recall_at_20": 0.382467,
+        "recall_at_50": 0.486006,
+        "mean_latency_ms": 1681.02,
+        "p95_latency_ms": 2183.1
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.833333,
+        "alpha_ndcg_at_10": 0.218423,
+        "hit_at_5": 0.666667,
+        "hit_at_10": 0.666667,
+        "mrr_at_10": 0.233333,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.039216,
+        "recall_at_5": 0.105882,
+        "recall_at_10": 0.12549,
+        "recall_at_20": 0.306443,
+        "recall_at_50": 0.393277,
+        "mean_latency_ms": 1320.47,
+        "p95_latency_ms": 2579.4
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.8,
+        "alpha_ndcg_at_10": 0.74732,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.8,
+        "mrr_at_10": 0.73125,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.75,
+        "recall_at_5": 0.75,
+        "recall_at_10": 0.8,
+        "recall_at_20": 0.8,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 757.07,
+        "p95_latency_ms": 900.0
+      }
+    }
+  },
+  "gates": {
+    "quality": {
+      "metric": "mean recall_at_5",
+      "scope": "all 223 queries",
+      "value": 0.23622604526769084,
+      "comparator": ">=",
+      "threshold": 0.231,
+      "basis": "baseline hybrid__raw mean R@5 = 0.255884 minus the paired bootstrap 95% half-width 0.024838 (gate_noise.json paired_reference.recall_at_5.ci95_halfwidth); 0.255884 - 0.024838 = 0.231046, non-inferiority floor",
+      "pass": true
+    },
+    "regression": {
+      "metric": "mean recall_at_10",
+      "scope": "identifier-heavy queries (n=200)",
+      "value": 0.27749992365133647,
+      "comparator": ">=",
+      "threshold": 0.2583,
+      "basis": "baseline 0.278862 minus paired bootstrap 95% half-width 0.020571 (gate_noise.json paired_reference.recall_at_10); most at-risk workload: heading-prefix tokens and identifier splitting damage exact-token recall",
+      "pass": true
+    },
+    "cost": {
+      "metric": "total_embedded_tokens ratio (request-text basis)",
+      "scope": "full index build",
+      "value": 0.9749055321721284,
+      "comparator": "<=",
+      "threshold": 1.15,
+      "basis": "retrospective verify_accounting.py (TDR-022 corrected method); candidate 13,521,230 / baseline 13,869,272 request tokens; pre-adapter EMBED-basis ratio 0.975172 also passes; committed in 8902309",
+      "pass": true
+    },
+    "latency": {
+      "metric": "query_p95_latency_ms",
+      "scope": "all 223 candidate queries",
+      "value": 2183.1,
+      "comparator": "<=",
+      "threshold": 2850,
+      "basis": "1.5 x baseline p95 1984.2 ms; clears the baseline p95 estimator CI upper bound 2334.3 ms (gate_noise.json)",
+      "pass": true
+    }
+  },
+  "overall_verdict": "PASS",
+  "runtime_manifest": {
+    "embedding_model": "qwen/qwen3-embedding-4b",
+    "embedding_provider": "openrouter (cloud)",
+    "embedding_dims": 2560,
+    "measurement_date": "2026-09-09",
+    "vector_store": "lancedb",
+    "chunk_count": 22281,
+    "corpus_docs": {
+      "freshstack": 10009,
+      "continuity": 15
+    },
+    "qrels_sha256": "ccd3bc5732d69a3715a322c8557261f4f7c46ca72951ac6dce160e666e4b2c57",
+    "latency_note": "query latency includes network round-trip to OpenRouter; measured around pipeline.search exactly as exp 22 did (no warm-up pass)",
+    "index_note": "omrg production ingestion with the model-token-aware Markdown chunker (ADR-063); relevance is path-level",
+    "chunker_tokenizer": {
+      "model": "Qwen/Qwen3-Embedding-4B",
+      "revision": "5cf2132abc99cad020ac570b19d031efec650f2b"
+    },
+    "preflight_assertions": {
+      "embedding.model": "qwen/qwen3-embedding-4b",
+      "retrieval.hybrid": true,
+      "retrieval.rerank_enabled": false,
+      "chunking.resolved_splitter": "Qwen/Qwen3-Embedding-4B@5cf2132abc99cad020ac570b19d031efec650f2b"
+    }
+  }
+}

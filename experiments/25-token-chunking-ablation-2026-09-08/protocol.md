@@ -3,7 +3,7 @@
 **ID**: `25-token-chunking-ablation-2026-09-08`
 **Date planned**: 2026-09-08
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: PLANNED → candidate index BUILT (2026-09-08, 6.44 h, 22,281 chunks); cost gate PASSED on corrected accounting (see `output/verify_accounting_*.json`); evaluation cells pending
+**Status**: COMPLETE — frozen-gate verdict: **PASS** (all four gates, 2026-09-09). Candidate index built 2026-09-08 (6.44 h, 22,281 chunks); cost gate PASSED on corrected accounting (`output/verify_accounting_*.json`); evaluation cells complete (candidate 223/223 queries, baseline reused from exp 22 `hybrid__raw`); summary in `results.md`. Chunker promoted at task 5.5 (ADR-063 Accepted).
 
 ## Accounting correction (2026-09-08, external review; definitive revision same day)
 
