@@ -3,3 +3,5 @@
 .model-cache/
 __pycache__/
 *.py[cod]
+
+.model-cache
