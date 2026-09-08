@@ -1,0 +1,214 @@
+{
+  "cells": {
+    "fast_path_baseline": {
+      "done": true,
+      "rows": [
+        {
+          "fixture": "eval_clean_text.pdf",
+          "latency_s": 1.454,
+          "documents": 1,
+          "markdown_chars": 215,
+          "markdown_sha256": "8fdaf3d50e399f3b885a51ce4809b515ca6e75f10a63b894b80f7d6f866bf372",
+          "markers": {
+            "headings": 2,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_image.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 0,
+          "markdown_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.8999999761581421,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_mixed.pdf",
+          "latency_s": 0.003,
+          "documents": 1,
+          "markdown_chars": 166,
+          "markdown_sha256": "373cfc1eb61808c2cb0486f23e6192e143597e019a0d3ca365a811e21629dcb6",
+          "markers": {
+            "headings": 1,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 0.5,
+          "pages_needing_ocr": 0,
+          "page_count": 2,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_scanned.pdf",
+          "latency_s": 0.0,
+          "documents": 1,
+          "markdown_chars": 0,
+          "markdown_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.8999999761581421,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_two_column.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 274,
+          "markdown_sha256": "81a3581c92a8883a6a061ea7682585cf3cc88b797386b356062a28c4a1871e4d",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        }
+      ]
+    },
+    "routed_worker_candidate": {
+      "done": true,
+      "rows": [
+        {
+          "fixture": "eval_clean_text.pdf",
+          "latency_s": 1.05,
+          "documents": 1,
+          "markdown_chars": 215,
+          "markdown_sha256": "8fdaf3d50e399f3b885a51ce4809b515ca6e75f10a63b894b80f7d6f866bf372",
+          "markers": {
+            "headings": 2,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        },
+        {
+          "fixture": "eval_image.pdf",
+          "latency_s": 104.37,
+          "documents": 1,
+          "markdown_chars": 123,
+          "markdown_sha256": "bee2c9711170799de5fd21e171b1fc7da86aaab441d60bffc5735d890b264fc5",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.8999999761581421,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": true,
+          "ocr_used": true,
+          "ocr_backend": "paddleocr_vl",
+          "error": null
+        },
+        {
+          "fixture": "eval_mixed.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 166,
+          "markdown_sha256": "373cfc1eb61808c2cb0486f23e6192e143597e019a0d3ca365a811e21629dcb6",
+          "markers": {
+            "headings": 1,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 0.5,
+          "pages_needing_ocr": 0,
+          "page_count": 2,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        },
+        {
+          "fixture": "eval_scanned.pdf",
+          "latency_s": 104.627,
+          "documents": 1,
+          "markdown_chars": 124,
+          "markdown_sha256": "96bab036f0a49c58b72acdcaf510ec2037e834ecf4ca32a65eeba415b9112ce6",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.8999999761581421,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": true,
+          "ocr_used": true,
+          "ocr_backend": "paddleocr_vl",
+          "error": null
+        },
+        {
+          "fixture": "eval_two_column.pdf",
+          "latency_s": 0.004,
+          "documents": 1,
+          "markdown_chars": 274,
+          "markdown_sha256": "81a3581c92a8883a6a061ea7682585cf3cc88b797386b356062a28c4a1871e4d",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        }
+      ]
+    }
+  }
+}
