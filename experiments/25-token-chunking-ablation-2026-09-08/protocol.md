@@ -1,46 +1,112 @@
-# Experiment 25 — Token-aware chunking ablation (task 5.2) — gates frozen
+# Experiment 25 — Token-aware chunking ablation (task 5.2)
 
-- **Status:** PLANNED (gates frozen 2026-09-08, task 1.6)
-- **Date frozen:** 2026-09-08
-- **Operator:** Dr Muhammad Aizat Bin Md Hawari with AI agent
-- **OpenSpec stage:** Stage 5 candidate evaluation. Gates below were derived
-  from Stage 1 baselines and committed BEFORE any candidate measurement.
+**ID**: `25-token-chunking-ablation-2026-09-08`
+**Date planned**: 2026-09-08
+**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
+**Status**: PLANNED (validity gates frozen 2026-09-08, task 1.6)
+**Relation**: `improve-rag-input-quality-5` task 5.2; ADR-063 (Proposed); experiment 22 baseline
 
-## Purpose
+## Why this experiment exists
 
-Build a comparable index from the same canonical FreshStack corpus with
-the merged model-token-aware Markdown chunker (ADR-063,
-`semantic-text-splitter` + Qwen tokenizer) and compare retrieval against
-the Experiment 22 baseline splitter on the identical 223 queries and
-qrels.
+The merged model-token-aware Markdown chunker (ADR-063,
+`semantic-text-splitter` + Qwen tokenizer) replaces the
+characters-per-token estimate for Markdown sources. Its retrieval effect
+is unmeasured. This experiment rebuilds the Experiment 22 corpus index
+with the candidate chunker and compares on identical queries and qrels,
+before any chunk-size default changes.
+
+## Hypothesis
+
+> An index built with model-token-aware Markdown chunking is
+> non-inferior to the Experiment 22 baseline splitter (mean R@5 ≥
+> 0.2310), keeps identifier-heavy R@10 ≥ 0.2583, and stays within 1.15 ×
+> baseline embedded tokens and the query latency cap.
+
+## Variables
+
+| Type | Variable | Values / treatment |
+| --- | --- | --- |
+| Independent | chunker | `baseline_splitter` vs `model_token_markdown` |
+| Dependent | mean R@1/R@3/R@5, identifier-heavy R@10 | gates + task 5.2 metrics |
+| Dependent | tokens, chunk-count distribution, ingestion time | cost gate |
+| Controlled | corpus, qrels, queries | Experiment 22 (sha `ccd3bc5732d69a37…`) |
+| Controlled | embedding | `qwen/qwen3-embedding-4b` via OpenRouter, dims 2560 |
+| Controlled | retrieval | hybrid RRF k=60, rerank off, top_k 50 |
+
+Not changed: retrieval stack, worker, routing, query text (raw).
+
+## Corpus and ground truth
+
+| Item | Value |
+| --- | --- |
+| Source | Experiment 22 FreshStack LangChain corpus (preserved copy) |
+| Local path | `~/Development/DATA/omrg/experiments/freshstack-corpus` (see exp 22 `DATA_LOCATIONS.md`) |
+| Size | 10,024 parent documents → baseline 32,631 chunks |
+| Ground truth | `experiments/22-.../output/ground-truth.json` (223 queries, fixed) |
+| Indexes | new build under `output/lancedb/` (gitignored); baseline index preserved untouched |
+
+## Metrics
+
+### Primary (gated)
+
+- Mean R@5 over all 223 queries (floor 0.2310)
+- Identifier-heavy mean R@10, n=200 (floor 0.2583)
+- Total embedded tokens vs baseline (≤ 1.15×); query p95 ≤ 2,850 ms
+
+### Diagnostic (recorded, not gated)
+
+- Evidence R@1/R@3, Evidence MRR, section/hierarchy Match@1, nDCG
+- Chunk-size distribution; chunks carrying derived `header_path` per path
+- Worst-case gap: chunk-text tokens vs full embedding-payload tokens
+- Ingestion wall-clock; resolved tokenizer identity **and revision** in the manifest
 
 ## Frozen validity gates
 
 Machine-readable form: [`plan.json`](./plan.json). Every threshold is
-baseline minus measured noise — no preference numbers.
+baseline minus measured noise (`gate_noise.json`, N=10,000, seed
+20260908): paired R@5 95% half-width 0.024838; R@10 half-width 0.020571;
+hybrid p95 estimator CI [1,518.9, 2,334.3] ms.
 
 | Gate | Rule | Basis |
 | --- | --- | --- |
-| Quality (non-inferiority) | Mean R@5 ≥ **0.2310** over all 223 queries | Baseline 0.255884 − paired bootstrap 95% half-width 0.024838 (`gate_noise.json`) |
-| Regression | Identifier-heavy mean R@10 ≥ **0.2583** (n=200) | Baseline 0.278862 − paired half-width 0.020571; heading prefixes and identifier splitting make this the at-risk workload |
-| Cost | Embedded tokens ≤ **1.15 ×** baseline build total; query p95 ≤ **2,850 ms** | Baseline token total recomputed with the same tokenizer counter at run time and recorded in the manifest; latency cap is 1.5 × baseline p95 and clears the p95 estimator CI (upper 2,334 ms) |
+| Quality (non-inferiority) | Mean R@5 ≥ 0.2310 | 0.255884 − 0.024838 |
+| Regression | Identifier-heavy R@10 ≥ 0.2583 | 0.278862 − 0.020571; at-risk: heading prefixes, identifier splitting |
+| Cost | Tokens ≤ 1.15 × baseline; query p95 ≤ 2,850 ms | baseline tokens recomputed with the same counter at run time; 1.5 × p95 clears the estimator CI |
 
-**Monitored, not gated:** continuity R@10 (n=20). Its bootstrap 95%
-half-width is ±0.15 — any hard gate would be pure noise. Recorded and
-inspected instead, with this stated reason in the plan.
+**Monitored, not gated:** continuity R@10 (n=20; bootstrap half-width
+±0.15 — a hard gate would be noise; reason recorded in the plan).
 
-## Noise evidence
+## Interpretation rules
 
-`experiments/22-raw-query-qwen4b-baseline-2026-09-07/output/gate_noise.json`
-(bootstrap N=10,000, seed 20260908): paired R@5 CI95 half-width 0.024838,
-paired R@10 half-width 0.020571, hybrid p95 1,900 ms with estimator CI
-[1,518.9, 2,334.3].
+- All gates pass → candidate eligible per task 5.5; promotion judged on lift + cost together.
+- Quality floor missed but regression holds → negative result; keep current splitter defaults; ADR-063 stays Proposed.
+- Regression gate fails → chunker damages exact-token recall; investigate header-path prefix cost before any re-run.
+- Cost gate fails → token budget exceeded; inspect chunk-size distribution; do not relax the ratio.
 
-## Next steps
+## Procedure
 
-1. Recompute the baseline embedded-token total over the exp 22 corpus
-   manifest with the production tokenizer counter; record it.
-2. Write the ablation runner; declare the full cell matrix here before
-   running (baseline splitter cell may reuse exp 22 checkpoints only if
-   the runtime manifest matches).
-3. Run cells; evaluate against the frozen gates only.
+```bash
+# 1. Recompute baseline embedded-token total (same tokenizer counter)
+#    and record it in the runtime manifest BEFORE building.
+# 2. Build candidate index (isolated, gitignored output/)
+uv run python experiments/25-token-chunking-ablation-2026-09-08/build_index.py --resume
+# 3. Run cells (baseline cell may reuse exp 22 checkpoints only if the
+#    runtime manifest matches; otherwise rerun)
+uv run python experiments/25-token-chunking-ablation-2026-09-08/run_eval.py --resume
+# 4. Summarise + gate check
+uv run python experiments/25-token-chunking-ablation-2026-09-08/summarise_eval.py
+```
+
+## Cleanup
+
+Candidate LanceDB index under `output/lancedb/` is gitignored; delete or
+preserve per reuse value (baseline index at the DATA location stays
+untouched). Raw JSON and summaries are committed.
+
+## Artefacts expected
+
+| File | Description | Required |
+| --- | --- | :--: |
+| `protocol.md` / `plan.json` | this plan + gates | ✅ |
+| `build_index.py` / `run_eval.py` / `summarise_eval.py` | runner chain | to write |
+| `results.md` + `output/*.json` | outcomes | ✅ |
