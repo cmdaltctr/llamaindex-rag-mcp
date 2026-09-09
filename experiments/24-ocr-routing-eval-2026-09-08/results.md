@@ -98,6 +98,106 @@ Both engines recover the same rule headings (Rule 3/4/5 and Rule
 within ~3 points confirms the run-2 PASS reflects real extraction,
 not a favourable reading of one engine.
 
+## Task 5.1 wording: the descriptive items
+
+The five frozen gates above are unchanged. Task 5.1 also asks for
+reading order, table/structure fidelity, missing content, failure rate,
+latency, and downstream evidence retrieval. Failure rate and latency are
+gated above. The rest are computed from the committed artefacts by
+[`analyse_task_5_1.py`](./analyse_task_5_1.py) into
+[`output/task_5_1_analysis.json`](./output/task_5_1_analysis.json). No
+worker run was repeated and no verdict depends on these numbers.
+
+### Reading order
+
+In-order word recall is the longest common subsequence of the
+ground-truth word sequence and the extracted word sequence, over the
+ground-truth length. Set recall is the order-blind figure already in the
+summary. A small gap means the words came back in the original order.
+
+| Fixture | Set recall | In-order recall | Gap |
+| --- | ---: | ---: | ---: |
+| eval_scanned.pdf | 94.3% | 94.7% | −0.4 pp |
+| eval_image.pdf | 93.0% | 92.8% | +0.3 pp |
+
+The two figures agree to within half a percentage point, so the worker
+preserved reading order on both single-column rasterised pages. The
+negative gap on `eval_scanned.pdf` is an artefact of the two
+denominators: set recall counts unique words, in-order recall counts
+positions.
+
+The fast-path baseline extracts nothing from either fixture, so its
+recall is 0.0 on both measures.
+
+### Structure fidelity
+
+| Fixture | Expected headings | Recovered as Markdown headings |
+| --- | --- | --- |
+| eval_scanned.pdf | Rule 3, Rule 4, Rule 5 | `Rule 3: Include an Introduction`, `Rule 4: Be Philip E. Bourne`, `Rule 5: Collaborate` |
+| eval_image.pdf | Rule 8, Rule 9 | `Rule 8: Reference`, `Rule 9: Edit` |
+
+Every section heading on both source pages came back as a Markdown
+heading with its full title.
+
+**Table fidelity is not measurable on this set.** Both held-out source
+pages are prose with figures: the ground truth contains zero table rows
+and the worker emitted zero. The one pipe-delimited line in the ground
+truth is the journal footer, not a table. Table behaviour on this branch
+rests on the calibration-set smoke evidence
+(`ocr-worker/SMOKE_RESULTS.md`), not on experiment 24.
+
+### Missing content
+
+| Fixture | Ground-truth words | Extracted words | Missing unique words |
+| --- | ---: | ---: | ---: |
+| eval_scanned.pdf | 527 | 537 | 16 |
+| eval_image.pdf | 583 | 600 | 21 |
+
+The missing words are listed in the analysis JSON. All 37 fall into two
+groups, and neither is lost content:
+
+1. Hyphenation fragments from the born-digital ground truth
+   (`intro`/`duction`, `supervi`/`sor`, `disci`/`plines`, `brev`/`ity`).
+   The worker rejoins the line break, so `introduction`, `supervisor`,
+   `disciplines` and `brevity` are all present in its output and the
+   fragment tokens are absent by construction. Here the OCR output is
+   more correct than the reference, not less complete.
+2. The journal running footer (`www`, `ploscompbiol`, `org`, `october`,
+   `volume`, `issue`). The worker drops page furniture, which is what a
+   retrieval corpus wants.
+
+Extracted word counts exceed the ground truth because figure captions
+and DOI lines are recovered too (`Figure 1`, `doi:` are present in both
+outputs).
+
+### Downstream evidence retrieval
+
+Twelve evidence questions were ranked over each cell's extracted
+Markdown, chunked by the production chunker (`markdown_chunk_size` 1024
+tokens, Qwen tokenizer identity as promoted) and scored with the
+production BM25 implementation in `core/retrieval/sparse.py`. Ten
+questions are answered only by the two routed pages; two control
+questions are answered by fast-path fixtures.
+
+| Cell | Chunks | R@1 | MRR@10 | Questions with no gold hit |
+| --- | ---: | ---: | ---: | ---: |
+| fast_path_baseline | 3 | 0.167 | 0.167 | 10 |
+| routed_worker_candidate | 5 | 0.917 | 0.958 | 0 |
+
+The baseline cannot answer any of the ten scanned-page questions: it
+produces no chunks for those two documents at all, so the evidence is
+not in the index. The routed candidate retrieves the gold document at
+rank 1 for eleven of twelve questions and at rank 2 for the twelfth.
+Both control questions rank 1 in both cells, confirming the fast-path
+content is unaffected.
+
+**Read this as a retrievability probe, not a ranking benchmark.** Five
+documents and two routed fixtures give no statistical power, and at the
+packaged 1024-token Markdown budget each fixture yields one chunk, so
+chunk-level and document-level retrieval coincide here. It answers one
+question — does OCR-recovered content become reachable evidence — and
+the answer is that without routing it is unreachable.
+
 ## Reproduction
 
 ```bash
@@ -106,6 +206,8 @@ ln -sfn ~/Development/DATA/omrg/ocr-worker/model-cache .model-cache
 cd ..
 uv run python experiments/24-ocr-routing-eval-2026-09-08/run_ablation.py --resume
 uv run python experiments/24-ocr-routing-eval-2026-09-08/summarise_eval.py
+# supplementary task 5.1 figures (no worker, no re-run)
+uv run python experiments/24-ocr-routing-eval-2026-09-08/analyse_task_5_1.py
 ```
 
 ## Artefacts
@@ -117,3 +219,5 @@ uv run python experiments/24-ocr-routing-eval-2026-09-08/summarise_eval.py
 | `measure_routing_overhead.py` | routing-decision latency baseline |
 | `output/ablation.json` | per-fixture rows, both cells |
 | `output/eval_results.summary.json` | gate checks, machine-readable |
+| `analyse_task_5_1.py` | supplementary task 5.1 descriptive analysis |
+| `output/task_5_1_analysis.json` | reading order, structure, missing content, evidence retrieval |
