@@ -1,7 +1,7 @@
 # ADR-062: Isolate PaddleOCR-VL in a Versioned OCR Worker
 
 **Date:** 2026-09-07
-**Status:** Proposed
+**Status:** Accepted (opt-in; the packaged default is decided in [ADR-064](064-input-quality-promotion-decisions.md))
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
 
 ## Context
@@ -53,6 +53,15 @@ would mix incompatible representations of the same source.
 8. Treat the Python 3.11, 3.12, and 3.13 provisioned smoke results as local
    Apple Silicon CPU evidence. They do not claim official Paddle hardware
    support or promote an OCR routing default.
+
+9. Ship the worker and the routing seam opt-in. `OCR_FALLBACK_ENABLED`
+   remains `false` and both routing thresholds remain at their `0.0`
+   never-trigger sentinels. Experiment 24 passed its five frozen gates on
+   held-out fixtures, but experiment 28 measured the same gate against 79
+   real library documents and failed its safety gate: a 991-page `mixed`
+   document with 1,127 characters per page routed on the unconditional
+   type rule. The isolation decision above stands unchanged; only the
+   default is refused. See [ADR-064](064-input-quality-promotion-decisions.md).
 
 ## Consequences
 

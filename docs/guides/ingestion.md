@@ -201,6 +201,15 @@ an image. A scanned page therefore comes back empty or nearly empty, and
 that content never reaches the index. The OCR fallback sends those PDFs
 to an isolated PaddleOCR-VL worker instead.
 
+**This is opt-in and stays off by default.** The reason is measured, not
+cautious: on a library of 79 real academic PDFs the routing gate sent one
+991-page document to OCR because it classified `mixed`, even though the
+document extracts 1,127 characters per page and only 10 of its 991 pages
+lacked text. That single mistake projects to 29 wasted hours against an
+80-second fast-path run over the whole library. See
+[ADR-064](../adr/064-input-quality-promotion-decisions.md) and experiment
+28 for the numbers, and read the routing rules below before enabling it.
+
 The worker is a separate project in `ocr-worker/` with its own lockfile.
 It owns every Paddle package. The OMRG main install has none of them, and
 a normal `uv sync` never pulls them in.
