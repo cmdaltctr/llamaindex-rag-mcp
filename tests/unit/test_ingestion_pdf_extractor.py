@@ -102,7 +102,7 @@ class TestChunkerThreadsReaderName:
     def test_chunker_passes_resolved_reader_to_factory(
         self, tmp_path, effective_settings, monkeypatch
     ):
-        """_read_sync calls get_pdf_reader with the injected settings' name."""
+        """_read_sync calls build_pdf_reader with the injected settings' name."""
         import asyncio
 
         from llama_index.core.schema import Document
@@ -116,11 +116,11 @@ class TestChunkerThreadsReaderName:
             def load_data(self, *args, **kwargs):
                 return [Document(text="stub pdf text for chunking")]
 
-        def fake_get_pdf_reader(name):
-            requested_names.append(name)
+        def fake_build_pdf_reader(reader, settings=None, *, ocr_client=None):
+            requested_names.append(reader)
             return StubExtractor
 
-        monkeypatch.setattr(pdf_pkg, "get_pdf_reader", fake_get_pdf_reader)
+        monkeypatch.setattr(pdf_pkg, "build_pdf_reader", fake_build_pdf_reader)
 
         fake_pdf = tmp_path / "stub.pdf"
         fake_pdf.write_bytes(b"%PDF-1.4 stub")

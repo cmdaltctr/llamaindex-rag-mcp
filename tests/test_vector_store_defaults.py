@@ -18,7 +18,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from omrg.config import Settings, get_settings
+from omrg.config import Settings
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,15 +39,18 @@ def _clear_backend_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _fresh_get_settings(monkeypatch: pytest.MonkeyPatch):
-    """Resolve ``get_settings()`` against the CURRENT test environment.
+    """Resolve a fresh ``Settings`` against the CURRENT test environment.
 
     Copies the conftest ``_isolate_env`` cache-reset idiom: the resolved
     singleton lives in the module global ``omrg.config._settings``.
+    Resolves with ``_env_file=None`` so packaged-default assertions hold
+    on any machine. The operator's ambient ``.env`` is local
+    configuration, not suite input (repair-fast-suite-regressions D2).
     """
     import omrg.config as config_mod
 
     monkeypatch.setattr(config_mod, "_settings", None, raising=False)
-    return get_settings()
+    return config_mod.Settings(_env_file=None)
 
 
 def test_default_resolution_is_lancedb(monkeypatch: pytest.MonkeyPatch) -> None:

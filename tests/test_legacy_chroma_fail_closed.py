@@ -168,6 +168,14 @@ def test_startup_wiring_reaches_cli_mcp_operator_path(
     monkeypatch.delenv("VECTOR_STORE", raising=False)
     monkeypatch.setenv("CHROMA_PERSIST_DIR", str(legacy_dir))
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
+    # Exclude the operator's ambient .env from the real startup route.
+    # It re-supplies VECTOR_STORE=lancedb, so the CLI takes the explicit
+    # acknowledgement path instead of failing closed. Seeding the
+    # settings singleton keeps the operator path intact while resolving
+    # like a clean CI runner (repair-fast-suite-regressions D2).
+    import omrg.config as config_mod
+
+    monkeypatch.setattr(config_mod, "_settings", config_mod.Settings(_env_file=None))
     reset_runtime_setup()
     try:
         result = CliRunner().invoke(app, [])

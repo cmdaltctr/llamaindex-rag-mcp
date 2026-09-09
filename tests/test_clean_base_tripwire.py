@@ -62,16 +62,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_BASE_EXECUTED = 2515  # Re-baselined at the v3 console-alias-removal change:
-# it added five cases — two packaging regression tests
-# (tests/test_package_metadata.py) proving `omrg` is the only console
-# script and the removed alias does not resolve, plus three LaunchAgent
-# regression tests (tests/unit/test_launchagent.py) for legacy-only
-# resolution failure and legacy-prefix plist discovery (2508 -> 2513);
-# review remediation then added two more LaunchAgent regression tests —
-# a relative-PATH discovery result resolved to absolute, and a
-# custom-labelled legacy plist discovered by prefix rather than slug
-# (2513 -> 2515).
+_OPENAI_LIKE_ADAPTER_CASES = 9
+_BASE_EXECUTED = 2774  # Bare CI baseline at repair-fast-suite-regressions.
+# The improve-rag-input-quality-5 branch added 259 base cases after
+# the prior 2515 pin. Nine cases use the optional OpenAI-like adapter
+# packages. The conditional adjustment below keeps the tripwire valid
+# in either supported dependency set.
 # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
@@ -112,15 +108,13 @@ _BASE_EXECUTED = 2515  # Re-baselined at the v3 console-alias-removal change:
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 129  # self-ignored run: base skips incl. chroma-gated files
-# (47 vectordb-contract, 19 chunk-lineage-navigation, 13
-# embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
-# plus the compose/metadata-extractor/lancedb/experiment/chroma-cloud
-# files), the 5 openrouter-extra embed cases, 2 leiden-community and
-# 2 bare chroma-extra skips, and the corpus-PDF/azure/optional-stub
-# singles. Corrected at stage 7: the stage-5 re-baseline updated the
-# executed count only and left this at 100, which the count assertion
-# masked until the executed count was re-baselined first.
+_BASE_SKIPPED = 131  # Bare CI baseline, including optional adapter cases.
+# The Exp25 installed-adapter cases run when the optional OpenAI-like
+# embedding package exists. They otherwise skip, so both supported
+# dependency sets keep an exact, documented manifest.
+if find_spec("llama_index.embeddings.openai_like") is not None:
+    _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
+    _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
 _BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
 _CHROMA_GATED_FILES = frozenset(

@@ -335,7 +335,10 @@ def _fixed_dense_rows(rows: list[dict]):
 
     # Accepts the norm-guard and timing keyword arguments the real dense
     # boundary receives (guard-embedding-normalisation,
-    # complete-observable-surface); the fake never runs them.
+    # complete-observable-surface); the fake never runs them. The
+    # query_instruction kwarg is likewise accepted and discarded: the
+    # fake returns fixed rows, so the model-facing query text is
+    # irrelevant here (query-embedding-preparation).
     def _fake(
         store,
         collection_name,
@@ -349,6 +352,7 @@ def _fixed_dense_rows(rows: list[dict]):
         timing_report=None,
         embed_model=None,
         cache=None,
+        query_instruction="",
     ):
         return [dict(r) for r in rows]
 
