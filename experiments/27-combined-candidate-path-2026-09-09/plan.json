@@ -8,21 +8,34 @@
   "manipulated_factors": [
     {
       "name": "query_instruction",
-      "levels": ["raw_none", "candidate_instruction"]
+      "levels": [
+        "raw_none",
+        "candidate_instruction"
+      ]
     }
   ],
   "controlled_variables": {
     "index": "exp 25 model-token candidate index held fixed (preserved at ~/Development/DATA/omrg/experiments/exp25-lancedb); read-only, nothing is ingested",
     "chunking": "model-token Markdown chunker (ADR-063), already the packaged default; its build cost is exp 25's verified 0.974906 request-token ratio and is not re-measured",
-    "ocr_routing": "not exercised — the FreshStack corpus contains no PDFs; the OCR component of the candidate path is evidenced by experiment 24 on a disjoint corpus",
+    "ocr_routing": "not exercised \u2014 the FreshStack corpus contains no PDFs; the OCR component of the candidate path is evidenced by experiment 24 on a disjoint corpus",
     "qrels": "exp 22 qrels (sha256 ccd3bc5732d69a37)",
     "queries": "exp 22 ground truth, 223 queries",
     "embedding_model": "qwen/qwen3-embedding-4b via openrouter",
     "retrieval": "hybrid (BM25 + dense, RRF k=60), rerank disabled, top_k 50"
   },
   "cells": [
-    {"id": "chunking_only_raw", "factors": {"query_instruction": "raw_none"}},
-    {"id": "combined_candidate", "factors": {"query_instruction": "candidate_instruction"}}
+    {
+      "id": "chunking_only_raw",
+      "factors": {
+        "query_instruction": "raw_none"
+      }
+    },
+    {
+      "id": "combined_candidate",
+      "factors": {
+        "query_instruction": "candidate_instruction"
+      }
+    }
   ],
   "reference_cells": [
     {
@@ -82,7 +95,7 @@
     },
     {
       "metric": "mean query request tokens",
-      "reason": "a fixed instruction preamble more than doubles a short query's token count by construction, so a ratio gate here would test arithmetic rather than a design risk. The absolute spend is roughly twenty tokens per query against a 22,281-chunk index build; it is recorded for the task 5.4 cost record"
+      "reason": "recorded for the task 5.4 cost record, not gated. The FreshStack queries average 450 Qwen tokens and the full instruction prefix is 25, so the added query spend is about 5.5 percent of an already negligible per-query cost against a 22,281-chunk index build. A ratio gate on a term that small would test arithmetic, not a design risk."
     },
     {
       "metric": "mean recall_at_10, continuity queries (n=20)",
@@ -90,10 +103,30 @@
     }
   ],
   "preflight_assertions": [
-    {"manifest_field": "embedding.model", "operator": "eq", "expected": "qwen/qwen3-embedding-4b"},
-    {"manifest_field": "retrieval.hybrid", "operator": "eq", "expected": true},
-    {"manifest_field": "retrieval.rerank_enabled", "operator": "eq", "expected": false},
-    {"manifest_field": "index.written", "operator": "eq", "expected": false},
-    {"manifest_field": "chunking.splitter", "operator": "eq", "expected": "model_token_markdown"}
+    {
+      "manifest_field": "embedding.model",
+      "operator": "eq",
+      "expected": "qwen/qwen3-embedding-4b"
+    },
+    {
+      "manifest_field": "retrieval.hybrid",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "retrieval.rerank_enabled",
+      "operator": "eq",
+      "expected": false
+    },
+    {
+      "manifest_field": "index.written",
+      "operator": "eq",
+      "expected": false
+    },
+    {
+      "manifest_field": "chunking.splitter",
+      "operator": "eq",
+      "expected": "model_token_markdown"
+    }
   ]
 }

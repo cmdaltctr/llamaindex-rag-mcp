@@ -1,0 +1,192 @@
+{
+  "experiment": "26-query-instruction-ablation-2026-09-08",
+  "run_date": "2026-09-09",
+  "verdict": "FAIL",
+  "failed_gates": [
+    "quality_paired_r5_lift",
+    "regression_identifier_r10",
+    "latency_p95_ms"
+  ],
+  "headline": "- **Negative result.** Failed gates: quality_paired_r5_lift, regression_identifier_r10, latency_p95_ms.\n- Paired mean R@5 lift is -0.0246 against a frozen requirement of\n  +0.0300.\n- Per task 5.5 the packaged default for `EMBEDDING__QUERY_INSTRUCTION`\n  stays empty. The instruction text is not tuned to chase the gate.",
+  "gates": {
+    "quality_paired_r5_lift": {
+      "pass": false,
+      "measured": -0.024649,
+      "threshold": 0.03,
+      "comparator": ">=",
+      "paired_bootstrap_95_half_width": 0.015502,
+      "n": 223
+    },
+    "regression_identifier_r10": {
+      "pass": false,
+      "measured": 0.256337,
+      "threshold": 0.2583,
+      "comparator": ">=",
+      "n": 200
+    },
+    "latency_p95_ms": {
+      "pass": false,
+      "measured": 3542.8,
+      "threshold": 2850,
+      "comparator": "<="
+    }
+  },
+  "metrics_by_cell": {
+    "raw_none": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.754068,
+        "alpha_ndcg_at_10": 0.43522,
+        "hit_at_5": 0.753363,
+        "hit_at_10": 0.816143,
+        "mrr_at_10": 0.579157,
+        "recall_at_1": 0.121354,
+        "recall_at_3": 0.193299,
+        "recall_at_5": 0.255884,
+        "recall_at_10": 0.327389,
+        "recall_at_20": 0.417853,
+        "recall_at_50": 0.514967,
+        "mean_latency_ms": 1751.54,
+        "p95_latency_ms": 5543.0
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.749119,
+        "alpha_ndcg_at_10": 0.406326,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.82,
+        "mrr_at_10": 0.57001,
+        "recall_at_1": 0.06531,
+        "recall_at_3": 0.145234,
+        "recall_at_5": 0.199723,
+        "recall_at_10": 0.278862,
+        "recall_at_20": 0.378436,
+        "recall_at_50": 0.479416,
+        "mean_latency_ms": 1760.03,
+        "p95_latency_ms": 5543.0
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.144644,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.318207,
+        "mean_latency_ms": 7301.27,
+        "p95_latency_ms": 20174.6
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.767745,
+        "hit_at_5": 0.85,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.7325,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.7,
+        "recall_at_5": 0.85,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 834.25,
+        "p95_latency_ms": 992.9
+      }
+    },
+    "candidate_instruction": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.727573,
+        "alpha_ndcg_at_10": 0.411704,
+        "hit_at_5": 0.721973,
+        "hit_at_10": 0.807175,
+        "mrr_at_10": 0.549849,
+        "recall_at_1": 0.112073,
+        "recall_at_3": 0.187031,
+        "recall_at_5": 0.231235,
+        "recall_at_10": 0.307187,
+        "recall_at_20": 0.393629,
+        "recall_at_50": 0.485604,
+        "mean_latency_ms": 1531.04,
+        "p95_latency_ms": 3542.8
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.719577,
+        "alpha_ndcg_at_10": 0.38066,
+        "hit_at_5": 0.72,
+        "hit_at_10": 0.81,
+        "mrr_at_10": 0.53704,
+        "recall_at_1": 0.054962,
+        "recall_at_3": 0.133246,
+        "recall_at_5": 0.177239,
+        "recall_at_10": 0.256337,
+        "recall_at_20": 0.351426,
+        "recall_at_50": 0.44755,
+        "mean_latency_ms": 1610.38,
+        "p95_latency_ms": 4070.5
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.143955,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.259944,
+        "mean_latency_ms": 1219.1,
+        "p95_latency_ms": 1317.8
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.762307,
+        "hit_at_5": 0.8,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.735417,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.75,
+        "recall_at_5": 0.8,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 784.5,
+        "p95_latency_ms": 937.8
+      }
+    }
+  },
+  "drift": {
+    "exp22_recall_at_5": 0.255884,
+    "exp26_raw_recall_at_5": 0.255884,
+    "delta": 0.0,
+    "note": "same index and queries; a non-zero delta is provider-side embedding drift between 2026-09-07 and this run"
+  },
+  "runtime_manifest": {
+    "embedding": {
+      "model": "qwen/qwen3-embedding-4b",
+      "provider": "openrouter (cloud)",
+      "query_instruction_applied_to": "queries_only",
+      "candidate_instruction": "Given a user query, retrieve passages that provide relevant and accurate evidence for answering the query."
+    },
+    "retrieval": {
+      "hybrid": true,
+      "rerank_enabled": false,
+      "top_k": 50
+    },
+    "index": {
+      "uri": "/Users/aizat/Development/DATA/omrg/experiments/exp22-lancedb",
+      "collection": "exp22",
+      "written": false
+    }
+  }
+}

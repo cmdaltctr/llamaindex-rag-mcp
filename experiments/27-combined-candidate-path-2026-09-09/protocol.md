@@ -93,9 +93,11 @@ comparable; none is re-derived for this run.
 **Monitored, not gated:** the interaction term, query token cost, and
 continuity R@10. The 2x2 is assembled from runs on two indexes across
 three dates, so the interaction term carries cross-run drift as well as
-signal. A fixed preamble more than doubles a short query's tokens by
-construction, so a token-ratio gate would test arithmetic, not risk.
-Continuity R@10 has a ±0.15 half-width at n=20.
+signal. Query token cost is recorded because task 5.4 asks for it, not
+gated: the FreshStack queries average 450 Qwen tokens against a 25-token
+instruction prefix, so the added spend is about 5.5% of an already
+negligible per-query cost. Continuity R@10 has a ±0.15 half-width at
+n=20.
 
 ## Interpretation rules
 
