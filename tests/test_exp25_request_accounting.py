@@ -14,7 +14,6 @@ from unittest.mock import AsyncMock, Mock
 import lancedb
 import pytest
 from llama_index.core.schema import MetadataMode, TextNode
-from llama_index.embeddings.openai_like import OpenAILikeEmbedding
 
 from omrg.integrations import tokenizer as tokenizer_module
 
@@ -37,6 +36,11 @@ def test_installed_adapter_normalises_request_text(
     monkeypatch: pytest.MonkeyPatch, asynchronous: bool
 ) -> None:
     """Exercise inherited OpenAI batch helpers through the installed adapter."""
+    adapter_module = pytest.importorskip(
+        "llama_index.embeddings.openai_like",
+        reason="llamacpp or openrouter optional extra is not installed",
+    )
+    OpenAILikeEmbedding = adapter_module.OpenAILikeEmbedding
     texts = ["title: A\n\nbody\nend", "unchanged\ttext\r\nnext"]
     response = SimpleNamespace(data=[SimpleNamespace(embedding=[1.0]) for _ in texts])
     create = AsyncMock(return_value=response) if asynchronous else Mock(return_value=response)

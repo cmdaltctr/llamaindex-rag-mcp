@@ -824,6 +824,14 @@ def test_build_engine_env_route_fails_closed_on_recognised_chroma(
     monkeypatch.delenv("VECTOR_STORE", raising=False)
     monkeypatch.setenv("CHROMA_PERSIST_DIR", str(legacy_dir))
     monkeypatch.setenv("LANCEDB_URI", str(tmp_path / "lancedb_store"))
+    # Exclude the operator's ambient .env from the environment-based
+    # build route. It re-supplies VECTOR_STORE=lancedb and turns the
+    # fail-closed contract into the acknowledgement path. Seeding the
+    # settings singleton keeps build_engine() on get_settings() while
+    # resolving like a clean CI runner (repair-fast-suite-regressions D2).
+    import omrg.config as config_mod
+
+    monkeypatch.setattr(config_mod, "_settings", config_mod.Settings(_env_file=None))
     with pytest.raises(LegacyChromaDataError, match="VECTOR_STORE=chroma"):
         build_engine()
 
