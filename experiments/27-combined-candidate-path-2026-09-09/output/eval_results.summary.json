@@ -1,0 +1,353 @@
+{
+  "experiment": "27-combined-candidate-path-2026-09-09",
+  "run_date": "2026-09-09",
+  "verdict": "FAIL",
+  "failed_gates": [
+    "quality_recall_at_5",
+    "latency_p95_ms"
+  ],
+  "headline": "- **Negative result.** Failed gates: quality_recall_at_5, latency_p95_ms.\n- The stacked path is worse than the frozen bar the single-factor\n  arms were held to. Ship only the component that passed alone.\n- Interaction on R@5 is +0.0118.",
+  "gates": {
+    "quality_recall_at_5": {
+      "pass": false,
+      "measured": 0.223686,
+      "threshold": 0.231,
+      "comparator": ">=",
+      "n": 223
+    },
+    "regression_identifier_r10": {
+      "pass": true,
+      "measured": 0.269936,
+      "threshold": 0.2583,
+      "comparator": ">=",
+      "n": 200
+    },
+    "latency_p95_ms": {
+      "pass": false,
+      "measured": 4790.4,
+      "threshold": 2850,
+      "comparator": "<="
+    }
+  },
+  "metrics_by_cell": {
+    "baseline_production": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.754068,
+        "alpha_ndcg_at_10": 0.435028,
+        "hit_at_5": 0.753363,
+        "hit_at_10": 0.816143,
+        "mrr_at_10": 0.578634,
+        "recall_at_1": 0.121354,
+        "recall_at_3": 0.193299,
+        "recall_at_5": 0.255884,
+        "recall_at_10": 0.327389,
+        "recall_at_20": 0.417649,
+        "recall_at_50": 0.515288,
+        "mean_latency_ms": 1023.07,
+        "p95_latency_ms": 1984.2
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.749119,
+        "alpha_ndcg_at_10": 0.405893,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.82,
+        "mrr_at_10": 0.569177,
+        "recall_at_1": 0.06531,
+        "recall_at_3": 0.145234,
+        "recall_at_5": 0.199723,
+        "recall_at_10": 0.278862,
+        "recall_at_20": 0.378209,
+        "recall_at_50": 0.479773,
+        "mean_latency_ms": 1024.66,
+        "p95_latency_ms": 1900.1
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.144644,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.318207,
+        "mean_latency_ms": 812.47,
+        "p95_latency_ms": 900.1
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.769936,
+        "hit_at_5": 0.85,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.735,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.7,
+        "recall_at_5": 0.85,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 1038.7,
+        "p95_latency_ms": 1984.2
+      }
+    },
+    "instruction_only": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.727573,
+        "alpha_ndcg_at_10": 0.411704,
+        "hit_at_5": 0.721973,
+        "hit_at_10": 0.807175,
+        "mrr_at_10": 0.549849,
+        "recall_at_1": 0.112073,
+        "recall_at_3": 0.187031,
+        "recall_at_5": 0.231235,
+        "recall_at_10": 0.307187,
+        "recall_at_20": 0.393629,
+        "recall_at_50": 0.485604,
+        "mean_latency_ms": 1531.04,
+        "p95_latency_ms": 3542.8
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.719577,
+        "alpha_ndcg_at_10": 0.38066,
+        "hit_at_5": 0.72,
+        "hit_at_10": 0.81,
+        "mrr_at_10": 0.53704,
+        "recall_at_1": 0.054962,
+        "recall_at_3": 0.133246,
+        "recall_at_5": 0.177239,
+        "recall_at_10": 0.256337,
+        "recall_at_20": 0.351426,
+        "recall_at_50": 0.44755,
+        "mean_latency_ms": 1610.38,
+        "p95_latency_ms": 4070.5
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.143955,
+        "hit_at_5": 0.333333,
+        "hit_at_10": 0.333333,
+        "mrr_at_10": 0.166667,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.019608,
+        "recall_at_5": 0.039216,
+        "recall_at_10": 0.078431,
+        "recall_at_20": 0.164706,
+        "recall_at_50": 0.259944,
+        "mean_latency_ms": 1219.1,
+        "p95_latency_ms": 1317.8
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.85,
+        "alpha_ndcg_at_10": 0.762307,
+        "hit_at_5": 0.8,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.735417,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.75,
+        "recall_at_5": 0.8,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.85,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 784.5,
+        "p95_latency_ms": 937.8
+      }
+    },
+    "chunking_only_raw": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.742035,
+        "alpha_ndcg_at_10": 0.42994,
+        "hit_at_5": 0.748879,
+        "hit_at_10": 0.820628,
+        "mrr_at_10": 0.573379,
+        "recall_at_1": 0.113643,
+        "recall_at_3": 0.188936,
+        "recall_at_5": 0.23654,
+        "recall_at_10": 0.322917,
+        "recall_at_20": 0.419057,
+        "recall_at_50": 0.522208,
+        "mean_latency_ms": 1389.06,
+        "p95_latency_ms": 3390.5
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.734869,
+        "alpha_ndcg_at_10": 0.401374,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.825,
+        "mrr_at_10": 0.562692,
+        "recall_at_1": 0.056712,
+        "recall_at_3": 0.135075,
+        "recall_at_5": 0.187154,
+        "recall_at_10": 0.27817,
+        "recall_at_20": 0.382652,
+        "recall_at_50": 0.486363,
+        "mean_latency_ms": 1386.94,
+        "p95_latency_ms": 2803.4
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.833333,
+        "alpha_ndcg_at_10": 0.218423,
+        "hit_at_5": 0.666667,
+        "hit_at_10": 0.666667,
+        "mrr_at_10": 0.233333,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.039216,
+        "recall_at_5": 0.105882,
+        "recall_at_10": 0.12549,
+        "recall_at_20": 0.306443,
+        "recall_at_50": 0.393277,
+        "mean_latency_ms": 1627.13,
+        "p95_latency_ms": 3390.5
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.8,
+        "alpha_ndcg_at_10": 0.74732,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.8,
+        "mrr_at_10": 0.73125,
+        "recall_at_1": 0.7,
+        "recall_at_3": 0.75,
+        "recall_at_5": 0.75,
+        "recall_at_10": 0.8,
+        "recall_at_20": 0.8,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 1374.55,
+        "p95_latency_ms": 3922.7
+      }
+    },
+    "combined_candidate": {
+      "all": {
+        "n": 223,
+        "coverage_at_20": 0.732917,
+        "alpha_ndcg_at_10": 0.411029,
+        "hit_at_5": 0.704036,
+        "hit_at_10": 0.798206,
+        "mrr_at_10": 0.541482,
+        "recall_at_1": 0.105827,
+        "recall_at_3": 0.171542,
+        "recall_at_5": 0.223686,
+        "recall_at_10": 0.320017,
+        "recall_at_20": 0.413,
+        "recall_at_50": 0.504265,
+        "mean_latency_ms": 1465.8,
+        "p95_latency_ms": 4790.4
+      },
+      "identifier-heavy": {
+        "n": 200,
+        "coverage_at_20": 0.720536,
+        "alpha_ndcg_at_10": 0.380196,
+        "hit_at_5": 0.7,
+        "hit_at_10": 0.795,
+        "mrr_at_10": 0.528127,
+        "recall_at_1": 0.052997,
+        "recall_at_3": 0.114681,
+        "recall_at_5": 0.172821,
+        "recall_at_10": 0.269936,
+        "recall_at_20": 0.367613,
+        "recall_at_50": 0.465936,
+        "mean_latency_ms": 1518.43,
+        "p95_latency_ms": 4969.3
+      },
+      "semantic": {
+        "n": 3,
+        "coverage_at_20": 0.444444,
+        "alpha_ndcg_at_10": 0.22891,
+        "hit_at_5": 0.666667,
+        "hit_at_10": 0.666667,
+        "mrr_at_10": 0.277778,
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.105882,
+        "recall_at_5": 0.105882,
+        "recall_at_10": 0.12549,
+        "recall_at_20": 0.192157,
+        "recall_at_50": 0.421289,
+        "mean_latency_ms": 1575.53,
+        "p95_latency_ms": 2389.3
+      },
+      "continuity": {
+        "n": 20,
+        "coverage_at_20": 0.9,
+        "alpha_ndcg_at_10": 0.746677,
+        "hit_at_5": 0.75,
+        "hit_at_10": 0.85,
+        "mrr_at_10": 0.714583,
+        "recall_at_1": 0.65,
+        "recall_at_3": 0.75,
+        "recall_at_5": 0.75,
+        "recall_at_10": 0.85,
+        "recall_at_20": 0.9,
+        "recall_at_50": 0.9,
+        "mean_latency_ms": 923.05,
+        "p95_latency_ms": 1542.9
+      }
+    }
+  },
+  "interaction": {
+    "chunking_effect": -0.019344,
+    "instruction_effect": -0.024649,
+    "combined_effect": -0.032198,
+    "additive_prediction": -0.043993,
+    "interaction": 0.011795,
+    "note": "assembled across two indexes and three dates; carries cross-run drift as well as signal. Monitored, never gated."
+  },
+  "query_token_cost": {
+    "available": true,
+    "mean_raw_tokens": 450.27,
+    "mean_instructed_tokens": 473.17,
+    "ratio": 1.0509,
+    "added_tokens_per_query": 22.9
+  },
+  "drift": {
+    "exp25_cell": "model_token_markdown",
+    "exp25_recall_at_5": 0.236226,
+    "exp27_chunking_only_recall_at_5": 0.23654,
+    "delta": 0.000314,
+    "note": "same index and queries on different dates; a non-zero delta is provider-side embedding drift"
+  },
+  "runtime_manifest": {
+    "embedding": {
+      "model": "qwen/qwen3-embedding-4b",
+      "provider": "openrouter (cloud)",
+      "query_instruction_applied_to": "queries_only",
+      "candidate_instruction": "Given a user query, retrieve passages that provide relevant and accurate evidence for answering the query."
+    },
+    "retrieval": {
+      "hybrid": true,
+      "rerank_enabled": false,
+      "top_k": 50
+    },
+    "index": {
+      "uri": "/Users/aizat/Development/DATA/omrg/experiments/exp25-lancedb",
+      "collection": "exp25_model_token",
+      "written": false
+    },
+    "chunking": {
+      "splitter": "model_token_markdown",
+      "tokenizer_model": "Qwen/Qwen3-Embedding-4B",
+      "source": "experiment 25 candidate index, unchanged"
+    },
+    "ocr_routing": {
+      "exercised": false,
+      "reason": "corpus contains no PDFs"
+    }
+  },
+  "cell_sources": {
+    "baseline_production": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-feat-improve-rag-input-quality-5/experiments/22-raw-query-qwen4b-baseline-2026-09-07/output/cells/hybrid__raw.json",
+    "instruction_only": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-feat-improve-rag-input-quality-5/experiments/26-query-instruction-ablation-2026-09-08/output/cells/candidate_instruction.json",
+    "chunking_only_raw": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-feat-improve-rag-input-quality-5/experiments/27-combined-candidate-path-2026-09-09/output/cells/chunking_only_raw.json",
+    "combined_candidate": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-feat-improve-rag-input-quality-5/experiments/27-combined-candidate-path-2026-09-09/output/cells/combined_candidate.json"
+  }
+}

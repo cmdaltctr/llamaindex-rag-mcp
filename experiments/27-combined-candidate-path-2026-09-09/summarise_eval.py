@@ -389,6 +389,11 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "experiment 25 index read-only.",
         "",
     ]
+    # Hand-written interpretation lives in its own file so regenerating
+    # the tables never discards it.
+    discussion = EXP_DIR / "discussion.md"
+    if discussion.exists():
+        lines.append(discussion.read_text(encoding="utf-8"))
     (EXP_DIR / "results.md").write_text("\n".join(lines), encoding="utf-8")
 
 
