@@ -1,0 +1,99 @@
+{
+  "experiment": "28-pdf-classification-prevalence-2026-09-09",
+  "run_date": "2026-09-09",
+  "verdict": "FAIL",
+  "n": 79,
+  "parse_failures": 0,
+  "headline": "- **FAIL.** The safety gate FAILED: 1 document(s) with a usable text layer routed to OCR.\n- needs-OCR prevalence is 2/79 (2.5%), Wilson 95% CI [0.7%, 8.8%].\n- Projected cost of the routed set: 30.5 hours, of which 29.3 hours is spent on documents that did not need OCR.\n- Pre-specified decision rule: safety gate fails \u2014 under no reading does a default that mis-routes real documents belong in a packaged release",
+  "decision_rule_outcome": "safety gate fails \u2014 under no reading does a default that mis-routes real documents belong in a packaged release",
+  "gates": {
+    "safety_false_routing_count": {
+      "pass": false,
+      "measured": 1,
+      "threshold": 0,
+      "comparator": "==",
+      "offending_docs": [
+        {
+          "doc_id": "doc_077",
+          "pdf_type": "mixed",
+          "page_count": 991,
+          "pages_needing_ocr": 10,
+          "characters_per_page": 1127.07
+        }
+      ]
+    },
+    "benefit_needs_ocr_prevalence": {
+      "pass": false,
+      "measured_count": 2,
+      "measured_prevalence": 0.025316,
+      "wilson_95_lower": 0.00697,
+      "wilson_95_upper": 0.087688,
+      "threshold": 0.01,
+      "comparator": ">",
+      "docs": [
+        "doc_045",
+        "doc_067"
+      ]
+    }
+  },
+  "cost_projection": {
+    "routed_documents": 3,
+    "routed_pages": 1031,
+    "pages_on_documents_that_did_not_need_ocr": 991,
+    "seconds_per_page_basis": 106.4,
+    "projected_ocr_seconds": 109698.4,
+    "projected_ocr_hours": 30.47,
+    "wasted_ocr_hours": 29.29,
+    "fast_path_seconds_whole_corpus": 79.8,
+    "slowdown_multiple": 1374.8
+  },
+  "distribution": {
+    "pdf_type_counts": {
+      "text_based": 77,
+      "scanned": 1,
+      "mixed": 1
+    },
+    "page_count": {
+      "min": 5,
+      "median": 15,
+      "max": 991,
+      "total": 2744
+    },
+    "characters_per_page": {
+      "min": 0.0,
+      "median": 3907.3,
+      "max": 7176.7
+    },
+    "confidence": {
+      "min": 0.75,
+      "median": 1.0,
+      "at_1_0": 72
+    },
+    "flagged_page_fraction": {
+      "zero": 71,
+      "max": 1.0
+    },
+    "documents_within_0.05_of_either_threshold": [],
+    "classification_only_routed": 2,
+    "caught_only_by_calibrated_thresholds": [
+      "doc_067"
+    ],
+    "routed_only_by_unconditional_type_rule": [
+      "doc_077"
+    ]
+  },
+  "sensitivity": {
+    "chars_per_page_lt_50": {
+      "needs_ocr_count": 2,
+      "false_routing_count": 1
+    },
+    "chars_per_page_lt_100": {
+      "needs_ocr_count": 2,
+      "false_routing_count": 1
+    },
+    "chars_per_page_lt_200": {
+      "needs_ocr_count": 2,
+      "false_routing_count": 1
+    }
+  }
+}
