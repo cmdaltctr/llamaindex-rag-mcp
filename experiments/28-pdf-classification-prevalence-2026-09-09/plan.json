@@ -1,0 +1,89 @@
+{
+  "experiment_id": "28-pdf-classification-prevalence",
+  "protocol_version": "2.0",
+  "status": "PLANNED",
+  "task_ref": "improve-rag-input-quality-5 task 5.5 (OCR_FALLBACK_ENABLED packaged default)",
+  "study_type": "single-sample prevalence estimation",
+  "experimental_unit": "one real-world PDF classified by pdf-inspector",
+  "primary_metric": "false_routing_count",
+  "manipulated_factors": [],
+  "controlled_variables": {
+    "population": "the operator's curated Zotero library: ~/Zotero/storage/**/*.pdf, de-duplicated by content sha256",
+    "classifier": "pdf-inspector via omrg.integrations.pdf registry, instantiated directly",
+    "candidate_gate": {"OCR_FALLBACK_ENABLED": true, "OCR_FALLBACK_MIN_CONFIDENCE": 0.5, "OCR_FALLBACK_PAGE_FRACTION": 0.5},
+    "gate_function": "omrg.integrations.pdf.ocr_routing.ocr_required_by_gate — the production function, not a reimplementation",
+    "no_ocr": "no worker is started, no model is loaded, no network call is made, nothing is embedded or ingested"
+  },
+  "ground_truth_definition": {
+    "label": "needs_ocr_truth",
+    "rule": "mean extracted characters per page < 100",
+    "basis": "the committed CC0 journal pages in tests/fixtures/pdf_baseline/evaluation carry 3,934 and 4,150 characters for one page each; 100 characters per page is under 3% of that, so a document below it has no usable text layer by any reading",
+    "specified_before_data": true,
+    "sensitivity_analysis": "the same counts recomputed at 50 and 200 characters per page, reported as exploratory and never gating"
+  },
+  "cells": [
+    {"id": "zotero_curated_papers", "factors": {}}
+  ],
+  "gate_freeze": {
+    "frozen_date": "2026-09-09",
+    "precedes_all_measurement": true,
+    "foreknowledge_of_data": "Authors have observed a DIFFERENT dataset: the eight synthetic and rasterised fixtures in tests/fixtures/pdf_baseline, whose classifications are committed in its manifest.json and in experiment 24. NO document in the Zotero library has been classified by pdf-inspector, and no aggregate over it has been computed. The gates below are derived from the fixture evidence and from a power analysis, never from the population under study.",
+    "baseline_evidence": {
+      "fast_path_cost": "experiment 24 output/ablation.json — 0.001 to 1.01 s per fast-path file",
+      "ocr_cost": "ocr-worker/SMOKE_RESULTS.md — 33.7 to 106.4 s per page warm, 150.8 to 289.8 s cold including model load",
+      "zero_tolerance_precedent": "experiment 24 plan.json regression gate: altered_fast_path_outputs == 0",
+      "character_density": "tests/fixtures/pdf_baseline/evaluation/eval_{scanned,image}.expected.txt — 3,934 and 4,150 characters per journal page"
+    }
+  },
+  "validity_gates": [
+    {
+      "kind": "safety",
+      "metric": "false_routing_count",
+      "definition": "documents with needs_ocr_truth == false that the candidate gate routes to OCR",
+      "scope": "every de-duplicated document in the population",
+      "comparator": "==",
+      "threshold": 0,
+      "basis": "experiment 24 froze altered_fast_path_outputs == 0 on the same principle. A false route costs 33.7-106.4 s per page against a fast path of about 1 s per file, a 30x to 100x regression on a document that needed nothing. Any non-zero count means the packaged default would impose that regression on documents unasked."
+    },
+    {
+      "kind": "benefit",
+      "metric": "needs_ocr_prevalence_wilson_lower_95",
+      "scope": "every de-duplicated document in the population",
+      "comparator": ">",
+      "threshold": 0.01,
+      "basis": "power analysis at the realised n. At n=83 the smallest observed count whose Wilson 95% interval separates the prevalence from 1% is 3 documents (3.6%). Below that this study cannot distinguish a real need for OCR from noise, and a packaged default that serves an unresolvable minority is risk without demonstrated benefit."
+    }
+  ],
+  "monitored_non_gating": [
+    {
+      "metric": "projected_ocr_wall_clock_seconds",
+      "definition": "routed page count x 106.4 s (the committed warm worst case), reported in minutes and as a multiple of the fast-path time for the same corpus",
+      "reason": "the number the promotion decision needs, but the acceptable figure is an operator preference and cannot be derived from the evidence, so it is reported rather than gated"
+    },
+    {
+      "metric": "classification distribution",
+      "definition": "counts of pdf_type, the confidence distribution, and the flagged-page proportion distribution",
+      "reason": "describes the population and shows how close the corpus sits to the 0.5 thresholds; no pre-specified expectation exists to gate against"
+    },
+    {
+      "metric": "classification_only_routing_count",
+      "definition": "documents routed with the thresholds at the 0.0 never-trigger sentinels, isolating the unconditional pdf_type rule from the calibrated thresholds",
+      "reason": "attributes any routing to the classifier or to the calibration; diagnostic, not a promotion criterion"
+    }
+  ],
+  "decision_rule": {
+    "specified_before_data": true,
+    "promote_switch_true": "safety gate passes AND benefit gate passes",
+    "promote_thresholds_only": "safety gate passes AND benefit gate fails — the calibrated values are demonstrably harmless on this population but there is nothing to gain by default",
+    "promote_nothing": "safety gate fails — under no reading does a default that mis-routes real documents belong in a packaged release",
+    "note": "This experiment can only speak for the population it sampled: one operator's curated academic library. It cannot license a default for corpora it never saw, and the change record must say so."
+  },
+  "preflight_assertions": [
+    {"manifest_field": "classifier.reader", "operator": "eq", "expected": "pdf_inspector"},
+    {"manifest_field": "gate.ocr_fallback_min_confidence", "operator": "eq", "expected": 0.5},
+    {"manifest_field": "gate.ocr_fallback_page_fraction", "operator": "eq", "expected": 0.5},
+    {"manifest_field": "privacy.filenames_recorded", "operator": "eq", "expected": false},
+    {"manifest_field": "privacy.content_recorded", "operator": "eq", "expected": false},
+    {"manifest_field": "ocr.worker_started", "operator": "eq", "expected": false}
+  ]
+}
