@@ -1,128 +1,48 @@
 """Experiment 26 summariser: aggregate both arms, check the frozen gates.
 
-Metric definitions are a verbatim port of Experiment 22's summariser
-(``_rank_map``, ``_alpha_ndcg``, ``_metrics_for_query``, ``_aggregate``),
-itself ported from 9a, so the numbers stay comparable with the baseline.
-Do not modify them.
+Metric definitions are the verbatim Experiment 22 port, shared via
+``_lib.retrieval_metrics`` so every cell is scored by identical code and
+the numbers stay comparable with the baseline. Do not modify them.
 
-Gate thresholds are read from the frozen ``plan.json`` and never from
-this file. Comparisons use unrounded values; rounding happens only in
-formatting.
+Repair tasks 4.2/4.3: before any gate is evaluated, every cell is
+validated against the declared observation set (the 223 ground-truth
+query ids and their categories) via ``_lib.checkpoint_validity``. A
+well-formed subset is INCOMPLETE; duplicates, unexpected ids, category
+drift, malformed rows, non-finite latencies, a ``done``/``rows`` desync
+or differing id sets between arms are INVALID. Neither status produces
+a verdict or promotion advice.
 
-The primary comparison is within this experiment: both arms ran
-interleaved in one process against the same preserved index, so the R@5
-lift is paired query by query. Experiment 22's published ``hybrid__raw``
-figures are re-aggregated with the same code as a drift cross-check and
-reported, never substituted for the local raw arm.
-
-Writes ``output/eval_results.summary.json`` and ``results.md``.
+Outputs never overwrite the frozen historical artefacts: the summariser
+writes ``eval_results.summary.json`` and ``results.md`` into an explicit
+out directory (default ``output/recovery-<date>/``), leaving the
+committed 2026-09-09 run untouched. Gate thresholds are read from the
+frozen ``plan.json`` and never from this file; comparisons use unrounded
+values and rounding happens only in formatting.
 """
 
 from __future__ import annotations
 
 import json
-import math
 import random
 import statistics
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 EXP_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(EXP_DIR.parent))
+
+from _lib.checkpoint_validity import validate_cells  # noqa: E402
+from _lib.retrieval_metrics import _aggregate, _metrics_for_query  # noqa: E402
+
 EXP22_DIR = EXP_DIR.parent / "22-raw-query-qwen4b-baseline-2026-09-07"
 GT_PATH = EXP22_DIR / "output/ground-truth.json"
 BASELINE_CKPT = EXP22_DIR / "output/cells/hybrid__raw.json"
 PLAN_PATH = EXP_DIR / "plan.json"
 MANIFEST_PATH = EXP_DIR / "output/runtime_manifest.json"
 CELLS = ("raw_none", "candidate_instruction")
-K_VALUES = (1, 3, 5, 10, 20, 50)
 BOOTSTRAP_N = 10000
 BOOTSTRAP_SEED = 20260908
-
-
-# ---------------------------------------------------------------------
-# Metric functions — verbatim port from Experiment 22's summariser.
-# ---------------------------------------------------------------------
-def _rank_map(parent_ids: list[str]) -> dict[str, int]:
-    ranks: dict[str, int] = {}
-    for rank, parent_id in enumerate(parent_ids, start=1):
-        ranks.setdefault(parent_id, rank)
-    return ranks
-
-
-def _alpha_ndcg(
-    parent_ids: list[str], nuggets: list[dict], k: int = 10, alpha: float = 0.5
-) -> float:
-    nugget_rels = [set(n.get("relevant_corpus_ids") or []) for n in nuggets]
-    if not nugget_rels:
-        return 0.0
-
-    def dcg(ranking: list[str]) -> float:
-        seen = [0 for _ in nugget_rels]
-        total = 0.0
-        for rank, doc_id in enumerate(ranking[:k], start=1):
-            gain = 0.0
-            for idx, rels in enumerate(nugget_rels):
-                if doc_id in rels:
-                    gain += (1.0 - alpha) ** seen[idx]
-                    seen[idx] += 1
-            if gain:
-                total += gain / math.log2(rank + 1)
-        return total
-
-    observed = dcg(parent_ids)
-    candidate_docs = sorted(set().union(*nugget_rels))
-    ideal: list[str] = []
-    remaining = candidate_docs[:]
-    while remaining and len(ideal) < k:
-        best_doc = max(remaining, key=lambda doc: dcg(ideal + [doc]))
-        ideal.append(best_doc)
-        remaining.remove(best_doc)
-    ideal_score = dcg(ideal)
-    return observed / ideal_score if ideal_score else 0.0
-
-
-def _metrics_for_query(parent_ids: list[str], query: dict) -> dict:
-    """Per-query metrics: 9a's set plus recall@K for K in K_VALUES."""
-    ranks = _rank_map(parent_ids)
-    relevant = set(query.get("relevant_parent_ids") or [])
-    nuggets = query.get("nuggets") or []
-    covered = 0
-    for nugget in nuggets:
-        rels = set(nugget.get("relevant_corpus_ids") or [])
-        if rels & set(parent_ids[:20]):
-            covered += 1
-    hit_ranks = [ranks[doc_id] for doc_id in relevant if doc_id in ranks]
-    first_rank = min(hit_ranks) if hit_ranks else None
-    metrics: dict = {
-        "coverage_at_20": covered / len(nuggets) if nuggets else 0.0,
-        "alpha_ndcg_at_10": _alpha_ndcg(parent_ids, nuggets, k=10),
-        "hit_at_5": first_rank is not None and first_rank <= 5,
-        "hit_at_10": first_rank is not None and first_rank <= 10,
-        "mrr_at_10": (1.0 / first_rank) if first_rank is not None and first_rank <= 10 else 0.0,
-        "first_relevant_rank": first_rank,
-    }
-    for k in K_VALUES:
-        top = set(parent_ids[:k])
-        metrics[f"recall_at_{k}"] = len(relevant & top) / len(relevant) if relevant else 0.0
-    return metrics
-
-
-def _aggregate(rows: list[dict]) -> dict:
-    """Mean over per-query metrics plus latency stats."""
-    by_cat: dict[str, list[dict]] = {"all": rows}
-    for row in rows:
-        by_cat.setdefault(row["category"], []).append(row)
-    out: dict = {}
-    for cat, cat_rows in by_cat.items():
-        agg: dict = {"n": len(cat_rows)}
-        metric_keys = [k for k in cat_rows[0]["metrics"] if k != "first_relevant_rank"]
-        for key in metric_keys:
-            agg[key] = round(statistics.fmean(r["metrics"][key] for r in cat_rows), 6)
-        latencies = [r["latency_s"] * 1000 for r in cat_rows]
-        latencies.sort()
-        agg["mean_latency_ms"] = round(statistics.fmean(latencies), 2)
-        agg["p95_latency_ms"] = round(latencies[max(0, math.ceil(0.95 * len(latencies)) - 1)], 2)
-        out[cat] = agg
-    return out
 
 
 # ---------------------------------------------------------------------
@@ -201,8 +121,10 @@ def _drift_check(raw: list[dict], queries: dict) -> dict:
         "exp22_recall_at_5": published["recall_at_5"],
         "exp26_raw_recall_at_5": local["recall_at_5"],
         "delta": round(local["recall_at_5"] - published["recall_at_5"], 6),
-        "note": "same index and queries; a non-zero delta is provider-side "
-        "embedding drift between 2026-09-07 and this run",
+        "note": "same index and queries; a non-zero delta between dates is "
+        "consistent with provider-side or pipeline variance between runs and "
+        "does not by itself identify a cause. An equal aggregate also does "
+        "not show rank-level stability; per-query rankings may differ.",
     }
 
 
@@ -218,10 +140,68 @@ def _rows_table(agg: dict, cats: tuple[str, ...]) -> list[str]:
     return lines
 
 
+def _validation_lines(summary: dict) -> list[str]:
+    """Render the validity block for a non-complete summary."""
+    lines = ["## Measurement validity", ""]
+    for cell, result in summary["validation"]["cells"].items():
+        lines.append(
+            f"- `{cell}`: {result['status'].upper()} — {result['n_rows']} of "
+            f"{result['expected_n']} expected queries."
+        )
+        lines.extend(f"  - {reason}" for reason in result["reasons"])
+    lines.extend(f"- Pairing: {reason}" for reason in summary["validation"]["pairing_reasons"])
+    lines += [
+        "",
+        "No gate is evaluated and no verdict or recommendation is issued",
+        "from this state. INCOMPLETE: the declared query set is not fully",
+        "measured here. INVALID: at least one cell is malformed, duplicated,",
+        "mislabelled or covers a different query set.",
+        "",
+    ]
+    return lines
+
+
 def _write_results_md(summary: dict, plan: dict) -> None:
-    """Render results.md from the computed summary."""
+    """Render results.md from the computed summary into the out directory."""
+    out_path = Path(summary["out_dir"]) / "results.md"
+    header = [
+        "# Experiment 26 Results: Query-instruction ablation (task 5.3)",
+        "",
+        "**ID**: `26-query-instruction-ablation-2026-09-08`  ",
+        f"**Report generated**: {summary['generated_utc']}  ",
+        f"**Status**: {summary['status'].upper()}"
+        + (f" (verdict {summary['verdict']})" if summary.get("verdict") else "")
+        + "  ",
+        f"**Cells source**: `{summary['cells_source']}`  ",
+        "**Raw data**: the checkpoint files named in `cell_sources` (read-only)",
+        "",
+        "---",
+        "",
+    ]
+    if summary["status"] != "complete":
+        body = [
+            "## Summary",
+            "",
+            summary["headline"],
+            "",
+            *_validation_lines(summary),
+            "## Reproduction",
+            "",
+            "```bash",
+            "uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py \\",
+            f"  --cells-dir <cells> --out-dir {summary['out_dir']}",
+            "```",
+            "",
+            "This regenerated report never overwrites the frozen historical",
+            "artefacts (`output/cells/`, `output/eval_results.summary.json`,",
+            "`results.md` at the experiment root).",
+            "",
+        ]
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("\n".join(header + body), encoding="utf-8")
+        return
+
     gates = summary["gates"]
-    verdict = "PASS" if summary["verdict"] == "PASS" else "FAIL"
     cats = ("all", "identifier-heavy", "semantic", "continuity")
     raw_agg = summary["metrics_by_cell"]["raw_none"]
     cand_agg = summary["metrics_by_cell"]["candidate_instruction"]
@@ -231,17 +211,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         gates["latency_p95_ms"],
     )
     mark = {True: "✅ PASS", False: "❌ FAIL"}
-    lines = [
-        "# Experiment 26 Results: Query-instruction ablation (task 5.3)",
-        "",
-        "**ID**: `26-query-instruction-ablation-2026-09-08`  ",
-        f"**Date run**: {summary['run_date']}  ",
-        "**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  ",
-        f"**Status**: {verdict}  ",
-        "**Raw data**: [`output/cells/`](./output/cells/)",
-        "",
-        "---",
-        "",
+    lines = header + [
         "## TL;DR / Decision",
         "",
         summary["headline"],
@@ -285,11 +255,12 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         f"| candidate_instruction | {cand_agg['all']['mean_latency_ms']:,.0f} ms | "
         f"{cand_agg['all']['p95_latency_ms']:,.0f} ms |",
         "",
-        "Both arms ran interleaved in one process with alternating arm order,",
-        "so they share the same network epoch. Latency is cloud-inclusive.",
-        "The first query of the run pays the one-off BM25 index build; that",
-        "cost lands on the raw arm, which if anything works against the",
-        "baseline rather than for the candidate.",
+        summary["execution"]["periods_text"],
+        "Latency is cloud-inclusive. Absolute latency comparisons across",
+        "different dates are inconclusive: provider-side variance between",
+        "days is not measured separately here. The first query of a run",
+        "pays the one-off BM25 index build; that cost lands on whichever",
+        "arm was scheduled first (`arm_position` 1).",
         "",
         "## Drift cross-check against Experiment 22",
         "",
@@ -297,9 +268,11 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         f"- This run's raw arm R@5: {summary['drift']['exp26_raw_recall_at_5']:.6f}",
         f"- Delta: {summary['drift']['delta']:+.6f}",
         "",
-        "Same index, same 223 queries. The gate is evaluated against this",
-        "run's own raw arm, which is paired query by query with the",
-        "instructed arm; Experiment 22's number is a drift check only.",
+        "Same index, same 223 queries. An equal aggregate does not show",
+        "rank-level stability: per-query rankings can differ while the mean",
+        "matches. The gate is evaluated against this run's own raw arm,",
+        "which is paired query by query with the instructed arm;",
+        "Experiment 22's number is a drift check only.",
         "",
         "## Monitored, not gated",
         "",
@@ -311,12 +284,13 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "## Reproduction",
         "",
         "```bash",
-        "uv run python experiments/26-query-instruction-ablation-2026-09-08/run_eval.py --resume",
-        "uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py",
+        "uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py \\",
+        f"  --cells-dir {summary['cells_source']} --out-dir {summary['out_dir']}",
         "```",
         "",
         "No index is built or written: both arms query the preserved",
-        "Experiment 22 index read-only.",
+        "Experiment 22 index read-only. This regenerated report never",
+        "overwrites the frozen historical artefacts.",
         "",
     ]
     # Hand-written interpretation lives in its own file so regenerating
@@ -324,20 +298,79 @@ def _write_results_md(summary: dict, plan: dict) -> None:
     discussion = EXP_DIR / "discussion.md"
     if discussion.exists():
         lines.append(discussion.read_text(encoding="utf-8"))
-    (EXP_DIR / "results.md").write_text("\n".join(lines), encoding="utf-8")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def main() -> None:
-    """Aggregate both arms, evaluate the frozen gates, write the artefacts."""
-    queries = {q["query_id"]: q for q in json.loads(GT_PATH.read_text(encoding="utf-8"))["queries"]}
+def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
+    """Validate, aggregate and gate the cells; write only into ``out_dir``.
+
+    The declared observation set is the ground truth's query ids and
+    categories. Gates and promotion wording are produced only when every
+    cell is complete and the arms share identical query membership.
+    """
+    queries_raw = json.loads(GT_PATH.read_text(encoding="utf-8"))["queries"]
+    queries = {q["query_id"]: q for q in queries_raw}
+    expected = {q["query_id"]: q["category"] for q in queries_raw}
     plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
 
+    states = {
+        cell: json.loads((cells_dir / f"{cell}.json").read_text(encoding="utf-8")) for cell in CELLS
+    }
+    validation = validate_cells(states, expected)
+    print(f"[summarise] validity: {validation['status']}", flush=True)
+
+    session_path = cells_dir.parent / "session.json"
+    historical = not session_path.exists()
+    summary: dict = {
+        "experiment": EXP_DIR.name,
+        "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "status": validation["status"],
+        "verdict": None,
+        "validation": validation,
+        "provenance": {
+            "cells_source": str(cells_dir),
+            "historical": historical,
+            "limits": [
+                "historical checkpoints carry no run identity or session "
+                "recording; execution periods and code provenance at "
+                "measurement time are not available"
+            ]
+            if historical
+            else [],
+        },
+        "cells_source": str(cells_dir),
+        "out_dir": str(out_dir),
+        "cell_sources": {cell: str(cells_dir / f"{cell}.json") for cell in CELLS},
+    }
+    if validation["status"] != "complete":
+        worst = "INVALID" if validation["status"] == "invalid" else "INCOMPLETE"
+        summary["headline"] = (
+            f"- **No verdict.** Measurement set is {worst}: "
+            + "; ".join(
+                f"{cell} {result['status']} ({result['n_rows']}/{result['expected_n']})"
+                for cell, result in validation["cells"].items()
+            )
+            + ". Gates are not evaluated; no recommendation follows from this state."
+        )
+        out_dir.mkdir(parents=True, exist_ok=True)
+        tmp = (out_dir / "eval_results.summary.json").with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
+        tmp.replace(out_dir / "eval_results.summary.json")
+        _write_results_md(summary, plan)
+        print(f"[summarise] status={validation['status']} → {out_dir}", flush=True)
+        return summary
+
+    session = json.loads(session_path.read_text(encoding="utf-8")) if not historical else None
+
     scored = {
-        cell: _scored_rows(EXP_DIR / "output/cells" / f"{cell}.json", queries) for cell in CELLS
+        cell: [
+            {**row, "metrics": _metrics_for_query(row["parent_ids"], queries[row["query_id"]])}
+            for row in states[cell]["rows"]
+        ]
+        for cell in CELLS
     }
     counts = {cell: len(rows) for cell, rows in scored.items()}
-    if len(set(counts.values())) != 1:
-        raise SystemExit(f"arms are not paired: {counts}")
     print(f"[summarise] {counts['raw_none']} queries per arm", flush=True)
 
     aggregates = {cell: _aggregate(rows) for cell, rows in scored.items()}
@@ -367,24 +400,72 @@ def main() -> None:
             f"  stays empty. The instruction text is not tuned to chase the gate."
         )
 
-    summary = {
-        "experiment": EXP_DIR.name,
-        "run_date": "2026-09-09",
+    summary |= {
         "verdict": verdict,
         "failed_gates": failed,
         "headline": headline,
         "gates": gates,
         "metrics_by_cell": aggregates,
         "drift": _drift_check(scored["raw_none"], queries),
+        "execution": {"session": session, "periods_text": _execution_periods_text(session)},
         "runtime_manifest": json.loads(MANIFEST_PATH.read_text(encoding="utf-8")),
     }
 
-    out_json = EXP_DIR / "output/eval_results.summary.json"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_json = out_dir / "eval_results.summary.json"
     tmp = out_json.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
     tmp.replace(out_json)
     _write_results_md(summary, plan)
     print(f"[summarise] verdict={verdict} → {out_json}", flush=True)
+    return summary
+
+
+def _execution_periods_text(session: dict | None) -> str:
+    """Report wording for execution periods (repair task 4.5)."""
+    if session is None:
+        return (
+            "Execution periods were not recorded for this run (historical "
+            "checkpoint; provenance limit). Both arms were interleaved per "
+            "query with alternating arm order, so arm-order bias is "
+            "controlled, but a single uninterrupted network period cannot "
+            "be claimed from the data."
+        )
+    periods = session.get("periods", [])
+    if len(periods) <= 1:
+        return (
+            f"Session {session.get('session_id', '?')}: measurements were taken "
+            "in a single recorded execution period; both arms were interleaved "
+            "per query with alternating arm order."
+        )
+    return (
+        f"Session {session.get('session_id', '?')}: measurements span "
+        f"{len(periods)} mixed execution periods with "
+        f"{session.get('interruptions', 0)} recorded interruption(s); both arms "
+        "were interleaved per query, but a common network epoch across periods "
+        "is not claimed."
+    )
+
+
+def main() -> None:
+    """Summarise validated cells into an explicit out directory."""
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--cells-dir",
+        type=Path,
+        default=EXP_DIR / "output/cells",
+        help="directory holding <cell>.json checkpoints (default: historical)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=EXP_DIR / "output/recovery-2026-09-10",
+        help="distinct report destination; frozen historical outputs are never written",
+    )
+    args = parser.parse_args()
+    summarise_from(args.cells_dir, args.out_dir)
 
 
 if __name__ == "__main__":

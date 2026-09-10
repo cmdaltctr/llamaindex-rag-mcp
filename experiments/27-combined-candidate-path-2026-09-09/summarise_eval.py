@@ -1,38 +1,51 @@
 """Experiment 27 summariser: assemble the 2x2, check the frozen gates.
 
-Metric definitions are a verbatim port of Experiment 22's summariser
-(``_rank_map``, ``_alpha_ndcg``, ``_metrics_for_query``, ``_aggregate``),
-itself ported from 9a, so every cell of the 2x2 is scored by identical
-code. Do not modify them.
+Metric definitions are the verbatim Experiment 22 port, shared via
+``_lib.retrieval_metrics`` so every cell of the 2x2 is scored by
+identical code. Do not modify them. Two cells are measured by
+``run_eval.py`` against the preserved Experiment 25 model-token index;
+the other two are LOADED from committed checkpoints and re-aggregated,
+never re-executed (``baseline_production`` → Experiment 22
+``hybrid__raw``; ``instruction_only`` → Experiment 26
+``candidate_instruction``).
 
-Two cells are measured by ``run_eval.py`` against the preserved
-Experiment 25 model-token index. The other two are LOADED from their
-committed checkpoints and re-aggregated with the same code, never
-re-executed:
+Repair tasks 4.2/4.3: before any gate is evaluated, ALL FOUR cells are
+validated against the declared observation set (the 223 ground-truth
+query ids and their categories) via ``_lib.checkpoint_validity``,
+including the loaded cells. A well-formed subset is INCOMPLETE;
+duplicates, unexpected ids, category drift, malformed rows, non-finite
+latencies, a ``done``/``rows`` desync or differing id sets between cells
+are INVALID. Neither status produces a verdict or a recommendation.
 
-- ``baseline_production``  → Experiment 22 ``hybrid__raw``
-- ``instruction_only``     → Experiment 26 ``candidate_instruction``
-
-Gate thresholds are read from the frozen ``plan.json`` and never from
-this file. All three gates are evaluated on ``combined_candidate``
-against the production baseline, exactly as the plan states.
-
-The interaction term and the query token cost are computed and reported
-but never gated; the plan records why.
-
-Writes ``output/eval_results.summary.json`` and ``results.md``.
+Outputs never overwrite the frozen historical artefacts: everything is
+written into an explicit out directory (default ``output/recovery-<date>/``),
+leaving the committed 2026-09-09 run untouched. Gate thresholds are read
+from the frozen ``plan.json`` and never from this file; all three gates
+are evaluated on ``combined_candidate`` against the production baseline,
+exactly as the plan states. The interaction term and the query token
+cost are computed and reported but never gated; the plan records why.
 """
 
 from __future__ import annotations
 
 import json
-import math
-import statistics
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 EXP_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(EXP_DIR))
+sys.path.insert(0, str(EXP_DIR.parent))
+
+from _lib.checkpoint_validity import validate_cells  # noqa: E402
+from _lib.retrieval_metrics import _aggregate, _metrics_for_query  # noqa: E402
+
+# Experiment-local assembly diagnostics (gates, interaction, cost, drift,
+# grid). The script directory is on sys.path both when run as a script
+# and under runpy.run_path, so a plain import is safe here.
+from assembly import _drift, _gates, _grid_table, _interaction, _query_token_cost  # noqa: E402
+
 EXP22_DIR = EXP_DIR.parent / "22-raw-query-qwen4b-baseline-2026-09-07"
-EXP25_DIR = EXP_DIR.parent / "25-token-chunking-ablation-2026-09-08"
 EXP26_DIR = EXP_DIR.parent / "26-query-instruction-ablation-2026-09-08"
 GT_PATH = EXP22_DIR / "output/ground-truth.json"
 PLAN_PATH = EXP_DIR / "plan.json"
@@ -46,242 +59,51 @@ CELL_SOURCES = {
     "combined_candidate": EXP_DIR / "output/cells/combined_candidate.json",
 }
 MEASURED_HERE = ("chunking_only_raw", "combined_candidate")
-K_VALUES = (1, 3, 5, 10, 20, 50)
 
 
 # ---------------------------------------------------------------------
-# Metric functions — verbatim port from Experiment 22's summariser.
+# Experiment 27 report rendering and orchestration
 # ---------------------------------------------------------------------
-def _rank_map(parent_ids: list[str]) -> dict[str, int]:
-    ranks: dict[str, int] = {}
-    for rank, parent_id in enumerate(parent_ids, start=1):
-        ranks.setdefault(parent_id, rank)
-    return ranks
-
-
-def _alpha_ndcg(
-    parent_ids: list[str], nuggets: list[dict], k: int = 10, alpha: float = 0.5
-) -> float:
-    nugget_rels = [set(n.get("relevant_corpus_ids") or []) for n in nuggets]
-    if not nugget_rels:
-        return 0.0
-
-    def dcg(ranking: list[str]) -> float:
-        seen = [0 for _ in nugget_rels]
-        total = 0.0
-        for rank, doc_id in enumerate(ranking[:k], start=1):
-            gain = 0.0
-            for idx, rels in enumerate(nugget_rels):
-                if doc_id in rels:
-                    gain += (1.0 - alpha) ** seen[idx]
-                    seen[idx] += 1
-            if gain:
-                total += gain / math.log2(rank + 1)
-        return total
-
-    observed = dcg(parent_ids)
-    candidate_docs = sorted(set().union(*nugget_rels))
-    ideal: list[str] = []
-    remaining = candidate_docs[:]
-    while remaining and len(ideal) < k:
-        best_doc = max(remaining, key=lambda doc: dcg(ideal + [doc]))
-        ideal.append(best_doc)
-        remaining.remove(best_doc)
-    ideal_score = dcg(ideal)
-    return observed / ideal_score if ideal_score else 0.0
-
-
-def _metrics_for_query(parent_ids: list[str], query: dict) -> dict:
-    """Per-query metrics: 9a's set plus recall@K for K in K_VALUES."""
-    ranks = _rank_map(parent_ids)
-    relevant = set(query.get("relevant_parent_ids") or [])
-    nuggets = query.get("nuggets") or []
-    covered = 0
-    for nugget in nuggets:
-        rels = set(nugget.get("relevant_corpus_ids") or [])
-        if rels & set(parent_ids[:20]):
-            covered += 1
-    hit_ranks = [ranks[doc_id] for doc_id in relevant if doc_id in ranks]
-    first_rank = min(hit_ranks) if hit_ranks else None
-    metrics: dict = {
-        "coverage_at_20": covered / len(nuggets) if nuggets else 0.0,
-        "alpha_ndcg_at_10": _alpha_ndcg(parent_ids, nuggets, k=10),
-        "hit_at_5": first_rank is not None and first_rank <= 5,
-        "hit_at_10": first_rank is not None and first_rank <= 10,
-        "mrr_at_10": (1.0 / first_rank) if first_rank is not None and first_rank <= 10 else 0.0,
-        "first_relevant_rank": first_rank,
-    }
-    for k in K_VALUES:
-        top = set(parent_ids[:k])
-        metrics[f"recall_at_{k}"] = len(relevant & top) / len(relevant) if relevant else 0.0
-    return metrics
-
-
-def _aggregate(rows: list[dict]) -> dict:
-    """Mean over per-query metrics plus latency stats."""
-    by_cat: dict[str, list[dict]] = {"all": rows}
-    for row in rows:
-        by_cat.setdefault(row["category"], []).append(row)
-    out: dict = {}
-    for cat, cat_rows in by_cat.items():
-        agg: dict = {"n": len(cat_rows)}
-        metric_keys = [k for k in cat_rows[0]["metrics"] if k != "first_relevant_rank"]
-        for key in metric_keys:
-            agg[key] = round(statistics.fmean(r["metrics"][key] for r in cat_rows), 6)
-        latencies = [r["latency_s"] * 1000 for r in cat_rows]
-        latencies.sort()
-        agg["mean_latency_ms"] = round(statistics.fmean(latencies), 2)
-        agg["p95_latency_ms"] = round(latencies[max(0, math.ceil(0.95 * len(latencies)) - 1)], 2)
-        out[cat] = agg
-    return out
-
-
-# ---------------------------------------------------------------------
-# Experiment 27 assembly and gate evaluation
-# ---------------------------------------------------------------------
-def _scored_rows(checkpoint: Path, queries: dict) -> list[dict]:
-    """Attach per-query metrics to one cell's checkpoint rows."""
-    state = json.loads(checkpoint.read_text(encoding="utf-8"))
-    return [
-        {**row, "metrics": _metrics_for_query(row["parent_ids"], queries[row["query_id"]])}
-        for row in state["rows"]
-    ]
-
-
-def _gates(plan: dict, agg_combined: dict) -> dict:
-    """Evaluate every frozen gate on the combined cell."""
-    by_kind = {g["kind"]: g for g in plan["validity_gates"]}
-    quality, regression, latency = by_kind["quality"], by_kind["regression"], by_kind["latency"]
-    r5 = agg_combined["all"]["recall_at_5"]
-    ident = agg_combined.get("identifier-heavy", {})
-    p95 = agg_combined["all"]["p95_latency_ms"]
-    return {
-        "quality_recall_at_5": {
-            "pass": r5 >= quality["threshold"],
-            "measured": r5,
-            "threshold": quality["threshold"],
-            "comparator": quality["comparator"],
-            "n": agg_combined["all"]["n"],
-        },
-        "regression_identifier_r10": {
-            "pass": ident.get("recall_at_10", 0.0) >= regression["threshold"],
-            "measured": ident.get("recall_at_10", 0.0),
-            "threshold": regression["threshold"],
-            "comparator": regression["comparator"],
-            "n": ident.get("n", 0),
-        },
-        "latency_p95_ms": {
-            "pass": p95 <= latency["threshold"],
-            "measured": p95,
-            "threshold": latency["threshold"],
-            "comparator": latency["comparator"],
-        },
-    }
-
-
-def _interaction(aggregates: dict) -> dict:
-    """The R@5 interaction term, recorded but never gated."""
-
-    def r5(cell: str) -> float:
-        return aggregates[cell]["all"]["recall_at_5"]
-
-    chunking_effect = r5("chunking_only_raw") - r5("baseline_production")
-    instruction_effect = r5("instruction_only") - r5("baseline_production")
-    combined_effect = r5("combined_candidate") - r5("baseline_production")
-    return {
-        "chunking_effect": round(chunking_effect, 6),
-        "instruction_effect": round(instruction_effect, 6),
-        "combined_effect": round(combined_effect, 6),
-        "additive_prediction": round(chunking_effect + instruction_effect, 6),
-        "interaction": round(combined_effect - chunking_effect - instruction_effect, 6),
-        "note": "assembled across two indexes and three dates; carries "
-        "cross-run drift as well as signal. Monitored, never gated.",
-    }
-
-
-def _query_token_cost(queries: dict) -> dict:
-    """Mean request tokens per query, raw vs instructed.
-
-    Counted offline with the pinned tokenizer from the local cache — no
-    API call and no spend. Returns ``None`` figures when the tokenizer is
-    not cached, so an absent model cache degrades the diagnostic instead
-    of failing the summary.
-    """
-    instruction = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["embedding"][
-        "candidate_instruction"
-    ]
-    try:
-        import sys
-
-        sys.path.insert(0, str(EXP_DIR.parent.parent / "src"))
-        from omrg.integrations.tokenizer import load_tokenizer
-
-        tokenizer = load_tokenizer(
-            "Qwen/Qwen3-Embedding-4B", "5cf2132abc99cad020ac570b19d031efec650f2b"
-        )
-    except Exception as exc:  # noqa: BLE001 - diagnostic only
-        return {"available": False, "reason": str(exc)[:200]}
-
-    def count(text: str) -> int:
-        return len(tokenizer.encode(text).ids)
-
-    raw = [count(q["query"]) for q in queries.values()]
-    instructed = [count(f"Instruct: {instruction}\nQuery: {q['query']}") for q in queries.values()]
-    return {
-        "available": True,
-        "mean_raw_tokens": round(statistics.fmean(raw), 2),
-        "mean_instructed_tokens": round(statistics.fmean(instructed), 2),
-        "ratio": round(statistics.fmean(instructed) / statistics.fmean(raw), 4),
-        "added_tokens_per_query": round(statistics.fmean(instructed) - statistics.fmean(raw), 2),
-    }
-
-
-def _drift(aggregates: dict) -> dict:
-    """Compare this run's raw arm with Experiment 25's published arm."""
-    published = json.loads(
-        (EXP25_DIR / "output/eval_results.summary.json").read_text(encoding="utf-8")
-    )
-    cells = published.get("metrics_by_cell", {})
-    key = "model_token_markdown" if "model_token_markdown" in cells else next(iter(cells))
-    prior = cells[key]["all"]["recall_at_5"]
-    local = aggregates["chunking_only_raw"]["all"]["recall_at_5"]
-    return {
-        "exp25_cell": key,
-        "exp25_recall_at_5": prior,
-        "exp27_chunking_only_recall_at_5": local,
-        "delta": round(local - prior, 6),
-        "note": "same index and queries on different dates; a non-zero "
-        "delta is provider-side embedding drift",
-    }
-
-
-def _grid_table(aggregates: dict) -> list[str]:
-    """The 2x2 rendered as a table."""
-    labels = {
-        "baseline_production": ("legacy chars", "raw"),
-        "instruction_only": ("legacy chars", "instructed"),
-        "chunking_only_raw": ("model tokens", "raw"),
-        "combined_candidate": ("model tokens", "instructed"),
-    }
-    lines = [
-        "| Cell | Chunking | Query | R@1 | R@3 | R@5 | R@10 | MRR@10 | P95 |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
-    ]
-    for cell, (chunk, query) in labels.items():
-        row = aggregates[cell]["all"]
-        lines.append(
-            f"| {cell} | {chunk} | {query} | "
-            + " | ".join(
-                f"{row[k] * 100:.1f}%"
-                for k in ("recall_at_1", "recall_at_3", "recall_at_5", "recall_at_10", "mrr_at_10")
-            )
-            + f" | {row['p95_latency_ms']:,.0f} ms |"
-        )
-    return lines
-
-
 def _write_results_md(summary: dict, plan: dict) -> None:
-    """Render results.md from the computed summary."""
+    """Render results.md from the computed summary into the out directory."""
+    from _lib.checkpoint_validity import validity_markdown_lines
+
+    out_path = Path(summary["out_dir"]) / "results.md"
+    header = [
+        "# Experiment 27 Results: Combined candidate path (task 5.4)",
+        "",
+        "**ID**: `27-combined-candidate-path-2026-09-09`  ",
+        f"**Report generated**: {summary['generated_utc']}  ",
+        f"**Status**: {summary['status'].upper()}"
+        + (f" (verdict {summary['verdict']})" if summary.get("verdict") else "")
+        + "  ",
+        "**Raw data**: the checkpoint files named in `cell_sources` (read-only)",
+        "",
+        "---",
+        "",
+    ]
+    if summary["status"] != "complete":
+        body = [
+            "## Summary",
+            "",
+            summary["headline"],
+            "",
+            *validity_markdown_lines(summary),
+            "## Reproduction",
+            "",
+            "```bash",
+            "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \\",
+            f"  --out-dir {summary['out_dir']}",
+            "```",
+            "",
+            "This regenerated report never overwrites the frozen historical",
+            "artefacts of experiments 22, 25, 26 or 27.",
+            "",
+        ]
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("\n".join(header + body), encoding="utf-8")
+        return
+
     gates = summary["gates"]
     mark = {True: "✅ PASS", False: "❌ FAIL"}
     q, r, lat = (
@@ -302,17 +124,18 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         if cost.get("available")
         else [f"- Not available: {cost.get('reason', 'tokenizer not cached')}."]
     )
-    lines = [
-        "# Experiment 27 Results: Combined candidate path (task 5.4)",
-        "",
-        "**ID**: `27-combined-candidate-path-2026-09-09`  ",
-        f"**Date run**: {summary['run_date']}  ",
-        "**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  ",
-        f"**Status**: {summary['verdict']}  ",
-        "**Raw data**: [`output/eval_results.summary.json`](./output/eval_results.summary.json)",
-        "",
-        "---",
-        "",
+    drift = summary["drift"]
+    drift_lines = (
+        [
+            f"- Experiment 25 published R@5 ({drift['exp25_cell']}): "
+            f"{drift['exp25_recall_at_5']:.6f}",
+            f"- This run's `chunking_only_raw` R@5: {drift['exp27_chunking_only_recall_at_5']:.6f}",
+            f"- Delta: {drift['delta']:+.6f}",
+        ]
+        if drift.get("available")
+        else [f"- Not available: {drift.get('reason', 'exp25 summary unreadable')}."]
+    )
+    lines = header + [
         "## TL;DR / Decision",
         "",
         summary["headline"],
@@ -344,9 +167,11 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         *_grid_table(agg),
         "",
         "`baseline_production` and `instruction_only` are loaded from their",
-        "committed checkpoints and re-aggregated with identical metric code.",
-        "`chunking_only_raw` and `combined_candidate` were measured here,",
-        "interleaved in one process against the preserved experiment 25 index.",
+        "committed checkpoints and re-aggregated with identical metric code;",
+        "`chunking_only_raw` and `combined_candidate` were measured in this",
+        "experiment, interleaved in one process against the preserved",
+        "experiment 25 index. Absolute latency is not comparable across the",
+        "measurement dates shown in the table.",
         "",
         "## Interaction (monitored, not gated)",
         "",
@@ -367,11 +192,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "",
         "## Drift cross-check against experiment 25",
         "",
-        f"- Experiment 25 published R@5 ({summary['drift']['exp25_cell']}): "
-        f"{summary['drift']['exp25_recall_at_5']:.6f}",
-        f"- This run's `chunking_only_raw` R@5: "
-        f"{summary['drift']['exp27_chunking_only_recall_at_5']:.6f}",
-        f"- Delta: {summary['drift']['delta']:+.6f}",
+        *drift_lines,
         "",
         "## Interpretation",
         "",
@@ -381,12 +202,13 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "## Reproduction",
         "",
         "```bash",
-        "uv run python experiments/27-combined-candidate-path-2026-09-09/run_eval.py --resume",
-        "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py",
+        "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \\",
+        f"  --out-dir {summary['out_dir']}",
         "```",
         "",
         "No index is built or written: both measured arms query the preserved",
-        "experiment 25 index read-only.",
+        "experiment 25 index read-only. This regenerated report never",
+        "overwrites the frozen historical artefacts.",
         "",
     ]
     # Hand-written interpretation lives in its own file so regenerating
@@ -394,19 +216,85 @@ def _write_results_md(summary: dict, plan: dict) -> None:
     discussion = EXP_DIR / "discussion.md"
     if discussion.exists():
         lines.append(discussion.read_text(encoding="utf-8"))
-    (EXP_DIR / "results.md").write_text("\n".join(lines), encoding="utf-8")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def main() -> None:
-    """Assemble the 2x2, evaluate the frozen gates, write the artefacts."""
-    queries = {q["query_id"]: q for q in json.loads(GT_PATH.read_text(encoding="utf-8"))["queries"]}
+def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
+    """Validate, assemble and gate the 2x2; write only into ``out_dir``.
+
+    ``cells_dir`` (optional) overrides the two locally measured cells, as
+    with a run directory's ``cells/`` subtree; the loaded reference cells
+    always come from ``CELL_SOURCES``. All four cells are validated
+    against the declared observation set before any gate is evaluated.
+    """
+    queries_raw = json.loads(GT_PATH.read_text(encoding="utf-8"))["queries"]
+    queries = {q["query_id"]: q for q in queries_raw}
+    expected = {q["query_id"]: q["category"] for q in queries_raw}
     plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
 
-    scored = {cell: _scored_rows(path, queries) for cell, path in CELL_SOURCES.items()}
+    sources = dict(CELL_SOURCES)
+    if cells_dir is not None:
+        for cell in MEASURED_HERE:
+            candidate = cells_dir / f"{cell}.json"
+            if candidate.exists():
+                sources[cell] = candidate
+    states = {cell: json.loads(path.read_text(encoding="utf-8")) for cell, path in sources.items()}
+    validation = validate_cells(states, expected)
+    print(f"[summarise] validity: {validation['status']}", flush=True)
+
+    session_path = (
+        cells_dir.parent / "session.json"
+        if cells_dir is not None and (cells_dir.parent / "session.json").exists()
+        else None
+    )
+    historical = session_path is None
+    summary: dict = {
+        "experiment": EXP_DIR.name,
+        "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "status": validation["status"],
+        "verdict": None,
+        "validation": validation,
+        "provenance": {
+            "historical": historical,
+            "limits": [
+                "historical checkpoints carry no run identity or session "
+                "recording; execution periods and code provenance at "
+                "measurement time are not available"
+            ]
+            if historical
+            else [],
+        },
+        "out_dir": str(out_dir),
+        "cell_sources": {cell: str(path) for cell, path in sources.items()},
+    }
+    if validation["status"] != "complete":
+        worst = "INVALID" if validation["status"] == "invalid" else "INCOMPLETE"
+        summary["headline"] = (
+            f"- **No verdict.** Measurement set is {worst}: "
+            + "; ".join(
+                f"{cell} {result['status']} ({result['n_rows']}/{result['expected_n']})"
+                for cell, result in validation["cells"].items()
+            )
+            + ". Gates are not evaluated; no recommendation follows from this state."
+        )
+        out_dir.mkdir(parents=True, exist_ok=True)
+        tmp = (out_dir / "eval_results.summary.json").with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
+        tmp.replace(out_dir / "eval_results.summary.json")
+        _write_results_md(summary, plan)
+        print(f"[summarise] status={validation['status']} → {out_dir}", flush=True)
+        return summary
+
+    session = json.loads(session_path.read_text(encoding="utf-8")) if session_path else None
+    scored = {
+        cell: [
+            {**row, "metrics": _metrics_for_query(row["parent_ids"], queries[row["query_id"]])}
+            for row in states[cell]["rows"]
+        ]
+        for cell in sources
+    }
     counts = {cell: len(rows) for cell, rows in scored.items()}
-    measured = {counts[c] for c in MEASURED_HERE}
-    if len(measured) != 1:
-        raise SystemExit(f"measured arms are not paired: {counts}")
     print(f"[summarise] cell sizes: {counts}", flush=True)
 
     aggregates = {cell: _aggregate(rows) for cell, rows in scored.items()}
@@ -433,9 +321,7 @@ def main() -> None:
             f"- Interaction on R@5 is {interaction['interaction']:+.4f}."
         )
 
-    summary = {
-        "experiment": EXP_DIR.name,
-        "run_date": "2026-09-09",
+    summary |= {
         "verdict": verdict,
         "failed_gates": failed,
         "headline": headline,
@@ -444,16 +330,50 @@ def main() -> None:
         "interaction": interaction,
         "query_token_cost": _query_token_cost(queries),
         "drift": _drift(aggregates),
+        "execution": {
+            "session": session,
+            "periods_text": (
+                "Execution periods were not recorded for the historical cells "
+                "(provenance limit); the two measured cells were interleaved per "
+                "query in one process."
+                if session is None
+                else f"Session {session.get('session_id', '?')}: "
+                f"{len(session.get('periods', []))} recorded execution period(s)."
+            ),
+        },
         "runtime_manifest": json.loads(MANIFEST_PATH.read_text(encoding="utf-8")),
-        "cell_sources": {c: str(p) for c, p in CELL_SOURCES.items()},
     }
 
-    out_json = EXP_DIR / "output/eval_results.summary.json"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_json = out_dir / "eval_results.summary.json"
     tmp = out_json.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
     tmp.replace(out_json)
     _write_results_md(summary, plan)
     print(f"[summarise] verdict={verdict} → {out_json}", flush=True)
+    return summary
+
+
+def main() -> None:
+    """Summarise validated cells into an explicit out directory."""
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        default=None,
+        help="optional run directory whose cells/ subtree overrides the measured cells",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=EXP_DIR / "output/recovery-2026-09-10",
+        help="distinct report destination; frozen historical outputs are never written",
+    )
+    args = parser.parse_args()
+    cells_dir = args.run_dir / "cells" if args.run_dir is not None else None
+    summarise_from(cells_dir, args.out_dir)
 
 
 if __name__ == "__main__":
