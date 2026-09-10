@@ -69,16 +69,19 @@ def _interaction(aggregates: dict) -> dict:
     }
 
 
-def _query_token_cost(queries: dict) -> dict:
+def _query_token_cost(queries: dict, *, runtime_manifest: dict | None = None) -> dict:
     """Mean request tokens per query, raw vs instructed (offline).
 
     Counted with the pinned tokenizer from the local cache — no API call
     and no spend. Degrades to ``available: False`` when the tokenizer is
     not cached.
     """
-    instruction = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["embedding"][
-        "candidate_instruction"
-    ]
+    manifest = (
+        json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        if runtime_manifest is None
+        else runtime_manifest
+    )
+    instruction = manifest["embedding"]["candidate_instruction"]
     try:
         sys.path.insert(0, str(EXP_DIR.parent.parent / "src"))
         from omrg.integrations.tokenizer import load_tokenizer
@@ -130,7 +133,7 @@ def _drift(aggregates: dict) -> dict:
     }
 
 
-def _grid_table(aggregates: dict) -> list[str]:
+def _grid_table(aggregates: dict, *, historical: bool = True) -> list[str]:
     """The 2x2 rendered as a table, with each cell's measurement date."""
     labels = {
         "baseline_production": ("legacy chars", "raw", "2026-09-07 (exp 22)"),
@@ -143,6 +146,8 @@ def _grid_table(aggregates: dict) -> list[str]:
         "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for cell, (chunk, query, date) in labels.items():
+        if not historical and cell in {"chunking_only_raw", "combined_candidate"}:
+            date = "see recorded session"
         row = aggregates[cell]["all"]
         lines.append(
             f"| {cell} | {chunk} | {query} | {date} | "

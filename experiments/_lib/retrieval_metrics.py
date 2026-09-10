@@ -3,7 +3,7 @@
 ``rank_map``, ``alpha_ndcg``, ``metrics_for_query`` and ``aggregate``
 were ported from Experiment 22 (itself ported from 9a) so every cell is
 scored by identical code and the numbers stay comparable with the
-baseline. Do not modify them. Experiments 26 and 27 import these so
+baseline. Preserve their metric definitions. Experiments 26 and 27 import these so
 their summarisers stay under the file-size budget without diverging.
 """
 
@@ -80,8 +80,8 @@ def _metrics_for_query(parent_ids: list[str], query: dict) -> dict:
     return metrics
 
 
-def _aggregate(rows: list[dict]) -> dict:
-    """Mean over per-query metrics plus latency stats."""
+def _aggregate(rows: list[dict], *, rounded: bool = True) -> dict:
+    """Mean metrics and latency stats; gates request unrounded values."""
     by_cat: dict[str, list[dict]] = {"all": rows}
     for row in rows:
         by_cat.setdefault(row["category"], []).append(row)
@@ -90,10 +90,13 @@ def _aggregate(rows: list[dict]) -> dict:
         agg: dict = {"n": len(cat_rows)}
         metric_keys = [k for k in cat_rows[0]["metrics"] if k != "first_relevant_rank"]
         for key in metric_keys:
-            agg[key] = round(statistics.fmean(r["metrics"][key] for r in cat_rows), 6)
+            value = statistics.fmean(r["metrics"][key] for r in cat_rows)
+            agg[key] = round(value, 6) if rounded else value
         latencies = [r["latency_s"] * 1000 for r in cat_rows]
         latencies.sort()
-        agg["mean_latency_ms"] = round(statistics.fmean(latencies), 2)
-        agg["p95_latency_ms"] = round(latencies[max(0, math.ceil(0.95 * len(latencies)) - 1)], 2)
+        mean = statistics.fmean(latencies)
+        p95 = latencies[max(0, math.ceil(0.95 * len(latencies)) - 1)]
+        agg["mean_latency_ms"] = round(mean, 2) if rounded else mean
+        agg["p95_latency_ms"] = round(p95, 2) if rounded else p95
         out[cat] = agg
     return out

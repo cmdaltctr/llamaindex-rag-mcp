@@ -75,7 +75,11 @@ def classify_cell(rows: object, done: object, expected: dict[str, str]) -> dict[
         elif float(latency) < 0.0:
             reasons.append(_reason(f"query {query_id} latency_s is negative"))
 
-    row_ids = [row.get("query_id") for row in rows if isinstance(row, dict)]
+    row_ids = [
+        row["query_id"]
+        for row in rows
+        if isinstance(row, dict) and isinstance(row.get("query_id"), str)
+    ]
     if len(done) != len(row_ids) or set(done) != set(row_ids):
         reasons.append(
             _reason(f"done list ({len(done)} ids) is inconsistent with rows ({len(row_ids)} rows)")
@@ -126,28 +130,22 @@ def validate_cells(states: dict[str, dict], expected: dict[str, str]) -> dict:
     for otherwise well-formed cells is incomplete — the run is partial, not
     corrupted. Only exact, consistent membership everywhere is complete.
     """
-    validation = {
-        cell: (
-            classify_cell(state.get("rows", []), state.get("done", []), expected)
-            | {"n_rows": len(state.get("rows", [])), "expected_n": len(expected)}
+    validation: dict[str, dict] = {}
+    id_sets: dict[str, set[str]] = {}
+    for cell, state in states.items():
+        rows = state.get("rows", []) if isinstance(state, dict) else None
+        result = (
+            classify_cell(rows, state.get("done", []), expected)
             if isinstance(state, dict)
-            else {
-                "status": "invalid",
-                "reasons": [f"checkpoint is not an object: {type(state).__name__}"],
-                "n_rows": 0,
-                "expected_n": len(expected),
-            }
+            else {"status": "invalid", "reasons": ["checkpoint is not an object"]}
         )
-        for cell, state in states.items()
-    }
-    id_sets = {
-        cell: {
-            row.get("query_id")
-            for row in (state.get("rows", []) if isinstance(state, dict) else [])
-            if isinstance(row, dict)
+        safe_rows = rows if isinstance(rows, list) else []
+        validation[cell] = result | {"n_rows": len(safe_rows), "expected_n": len(expected)}
+        id_sets[cell] = {
+            row["query_id"]
+            for row in safe_rows
+            if isinstance(row, dict) and isinstance(row.get("query_id"), str)
         }
-        for cell, state in states.items()
-    }
     pairing = pairing_ids_mismatch(id_sets)
     counts_equal = len({v["n_rows"] for v in validation.values()}) <= 1
     if any(v["status"] == "invalid" for v in validation.values()):
@@ -258,3 +256,130 @@ def evaluate_resume(
     if reasons:
         return {"action": "refuse", "reasons": reasons}
     return {"action": "resume", "reasons": []}
+
+
+def load_checkpoint_files(sources: dict[str, Path], expected: dict[str, str]) -> tuple[dict, dict]:
+    """Read selected checkpoints and retain all validation and read-error reasons."""
+    states: dict = {}
+    errors: dict[str, str] = {}
+    for cell, path in sources.items():
+        try:
+            states[cell] = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
+            states[cell] = {"rows": [], "done": []}
+            description = "checkpoint file missing" if isinstance(exc, FileNotFoundError) else (
+                "checkpoint cannot be read as JSON"
+            )
+            errors[cell] = f"{description}: {path}"
+    validation = validate_cells(states, expected)
+    for cell, reason in errors.items():
+        validation["status"] = "invalid"
+        validation["cells"][cell]["status"] = "invalid"
+        validation["cells"][cell]["reasons"].append(reason)
+        validation["pairing_reasons"].append(f"{cell}: {reason}")
+    return states, validation
+
+
+def summary_provenance(
+    states: dict,
+    measured: tuple[str, ...],
+    run_dir: Path,
+    plan_path: Path,
+    gt_path: Path,
+    historical_manifest: Path,
+) -> tuple[dict, dict | None, dict, list[str]]:
+    """Check measured cells against recorded session inputs without rerunning them.
+
+    Legacy cells remain readable with explicit provenance limits. A session file
+    cannot upgrade them into new evidence. Historical reference cells in a
+    combined grid retain their separate provenance.
+    """
+    session_path = run_dir / "session.json"
+    has_identity = any(
+        isinstance(states[cell], dict)
+        and ("run_identity" in states[cell] or "session_id" in states[cell])
+        for cell in measured
+    )
+    historical = not session_path.exists() and not has_identity
+    limits = []
+    reasons: list[str] = []
+    session = None
+    manifest: dict = {}
+    manifest_path = historical_manifest if historical else run_dir / "runtime_manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            raise ValueError("runtime manifest is not an object")
+    except (OSError, UnicodeError, ValueError):
+        reasons.append("runtime manifest is missing or invalid")
+        manifest = {}
+
+    if historical:
+        limits.append(
+            "Historical checkpoints lack run identity and recorded execution periods; "
+            "their measurement-time code and session cannot be verified."
+        )
+    else:
+        try:
+            session = json.loads(session_path.read_text(encoding="utf-8"))
+            if not isinstance(session, dict):
+                raise ValueError("session is not an object")
+            identity = session.get("run_identity")
+            session_id = session.get("session_id")
+            if not isinstance(identity, dict) or not isinstance(session_id, str) or not session_id:
+                raise ValueError("session identity is missing")
+            required = ("plan", "ground_truth", "corpus_manifest", "runtime_manifest")
+            if not all(isinstance(identity.get(key), str) and identity[key] for key in required):
+                raise ValueError("session input identity is incomplete")
+            if not isinstance(identity.get("code"), dict) or not identity["code"]:
+                raise ValueError("session code identity is missing")
+            observed = {
+                **identity,
+                "plan": _sha256_file(plan_path),
+                "ground_truth": _sha256_file(gt_path),
+                "runtime_manifest": _sha256_value(manifest),
+            }
+            differing = identity_mismatches(identity, observed)
+            if differing:
+                reasons.append(f"session inputs differ on fields: {', '.join(differing)}")
+            for cell in measured:
+                state = states[cell]
+                if not isinstance(state, dict) or state.get("run_identity") != identity:
+                    reasons.append(f"{cell}: checkpoint run identity differs from session")
+                if not isinstance(state, dict) or state.get("session_id") != session_id:
+                    reasons.append(f"{cell}: checkpoint session_id differs from session")
+            periods = session.get("periods")
+            if not isinstance(periods, list) or not periods:
+                reasons.append("session has no recorded execution periods")
+        except (OSError, UnicodeError, ValueError):
+            reasons.append("session record is missing or invalid")
+            session = None
+        limits.append(
+            "Recorded corpus and code identities are compared between measured cells; "
+            "this summary does not reconstruct or execute their historical environment."
+        )
+    references = sorted(set(states) - set(measured))
+    if references:
+        limits.append(
+            "Reference cells retain separate historical provenance and are not part of "
+            f"the measured session: {', '.join(references)}."
+        )
+    provenance = {"historical": historical, "limits": limits}
+    return provenance, session, manifest, reasons
+
+
+def create_report_directory(out_dir: Path, protected_dirs: list[Path]) -> Path:
+    """Reserve a fresh report directory without writing inside checkpoint inputs."""
+    if out_dir.is_symlink():
+        raise ValueError("report destination must not be a symlink")
+    destination = out_dir.resolve()
+    if any(destination.is_relative_to(path.resolve()) for path in protected_dirs):
+        raise ValueError("report destination is inside protected experiment inputs")
+    destination.mkdir(parents=True, exist_ok=False)
+    return destination
+
+
+def write_report_text(path: Path, content: str) -> None:
+    """Write a new report file exclusively; never replace existing evidence."""
+    with path.open("x", encoding="utf-8") as stream:
+        stream.write(content)

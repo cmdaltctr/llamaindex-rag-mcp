@@ -63,7 +63,7 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
 _OPENAI_LIKE_ADAPTER_CASES = 9
-_BASE_EXECUTED = 2836  # Bare CI baseline at repair-input-quality-experiment-evidence.
+_BASE_EXECUTED = 2858  # Bare CI baseline at repair-input-quality-experiment-evidence.
 # Re-baselined 2026-09-10 from 2774 (repair-fast-suite-regressions): the
 # committed exp 26/27 verdict-validity suites add 38 cases (e5240d1) and
 # the mixed-PDF threshold-routing regression tests add 4 (9bf4810). Both
@@ -75,6 +75,9 @@ _BASE_EXECUTED = 2836  # Bare CI baseline at repair-input-quality-experiment-evi
 # tests (missing file, negative latency, full-precision thresholds) plus
 # 1 parametrize case, and 2 exp27 verdict validity tests (missing file,
 # negative latency).
+# Review amendment adds 22 synthetic cases: 21 summary safety cases and
+# one combined-gate precision case. This expected delta requires a local
+# tripwire run; it is not a newly measured CI result.
 # The improve-rag-input-quality-5 branch added 259 base cases after
 # the prior 2515 pin. Nine cases use the optional OpenAI-like adapter
 # packages. The conditional adjustment below keeps the tripwire valid
@@ -120,6 +123,16 @@ _BASE_EXECUTED = 2836  # Bare CI baseline at repair-input-quality-experiment-evi
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
 _BASE_SKIPPED = 131  # Bare CI baseline, including optional adapter cases.
+# Four historical-prefix cases need ignored ground truth. New safety
+# regressions are synthetic and always run. Preserve both exact counts
+# when that optional historical input is absent (as in a fresh checkout).
+_HISTORICAL_GT = (
+    Path(__file__).resolve().parents[1]
+    / "experiments/22-raw-query-qwen4b-baseline-2026-09-07/output/ground-truth.json"
+)
+if not _HISTORICAL_GT.exists():
+    _BASE_EXECUTED -= 4
+    _BASE_SKIPPED += 4
 # The Exp25 installed-adapter cases run when the optional OpenAI-like
 # embedding package exists. They otherwise skip, so both supported
 # dependency sets keep an exact, documented manifest.

@@ -32,7 +32,12 @@ from pathlib import Path
 EXP_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(EXP_DIR.parent))
 
-from _lib.checkpoint_validity import validate_cells  # noqa: E402
+from _lib.checkpoint_validity import (  # noqa: E402
+    create_report_directory,
+    load_checkpoint_files,
+    summary_provenance,
+    write_report_text,
+)
 from _lib.retrieval_metrics import _aggregate, _metrics_for_query  # noqa: E402
 
 EXP22_DIR = EXP_DIR.parent / "22-raw-query-qwen4b-baseline-2026-09-07"
@@ -90,7 +95,7 @@ def _gates(plan: dict, raw: list[dict], cand: list[dict], agg_cand: dict) -> dic
     return {
         "quality_paired_r5_lift": {
             "pass": lift >= quality["threshold"],
-            "measured": round(lift, 6),
+            "measured": lift,
             "threshold": quality["threshold"],
             "comparator": quality["comparator"],
             "paired_bootstrap_95_half_width": round(_bootstrap_half_width(deltas), 6),
@@ -98,7 +103,7 @@ def _gates(plan: dict, raw: list[dict], cand: list[dict], agg_cand: dict) -> dic
         },
         "regression_identifier_r10": {
             "pass": ident_r10 >= regression["threshold"],
-            "measured": round(ident_r10, 6),
+            "measured": ident_r10,
             "threshold": regression["threshold"],
             "comparator": regression["comparator"],
             "n": agg_cand.get("identifier-heavy", {}).get("n", 0),
@@ -175,6 +180,9 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         f"**Cells source**: `{summary['cells_source']}`  ",
         "**Raw data**: the checkpoint files named in `cell_sources` (read-only)",
         "",
+        "**Evidence limits**",
+        *[f"- {limit}" for limit in summary["provenance"]["limits"]],
+        "",
         "---",
         "",
     ]
@@ -189,7 +197,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
             "",
             "```bash",
             "uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py \\",
-            f"  --cells-dir <cells> --out-dir {summary['out_dir']}",
+            "  --cells-dir <cells> --out-dir <new-report-directory>",
             "```",
             "",
             "This regenerated report never overwrites the frozen historical",
@@ -198,7 +206,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
             "",
         ]
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text("\n".join(header + body), encoding="utf-8")
+        write_report_text(out_path, "\n".join(header + body))
         return
 
     gates = summary["gates"]
@@ -285,7 +293,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "",
         "```bash",
         "uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py \\",
-        f"  --cells-dir {summary['cells_source']} --out-dir {summary['out_dir']}",
+        f"  --cells-dir {summary['cells_source']} --out-dir <new-report-directory>",
         "```",
         "",
         "No index is built or written: both arms query the preserved",
@@ -299,7 +307,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
     if discussion.exists():
         lines.append(discussion.read_text(encoding="utf-8"))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_report_text(out_path, "\n".join(lines))
 
 
 def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
@@ -314,56 +322,26 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
     expected = {q["query_id"]: q["category"] for q in queries_raw}
     plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
 
-    states: dict[str, dict] = {}
-    missing: list[str] = []
-    for cell in CELLS:
-        path = cells_dir / f"{cell}.json"
-        if not path.exists():
-            missing.append(str(path))
-            states[cell] = {"rows": [], "done": []}
-            continue
-        states[cell] = json.loads(path.read_text(encoding="utf-8"))
-    validation = validate_cells(states, expected)
-    if missing:
-        validation = {
-            "status": "invalid",
-            "cells": {
-                cell: (
-                    {
-                        "status": "invalid",
-                        "reasons": [f"checkpoint file missing: {path}"],
-                        "n_rows": 0,
-                        "expected_n": len(expected),
-                    }
-                    if not (cells_dir / f"{cell}.json").exists()
-                    else validation["cells"][cell]
-                )
-                for cell, path in zip(CELLS, [cells_dir / f"{c}.json" for c in CELLS], strict=True)
-            },
-            "pairing_reasons": validation["pairing_reasons"]
-            + [f"missing checkpoint files: {', '.join(missing)}"],
-        }
+    sources = {cell: cells_dir / f"{cell}.json" for cell in CELLS}
+    out_dir = create_report_directory(
+        out_dir, [path.parent for path in sources.values()] + [EXP_DIR / "output/cells"]
+    )
+    states, validation = load_checkpoint_files(sources, expected)
+    provenance, session, manifest, reasons = summary_provenance(
+        states, CELLS, cells_dir.parent, PLAN_PATH, GT_PATH, MANIFEST_PATH
+    )
+    if reasons:
+        validation["status"] = "invalid"
+        validation["pairing_reasons"].extend(reasons)
     print(f"[summarise] validity: {validation['status']}", flush=True)
 
-    session_path = cells_dir.parent / "session.json"
-    historical = not session_path.exists()
     summary: dict = {
         "experiment": EXP_DIR.name,
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": validation["status"],
         "verdict": None,
         "validation": validation,
-        "provenance": {
-            "cells_source": str(cells_dir),
-            "historical": historical,
-            "limits": [
-                "historical checkpoints carry no run identity or session "
-                "recording; execution periods and code provenance at "
-                "measurement time are not available"
-            ]
-            if historical
-            else [],
-        },
+        "provenance": provenance,
         "cells_source": str(cells_dir),
         "out_dir": str(out_dir),
         "cell_sources": {cell: str(cells_dir / f"{cell}.json") for cell in CELLS},
@@ -378,15 +356,12 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
             )
             + ". Gates are not evaluated; no recommendation follows from this state."
         )
-        out_dir.mkdir(parents=True, exist_ok=True)
-        tmp = (out_dir / "eval_results.summary.json").with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
-        tmp.replace(out_dir / "eval_results.summary.json")
+        write_report_text(
+            out_dir / "eval_results.summary.json", json.dumps(summary, indent=2, allow_nan=False)
+        )
         _write_results_md(summary, plan)
         print(f"[summarise] status={validation['status']} → {out_dir}", flush=True)
         return summary
-
-    session = json.loads(session_path.read_text(encoding="utf-8")) if not historical else None
 
     scored = {
         cell: [
@@ -398,7 +373,7 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
     counts = {cell: len(rows) for cell, rows in scored.items()}
     print(f"[summarise] {counts['raw_none']} queries per arm", flush=True)
 
-    aggregates = {cell: _aggregate(rows) for cell, rows in scored.items()}
+    aggregates = {cell: _aggregate(rows, rounded=False) for cell, rows in scored.items()}
     gates = _gates(
         plan,
         scored["raw_none"],
@@ -414,7 +389,7 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
             f"- All three frozen gates pass. The candidate instruction lifts paired\n"
             f"  mean R@5 by {lift:+.4f} without breaching the identifier-heavy or\n"
             f"  latency guards.\n"
-            f"- Eligible for promotion of `EMBEDDING__QUERY_INSTRUCTION` under task 5.5."
+            "- Numerical gate result only; provenance limits and operator approval still apply."
         )
     else:
         headline = (
@@ -433,14 +408,11 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
         "metrics_by_cell": aggregates,
         "drift": _drift_check(scored["raw_none"], queries),
         "execution": {"session": session, "periods_text": _execution_periods_text(session)},
-        "runtime_manifest": json.loads(MANIFEST_PATH.read_text(encoding="utf-8")),
+        "runtime_manifest": manifest,
     }
 
-    out_dir.mkdir(parents=True, exist_ok=True)
     out_json = out_dir / "eval_results.summary.json"
-    tmp = out_json.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
-    tmp.replace(out_json)
+    write_report_text(out_json, json.dumps(summary, indent=2, allow_nan=False))
     _write_results_md(summary, plan)
     print(f"[summarise] verdict={verdict} → {out_json}", flush=True)
     return summary
@@ -457,7 +429,7 @@ def _execution_periods_text(session: dict | None) -> str:
             "be claimed from the data."
         )
     periods = session.get("periods", [])
-    if len(periods) <= 1:
+    if len(periods) == 1:
         return (
             f"Session {session.get('session_id', '?')}: measurements were taken "
             "in a single recorded execution period; both arms were interleaved "
@@ -487,7 +459,7 @@ def main() -> None:
         "--out-dir",
         type=Path,
         default=EXP_DIR / "output/recovery-2026-09-10",
-        help="distinct report destination; frozen historical outputs are never written",
+        help="fresh report directory; choose a new path for each report",
     )
     args = parser.parse_args()
     summarise_from(args.cells_dir, args.out_dir)

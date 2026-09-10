@@ -59,7 +59,9 @@ def _configure(ns: _Module, root: Path, sources: dict[str, Path]) -> None:
     ns.PLAN_PATH = EXP / "plan.json"
     ns.MANIFEST_PATH = EXP / "output/runtime_manifest.json"
     ns.CELL_SOURCES = sources
-    ns._query_token_cost = lambda queries: {"available": False, "reason": "offline fixture"}
+    ns._query_token_cost = lambda queries, **kwargs: {
+        "available": False, "reason": "offline fixture"
+    }
     ns._write_results_md = lambda summary, plan: (root / "rendered.md").write_text(
         summary["headline"], encoding="utf-8"
     )
@@ -207,30 +209,67 @@ def test_exp27_runner_rejects_non_positive_smoke_limits(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not GT.exists(), reason="untracked ground truth is absent")
+def _synthetic_sources(ns: _Module, root: Path) -> dict[str, Path]:
+    """Build a complete grid without ignored ground truth or paid artefacts."""
+    query = {
+        "query_id": "q",
+        "query": "synthetic query",
+        "category": "identifier-heavy",
+        "relevant_parent_ids": ["hit"],
+        "nuggets": [],
+    }
+    row = {
+        "query_id": "q", "category": "identifier-heavy", "parent_ids": ["miss"], "latency_s": 0.1
+    }
+    sources = {
+        cell: _write(root / "historical/cells" / f"{cell}.json", {"rows": [row], "done": ["q"]})
+        for cell in ns.CELL_SOURCES
+    }
+    _configure(ns, root, sources)
+    ns.GT_PATH = _write(root / "ground-truth.json", {"queries": [query]})
+    ns.MANIFEST_PATH = _write(root / "runtime_manifest.json", {"embedding": {}})
+    return sources
+
+
 def test_exp27_missing_measured_cell_is_invalid_not_crash(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A missing measured cell must produce an invalid verdict, not a crash."""
+    """Intact historical cells cannot fill gaps in a separately requested run."""
     ns = _load(EXP / "summarise_eval.py", monkeypatch)
-    sources = _historical_sources(tmp_path)
-    # Delete one measured cell to simulate a missing checkpoint.
-    sources["combined_candidate"].unlink()
-    _configure(ns, tmp_path, sources)
-    summary = _summary(ns, tmp_path / "cells", tmp_path / "report")
-    assert summary.get("status") == "invalid"
-    assert summary.get("verdict") is None
+    sources = _synthetic_sources(ns, tmp_path)
+    cells = tmp_path / "requested/cells"
+    # Both requested cells are absent, but both historical fallbacks exist.
+    empty = _summary(ns, cells, tmp_path / "empty-report")
+    assert empty["status"] == "invalid" and empty["verdict"] is None
+    _copy_checkpoint(sources["chunking_only_raw"], cells / "chunking_only_raw.json")
+    summary = _summary(ns, cells, tmp_path / "partial-report")
+    assert summary["status"] == "invalid" and summary["verdict"] is None
+    assert "different query id sets" in " ".join(summary["validation"]["pairing_reasons"])
+    assert summary["cell_sources"]["combined_candidate"] == str(cells / "combined_candidate.json")
+    assert sources["combined_candidate"].exists()
 
 
-@pytest.mark.skipif(not GT.exists(), reason="untracked ground truth is absent")
 def test_exp27_negative_latency_is_invalid(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A negative latency in any cell invalidates the whole grid."""
     ns = _load(EXP / "summarise_eval.py", monkeypatch)
-    sources = _historical_sources(tmp_path)
+    sources = _synthetic_sources(ns, tmp_path)
     state = json.loads(sources["combined_candidate"].read_text(encoding="utf-8"))
     state["rows"][0]["latency_s"] = -1.0
     _write(sources["combined_candidate"], state)
-    _configure(ns, tmp_path, sources)
-    summary = _summary(ns, tmp_path / "cells", tmp_path / "report")
-    assert summary.get("status") == "invalid"
-    assert summary.get("verdict") is None
+    summary = ns.summarise_from(None, tmp_path / "report")
+    assert summary["status"] == "invalid" and summary["verdict"] is None
+
+
+def test_exp27_gates_use_unrounded_aggregates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """All three combined gates reject values rounded onto their thresholds."""
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    plan = json.loads((EXP / "plan.json").read_text(encoding="utf-8"))
+    rows = [{
+        "category": "identifier-heavy",
+        "latency_s": 2.850004,
+        "metrics": {"recall_at_5": 0.2309996, "recall_at_10": 0.2582996},
+    }]
+    rounded = ns._aggregate(rows)
+    assert all(gate["pass"] for gate in ns._gates(plan, rounded).values())
+    exact = ns._aggregate(rows, rounded=False)
+    assert not any(gate["pass"] for gate in ns._gates(plan, exact).values())

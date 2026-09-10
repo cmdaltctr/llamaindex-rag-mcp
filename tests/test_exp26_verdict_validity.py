@@ -403,31 +403,23 @@ def test_exp26_negative_latency_is_invalid(monkeypatch: pytest.MonkeyPatch, tmp_
 
 
 def test_exp26_gate_thresholds_use_full_precision(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Gate comparisons use unrounded values; rounding is display-only.
-
-    A measured value that rounds to the threshold but is actually below
-    it must FAIL, not PASS. This proves the full-precision contract.
-    """
+    """Rounded boundary values must not turn failed gates into passes."""
     ns = _load(EXP / "summarise_eval.py", monkeypatch)
-    gt, plan, manifest, expected = _synthetic_inputs(tmp_path)
-    cells, out = tmp_path / "cells", tmp_path / "report"
-    # Build a complete synthetic set where the raw arm has all hits
-    # and the candidate arm has all misses — a clear FAIL.
-    rows_raw = [_row(q, c, parent_ids=[f"hit-{q}"]) for q, c in expected.items()]
-    rows_cand = [_row(q, c, parent_ids=["miss"]) for q, c in expected.items()]
-    _write(cells / "raw_none.json", _state(rows_raw))
-    _write(cells / "candidate_instruction.json", _state(rows_cand))
-    _configure_exp26(ns, tmp_path, cells, gt, plan, manifest)
-    summary = _summary(ns, cells, out)
-    assert summary["status"] == "complete"
-    assert summary["verdict"] == "FAIL"
-    # The quality gate measured value must be the unrounded lift,
-    # not a rounded-to-threshold value.
-    measured = summary["gates"]["quality_paired_r5_lift"]["measured"]
-    threshold = summary["gates"]["quality_paired_r5_lift"]["threshold"]
-    # The measured lift is negative (all misses vs all hits), well below
-    # the positive threshold. Full precision means the comparison is
-    # exact, not rounded to 6 dp before comparing.
-    assert measured < threshold
+    plan = json.loads((EXP / "plan.json").read_text(encoding="utf-8"))
+    raw = [{"query_id": "q", "category": "identifier-heavy", "metrics": {"recall_at_5": 0.0}}]
+    candidate = [{
+        "query_id": "q",
+        "category": "identifier-heavy",
+        "latency_s": 2.850004,
+        "metrics": {"recall_at_5": 0.0299996, "recall_at_10": 0.2582996},
+    }]
+    rounded = ns._aggregate(candidate)
+    exact = ns._aggregate(candidate, rounded=False)
+    assert rounded["all"]["p95_latency_ms"] == 2850.0
+    assert rounded["identifier-heavy"]["recall_at_10"] == 0.2583
+    gates = ns._gates(plan, raw, candidate, exact)
+    assert not any(gate["pass"] for gate in gates.values())
+    assert gates["latency_p95_ms"]["measured"] > 2850.0
+    assert gates["regression_identifier_r10"]["measured"] < 0.2583

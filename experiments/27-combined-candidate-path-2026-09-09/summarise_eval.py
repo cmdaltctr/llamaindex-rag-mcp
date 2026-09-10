@@ -37,7 +37,12 @@ EXP_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(EXP_DIR))
 sys.path.insert(0, str(EXP_DIR.parent))
 
-from _lib.checkpoint_validity import validate_cells  # noqa: E402
+from _lib.checkpoint_validity import (  # noqa: E402
+    create_report_directory,
+    load_checkpoint_files,
+    summary_provenance,
+    write_report_text,
+)
 from _lib.retrieval_metrics import _aggregate, _metrics_for_query  # noqa: E402
 
 # Experiment-local assembly diagnostics (gates, interaction, cost, drift,
@@ -79,6 +84,9 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         + "  ",
         "**Raw data**: the checkpoint files named in `cell_sources` (read-only)",
         "",
+        "**Evidence limits**",
+        *[f"- {limit}" for limit in summary["provenance"]["limits"]],
+        "",
         "---",
         "",
     ]
@@ -93,7 +101,8 @@ def _write_results_md(summary: dict, plan: dict) -> None:
             "",
             "```bash",
             "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \\",
-            f"  --out-dir {summary['out_dir']}",
+            f"  --run-dir {Path(summary['cell_sources']['combined_candidate']).parent.parent} "
+            "--out-dir <new-report-directory>",
             "```",
             "",
             "This regenerated report never overwrites the frozen historical",
@@ -101,7 +110,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
             "",
         ]
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text("\n".join(header + body), encoding="utf-8")
+        write_report_text(out_path, "\n".join(header + body))
         return
 
     gates = summary["gates"]
@@ -164,7 +173,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "",
         "## The 2x2",
         "",
-        *_grid_table(agg),
+        *_grid_table(agg, historical=summary["provenance"]["historical"]),
         "",
         "`baseline_production` and `instruction_only` are loaded from their",
         "committed checkpoints and re-aggregated with identical metric code;",
@@ -203,7 +212,8 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "",
         "```bash",
         "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \\",
-        f"  --out-dir {summary['out_dir']}",
+        f"  --run-dir {Path(summary['cell_sources']['combined_candidate']).parent.parent} "
+            "--out-dir <new-report-directory>",
         "```",
         "",
         "No index is built or written: both measured arms query the preserved",
@@ -217,7 +227,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
     if discussion.exists():
         lines.append(discussion.read_text(encoding="utf-8"))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_report_text(out_path, "\n".join(lines))
 
 
 def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
@@ -236,61 +246,31 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
     sources = dict(CELL_SOURCES)
     if cells_dir is not None:
         for cell in MEASURED_HERE:
-            candidate = cells_dir / f"{cell}.json"
-            if candidate.exists():
-                sources[cell] = candidate
-    states: dict[str, dict] = {}
-    missing: list[str] = []
-    for cell, path in sources.items():
-        if not path.exists():
-            missing.append(str(path))
-            states[cell] = {"rows": [], "done": []}
-            continue
-        states[cell] = json.loads(path.read_text(encoding="utf-8"))
-    validation = validate_cells(states, expected)
-    if missing:
-        validation = {
-            "status": "invalid",
-            "cells": {
-                cell: (
-                    {
-                        "status": "invalid",
-                        "reasons": [f"checkpoint file missing: {sources[cell]}"],
-                        "n_rows": 0,
-                        "expected_n": len(expected),
-                    }
-                    if not sources[cell].exists()
-                    else validation["cells"][cell]
-                )
-                for cell in sources
-            },
-            "pairing_reasons": validation["pairing_reasons"]
-            + [f"missing checkpoint files: {', '.join(missing)}"],
-        }
+            sources[cell] = cells_dir / f"{cell}.json"
+    out_dir = create_report_directory(
+        out_dir, [path.parent for path in sources.values()] + [EXP_DIR / "output/cells"]
+    )
+    states, validation = load_checkpoint_files(sources, expected)
+    provenance, session, manifest, reasons = summary_provenance(
+        states,
+        MEASURED_HERE,
+        cells_dir.parent if cells_dir is not None else EXP_DIR / "output",
+        PLAN_PATH,
+        GT_PATH,
+        MANIFEST_PATH,
+    )
+    if reasons:
+        validation["status"] = "invalid"
+        validation["pairing_reasons"].extend(reasons)
     print(f"[summarise] validity: {validation['status']}", flush=True)
 
-    session_path = (
-        cells_dir.parent / "session.json"
-        if cells_dir is not None and (cells_dir.parent / "session.json").exists()
-        else None
-    )
-    historical = session_path is None
     summary: dict = {
         "experiment": EXP_DIR.name,
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": validation["status"],
         "verdict": None,
         "validation": validation,
-        "provenance": {
-            "historical": historical,
-            "limits": [
-                "historical checkpoints carry no run identity or session "
-                "recording; execution periods and code provenance at "
-                "measurement time are not available"
-            ]
-            if historical
-            else [],
-        },
+        "provenance": provenance,
         "out_dir": str(out_dir),
         "cell_sources": {cell: str(path) for cell, path in sources.items()},
     }
@@ -304,15 +284,13 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
             )
             + ". Gates are not evaluated; no recommendation follows from this state."
         )
-        out_dir.mkdir(parents=True, exist_ok=True)
-        tmp = (out_dir / "eval_results.summary.json").with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
-        tmp.replace(out_dir / "eval_results.summary.json")
+        write_report_text(
+            out_dir / "eval_results.summary.json", json.dumps(summary, indent=2, allow_nan=False)
+        )
         _write_results_md(summary, plan)
         print(f"[summarise] status={validation['status']} → {out_dir}", flush=True)
         return summary
 
-    session = json.loads(session_path.read_text(encoding="utf-8")) if session_path else None
     scored = {
         cell: [
             {**row, "metrics": _metrics_for_query(row["parent_ids"], queries[row["query_id"]])}
@@ -323,7 +301,7 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
     counts = {cell: len(rows) for cell, rows in scored.items()}
     print(f"[summarise] cell sizes: {counts}", flush=True)
 
-    aggregates = {cell: _aggregate(rows) for cell, rows in scored.items()}
+    aggregates = {cell: _aggregate(rows, rounded=False) for cell, rows in scored.items()}
     gates = _gates(plan, aggregates["combined_candidate"])
     verdict = "PASS" if all(g["pass"] for g in gates.values()) else "FAIL"
     failed = [name for name, gate in gates.items() if not gate["pass"]]
@@ -354,7 +332,7 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
         "gates": gates,
         "metrics_by_cell": aggregates,
         "interaction": interaction,
-        "query_token_cost": _query_token_cost(queries),
+        "query_token_cost": _query_token_cost(queries, runtime_manifest=manifest),
         "drift": _drift(aggregates),
         "execution": {
             "session": session,
@@ -367,14 +345,11 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
                 f"{len(session.get('periods', []))} recorded execution period(s)."
             ),
         },
-        "runtime_manifest": json.loads(MANIFEST_PATH.read_text(encoding="utf-8")),
+        "runtime_manifest": manifest,
     }
 
-    out_dir.mkdir(parents=True, exist_ok=True)
     out_json = out_dir / "eval_results.summary.json"
-    tmp = out_json.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding="utf-8")
-    tmp.replace(out_json)
+    write_report_text(out_json, json.dumps(summary, indent=2, allow_nan=False))
     _write_results_md(summary, plan)
     print(f"[summarise] verdict={verdict} → {out_json}", flush=True)
     return summary
@@ -395,7 +370,7 @@ def main() -> None:
         "--out-dir",
         type=Path,
         default=EXP_DIR / "output/recovery-2026-09-10",
-        help="distinct report destination; frozen historical outputs are never written",
+        help="fresh report directory; choose a new path for each report",
     )
     args = parser.parse_args()
     cells_dir = args.run_dir / "cells" if args.run_dir is not None else None
