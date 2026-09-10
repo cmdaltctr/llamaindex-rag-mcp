@@ -1,15 +1,23 @@
 # ADR-062: Isolate PaddleOCR-VL in a Versioned OCR Worker
 
 **Date:** 2026-09-07
-**Status:** Proposed — operator approval of acceptance and OCR default disposition is pending
-**Deciders:** No operator approval is recorded for the outstanding acceptance or OCR routing/default decision
+**Status:** Proposed — the worker architecture is implemented and tested but has not received separate operator approval; the OCR default disposition was settled on 2026-09-10 (see ADR-064)
+**Deciders:** Dr Muhammad Aizat Bin Md Hawari (OCR default decision, 2026-09-10); worker architecture approval not separately recorded
 
 ## Recovery correction (2026-09-09)
 
 The earlier status change from Proposed to Accepted was not backed by recorded
-operator approval. This ADR therefore remains Proposed. The worker evidence
-and implementation record are preserved, but neither this ADR nor ADR-064
-records approval for a routing policy or an OCR default.
+operator approval. This ADR therefore remains Proposed for the worker
+architecture. The worker evidence and implementation record are preserved.
+
+## Settled default decision (2026-09-10)
+
+The OCR routing/default disposition was settled by the operator on
+2026-09-10: `OCR_FALLBACK_ENABLED` stays `false`, both routing thresholds
+stay at `0.0`, and `mixed` is removed from `OCR_UNCONDITIONAL_TYPES`.
+See [ADR-064](064-input-quality-promotion-decisions.md) for the full
+decision record. This ADR records the worker boundary, lifecycle, and
+protocol — not the OCR default, which lives in ADR-064.
 
 ## Context
 
@@ -97,12 +105,12 @@ would mix incompatible representations of the same source.
 
 ## Alternatives Considered
 
-| Option | Rejected Because |
-| --- | --- |
+| Option                                         | Rejected Because                                                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Add Paddle packages to OMRG's main environment | Every installation would carry large native dependencies and a new import boundary risk. |
-| Send all PDFs to PaddleOCR-VL | Clean PDFs would lose the cheap pdf-inspector fast path. |
-| Use an unversioned subprocess protocol | OMRG could not safely identify incompatible worker output. |
-| Create a pipeline for every document | Model initialisation would repeat for each OCR-required file. |
+| Send all PDFs to PaddleOCR-VL                  | Clean PDFs would lose the cheap pdf-inspector fast path.                                 |
+| Use an unversioned subprocess protocol         | OMRG could not safely identify incompatible worker output.                               |
+| Create a pipeline for every document           | Model initialisation would repeat for each OCR-required file.                            |
 
 ## Validation and Integration Notes
 

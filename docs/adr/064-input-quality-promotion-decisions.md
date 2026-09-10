@@ -1,8 +1,9 @@
-# ADR-064: Input-Quality Promotion Evidence and Pending OCR Decision
+# ADR-064: Input-Quality Promotion Evidence and OCR Default Decision
 
 **Date:** 2026-09-09
-**Status:** Partially accepted — the OCR routing/default decision is pending explicit operator approval
-**Deciders:** No operator approval is recorded for the outstanding OCR routing/default decision
+**Settled:** 2026-09-10
+**Status:** Accepted — the OCR routing/default decision was settled by the operator on 2026-09-10
+**Deciders:** Dr Muhammad Aizat Bin Md Hawari
 **Change:** `improve-rag-input-quality-5`
 **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary, lifecycle, protocol), [ADR-063](063-model-token-aware-markdown-chunking.md) (tokenizer and chunker), [ADR-018](018-balanced-retrieval-defaults.md), [ADR-037](037-architecture-v2-conformance.md)
 
@@ -11,12 +12,23 @@
 The earlier version incorrectly recorded the experiment 28 gate result as an
 accepted operator decision. The evidence remains intact, but a machine verdict
 does not approve a routing policy or an OCR default. The OCR portion of the
-original change is reopened. `OCR_FALLBACK_ENABLED` remains `false`, and both
-routing thresholds remain `0.0`, while the operator decision is pending.
+original change was reopened pending operator approval.
+
+## Settled decision (2026-09-10)
+
+The operator settled the OCR routing/default disposition on 2026-09-10:
+
+1. `OCR_FALLBACK_ENABLED` stays `false` — OCR remains off by default.
+2. Both routing thresholds stay at their `0.0` never-trigger sentinels.
+3. `mixed` is removed from `OCR_UNCONDITIONAL_TYPES`; mixed PDFs now route
+   by the calibrated threshold gate, not unconditionally.
+4. Further OCR promotion remains deferred pending a future preregistered
+   routing study on a fresh corpus.
 
 The model-token chunking promotion, the query-instruction measurement, and all
-historical reports remain recorded. This correction does not promote a default,
-adopt the preserved routing patch, or change production routing.
+historical reports remain recorded. The mixed-routing defect described in
+the experiment 28 evidence is fixed: `mixed` is no longer in the unconditional
+routing set (see `src/omrg/core/ingestion/ocr_identity.py`).
 
 ## Context
 
@@ -81,7 +93,7 @@ gate. Tuning a candidate until it clears a gate it already failed turns
 the gate into decoration. A different instruction is a new experiment
 with its own frozen plan.
 
-### 3. Pending operator decision: the OCR routing defaults
+### 3. Settled: the OCR routing defaults (2026-09-10)
 
 `OCR_FALLBACK_ENABLED` stays `false`. `OCR_FALLBACK_MIN_CONFIDENCE` and
 `OCR_FALLBACK_PAGE_FRACTION` stay at their `0.0` never-trigger sentinels.
@@ -89,7 +101,9 @@ The calibrated `0.5` / `0.5` values are documented in `.env.example` and
 in the ingestion guide as what an operator should set when enabling OCR.
 
 The isolated worker itself remains an opt-in capability described by ADR-062.
-The operator has not approved an OCR routing/default disposition.
+The operator settled the OCR routing/default disposition on 2026-09-10:
+OCR stays off by default, `mixed` PDFs route by the threshold gate (not
+unconditionally), and further OCR promotion remains deferred.
 
 This is the decision that changed on evidence. Experiment 24 passed all
 five of its frozen gates on five held-out fixtures, which looked like
@@ -97,18 +111,19 @@ grounds for promotion. Experiment 28 then measured the same gate against
 79 real documents from a working academic library and failed both of its
 frozen gates:
 
-| Gate | Rule | Measured |
-| --- | --- | --- |
-| Safety | zero documents with a text layer route | **1** |
-| Benefit | needs-OCR Wilson 95% lower bound > 1% | 2/79 = 2.5%, CI [0.7%, 8.8%] |
+| Gate    | Rule                                   | Measured                     |
+| ------- | -------------------------------------- | ---------------------------- |
+| Safety  | zero documents with a text layer route | **1**                        |
+| Benefit | needs-OCR Wilson 95% lower bound > 1%  | 2/79 = 2.5%, CI [0.7%, 8.8%] |
 
 The safety failure is one 991-page document classified `mixed` at
 confidence 0.76 carrying **1,127 characters per page** — a healthy text
-layer — with only **10 of 991 pages** flagged. `mixed` is in
-`OCR_UNCONDITIONAL_TYPES`, so it bypasses the calibrated thresholds
-entirely, and whole-file dispatch then multiplies the mistake by the page
-count: a projected **29.3 wasted OCR hours**, turning an 80-second corpus
-into a **1,375× slowdown**.
+layer — with only **10 of 991 pages** flagged. At the time of the
+experiment, `mixed` was in `OCR_UNCONDITIONAL_TYPES`, so it bypassed the
+calibrated thresholds entirely, and whole-file dispatch then multiplied
+the mistake by the page count: a projected **29.3 wasted OCR hours**,
+turning an 80-second corpus into a **1,375× slowdown**. This defect was
+fixed on 2026-09-10 (see the "Mixed-routing defect" section below).
 
 Two findings qualify that verdict and belong in the record:
 
@@ -125,29 +140,29 @@ Two findings qualify that verdict and belong in the record:
 
 Every threshold was committed before its measurement.
 
-| Exp | Task | Gate | Threshold | Measured | Verdict |
-| --- | --- | --- | ---: | ---: | :-: |
-| 24 | 5.1 | structured failures | 0 | 0 | PASS |
-| 24 | 5.1 | fast-path byte identity | 0 altered | 0 | PASS |
-| 24 | 5.1 | worker s/page p95 | ≤ 180 | 156.9 | PASS |
-| 24 | 5.1 | routing decision p95 | ≤ 50 ms | 2.26 ms | PASS |
-| 25 | 5.2 | mean R@5 | ≥ 0.231 | 0.2362 | PASS |
-| 25 | 5.2 | identifier-heavy R@10 | ≥ 0.2583 | 0.2775 | PASS |
-| 25 | 5.2 | embedded-token ratio | ≤ 1.15 | 0.9749 | PASS |
-| 25 | 5.2 | query p95 | ≤ 2,850 ms | 2,183 ms | PASS |
-| 26 | 5.3 | paired R@5 lift | ≥ +0.0300 | **−0.0246** | **FAIL** |
-| 26 | 5.3 | identifier-heavy R@10 | ≥ 0.2583 | **0.2563** | **FAIL** |
-| 26 | 5.3 | query p95 | ≤ 2,850 ms | **3,543 ms** | **FAIL** (see below) |
-| 27 | 5.4 | mean R@5 | ≥ 0.231 | **0.2237** | **FAIL** |
-| 27 | 5.4 | identifier-heavy R@10 | ≥ 0.2583 | 0.2699 | PASS |
-| 27 | 5.4 | query p95 | ≤ 2,850 ms | **4,790 ms** | **FAIL** (see below) |
-| 28 | 5.5 | false routing count | 0 | **1** | **FAIL** |
-| 28 | 5.5 | needs-OCR Wilson lower | > 0.01 | **0.007** | **FAIL** |
+| Exp | Task | Gate                    |  Threshold |     Measured |       Verdict        |
+| --- | ---- | ----------------------- | ---------: | -----------: | :------------------: |
+| 24  | 5.1  | structured failures     |          0 |            0 |         PASS         |
+| 24  | 5.1  | fast-path byte identity |  0 altered |            0 |         PASS         |
+| 24  | 5.1  | worker s/page p95       |      ≤ 180 |        156.9 |         PASS         |
+| 24  | 5.1  | routing decision p95    |    ≤ 50 ms |      2.26 ms |         PASS         |
+| 25  | 5.2  | mean R@5                |    ≥ 0.231 |       0.2362 |         PASS         |
+| 25  | 5.2  | identifier-heavy R@10   |   ≥ 0.2583 |       0.2775 |         PASS         |
+| 25  | 5.2  | embedded-token ratio    |     ≤ 1.15 |       0.9749 |         PASS         |
+| 25  | 5.2  | query p95               | ≤ 2,850 ms |     2,183 ms |         PASS         |
+| 26  | 5.3  | paired R@5 lift         |  ≥ +0.0300 |  **−0.0246** |       **FAIL**       |
+| 26  | 5.3  | identifier-heavy R@10   |   ≥ 0.2583 |   **0.2563** |       **FAIL**       |
+| 26  | 5.3  | query p95               | ≤ 2,850 ms | **3,543 ms** | **FAIL** (see below) |
+| 27  | 5.4  | mean R@5                |    ≥ 0.231 |   **0.2237** |       **FAIL**       |
+| 27  | 5.4  | identifier-heavy R@10   |   ≥ 0.2583 |       0.2699 |         PASS         |
+| 27  | 5.4  | query p95               | ≤ 2,850 ms | **4,790 ms** | **FAIL** (see below) |
+| 28  | 5.5  | false routing count     |          0 |        **1** |       **FAIL**       |
+| 28  | 5.5  | needs-OCR Wilson lower  |     > 0.01 |    **0.007** |       **FAIL**       |
 
 **The latency gates in experiments 26 and 27 did not discriminate.** Both
 are stated in absolute milliseconds against a baseline p95 of 1,984 ms
 measured on 2026-09-07. On 2026-09-09 the provider was slower for
-everything: experiment 26's *raw* arm was the slowest measurement of the
+everything: experiment 26's _raw_ arm was the slowest measurement of the
 whole series at 5,543 ms, and experiment 27's raw chunking arm read
 3,390 ms where experiment 25 measured the identical configuration at
 2,183 ms the previous day. They are recorded as failed because a frozen
@@ -183,21 +198,28 @@ experiment 27's to +0.000314.
   workload, so no single run in this change exercised all three
   components against one corpus.
 
-### Known defect, not fixed here
+### Mixed-routing defect, fixed 2026-09-10
 
-`OCR_UNCONDITIONAL_TYPES` contains `mixed`, so a `mixed` classification
-bypasses the calibrated thresholds, and task 2.4's whole-file dispatch
-scales the consequence by page count. On experiment 28's population,
+`mixed` was in `OCR_UNCONDITIONAL_TYPES`, so a `mixed` classification
+bypassed the calibrated thresholds, and task 2.4's whole-file dispatch
+scaled the consequence by page count. On experiment 28's population,
 removing `mixed` from that set would have produced zero false routes
 while keeping both true positives.
 
 That observation was made **after** seeing the data, **on** the data, and
 is therefore exploratory. It is a hypothesis for a new preregistered
 experiment on a fresh corpus, not a change made on this run's strength.
-The frozen decision rule said *safety fails → promote nothing*, and it
+The frozen decision rule said _safety fails → promote nothing_, and it
 was followed exactly. A better configuration appearing during analysis is
 precisely the moment when rewriting the rule would turn the gate into
 decoration.
+
+The operator settled the disposition on 2026-09-10: `mixed` is removed
+from `OCR_UNCONDITIONAL_TYPES` and now routes by the calibrated threshold
+gate. The fix is in `src/omrg/core/ingestion/ocr_identity.py` and is
+covered by `tests/test_ocr_routing_gate.py`. The unconditional routing
+types now participate in the source index identity (schema 5) so changes
+to the routing set prevent stale `skipped_unchanged` results.
 
 ## Scope limits binding on this record
 
@@ -218,14 +240,14 @@ decoration.
 
 ## Evidence
 
-| Experiment | Verdict | Artefacts |
-| --- | --- | --- |
-| 23 — OCR routing gate calibration | COMPLETE | `experiments/23-ocr-routing-gate-calibration-2026-09-07/` |
-| 24 — OCR routing evaluation | PASS (run 2) | `experiments/24-ocr-routing-eval-2026-09-08/` |
-| 25 — Token chunking ablation | PASS | `experiments/25-token-chunking-ablation-2026-09-08/` |
-| 26 — Query-instruction ablation | FAIL | `experiments/26-query-instruction-ablation-2026-09-08/` |
-| 27 — Combined candidate path | FAIL | `experiments/27-combined-candidate-path-2026-09-09/` |
-| 28 — PDF classification prevalence | FAIL | `experiments/28-pdf-classification-prevalence-2026-09-09/` |
+| Experiment                         | Verdict      | Artefacts                                                  |
+| ---------------------------------- | ------------ | ---------------------------------------------------------- |
+| 23 — OCR routing gate calibration  | COMPLETE     | `experiments/23-ocr-routing-gate-calibration-2026-09-07/`  |
+| 24 — OCR routing evaluation        | PASS (run 2) | `experiments/24-ocr-routing-eval-2026-09-08/`              |
+| 25 — Token chunking ablation       | PASS         | `experiments/25-token-chunking-ablation-2026-09-08/`       |
+| 26 — Query-instruction ablation    | FAIL         | `experiments/26-query-instruction-ablation-2026-09-08/`    |
+| 27 — Combined candidate path       | FAIL         | `experiments/27-combined-candidate-path-2026-09-09/`       |
+| 28 — PDF classification prevalence | FAIL         | `experiments/28-pdf-classification-prevalence-2026-09-09/` |
 
 Experiment 24 run 1 failed honestly and is preserved in the record
 (commit `a7d7cd2`): the original fixtures were 605-byte blank PDFs with

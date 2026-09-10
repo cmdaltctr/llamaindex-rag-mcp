@@ -69,9 +69,9 @@ Alternative rejected: rolling back to the session base. The unconditional mixed 
 
 ### 2. Reopen the original decision without inventing another one
 
-During apply, use `openspec-update-change` to reconcile the original change's planning artefacts. Reopen the OCR portion of task 5.5 and the unapproved decision-record completion at 6.9. Preserve earlier tokenizer approval and completed measurements. Correct ADR-064's attribution and ADR-062's newly asserted acceptance; describe OCR approval as pending.
+During apply, use `openspec-update-change` to reconcile the original change's planning artefacts. Reopen the OCR portion of task 5.5 and the unapproved decision-record completion at 6.9. Preserve earlier tokenizer approval and completed measurements. Correct ADR-064's attribution and ADR-062's newly asserted acceptance.
 
-The packaged OCR switch remains false and both thresholds remain zero. The existing query-instruction default stays empty. Correct recommendations independently from the settings themselves.
+Settled (2026-09-10): the operator settled the OCR routing/default disposition. ADR-064 now records the settled decision (OCR off by default, `mixed` removed from `OCR_UNCONDITIONAL_TYPES`, further promotion deferred). ADR-062 stays Proposed for the worker architecture. The packaged OCR switch remains false and both thresholds remain zero.
 
 Synchronise decision status with the existing local project-tracking bundle and NiftyPM through its normal workflow when available. Report an unavailable sync explicitly; never claim it happened.
 
@@ -178,24 +178,24 @@ Final checks include targeted tests, the user-requested fast suite, OpenSpec val
 
 Updated during apply to record the operator's approvals and their safeguards. The quoted approval above is the controlling record for this amendment.
 
-| Item | Status | Action before proceeding |
-| --- | --- | --- |
-| Existing worktree | Approved by operator; moved 2026-09-10 to this change's own worktree | Stay on `feat/repair-input-quality-experiment-evidence`; no reset or further worktree change |
-| Evidence/tooling repair | Approved by operator | Apply within the existing safeguards |
-| Existing ten-commit remote backup | Approved with safeguards | Inspect committed content; verify a local backup of all uncommitted changes; push only the inspected HEAD |
-| Pull request | Not approved | Do not create one |
-| Full fast-suite coverage measurement | Approved with safeguards | Run fresh coverage; compare a named earlier revision only if needed; do not fix unrelated debt |
-| Two prior `AIK_py_LFI` findings | Approved for reassessment | Run a fresh scan and trace reachable input paths for the checkpoint and temporary-file findings |
-| Experiment 25 estimate and 15% rule | Confirmed by operator | Display estimated tokens and cost; use 15% only to judge the result; allow an approved build above it |
-| Experiment 25 paid rebuild | Decided: not rerun (2026-09-10, task 3.7) | Keep the unconditional refusal; remove the orphaned estimator scaffold |
-| Experiment 26 repeat | No paid repeat authorised (2026-09-10) | Record the formal purpose or close decision; no new tasks without an operator request |
-| Experiment 27 repeat | No paid repeat authorised (2026-09-10) | Record the formal purpose or close decision; no new tasks without an operator request |
-| Selected PDF collection | Deferred to the future routing study (2026-09-10) | Obtain the explicit list or selection, including the book, in that change |
-| Independent page labels and hold-out | Deferred to the future routing study (2026-09-10) | Agree coverage and reserve unseen outcomes in that change |
-| Replacement routing rule | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Approve missing-page, zero-threshold and whole-file behaviour only in the future study |
-| Real OCR measurement | Deferred to the future routing study (2026-09-10) | Agree documents, runtime budget and timeout in that change |
-| Four-file mixed patch | Adopted as defect-fix commit `9bf4810` (2026-09-10) | None here; broader default promotion remains deferred |
-| OCR default promotion | Decided: stays off (2026-09-10) | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the future preregistered routing study |
+| Item                                 | Status                                                                         | Action before proceeding                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Existing worktree                    | Approved by operator; moved 2026-09-10 to this change's own worktree           | Stay on `feat/repair-input-quality-experiment-evidence`; no reset or further worktree change              |
+| Evidence/tooling repair              | Approved by operator                                                           | Apply within the existing safeguards                                                                      |
+| Existing ten-commit remote backup    | Approved with safeguards                                                       | Inspect committed content; verify a local backup of all uncommitted changes; push only the inspected HEAD |
+| Pull request                         | Not approved                                                                   | Do not create one                                                                                         |
+| Full fast-suite coverage measurement | Approved with safeguards                                                       | Run fresh coverage; compare a named earlier revision only if needed; do not fix unrelated debt            |
+| Two prior `AIK_py_LFI` findings      | Approved for reassessment                                                      | Run a fresh scan and trace reachable input paths for the checkpoint and temporary-file findings           |
+| Experiment 25 estimate and 15% rule  | Confirmed by operator                                                          | Display estimated tokens and cost; use 15% only to judge the result; allow an approved build above it     |
+| Experiment 25 paid rebuild           | Decided: not rerun (2026-09-10, task 3.7)                                      | Keep the unconditional refusal; remove the orphaned estimator scaffold                                    |
+| Experiment 26 repeat                 | No paid repeat authorised (2026-09-10)                                         | Record the formal purpose or close decision; no new tasks without an operator request                     |
+| Experiment 27 repeat                 | No paid repeat authorised (2026-09-10)                                         | Record the formal purpose or close decision; no new tasks without an operator request                     |
+| Selected PDF collection              | Deferred to the future routing study (2026-09-10)                              | Obtain the explicit list or selection, including the book, in that change                                 |
+| Independent page labels and hold-out | Deferred to the future routing study (2026-09-10)                              | Agree coverage and reserve unseen outcomes in that change                                                 |
+| Replacement routing rule             | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Approve missing-page, zero-threshold and whole-file behaviour only in the future study                    |
+| Real OCR measurement                 | Deferred to the future routing study (2026-09-10)                              | Agree documents, runtime budget and timeout in that change                                                |
+| Four-file mixed patch                | Adopted as defect-fix commit `9bf4810` (2026-09-10)                            | None here; broader default promotion remains deferred                                                     |
+| OCR default promotion                | Decided: stays off (2026-09-10)                                                | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the future preregistered routing study          |
 
 ## Migration Plan
 

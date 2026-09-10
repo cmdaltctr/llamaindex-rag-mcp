@@ -24,6 +24,8 @@ Status (2026-09-10, session update):
 
 ## 2. Reopen the unapproved OCR decision
 
+Settled (2026-09-10): the operator settled the OCR routing/default disposition. ADR-064 records the settled decision (OCR off by default, `mixed` removed from `OCR_UNCONDITIONAL_TYPES`, further promotion deferred). The tasks below record the historical reopen-and-correct work; their "pending" wording is preserved as provenance.
+
 - [x] 2.1 Use the update-change workflow to reopen the OCR portion of original task 5.5 and the unapproved completion at 6.9. Verify earlier tokenizer approval and completed measurements remain recorded. Evidence: `improve-rag-input-quality-5/tasks.md` now carries dated recovery amendments; 5.5a/5.5b preserve the tokenizer promotion and instruction result, unchecked 5.5c and 6.9b reopen the OCR decision.
 - [x] 2.2 Correct ADR-064 and ADR-062's newly attributed acceptance to show approval is pending. Verify the operator is not listed as having approved the outstanding decision. Evidence: ADR-064 title/status/deciders and decision 3 heading corrected with a dated recovery section; ADR-062 status returned to Proposed with a dated correction; neither ADR attributes the outstanding approval to the operator.
 - [x] 2.3 Reconcile shared guide and environment-comment wording without adopting or discarding the preserved mixed patch. Verify the diff leaves packaged settings and production code unchanged. Evidence: `evidence/task-2.3-prose-reconciliation.md`; the wording distinguishes the committed unconditional `mixed` policy from the unapproved local threshold variant, the protected production/test hashes match apply-start, and the saved patch digest is unchanged.

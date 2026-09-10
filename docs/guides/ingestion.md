@@ -69,16 +69,16 @@ identifier ever changes a vector or the text an LLM sees.
 
 ### The identity hierarchy
 
-| Field                | Formula                                                                                                                                                    | Stability                                                                                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `file_path`          | canonical absolute path                                                                                                                                     | Human-readable locator for display and diagnostics                                          |
-| `source_id`          | `"src_" + SHA-256("file\0" + canonical path)`                                                                                                               | Stable while the file is edited in place; new after a move or copy; identical across collections |
-| `source_content_hash` | SHA-256 of the original file bytes                                                                                                                        | New when bytes change; shared by equal bytes at two paths                                    |
-| `source_version`     | SHA-256 of `source_content_hash` + NUL + `source_index_identity`                                                                                            | New when bytes or any index-shaping setting (parser, chunker, metadata, embedding) changes   |
-| `source_chunk_index` | zero-based ordinal within the version                                                                                                                       | Orders membership in the chunk set                                                           |
-| `source_chunk_count` | N, the chunk total for the version                                                                                                                          | Declares the size of the complete set                                                        |
-| `chunk_id`           | `"chk_" + SHA-256(source_id + NUL + source_version + NUL + decimal index + NUL + chunk text hash)`                                                          | Stable for the same text at the same ordinal in one version                                  |
-| vector row ID        | SHA-256 of `source_id` + NUL + `source_attempt` + NUL + `chunk_id`                                                                                          | Attempt-specific; never a store primary key                                                  |
+| Field                 | Formula                                                                                            | Stability                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `file_path`           | canonical absolute path                                                                            | Human-readable locator for display and diagnostics                                               |
+| `source_id`           | `"src_" + SHA-256("file\0" + canonical path)`                                                      | Stable while the file is edited in place; new after a move or copy; identical across collections |
+| `source_content_hash` | SHA-256 of the original file bytes                                                                 | New when bytes change; shared by equal bytes at two paths                                        |
+| `source_version`      | SHA-256 of `source_content_hash` + NUL + `source_index_identity`                                   | New when bytes or any index-shaping setting (parser, chunker, metadata, embedding) changes       |
+| `source_chunk_index`  | zero-based ordinal within the version                                                              | Orders membership in the chunk set                                                               |
+| `source_chunk_count`  | N, the chunk total for the version                                                                 | Declares the size of the complete set                                                            |
+| `chunk_id`            | `"chk_" + SHA-256(source_id + NUL + source_version + NUL + decimal index + NUL + chunk text hash)` | Stable for the same text at the same ordinal in one version                                      |
+| vector row ID         | SHA-256 of `source_id` + NUL + `source_attempt` + NUL + `chunk_id`                                 | Attempt-specific; never a store primary key                                                      |
 
 All digests are lower-case hexadecimal over UTF-8 input joined with NUL
 separators. `source_id` excludes the collection name, so one file indexed
@@ -133,7 +133,7 @@ This release changes two things every stored vector depends on:
 
 1. The embedding-text contract
    ([ADR-055](../adr/055-embedding-text-is-a-declared-contract.md)). Parser
-telemetry and filesystem bookkeeping no longer enter embedding text.
+   telemetry and filesystem bookkeeping no longer enter embedding text.
 2. Index identity schema 3. The identity now records the exclusion set and
    the reader's declared text format.
 
@@ -166,13 +166,13 @@ weakens nor replaces that guard.
 The PDF parser is a pluggable factory controlled by the `PDF_READER`
 environment variable. Accepted values:
 
-| Value           | Description                                                              | Install                        |
-| --------------- | ------------------------------------------------------------------------ | ------------------------------ |
-| `pdf_inspector` | Default. Rust markdown extractor. Emits one document per PDF.            | Base dependency                |
-| `pypdf`         | Always available via `llama-index-readers-file`. Terminal fallback.      | Base (transitive)              |
-| `liteparse`     | Column-aware reading order + bounding-box metadata.                      | Base dependency                |
-| `pypdfium2`     | Same PDFium engine as LiteParse, no bbox. Fallback tier.                 | `[pdf-pypdfium2]` extra        |
-| `auto`          | Probes in order: liteparse → pypdfium2 → pypdf.                          | Depends on what is installed   |
+| Value           | Description                                                         | Install                      |
+| --------------- | ------------------------------------------------------------------- | ---------------------------- |
+| `pdf_inspector` | Default. Rust markdown extractor. Emits one document per PDF.       | Base dependency              |
+| `pypdf`         | Always available via `llama-index-readers-file`. Terminal fallback. | Base (transitive)            |
+| `liteparse`     | Column-aware reading order + bounding-box metadata.                 | Base dependency              |
+| `pypdfium2`     | Same PDFium engine as LiteParse, no bbox. Fallback tier.            | `[pdf-pypdfium2]` extra      |
+| `auto`          | Probes in order: liteparse → pypdfium2 → pypdf.                     | Depends on what is installed |
 
 The packaged default is `pdf_inspector`, a base dependency selected through
 configuration after Experiment 14
@@ -211,31 +211,25 @@ Second, how much a corpus benefits is unresolved. On a library of 79 real
 academic PDFs, only 2 documents genuinely lacked a text layer — but with
 79 documents the 95% interval on that rate still runs from 0.7% to 8.8%,
 so "rare" is supported and "negligible" is not. See
-[ADR-064](../adr/064-input-quality-promotion-decisions.md) and experiment
-28.
+[ADR-064](../adr/064-input-quality-promotion-decisions.md) and experiment 28.
 
-The same measurement identified a limitation in the committed policy: it
+The same measurement identified a limitation in the original policy: it
 sent a 991-page `mixed` document to OCR in full, despite extracting 1,127
-characters per page with only 10 of 991 pages flagged. The committed policy
-still routes `mixed` PDFs unconditionally.
+characters per page with only 10 of 991 pages flagged. That defect was
+fixed on 2026-09-10: `mixed` is no longer in the unconditional routing
+set and now routes by the calibrated thresholds.
 
 The worker is a separate project in `ocr-worker/` with its own lockfile.
 It owns every Paddle package. The OMRG main install has none of them, and
 a normal `uv sync` never pulls them in.
 
-### Committed policy and proposed local variant
+### Routing policy
 
 Every PDF starts on `pdf-inspector`. The routing seam only looks at the
 evidence `pdf-inspector` already produced: `pdf_type`, `pdf_confidence`,
 the count of pages flagged for OCR, and the page count.
 
-The committed policy sends a PDF to the worker when its `pdf_type` is
-`scanned`, `image_based`, or `mixed`. Other types use the configured
-thresholds.
-
-The preserved local worktree patch proposes a different policy. It is
-unapproved and does not change the packaged behaviour. Under that proposal,
-a PDF routes to the worker when either rule fires:
+A PDF routes to the OCR worker when either rule fires:
 
 1. `pdf_type` is `scanned` or `image_based`. This is unconditional and
    ignores the thresholds, because both labels mean the whole document
@@ -244,15 +238,14 @@ a PDF routes to the worker when either rule fires:
    `pdf_confidence` falls below `OCR_FALLBACK_MIN_CONFIDENCE`, or the
    flagged-page proportion reaches `OCR_FALLBACK_PAGE_FRACTION`.
 
-In the proposed local variant, `mixed` sits in the second group. It means
-"some pages carry text and some do not", which the page-fraction threshold
-can evaluate. The whole file is dispatched together, with no page-level
-stitching. The 991-page document remains evidence for this proposal; it does
-not establish an adopted policy. See
+`mixed` sits in the second group. It means "some pages carry text and
+some do not", which the page-fraction threshold can evaluate. The whole
+file is dispatched together, with no page-level stitching. The 991-page
+document from experiment 28 motivated this fix; see
 [ADR-064](../adr/064-input-quality-promotion-decisions.md).
 
-Keep OCR disabled with both thresholds at `0.0` until the operator explicitly
-decides the policy.
+OCR remains off by default. Keep `OCR_FALLBACK_ENABLED=false` with both
+thresholds at `0.0` until the operator explicitly enables OCR.
 
 Layout complexity is not a rule. Multi-column and table-heavy PDFs stay
 on the fast path when their text extracts cleanly. Experiment 24
@@ -264,14 +257,14 @@ page-level stitching between the two readers.
 
 ### Configuration
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `OCR_FALLBACK_ENABLED` | `false` | Master switch. Off means no PDF ever reaches the worker. |
-| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.0` | Confidence floor for text-based PDFs. `0.0` never triggers. |
-| `OCR_FALLBACK_PAGE_FRACTION` | `0.0` | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
-| `OCR_WORKER_COMMAND` | empty | Command that starts the worker. Empty means unavailable. |
-| `OCR_WORKER_ENV_DIR` | empty | Worker virtual-environment directory. |
-| `OCR_WORKER_REQUEST_TIMEOUT` | `300.0` | Seconds to wait for one parse response. |
+| Variable                      | Default | Meaning                                                          |
+| ----------------------------- | ------- | ---------------------------------------------------------------- |
+| `OCR_FALLBACK_ENABLED`        | `false` | Master switch. Off means no PDF ever reaches the worker.         |
+| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.0`   | Confidence floor for text-based PDFs. `0.0` never triggers.      |
+| `OCR_FALLBACK_PAGE_FRACTION`  | `0.0`   | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
+| `OCR_WORKER_COMMAND`          | empty   | Command that starts the worker. Empty means unavailable.         |
+| `OCR_WORKER_ENV_DIR`          | empty   | Worker virtual-environment directory.                            |
+| `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Seconds to wait for one parse response.                          |
 
 In the proposed local variant, both `0.0` thresholds are "never triggered"
 sentinels, not "always triggered". Enabling the fallback without calibrated
@@ -362,20 +355,20 @@ continues with the next file.
 Four keys are stamped on both branches, so an operator can tell what
 happened by reading a retrieval result:
 
-| Key | Meaning |
-| --- | --- |
-| `ocr_required` | The routing gate said this PDF needs OCR. |
-| `ocr_used` | The worker actually parsed it. |
-| `ocr_backend` | `pdf_inspector` or `paddleocr_vl`. |
-| `pages_needing_ocr` | Scalar count of flagged pages. |
+| Key                 | Meaning                                   |
+| ------------------- | ----------------------------------------- |
+| `ocr_required`      | The routing gate said this PDF needs OCR. |
+| `ocr_used`          | The worker actually parsed it.            |
+| `ocr_backend`       | `pdf_inspector` or `paddleocr_vl`.        |
+| `pages_needing_ocr` | Scalar count of flagged pages.            |
 
 Read them together:
 
-| `ocr_required` | `ocr_used` | `ocr_backend` | What happened |
-| --- | --- | --- | --- |
-| `false` | `false` | `pdf_inspector` | Fast path. Clean text extraction. |
-| `true` | `true` | `paddleocr_vl` | OCR fallback. Worker output. |
-| `true` | `false` | `pdf_inspector` | Degraded. Worker unavailable; partial text only. |
+| `ocr_required` | `ocr_used` | `ocr_backend`   | What happened                                    |
+| -------------- | ---------- | --------------- | ------------------------------------------------ |
+| `false`        | `false`    | `pdf_inspector` | Fast path. Clean text extraction.                |
+| `true`         | `true`     | `paddleocr_vl`  | OCR fallback. Worker output.                     |
+| `true`         | `false`    | `pdf_inspector` | Degraded. Worker unavailable; partial text only. |
 
 `pages_needing_ocr` is stored as a count, never as the page list
 `pdf-inspector` returns internally: no vector store accepts a list-valued
@@ -392,10 +385,10 @@ participate in the index identity. See
 
 Document reading dispatches through a registry selected by `DOCUMENT_BACKEND`.
 
-| Value   | Reads                             | Install                 |
-| ------- | --------------------------------- | ----------------------- |
-| `local` | All supported formats (default)   | Base dependency         |
-| `azure` | `.pdf`, `.docx`, and `.doc` only  | `uv sync --extra azure` |
+| Value   | Reads                            | Install                 |
+| ------- | -------------------------------- | ----------------------- |
+| `local` | All supported formats (default)  | Base dependency         |
+| `azure` | `.pdf`, `.docx`, and `.doc` only | `uv sync --extra azure` |
 
 Files outside azure's list read through the local backend even when
 `DOCUMENT_BACKEND=azure`. An unknown value fails server start-up and
@@ -510,13 +503,13 @@ default after [experiment 25](../../experiments/25-token-chunking-ablation-2026-
 passed all four frozen gates: retrieval neutral, embedded tokens −2.5%, largest chunk
 halved).
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `EMBEDDING__TOKENIZER_MODEL` | `Qwen/Qwen3-Embedding-4B` | Tokenizer identity for the budget |
-| `EMBEDDING__TOKENIZER_REVISION` | `5cf2132abc99cad020ac570b19d031efec650f2b` | Pinned revision; must be in the local Hugging Face cache |
-| `CHUNKING__MARKDOWN_CHUNK_SIZE` | `1024` | Maximum chunk size in tokenizer units |
-| `CHUNKING__MARKDOWN_HEADING_PREPEND` | `false` | Prepend the heading path to each chunk. When on, the prepended text counts against the token cap |
-| `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` | `0.0` | Filter chunks below this fraction of the cap (measured in real tokens on this path) |
+| Setting                                 | Default                                    | Meaning                                                                                          |
+| --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `EMBEDDING__TOKENIZER_MODEL`            | `Qwen/Qwen3-Embedding-4B`                  | Tokenizer identity for the budget                                                                |
+| `EMBEDDING__TOKENIZER_REVISION`         | `5cf2132abc99cad020ac570b19d031efec650f2b` | Pinned revision; must be in the local Hugging Face cache                                         |
+| `CHUNKING__MARKDOWN_CHUNK_SIZE`         | `1024`                                     | Maximum chunk size in tokenizer units                                                            |
+| `CHUNKING__MARKDOWN_HEADING_PREPEND`    | `false`                                    | Prepend the heading path to each chunk. When on, the prepended text counts against the token cap |
+| `CHUNKING__MARKDOWN_MIN_CHUNK_FRACTION` | `0.0`                                      | Filter chunks below this fraction of the cap (measured in real tokens on this path)              |
 
 The contract, in short:
 
