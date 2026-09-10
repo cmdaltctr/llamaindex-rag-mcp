@@ -1,0 +1,10 @@
+# Gitleaks config: keep all default rules, allowlist known false positives.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "SHA-256 file-integrity manifests for the experiment recompute evidence are hashes, not secrets"
+paths = [
+  '''repair/evidence/task-4-recompute/hashes-before\.json''',
+  '''repair/evidence/task-4-recompute/hashes-after\.json''',
+]
