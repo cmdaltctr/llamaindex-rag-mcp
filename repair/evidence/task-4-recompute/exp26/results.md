@@ -1,3 +1,99 @@
+# Experiment 26 Results: Query-instruction ablation (task 5.3)
+
+**ID**: `26-query-instruction-ablation-2026-09-08`  
+**Report generated**: 2026-09-10T00:22:22+00:00  
+**Status**: COMPLETE (verdict FAIL)  
+**Cells source**: `experiments/26-query-instruction-ablation-2026-09-08/output/cells`  
+**Raw data**: the checkpoint files named in `cell_sources` (read-only)
+
+---
+
+## TL;DR / Decision
+
+- **Negative result.** Failed gates: quality_paired_r5_lift, regression_identifier_r10, latency_p95_ms.
+- Paired mean R@5 lift is -0.0246 against a frozen requirement of
+  +0.0300.
+- Per task 5.5 the packaged default for `EMBEDDING__QUERY_INSTRUCTION`
+  stays empty. The instruction text is not tuned to chase the gate.
+
+## Frozen gate checks
+
+| Gate | Rule | Measured | Verdict |
+| --- | --- | --- | --- |
+| Quality | paired mean R@5 lift ≥ +0.0300 | -0.0246 (95% half-width ±0.0155, n=223) | ❌ FAIL |
+| Regression | identifier-heavy R@10 ≥ 0.2583 | 0.2563 (n=200) | ❌ FAIL |
+| Latency | query p95 ≤ 2850 ms | 3,543 ms | ❌ FAIL |
+
+Thresholds are read from the frozen [`plan.json`](./plan.json); no
+threshold lives in the summariser. The gates were frozen on
+2026-09-08 and are unchanged.
+
+## Raw arm (`raw_none`)
+
+| Category | n | R@1 | R@3 | R@5 | R@10 | MRR@10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| all | 223 | 12.1% | 19.3% | 25.6% | 32.7% | 57.9% |
+| identifier-heavy | 200 | 6.5% | 14.5% | 20.0% | 27.9% | 57.0% |
+| semantic | 3 | 0.0% | 2.0% | 3.9% | 7.8% | 16.7% |
+| continuity | 20 | 70.0% | 70.0% | 85.0% | 85.0% | 73.2% |
+
+## Instructed arm (`candidate_instruction`)
+
+| Category | n | R@1 | R@3 | R@5 | R@10 | MRR@10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| all | 223 | 11.2% | 18.7% | 23.1% | 30.7% | 55.0% |
+| identifier-heavy | 200 | 5.5% | 13.3% | 17.7% | 25.6% | 53.7% |
+| semantic | 3 | 0.0% | 2.0% | 3.9% | 7.8% | 16.7% |
+| continuity | 20 | 70.0% | 75.0% | 80.0% | 85.0% | 73.5% |
+
+## Candidate instruction
+
+```text
+Given a user query, retrieve passages that provide relevant and accurate evidence for answering the query.
+```
+
+## Latency
+
+| Arm | Mean | P95 |
+| --- | ---: | ---: |
+| raw_none | 1,752 ms | 5,543 ms |
+| candidate_instruction | 1,531 ms | 3,543 ms |
+
+Execution periods were not recorded for this run (historical checkpoint; provenance limit). Both arms were interleaved per query with alternating arm order, so arm-order bias is controlled, but a single uninterrupted network period cannot be claimed from the data.
+Latency is cloud-inclusive. Absolute latency comparisons across
+different dates are inconclusive: provider-side variance between
+days is not measured separately here. The first query of a run
+pays the one-off BM25 index build; that cost lands on whichever
+arm was scheduled first (`arm_position` 1).
+
+## Drift cross-check against Experiment 22
+
+- Experiment 22 published R@5 (hybrid, raw): 0.255884
+- This run's raw arm R@5: 0.255884
+- Delta: +0.000000
+
+Same index, same 223 queries. An equal aggregate does not show
+rank-level stability: per-query rankings can differ while the mean
+matches. The gate is evaluated against this run's own raw arm,
+which is paired query by query with the instructed arm;
+Experiment 22's number is a drift check only.
+
+## Monitored, not gated
+
+- Continuity R@10 (n=20): raw 0.8500 → candidate 0.8500. The bootstrap
+  95% half-width at n=20 is ±0.15, so no hard gate could be meaningful.
+
+## Reproduction
+
+```bash
+uv run python experiments/26-query-instruction-ablation-2026-09-08/summarise_eval.py \
+  --cells-dir experiments/26-query-instruction-ablation-2026-09-08/output/cells --out-dir repair/evidence/task-4-recompute/exp26
+```
+
+No index is built or written: both arms query the preserved
+Experiment 22 index read-only. This regenerated report never
+overwrites the frozen historical artefacts.
+
 ## Discussion
 
 ### The quality result is real, not noise

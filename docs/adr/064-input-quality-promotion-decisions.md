@@ -1,10 +1,22 @@
-# ADR-064: Input-Quality Promotion Decisions — One Promotion, Two Rejections
+# ADR-064: Input-Quality Promotion Evidence and Pending OCR Decision
 
 **Date:** 2026-09-09
-**Status:** Accepted
-**Deciders:** Dr Muhammad Aizat Bin Md Hawari
+**Status:** Partially accepted — the OCR routing/default decision is pending explicit operator approval
+**Deciders:** No operator approval is recorded for the outstanding OCR routing/default decision
 **Change:** `improve-rag-input-quality-5`
 **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary, lifecycle, protocol), [ADR-063](063-model-token-aware-markdown-chunking.md) (tokenizer and chunker), [ADR-018](018-balanced-retrieval-defaults.md), [ADR-037](037-architecture-v2-conformance.md)
+
+## Recovery correction (2026-09-09)
+
+The earlier version incorrectly recorded the experiment 28 gate result as an
+accepted operator decision. The evidence remains intact, but a machine verdict
+does not approve a routing policy or an OCR default. The OCR portion of the
+original change is reopened. `OCR_FALLBACK_ENABLED` remains `false`, and both
+routing thresholds remain `0.0`, while the operator decision is pending.
+
+The model-token chunking promotion, the query-instruction measurement, and all
+historical reports remain recorded. This correction does not promote a default,
+adopt the preserved routing patch, or change production routing.
 
 ## Context
 
@@ -69,15 +81,15 @@ gate. Tuning a candidate until it clears a gate it already failed turns
 the gate into decoration. A different instruction is a new experiment
 with its own frozen plan.
 
-### 3. Rejected: the OCR routing defaults
+### 3. Pending operator decision: the OCR routing defaults
 
 `OCR_FALLBACK_ENABLED` stays `false`. `OCR_FALLBACK_MIN_CONFIDENCE` and
 `OCR_FALLBACK_PAGE_FRACTION` stay at their `0.0` never-trigger sentinels.
 The calibrated `0.5` / `0.5` values are documented in `.env.example` and
 in the ingestion guide as what an operator should set when enabling OCR.
 
-The isolated worker itself ships as designed (ADR-062). Only the default
-is rejected.
+The isolated worker itself remains an opt-in capability described by ADR-062.
+The operator has not approved an OCR routing/default disposition.
 
 This is the decision that changed on evidence. Experiment 24 passed all
 five of its frozen gates on five held-out fixtures, which looked like

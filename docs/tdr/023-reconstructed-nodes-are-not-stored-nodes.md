@@ -155,3 +155,98 @@ do not establish provider billing, retries or historical network traffic.
 - TDR-022 — the three original traps; this record extends it
 - `experiments/25-token-chunking-ablation-2026-09-08/{verify_accounting.py,build_index.py,protocol.md}`
 - External model review round 2, 2026-09-08 (relayed by the operator)
+
+## Follow-up (2026-09-09): refusal restored; estimate-gate scaffold retained unverified
+
+This follow-up was corrected the same day after a blocking security audit.
+An interim version had replaced the blanket refusal with an approval-gated
+path; the audit found that a self-consistent, correctly digested estimate
+document can be handcrafted without genuine production preparation, so
+document validation alone cannot authorise spending. `build_index.py` again
+refuses every rebuild unconditionally — before estimate/approval documents
+are read and before runtime setup is imported — naming the missing
+estimator and parity verification. The historical marker still allows a
+clean skip (marker present, no `--force`).
+
+### What exists now
+
+- `experiments/25-.../build_index.py` (90 lines): marker skip plus
+  unconditional rebuild refusal. Estimate/approval CLI arguments are
+  accepted but never read while rebuilds are blocked.
+- `experiments/25-.../estimate_gate.py` (438 lines): explicitly UNVERIFIED
+  scaffold, unit-tested offline, for a future verified estimator:
+  - identity digests (corpus content, fixed settings, builder code,
+    `src/omrg/` runtime-source tree, `uv.lock`, tokenizer model+revision);
+  - estimate/approval document validation bound to the estimate digest,
+    a destination outside every preserved root (both-direction path
+    containment), dated pricing with a baseline/candidate comparison,
+    tokenizer-fallback invalidation, and an independent
+    `max_request_tokens` cap enforced as the lower of the
+    currency-derived and token ceilings;
+  - `BudgetStopEmbedder` (per-batch request-token ceiling at the single
+    production embedding choke point, `get_text_embedding_batch`) and
+    `_pack_failed` (ingestion results report failures as statuses, not
+    exceptions).
+- `build_index.main` never calls the scaffold. Activating an approval
+  path requires: the installed production adapter
+  (`llama-index-embeddings-openai-like`, optional extra `openrouter`),
+  a production-preparation estimator with proven request-text parity
+  against that installed adapter (repair tasks 3.2/3.3), and an explicit
+  operator decision recorded through the repair change.
+
+### Estimates and billing
+
+The scaffold's display contract shows identified baseline/candidate
+request-token counts, percentage difference, and approximate cost from
+operator-provided or verified dated pricing, and states that provider
+retries and billing can differ — an offline count, never a provider
+billing forecast. The frozen 1.15× extra-token threshold judges the
+measured result only; these are contract shapes, not a live path.
+
+### Test evidence
+
+- `tests/test_exp25_build_authorisation.py` (251 lines): rebuild-refusal
+  and marker-reuse contracts with fake transports as import traps. The
+  operator-requested regression feeds a fully valid-looking handcrafted
+  estimate (correct digests, live identity, dated pricing) plus a
+  matching approval — documents proven to satisfy the scaffold gate —
+  and requires exit 1 with zero runtime/embedding requests. Fail-before:
+  against the interim approval-gated code this regression FAILED (the
+  build proceeded); after the refusal restore it passes. An independent
+  read-only audit confirmed the refusal (2026-09-09) and suggested, for
+  a future strengthening, explicit file-read traps alongside the import
+  traps.
+- `tests/test_exp25_estimate_gate_scaffold.py` (382 lines): scaffold
+  contracts — tampered digest, changed corpus/lock/runtime-source
+  identity, missing pricing date, missing baseline comparison,
+  tokenizer fallback, approval digest/destination mismatch, six protected
+  destinations, token-cap binding, budget-stop wrapper, pack-failure
+  detection, and the valid-document pass case that keeps the handcrafted
+  regression meaningful.
+- Combined: `uv run --no-sync pytest tests/test_exp25_build_authorisation.py
+  tests/test_exp25_estimate_gate_scaffold.py tests/test_exp25_request_accounting.py
+  tests/test_exp25_accounting_contracts.py -q` → 32 passed, 2 skipped
+  (adapter-parity skips, see below). The pre-existing
+  `test_paid_build_still_refuses` passes.
+
+### Unresolved conditions (no operator acceptance implied)
+
+- The offline estimator does not exist; installing the adapter requires
+  operator approval (`uv sync --extra openrouter`). Until then no
+  estimate document is legitimate and every rebuild refuses.
+- The sync and async `test_installed_adapter_normalises_request_text`
+  cases skip for the missing dependency; request-text parity (task 3.2)
+  is unverified.
+- Unresolved risk items awaiting operator decision, NOT accepted:
+  preserved DATA roots derive from `Path.home()` (a crafted `HOME` moves
+  them); corpus/destination time-of-check-to-time-of-use windows remain;
+  lock-wide dependency advisories (chromadb, nltk) await the change-wide
+  security reassessment.
+- `estimate_gate.py` is scaffold only; any future activation needs the
+  verified estimator, parity proof and an explicit operator decision.
+
+### Entry points
+
+`overnight.sh` exits 1 with the blocked status; it no longer runs
+`token_accounting.py` for any purpose. `verify_accounting.py` remains
+retrospective verification, separate from any approval path.

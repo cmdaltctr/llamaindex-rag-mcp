@@ -1,3 +1,95 @@
+# Experiment 27 Results: Combined candidate path (task 5.4)
+
+**ID**: `27-combined-candidate-path-2026-09-09`  
+**Report generated**: 2026-09-10T00:22:23+00:00  
+**Status**: COMPLETE (verdict FAIL)  
+**Raw data**: the checkpoint files named in `cell_sources` (read-only)
+
+---
+
+## TL;DR / Decision
+
+- **Negative result.** Failed gates: quality_recall_at_5, latency_p95_ms.
+- The stacked path is worse than the frozen bar the single-factor
+  arms were held to. Ship only the component that passed alone.
+- Interaction on R@5 is +0.0118.
+
+## Scope
+
+The FreshStack corpus contains no PDFs, so OCR routing is **not**
+exercised here. Its evidence is experiment 24, on a disjoint corpus
+of five held-out PDFs. This is the combined *retrieval* path:
+model-token chunking plus the candidate query instruction.
+
+## Frozen gate checks (on `combined_candidate`)
+
+| Gate | Rule | Measured | Verdict |
+| --- | --- | --- | --- |
+| Quality | mean R@5 ≥ 0.231 | 0.223686 (n=223) | ❌ FAIL |
+| Regression | identifier-heavy R@10 ≥ 0.2583 | 0.269936 (n=200) | ✅ PASS |
+| Latency | query p95 ≤ 2850 ms | 4,790 ms | ❌ FAIL |
+
+Thresholds are read from the frozen [`plan.json`](./plan.json), frozen
+2026-09-09 and unchanged. Every value is carried
+over from the earlier frozen plans rather than re-derived.
+
+## The 2x2
+
+| Cell | Chunking | Query | Measured | R@1 | R@3 | R@5 | R@10 | MRR@10 | P95 |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline_production | legacy chars | raw | 2026-09-07 (exp 22) | 12.1% | 19.3% | 25.6% | 32.7% | 57.9% | 1,984 ms |
+| instruction_only | legacy chars | instructed | 2026-09-09 (exp 26) | 11.2% | 18.7% | 23.1% | 30.7% | 55.0% | 3,543 ms |
+| chunking_only_raw | model tokens | raw | 2026-09-09 (here) | 11.4% | 18.9% | 23.7% | 32.3% | 57.3% | 3,390 ms |
+| combined_candidate | model tokens | instructed | 2026-09-09 (here) | 10.6% | 17.2% | 22.4% | 32.0% | 54.1% | 4,790 ms |
+
+`baseline_production` and `instruction_only` are loaded from their
+committed checkpoints and re-aggregated with identical metric code;
+`chunking_only_raw` and `combined_candidate` were measured in this
+experiment, interleaved in one process against the preserved
+experiment 25 index. Absolute latency is not comparable across the
+measurement dates shown in the table.
+
+## Interaction (monitored, not gated)
+
+- Chunking alone: -0.0193 R@5
+- Instruction alone: -0.0246 R@5
+- Additive prediction: -0.0440 R@5
+- Combined, measured: -0.0322 R@5
+- **Interaction term: +0.0118 R@5**
+
+assembled across two indexes and three dates; carries cross-run drift as well as signal. Monitored, never gated.
+
+## Cost (task 5.4 record)
+
+Index build cost is experiment 25's verified 0.974906 request-token
+ratio; the index is reused unchanged and not rebuilt. Query cost:
+
+- Mean raw query: 450.27 tokens.
+- Mean instructed query: 473.17 tokens (1.05x, +22.9 tokens).
+- Counted offline with the pinned tokenizer; no API call.
+
+## Drift cross-check against experiment 25
+
+- Experiment 25 published R@5 (model_token_markdown): 0.236226
+- This run's `chunking_only_raw` R@5: 0.236540
+- Delta: +0.000314
+
+## Interpretation
+
+A passing combined run does not promote the query instruction.
+Only experiment 26's own frozen gates can do that (task 5.5).
+
+## Reproduction
+
+```bash
+uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \
+  --out-dir repair/evidence/task-4-recompute/exp27
+```
+
+No index is built or written: both measured arms query the preserved
+experiment 25 index read-only. This regenerated report never
+overwrites the frozen historical artefacts.
+
 ## Discussion
 
 ### The instruction takes the combined path below the bar

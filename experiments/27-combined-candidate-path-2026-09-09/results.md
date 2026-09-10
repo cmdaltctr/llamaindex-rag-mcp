@@ -85,12 +85,23 @@ uv run python experiments/27-combined-candidate-path-2026-09-09/run_eval.py --re
 uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py
 ```
 
+*(Reproduction note 2026-09-10: the commands above are the historical
+ones. As of the repair change, `run_eval.py` no longer resumes the
+historical checkpoints — measured runs need `--run-dir <name>`, smoke
+runs use `--limit`, and the summariser writes to an explicit
+`--out-dir` instead of this file.)*
+
 No index is built or written: both measured arms query the preserved
 experiment 25 index read-only.
 
 ## Discussion
 
-### The combined failure is entirely the instruction
+### The instruction takes the combined path below the bar
+
+*(Heading corrected 2026-09-10: this section was previously titled "The
+combined failure is entirely the instruction". The four-cell table is a
+historical comparison across runs, so "entirely" was not supportable;
+see the Recovery clarification below.)*
 
 The three arms measured against the frozen quality bar of 0.231:
 
@@ -101,13 +112,17 @@ The three arms measured against the frozen quality bar of 0.231:
 | `combined_candidate` | 0.2237 | 0.231 | **fails** |
 
 The promoted chunker on its own still clears the bar on a fresh run.
-Adding the instruction takes it below. Nothing else changed between the
-two measured arms: same index, same queries, same process, interleaved.
+Adding the instruction takes it below. Between the two arms measured in
+this experiment nothing else changed: same index, same queries, same
+process, interleaved — so the −0.0128 R@5 difference on the model-token
+index is a within-run paired comparison that isolates the instruction.
+Across all four cells the comparison is historical, and the table as a
+whole cannot prove the instruction caused every difference in it.
 
-This is an independent confirmation of experiment 26's rejection,
-reached on a different index. The instruction hurt the legacy-chunked
-corpus by −0.0246 R@5 and the model-token corpus by −0.0128. Two
-indexes, two negative results, no positive one.
+This is corroboration of experiment 26's rejection, reached on a
+different index. The instruction hurt the legacy-chunked corpus by
+−0.0246 R@5 and the model-token corpus by −0.0128. Two indexes, two
+negative results, no positive one.
 
 ### The regression gate passed this time, and that is informative
 

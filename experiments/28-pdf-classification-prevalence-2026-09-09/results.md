@@ -8,12 +8,19 @@
 
 ---
 
-## TL;DR / Decision
+## Summary
 
-- **FAIL.** The safety gate FAILED: 1 document(s) with a usable text layer routed to OCR.
-- needs-OCR prevalence is 2/79 (2.5%), Wilson 95% CI [0.7%, 8.8%].
-- Projected cost of the routed set: 30.5 hours, of which 29.3 hours is spent on documents that did not need OCR.
-- Pre-specified decision rule: safety gate fails — under no reading does a default that mis-routes real documents belong in a packaged release
+**Question:** If OCR routing were enabled with the calibrated thresholds on
+real library PDFs, how many documents would route incorrectly, and how many
+genuinely need OCR?
+
+**Observed outcome:** The safety gate failed with one false route out of 79
+documents. The benefit gate also failed with needs-OCR prevalence 2/79 and a
+Wilson 95% interval [0.7%, 8.8%].
+
+**Decision status:** The preregistered rule recorded *promote nothing* as the
+experiment outcome. The operator decision on OCR routing and defaults is
+pending separately and was never taken on this evidence.
 
 ## Frozen gate checks
 
@@ -180,6 +187,20 @@ Following the frozen rule matters here precisely because the analysis
 below suggests a *better* configuration exists. Rewriting the decision
 rule after seeing which component failed is how a gate becomes
 decoration.
+
+### Recovery clarification (2026-09-09)
+
+The frozen benefit threshold remains a Wilson 95% lower bound above 0.01
+(1%). This value was fixed before data collection, and it is a practical
+choice, not a result of a statistical calculation. The power analysis in the
+frozen plan anticipated about 83 documents, while the realised sample held 79
+after de-duplication; the preregistered 1% threshold is unchanged. The benefit
+gate remains failed at the realised sample size, with a prevalence interval
+still spanning 0.7% to 8.8%.
+
+This report's *Decision* section records the preregistered gate outcome. The
+operator did not approve an OCR routing/default disposition on this evidence,
+and no production routing change follows from the verdict alone.
 
 ### Exploratory finding — a design defect, not a calibration problem
 
