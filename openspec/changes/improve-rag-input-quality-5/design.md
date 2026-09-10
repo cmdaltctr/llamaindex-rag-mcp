@@ -518,7 +518,7 @@ OCR_FALLBACK_MIN_CONFIDENCE    route to OCR when inspection confidence is below 
 OCR_FALLBACK_PAGE_FRACTION     route to OCR when pages_needing_ocr / page_count is at or above this
 ```
 
-Routing semantics: `pdf_type` of scanned or image-based is OCR-required unconditionally; mixed classification, a confidence below `OCR_FALLBACK_MIN_CONFIDENCE`, or an OCR-page proportion at or above `OCR_FALLBACK_PAGE_FRACTION` makes a text-extractable PDF OCR-eligible. Packaged threshold defaults are `0.0` (never additionally triggered), so with the fallback disabled or thresholds untouched the gate routes by classification only. All three names are absent from the retired-variable tripwire in `config/legacy.py` (checked 2026-09-07); no new flat compatibility aliases are added.
+Routing semantics (settled 2026-09-10): when OCR is enabled, `scanned` and `image_based` route unconditionally. Other types, including `mixed`, require confidence below a positive `OCR_FALLBACK_MIN_CONFIDENCE` or an OCR-page proportion at or above a positive `OCR_FALLBACK_PAGE_FRACTION`. Both `0.0` defaults disable their threshold conditions. With OCR disabled no type dispatches; with OCR enabled and untouched thresholds only scanned and image-based PDFs dispatch. The unconditional type set is included in source identity under schema 5. No new flat compatibility aliases are added.
 
 OCR worker location, launch command, and request timeout are injected operational settings. They are not routing-promotion gates. No machine-specific path is hardcoded, and `config/` performs no capability probe.
 

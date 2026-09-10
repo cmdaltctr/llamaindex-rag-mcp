@@ -168,7 +168,7 @@ are read and before runtime setup is imported — naming the missing
 estimator and parity verification. The historical marker still allows a
 clean skip (marker present, no `--force`).
 
-### What exists now
+### What existed at the 2026-09-09 checkpoint
 
 - `experiments/25-.../build_index.py` (90 lines): marker skip plus
   unconditional rebuild refusal. Estimate/approval CLI arguments are
@@ -250,3 +250,12 @@ measured result only; these are contract shapes, not a live path.
 `overnight.sh` exits 1 with the blocked status; it no longer runs
 `token_accounting.py` for any purpose. `verify_accounting.py` remains
 retrospective verification, separate from any approval path.
+
+## Consolidation status (2026-09-10)
+
+The estimate-gate scaffold and its dedicated authorisation tests described
+above are absent from the consolidated tree. Their descriptions and prior
+test results are historical records, not claims about current interfaces.
+The operator declined an Experiment 25 rebuild. Its existing builder refusal,
+paid index, accounting outputs and Accepted chunking decision remain preserved.
+Do not restore or debug the abandoned spending-approval machinery.

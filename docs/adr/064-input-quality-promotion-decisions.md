@@ -28,7 +28,7 @@ The operator settled the OCR routing/default disposition on 2026-09-10:
 The model-token chunking promotion, the query-instruction measurement, and all
 historical reports remain recorded. The mixed-routing defect described in
 the experiment 28 evidence is fixed: `mixed` is no longer in the unconditional
-routing set (see `src/omrg/core/ingestion/ocr_identity.py`).
+routing set (see `src/omrg/integrations/pdf/ocr_policy.py`).
 
 ## Context
 
@@ -161,13 +161,13 @@ Every threshold was committed before its measurement.
 
 **The latency gates in experiments 26 and 27 did not discriminate.** Both
 are stated in absolute milliseconds against a baseline p95 of 1,984 ms
-measured on 2026-09-07. On 2026-09-09 the provider was slower for
-everything: experiment 26's _raw_ arm was the slowest measurement of the
+measured on 2026-09-07. Later raw-arm timings were higher, but these
+measurements do not isolate the provider as their cause: experiment 26's _raw_ arm was the slowest measurement of the
 whole series at 5,543 ms, and experiment 27's raw chunking arm read
 3,390 ms where experiment 25 measured the identical configuration at
 2,183 ms the previous day. They are recorded as failed because a frozen
-rule is not edited after the fact, and they carry no evidence about
-either candidate. The quality comparisons remain trustworthy: experiment
+rule is not edited after the fact. The measured timings remain evidence,
+but cross-date comparisons do not isolate candidate overhead. Experiment
 26's raw arm reproduced experiment 22's R@5 to six decimal places, and
 experiment 27's to +0.000314.
 
@@ -177,9 +177,8 @@ experiment 27's to +0.000314.
 
 - Every packaged default that changed is backed by a gate frozen before
   its measurement, and every rejection is committed with its numbers.
-- The OCR worker, the routing seam, the tokenizer and the query
-  instruction all ship as working, documented, opt-in capabilities. An
-  operator who wants any of them turns it on.
+- Model-token Markdown chunking is the packaged default. The OCR worker,
+  routing seam and query instruction remain documented opt-in capabilities.
 - The near-miss is on record. Experiment 24 alone would have justified
   enabling OCR by default, and doing so would have imposed a 1,375×
   slowdown on an ordinary paper library. Fixture evidence was not
@@ -216,7 +215,7 @@ decoration.
 
 The operator settled the disposition on 2026-09-10: `mixed` is removed
 from `OCR_UNCONDITIONAL_TYPES` and now routes by the calibrated threshold
-gate. The fix is in `src/omrg/core/ingestion/ocr_identity.py` and is
+gate. The fix is in `src/omrg/integrations/pdf/ocr_policy.py` and is
 covered by `tests/test_ocr_routing_gate.py`. The unconditional routing
 types now participate in the source index identity (schema 5) so changes
 to the routing set prevent stale `skipped_unchanged` results.
@@ -253,3 +252,14 @@ Experiment 24 run 1 failed honestly and is preserved in the record
 (commit `a7d7cd2`): the original fixtures were 605-byte blank PDFs with
 nothing to OCR. The repair replaced them with rasterised CC0 pages
 (commit `786055e`) and the frozen gates were never touched.
+
+## Consolidation review note
+
+Schema 5 changes source identity for every source, including non-PDF sources
+and sources with OCR disabled. Reading a preserved index does not rebuild it.
+A later ingestion attempt can reprocess and re-embed unchanged source bytes.
+Do not use preserved experiment indexes for ingestion or migration tests.
+
+The 29.3-hour OCR figure is a whole-document projection from fixture timings,
+not an observed workload duration. Request timeouts may interrupt OCR earlier.
+Average text density alone does not prove that every flagged page is unimportant.

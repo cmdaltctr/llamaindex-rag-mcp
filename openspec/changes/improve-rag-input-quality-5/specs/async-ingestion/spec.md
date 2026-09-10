@@ -2,11 +2,11 @@
 
 ### Requirement: New input-quality inputs SHALL participate in the complete index identity
 
-The index-shaping identity SHALL cover every input this change adds that can alter emitted chunk text or stored vectors. The identity SHALL include the configured embedding-tokenizer identity and revision, the **resolved** active Markdown splitter (model-token-aware or legacy fallback), the OCR routing configuration, and the **resolved** OCR fallback capability.
+The index-shaping identity SHALL cover every input this change adds that can alter emitted chunk text or stored vectors. The identity SHALL include the configured embedding-tokenizer identity and revision, the **resolved** active Markdown splitter (model-token-aware or legacy fallback), the OCR routing configuration including the sorted unconditional routing types, and the **resolved** OCR fallback capability.
 
 Resolved values SHALL be recorded, not only configured values. A configured tokenizer that cannot be loaded runs the legacy splitter, and a configured OCR gate without an installed OCR stack runs the fast path alone; recording only the configuration would leave both degraded results indistinguishable from the intended ones.
 
-These inputs SHALL enter the existing `source_index_identity` payload and its failure-safe replacement path. A second identity mechanism SHALL NOT be introduced. The payload's schema version SHALL be raised once for the new shape.
+These inputs SHALL enter the existing `source_index_identity` payload and its failure-safe replacement path. A second identity mechanism SHALL NOT be introduced. The initial shape used schema 4. The routing-policy amendment SHALL advance it to schema 5. This conservative identity change applies to all sources, including those with OCR disabled.
 
 Inclusion SHALL follow the existing conservative rule for parser and chunking selectors: an input is hashed whether or not a given file type uses it, because unnecessary reprocessing is safer than reusing stale chunks.
 

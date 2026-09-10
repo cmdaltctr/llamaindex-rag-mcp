@@ -79,7 +79,7 @@ Alternative rejected: treating a failed gate as permission to write an Accepted 
 
 ### 3. Replace experiment 25's refusal only after a valid offline estimate exists
 
-DESCOPED (2026-09-10): the operator decided at task 3.7 not to rerun experiment 25. Its historical PASS, tokenizer promotion and existing index stand. The unconditional refusal in `build_index.py` remains the live behaviour, and the orphaned estimator and approval scaffold awaits removal (backed up under task 1.5). The gate principle is preserved for any future rebuild in the `experiment-validity-gates` spec requirement "Paid rebuilds require current estimates and approval". The text below is retained as that future design basis.
+DESCOPED (2026-09-10): the operator decided at task 3.7 not to rerun experiment 25. Its historical PASS, tokenizer promotion and existing index stand. The unconditional refusal in `build_index.py` remains the live behaviour, and the historical estimator and approval scaffold is absent from the consolidated tree. Preserve its recovery records; do not restore it. The gate principle is preserved for any future rebuild in the `experiment-validity-gates` spec requirement "Paid rebuilds require current estimates and approval". The text below is retained as that future design basis.
 
 Reuse production document selection and preparation with an in-memory sink and a network-blocked embedding-request recorder. Exercise the installed adapter's normal request preparation using a fake transport; do not rebuild payloads from row text and metadata or revive the deprecated standalone counter.
 
@@ -147,13 +147,13 @@ Alternative rejected: rerunning the whole library with a different density thres
 
 ### 7. Adopt a routing change only through a later explicit amendment
 
-Disposition (2026-09-10): the four-file mixed patch was adopted as the standalone defect-fix commit `9bf4810` ("route mixed PDFs by threshold, not unconditionally") with regression tests, on design grounds. It changes no packaged default, so no routing-identity invalidation is required while OCR is off. The broader OCR default-promotion decision (`OCR_FALLBACK_ENABLED`) stays deferred to the future study in decision 6. Any future default change still follows this section's amendment rule.
+Disposition (2026-09-10): the four-file mixed patch was adopted as the standalone defect-fix commit `9bf4810` ("route mixed PDFs by threshold, not unconditionally") with regression tests, on design grounds. It changes no packaged default. The consolidation correction includes the unconditional routing types in source identity and advances schema 4 to 5. This invalidates prior identities even when OCR is off; only a later ingestion attempt can reprocess a source. Preserved experiment indexes must not be re-ingested. The broader OCR default-promotion decision (`OCR_FALLBACK_ENABLED`) stays deferred to the future study in decision 6. Any future default change still follows this section's amendment rule.
 
-This proposal does not select a new production rule. After the operator approves one, run `openspec-update-change` to add its exact PDF behaviour, scenarios and implementation tasks to this change and reconcile the original design. Then seek approval to apply that amended scope.
+The settled defect fix is recorded above. For any further production rule, after the operator approves it, run `openspec-update-change` to add its exact PDF behaviour, scenarios and implementation tasks to this change and reconcile the original design. Then seek approval to apply that amended scope.
 
 If the existing mixed removal is selected, its adoption must cover enable-only behaviour, fixed test cases at zero and calibrated thresholds, reader diagnostics, whole-request failure handling and routing-policy identity. A policy change affecting extractor output must prevent stale `skipped_unchanged` results. Reconcile the ingestion guide, configuration guide, environment comments and ADR together.
 
-The current four-file patch remains preserved until this decision. Adopting it requires an explicit request; rejecting it also requires approval before discarding it.
+The patch is preserved in commit history and its adoption is settled. Further routing-policy changes require a separate explicit decision.
 
 ### 8. Record completion honestly
 
@@ -192,7 +192,7 @@ Updated during apply to record the operator's approvals and their safeguards. Th
 | Experiment 27 repeat                 | No paid repeat authorised (2026-09-10)                                         | Record the formal purpose or close decision; no new tasks without an operator request                     |
 | Selected PDF collection              | Deferred to the future routing study (2026-09-10)                              | Obtain the explicit list or selection, including the book, in that change                                 |
 | Independent page labels and hold-out | Deferred to the future routing study (2026-09-10)                              | Agree coverage and reserve unseen outcomes in that change                                                 |
-| Replacement routing rule             | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Approve missing-page, zero-threshold and whole-file behaviour only in the future study                    |
+| Replacement routing rule             | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Keep the settled mixed/zero-threshold behaviour; approve any further policy change in the future study                    |
 | Real OCR measurement                 | Deferred to the future routing study (2026-09-10)                              | Agree documents, runtime budget and timeout in that change                                                |
 | Four-file mixed patch                | Adopted as defect-fix commit `9bf4810` (2026-09-10)                            | None here; broader default promotion remains deferred                                                     |
 | OCR default promotion                | Decided: stays off (2026-09-10)                                                | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the future preregistered routing study          |

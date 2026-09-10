@@ -69,7 +69,7 @@ would mix incompatible representations of the same source.
    Apple Silicon CPU evidence. They do not claim official Paddle hardware
    support or promote an OCR routing default.
 
-9. Keep the worker and routing seam opt-in while approval is pending.
+9. Keep the worker and routing seam opt-in under the settled default decision.
    `OCR_FALLBACK_ENABLED` remains `false` and both routing thresholds remain
    at their `0.0` never-trigger sentinels. Experiment 24 passed its five
    frozen gates on held-out fixtures, but experiment 28 measured the same
@@ -119,9 +119,9 @@ Provisioned smoke tests passed locally on Apple Silicon for Python 3.11,
 `ocr-worker/.model-cache`, and returned the complete worker fingerprint.
 The evidence is recorded in `ocr-worker/SMOKE_RESULTS.md`.
 
-The final fast-suite run reported 2,739 passed, 8 failed, and 123 skipped.
-The failures were present before the OCR review fixes and are existing branch
-debt. They include stale retrieval test doubles, integration inventory drift,
+The earlier worker-stage fast-suite record reported 2,739 passed, 8 failed, and 123 skipped.
+That historical record attributed the failures to earlier branch debt. It does
+not establish the current branch's runtime state. They include stale retrieval test doubles, integration inventory drift,
 a stale PDF-reader patch target, and the dependent clean-base manifest check.
 This ADR does not change or disposition those failures.
 

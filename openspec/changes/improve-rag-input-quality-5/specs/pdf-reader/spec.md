@@ -2,7 +2,7 @@
 
 ### Requirement: pdf-inspector SHALL route OCR-required PDFs to an isolated document-understanding worker
 
-When the configured PDF path uses `pdf_inspector`, the system SHALL use the existing `pdf-inspector` result as both the fast extraction result and the evidence for deciding whether OCR/document understanding is required. Text-based PDFs with acceptable extraction quality SHALL keep the `pdf-inspector` Markdown. PDFs classified as scanned, image-based, or mixed, PDFs with material `pages_needing_ocr`, or PDFs that fail a separately calibrated extraction-quality gate SHALL be eligible for the OCR fallback when the isolated worker capability is available.
+When the configured PDF path uses `pdf_inspector`, the system SHALL use the existing `pdf-inspector` result as both the fast extraction result and the evidence for deciding whether OCR/document understanding is required. Text-based PDFs with acceptable extraction quality SHALL keep the `pdf-inspector` Markdown. When the isolated worker capability is available and OCR is enabled, scanned and image-based PDFs SHALL route unconditionally. Other types, including mixed PDFs, SHALL route only when a positive configured threshold condition is met. A confidence below the minimum or an OCR-page proportion at or above the configured fraction SHALL select OCR. A zero threshold SHALL disable its condition.
 
 Layout complexity alone SHALL NOT require OCR. A text-based multi-column or table-heavy PDF that `pdf-inspector` extracts acceptably SHALL remain on the fast path.
 
@@ -41,6 +41,14 @@ The first implementation SHALL route the whole PDF to the worker when the OCR co
 - **WHEN** the PDF is ingested
 - **THEN** the whole PDF SHALL be parsed by the PaddleOCR-VL worker
 - **AND** the system SHALL NOT stitch independently parsed page fragments from the two engines
+
+#### Scenario: Mixed PDF with zero thresholds stays on the fast path
+
+- **GIVEN** OCR is enabled and a PDF is classified as mixed
+- **AND** both routing thresholds are zero
+- **WHEN** the PDF is ingested
+- **THEN** no OCR parse request SHALL be dispatched
+- **AND** the existing extracted Markdown and page diagnostics SHALL be preserved
 
 #### Scenario: OCR required but the worker is unavailable
 
@@ -207,9 +215,9 @@ The change SHALL NOT require a new canonical document class or a second chunking
 
 ### Requirement: Source index identity SHALL include the resolved OCR worker fingerprint
 
-The existing source index identity SHALL include the OCR routing configuration and a deterministic worker fingerprint. The fingerprint SHALL include worker availability, protocol version, package names and exact versions, pipeline identity and revision, model identity and revision, and output-schema identity and version. It SHALL exclude transient process details such as process identifiers. An unavailable worker SHALL contribute a stable unavailable fingerprint rather than an omitted field.
+The existing source index identity SHALL include the OCR routing configuration, the sorted unconditional routing type set, and a deterministic worker fingerprint. The fingerprint SHALL include worker availability, protocol version, package names and exact versions, pipeline identity and revision, model identity and revision, and output-schema identity and version. It SHALL exclude transient process details such as process identifiers. An unavailable worker SHALL contribute a stable unavailable fingerprint rather than an omitted field.
 
-The worker fingerprint SHALL be recorded for every source through the existing index-identity mechanism. A change to any fingerprint field SHALL invalidate the prior identity so byte-identical sources are re-ingested. The identity schema SHALL be advanced once for this payload extension.
+The worker fingerprint SHALL be recorded for every source through the existing index-identity mechanism. A change to any fingerprint field SHALL invalidate the prior identity so byte-identical sources are re-ingested. The initial payload extension used schema 4. The routing-policy amendment SHALL use schema 5 so existing identities cannot silently omit the unconditional routing set.
 
 #### Scenario: Provisioning an unavailable worker triggers re-ingestion
 
