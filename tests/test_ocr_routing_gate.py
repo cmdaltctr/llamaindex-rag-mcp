@@ -60,7 +60,7 @@ def test_all_ocr_pages_with_zero_fraction_does_not_route(effective_settings) -> 
 
 
 def test_unconditional_types_route_even_at_defaults(effective_settings) -> None:
-    """scanned / image-based / mixed are OCR-required unconditionally."""
+    """scanned and image-based are OCR-required unconditionally."""
     settings = effective_settings()
     for pdf_type in sorted(OCR_UNCONDITIONAL_TYPES):
         assert (
@@ -73,6 +73,121 @@ def test_unconditional_types_route_even_at_defaults(effective_settings) -> None:
             )
             is True
         ), pdf_type
+
+
+def test_scanned_routes_unconditionally_at_default_thresholds(effective_settings) -> None:
+    """A scanned PDF routes to OCR regardless of thresholds (explicit, not looped)."""
+    settings = effective_settings()
+    assert (
+        ocr_required_by_gate(
+            pdf_type="scanned",
+            pdf_confidence=1.0,
+            pages_needing_ocr=0,
+            page_count=1,
+            settings=settings,
+        )
+        is True
+    )
+
+
+def test_image_based_routes_unconditionally_at_default_thresholds(effective_settings) -> None:
+    """An image-based PDF routes to OCR regardless of thresholds (explicit, not looped)."""
+    settings = effective_settings()
+    assert (
+        ocr_required_by_gate(
+            pdf_type="image_based",
+            pdf_confidence=1.0,
+            pages_needing_ocr=0,
+            page_count=1,
+            settings=settings,
+        )
+        is True
+    )
+
+
+def test_scanned_routes_with_ocr_enabled_and_zero_thresholds(effective_settings) -> None:
+    """Scanned PDF routes even with OCR enabled and both thresholds at 0.0."""
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.0,
+        ocr_fallback_page_fraction=0.0,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="scanned",
+            pdf_confidence=1.0,
+            pages_needing_ocr=1,
+            page_count=1,
+            settings=settings,
+        )
+        is True
+    )
+
+
+def test_image_based_routes_with_ocr_enabled_and_zero_thresholds(effective_settings) -> None:
+    """Image-based PDF routes even with OCR enabled and both thresholds at 0.0."""
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.0,
+        ocr_fallback_page_fraction=0.0,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="image_based",
+            pdf_confidence=1.0,
+            pages_needing_ocr=1,
+            page_count=1,
+            settings=settings,
+        )
+        is True
+    )
+
+
+def test_mixed_stays_on_fast_path_with_ocr_enabled_and_zero_thresholds(
+    effective_settings,
+) -> None:
+    """Mixed PDF with OCR enabled and both thresholds at 0.0 stays on the fast path.
+
+    The 0.0 sentinels are disabled, so a mixed classification routes by
+    neither the confidence nor the fraction trigger. This is the packaged
+    default behaviour: OCR is enabled but the thresholds are inert.
+    """
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.0,
+        ocr_fallback_page_fraction=0.0,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="mixed",
+            pdf_confidence=0.76,
+            pages_needing_ocr=10,
+            page_count=991,
+            settings=settings,
+        )
+        is False
+    )
+
+
+def test_mixed_with_all_pages_flagged_stays_on_fast_path_at_zero_thresholds(
+    effective_settings,
+) -> None:
+    """Even with every page flagged, zero thresholds keep mixed on the fast path."""
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.0,
+        ocr_fallback_page_fraction=0.0,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="mixed",
+            pdf_confidence=0.0,
+            pages_needing_ocr=50,
+            page_count=50,
+            settings=settings,
+        )
+        is False
+    )
 
 
 def test_mixed_is_not_unconditional(effective_settings) -> None:

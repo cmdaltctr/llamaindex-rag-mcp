@@ -219,3 +219,161 @@ def test_pages_needing_ocr_is_a_scalar_on_every_branch(fixture: str, effective_s
         assert value in (0, 1)
     finally:
         client.close()
+
+
+# ── Mixed-PDF dispatch boundary: OCR enabled, thresholds at 0.0 ──────────
+
+
+def _mock_inner_document(pdf_type: str, confidence: float, pages_needing_ocr: int, page_count: int):
+    """Build a mock inner reader returning one document with inspection evidence."""
+    from llama_index.core import Document
+
+    return lambda file, *args, **kwargs: [
+        Document(
+            text="partial extraction",
+            metadata={
+                "pdf_type": pdf_type,
+                "pdf_confidence": confidence,
+                "pages_needing_ocr": pages_needing_ocr,
+                "page_count": page_count,
+                "file_name": str(file),
+            },
+        )
+    ]
+
+
+def test_mixed_pdf_with_ocr_enabled_zero_thresholds_stays_on_fast_path(
+    effective_settings, monkeypatch
+) -> None:
+    """A mixed PDF with OCR enabled and both thresholds at 0.0 stays on pdf-inspector.
+
+    The reader dispatch boundary follows the gate: 0.0 sentinels are
+    disabled, so a mixed classification does not route to the worker even
+    when OCR fallback is enabled. The worker is never started.
+    """
+    client = _echo_client()
+    try:
+        settings = effective_settings(
+            pdf_reader="pdf_inspector",
+            ocr_fallback_enabled=True,
+            ocr_fallback_min_confidence=0.0,
+            ocr_fallback_page_fraction=0.0,
+        )
+        reader = build_pdf_reader("pdf_inspector", settings, ocr_client=client)
+        assert isinstance(reader, OcrRoutedPdfInspector)
+        # Mock the inner reader to return a mixed-classification document.
+        reader._inner.load_data = _mock_inner_document(
+            pdf_type="mixed",
+            confidence=0.76,
+            pages_needing_ocr=10,
+            page_count=991,
+        )
+        docs = reader.load_data(file=Path("/fake/mixed.pdf"))
+        meta = docs[0].metadata
+        assert meta["ocr_required"] is False
+        assert meta["ocr_used"] is False
+        assert meta["ocr_backend"] == OCR_BACKEND_FAST_PATH
+        assert client.is_started is False
+        assert client.process_generations == 0
+    finally:
+        client.close()
+
+
+def test_scanned_pdf_with_ocr_enabled_zero_thresholds_dispatches_worker(
+    effective_settings, monkeypatch
+) -> None:
+    """A scanned PDF with OCR enabled and both thresholds at 0.0 dispatches the worker.
+
+    Scanned is unconditional, so it routes regardless of threshold values.
+    The worker is started and the extraction is replaced.
+    """
+    client = _echo_client()
+    try:
+        settings = effective_settings(
+            pdf_reader="pdf_inspector",
+            ocr_fallback_enabled=True,
+            ocr_fallback_min_confidence=0.0,
+            ocr_fallback_page_fraction=0.0,
+        )
+        reader = build_pdf_reader("pdf_inspector", settings, ocr_client=client)
+        assert isinstance(reader, OcrRoutedPdfInspector)
+        reader._inner.load_data = _mock_inner_document(
+            pdf_type="scanned",
+            confidence=0.9,
+            pages_needing_ocr=1,
+            page_count=1,
+        )
+        docs = reader.load_data(file=Path("/fake/scanned.pdf"))
+        meta = docs[0].metadata
+        assert meta["ocr_required"] is True
+        assert meta["ocr_used"] is True
+        assert meta["ocr_backend"] == OCR_BACKEND_WORKER_PATH
+        assert client.is_started is True
+        assert client.process_generations == 1
+    finally:
+        client.close()
+
+
+def test_image_based_pdf_with_ocr_enabled_zero_thresholds_dispatches_worker(
+    effective_settings, monkeypatch
+) -> None:
+    """An image-based PDF with OCR enabled and both thresholds at 0.0 dispatches the worker.
+
+    Image-based is unconditional, so it routes regardless of threshold values.
+    """
+    client = _echo_client()
+    try:
+        settings = effective_settings(
+            pdf_reader="pdf_inspector",
+            ocr_fallback_enabled=True,
+            ocr_fallback_min_confidence=0.0,
+            ocr_fallback_page_fraction=0.0,
+        )
+        reader = build_pdf_reader("pdf_inspector", settings, ocr_client=client)
+        assert isinstance(reader, OcrRoutedPdfInspector)
+        reader._inner.load_data = _mock_inner_document(
+            pdf_type="image_based",
+            confidence=0.95,
+            pages_needing_ocr=1,
+            page_count=1,
+        )
+        docs = reader.load_data(file=Path("/fake/image.pdf"))
+        meta = docs[0].metadata
+        assert meta["ocr_required"] is True
+        assert meta["ocr_used"] is True
+        assert meta["ocr_backend"] == OCR_BACKEND_WORKER_PATH
+        assert client.is_started is True
+    finally:
+        client.close()
+
+
+def test_mixed_pdf_with_ocr_enabled_zero_thresholds_preserves_diagnostics(
+    effective_settings, monkeypatch
+) -> None:
+    """The mixed fast path still stamps the four additive OCR diagnostics."""
+    client = _echo_client()
+    try:
+        settings = effective_settings(
+            pdf_reader="pdf_inspector",
+            ocr_fallback_enabled=True,
+            ocr_fallback_min_confidence=0.0,
+            ocr_fallback_page_fraction=0.0,
+        )
+        reader = build_pdf_reader("pdf_inspector", settings, ocr_client=client)
+        assert isinstance(reader, OcrRoutedPdfInspector)
+        reader._inner.load_data = _mock_inner_document(
+            pdf_type="mixed",
+            confidence=0.5,
+            pages_needing_ocr=3,
+            page_count=10,
+        )
+        docs = reader.load_data(file=Path("/fake/mixed.pdf"))
+        meta = docs[0].metadata
+        assert "ocr_required" in meta
+        assert "ocr_used" in meta
+        assert "ocr_backend" in meta
+        assert "pages_needing_ocr" in meta
+        assert meta["pages_needing_ocr"] == 3
+        assert isinstance(meta["pages_needing_ocr"], int)
+    finally:
+        client.close()

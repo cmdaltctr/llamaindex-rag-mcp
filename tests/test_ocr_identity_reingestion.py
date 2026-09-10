@@ -124,7 +124,7 @@ def test_unavailable_fingerprint_payload_has_one_stable_shape() -> None:
 
 
 def test_routing_payload_echoes_the_three_gate_values(effective_settings) -> None:
-    """The routing payload carries enabled, min_confidence, page_fraction."""
+    """The routing payload carries the gate values and the unconditional types."""
     settings = effective_settings(
         ocr_fallback_enabled=True,
         ocr_fallback_min_confidence=0.5,
@@ -134,6 +134,7 @@ def test_routing_payload_echoes_the_three_gate_values(effective_settings) -> Non
         "enabled": True,
         "min_confidence": 0.5,
         "page_fraction": 0.25,
+        "unconditional_types": ["image_based", "scanned"],
     }
 
 
@@ -308,7 +309,7 @@ async def test_query_instruction_change_alone_still_skips(
     """Only ``EMBEDDING__QUERY_INSTRUCTION`` changes: identity is unchanged.
 
     Spec scenario "Query instruction change alone does not force
-    reprocessing", asserted here against the schema-4 payload too: the
+    reprocessing", asserted here against the schema-5 payload too: the
     instruction changes query vectors only and stays OUT of the document
     identity (design D8, proposal §6).
     """
@@ -336,3 +337,71 @@ async def test_query_instruction_change_alone_still_skips(
     ), "equal content plus an instruction-only change must reproduce the version"
     assert _stored_identities("ocr_id_query") == first_identities
     assert len(first_identities) == 1
+
+
+# ── Scenario: unconditional routing types participate in the index identity ─
+
+
+def test_unconditional_types_are_in_the_routing_payload() -> None:
+    """The routing payload carries the unconditional types for identity.
+
+    The unconditional routing set decides which ``pdf_type`` values bypass
+    the calibrated thresholds. Changing that set changes the routing
+    decision for affected PDFs, so it MUST participate in the index
+    identity to prevent stale ``skipped_unchanged`` results after a
+    routing-rule fix.
+    """
+    payload = ocr_routing_payload(
+        type(
+            "S",
+            (),
+            {
+                "ocr_fallback_enabled": True,
+                "ocr_fallback_min_confidence": 0.5,
+                "ocr_fallback_page_fraction": 0.5,
+            },
+        )()
+    )
+    assert "unconditional_types" in payload
+    assert set(payload["unconditional_types"]) == {"scanned", "image_based"}
+    assert "mixed" not in payload["unconditional_types"]
+
+
+def test_routing_payload_unconditional_types_are_sorted() -> None:
+    """The unconditional types are sorted for deterministic identity hashing."""
+    payload = ocr_routing_payload(
+        type(
+            "S",
+            (),
+            {
+                "ocr_fallback_enabled": False,
+                "ocr_fallback_min_confidence": 0.0,
+                "ocr_fallback_page_fraction": 0.0,
+            },
+        )()
+    )
+    assert payload["unconditional_types"] == sorted(payload["unconditional_types"])
+
+
+def test_mixed_is_not_in_unconditional_types() -> None:
+    """``mixed`` is deliberately excluded from the unconditional routing set.
+
+    ``scanned`` and ``image_based`` both mean "the whole document is
+    pictures", so no threshold can change the answer. ``mixed`` means
+    "some pages carry text and some do not" — which is precisely the
+    question ``ocr_fallback_page_fraction`` exists to answer, so routing
+    it unconditionally skips the one check designed for it.
+    """
+    from omrg.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES
+
+    assert "mixed" not in OCR_UNCONDITIONAL_TYPES
+    assert "scanned" in OCR_UNCONDITIONAL_TYPES
+    assert "image_based" in OCR_UNCONDITIONAL_TYPES
+
+
+def test_ocr_routing_constant_is_consistent_across_modules() -> None:
+    """The routing module re-exports the identity module's constant (single source of truth)."""
+    from omrg.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES as identity_types
+    from omrg.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES as routing_types
+
+    assert identity_types is routing_types
