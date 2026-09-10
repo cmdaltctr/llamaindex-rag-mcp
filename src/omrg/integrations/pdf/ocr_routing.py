@@ -36,31 +36,11 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from ...core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES  # noqa: F401 — re-exported
 from ..ocr_worker.client import OcrWorkerError
 from ..ocr_worker.protocol import ParseSuccess
+from .ocr_policy import OCR_UNCONDITIONAL_TYPES
 
 logger = logging.getLogger(__name__)
-
-#: ``pdf_type`` values that require OCR unconditionally (design D7.3
-#: routing semantics). Anything else (notably ``text_based`` and
-#: ``mixed``) routes by the calibrated thresholds only.
-#:
-#: ``mixed`` is deliberately NOT here. ``scanned`` and ``image_based``
-#: both mean "the whole document is pictures", so no threshold can
-#: change the answer. ``mixed`` means "some pages carry text and some do
-#: not" — which is precisely the question ``ocr_fallback_page_fraction``
-#: exists to answer, so routing it unconditionally skips the one check
-#: designed for it. Because task 2.4 dispatches whole files with no
-#: page-level stitching, that skip is multiplied by the page count:
-#: experiment 28 found a 991-page ``mixed`` document carrying 1,127
-#: characters per page, with 10 of 991 pages flagged, that the
-#: unconditional path sent to OCR in full (~29 hours of work to recover
-#: 1% of a document that already extracted cleanly). See ADR-064.
-#:
-#: The constant is defined in ``core/ingestion/ocr_identity.py`` because
-#: it participates in the source index identity; it is re-exported here
-#: so existing imports from this module keep working.
 
 #: Diagnostic backend identifiers (task 2.10). The fast path and the
 #: degraded path both ran pdf-inspector alone; only the worker path

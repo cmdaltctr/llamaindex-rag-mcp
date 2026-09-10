@@ -342,7 +342,7 @@ async def test_query_instruction_change_alone_still_skips(
 # ── Scenario: unconditional routing types participate in the index identity ─
 
 
-def test_unconditional_types_are_in_the_routing_payload() -> None:
+def test_unconditional_types_are_in_the_routing_payload(effective_settings) -> None:
     """The routing payload carries the unconditional types for identity.
 
     The unconditional routing set decides which ``pdf_type`` values bypass
@@ -365,6 +365,21 @@ def test_unconditional_types_are_in_the_routing_payload() -> None:
     assert "unconditional_types" in payload
     assert set(payload["unconditional_types"]) == {"scanned", "image_based"}
     assert "mixed" not in payload["unconditional_types"]
+
+    from omrg.core.ingestion.source_state import build_index_identity
+
+    settings = _ocr_settings(effective_settings)
+    kwargs = {
+        "content_type": "document",
+        "chunk_size": 512,
+        "chunk_overlap": 100,
+        "embed_model": object(),
+    }
+    current = ocr_routing_payload(settings)
+    previous = {**current, "unconditional_types": sorted({"scanned", "image_based", "mixed"})}
+    assert build_index_identity(settings, ocr_routing=current, **kwargs) != build_index_identity(
+        settings, ocr_routing=previous, **kwargs
+    )
 
 
 def test_routing_payload_unconditional_types_are_sorted() -> None:
@@ -400,7 +415,7 @@ def test_mixed_is_not_in_unconditional_types() -> None:
 
 
 def test_ocr_routing_constant_is_consistent_across_modules() -> None:
-    """The routing module re-exports the identity module's constant (single source of truth)."""
+    """Routing and identity re-export the same pure policy constant."""
     from omrg.core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES as identity_types
     from omrg.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES as routing_types
 

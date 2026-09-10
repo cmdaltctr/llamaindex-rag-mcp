@@ -28,32 +28,13 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-#: ``pdf_type`` values that require OCR unconditionally (design D7.3
-#: routing semantics). Anything else (notably ``text_based`` and
-#: ``mixed``) routes by the calibrated thresholds only.
-#:
-#: ``mixed`` is deliberately NOT here. ``scanned`` and ``image_based``
-#: both mean "the whole document is pictures", so no threshold can
-#: change the answer. ``mixed`` means "some pages carry text and some do
-#: not" — which is precisely the question ``ocr_fallback_page_fraction``
-#: exists to answer, so routing it unconditionally skips the one check
-#: designed for it. Because task 2.4 dispatches whole files with no
-#: page-level stitching, that skip is multiplied by the page count.
-#: See ADR-064.
-#:
-#: This constant lives in the identity module (not in
-#: ``integrations/pdf/ocr_routing.py``) because it is identity-relevant:
-#: changing which types route unconditionally changes the routing
-#: decision for affected PDFs, so it MUST participate in the index
-#: identity to prevent stale ``skipped_unchanged`` results. The routing
-#: module imports and re-exports it so existing imports keep working.
-OCR_UNCONDITIONAL_TYPES: frozenset[str] = frozenset({"scanned", "image_based"})
+from ...integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
 
 #: The canonical unavailable fingerprint payload. Byte-identical, by
 #: construction, to ``asdict(UNAVAILABLE_OCR_WORKER_FINGERPRINT)`` from
 #: ``integrations/ocr_worker/fingerprint.py``: every identity field
 #: empty and ``available=False``. Duplicated here only so this leaf
-#: module needs no import from ``integrations/``; the re-ingestion
+#: module does not import the worker implementation; the re-ingestion
 #: tests pin the no-drift equality.
 _UNAVAILABLE_FINGERPRINT_PAYLOAD: dict[str, Any] = {
     "available": False,
