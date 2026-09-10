@@ -36,6 +36,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from ...core.ingestion.ocr_identity import OCR_UNCONDITIONAL_TYPES  # noqa: F401 — re-exported
 from ..ocr_worker.client import OcrWorkerError
 from ..ocr_worker.protocol import ParseSuccess
 
@@ -56,7 +57,10 @@ logger = logging.getLogger(__name__)
 #: characters per page, with 10 of 991 pages flagged, that the
 #: unconditional path sent to OCR in full (~29 hours of work to recover
 #: 1% of a document that already extracted cleanly). See ADR-064.
-OCR_UNCONDITIONAL_TYPES: frozenset[str] = frozenset({"scanned", "image_based"})
+#:
+#: The constant is defined in ``core/ingestion/ocr_identity.py`` because
+#: it participates in the source index identity; it is re-exported here
+#: so existing imports from this module keep working.
 
 #: Diagnostic backend identifiers (task 2.10). The fast path and the
 #: degraded path both ran pdf-inspector alone; only the worker path

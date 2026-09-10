@@ -7,7 +7,8 @@ incidental change. Task 2.13 itself was reviewed exactly
 this way: the pre-change pin recorded schema 3 with top-level keys
 ``schema/embedding/embedding_text/parser/chunking/metadata_shape`` and
 neither OCR block; the diff to this file shows the schema-4 extension
-(OCR routing + resolved worker fingerprint).
+(OCR routing + resolved worker fingerprint), and the schema-5 extension
+(unconditional routing types in the OCR routing payload).
 
 The payload is captured by wrapping the module-local ``json`` binding, so
 the recorded structure is exactly what gets canonicalised and hashed —
@@ -22,7 +23,7 @@ import json
 import pytest
 
 from omrg.core.ingestion import source_state
-from omrg.core.settings import EmbeddingBlock, EffectiveSettings, MetadataBlock
+from omrg.core.settings import EffectiveSettings, EmbeddingBlock, MetadataBlock
 
 EXPECTED_TOP_LEVEL_KEYS = {
     "schema",
@@ -60,7 +61,7 @@ EXPECTED_CHUNKING_SETTINGS_KEYS = {
     "markdown_min_chunk_fraction",
     "strategy_fallback",
 }
-EXPECTED_OCR_ROUTING_KEYS = {"enabled", "min_confidence", "page_fraction"}
+EXPECTED_OCR_ROUTING_KEYS = {"enabled", "min_confidence", "page_fraction", "unconditional_types"}
 EXPECTED_OCR_FINGERPRINT_KEYS = {
     "available",
     "protocol_version",
@@ -107,7 +108,7 @@ class _RecordingJSON:
 
 def _baseline_payload(monkeypatch: pytest.MonkeyPatch) -> tuple[dict, str]:
     # The tokenizer fields pin the empty legacy identity: this baseline
-    # pins the schema-4 payload shape deterministically, and the promoted
+    # pins the schema-5 payload shape deterministically, and the promoted
     # packaged default (ADR-063) would otherwise resolve against the
     # machine's Hugging Face cache, varying the payload between machines.
     settings = EffectiveSettings(
@@ -128,22 +129,21 @@ def _baseline_payload(monkeypatch: pytest.MonkeyPatch) -> tuple[dict, str]:
 
 
 def test_index_identity_schema_value_is_pinned() -> None:
-    """Baseline: schema is 4 after task 2.13's single shared Stage 2/3 bump.
+    """Baseline: schema is 5 after the unconditional-types identity extension.
 
-    The pre-change pin (task 1.9) recorded schema 3; task 2.13 raised it
-    exactly once for the OCR routing gate and resolved worker fingerprint,
-    and task 3.11 extends the SAME schema-4 payload with the tokenizer
-    identity and resolved splitter instead of bumping again.
+    Schema 4 was the single shared Stage 2/3 bump (task 2.13/3.11). Schema 5
+    adds ``unconditional_types`` to the OCR routing payload so changes to
+    the unconditional routing set participate in the index identity.
     """
-    assert source_state._INDEX_IDENTITY_SCHEMA == 4
+    assert source_state._INDEX_IDENTITY_SCHEMA == 5
 
 
 def test_index_identity_payload_shape_is_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin the exact key structure of the schema-4 payload after Stage 3."""
+    """Pin the exact key structure of the schema-5 payload after Stage 3."""
     payload, _ = _baseline_payload(monkeypatch)
 
     assert set(payload) == EXPECTED_TOP_LEVEL_KEYS
-    assert payload["schema"] == 4
+    assert payload["schema"] == 5
     assert set(payload["embedding"]) == EXPECTED_EMBEDDING_KEYS
     assert set(payload["embedding_text"]) == EXPECTED_EMBEDDING_TEXT_KEYS
     assert set(payload["tokenizer"]) == EXPECTED_TOKENIZER_KEYS
@@ -175,6 +175,7 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
         "enabled": False,
         "min_confidence": 0.0,
         "page_fraction": 0.0,
+        "unconditional_types": ["image_based", "scanned"],
     }
     fingerprint = payload["ocr_worker_fingerprint"]
     assert fingerprint["available"] is False

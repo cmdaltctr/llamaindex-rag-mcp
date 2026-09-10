@@ -33,9 +33,10 @@ SOURCE_ATTEMPT_KEY = "source_attempt"
 SOURCE_CHUNK_COUNT_KEY = "source_chunk_count"
 SOURCE_CHUNK_INDEX_KEY = "source_chunk_index"
 
-# Schema 4 is the single shared Stage 2/3 payload bump. OCR, tokenizer, and
-# resolved splitter fields extend this payload additively.
-_INDEX_IDENTITY_SCHEMA = 4
+# Schema 5 adds ``unconditional_types`` to the OCR routing payload so
+# changes to the unconditional routing set participate in the index
+# identity (prevents stale ``skipped_unchanged`` after a routing-rule fix).
+_INDEX_IDENTITY_SCHEMA = 5
 _SOURCE_METADATA_KEYS = (
     SOURCE_CONTENT_HASH_KEY,
     SOURCE_ID_KEY,
