@@ -63,7 +63,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
 _OPENAI_LIKE_ADAPTER_CASES = 9
-_BASE_EXECUTED = 2774  # Bare CI baseline at repair-fast-suite-regressions.
+_BASE_EXECUTED = 2816  # Bare CI baseline at repair-input-quality-experiment-evidence.
+# Re-baselined 2026-09-10 from 2774 (repair-fast-suite-regressions): the
+# committed exp 26/27 verdict-validity suites add 38 cases (e5240d1) and
+# the mixed-PDF threshold-routing regression tests add 4 (9bf4810). Both
+# suites are committed and reviewed; the earlier objection to counting
+# the routing tests applied only while the patch was unapproved.
 # The improve-rag-input-quality-5 branch added 259 base cases after
 # the prior 2515 pin. Nine cases use the optional OpenAI-like adapter
 # packages. The conditional adjustment below keeps the tripwire valid

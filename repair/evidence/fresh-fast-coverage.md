@@ -61,3 +61,13 @@ The Core + MCP calculation covers 94 files. It includes 5,007/5,430 lines and 1,
 No earlier comparable coverage run exists in this evidence set. An empty vectordb diff cannot attribute aggregate suite counts, coverage, warnings, or the tripwire failure to a pre-existing condition. This record makes no such attribution.
 
 No source, frozen/input/index, or `.env` file was edited. This evidence file is the only intended tracked change from this run.
+
+## Fresh green measurement at 23389f7 (2026-09-10, repair resume session)
+
+Command: `uv run --no-sync pytest -m 'not slow' -q --cov=omrg --cov-branch`
+
+- Revision: `23389f7552d3425e2712817e3c7242c4794bb6db` (worktree `feat/repair-input-quality-experiment-evidence`), after the tripwire executed-count re-baseline 2,774 → 2,816 (documented in the change evidence).
+- Result: **2,821 passed, 131 skipped, 19 deselected, 0 failed in 551.82 s**.
+- Overall branch coverage: **91%**. Orchestration tier: **94%**. Core+MCP tier: **91%** (below its 95% floor; exception unresolved and unchanged in disposition).
+- Lock provenance: `uv run --no-sync` against the existing environment; no dependency change.
+- The earlier `afe151e` measurement in this file used the identical command and configuration, so both revisions are on file; no further earlier-revision run is required for attribution. The suite is green at `23389f7`.

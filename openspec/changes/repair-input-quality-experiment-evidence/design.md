@@ -13,6 +13,8 @@ Four files already contain an unapproved mixed-routing patch:
 - `src/omrg/integrations/pdf/ocr_routing.py`
 - `tests/test_ocr_routing_gate.py`
 
+Continuation note (2026-09-10): execution moved from the `feat/improve-rag-input-quality-5` worktree into this change's own worktree on branch `feat/repair-input-quality-experiment-evidence`, HEAD `23389f7`. That commit adds the routing defect fix `9bf4810`, the experiment 26/27 guard commit `e5240d1`, a gitleaks allowlist commit and this change's planning artefacts on top of the starting evidence recorded above. The recovered repair work is committed there and the working tree is clean. The starting-evidence figures are retained as provenance, and the four-file patch statement above is historical: its disposition is recorded in decision 7 and the register.
+
 The audit verified the complete experiment 26 and 27 numeric results. Both contain 223 expected queries. Partial prefixes can incorrectly receive PASS. Experiment 28 contains 79 records and no errors, but resume regenerates sequential IDs and public errors can contain private exception messages.
 
 Experiment 25's `build_index.py` skips when its marker exists and otherwise refuses paid work, including `--force`. TDR-023 explains why: the earlier estimator counted the wrong inputs. `verify_accounting.py` checks completed indexes and cannot authorise future spending. The existing refusal is intentional protection until a correct replacement exists.
@@ -35,21 +37,23 @@ Relevant evidence:
 **Goals:**
 
 - Make the existing evidence reproducible without new embedding spending.
-- Restore a guarded rebuild option for experiment 25.
-- Evaluate routing on an operator-selected collection with independently checked pages.
 - Preserve a clear record of what the operator has approved and what remains pending.
 - Create the approved remote backup without including or losing uncommitted work.
 - Refresh comparable coverage and security evidence without expanding repair scope.
 
+Scope amendment (2026-09-10): two original goals are removed here. "Restore a guarded rebuild option for experiment 25" is descoped by the operator's task 3.7 decision not to rerun experiment 25. "Evaluate routing on an operator-selected collection with independently checked pages" is deferred to a separate future change. Both are recorded as non-goals below.
+
 **Non-goals:**
 
-- Rewrite git history, create a worktree or delete historical runs.
+- Rewrite git history, create a worktree or delete historical runs. (Amended 2026-09-10: execution later moved into this change's own worktree `feat/repair-input-quality-experiment-evidence` carrying the committed repair work; no history was rewritten.)
 - Create a pull request as part of the approved remote backup.
 - Promote any packaged default during evidence repair.
 - Implement a replacement routing policy before its approval and specification.
 - Introduce page stitching, a new OCR backend, Mistral integration or a new ingestion framework.
 - Repeat experiments 25–27 merely because their reporting needs correction.
 - Repair unrelated coverage debt or experiment 24 tooling in this change. Their audit findings remain unresolved and must not be described as fixed.
+- Rebuild experiment 25's index or restore its estimate-approval path (descoped 2026-09-10; the operator decided at task 3.7 not to rerun it).
+- Run the repeat PDF routing study in this change; it moves to a separate future change (deferred 2026-09-10).
 
 ## Decisions
 
@@ -74,6 +78,8 @@ Synchronise decision status with the existing local project-tracking bundle and 
 Alternative rejected: treating a failed gate as permission to write an Accepted ADR under the operator's name.
 
 ### 3. Replace experiment 25's refusal only after a valid offline estimate exists
+
+DESCOPED (2026-09-10): the operator decided at task 3.7 not to rerun experiment 25. Its historical PASS, tokenizer promotion and existing index stand. The unconditional refusal in `build_index.py` remains the live behaviour, and the orphaned estimator and approval scaffold awaits removal (backed up under task 1.5). The gate principle is preserved for any future rebuild in the `experiment-validity-gates` spec requirement "Paid rebuilds require current estimates and approval". The text below is retained as that future design basis.
 
 Reuse production document selection and preparation with an in-memory sink and a network-blocked embedding-request recorder. Exercise the installed adapter's normal request preparation using a fake transport; do not rebuild payloads from row text and metadata or revive the deprecated standalone counter.
 
@@ -113,6 +119,8 @@ Ask whether another combined run serves a desired candidate. If the operator dec
 
 ### 6. Repeat experiment 28 as a routing study
 
+DEFERRED (2026-09-10): this study is new paid measurement, not evidence repair, and moves to its own future OpenSpec change (tasks 6.1–6.11). The concrete routing defect it targeted is already fixed by commit `9bf4810`, which routes `mixed` PDFs by the calibrated thresholds instead of unconditionally. The text below is retained as the design basis for that future change.
+
 Use a new sibling experiment directory with the next available identifier, chosen at apply time. Keep experiment 28's frozen plan and original output intact.
 
 The collection must include the previously identified book as a known development/stress case, plus explicitly approved documents. No automatic scan of Zotero, Downloads, Documents or Desktop is permitted. Ask the operator to supply or approve a path list or a precisely defined collection. Preserve content-digest-to-ID mappings privately and validate them before resume. Public records carry opaque IDs and safe counts only.
@@ -138,6 +146,8 @@ Record actual classification duration. Label fixture-based OCR projections, incl
 Alternative rejected: rerunning the whole library with a different density threshold. That would repeat the population and labelling weaknesses.
 
 ### 7. Adopt a routing change only through a later explicit amendment
+
+Disposition (2026-09-10): the four-file mixed patch was adopted as the standalone defect-fix commit `9bf4810` ("route mixed PDFs by threshold, not unconditionally") with regression tests, on design grounds. It changes no packaged default, so no routing-identity invalidation is required while OCR is off. The broader OCR default-promotion decision (`OCR_FALLBACK_ENABLED`) stays deferred to the future study in decision 6. Any future default change still follows this section's amendment rule.
 
 This proposal does not select a new production rule. After the operator approves one, run `openspec-update-change` to add its exact PDF behaviour, scenarios and implementation tasks to this change and reconcile the original design. Then seek approval to apply that amended scope.
 
@@ -170,22 +180,22 @@ Updated during apply to record the operator's approvals and their safeguards. Th
 
 | Item | Status | Action before proceeding |
 | --- | --- | --- |
-| Existing worktree | Approved by operator | Stay on this branch; no reset or new worktree |
+| Existing worktree | Approved by operator; moved 2026-09-10 to this change's own worktree | Stay on `feat/repair-input-quality-experiment-evidence`; no reset or further worktree change |
 | Evidence/tooling repair | Approved by operator | Apply within the existing safeguards |
 | Existing ten-commit remote backup | Approved with safeguards | Inspect committed content; verify a local backup of all uncommitted changes; push only the inspected HEAD |
 | Pull request | Not approved | Do not create one |
 | Full fast-suite coverage measurement | Approved with safeguards | Run fresh coverage; compare a named earlier revision only if needed; do not fix unrelated debt |
 | Two prior `AIK_py_LFI` findings | Approved for reassessment | Run a fresh scan and trace reachable input paths for the checkpoint and temporary-file findings |
 | Experiment 25 estimate and 15% rule | Confirmed by operator | Display estimated tokens and cost; use 15% only to judge the result; allow an approved build above it |
-| Experiment 25 paid rebuild | Not approved | Present valid estimate, purpose and separate destination; obtain spending approval |
-| Experiment 26 repeat | Not scheduled | Correct saved evidence first; ask if a new run is needed |
-| Experiment 27 repeat | Undecided | Confirm whether the combined candidate is still wanted |
-| Selected PDF collection | Not yet selected | Obtain explicit list/selection, including the book |
-| Independent page labels and hold-out | Not yet prepared | Agree coverage and reserve unseen outcomes |
-| Replacement routing rule | Undecided | Approve missing-page, zero-threshold and whole-file behaviour |
-| Real OCR measurement | Not approved | Agree documents, runtime budget and timeout |
-| Four-file mixed patch | Unapproved | Preserve; neither adopt nor discard automatically |
-| OCR default promotion | Pending | Reopen original task 5.5 during apply; await explicit decision |
+| Experiment 25 paid rebuild | Decided: not rerun (2026-09-10, task 3.7) | Keep the unconditional refusal; remove the orphaned estimator scaffold |
+| Experiment 26 repeat | No paid repeat authorised (2026-09-10) | Record the formal purpose or close decision; no new tasks without an operator request |
+| Experiment 27 repeat | No paid repeat authorised (2026-09-10) | Record the formal purpose or close decision; no new tasks without an operator request |
+| Selected PDF collection | Deferred to the future routing study (2026-09-10) | Obtain the explicit list or selection, including the book, in that change |
+| Independent page labels and hold-out | Deferred to the future routing study (2026-09-10) | Agree coverage and reserve unseen outcomes in that change |
+| Replacement routing rule | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Approve missing-page, zero-threshold and whole-file behaviour only in the future study |
+| Real OCR measurement | Deferred to the future routing study (2026-09-10) | Agree documents, runtime budget and timeout in that change |
+| Four-file mixed patch | Adopted as defect-fix commit `9bf4810` (2026-09-10) | None here; broader default promotion remains deferred |
+| OCR default promotion | Decided: stays off (2026-09-10) | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the future preregistered routing study |
 
 ## Migration Plan
 

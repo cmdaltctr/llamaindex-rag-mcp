@@ -5,6 +5,7 @@ The session audit found unsafe experiment completion checks, unsupported conclus
 ## What Changes
 
 - Work in the existing `feat/improve-rag-input-quality-5` worktree. Preserve the commits, historical failed results, frozen gates and existing indexes.
+- Continuation (2026-09-10): execution moved into this change's own worktree on branch `feat/repair-input-quality-experiment-evidence` at `23389f7`, carrying the committed repair work. No reset or history rewrite occurred; the bullet above is superseded for location only.
 - Reopen the OCR part of original task 5.5 and the unapproved acceptance in task 6.9 and ADR-064. Correct ADR-062's newly attributed acceptance. Leave packaged defaults unchanged.
 - Experiment 25 is not rerun (operator decision, task 3.7). Its historical PASS, tokenizer promotion and existing index stand unchanged. The offline estimate, spending-approval and budget-stop rebuild path is descoped and its scaffold removed. The gate principle (a paid rebuild needs a current estimate and explicit approval) stays recorded in the spec for any future rebuild.
 - Make experiment 26 and 27 reject incomplete, duplicate, mismatched or incompatible checkpoints before issuing a verdict. Correct their conclusions from the existing complete results.
