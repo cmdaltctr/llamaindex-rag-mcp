@@ -72,6 +72,8 @@ def classify_cell(rows: object, done: object, expected: dict[str, str]) -> dict[
             reasons.append(_reason(f"query {query_id} latency_s is not a number"))
         elif not math.isfinite(float(latency)):
             reasons.append(_reason(f"query {query_id} latency_s is not finite"))
+        elif float(latency) < 0.0:
+            reasons.append(_reason(f"query {query_id} latency_s is negative"))
 
     row_ids = [row.get("query_id") for row in rows if isinstance(row, dict)]
     if len(done) != len(row_ids) or set(done) != set(row_ids):

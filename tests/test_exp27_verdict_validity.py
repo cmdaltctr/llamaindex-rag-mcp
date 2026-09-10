@@ -200,3 +200,37 @@ def test_exp27_runner_rejects_non_positive_smoke_limits(
     runner.EXP_DIR = tmp_path / "experiment"
     with pytest.raises(SystemExit, match="positive integer"):
         runner.resolve_checkpoint_base(limit=bad_limit, run_name=None)
+
+
+# ---------------------------------------------------------------------------
+# Task 4.2: missing checkpoint files produce a clean invalid verdict.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not GT.exists(), reason="untracked ground truth is absent")
+def test_exp27_missing_measured_cell_is_invalid_not_crash(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A missing measured cell must produce an invalid verdict, not a crash."""
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    sources = _historical_sources(tmp_path)
+    # Delete one measured cell to simulate a missing checkpoint.
+    sources["combined_candidate"].unlink()
+    _configure(ns, tmp_path, sources)
+    summary = _summary(ns, tmp_path / "cells", tmp_path / "report")
+    assert summary.get("status") == "invalid"
+    assert summary.get("verdict") is None
+
+
+@pytest.mark.skipif(not GT.exists(), reason="untracked ground truth is absent")
+def test_exp27_negative_latency_is_invalid(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A negative latency in any cell invalidates the whole grid."""
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    sources = _historical_sources(tmp_path)
+    state = json.loads(sources["combined_candidate"].read_text(encoding="utf-8"))
+    state["rows"][0]["latency_s"] = -1.0
+    _write(sources["combined_candidate"], state)
+    _configure(ns, tmp_path, sources)
+    summary = _summary(ns, tmp_path / "cells", tmp_path / "report")
+    assert summary.get("status") == "invalid"
+    assert summary.get("verdict") is None

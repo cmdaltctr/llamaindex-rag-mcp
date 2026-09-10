@@ -239,8 +239,34 @@ def summarise_from(cells_dir: Path | None, out_dir: Path) -> dict:
             candidate = cells_dir / f"{cell}.json"
             if candidate.exists():
                 sources[cell] = candidate
-    states = {cell: json.loads(path.read_text(encoding="utf-8")) for cell, path in sources.items()}
+    states: dict[str, dict] = {}
+    missing: list[str] = []
+    for cell, path in sources.items():
+        if not path.exists():
+            missing.append(str(path))
+            states[cell] = {"rows": [], "done": []}
+            continue
+        states[cell] = json.loads(path.read_text(encoding="utf-8"))
     validation = validate_cells(states, expected)
+    if missing:
+        validation = {
+            "status": "invalid",
+            "cells": {
+                cell: (
+                    {
+                        "status": "invalid",
+                        "reasons": [f"checkpoint file missing: {sources[cell]}"],
+                        "n_rows": 0,
+                        "expected_n": len(expected),
+                    }
+                    if not sources[cell].exists()
+                    else validation["cells"][cell]
+                )
+                for cell in sources
+            },
+            "pairing_reasons": validation["pairing_reasons"]
+            + [f"missing checkpoint files: {', '.join(missing)}"],
+        }
     print(f"[summarise] validity: {validation['status']}", flush=True)
 
     session_path = (

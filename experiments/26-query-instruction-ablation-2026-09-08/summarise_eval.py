@@ -314,10 +314,35 @@ def summarise_from(cells_dir: Path, out_dir: Path) -> dict:
     expected = {q["query_id"]: q["category"] for q in queries_raw}
     plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
 
-    states = {
-        cell: json.loads((cells_dir / f"{cell}.json").read_text(encoding="utf-8")) for cell in CELLS
-    }
+    states: dict[str, dict] = {}
+    missing: list[str] = []
+    for cell in CELLS:
+        path = cells_dir / f"{cell}.json"
+        if not path.exists():
+            missing.append(str(path))
+            states[cell] = {"rows": [], "done": []}
+            continue
+        states[cell] = json.loads(path.read_text(encoding="utf-8"))
     validation = validate_cells(states, expected)
+    if missing:
+        validation = {
+            "status": "invalid",
+            "cells": {
+                cell: (
+                    {
+                        "status": "invalid",
+                        "reasons": [f"checkpoint file missing: {path}"],
+                        "n_rows": 0,
+                        "expected_n": len(expected),
+                    }
+                    if not (cells_dir / f"{cell}.json").exists()
+                    else validation["cells"][cell]
+                )
+                for cell, path in zip(CELLS, [cells_dir / f"{c}.json" for c in CELLS], strict=True)
+            },
+            "pairing_reasons": validation["pairing_reasons"]
+            + [f"missing checkpoint files: {', '.join(missing)}"],
+        }
     print(f"[summarise] validity: {validation['status']}", flush=True)
 
     session_path = cells_dir.parent / "session.json"

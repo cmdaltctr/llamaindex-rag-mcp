@@ -158,6 +158,7 @@ def test_four_query_prefix_is_incomplete_and_never_promoted(
             "parent_ids",
         ),
         ([_row("q0", latency_s=float("nan"))], ["q0"], "invalid", "latency"),
+        ([_row("q0", latency_s=-0.1)], ["q0"], "invalid", "negative"),
         ([_row("q0")], ["q0", "q1"], "invalid", "done"),
     ],
 )
@@ -360,3 +361,73 @@ def test_validate_cells_marks_non_object_checkpoints_invalid() -> None:
     result = helper.validate_cells({"raw": good, "candidate": ["not", "an", "object"]}, expected)
     assert result["status"] == "invalid"
     assert any("not an object" in r for r in result["cells"]["candidate"]["reasons"])
+
+
+# ---------------------------------------------------------------------------
+# Task 4.2: missing checkpoint files produce a clean invalid verdict.
+# ---------------------------------------------------------------------------
+
+
+def test_exp26_missing_checkpoint_file_is_invalid_not_crash(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A missing checkpoint file must produce an invalid verdict, not a crash."""
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    gt, plan, manifest, expected = _synthetic_inputs(tmp_path)
+    cells = tmp_path / "cells"
+    cells.mkdir()
+    # Write only one of the two required cells.
+    rows = [_row(query_id, category) for query_id, category in expected.items()]
+    _write(cells / "raw_none.json", _state(rows))
+    # candidate_instruction.json is deliberately absent.
+    _configure_exp26(ns, tmp_path, cells, gt, plan, manifest)
+    summary = _summary(ns, cells, tmp_path / "report")
+    assert summary["status"] == "invalid"
+    assert summary.get("verdict") is None
+    assert "missing" in " ".join(summary["validation"]["pairing_reasons"]).lower()
+
+
+def test_exp26_negative_latency_is_invalid(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A negative latency is structurally invalid and must not produce a verdict."""
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    gt, plan, manifest, expected = _synthetic_inputs(tmp_path)
+    cells = tmp_path / "cells"
+    rows = [_row(query_id, category) for query_id, category in expected.items()]
+    rows[0]["latency_s"] = -0.5
+    _write(cells / "raw_none.json", _state(rows))
+    _write(cells / "candidate_instruction.json", _state([_row(q, c) for q, c in expected.items()]))
+    _configure_exp26(ns, tmp_path, cells, gt, plan, manifest)
+    summary = _summary(ns, cells, tmp_path / "report")
+    assert summary["status"] == "invalid"
+    assert summary.get("verdict") is None
+
+
+def test_exp26_gate_thresholds_use_full_precision(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Gate comparisons use unrounded values; rounding is display-only.
+
+    A measured value that rounds to the threshold but is actually below
+    it must FAIL, not PASS. This proves the full-precision contract.
+    """
+    ns = _load(EXP / "summarise_eval.py", monkeypatch)
+    gt, plan, manifest, expected = _synthetic_inputs(tmp_path)
+    cells, out = tmp_path / "cells", tmp_path / "report"
+    # Build a complete synthetic set where the raw arm has all hits
+    # and the candidate arm has all misses — a clear FAIL.
+    rows_raw = [_row(q, c, parent_ids=[f"hit-{q}"]) for q, c in expected.items()]
+    rows_cand = [_row(q, c, parent_ids=["miss"]) for q, c in expected.items()]
+    _write(cells / "raw_none.json", _state(rows_raw))
+    _write(cells / "candidate_instruction.json", _state(rows_cand))
+    _configure_exp26(ns, tmp_path, cells, gt, plan, manifest)
+    summary = _summary(ns, cells, out)
+    assert summary["status"] == "complete"
+    assert summary["verdict"] == "FAIL"
+    # The quality gate measured value must be the unrounded lift,
+    # not a rounded-to-threshold value.
+    measured = summary["gates"]["quality_paired_r5_lift"]["measured"]
+    threshold = summary["gates"]["quality_paired_r5_lift"]["threshold"]
+    # The measured lift is negative (all misses vs all hits), well below
+    # the positive threshold. Full precision means the comparison is
+    # exact, not rounded to 6 dp before comparing.
+    assert measured < threshold
