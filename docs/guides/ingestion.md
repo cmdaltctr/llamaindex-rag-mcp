@@ -229,14 +229,14 @@ Every PDF starts on `pdf-inspector`. The routing seam only looks at the
 evidence `pdf-inspector` already produced: `pdf_type`, `pdf_confidence`,
 the count of pages flagged for OCR, and the page count.
 
-A PDF routes to the OCR worker when either rule fires:
+With OCR enabled and the worker available, a PDF routes when either rule fires:
 
 1. `pdf_type` is `scanned` or `image_based`. This is unconditional and
    ignores the thresholds, because both labels mean the whole document
    is pictures and no threshold can change that.
 2. Anything else — including `mixed` and `text_based` — routes only if
-   `pdf_confidence` falls below `OCR_FALLBACK_MIN_CONFIDENCE`, or the
-   flagged-page proportion reaches `OCR_FALLBACK_PAGE_FRACTION`.
+   `pdf_confidence` falls below a positive `OCR_FALLBACK_MIN_CONFIDENCE`,
+   or the flagged-page proportion reaches a positive `OCR_FALLBACK_PAGE_FRACTION`.
 
 `mixed` sits in the second group. It means "some pages carry text and
 some do not", which the page-fraction threshold can evaluate. The whole
@@ -266,14 +266,22 @@ page-level stitching between the two readers.
 | `OCR_WORKER_ENV_DIR`          | empty   | Worker virtual-environment directory.                            |
 | `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Seconds to wait for one parse response.                          |
 
-In the proposed local variant, both `0.0` thresholds are "never triggered"
-sentinels, not "always triggered". Enabling the fallback without calibrated
-thresholds gives classification-only routing in that variant.
+Both `0.0` thresholds disable their conditions. With OCR enabled and both
+thresholds untouched, only `scanned` and `image_based` route to the worker.
+Mixed PDFs remain on the fast path.
 
-The first three fields form the calibrated gate in the proposed local variant.
+The first three fields form the settled routing gate.
 The last three are operational: how to reach the worker. Keep them separate.
 `0.5` / `0.5` are the values Experiment 23 calibrated on the committed
 calibration fixtures.
+
+### Routing identity and existing indexes
+
+Schema 5 includes the sorted unconditional routing types in source identity.
+It changes identity for all sources, including non-PDF sources and sources
+with OCR disabled. Reading an index does not rebuild it. The next ingestion
+attempt can reprocess and re-embed previously indexed source bytes.
+Keep preserved experiment databases out of ingestion and migration tests.
 
 ### Provision the worker
 
