@@ -75,6 +75,84 @@ def test_unconditional_types_route_even_at_defaults(effective_settings) -> None:
         ), pdf_type
 
 
+def test_mixed_is_not_unconditional(effective_settings) -> None:
+    """``mixed`` routes by the thresholds, never unconditionally (ADR-064).
+
+    A ``mixed`` classification means some pages carry text and some do
+    not — the exact question ``ocr_fallback_page_fraction`` answers.
+    Routing it unconditionally skipped that check, and whole-file
+    dispatch multiplied the skip by the page count.
+    """
+    assert "mixed" not in OCR_UNCONDITIONAL_TYPES
+
+
+def test_mixed_with_few_flagged_pages_stays_on_the_fast_path(effective_settings) -> None:
+    """The experiment 28 regression: 10 flagged pages must not route 991.
+
+    Shaped from the real document that failed experiment 28's safety
+    gate — ``mixed`` at confidence 0.76, 991 pages, 10 flagged, 1,127
+    characters per page. Under the calibrated gate the flagged fraction
+    is 1%, far below the 0.5 trigger, so it belongs on the fast path.
+    """
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.5,
+        ocr_fallback_page_fraction=0.5,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="mixed",
+            pdf_confidence=0.7625,
+            pages_needing_ocr=10,
+            page_count=991,
+            settings=settings,
+        )
+        is False
+    )
+
+
+def test_mixed_with_material_flagged_pages_still_routes(effective_settings) -> None:
+    """Demoting ``mixed`` must not stop a genuinely OCR-needing mixed PDF.
+
+    Above the calibrated page fraction the same classification routes,
+    so the fix narrows the rule without disabling it.
+    """
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.5,
+        ocr_fallback_page_fraction=0.5,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="mixed",
+            pdf_confidence=0.9,
+            pages_needing_ocr=6,
+            page_count=10,
+            settings=settings,
+        )
+        is True
+    )
+
+
+def test_mixed_with_low_confidence_still_routes(effective_settings) -> None:
+    """A poorly-classified mixed PDF still reaches OCR via the confidence floor."""
+    settings = effective_settings(
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.5,
+        ocr_fallback_page_fraction=0.5,
+    )
+    assert (
+        ocr_required_by_gate(
+            pdf_type="mixed",
+            pdf_confidence=0.3,
+            pages_needing_ocr=0,
+            page_count=20,
+            settings=settings,
+        )
+        is True
+    )
+
+
 def test_unknown_classification_routes_by_thresholds_only(effective_settings) -> None:
     """An unseen classification value falls through to the calibrated path."""
     settings = effective_settings()

@@ -201,32 +201,58 @@ an image. A scanned page therefore comes back empty or nearly empty, and
 that content never reaches the index. The OCR fallback sends those PDFs
 to an isolated PaddleOCR-VL worker instead.
 
-**This is opt-in and stays off by default.** The reason is measured, not
-cautious: on a library of 79 real academic PDFs the routing gate sent one
-991-page document to OCR because it classified `mixed`, even though the
-document extracts 1,127 characters per page and only 10 of its 991 pages
-lacked text. That single mistake projects to 29 wasted hours against an
-80-second fast-path run over the whole library. See
+**This is opt-in and stays off by default.** Two reasons, both measured.
+
+First, OCR is expensive: 34–106 seconds per page against roughly one
+second per file on the fast path. A 20-page scanned document costs
+twenty minutes.
+
+Second, how much a corpus benefits is unresolved. On a library of 79 real
+academic PDFs, only 2 documents genuinely lacked a text layer — but with
+79 documents the 95% interval on that rate still runs from 0.7% to 8.8%,
+so "rare" is supported and "negligible" is not. See
 [ADR-064](../adr/064-input-quality-promotion-decisions.md) and experiment
-28 for the numbers, and read the routing rules below before enabling it.
+28.
+
+The same measurement identified a limitation in the committed policy: it
+sent a 991-page `mixed` document to OCR in full, despite extracting 1,127
+characters per page with only 10 of 991 pages flagged. The committed policy
+still routes `mixed` PDFs unconditionally.
 
 The worker is a separate project in `ocr-worker/` with its own lockfile.
 It owns every Paddle package. The OMRG main install has none of them, and
 a normal `uv sync` never pulls them in.
 
-### The fast path stays the default
+### Committed policy and proposed local variant
 
 Every PDF starts on `pdf-inspector`. The routing seam only looks at the
 evidence `pdf-inspector` already produced: `pdf_type`, `pdf_confidence`,
 the count of pages flagged for OCR, and the page count.
 
-A PDF routes to the worker when either rule fires:
+The committed policy sends a PDF to the worker when its `pdf_type` is
+`scanned`, `image_based`, or `mixed`. Other types use the configured
+thresholds.
 
-1. `pdf_type` is `scanned`, `image_based`, or `mixed`. This is
-   unconditional and ignores the thresholds.
-2. The PDF is text-based, but `pdf_confidence` falls below
-   `OCR_FALLBACK_MIN_CONFIDENCE`, or the flagged-page proportion reaches
-   `OCR_FALLBACK_PAGE_FRACTION`.
+The preserved local worktree patch proposes a different policy. It is
+unapproved and does not change the packaged behaviour. Under that proposal,
+a PDF routes to the worker when either rule fires:
+
+1. `pdf_type` is `scanned` or `image_based`. This is unconditional and
+   ignores the thresholds, because both labels mean the whole document
+   is pictures and no threshold can change that.
+2. Anything else — including `mixed` and `text_based` — routes only if
+   `pdf_confidence` falls below `OCR_FALLBACK_MIN_CONFIDENCE`, or the
+   flagged-page proportion reaches `OCR_FALLBACK_PAGE_FRACTION`.
+
+In the proposed local variant, `mixed` sits in the second group. It means
+"some pages carry text and some do not", which the page-fraction threshold
+can evaluate. The whole file is dispatched together, with no page-level
+stitching. The 991-page document remains evidence for this proposal; it does
+not establish an adopted policy. See
+[ADR-064](../adr/064-input-quality-promotion-decisions.md).
+
+Keep OCR disabled with both thresholds at `0.0` until the operator explicitly
+decides the policy.
 
 Layout complexity is not a rule. Multi-column and table-heavy PDFs stay
 on the fast path when their text extracts cleanly. Experiment 24
@@ -247,14 +273,14 @@ page-level stitching between the two readers.
 | `OCR_WORKER_ENV_DIR` | empty | Worker virtual-environment directory. |
 | `OCR_WORKER_REQUEST_TIMEOUT` | `300.0` | Seconds to wait for one parse response. |
 
-Both `0.0` thresholds are "never triggered" sentinels, not "always
-triggered". Enabling the fallback without calibrated thresholds gives
-classification-only routing, which is the safe state.
+In the proposed local variant, both `0.0` thresholds are "never triggered"
+sentinels, not "always triggered". Enabling the fallback without calibrated
+thresholds gives classification-only routing in that variant.
 
-The first three fields are the calibrated gate: which PDFs deserve OCR.
-The last three are operational: how to reach the worker. Keep them
-separate. `0.5` / `0.5` are the values Experiment 23 calibrated on the
-committed calibration fixtures.
+The first three fields form the calibrated gate in the proposed local variant.
+The last three are operational: how to reach the worker. Keep them separate.
+`0.5` / `0.5` are the values Experiment 23 calibrated on the committed
+calibration fixtures.
 
 ### Provision the worker
 
