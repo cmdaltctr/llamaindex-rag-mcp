@@ -12,7 +12,7 @@ The session audit found unsafe experiment completion checks, unsupported conclus
 - Rewrite experiment 27's purpose in plain English. Ask whether the combination is still wanted before scheduling another paid run.
 - The repeat PDF routing study (approved corpus, independent page labels, held-out split, real OCR run) is deferred to a separate future change. It is new paid measurement, not evidence repair.
 - The concrete routing defect experiment 28 exposed is fixed: `mixed` PDFs route by the calibrated thresholds, not unconditionally (commit `9bf4810`). This changes no packaged default. Enabling OCR by default remains an operator decision, deferred to the future study.
-- The four previously uncommitted routing files are adopted as that bug fix, with regression tests. Because the OCR default stays off, no routing identity invalidation is required.
+- The four previously uncommitted routing files are adopted as that bug fix, with regression tests. Schema 5 includes the unconditional routing types in source identity, even when OCR is off. A later ingestion attempt can reprocess existing sources; preserved experiment indexes must not be re-ingested.
 - Separate experiment verdicts from operator decisions. Record blocked work and tick tasks only after verification.
 - Push the existing ten commits only as a remote backup. First inspect committed content for secrets and private data, then preserve all uncommitted changes in a verified local backup. Do not create a pull request.
 - Measure coverage with a fresh full fast-suite run. Compare a named earlier revision only if attribution needs it, and do not expand into unrelated coverage fixes.

@@ -63,7 +63,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
 _OPENAI_LIKE_ADAPTER_CASES = 9
-_BASE_EXECUTED = 2858  # Bare CI baseline at repair-input-quality-experiment-evidence.
+# Reference counts assume historical ground truth and the Qwen tokenizer cache
+# are present, and the optional OpenAI-like adapter is absent.
+_BASE_EXECUTED = 2858
 # Re-baselined 2026-09-10 from 2774 (repair-fast-suite-regressions): the
 # committed exp 26/27 verdict-validity suites add 38 cases (e5240d1) and
 # the mixed-PDF threshold-routing regression tests add 4 (9bf4810). Both
@@ -122,7 +124,7 @@ _BASE_EXECUTED = 2858  # Bare CI baseline at repair-input-quality-experiment-evi
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 131  # Bare CI baseline, including optional adapter cases.
+_BASE_SKIPPED = 131  # Reference count before the environment adjustments below.
 # Four historical-prefix cases need ignored ground truth. New safety
 # regressions are synthetic and always run. Preserve both exact counts
 # when that optional historical input is absent (as in a fresh checkout).
