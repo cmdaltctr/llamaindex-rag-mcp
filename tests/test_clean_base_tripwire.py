@@ -141,10 +141,15 @@ if not _HISTORICAL_GT.exists():
 if find_spec("llama_index.embeddings.openai_like") is not None:
     _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
     _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
-# Two model-token chunking tests use a cached Qwen3-Embedding-4B tokenizer
+# Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
 # when it is present in the HuggingFace hub cache. They skip on a clean CI
 # runner, so both supported environments keep an exact, documented manifest.
-_CACHED_TOKENIZER_CASES = 2
+# Measured 2026-09-11 by running the base suite with $HOME pointed at an empty
+# dir (tokenizer absent, historical ground truth still present): executed
+# dropped 2858 -> 2855, skipped rose 131 -> 134. The prior value of 2 was
+# latent — the count assertion was unreachable until the docs-reference gate
+# stopped failing the subprocess returncode check first.
+_CACHED_TOKENIZER_CASES = 3
 _HF_CACHE = Path.home() / ".cache" / "huggingface" / "hub"
 _has_qwen_tokenizer = bool(
     list(_HF_CACHE.glob("models--Qwen--Qwen3-Embedding-4B/snapshots/*/tokenizer.json"))
