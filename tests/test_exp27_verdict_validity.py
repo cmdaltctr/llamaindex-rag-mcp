@@ -60,7 +60,8 @@ def _configure(ns: _Module, root: Path, sources: dict[str, Path]) -> None:
     ns.MANIFEST_PATH = EXP / "output/runtime_manifest.json"
     ns.CELL_SOURCES = sources
     ns._query_token_cost = lambda queries, **kwargs: {
-        "available": False, "reason": "offline fixture"
+        "available": False,
+        "reason": "offline fixture",
     }
     ns._write_results_md = lambda summary, plan: (root / "rendered.md").write_text(
         summary["headline"], encoding="utf-8"
@@ -219,7 +220,10 @@ def _synthetic_sources(ns: _Module, root: Path) -> dict[str, Path]:
         "nuggets": [],
     }
     row = {
-        "query_id": "q", "category": "identifier-heavy", "parent_ids": ["miss"], "latency_s": 0.1
+        "query_id": "q",
+        "category": "identifier-heavy",
+        "parent_ids": ["miss"],
+        "latency_s": 0.1,
     }
     sources = {
         cell: _write(root / "historical/cells" / f"{cell}.json", {"rows": [row], "done": ["q"]})
@@ -264,11 +268,13 @@ def test_exp27_gates_use_unrounded_aggregates(monkeypatch: pytest.MonkeyPatch) -
     """All three combined gates reject values rounded onto their thresholds."""
     ns = _load(EXP / "summarise_eval.py", monkeypatch)
     plan = json.loads((EXP / "plan.json").read_text(encoding="utf-8"))
-    rows = [{
-        "category": "identifier-heavy",
-        "latency_s": 2.850004,
-        "metrics": {"recall_at_5": 0.2309996, "recall_at_10": 0.2582996},
-    }]
+    rows = [
+        {
+            "category": "identifier-heavy",
+            "latency_s": 2.850004,
+            "metrics": {"recall_at_5": 0.2309996, "recall_at_10": 0.2582996},
+        }
+    ]
     rounded = ns._aggregate(rows)
     assert all(gate["pass"] for gate in ns._gates(plan, rounded).values())
     exact = ns._aggregate(rows, rounded=False)

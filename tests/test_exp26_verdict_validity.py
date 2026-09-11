@@ -409,12 +409,14 @@ def test_exp26_gate_thresholds_use_full_precision(
     ns = _load(EXP / "summarise_eval.py", monkeypatch)
     plan = json.loads((EXP / "plan.json").read_text(encoding="utf-8"))
     raw = [{"query_id": "q", "category": "identifier-heavy", "metrics": {"recall_at_5": 0.0}}]
-    candidate = [{
-        "query_id": "q",
-        "category": "identifier-heavy",
-        "latency_s": 2.850004,
-        "metrics": {"recall_at_5": 0.0299996, "recall_at_10": 0.2582996},
-    }]
+    candidate = [
+        {
+            "query_id": "q",
+            "category": "identifier-heavy",
+            "latency_s": 2.850004,
+            "metrics": {"recall_at_5": 0.0299996, "recall_at_10": 0.2582996},
+        }
+    ]
     rounded = ns._aggregate(candidate)
     exact = ns._aggregate(candidate, rounded=False)
     assert rounded["all"]["p95_latency_ms"] == 2850.0

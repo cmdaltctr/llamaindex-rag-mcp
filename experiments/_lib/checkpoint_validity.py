@@ -267,8 +267,10 @@ def load_checkpoint_files(sources: dict[str, Path], expected: dict[str, str]) ->
             states[cell] = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, ValueError) as exc:
             states[cell] = {"rows": [], "done": []}
-            description = "checkpoint file missing" if isinstance(exc, FileNotFoundError) else (
-                "checkpoint cannot be read as JSON"
+            description = (
+                "checkpoint file missing"
+                if isinstance(exc, FileNotFoundError)
+                else ("checkpoint cannot be read as JSON")
             )
             errors[cell] = f"{description}: {path}"
     validation = validate_cells(states, expected)

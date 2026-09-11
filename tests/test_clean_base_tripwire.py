@@ -139,6 +139,17 @@ if not _HISTORICAL_GT.exists():
 if find_spec("llama_index.embeddings.openai_like") is not None:
     _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
     _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
+# Two model-token chunking tests use a cached Qwen3-Embedding-4B tokenizer
+# when it is present in the HuggingFace hub cache. They skip on a clean CI
+# runner, so both supported environments keep an exact, documented manifest.
+_CACHED_TOKENIZER_CASES = 2
+_HF_CACHE = Path.home() / ".cache" / "huggingface" / "hub"
+_has_qwen_tokenizer = bool(
+    list(_HF_CACHE.glob("models--Qwen--Qwen3-Embedding-4B/snapshots/*/tokenizer.json"))
+)
+if not _has_qwen_tokenizer:
+    _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
+    _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
 _BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
 _CHROMA_GATED_FILES = frozenset(

@@ -213,7 +213,7 @@ def _write_results_md(summary: dict, plan: dict) -> None:
         "```bash",
         "uv run python experiments/27-combined-candidate-path-2026-09-09/summarise_eval.py \\",
         f"  --run-dir {Path(summary['cell_sources']['combined_candidate']).parent.parent} "
-            "--out-dir <new-report-directory>",
+        "--out-dir <new-report-directory>",
         "```",
         "",
         "No index is built or written: both measured arms query the preserved",

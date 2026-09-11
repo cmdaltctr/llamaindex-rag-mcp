@@ -47,10 +47,14 @@ def _fixture(number: int, root: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
     )
     cells = ns["CELLS"] if number == 26 else tuple(ns["CELL_SOURCES"])
     state = {
-        "rows": [{
-            "query_id": "q", "category": "identifier-heavy",
-            "parent_ids": ["miss"], "latency_s": 0.1,
-        }],
+        "rows": [
+            {
+                "query_id": "q",
+                "category": "identifier-heavy",
+                "parent_ids": ["miss"],
+                "latency_s": 0.1,
+            }
+        ],
         "done": ["q"],
     }
     sources = {cell: _write(root / "cells" / f"{cell}.json", state) for cell in cells}
@@ -61,7 +65,8 @@ def _fixture(number: int, root: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[
         ns["CELL_SOURCES"] = sources
         ns["_drift"] = lambda aggregates: {"available": False, "reason": "synthetic fixture"}
         ns["_query_token_cost"] = lambda queries, **kwargs: {
-            "available": False, "reason": "synthetic fixture"
+            "available": False,
+            "reason": "synthetic fixture",
         }
     return ns, sources
 
