@@ -252,9 +252,7 @@ def effective_settings():
                 continue
             defaults = factory_block_defaults.get(block_name, {})
             if block_name in nested or defaults:
-                kwargs[block_name] = block_cls(
-                    **{**defaults, **nested.get(block_name, {})}
-                )
+                kwargs[block_name] = block_cls(**{**defaults, **nested.get(block_name, {})})
 
         return EffectiveSettings(**kwargs)
 
@@ -279,8 +277,8 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     would otherwise reset the store AFTER this fixture installs it).
     """
     from omrg.core.settings import (
-        EmbeddingBlock,
         EffectiveSettings,
+        EmbeddingBlock,
         MetadataBlock,
         reset_default_effective_settings,
         set_default_effective_settings,
