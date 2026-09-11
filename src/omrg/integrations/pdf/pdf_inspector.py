@@ -53,6 +53,11 @@ class PdfInspectorReader:
 
         result = pdf_inspector.process_pdf(str(file))
         markdown = result.markdown or ""
+        # Store-compatible scalar count (task 2.10): vector-store
+        # metadata values are scalars in both backends and nothing
+        # sanitises them on the way in, so the classifier's page LIST
+        # is reduced here to the count the routing gate consumes.
+        pages_needing_ocr_count = len(result.pages_needing_ocr or [])
 
         if result.pdf_type != "text_based":
             logger.info(
@@ -61,7 +66,7 @@ class PdfInspectorReader:
                 file.name,
                 result.pdf_type,
                 result.confidence,
-                len(result.pages_needing_ocr or []),
+                pages_needing_ocr_count,
             )
 
         return [
@@ -72,6 +77,7 @@ class PdfInspectorReader:
                     "pdf_type": result.pdf_type,
                     "pdf_confidence": result.confidence,
                     "page_count": result.page_count,
+                    "pages_needing_ocr": pages_needing_ocr_count,
                     "file_path": str(file),
                     "file_name": file.name,
                 },

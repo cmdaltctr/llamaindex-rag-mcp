@@ -1,0 +1,16 @@
+{
+  "mode": "candidate",
+  "tokenizer": {
+    "model": "Qwen/Qwen3-Embedding-4B",
+    "revision": "5cf2132abc99cad020ac570b19d031efec650f2b"
+  },
+  "files": 10025,
+  "chunks": 65529,
+  "embedded_tokens": 31875788,
+  "max_chunk_tokens": 1024,
+  "chunks_with_header_path": 2112,
+  "chunk_errors": 0,
+  "binary_skipped": 0,
+  "error_samples": [],
+  "elapsed_s": 2092.6
+}

@@ -1,0 +1,237 @@
+# Experiment 28 Results: PDF classification prevalence (task 5.5)
+
+**ID**: `28-pdf-classification-prevalence-2026-09-09`  
+**Date run**: 2026-09-09  
+**Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
+**Status**: FAIL  
+**Raw data**: [`output/classifications.json`](./output/classifications.json)
+
+---
+
+## Summary
+
+**Question:** If OCR routing were enabled with the calibrated thresholds on
+real library PDFs, how many documents would route incorrectly, and how many
+genuinely need OCR?
+
+**Observed outcome:** The safety gate failed with one false route out of 79
+documents. The benefit gate also failed with needs-OCR prevalence 2/79 and a
+Wilson 95% interval [0.7%, 8.8%].
+
+**Decision status:** The preregistered rule recorded *promote nothing* as the
+experiment outcome. The operator decision on OCR routing and defaults is
+pending separately and was never taken on this evidence.
+
+## Frozen gate checks
+
+| Gate | Rule | Measured | Verdict |
+| --- | --- | --- | --- |
+| Safety (H1) | false routes == 0 | 1 | ❌ FAIL |
+| Benefit (H2) | needs-OCR Wilson 95% lower > 0.01 | 2/79 = 2.5%, CI [0.7%, 8.8%] | ❌ FAIL |
+
+Thresholds are read from the frozen [`plan.json`](./plan.json), frozen
+2026-09-09 before any document was classified.
+
+## Population
+
+| Property | Value |
+| --- | --- |
+| Documents after de-duplication | 79 |
+| Parse failures | 0 |
+| Total pages | 2,744 |
+| Pages per document (min / median / max) | 5 / 15 / 991 |
+| Characters per page (min / median / max) | 0 / 3907 / 7177 |
+| `pdf_type` counts | {'text_based': 77, 'scanned': 1, 'mixed': 1} |
+| Documents at confidence 1.0 | 72 |
+| Documents with zero flagged pages | 71 |
+
+## What routed
+
+- Under the candidate gate (0.5 / 0.5): **3 documents**, 1,031 pages.
+- Under classification alone (thresholds at the 0.0 sentinels): 2 documents.
+- Caught ONLY by the calibrated thresholds: ['doc_067'].
+- Routed by the unconditional `pdf_type` rule despite having a text layer: ['doc_077'].
+
+### The false routes
+
+| Doc | `pdf_type` | Pages | Flagged | Chars/page |
+| --- | --- | ---: | ---: | ---: |
+| doc_077 | mixed | 991 | 10 | 1,127 |
+
+## Projected cost (monitored, not gated)
+
+At the committed warm worst case of 106.4 s/page:
+
+- Routed pages: 1,031 → **30.5 hours** of OCR.
+- Of which pages belonging to documents that did NOT need OCR: 991 → **29.3 hours wasted**.
+- The same corpus on the fast path: 80 s.
+- Slowdown: **1,375×**.
+
+## Ground-truth sensitivity (exploratory)
+
+| Threshold | needs-OCR count | False routes |
+| --- | ---: | ---: |
+| < 50 chars/page | 2 | 1 |
+| < 100 chars/page | 2 | 1 |
+| < 200 chars/page | 2 | 1 |
+
+The verdict does not depend on where the threshold sits.
+
+## Reproduction
+
+```bash
+uv run python experiments/28-pdf-classification-prevalence-2026-09-09/classify.py
+uv run python experiments/28-pdf-classification-prevalence-2026-09-09/summarise_eval.py
+```
+
+No OCR worker, no model load, no network call, no embedding. The
+id-to-path map stays in the gitignored `output/.local_manifest.json`.
+
+## Discussion
+
+### H1 fails, and the failure is a 991-page document
+
+One document routed that should not have: `doc_077`, classified `mixed`
+at confidence 0.76, **991 pages**, **1,127 characters per page**. That is
+a healthy text layer — a third of the median density in this library, but
+three orders of magnitude above the "no usable text" line at any
+threshold tested.
+
+Only **10 of its 991 pages** are flagged as needing OCR. Barely 1%. The
+gate sends all 991 anyway, because `mixed` is in
+`OCR_UNCONDITIONAL_TYPES` and task 2.4 dispatches whole files with no
+page-level stitching.
+
+At the committed warm worst case of 106.4 s/page that is **29.3 hours of
+OCR for one document that already extracts fine**. The whole 79-document
+library takes 80 seconds on the fast path. Enabling this default would
+have made it **1,375× slower**, and 96% of that cost buys nothing.
+
+### The operator's instinct was right and my retraction was wrong
+
+Earlier in this session I claimed a mostly-text document containing a few
+image-only pages would classify `mixed` and drag the entire file into
+OCR. I then withdrew the claim, because the one fixture that tests it —
+`eval_mixed.pdf`, a text page plus an image-only page — classified
+`text_based` at confidence 0.5 and stayed on the fast path.
+
+The real library vindicates the original claim. `eval_mixed.pdf` is a
+two-page synthetic file; `doc_077` is a 991-page real document, and the
+classifier treats them differently.
+
+The lesson is not that the first instinct was lucky. It is that a single
+synthetic two-page fixture was never adequate evidence in either
+direction, and I treated it as decisive twice — once to raise an alarm,
+once to withdraw it. The fixture set could not answer this question. That
+is exactly why this experiment exists.
+
+### The calibrated thresholds are the good part
+
+The routing breaks down cleanly, and the split is the opposite of what
+the promotion debate assumed:
+
+| Document | `pdf_type` | Pages | Flagged | Chars/page | Needed OCR? | Routed by |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| `doc_045` | scanned | 23 | 23 | 0 | **yes** | unconditional type rule |
+| `doc_067` | text_based | 17 | 17 | 0 | **yes** | **calibrated page-fraction threshold only** |
+| `doc_077` | mixed | 991 | 10 | 1,127 | no | unconditional type rule |
+
+`doc_067` is the interesting one. `pdf-inspector` classified it
+`text_based` at **confidence 1.0** while it extracts **zero characters
+across all 17 pages**. Classification alone would have missed it
+completely. The 0.5 page-fraction threshold — 17 of 17 pages flagged —
+is the only thing that caught it.
+
+So experiment 23's calibration earns its keep: it caught a document the
+classifier was confidently wrong about, and it produced no false routes.
+Every false route came from the unconditional `pdf_type` rule instead.
+
+### H2 fails too, but read it correctly
+
+needs-OCR prevalence is 2 of 79 (2.5%), Wilson 95% CI [0.7%, 8.8%]. The
+lower bound does not clear the 1% bar the power analysis set, so H2
+fails as preregistered.
+
+**This does not mean scanned documents are rare in academic libraries.**
+The interval runs up to 8.8% — as many as one document in eleven could
+need OCR and this study could not tell. n = 79 cannot resolve it. The
+honest statement is that the prevalence is unresolved at this sample
+size, not that the need is absent. A larger corpus would settle it; the
+operator scoped this one to the Zotero library.
+
+### Robustness
+
+The ground-truth threshold does not drive the verdict. At 50, 100 and 200
+characters per page the counts are identical: 2 documents need OCR, 1
+false route. `doc_077` sits at 1,127 characters per page, five times
+above the loosest threshold tested, so no plausible definition of "has a
+text layer" excludes it.
+
+No document sits within 0.05 of either 0.5 threshold, so the calibration
+is not balanced on a knife edge for this population.
+
+Zero parse failures across 79 documents and 2,744 pages.
+
+### Decision, per the rule fixed before the data
+
+The preregistered decision rule says: *safety gate fails → promote
+nothing.* That is the outcome.
+
+1. `OCR_FALLBACK_ENABLED` keeps its packaged default of `false`.
+2. `OCR_FALLBACK_MIN_CONFIDENCE` and `OCR_FALLBACK_PAGE_FRACTION` keep
+   their `0.0` never-trigger sentinels.
+3. The calibrated 0.5 / 0.5 values stay documented in `.env.example` and
+   the ADR as the values an operator should use when enabling OCR.
+
+Following the frozen rule matters here precisely because the analysis
+below suggests a *better* configuration exists. Rewriting the decision
+rule after seeing which component failed is how a gate becomes
+decoration.
+
+### Recovery clarification (2026-09-09)
+
+The frozen benefit threshold remains a Wilson 95% lower bound above 0.01
+(1%). This value was fixed before data collection, and it is a practical
+choice, not a result of a statistical calculation. The power analysis in the
+frozen plan anticipated about 83 documents, while the realised sample held 79
+after de-duplication; the preregistered 1% threshold is unchanged. The benefit
+gate remains failed at the realised sample size, with a prevalence interval
+still spanning 0.7% to 8.8%.
+
+This report's *Decision* section records the preregistered gate outcome. The
+operator did not approve an OCR routing/default disposition on this evidence,
+and no production routing change follows from the verdict alone.
+
+### Exploratory finding — a design defect, not a calibration problem
+
+**Labelled exploratory. Observed after the data, on the same data, and
+therefore not confirmatory evidence for anything.**
+
+The defect is locatable to one line. `OCR_UNCONDITIONAL_TYPES` in
+`core/../integrations/pdf/ocr_routing.py` contains `mixed`, so a `mixed`
+classification bypasses the calibrated thresholds entirely — and whole-
+file dispatch then multiplies the mistake by the page count.
+
+On this population, removing `mixed` from the unconditional set would
+have produced:
+
+- `doc_045` (scanned, unconditional) — still routed. Correct.
+- `doc_067` (17/17 pages flagged ≥ 0.5) — still routed. Correct.
+- `doc_077` (10/991 = 1% flagged, below 0.5) — **not routed**. Correct.
+
+Zero false routes, both true positives kept. But this is one library, and
+the observation was made after seeing the numbers. It is a hypothesis for
+a new preregistered experiment on a fresh corpus, not a change to make on
+the strength of this run.
+
+### Scope limit, binding on the change record
+
+This experiment sampled **one operator's curated academic library**:
+79 documents, 2,744 pages, overwhelmingly born-digital journal PDFs
+(median 3,907 characters per page, 72 of 79 classified at confidence 1.0).
+
+It cannot license a default for corpora it never saw — scanned archives,
+historical collections, OCR-hostile institutional repositories. What it
+does establish is that on a normal modern paper library the OCR fallback
+default would have been a serious mistake, and that the mistake is
+structural rather than a matter of tuning.

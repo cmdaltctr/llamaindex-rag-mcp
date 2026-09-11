@@ -69,6 +69,7 @@ dependencies = [
     # ingestion worker; security review F7 of
     # add-grounded-answer-synthesis-3). Floor == fixed release.
     "pypdf>=6.16.1",
+    "semantic-text-splitter>=0.32.0",
 ]
 
 [project.optional-dependencies]

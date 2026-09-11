@@ -62,16 +62,28 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 # isolation suite (tasks 4.8/4.9) with engine-level profile-isolation
 # cases (2468 -> 2508 executed, and the two new chroma-gated
 # write-contract cases add 2 base skips: 127 -> 129).
-_BASE_EXECUTED = 2515  # Re-baselined at the v3 console-alias-removal change:
-# it added five cases — two packaging regression tests
-# (tests/test_package_metadata.py) proving `omrg` is the only console
-# script and the removed alias does not resolve, plus three LaunchAgent
-# regression tests (tests/unit/test_launchagent.py) for legacy-only
-# resolution failure and legacy-prefix plist discovery (2508 -> 2513);
-# review remediation then added two more LaunchAgent regression tests —
-# a relative-PATH discovery result resolved to absolute, and a
-# custom-labelled legacy plist discovered by prefix rather than slug
-# (2513 -> 2515).
+_OPENAI_LIKE_ADAPTER_CASES = 9
+# Reference counts assume historical ground truth and the Qwen tokenizer cache
+# are present, and the optional OpenAI-like adapter is absent.
+_BASE_EXECUTED = 2858
+# Re-baselined 2026-09-10 from 2774 (repair-fast-suite-regressions): the
+# committed exp 26/27 verdict-validity suites add 38 cases (e5240d1) and
+# the mixed-PDF threshold-routing regression tests add 4 (9bf4810). Both
+# suites are committed and reviewed; the earlier objection to counting
+# the routing tests applied only while the patch was unapproved.
+# Re-baselined 2026-09-10 from 2816: the consolidation change added 20
+# new tests — 6 mixed-PDF routing gate tests, 4 reader dispatch boundary
+# tests, 4 unconditional-types identity tests, 3 exp26 verdict validity
+# tests (missing file, negative latency, full-precision thresholds) plus
+# 1 parametrize case, and 2 exp27 verdict validity tests (missing file,
+# negative latency).
+# Review amendment adds 22 synthetic cases: 21 summary safety cases and
+# one combined-gate precision case. This expected delta requires a local
+# tripwire run; it is not a newly measured CI result.
+# The improve-rag-input-quality-5 branch added 259 base cases after
+# the prior 2515 pin. Nine cases use the optional OpenAI-like adapter
+# packages. The conditional adjustment below keeps the tripwire valid
+# in either supported dependency set.
 # Includes the 31 engine and public API cases added by PR 85,
 # the login-watcher installer suite with security-audit, contention-warning,
 # ANSI-stripping, different-label replacement (deferred removal + bootout
@@ -112,15 +124,39 @@ _BASE_EXECUTED = 2515  # Re-baselined at the v3 console-alias-removal change:
 # seven-tool discovery rename, plus five CLI transport cases for
 # `omrg answer` (net +46; 2178 -> 2224). The slow golden-answer case
 # is deselected by the not-slow marker, not skipped.
-_BASE_SKIPPED = 129  # self-ignored run: base skips incl. chroma-gated files
-# (47 vectordb-contract, 19 chunk-lineage-navigation, 13
-# embedding-write-contract chroma-parametrised, 11 hybrid-retrieval,
-# plus the compose/metadata-extractor/lancedb/experiment/chroma-cloud
-# files), the 5 openrouter-extra embed cases, 2 leiden-community and
-# 2 bare chroma-extra skips, and the corpus-PDF/azure/optional-stub
-# singles. Corrected at stage 7: the stage-5 re-baseline updated the
-# executed count only and left this at 100, which the count assertion
-# masked until the executed count was re-baselined first.
+_BASE_SKIPPED = 131  # Reference count before the environment adjustments below.
+# Four historical-prefix cases need ignored ground truth. New safety
+# regressions are synthetic and always run. Preserve both exact counts
+# when that optional historical input is absent (as in a fresh checkout).
+_HISTORICAL_GT = (
+    Path(__file__).resolve().parents[1]
+    / "experiments/22-raw-query-qwen4b-baseline-2026-09-07/output/ground-truth.json"
+)
+if not _HISTORICAL_GT.exists():
+    _BASE_EXECUTED -= 4
+    _BASE_SKIPPED += 4
+# The Exp25 installed-adapter cases run when the optional OpenAI-like
+# embedding package exists. They otherwise skip, so both supported
+# dependency sets keep an exact, documented manifest.
+if find_spec("llama_index.embeddings.openai_like") is not None:
+    _BASE_EXECUTED += _OPENAI_LIKE_ADAPTER_CASES
+    _BASE_SKIPPED -= _OPENAI_LIKE_ADAPTER_CASES
+# Three model-token chunking cases use a cached Qwen3-Embedding-4B tokenizer
+# when it is present in the HuggingFace hub cache. They skip on a clean CI
+# runner, so both supported environments keep an exact, documented manifest.
+# Measured 2026-09-11 by running the base suite with $HOME pointed at an empty
+# dir (tokenizer absent, historical ground truth still present): executed
+# dropped 2858 -> 2855, skipped rose 131 -> 134. The prior value of 2 was
+# latent — the count assertion was unreachable until the docs-reference gate
+# stopped failing the subprocess returncode check first.
+_CACHED_TOKENIZER_CASES = 3
+_HF_CACHE = Path.home() / ".cache" / "huggingface" / "hub"
+_has_qwen_tokenizer = bool(
+    list(_HF_CACHE.glob("models--Qwen--Qwen3-Embedding-4B/snapshots/*/tokenizer.json"))
+)
+if not _has_qwen_tokenizer:
+    _BASE_EXECUTED -= _CACHED_TOKENIZER_CASES
+    _BASE_SKIPPED += _CACHED_TOKENIZER_CASES
 _BASE_DESELECTED = 19  # -m "not slow": existing 14 plus four quality gates
 # plus the golden-answer gate (add-grounded-answer-synthesis-3 task 7.1).
 _CHROMA_GATED_FILES = frozenset(

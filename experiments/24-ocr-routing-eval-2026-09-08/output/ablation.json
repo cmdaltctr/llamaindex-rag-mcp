@@ -1,0 +1,224 @@
+{
+  "cells": {
+    "fast_path_baseline": {
+      "done": true,
+      "rows": [
+        {
+          "fixture": "eval_clean_text.pdf",
+          "latency_s": 1.01,
+          "documents": 1,
+          "markdown_chars": 215,
+          "markdown": "## Evaluation Clean Text Fixture\n\nThis held-out document measures downstream retrieval once the gate is frozen. It was never used to pick a threshold.\n\n## Identifier sample: OMRG-EV-0042 mentions retrieval quality.\n",
+          "markdown_sha256": "8fdaf3d50e399f3b885a51ce4809b515ca6e75f10a63b894b80f7d6f866bf372",
+          "markers": {
+            "headings": 2,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_image.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 0,
+          "markdown": "",
+          "markdown_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.949999988079071,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_mixed.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 166,
+          "markdown": "## Evaluation Mixed Fixture Page One\n\nThis page carries a full extractable text layer with the marker MIXED-PAGE-ONE so evaluation can assert it survived extraction.\n",
+          "markdown_sha256": "373cfc1eb61808c2cb0486f23e6192e143597e019a0d3ca365a811e21629dcb6",
+          "markers": {
+            "headings": 1,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 0.5,
+          "pages_needing_ocr": 0,
+          "page_count": 2,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_scanned.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 0,
+          "markdown": "",
+          "markdown_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.949999988079071,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        },
+        {
+          "fixture": "eval_two_column.pdf",
+          "latency_s": 0.0,
+          "documents": 1,
+          "markdown_chars": 274,
+          "markdown": "Left column heading Right column heading Left body text flows downward in its own column and discusses Right body text starts at a separate x offset so the extractor Evidence Recall on the held-out evaluation corpus.must order the two columns before flattening to markdown.\n",
+          "markdown_sha256": "81a3581c92a8883a6a061ea7682585cf3cc88b797386b356062a28c4a1871e4d",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": null,
+          "ocr_used": null,
+          "ocr_backend": null,
+          "error": null
+        }
+      ]
+    },
+    "routed_worker_candidate": {
+      "done": true,
+      "rows": [
+        {
+          "fixture": "eval_clean_text.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 215,
+          "markdown": "## Evaluation Clean Text Fixture\n\nThis held-out document measures downstream retrieval once the gate is frozen. It was never used to pick a threshold.\n\n## Identifier sample: OMRG-EV-0042 mentions retrieval quality.\n",
+          "markdown_sha256": "8fdaf3d50e399f3b885a51ce4809b515ca6e75f10a63b894b80f7d6f866bf372",
+          "markers": {
+            "headings": 2,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        },
+        {
+          "fixture": "eval_image.pdf",
+          "latency_s": 156.91,
+          "documents": 1,
+          "markdown_chars": 4297,
+          "markdown": "<div style=\"text-align: center;\">Ten Simple Rules authorship</div>\n\n\n<div style=\"text-align: center;\"><img src=\"imgs/img_in_chart_box_174_156_1045_628.jpg\" alt=\"Image\" width=\"71%\" />\n\n\n\n</div>\n\n\n<div style=\"text-align: center;\">Figure 2. Your best chance of having a PLOS Ten Simple Rules article published is by being Philip E. Bourne. doi:10.1371/journal.pcbi.1003858.g002</div>\n\n\n## Rule 8: Reference\n\nThe ten rules format calls for a casual writing style, but that shouldn't prevent you from referencing. The need for citations will vary with the topic, however this is still a scientific journal, and this paper will form part of the scientific literature, indexed and found. There is plenty of scope for presenting your opinion, but do back up your facts. Wherever possible cite relevant online resources, including other Ten Simple Rules articles.\n\nThe caveat to this rule is that there can be such a thing as too many references. A great Ten Simple Rules article is easy to read and accessible to its audience. There is little point in having ten simple rules then overloading them with hundreds of references. Include only those that you have read and learnt from.\n\nResolve this conflict by considering how your article will be used. How many people will read it? Although references are important, Ten Simple Rules articles are viewed and downloaded more often than they are cited (Figure 3). In fact, by recent count, six of the top ten most viewed articles in PLOS Computational Biology were from the Ten Simple Rules collection. Clearly, the impact of your article will not be measured by citations.\n\nBy considering your audience (see Rule 7), you will get a sense for the number of citations needed to effectively get your message across. Balance accessibility, brevity and authority, as these qualities that will determine how many people have a chance to follow your ten simple rules.\n\n\n\n[PB: I love this graph (Figure 3). What does it say about impact? After all is this not what we are trying to measure? PLOS's efforts with article level metrics (ALMs) speak to the need to be more quantitative in how we measure the impact of a piece of scholarship. But since what we do most of the time is be qualitative\u2014judging a piece of work by the impact factor of the whole journal\u2014let me also be quantitative. Judging by the number of times someone I do not know comes up to me and says, \"I know your work\" and I respond, \"really which research are you referring to?\" Upon which they say, \"I don't know your research, I am talking about the Ten Simple Rules,\" I would say the impact is high\u2014at least relative to my research.]\n\n### Rule 9: Edit\n\nOnce you have the words on the page, your next step is to edit them. Present your rules in a logical order. Order and reorder them. Find the flow both between and within your rules.\n\nOnce you have taken care of the big picture, spend some time thinking about whether your paragraphs are cohesive and well structured. This is not an essay, so the rules are a little more fluid, but you could still benefit from topic sentences and phrases that flow between paragraphs. If, like many academics, you find your sentences blow out beyond 30 words, you may like to use a tool such as Draft to keep them in check. These tools are great for picking up tortured sentence structures like passive voice and split infinitives.\n\n\n\nOne of the best ways to make your article more readable is to have others read it. Workshop and crowdsource your article. Your peers are your secret weapons. Many of them are your target audience, so you can do a test run and perhaps even get honest feedback.\n\nSome literary theorists argue that as soon as you publish a piece of writing, it becomes the domain of the reader. The intent of the author pales in comparison to the interpretation of the audience. In this context, the reader is always right. So you may as well get the major criticisms and revisions out of the way early.\n\n[PB: As I say somewhere in the collection, what you commit to the literature will be around long after you are gone\u2014it is a large part of your professional legacy\u2014get it right. Reviewers' comments often relate to the order and organization of the rules, so this rule is good advice for getting your contribution published and out there.]",
+          "markdown_sha256": "9a24598df40de517c6cd5b6c2ba2ce2638b84f5d719a004e5c944a7973b53478",
+          "markers": {
+            "headings": 2,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.949999988079071,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": true,
+          "ocr_used": true,
+          "ocr_backend": "paddleocr_vl",
+          "error": null
+        },
+        {
+          "fixture": "eval_mixed.pdf",
+          "latency_s": 0.002,
+          "documents": 1,
+          "markdown_chars": 166,
+          "markdown": "## Evaluation Mixed Fixture Page One\n\nThis page carries a full extractable text layer with the marker MIXED-PAGE-ONE so evaluation can assert it survived extraction.\n",
+          "markdown_sha256": "373cfc1eb61808c2cb0486f23e6192e143597e019a0d3ca365a811e21629dcb6",
+          "markers": {
+            "headings": 1,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 0.5,
+          "pages_needing_ocr": 0,
+          "page_count": 2,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        },
+        {
+          "fixture": "eval_scanned.pdf",
+          "latency_s": 156.33,
+          "documents": 1,
+          "markdown_chars": 4032,
+          "markdown": "<div style=\"text-align: center;\"><img src=\"imgs/img_in_chart_box_206_120_1014_634.jpg\" alt=\"Image\" width=\"65%\" />\n\n\n\n</div>\n\n\n<div style=\"text-align: center;\">Figure 1. Have ten rules. doi:10.1371/journal.pcbi.1003858.g001</div>\n\n\nbetween academia and industry, and how to start a company. The articles even extend to interpersonal skills like networking, collaboration, and communicating with your supervisor. There is also a strong academic focus: the core skills of doing research, writing, publishing, and teaching.\n\nNow, what can you add to the mix? What do you wish that you'd known a year ago? What would you tell a new student? What do you wish your supervisor would realise? Computational biology is such a fresh, fast-moving field. There is always room for advice to emerge and for those new to the field to share their experiences, drawing from other disciplines and bringing together emerging ideas and techniques. The Ten Simple Rules collection is a reservoir for accessible wisdom (in both the open source and intellectually approachable senses of the word). What do you have to contribute?\n\nIf you are stumped, here are some suggestions: Ten Simple Rules for retiring when you know you should. Ten Simple Rules for winning a Nobel Prize. Ten Simple Rules for managing a scientific rivalry.\n\n[PB: Some would say I should write the first; none would say I should write the second; the third I have enough of already, but having an entry in the series from a Nobel laureate is a great idea\u2014I am working on recruiting that someone right now\u2014and so the series goes.]\n\n### Rule 3: Include an Introduction\n\nNever underestimate the importance of a great introduction. Your introduction defines the scope of your article. It sets up a promise to your reader that you will cover this, that, but not some other thing. It provides the opportunity to put your topic in perspective and fill any gaps in your reader's knowledge.\n\nPerhaps the most vital function of the introduction is to convince your reader to keep reading. You need to make your point clearly and simply the first time. You are also going to need to catch their attention in the first paragraph or so. You must convince them that you can both entertain and inform.\n\nLike your Ten Simple Rules, your introduction should be short and to the point\u2014there is no point having Ten Simple Rules with a thesis-length introduction.\n\n[PB: Agreed, particularly concerning the length of the introduction.]\n\n## Rule 4: Be Philip E. Bourne\n\nYour best chance of having a PLOS Ten Simple Rules article published is by being Philip E. Bourne. At the time of writing, 48.6% of PLOS Ten Simple Rules articles list PLOS Computational Biology Founding Editor-in-Chief, Philip E. Bourne, as the first, last, or sole author (Figure 2). In fact, statistically speaking (Box 1), his frequent occurrences as an author of Ten Simple Rules is significant (p-value = 6.63758e-52).\n\n\n\nMore recent articles are increasingly written by other experts or groups of individuals, but Philip is often found as part of the author list. Before you start filling out a change of name form though, consider asking Philip to be a coauthor.\n\n[PB: And I thought they asked me because I know something.]\n\n#### Rule 5: Collaborate\n\nYou have a great idea for a Ten Simple Rules article, now you need to make it a reality. We have discussed getting Philip Bourne involved (see Rule 4), but we haven't yet discussed why having a coauthor or two could help, even if they don't have an in at PLOS.\n\nWhen you write a Ten Simple Rules article, you are speaking with an aura of knowledge and authority. One way to achieve this is to be a giant in your field. But if only the \u201cexperts\u201d write these articles, we are missing out on the intimate, hard-earned knowledge of those in the trenches. If your name doesn\u2019t strike awe in your readers, perhaps consider combining forces with others. If you can\u2019t find experts, contact your peers. The emerging opinion of a group of more junior authors may be almost as respectful.",
+          "markdown_sha256": "791effaef359db7062ad9ca9ec2125a3041845498ea265f7ed4ee62edb66c1a1",
+          "markers": {
+            "headings": 3,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "scanned",
+          "pdf_confidence": 0.949999988079071,
+          "pages_needing_ocr": 1,
+          "page_count": 1,
+          "ocr_required": true,
+          "ocr_used": true,
+          "ocr_backend": "paddleocr_vl",
+          "error": null
+        },
+        {
+          "fixture": "eval_two_column.pdf",
+          "latency_s": 0.001,
+          "documents": 1,
+          "markdown_chars": 274,
+          "markdown": "Left column heading Right column heading Left body text flows downward in its own column and discusses Right body text starts at a separate x offset so the extractor Evidence Recall on the held-out evaluation corpus.must order the two columns before flattening to markdown.\n",
+          "markdown_sha256": "81a3581c92a8883a6a061ea7682585cf3cc88b797386b356062a28c4a1871e4d",
+          "markers": {
+            "headings": 0,
+            "list_items": 0,
+            "tables": 0
+          },
+          "pdf_type": "text_based",
+          "pdf_confidence": 1.0,
+          "pages_needing_ocr": 0,
+          "page_count": 1,
+          "ocr_required": false,
+          "ocr_used": false,
+          "ocr_backend": "pdf_inspector",
+          "error": null
+        }
+      ]
+    }
+  }
+}

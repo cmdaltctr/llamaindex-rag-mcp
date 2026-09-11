@@ -104,6 +104,40 @@ def get_pdf_reader(reader: str) -> Any:
     return reader_class()
 
 
+def build_pdf_reader(reader: str, settings: Any = None, *, ocr_client: Any = None) -> Any:
+    """Return the PDF reader for *reader*, wrapped with the OCR seam when active.
+
+    Composition policy (not strategy dispatch): the OCR routing seam
+    wraps the pdf-inspector reader only when the RESOLVED reader is
+    ``pdf_inspector`` AND the operator enabled the OCR fallback — the
+    same class of composition decision as the ``auto`` resolution
+    below. Every other configuration returns the plain reader.
+
+    Args:
+        reader: Reader name from the injected settings — a concrete
+            name or ``auto``.
+        settings: Settings object carrying ``ocr_fallback_enabled``.
+            Required for seam activation; ``None`` keeps the plain
+            reader (routing off).
+        ocr_client: Injected managed OCR worker client for the seam.
+            ``None`` degrades OCR-required files deterministically
+            (task 2.7) rather than disabling the diagnostics.
+
+    Returns:
+        A reader instance with a ``load_data(file: Path) -> list[Document]``
+        method, wrapped in :class:`OcrRoutedPdfInspector` when active.
+    """
+    resolved = resolve_reader_name(reader) if reader == "auto" else reader
+    inner = get_pdf_reader(resolved)
+    if resolved == "pdf_inspector" and settings is not None:
+        enabled = bool(getattr(settings, "ocr_fallback_enabled", False))
+        if enabled:
+            from .ocr_routing import OcrRoutedPdfInspector
+
+            return OcrRoutedPdfInspector(inner, settings=settings, ocr_client=ocr_client)
+    return inner
+
+
 def _resolve_auto() -> str:
     """Probe optional backends in the composition root's preference order."""
     for backend in ("liteparse", "pypdfium2"):

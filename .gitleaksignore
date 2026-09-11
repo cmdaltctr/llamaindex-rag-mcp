@@ -78,3 +78,11 @@ experiments/5b-persistent-mps-reranker-worker-2026-08-20/output/preflight/torch_
 experiments/5b-persistent-mps-reranker-worker-2026-08-20/output/preflight/torch_mps_persistent__block0.json:generic-api-key:7
 experiments/5b-persistent-mps-reranker-worker-2026-08-20/output/preflight/torch_mps_persistent__block0.json:generic-api-key:8
 experiments/5b-persistent-mps-reranker-worker-2026-08-20/output/preflight/torch_mps_persistent__block0.json:generic-api-key:9
+experiments/25-token-chunking-ablation-2026-09-08/token_accounting.py:generic-api-key:30
+experiments/25-token-chunking-ablation-2026-09-08/build_index.py:generic-api-key:28
+experiments/25-token-chunking-ablation-2026-09-08/verify_accounting.py:generic-api-key:33
+
+# Experiment 24 supplementary analysis (task 5.1): the flagged value is the
+# pinned public Hugging Face commit revision of Qwen/Qwen3-Embedding-4B,
+# recorded as chunking-context provenance. Not a secret.
+experiments/24-ocr-routing-eval-2026-09-08/output/task_5_1_analysis.json:generic-api-key:327

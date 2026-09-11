@@ -162,6 +162,12 @@ The configured `CHUNKING__CHUNK_OVERLAP` SHALL be passed to the splitter as its 
 
 The token cap SHALL govern the chunk text as finalised for embedding, which includes any prepended heading path. When heading prepend is enabled, the splitter SHALL be given a capacity reduced by the token length of the prefix that will be prepended, so a prepended chunk cannot exceed the configured budget.
 
+Reserving that prefix SHALL NOT change the requested overlap. When the reduced capacity cannot hold `CHUNKING__CHUNK_OVERLAP`, the system SHALL fail for that source with a diagnostic naming `CHUNKING__MARKDOWN_CHUNK_SIZE`, `CHUNKING__CHUNK_OVERLAP`, and `CHUNKING__MARKDOWN_HEADING_PREPEND`. Silently clamping the overlap to the reduced capacity is forbidden, because the emitted chunking would then differ from the configured contract with no signal.
+
+The system SHALL verify each chunk against the cap as finalised, and SHALL never emit a chunk above it. A chunk that cannot be reduced below the cap SHALL fail for that source through the existing per-file failure path, so the batch continues and the report names the source.
+
+Heading ancestry SHALL be derived from document structure only. A `#` line inside a fenced code block, opened by either backticks or tildes, is code and SHALL NOT join the heading chain. Each ancestry entry SHALL retain its heading level, so an incoming heading removes every entry at its own level or deeper: a skipped level makes two headings of the same level siblings, never parent and child.
+
 The cap SHALL NOT be defined over the complete LlamaIndex embedding payload. Retained metadata keys are added to that payload after chunking and are not known when the splitter runs. Their worst-case token overhead SHALL be measured and reported as experiment evidence instead of budgeted.
 
 #### Scenario: Heading path is derived on the model-token-aware path
@@ -192,6 +198,37 @@ The cap SHALL NOT be defined over the complete LlamaIndex embedding payload. Ret
 - **WHEN** the section is chunked and its heading path is prepended
 - **THEN** the finalised chunk text SHALL still be within `CHUNKING__MARKDOWN_CHUNK_SIZE` tokenizer units
 - **AND** the reserved prefix budget SHALL come from the splitter capacity rather than from a post-hoc truncation
+
+#### Scenario: A reserved heading prefix never silently reduces the overlap
+
+- **GIVEN** heading prepend is enabled
+- **AND** the heading prefix leaves a capacity at or below `CHUNKING__CHUNK_OVERLAP`
+- **WHEN** the section is chunked
+- **THEN** the system SHALL fail for that source naming `CHUNKING__MARKDOWN_CHUNK_SIZE`, `CHUNKING__CHUNK_OVERLAP`, and `CHUNKING__MARKDOWN_HEADING_PREPEND`
+- **AND** it SHALL NOT emit chunks whose actual overlap is below the configured value
+
+#### Scenario: A chunk that cannot be reduced fails instead of exceeding the cap
+
+- **GIVEN** heading prepend is enabled
+- **AND** a chunk that no capacity above the requested overlap can split further
+- **WHEN** the chunk is finalised
+- **THEN** the system SHALL fail for that source naming `CHUNKING__MARKDOWN_CHUNK_SIZE`
+- **AND** it SHALL NOT emit a chunk above the configured token cap
+
+#### Scenario: Fenced code headings do not change heading ancestry
+
+- **GIVEN** Markdown with a `#` comment line inside a fenced code block
+- **AND** the fence is opened with backticks in one source and tildes in another
+- **WHEN** the following prose is chunked
+- **THEN** its `header_path` SHALL contain only the enclosing document headings
+- **AND** the fenced `#` line SHALL NOT appear in the path
+
+#### Scenario: Skipped heading levels produce sibling paths
+
+- **GIVEN** Markdown with a level-one heading followed by two level-three headings
+- **WHEN** the content under each level-three heading is chunked
+- **THEN** the two sections SHALL receive sibling `header_path` values under the level-one heading
+- **AND** the second section SHALL NOT be nested under the first
 
 #### Scenario: Metadata overhead is measured, not budgeted
 

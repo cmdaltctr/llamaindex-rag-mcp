@@ -1,0 +1,329 @@
+{
+  "experiment": "24-ocr-routing-eval-2026-09-08",
+  "note": "supplementary; no gate changes",
+  "fidelity": {
+    "fast_path_baseline": {
+      "eval_image.pdf": {
+        "ground_truth_words": 583,
+        "extracted_words": 0,
+        "set_word_recall": 0.0,
+        "in_order_word_recall": 0.0,
+        "reading_order_gap_pp": 0.0,
+        "missing_unique_words": 302,
+        "missing_word_sample": [
+          "about",
+          "academics",
+          "accessibility",
+          "accessible",
+          "across",
+          "advice",
+          "after",
+          "all",
+          "alms",
+          "also",
+          "although",
+          "always",
+          "and",
+          "are",
+          "argue",
+          "around",
+          "article",
+          "articles",
+          "audience",
+          "author",
+          "authority",
+          "back",
+          "balance",
+          "becomes",
+          "being"
+        ],
+        "expected_section_headings": [
+          "Rule 8",
+          "Rule 9"
+        ],
+        "emitted_markdown_headings": [],
+        "section_headings_recovered": [],
+        "ground_truth_table_rows": 0,
+        "emitted_table_rows": 0
+      },
+      "eval_scanned.pdf": {
+        "ground_truth_words": 527,
+        "extracted_words": 0,
+        "set_word_recall": 0.0,
+        "in_order_word_recall": 0.0,
+        "reading_order_gap_pp": 0.0,
+        "missing_unique_words": 282,
+        "missing_word_sample": [
+          "academia",
+          "academic",
+          "accessible",
+          "achieve",
+          "add",
+          "advice",
+          "ago",
+          "agreed",
+          "almost",
+          "already",
+          "also",
+          "always",
+          "and",
+          "any",
+          "approachable",
+          "are",
+          "article",
+          "articles",
+          "asked",
+          "asking",
+          "attention",
+          "aura",
+          "author",
+          "authority",
+          "authors"
+        ],
+        "expected_section_headings": [
+          "Rule 3",
+          "Rule 4",
+          "Rule 5"
+        ],
+        "emitted_markdown_headings": [],
+        "section_headings_recovered": [],
+        "ground_truth_table_rows": 0,
+        "emitted_table_rows": 0
+      }
+    },
+    "routed_worker_candidate": {
+      "eval_image.pdf": {
+        "ground_truth_words": 583,
+        "extracted_words": 600,
+        "set_word_recall": 0.9305,
+        "in_order_word_recall": 0.928,
+        "reading_order_gap_pp": 0.3,
+        "missing_unique_words": 21,
+        "missing_word_sample": [
+          "brev",
+          "collec",
+          "don",
+          "graphs",
+          "ing",
+          "ion",
+          "issue",
+          "ity",
+          "judg",
+          "october",
+          "ons",
+          "opin",
+          "org",
+          "para",
+          "ploscompbiol",
+          "reviewers",
+          "shouldn",
+          "tion",
+          "volume",
+          "weap",
+          "www"
+        ],
+        "expected_section_headings": [
+          "Rule 8",
+          "Rule 9"
+        ],
+        "emitted_markdown_headings": [
+          "Rule 8: Reference",
+          "Rule 9: Edit"
+        ],
+        "section_headings_recovered": [
+          "Rule 8",
+          "Rule 9"
+        ],
+        "ground_truth_table_rows": 0,
+        "emitted_table_rows": 0
+      },
+      "eval_scanned.pdf": {
+        "ground_truth_words": 527,
+        "extracted_words": 537,
+        "set_word_recall": 0.9433,
+        "in_order_word_recall": 0.9469,
+        "reading_order_gap_pp": -0.4,
+        "missing_unique_words": 16,
+        "missing_word_sample": [
+          "disci",
+          "don",
+          "duction",
+          "haven",
+          "intro",
+          "issue",
+          "october",
+          "org",
+          "plines",
+          "ploscompbiol",
+          "respect",
+          "sor",
+          "supervi",
+          "tween",
+          "volume",
+          "www"
+        ],
+        "expected_section_headings": [
+          "Rule 3",
+          "Rule 4",
+          "Rule 5"
+        ],
+        "emitted_markdown_headings": [
+          "Rule 3: Include an Introduction",
+          "Rule 4: Be Philip E. Bourne",
+          "Rule 5: Collaborate"
+        ],
+        "section_headings_recovered": [
+          "Rule 3",
+          "Rule 4",
+          "Rule 5"
+        ],
+        "ground_truth_table_rows": 0,
+        "emitted_table_rows": 0
+      }
+    }
+  },
+  "downstream_evidence_retrieval": {
+    "fast_path_baseline": {
+      "chunks": 3,
+      "recall_at_1": 0.1667,
+      "mrr_at_10": 0.1667,
+      "unretrievable_queries": 10,
+      "per_query": [
+        {
+          "query": "what does the introduction of a ten simple rules article define",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "who is listed as first last or sole author of most ten simple rules articles",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "why collaborate with coauthors when writing a rules article",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "how long should the introduction be",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "what p-value is reported for the frequent author",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "can there be too many references in a rules article",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "are ten simple rules articles viewed more often than cited",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "what tool helps keep sentences under thirty words",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "why should others read and workshop your article",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "how should the rules be ordered when editing",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": null
+        },
+        {
+          "query": "what does this held-out document measure",
+          "gold": "eval_clean_text.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "which page carries a full extractable paragraph",
+          "gold": "eval_mixed.pdf",
+          "first_gold_rank": 1
+        }
+      ]
+    },
+    "routed_worker_candidate": {
+      "chunks": 5,
+      "recall_at_1": 0.9167,
+      "mrr_at_10": 0.9583,
+      "unretrievable_queries": 0,
+      "per_query": [
+        {
+          "query": "what does the introduction of a ten simple rules article define",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "who is listed as first last or sole author of most ten simple rules articles",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "why collaborate with coauthors when writing a rules article",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "how long should the introduction be",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "what p-value is reported for the frequent author",
+          "gold": "eval_scanned.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "can there be too many references in a rules article",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "are ten simple rules articles viewed more often than cited",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "what tool helps keep sentences under thirty words",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "why should others read and workshop your article",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "how should the rules be ordered when editing",
+          "gold": "eval_image.pdf",
+          "first_gold_rank": 2
+        },
+        {
+          "query": "what does this held-out document measure",
+          "gold": "eval_clean_text.pdf",
+          "first_gold_rank": 1
+        },
+        {
+          "query": "which page carries a full extractable paragraph",
+          "gold": "eval_mixed.pdf",
+          "first_gold_rank": 1
+        }
+      ]
+    }
+  },
+  "chunking_context": {
+    "markdown_chunk_size": 1024,
+    "chunk_overlap": 100,
+    "tokenizer_model": "Qwen/Qwen3-Embedding-4B",
+    "tokenizer_revision": "5cf2132abc99cad020ac570b19d031efec650f2b"
+  }
+}

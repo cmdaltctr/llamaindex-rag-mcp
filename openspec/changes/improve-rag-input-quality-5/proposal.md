@@ -30,17 +30,23 @@ For the normal PDF path, `pdf-inspector` remains the cheap Rust-based classifier
 
 The system SHALL NOT equate "complex layout" with "needs OCR". OCR is selected only when the inspection result says visual/OCR understanding is materially required, such as scanned, image-based, or mixed content, significant `pages_needing_ocr`, or a separately calibrated extraction-quality failure.
 
-### 2. Add PaddleOCR-VL as an intelligent OCR/document-understanding fallback
+### 2. Add PaddleOCR-VL through an isolated local worker
 
-When the fast path determines that OCR is required and the optional OCR capability is installed, route the **whole PDF** through the full PaddleOCR-VL document pipeline rather than attempting a page-by-page hybrid merge. The full pipeline includes layout analysis, region handling, reading order, recognition, and result assembly; the proposal does not reduce PaddleOCR to a bare image-to-text model call.
+When the fast path determines that OCR is required and the worker capability is available, route the **whole PDF** through the full PaddleOCR-VL document pipeline. The pipeline includes layout analysis, region handling, reading order, recognition, and result assembly. It does not reduce PaddleOCR to a bare image-to-text model call.
 
-PaddleOCR remains an optional, lazily loaded heavy dependency. Installing it must not make PaddlePaddle or any associated accelerator stack part of the base import path. Runtime capability probing remains owned by the composition root, not by `config/` or business logic.
+PaddleOCR runs in a separate local Python environment owned by the worker. That environment has its own lockfile and declares Python `>=3.11,<3.14`. PaddleOCR, PaddleX, PaddlePaddle, and accelerator packages SHALL NOT enter OMRG's main environment, main lockfile, or import graph. OMRG contains only the worker client, lifecycle control, routing, and protocol contracts.
 
-If the OCR capability is absent, preserve today's useful degraded behaviour: retain the `pdf-inspector` output, surface an explicit diagnostic that OCR was required but unavailable, and do not fabricate missing content.
+The OCR process is lazy and long-lived. It starts only after routing selects an OCR-required PDF, loads its model inside the isolated process, and remains available for later OCR requests. A clean PDF never starts the worker. Normal owner shutdown closes the process. A crash or timeout discards the process handle; a later eligible file may start a fresh process, but the failed request is not replayed automatically.
+
+OMRG and the worker communicate through UTF-8 JSON Lines over standard input and standard output. Each request is exactly one JSON object on one line. A healthy worker returns exactly one terminal response object on one line for each accepted request. Standard output is reserved for protocol messages. Worker diagnostics and logs go only to standard error.
+
+The composition boundary resolves a capability fingerprint without loading the OCR model. The fingerprint records worker availability, protocol version, package versions, document-pipeline identity, model identity, and output-schema version. A metadata-only probe must not start the long-lived worker or import model code.
+
+If the worker is unavailable before dispatch, preserve today's useful degraded behaviour: retain the `pdf-inspector` output, surface an explicit diagnostic that OCR was required but unavailable, and do not fabricate missing content. Once OMRG dispatches an OCR request, a worker crash, timeout, or protocol failure produces a structured per-file ingestion error. That failed source is not marked current, and the existing failure-safe replacement path preserves any prior current version.
 
 ### 3. Converge both PDF paths on structured Markdown
 
-Both the `pdf-inspector` fast path and PaddleOCR fallback SHALL converge on the same downstream contract: structured Markdown plus honest metadata.
+Both the `pdf-inspector` fast path and a successful PaddleOCR worker response SHALL converge on the same downstream contract: structured Markdown plus honest metadata.
 
 The Markdown should preserve useful document structure when available:
 
@@ -75,9 +81,11 @@ The existing `CHUNKING__MARKDOWN_CHUNK_SIZE` remains the initial budget. This pr
 
 ### 5. Keep index identity and embedding text honest about the new inputs
 
-The additions above change the chunk text that gets stored, so they belong in the existing index-shaping identity that decides whether a source is `skipped_unchanged`. The identity SHALL gain the embedding-tokenizer identity and revision, the resolved active Markdown splitter, the OCR routing configuration, and the resolved OCR capability. It stays one identity: no parallel mechanism, no second change-detection path.
+The additions above change the chunk text that gets stored, so they belong in the existing `source_index_identity` that decides whether a source is `skipped_unchanged`. The identity SHALL gain the embedding-tokenizer identity and revision, the resolved active Markdown splitter, the OCR routing configuration, and the resolved worker capability fingerprint. It stays one identity: no parallel mechanism and no second change-detection path.
 
-The resolved values matter as much as the configured ones. A source indexed while the tokenizer could not be loaded, or while the OCR stack was absent, must not stay `skipped_unchanged` forever once that capability arrives — its chunks came from a path the operator has since replaced.
+The worker fingerprint SHALL include availability, protocol version, exact worker package versions, document-pipeline identity, model identity, and output-schema version. These values are available before model loading. A stable unavailable value represents a missing, invalid, protocol-incompatible, or output-schema-incompatible worker. Transient process data, including process identifiers and timestamps, stays out of the fingerprint.
+
+The resolved values matter as much as the configured ones. A source indexed while the tokenizer could not load, or while the OCR worker was unavailable, must not stay `skipped_unchanged` after that capability arrives. Changes to the worker protocol, packages, pipeline, model, or output schema must also produce a new identity because any of them can change emitted Markdown.
 
 The new OCR diagnostics are additive metadata, and they are parser telemetry: constant across every chunk of a document, carrying nothing a user query could match. `ocr_required`, `ocr_used`, `ocr_backend`, and `pages_needing_ocr` SHALL join the centrally owned embedding-text exclusion set, so they stay out of embedding vectors and LLM-visible text while remaining in stored metadata and retrieval results.
 
@@ -117,9 +125,11 @@ The OCR routing threshold is calibrated in its own step, on the calibration fixt
 
 OCR routing thresholds, a new Markdown chunk-size default, and a default Qwen instruction SHALL NOT be guessed.
 
-### Stage 2 — PDF routing and PaddleOCR fallback
+### Stage 2 — PDF routing and isolated PaddleOCR worker
 
-Keep `pdf-inspector` as the classifier/extractor for the fast path. Add a lazily loaded PaddleOCR-VL adapter and a small routing seam that sends OCR-required PDFs through the full Paddle document pipeline when available. Both branches return structured Markdown and compatible metadata. Missing PaddleOCR degrades to the existing `pdf-inspector` result with a clear diagnostic.
+Keep `pdf-inspector` as the classifier/extractor for the fast path. Add an OMRG-side worker client and a small routing seam that sends OCR-required PDFs to the full Paddle document pipeline when available. The worker uses its own locked Python environment and communicates through the versioned JSON Lines protocol. Both successful branches return structured Markdown and compatible metadata. An unavailable worker degrades to the existing `pdf-inspector` result with a clear diagnostic.
+
+Start the long-lived process only on the first OCR dispatch, then reuse it. Keep standard output protocol-only, drain logs from standard error, and close the process with its owner. Treat a post-dispatch crash, timeout, malformed response, or worker error as a structured per-file failure. Do not mark that source current.
 
 Do not implement page-level stitching in this stage. Whole-document Paddle processing is simpler and avoids corrupting reading order at merge boundaries.
 
@@ -137,7 +147,7 @@ Evaluate raw queries against the candidate Qwen instruction before promoting any
 
 Run separate ablations so improvements are attributable:
 
-1. `pdf-inspector` only vs routed PaddleOCR on OCR-required PDFs.
+1. `pdf-inspector` only vs the routed isolated-worker candidate on OCR-required PDFs.
 2. Current Markdown splitter vs `semantic-text-splitter` with the Qwen tokenizer.
 3. Raw Qwen queries vs query-instructed Qwen queries.
 4. The combined candidate pipeline vs the current baseline.
@@ -156,10 +166,10 @@ Only after the experiments pass their gates should a threshold, query instructio
 
 ### Modified Capabilities
 
-- `pdf-reader`: add `pdf-inspector`-driven routing to an optional PaddleOCR-VL fallback while preserving the fast text-based path and graceful degradation.
+- `pdf-reader`: add `pdf-inspector`-driven routing to an isolated PaddleOCR-VL worker while preserving the fast text-based path and pre-dispatch graceful degradation.
 - `markdown-aware-chunking`: add Rust structure-aware Markdown splitting using the configured embedding-model tokenizer and remove approximate Markdown token counting where the real tokenizer is available.
 - `query-embedding-cache`: cache the actual prepared query embedding input, not a raw query that may hide different instructions.
-- `async-ingestion`: extend the existing index-shaping identity with the tokenizer identity, the resolved active splitter, and the OCR routing configuration and resolved capability, so degraded ingestion recovers instead of staying `skipped_unchanged`.
+- `async-ingestion`: extend `source_index_identity` with the tokenizer identity, resolved active splitter, OCR routing configuration, and resolved worker capability fingerprint. The fingerprint covers availability, protocol, packages, pipeline, model, and output schema, so degraded or changed ingestion does not stay `skipped_unchanged`.
 - `embedding-text-composition`: add the new OCR diagnostics to the centrally owned embedding-text exclusion set.
 
 ## Out of Scope
@@ -177,8 +187,8 @@ Only after the experiments pass their gates should a threshold, query instructio
 ## Impact
 
 - **Quality:** fixes information loss before retrieval, where later ranking stages cannot reconstruct damaged reading order, tables, or omitted scanned content.
-- **Performance:** clean PDFs remain on the fast `pdf-inspector` path. Only OCR-required PDFs pay the PaddleOCR cost. Rust-backed Markdown splitting and tokenisation keep the CPU-side preparation path efficient.
-- **Dependencies:** `semantic-text-splitter` and Hugging Face `tokenizers` are proposed as chunking dependencies. PaddleOCR/PaddleX/PaddlePaddle belong to an optional OCR extra and must load lazily. Dependency floors must be recorded once the tested versions are known.
-- **Storage:** OCR or chunking changes alter chunk text/boundaries and therefore require re-ingestion to affect existing documents. Because the new inputs join the index identity, that re-ingestion is triggered automatically on the next run rather than needing a manual rebuild — including when the OCR stack or the tokenizer merely becomes available. Inclusion is unconditional, matching the existing conservative rule, so installing the optional OCR extra also invalidates non-PDF sources. Query-instruction-only changes do not require re-ingestion.
-- **Compatibility:** explicit non-`pdf_inspector` readers remain explicit overrides. Non-Markdown and code chunking remain unchanged. Existing retrieval and transport contracts remain unchanged.
-- **Architecture:** settings stay injected, runtime capability probes stay in the composition root, registries remain the dispatch mechanism, and no `core/ingestion` ↔ `core/retrieval` import is introduced.
+- **Performance:** clean PDFs remain on the fast `pdf-inspector` path and never start the OCR worker. Only OCR-required PDFs pay process-start and model costs. The process then stays alive for later OCR requests. Rust-backed Markdown splitting and tokenisation keep the CPU-side preparation path efficient.
+- **Dependencies:** `semantic-text-splitter` and Hugging Face `tokenizers` are proposed as OMRG chunking dependencies. PaddleOCR, PaddleX, PaddlePaddle, and accelerator packages exist only in the worker-owned lockfile and isolated Python `>=3.11,<3.14` environment. OMRG's main environment contains no Paddle package or import.
+- **Storage:** OCR or chunking changes alter chunk text or boundaries and therefore require re-ingestion to affect existing documents. Because the new inputs join `source_index_identity`, re-ingestion is triggered on the next run rather than requiring a manual rebuild. This includes worker availability and any protocol, package, pipeline, model, or output-schema change. Inclusion remains unconditional, so provisioning or changing the OCR worker also invalidates non-PDF sources. Query-instruction-only changes do not require re-ingestion.
+- **Compatibility:** explicit non-`pdf_inspector` readers remain explicit overrides. Non-Markdown and code chunking remain unchanged. Existing public retrieval and transport contracts remain unchanged.
+- **Architecture:** settings stay injected, metadata-only capability probing stays at the composition boundary, and registries remain the dispatch mechanism. The JSON Lines worker boundary keeps Paddle code outside OMRG. No `core/ingestion` ↔ `core/retrieval` import is introduced.

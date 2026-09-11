@@ -1,0 +1,6 @@
+## Calibration Table Text Fixture
+
+
+<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>name</td><td style='text-align: center; word-wrap: break-word;'>quantity</td><td style='text-align: center; word-wrap: break-word;'>unit_price</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>bolt</td><td style='text-align: center; word-wrap: break-word;'>12</td><td style='text-align: center; word-wrap: break-word;'>0.05</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>nut</td><td style='text-align: center; word-wrap: break-word;'>48</td><td style='text-align: center; word-wrap: break-word;'>0.02</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>washer</td><td style='text-align: center; word-wrap: break-word;'>96</td><td style='text-align: center; word-wrap: break-word;'>0.01</td></tr></table>
+
+The rows above are positioned text, not a drawn table, so the classifier must still see a full text layer on this page.

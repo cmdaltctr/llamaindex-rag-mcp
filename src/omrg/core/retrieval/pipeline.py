@@ -82,6 +82,7 @@ def _hybrid_query_rows(
             timing_report=timing_report,
             embed_model=embed_model,
             cache=cache,
+            query_instruction=settings.embedding.query_instruction,
         )
         sparse_future = executor.submit(
             sparse_runner,
@@ -321,6 +322,7 @@ def search(
             timing_report=timing_report,
             embed_model=embed_model,
             cache=query_cache,
+            query_instruction=resolved_settings.embedding.query_instruction,
         )
 
     # Optional: re-score with cross-encoder reranker.

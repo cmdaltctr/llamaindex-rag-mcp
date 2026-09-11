@@ -15,9 +15,26 @@ sits at the 500-line file ceiling, so additions land here and
 from __future__ import annotations
 
 import logging
+import subprocess
 from importlib.util import find_spec
+from typing import Any
 
 from .config import Settings
+from .integrations.ocr_worker.fingerprint import (
+    UNAVAILABLE_OCR_WORKER_FINGERPRINT,  # noqa: F401 - re-exported probe result
+)
+
+__all__ = [
+    "UNAVAILABLE_OCR_WORKER_FINGERPRINT",
+    "build_managed_ocr_client",
+    "probe_ocr_worker",
+    "reset_ocr_fingerprint_cache",
+    "resolve_document_backend",
+    "resolve_pdf_reader",
+    "resolve_sparse_backend",
+    "validate_document_backend",
+    "validate_sparse_backend",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -226,3 +243,163 @@ def resolve_pdf_reader(settings: Settings) -> str:
 def _resolve_sparse_backend_for(settings: Settings) -> str:
     """Resolve ``auto`` to a concrete sparse backend via the capability probe."""
     return resolve_sparse_backend(settings)
+
+
+# ── OCR worker capability probe (task 2.6, design D2.4/D8) ────────────────
+#
+# The probe is a metadata-only subprocess: it appends the capabilities
+# flag to the configured worker command, reads one JSON fingerprint
+# line, and the command exits. It never starts the long-lived parsing
+# worker, never imports Paddle, and never loads model weights. Every
+# unavailability mode collapses to the ONE stable
+# UNAVAILABLE_OCR_WORKER_FINGERPRINT so the fingerprint can join the
+# source index identity without churning on transient failure detail.
+
+#: Seconds the probe waits for the capabilities command. Deliberately
+#: short: a metadata read that takes longer than this is an unusable
+#: worker, not a slow one.
+OCR_PROBE_TIMEOUT_SECONDS = 10.0
+
+# Memoised probe results, keyed by ``(command, timeout)``. This is a
+# capability cache in the ADR-031 reranker-model-cache family, NOT a
+# settings singleton: it stores an immutable resolved capability so the
+# composition boundary resolves the probe once per command per process
+# instead of once per engine or per file. Tests reset it via
+# :func:`reset_ocr_fingerprint_cache`.
+_ocr_fingerprint_cache: dict[tuple[tuple[str, ...], float], Any] = {}
+
+
+def probe_ocr_worker(
+    command: list[str],
+    *,
+    timeout: float = OCR_PROBE_TIMEOUT_SECONDS,
+) -> Any:
+    """Probe one OCR worker command for its capability fingerprint.
+
+    Runs ``command + [CAPABILITIES_FLAG]`` as a one-shot subprocess,
+    validates its JSON payload against the OMRG-owned protocol and
+    output-schema constants, and memoises the result per command so the
+    composition boundary pays for the probe once.
+
+    Args:
+        command: Worker launch command, argv-style. An empty command
+            means no worker is configured.
+        timeout: Seconds to wait for the capabilities command.
+
+    Returns:
+        The available :class:`OcrWorkerFingerprint`, or
+        :data:`UNAVAILABLE_OCR_WORKER_FINGERPRINT` for a missing,
+        unusable, malformed, or incompatible worker — always the same
+        constant object, with the specific reason logged.
+    """
+    from .integrations.ocr_worker.fingerprint import (
+        CAPABILITIES_FLAG,
+    )
+
+    if not command:
+        return UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    cache_key = (tuple(command), timeout)
+    cached = _ocr_fingerprint_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    # A command that already carries the capabilities flag is run
+    # verbatim: an operator (or a test) may embed the flag with its own
+    # value in a wrapper command. Otherwise the flag is appended.
+    if CAPABILITIES_FLAG in command:
+        argv = list(command)
+    else:
+        argv = [*command, CAPABILITIES_FLAG]
+    fingerprint = _run_capability_probe(argv, timeout=timeout)
+    _ocr_fingerprint_cache[cache_key] = fingerprint
+    if fingerprint.available:
+        logger.debug(
+            "OCR worker available: protocol %s, %d package(s)",
+            fingerprint.protocol_version,
+            len(fingerprint.packages),
+        )
+    else:
+        logger.debug("OCR worker unavailable; fingerprint is the stable constant")
+    return fingerprint
+
+
+def _run_capability_probe(argv: list[str], *, timeout: float) -> Any:
+    """Run the one-shot capabilities command and classify its output."""
+    from .integrations.ocr_worker.fingerprint import (
+        UNAVAILABLE_OCR_WORKER_FINGERPRINT,
+        fingerprint_from_output,
+    )
+
+    try:
+        completed = subprocess.run(  # noqa: S603 - caller-configured argv, no shell
+            argv,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.debug("OCR worker capabilities command timed out after %.1fs", timeout)
+        return UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    except OSError as exc:
+        logger.debug("OCR worker capabilities command could not run: %s", exc)
+        return UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    if completed.returncode != 0:
+        logger.debug(
+            "OCR worker capabilities command exited with status %d",
+            completed.returncode,
+        )
+        return UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    fingerprint = fingerprint_from_output(completed.stdout)
+    if fingerprint is None:
+        return UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    return fingerprint
+
+
+def reset_ocr_fingerprint_cache() -> None:
+    """Clear the memoised OCR worker fingerprints (used by tests)."""
+    _ocr_fingerprint_cache.clear()
+
+
+def build_managed_ocr_client(settings: Any) -> Any:
+    """Compose the owner-scoped OCR worker client from injected settings.
+
+    Single composition path shared by ``build_engine`` (engine-owned
+    client, closed at engine shutdown) and the ingest boundary
+    (operation-owned client, closed when the batch finishes). The probe
+    runs only when the operator enabled the fallback AND configured a
+    command, so the packaged default spawns nothing; an empty command
+    is the stable unavailable fingerprint.
+
+    Args:
+        settings: Settings object (flat ``Settings`` or frozen
+            ``EffectiveSettings`` — the six OCR fields exist on both)
+            carrying ``ocr_fallback_enabled``, ``ocr_worker_command``,
+            ``ocr_worker_env_dir`` and ``ocr_worker_request_timeout``.
+
+    Returns:
+        A :class:`~omrg.integrations.ocr_worker.managed.ManagedOcrClient`
+        holding the resolved fingerprint. Construction starts no
+        process.
+    """
+    import shlex
+
+    from .integrations.ocr_worker.managed import ManagedOcrClient
+
+    # isinstance guards keep duck-typed settings objects (tests, fakes)
+    # on the unavailable path instead of exploding inside shlex.
+    raw_command = getattr(settings, "ocr_worker_command", "")
+    command = shlex.split(raw_command) if isinstance(raw_command, str) else []
+    enabled = bool(getattr(settings, "ocr_fallback_enabled", False))
+    if not enabled or not command:
+        fingerprint: Any = UNAVAILABLE_OCR_WORKER_FINGERPRINT
+    else:
+        fingerprint = probe_ocr_worker(command)
+    raw_env_dir = getattr(settings, "ocr_worker_env_dir", "")
+    env_dir = raw_env_dir.strip() or None if isinstance(raw_env_dir, str) else None
+    return ManagedOcrClient(
+        fingerprint=fingerprint,
+        command=command,
+        request_timeout=settings.ocr_worker_request_timeout,
+        cwd=env_dir,
+    )

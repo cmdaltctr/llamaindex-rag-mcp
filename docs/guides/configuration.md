@@ -371,10 +371,52 @@ unit-normalised. The guard enforces the contract: fail-closed at ingest (a bad v
 file replacement before any write), warn-and-continue at query (results stay available, a
 `norm_guard` diagnostic appears with diagnostics enabled).
 
+The two `tokenizer_*` fields carry the Markdown chunking budget identity
+([ADR-063](../adr/063-model-token-aware-markdown-chunking.md), promoted to packaged default
+after experiment 25 passed all four frozen gates). The tokenizer is resolved from the local
+Hugging Face cache only — it is independent of the embedding inference provider, and the
+system never infers it from an Ollama, llama.cpp, or OpenRouter alias.
+
 | Field | Default | What it does |
 |---|---|---|
 | `norm_guard_enabled` | `true` | Verify vector norms at both boundaries. Disabling is logged at startup |
 | `norm_tolerance` | `0.001` | Maximum permitted `abs(norm − 1.0)`, inclusive. Must be positive |
+| `tokenizer_model` | `Qwen/Qwen3-Embedding-4B` | Hugging Face identity used to budget Markdown chunks in real token units. Both fields empty → legacy character-budgeted path. Uncached revision → warning + the same legacy fallback |
+| `tokenizer_revision` | `5cf2132abc99cad020ac570b19d031efec650f2b` | Pinned revision; must be present in the local cache for the model-token path to activate. Changing either field changes the source index identity, so Markdown sources re-chunk on the next ingest |
+| `query_instruction` | empty | Instruction prefix applied to **queries only**. Empty preserves the raw query verbatim |
+
+#### `EMBEDDING__QUERY_INSTRUCTION`
+
+Some embedding models accept a task instruction that reshapes the query
+vector. When this field is non-empty, the dense retrieval path embeds
+
+```text
+Instruct: <EMBEDDING__QUERY_INSTRUCTION>
+Query: <the user's query>
+```
+
+instead of the raw query. Empty is the packaged default and preserves
+today's behaviour exactly.
+
+Four things to know before you set it:
+
+1. **Queries only.** Document and chunk embeddings are never touched.
+   You do not need to re-ingest anything to try an instruction, and you
+   do not need to re-ingest anything to remove it.
+2. **It changes query-vector semantics.** The same question maps to a
+   different point in the embedding space, so results move. That is the
+   point of the setting, and it is also its risk: an instruction that
+   helps prose questions can dilute identifier tokens and hurt exact
+   code lookups.
+3. **Dense only.** The sparse (BM25) runner and the cross-encoder
+   reranker receive the raw query, never the instructed one.
+4. **The query-embedding cache keys on the prepared query.** Two
+   identical raw queries under different instructions get separate cache
+   entries and cannot collide.
+
+Set it per model. A model that was not trained with instructions gains
+nothing from one. Measure before you keep it: see the change record for
+what the evaluated candidate instruction actually did on this workload.
 
 ### Retrieval — `RETRIEVAL__*`
 
@@ -486,6 +528,37 @@ the registry must stay in agreement (a guard test enforces this).
 | `pypdf` | `plain` | Yes |
 | `pypdfium2` | `plain` | Yes |
 
+### OCR fallback and the isolated worker
+
+The calibrated routing gate — which PDFs deserve OCR:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `OCR_FALLBACK_ENABLED` | `false` | Master switch. Off means no PDF reaches the worker |
+| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.0` | Confidence floor for text-based PDFs. `0.0` is the never-trigger sentinel |
+| `OCR_FALLBACK_PAGE_FRACTION` | `0.0` | Flagged-page proportion that triggers OCR. `0.0` is the never-trigger sentinel |
+
+Worker operation — how to reach the worker:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `OCR_WORKER_COMMAND` | empty | Command that starts the worker. Empty means unavailable |
+| `OCR_WORKER_ENV_DIR` | empty | Worker virtual-environment directory |
+| `OCR_WORKER_REQUEST_TIMEOUT` | `300.0` | Seconds to wait for one parse response |
+
+Both groups are top-level fields beside `PDF_READER`, resolved once at
+the composition root and injected. Keep them apart: the gate is
+calibrated evidence, the worker fields are machine configuration.
+
+Enabling the fallback without calibrated thresholds gives
+classification-only routing: `scanned`, `image_based` and `mixed` PDFs
+route, text-based PDFs never do. That is the safe state, not a broken
+one.
+
+Full behaviour — provisioning, lifecycle, protocol, degraded path and
+the four OCR metadata keys — is in
+[the ingestion guide](ingestion.md#ocr-fallback-for-scanned-pdfs).
+
 ### Document backend
 
 | Variable | Default | What it does |
@@ -549,6 +622,42 @@ explicit algorithm selection is an operator contract. See
 [ADR-044](../adr/044-pluggable-community-detection.md).
 
 ---
+
+## Index identity and re-ingestion
+
+OMRG skips a source it has already indexed when the file bytes and the
+index identity both match. Change the identity and every affected source
+re-ingests on the next run, even if not one byte of the file changed.
+
+These settings are part of the index identity:
+
+| What | Why it counts |
+| --- | --- |
+| `EMBEDDING__TOKENIZER_MODEL` and `EMBEDDING__TOKENIZER_REVISION` | They set the Markdown token budget, so chunk boundaries move |
+| The **resolved** Markdown splitter | Model-token-aware or legacy fallback. The resolved value is recorded, not the configured one, so a corpus chunked under the fallback does not stay "matching" forever once the tokenizer becomes loadable |
+| `OCR_FALLBACK_ENABLED`, `OCR_FALLBACK_MIN_CONFIDENCE`, `OCR_FALLBACK_PAGE_FRACTION` | They decide which reader produced the text |
+| The resolved OCR worker fingerprint | Availability, protocol version, every package and exact version, pipeline identity and revision, model identity and revision, output-schema identity and version |
+
+Two consequences worth planning for:
+
+1. **Provisioning the worker invalidates previously indexed sources —
+   including non-PDF ones.** The fingerprint is one field of a single
+   shared identity payload, not a per-file-type one. A PDF indexed while
+   the worker was unavailable is re-ingested once the worker appears,
+   which is the point; the Markdown and code files alongside it are
+   re-ingested too. Upgrading the worker's packages, model, pipeline,
+   protocol, or output schema has the same effect. Plan the re-ingest,
+   or provision the worker before you build the corpus.
+2. **`EMBEDDING__QUERY_INSTRUCTION` deliberately does NOT count.** It
+   changes query vectors only, never stored ones, so it is excluded from
+   the identity on purpose. Set it, change it, or clear it freely: a
+   byte-identical source still reports `skipped_unchanged`.
+
+Transient process details — process ids, temporary paths, timings — are
+excluded from the fingerprint. A missing, unusable, malformed, or
+incompatible worker collapses to ONE stable unavailable fingerprint, so
+"the worker is not installed" is a single identity rather than a
+different one for every failure mode.
 
 ## How settings reach the code
 

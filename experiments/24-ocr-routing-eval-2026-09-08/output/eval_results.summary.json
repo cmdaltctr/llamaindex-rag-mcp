@@ -1,0 +1,61 @@
+{
+  "experiment": "24-ocr-routing-eval-2026-09-08",
+  "verdict": "PASS",
+  "gates": {
+    "quality_zero_structured_failures": {
+      "pass": true,
+      "measured": 0
+    },
+    "quality_structure_markers": {
+      "pass": true,
+      "measured": {
+        "eval_image.pdf": {
+          "headings": 2,
+          "list_items": 0,
+          "tables": 0
+        },
+        "eval_scanned.pdf": {
+          "headings": 3,
+          "list_items": 0,
+          "tables": 0
+        }
+      },
+      "failed_fixtures": []
+    },
+    "regression_fast_path_byte_identical": {
+      "pass": true,
+      "measured": "3/3 identical"
+    },
+    "latency_worker_p95_s_per_page": {
+      "pass": true,
+      "measured": 156.91,
+      "threshold": 180.0
+    },
+    "latency_routing_p95_ms": {
+      "pass": true,
+      "measured": 2.26,
+      "threshold": 50.0
+    }
+  },
+  "worker_per_page_s": {
+    "eval_image.pdf": 156.91,
+    "eval_scanned.pdf": 156.33
+  },
+  "ground_truth_word_recall": {
+    "eval_image.pdf": 0.9305,
+    "eval_scanned.pdf": 0.9433
+  },
+  "routed_fixtures": [
+    "eval_image.pdf",
+    "eval_scanned.pdf"
+  ],
+  "non_routed_fixtures": [
+    "eval_clean_text.pdf",
+    "eval_mixed.pdf",
+    "eval_two_column.pdf"
+  ],
+  "cross_engine_mistral_word_recall": {
+    "eval_image.pdf": 0.9503,
+    "eval_scanned.pdf": 0.9681
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "experiment_id": "24-ocr-routing-eval",
+  "protocol_version": "2.0",
+  "status": "PLANNED",
+  "task_ref": "improve-rag-input-quality-5 task 5.1",
+  "experimental_unit": "one held-out evaluation PDF processed end to end",
+  "primary_metric": "structured_missing_content_failures",
+  "manipulated_factors": [
+    {
+      "name": "routing",
+      "levels": ["fast_path_baseline", "routed_worker_candidate"]
+    }
+  ],
+  "controlled_variables": {
+    "fixtures": "tests/fixtures/pdf_baseline/evaluation/ (5 held-out PDFs)",
+    "routing_gate": {"OCR_FALLBACK_ENABLED": true, "OCR_FALLBACK_MIN_CONFIDENCE": 0.5, "OCR_FALLBACK_PAGE_FRACTION": 0.5},
+    "routing_gate_source": "experiment 23 calibration (task 1.7)",
+    "worker_fingerprint_source": "ocr-worker capability probe (schema omrg.ocr.parse_output v1)"
+  },
+  "cells": [
+    {"id": "fast_path_baseline", "factors": {"routing": "fast_path_baseline"}},
+    {"id": "routed_worker_candidate", "factors": {"routing": "routed_worker_candidate"}}
+  ],
+  "gate_freeze": {
+    "frozen_date": "2026-09-08",
+    "task": "1.6",
+    "precedes_all_candidate_measurements": true,
+    "baseline_evidence": {
+      "pinned_observations": "tests/fixtures/pdf_baseline/manifest.json (recorded 2026-09-06)",
+      "worker_timing": "ocr-worker/SMOKE_RESULTS.md (33.7-150.8 s/page CPU, calibration fixtures)",
+      "routing_overhead": "output/routing_overhead.json (worst-case p95 2.26 ms)"
+    }
+  },
+  "validity_gates": [
+    {
+      "kind": "quality",
+      "metric": "structured_missing_content_failures",
+      "scope": "evaluation fixtures",
+      "comparator": "==",
+      "threshold": 0,
+      "basis": "fast-path baseline failure count is pinned at 0 by tests/unit/test_pdf_baseline_fixtures.py; routing must not introduce any",
+      "additional": {"every_routed_fixture_min_structure_markers": 1}
+    },
+    {
+      "kind": "regression",
+      "metric": "altered_fast_path_outputs",
+      "scope": "text_based evaluation fixtures",
+      "comparator": "==",
+      "threshold": 0,
+      "basis": "fast-path Markdown is pinned byte-exact by tests/unit/test_pdf_baseline_fixtures.py; routing must leave clean PDFs untouched"
+    },
+    {
+      "kind": "latency",
+      "metric": "worker_seconds_per_page",
+      "scope": "OCR-routed pages",
+      "percentile": "p95",
+      "comparator": "<=",
+      "threshold": 180,
+      "basis": "committed smoke evidence tops at 150.8 s/page CPU on calibration fixtures; 180 covers the observed range with margin",
+      "additional": {"routing_decision_ms": {"percentile": "p95", "comparator": "<=", "threshold": 50, "basis": "measured worst-case p95 2.26 ms (output/routing_overhead.json); 50 ms stays negligible against worker cost"}}
+    }
+  ],
+  "monitored_non_gating": [],
+  "preflight_assertions": [
+    {"manifest_field": "routing.ocr_fallback_min_confidence", "operator": "eq", "expected": 0.5},
+    {"manifest_field": "routing.ocr_fallback_page_fraction", "operator": "eq", "expected": 0.5}
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "change": "improve-rag-input-quality-5",
+  "tasks": ["1.1", "1.2"],
+  "licence": "Self-authored content except where noted under 'provenance': the repaired scanned/image evaluation fixtures embed rasterised pages from a CC0 public-domain source, attributed there.",
+  "sets": {
+    "calibration": {
+      "role": "OCR routing gate calibration only (design D7.2); never used for Stage 5 evaluation.",
+      "files": {
+        "calibration/cal_clean_text.pdf": "clean single-column text",
+        "calibration/cal_table_text.pdf": "table-like positioned text (text layer present)",
+        "calibration/cal_scanned.pdf": "scanned page (no text layer)"
+      }
+    },
+    "evaluation": {
+      "role": "Held-out evaluation set for the Stage 5 ablation; untouched by calibration.",
+      "files": {
+        "evaluation/eval_clean_text.pdf": "clean single-column text",
+        "evaluation/eval_two_column.pdf": "two-column text on one page",
+        "evaluation/eval_scanned.pdf": "rasterised page 2 of the CC0 source paper (no text layer)",
+        "evaluation/eval_image.pdf": "rasterised page 4 of the CC0 source paper (no text layer)",
+        "evaluation/eval_mixed.pdf": "mixed: text page + image-only page"
+      }
+    }
+  },
+  "provenance": {
+    "source": "Dashnow H, Lonsdale A, Bourne PE (2014) Ten Simple Rules for Writing a PLOS Ten Simple Rules Article. PLoS Comput Biol 10(10): e1003858. doi:10.1371/journal.pcbi.1003858",
+    "url": "https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003858",
+    "licence": "CC0 1.0 public domain dedication (stated in the article: free of all copyright, usable by anyone for any lawful purpose)",
+    "source_pdf_sha256": "93b6752052ef18f987fee5be87009e5027be03bf78624ea160c9229bb20db5e9",
+    "pages_used": {"eval_scanned.pdf": 2, "eval_image.pdf": 4},
+    "ground_truth": "eval_scanned.expected.txt and eval_image.expected.txt hold the born-digital text of the source pages",
+    "repair_note": "Original task 1.1 fixtures for these two files were 605-byte blank PDFs with no extractable content (experiment 24 run 1 FAIL); repaired 2026-09-08 from the CC0 source above, rendered at 200 DPI with no text layer."
+  },
+  "observed_baseline": {
+    "tool": "pdf-inspector",
+    "recorded": "2026-09-06",
+    "note": "Pinned by tests/unit/test_pdf_baseline_fixtures.py; a diff after a pdf-inspector bump is a visible baseline change.",
+    "files": {
+      "calibration/cal_clean_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "calibration/cal_table_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "calibration/cal_scanned.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.9,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_clean_text.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "evaluation/eval_two_column.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 1.0,
+        "page_count": 1,
+        "pages_needing_ocr": []
+      },
+      "evaluation/eval_scanned.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.95,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_image.pdf": {
+        "pdf_type": "scanned",
+        "confidence": 0.95,
+        "page_count": 1,
+        "pages_needing_ocr": [1]
+      },
+      "evaluation/eval_mixed.pdf": {
+        "pdf_type": "text_based",
+        "confidence": 0.5,
+        "page_count": 2,
+        "pages_needing_ocr": []
+      }
+    }
+  }
+}

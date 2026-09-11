@@ -12,6 +12,13 @@ uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest --cov=omrg      # Coverage
 ```
 
+## Last known good reference point
+
+- Branch: `v3` at `1d83d35` (the `chore(openspec)` commit archiving the residue-removal change)
+- Backup tag: `v3-backup-pre-repair-evidence` (immutable, same commit)
+- Backup branch: `v3-backup` (same commit, visible in GitHub branch list)
+- Created 2026-09-11 before merging `repair-input-quality-experiment-evidence`.
+
 ## WHEN YOU WRITE
 
 ### Explaining problems and errors
@@ -77,7 +84,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 | ⚠️ Ask    | Adding new core dependencies. Mixing embedding models (ChromaDB locks dims).                                                                        |
 | ✅ Always | Type annotations + `from __future__ import annotations` in new modules.                                                                             |
 | ✅ Always | Google-style docstrings on public functions and classes.                                                                                            |
-| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrg` before committing.                                                                          |
+| ✅ Always | `uv sync` + `uv run pytest -m "not slow" --cov=omrg` before committing.                                                                             |
 
 ## Change Workflow
 

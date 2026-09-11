@@ -47,6 +47,8 @@ architecture), see the [ADR index](../adr/).
 | 019 | [Markdown formatter damages continuation lines in list items](019-markdown-formatter-damages-continuation-lines-in-lists.md)                        | Accepted                                                           | 2026-09-01 |
 | 020 | [Permanent `sys.modules` eviction in laziness tests poisons later real imports](020-sys-modules-eviction-in-lazeness-tests-poisons-later-imports.md)| Accepted                                                           | 2026-09-01 |
 | 021 | [Release notes must ride a `BREAKING CHANGE` footer on an included commit type](021-release-notes-ride-breaking-change-footer-on-included-commit-type.md)| Accepted                                                           | 2026-09-01 |
+| 022 | [Token counting is contract-sensitive — three traps in the exp 25 pre-build gate](022-token-counting-is-contract-sensitive.md)                       | Accepted (extended by 023)                                          | 2026-09-08 |
+| 023 | [Reconstructed nodes are not stored nodes — deserialise `_node_content` for payload accounting](023-reconstructed-nodes-are-not-stored-nodes.md)     | Accepted                                                           | 2026-09-08 |
 
 ## Status values
 

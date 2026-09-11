@@ -17,13 +17,19 @@ from typing import Any
 from ...settings import EffectiveSettings
 
 
-async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> list[Any]:
+async def read_documents(
+    file_path: Path, *, settings: EffectiveSettings, ocr_client: Any = None
+) -> list[Any]:
     """Read *file_path* with the local reader chain.
 
     Args:
         file_path: File to read.
         settings: Injected effective settings; ``settings.pdf_reader``
             selects the concrete PDF parser via the factory.
+        ocr_client: Injected managed OCR worker client, threaded to
+            the PDF factory so the OCR routing seam can dispatch
+            OCR-required PDFs (task 2.6a). ``None`` degrades
+            OCR-required files deterministically.
 
     Returns:
         LlamaIndex ``Document`` objects carrying ``file_path`` metadata.
@@ -32,14 +38,33 @@ async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> lis
     def _read_sync() -> list[Any]:
         from llama_index.core import SimpleDirectoryReader
 
-        from omrg.integrations.pdf import get_pdf_reader
+        from omrg.integrations.pdf import build_pdf_reader
 
+        pdf_reader = build_pdf_reader(settings.pdf_reader, settings, ocr_client=ocr_client)
         reader = SimpleDirectoryReader(
             input_files=[str(file_path)],
             filename_as_id=True,
-            file_extractor={".pdf": get_pdf_reader(settings.pdf_reader)},
+            file_extractor={".pdf": pdf_reader},
+            # Surface real reader failures (including the OCR seam's
+            # structured post-dispatch errors, task 2.9) instead of
+            # letting SimpleDirectoryReader swallow them into an empty
+            # document list: the per-file error boundary needs the
+            # cause, and the backend contract says exceptions propagate.
+            raise_on_error=True,
         )
-        return reader.load_data()
+        try:
+            return reader.load_data()
+        except Exception as exc:
+            # SimpleDirectoryReader wraps extractor failures in a bare
+            # ``Exception("Error loading file")`` whose only payload is
+            # the chained cause (llama-index 0.14 file/base.py). Raise
+            # the cause instead so the per-file error boundary sees the
+            # real failure — task 2.9 requires the structured worker
+            # error, not a generic wrapper message.
+            cause = exc.__cause__
+            if cause is not None and str(exc) == "Error loading file":
+                raise cause from None
+            raise
 
     # Blocking parser work runs in a worker thread so the event loop
     # stays responsive (spec: "no event-loop blocking").

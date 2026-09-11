@@ -205,6 +205,16 @@ def effective_settings():
         for field in block_cls.model_fields:
             field_owner.setdefault(field, block_name)
 
+    # ADR-063 promotion (task 5.5): the packaged tokenizer default is the
+    # evaluated Qwen identity, and resolving it depends on the local
+    # Hugging Face cache. Tests pin the empty legacy identity so chunking
+    # behaviour is identical on machines with and without the cache; a test
+    # that wants the model-token path passes the tokenizer fields
+    # explicitly (as test_model_token_markdown_chunking does).
+    factory_block_defaults: dict[str, dict] = {
+        "embedding": {"tokenizer_model": "", "tokenizer_revision": ""},
+    }
+
     def _factory(**overrides) -> EffectiveSettings:
         kwargs: dict = {}
         nested: dict[str, dict] = {}
@@ -236,8 +246,13 @@ def effective_settings():
                 )
 
         for block_name, block_cls in blocks.items():
-            if block_name in nested:
-                kwargs[block_name] = block_cls(**nested[block_name])
+            # A caller-supplied whole block wins verbatim; defaults merge
+            # only when the factory itself constructs the block.
+            if block_name in kwargs:
+                continue
+            defaults = factory_block_defaults.get(block_name, {})
+            if block_name in nested or defaults:
+                kwargs[block_name] = block_cls(**{**defaults, **nested.get(block_name, {})})
 
         return EffectiveSettings(**kwargs)
 
@@ -263,6 +278,7 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     """
     from omrg.core.settings import (
         EffectiveSettings,
+        EmbeddingBlock,
         MetadataBlock,
         reset_default_effective_settings,
         set_default_effective_settings,
@@ -275,8 +291,13 @@ def _install_default_effective_settings(_isolate_env, _reset_default_store, tmp_
     #   - extraction_mode="disabled" -> no auto-categorisation (was patched
     #     onto the settings singleton before v2.0.0)
     #   - pdf_reader="pypdf"         -> deterministic PDF path (gotcha #6)
+    #   - tokenizer fields empty     -> legacy chunking path regardless of
+    #     the Hugging Face cache (ADR-063 promotion made the packaged
+    #     default the Qwen identity; cache-dependent resolution would make
+    #     test behaviour differ between machines)
     effective = EffectiveSettings(
         metadata=MetadataBlock(extraction_mode="disabled"),
+        embedding=EmbeddingBlock(tokenizer_model="", tokenizer_revision=""),
         pdf_reader="pypdf",
         collection_name=_TEST_COLLECTION,
         chroma_persist_dir=_TEST_PERSIST_DIR,

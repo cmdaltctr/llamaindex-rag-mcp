@@ -19,6 +19,7 @@ import asyncio
 import importlib
 import logging
 from pathlib import Path
+from typing import Any
 
 from ..core.settings import EffectiveSettings
 
@@ -297,7 +298,9 @@ def require_azure_installed() -> None:
         ) from exc
 
 
-async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> list:
+async def read_documents(
+    file_path: Path, *, settings: EffectiveSettings, ocr_client: Any = None
+) -> list:
     """Read *file_path* through Azure Document Intelligence (registered backend).
 
     Runs the SDK call in a worker thread so the event loop stays
@@ -309,6 +312,11 @@ async def read_documents(file_path: Path, *, settings: EffectiveSettings) -> lis
         file_path: Path to the document file (PDF, DOCX, etc.).
         settings: Injected effective settings carrying the Azure
             endpoint, key, and model.
+        ocr_client: Accepted for ``DocumentBackend`` signature parity
+            and ignored: the cloud backend parses documents itself and
+            has no local PDF reader chain to route. (The orchestrator's
+            LOCAL fallback receives the real client when azure degrades
+            to it.)
 
     Returns:
         List of LlamaIndex ``Document`` objects with paragraphs, tables,

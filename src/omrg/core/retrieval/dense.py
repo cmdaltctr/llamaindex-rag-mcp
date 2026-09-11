@@ -20,11 +20,22 @@ logger = logging.getLogger(__name__)
 # ── Query embedding cache ──────────────────────────────────────────────
 # Process-local LRU cache so repeated identical queries (common in
 # agentic loops) do not re-hit Ollama for the embedding step.  The cache
-# is keyed by ``(query, embed_model_name)`` so a model swap (e.g. via
+# is keyed by ``(prepared_query, embed_model_name)`` so a model swap (e.g. via
 # ``Settings.embed_model = ...`` in tests) automatically invalidates
 # entries from the previous model.  See ADR-016 / OpenSpec change
 # ``rag-retrieval-quality-improvements`` Decision 4.
 _QUERY_EMBED_CACHE_MAXSIZE = 128
+
+
+def _prepare_query_embedding_input(query: str, query_instruction: str = "") -> str:
+    """Return the model-facing dense query text.
+
+    The formatting stays at the query embedding boundary. Sparse retrieval,
+    reranking, logging, and document embedding continue to use the raw query.
+    """
+    if not query_instruction:
+        return query
+    return f"Instruct: {query_instruction}\nQuery: {query}"
 
 
 @functools.lru_cache(maxsize=_QUERY_EMBED_CACHE_MAXSIZE)
@@ -50,7 +61,11 @@ def _cached_query_embedding(
     return tuple(vec)
 
 
-def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list[float]:
+def _embed_query(
+    query: str,
+    embed_model: Any = None,
+    cache: Any = None,
+) -> list[float]:
     """Embed a query, using the provided cache when available.
 
     Falls back to the LlamaIndex global ``Settings.embed_model`` when
@@ -58,11 +73,11 @@ def _embed_query(query: str, embed_model: Any = None, cache: Any = None) -> list
     LRU cache when cache is None **and** the legacy global is in use.
 
     Args:
-        query: The user's search query string.
+        query: The model-facing search query string.
         embed_model: Optional injected embedding model.  When ``None``,
             the LlamaIndex global is read (legacy transport path).
         cache: Optional ``OrderedDict``-shaped cache keyed by
-            ``(query, model_name)``.  When ``None``, the module-level
+            ``(query, model_name)``. When ``None``, the module-level
             LRU cache is used on the legacy global path only.
 
     Returns:
@@ -132,6 +147,7 @@ def _dense_query_rows(
     *,
     embed_model: Any = None,
     cache: Any = None,
+    query_instruction: str = "",
     norm_guard_enabled: bool = True,
     norm_tolerance: float = 0.001,
     attach_norm_diagnostic: bool = False,
@@ -169,7 +185,8 @@ def _dense_query_rows(
         in diagnostics mode with the guard enabled, ``norm_guard``.
     """
     t0 = time.perf_counter()
-    query_embedding = _embed_query(query, embed_model, cache)
+    prepared_query = _prepare_query_embedding_input(query, query_instruction)
+    query_embedding = _embed_query(prepared_query, embed_model, cache)
     t1 = time.perf_counter()
     if timing_report is not None:
         timing_report["embedding_seconds"] = timing_report.get("embedding_seconds", 0.0) + (t1 - t0)

@@ -24,6 +24,17 @@ class DocumentBackend(Protocol):
     value object — never a settings singleton (ADR-037) — and must
     offload blocking parser work with ``asyncio.to_thread`` so the
     event loop stays responsive.
+
+    ``ocr_client`` carries the injected managed OCR worker client for
+    backends whose reader chain can route OCR-required PDFs (the
+    ``local`` chain); cloud backends accept and ignore it so both
+    signatures stay interchangeable at the dispatch boundary.
     """
 
-    async def __call__(self, file_path: Path, *, settings: EffectiveSettings) -> list[Any]: ...
+    async def __call__(
+        self,
+        file_path: Path,
+        *,
+        settings: EffectiveSettings,
+        ocr_client: Any = None,
+    ) -> list[Any]: ...

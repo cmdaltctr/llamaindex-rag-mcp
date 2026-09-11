@@ -1,0 +1,52 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 526 >>
+stream
+BT /F1 12 Tf 72 720 Td
+(Calibration Clean Text Fixture) Tj
+0 -16 Td
+() Tj
+0 -16 Td
+(This is a plain single-column text document used to calibrate the) Tj
+0 -16 Td
+(OCR routing gate. It has an unambiguous text layer and simple) Tj
+0 -16 Td
+(top-to-bottom reading order.) Tj
+0 -16 Td
+() Tj
+0 -16 Td
+(The second paragraph exists so the confidence sweep sees a text) Tj
+0 -16 Td
+(PDF that must stay on the fast path at every sane threshold.) Tj
+0 -16 Td
+() Tj
+0 -16 Td
+(Third paragraph: stable, boring, deterministic prose.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000818 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+888
+%%EOF

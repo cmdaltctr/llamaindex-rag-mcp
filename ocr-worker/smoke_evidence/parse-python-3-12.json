@@ -1,0 +1,21 @@
+{
+  "id": "smoke-test-0001",
+  "markdown": "## Calibration Table Text Fixture\n\n\n<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>name</td><td style='text-align: center; word-wrap: break-word;'>quantity</td><td style='text-align: center; word-wrap: break-word;'>unit_price</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>bolt</td><td style='text-align: center; word-wrap: break-word;'>12</td><td style='text-align: center; word-wrap: break-word;'>0.05</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>nut</td><td style='text-align: center; word-wrap: break-word;'>48</td><td style='text-align: center; word-wrap: break-word;'>0.02</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>washer</td><td style='text-align: center; word-wrap: break-word;'>96</td><td style='text-align: center; word-wrap: break-word;'>0.01</td></tr></table>\n\nThe rows above are positioned text, not a drawn table, so the classifier must still see a full text layer on this page.",
+  "metadata": {
+    "model": "PaddleOCR-VL",
+    "model_revision": "1.6",
+    "ocr_backend": "paddleocr-vl",
+    "ocr_used": true,
+    "output_schema": {
+      "id": "omrg.ocr.parse_output",
+      "version": "1"
+    },
+    "page_count": 1,
+    "pipeline": "PaddleOCRVL",
+    "pipeline_revision": "predict+restructure_pages",
+    "reader": "paddleocr-vl"
+  },
+  "ok": true,
+  "protocol_version": "1.0",
+  "type": "parse_result"
+}

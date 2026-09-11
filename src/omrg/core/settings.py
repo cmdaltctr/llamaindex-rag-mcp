@@ -70,7 +70,7 @@ class IngestionBlock(BaseModel):
 
 
 class EmbeddingSettings(BaseModel):
-    """Config-facing embedding norm-guard knobs (env prefix ``EMBEDDING__``).
+    """Config-facing embedding knobs (env prefix ``EMBEDDING__``).
 
     The Settings twin of :class:`EmbeddingBlock`. Lives here — next to its
     Block, in the pure-data settings module — rather than under
@@ -83,6 +83,19 @@ class EmbeddingSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Optional model-specific query prefix. Empty preserves the caller's
+    # query verbatim, including for generic embedding models.
+    query_instruction: str = ""
+    # Explicit tokenizer identity prevents inference-server aliases from
+    # selecting a mismatched size calculator. Promoted packaged default
+    # (task 5.5, exp 25 PASS, ADR-063 Accepted): the evaluated Qwen
+    # tokenizer. The Qwen3 embedding family shares one 151,669-token
+    # vocabulary, so the identity matches every shipped embedding size.
+    # Set both fields empty to return to the legacy character-budgeted
+    # path; an uncached revision also falls back with a warning.
+    tokenizer_model: str = "Qwen/Qwen3-Embedding-4B"
+    tokenizer_revision: str = "5cf2132abc99cad020ac570b19d031efec650f2b"
+
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
     # default.
@@ -93,7 +106,7 @@ class EmbeddingSettings(BaseModel):
 
 
 class EmbeddingBlock(BaseModel):
-    """Embedding norm-guard knobs in :attr:`EffectiveSettings.embedding`.
+    """Embedding knobs in :attr:`EffectiveSettings.embedding`.
 
     The dense path ranks by L2 distance and converts to cosine-like
     similarity at the store boundary — rank-equivalent to cosine only for
@@ -105,6 +118,17 @@ class EmbeddingBlock(BaseModel):
     # instances by reference between overlays, so a mutable block would
     # let one operation silently rewrite another's configuration.
     model_config = ConfigDict(frozen=True)
+
+    # Kept empty for generic models. The dense query path applies the
+    # instruction immediately before query embedding only.
+    query_instruction: str = ""
+    # These selectors describe the exact local tokenizer used for Markdown
+    # sizing. Promoted packaged default (task 5.5, exp 25 PASS, ADR-063
+    # Accepted): the evaluated Qwen identity; see EmbeddingSettings for the
+    # opt-out and cache-miss fallback semantics. Explicit empty values
+    # return to the legacy character-budgeted splitter path.
+    tokenizer_model: str = "Qwen/Qwen3-Embedding-4B"
+    tokenizer_revision: str = "5cf2132abc99cad020ac570b19d031efec650f2b"
 
     # Fail-closed at ingest, warn-and-continue at query. Disabling is an
     # explicit, startup-logged operator escape hatch — never a silent
@@ -263,6 +287,27 @@ class EffectiveSettings(BaseModel):
     pdf_reader: str = "auto"
     liteparse_num_workers: int | None = None
     liteparse_ocr_enabled: bool = False
+
+    # ── OCR routing gate (design D7.3, improve-rag-input-quality-5) ──
+    # The packaged default keeps the fallback OFF until the Stage 6
+    # promotion gates are met, so a fresh install never reroutes PDFs
+    # to the isolated worker however it is provisioned. The 0.0
+    # threshold defaults are the "never additionally triggered"
+    # sentinels: with them, routing is classification-only.
+    ocr_fallback_enabled: bool = False
+    ocr_fallback_min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    ocr_fallback_page_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    # ── OCR worker operation (design D2.1) ────────────────────────
+    # Operational settings, deliberately separate from the calibrated
+    # routing gate above (task 2.6b): command, environment location
+    # and request timeout describe HOW to reach the worker, while the
+    # gate describes WHICH PDFs deserve it. An empty command means the
+    # worker is unavailable — a stable fingerprint, never a hardcoded
+    # machine-specific path.
+    ocr_worker_command: str = ""
+    ocr_worker_env_dir: str = ""
+    ocr_worker_request_timeout: float = Field(default=300.0, gt=0)
 
     # ── Codebase map ──────────────────────────────────────────────
     magika_binary: str = "magika"
