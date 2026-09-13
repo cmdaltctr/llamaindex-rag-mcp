@@ -1,0 +1,102 @@
+[
+  {
+    "doc_id": "p01_ia_prince",
+    "split": "pathological",
+    "page_count": 136,
+    "shipped": {
+      "total_seconds": 15.721,
+      "characters": 219549,
+      "fallback_backend": "pypdf",
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 1.506,
+      "retry_seconds": 0.31,
+      "fallback_tier": "liteparse",
+      "characters": 183330,
+      "pages_with_text": 121,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "p02_ia_managing",
+    "split": "pathological",
+    "page_count": 68,
+    "shipped": {
+      "total_seconds": 7.059,
+      "characters": 78693,
+      "fallback_backend": "pypdf",
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.747,
+      "retry_seconds": 0.098,
+      "fallback_tier": "liteparse",
+      "characters": 76849,
+      "pages_with_text": 66,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "p03_winansi_sloman",
+    "split": "pathological",
+    "page_count": 17,
+    "shipped": {
+      "total_seconds": 0.422,
+      "characters": 44948,
+      "fallback_backend": "pypdf",
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.031,
+      "retry_seconds": 0.075,
+      "fallback_tier": "liteparse",
+      "characters": 44277,
+      "pages_with_text": 17,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "c01_scanned_kerr",
+    "split": "control",
+    "page_count": 23,
+    "shipped": {
+      "total_seconds": 0.002,
+      "characters": 0,
+      "fallback_backend": null,
+      "routed_to_ocr": true
+    },
+    "chain": {
+      "classify_seconds": 0.002,
+      "retry_seconds": 0.0,
+      "fallback_tier": null,
+      "characters": 0,
+      "pages_with_text": null,
+      "routed_to_ocr": true,
+      "pdf_type": "scanned"
+    }
+  },
+  {
+    "doc_id": "c02_healthy_graphrag",
+    "split": "control",
+    "page_count": 26,
+    "shipped": {
+      "total_seconds": 0.109,
+      "characters": 93126,
+      "fallback_backend": null,
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.102,
+      "retry_seconds": 0.0,
+      "fallback_tier": null,
+      "characters": 93126,
+      "pages_with_text": null,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  }
+]

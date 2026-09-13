@@ -1,9 +1,9 @@
 # TDR-024: pdf-inspector silently extracts nothing from WinAnsi TrueType PDFs without `/ToUnicode` — retry with pypdf in the adapter
 
 **Date:** 2026-09-13
-**Status:** Accepted
+**Status:** Accepted (amended same day — second failure mechanism and reader matrix below)
 **Deciders:** Aizat
-**Tags:** pdf | ingestion | pdf-inspector | pypdf | ocr-routing
+**Tags:** pdf | ingestion | pdf-inspector | pypdf | liteparse | ocr-routing
 
 ## Context
 
@@ -122,5 +122,55 @@ as-is today).
 - `tests/test_ocr_routing_seam.py` — seam-level evidence-correction tests
 - `experiments/29-pdf-routing-repeat-2026-09-13/report.md` — the Sloman
   observation and projected-cost analysis
-- OpenSpec change `openspec/changes/pdf-reader-extraction-fallback/` —
+- OpenSpec change `openspec/changes/archive/2026-09-13-pdf-reader-extraction-fallback/` —
   proposal, design (D1–D6) and spec deltas
+
+## Amendment (2026-09-13): second mechanism, reader matrix, tiered chain
+
+### Second failure mechanism: Internet Archive GlyphLessFont scans
+
+Two operator-supplied "scanned" PDFs — both Internet Archive scans
+(Producer `Internet Archive PDF 1.4.x; including mupdf and
+pymupdf/skimage`) — reproduce the same silent-empty contradiction with
+a **different root cause**: the text layer is a Type0 `/GlyphLessFont`
+with Identity-H encoding, the invisible Tesseract OCR layer IA paints
+over page images, and a `/ToUnicode` map **is present**. pdf-inspector
+1.17.0 returns zero Markdown from these standard searchable PDFs
+anyway. This is not an exotic edge case: IA Scribe output is the
+dominant internet scanned-book format. Both files classify `text_based`
+(the-prince at 0.75 confidence, managing-directories at 1.0) while
+extracting nothing — the guard's trigger signature.
+
+### Reader matrix on all three pathological files
+
+| Reader | the-prince (136 pp, IA) | managing-directories (68 pp, IA) | Sloman (17 pp, WinAnsi) |
+| --- | --: | --: | --: |
+| pdf-inspector 1.17.0 | 0 chars | 0 chars | 0 chars |
+| liteparse | 183,090 chars, 1.4 s | 76,719 chars, 0.1 s | 44,245 chars, 0.3 s |
+| pypdf | 219,549 chars | 78,693 chars | 44,948 chars |
+
+Classification record over the same session: pdf-inspector 4/4 correct
+(`text_based` on both IA files and Sloman, `scanned` on Kerr 1998) —
+the classifier is reliable even where the extractor fails. liteparse
+is also Rust (over PDFium); the failures are pdf-inspector-specific.
+
+### Routing confirmation
+
+Replaying the production gate (promoted thresholds 0.5/0.10) on the raw
+versus guarded evidence: without the guard both IA scans route to OCR
+(204 pages of pointless worker time ending in the 300 s packaged
+timeout — a hard file failure); with the shipped guard both stay on
+the fast path with recovered text, and Kerr still routes to OCR.
+
+### Resolution: tiered fallback chain (ADR-066, Experiment 30)
+
+The revisit trigger below ("a second silent-empty signature appears")
+fired with the IA GlyphLessFont evidence. Experiment 30
+(`experiments/30-reader-fallback-chain-2026-09-13/`, PASS 4/4 gates)
+validated the tiered chain — pdf-inspector primary (classification),
+liteparse first fallback (fastest rescue, omits textless pages), pypdf
+last (always available). Recorded in ADR-066; implementation as an
+OpenSpec change modifying the shipped guard. The character deltas
+between rescue tiers (liteparse ~2–16% fewer characters) are textless
+pages and page furniture; token-level content equivalence is not
+measured.

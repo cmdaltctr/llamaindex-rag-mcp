@@ -72,6 +72,7 @@ development of OMRG — Opinionated Modular RAG.
 | [063](./063-model-token-aware-markdown-chunking.md)          | Model-Token-Aware Markdown Chunking                                                          | 2026-09-07 | Proposed |
 | [064](./064-input-quality-promotion-decisions.md)            | Input-Quality Promotion Evidence and OCR Default Decision                                    | 2026-09-09 | Accepted — items 1–2 superseded by ADR-065 |
 | [065](./065-ocr-fallback-gate-promoted-to-packaged-default.md) | OCR Fallback Gate Promoted to Packaged Default                                             | 2026-09-13 | Accepted |
+| [066](./066-tiered-reader-fallback-chain.md)                 | Tiered Reader Fallback — pdf-inspector → liteparse → pypdf                                  | 2026-09-13 | Accepted |
 
 ## Convention
 
