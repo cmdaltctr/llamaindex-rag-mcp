@@ -13,8 +13,8 @@
 The shipped guard rescues pdf-inspector's silent-empty extractions with
 pypdf, and it works — but pypdf is the slow rescuer. liteparse reads
 every failure class we have found (Internet Archive GlyphLessFont scans
-and Acrobat-Capture WinAnsi) in fractions of a second, omits textless
-pages, and keeps page provenance. A chain — pdf-inspector primary,
+and Acrobat-Capture WinAnsi) in fractions of a second and omits textless
+pages. A chain — pdf-inspector primary,
 liteparse first fallback, pypdf last — matched the shipped guard's
 recovery coverage on all three pathological documents, was faster on
 all three, preserved every routing decision, and never fired on the
@@ -22,12 +22,14 @@ healthy control.
 
 ## What we tested
 
-Five documents, two arms. The `shipped` arm is the production
-`PdfInspectorReader` as committed (pypdf-only retry). The `chain` arm
-is a script-local mirror of the guard whose retry tier is liteparse
-first, pypdf only when liteparse yields nothing. Both replay the
-production gate with the promoted packaged thresholds (0.5 / 0.10). No
-OCR worker, no model load, no network, no ingestion.
+Five documents, two arms. The `shipped` arm is a script-local mirror of
+the historical pypdf-only guard (commit 928f030) — the production
+`PdfInspectorReader` now carries the chain itself (ADR-066), so calling
+it would measure the new code, not the baseline. The `chain` arm is a
+script-local mirror of the guard whose retry tier is liteparse first,
+pypdf only when liteparse yields nothing. Both replay the production
+gate with the promoted packaged thresholds (0.5 / 0.10). No OCR worker,
+no model load, no network, no ingestion.
 
 ## Results
 
@@ -36,7 +38,7 @@ OCR worker, no model load, no network, no ingestion.
 | Gate | Rule | Measured | Pass? |
 | --- | --- | --- | :--: |
 | Recovery | 3/3 pathological docs recover via liteparse tier | 3/3, tier=`liteparse` on all | ✅ |
-| Speed | liteparse retry ≤ pypdf retry per doc | 0.36 vs 16.1 s; 0.10 vs 6.3 s; 0.23 vs 0.5 s | ✅ |
+| Speed | liteparse retry ≤ pypdf retry per doc | 0.20 vs 11.5 s; 0.07 vs 5.4 s; 0.05 vs 0.31 s (median of 3) | ✅ |
 | Routing | pathological→fast, Kerr→OCR, healthy untouched | exactly that | ✅ |
 | Blank pages | p01 pages_with_text < page_count | 121 < 136 | ✅ |
 
@@ -44,9 +46,9 @@ OCR worker, no model load, no network, no ingestion.
 
 | doc_id | Pages | pdf_type | Shipped (pypdf) | Chain (liteparse) | Routing |
 | --- | --: | --- | --- | --- | --- |
-| p01_ia_prince | 136 | text_based | 219,549 chars, ~16.1 s retry | 183,330 chars, **0.36 s** | fast / fast |
-| p02_ia_managing | 68 | text_based | 78,693 chars, ~6.3 s retry | 76,849 chars, **0.10 s** | fast / fast |
-| p03_winansi_sloman | 17 | text_based | 44,948 chars, ~0.5 s retry | 44,277 chars, **0.23 s** | fast / fast |
+| p01_ia_prince | 136 | text_based | 219,549 chars, ~11.5 s retry | 183,330 chars, **0.20 s** | fast / fast |
+| p02_ia_managing | 68 | text_based | 78,693 chars, ~5.4 s retry | 76,849 chars, **0.07 s** | fast / fast |
+| p03_winansi_sloman | 17 | text_based | 44,948 chars, ~0.31 s retry | 44,277 chars, **0.05 s** | fast / fast |
 | c01_scanned_kerr | 23 | scanned | 0 chars, no fallback | 0 chars, no fallback | **OCR / OCR** |
 | c02_healthy_graphrag | 26 | text_based | 93,126 chars, no fallback | identical, no fallback | fast / fast |
 
@@ -69,12 +71,13 @@ page furniture differences follow from the per-item text join. This
 experiment did not verify token-level content equivalence against
 ground truth; recovery, routing and timing are the measured claims.
 
-**Timing caveat.** The chain's classify+retry split attributes the
-first pdf-inspector pass separately; pypdf retry time is derived as
-shipped total minus that classify time. Cold-import variance explains
-the gap between this run's 0.36 s liteparse retry and the 1.4 s seen in
-the session's first standalone probe; both sit far below pypdf's
-~16 s on the 136-page file.
+**Timing methodology.** Retry times are medians of three direct
+measurements per document — the original single-shot run measured
+liteparse on p03 at 0.38 s one run and 0.07 s the next, enough to flip
+the frozen speed gate on noise alone (the earlier derived estimate had
+also inflated the pypdf side by bundling classify time). The gate now
+compares the liteparse tier directly against a script-local pypdf-only
+mirror. Margins remain large: ~56× on p01, ~76× on p02, ~7× on p03.
 
 **Kerr is untouched by design.** `scanned` is not a contradiction case
 — no fallback tier fires, and the gate still routes it to OCR in both

@@ -1,8 +1,10 @@
 """Experiment 30 runner: reader fallback chain vs shipped pypdf-only guard.
 
 Arms:
-- ``shipped``: the production ``PdfInspectorReader`` as committed
-  (guard retries with pypdf on the silent-empty contradiction).
+- ``shipped``: a script-local mirror of the historical pypdf-only
+  guard (commit 928f030) — the production ``PdfInspectorReader`` now
+  carries the chain itself (ADR-066), so calling it here would no
+  longer measure the pre-chain baseline.
 - ``chain``: a script-local mirror of the guard whose retry tier is
   liteparse first, then pypdf only when liteparse yields no text.
 
@@ -47,7 +49,6 @@ set_default_effective_settings(
 import pdf_inspector  # noqa: E402
 
 from omrg.integrations.pdf.ocr_routing import ocr_required_by_gate  # noqa: E402
-from omrg.integrations.pdf.pdf_inspector import PdfInspectorReader  # noqa: E402
 
 
 def _gate_settings() -> object:
@@ -77,7 +78,7 @@ def _pypdf_retry(path: Path) -> tuple[str, float, int]:
     started = time.perf_counter()
     docs = get_reader("pypdf")().load_data(path)
     elapsed = time.perf_counter() - started
-    text = "\n\n".join(doc.text for doc in docs)
+    text = "\n\n".join(doc.text for doc in docs if doc.text and doc.text.strip())
     return text, elapsed, len(docs)
 
 
@@ -89,6 +90,25 @@ def _liteparse_retry(path: Path) -> tuple[str, float, int, int]:
     elapsed = time.perf_counter() - started
     text = "\n\n".join(doc.text for doc in docs)
     return text, elapsed, len(docs), len(text)
+
+
+def _measured(fn, path: Path, repeats: int = 3) -> tuple:
+    """Return (first-run result, median seconds) over *repeats* runs.
+
+    Single-shot wall-clock timings on small files are noise: p03's
+    liteparse retry measured 0.072–0.379 s across identical runs, enough
+    to flip the frozen speed gate. The median keeps the comparison
+    stable without changing the gate's terms.
+    """
+    first = None
+    times = []
+    for _ in range(repeats):
+        result = fn(path)
+        if first is None:
+            first = result
+        times.append(result[1])
+    times.sort()
+    return first, times[len(times) // 2]
 
 
 def _chain_arm(path: Path) -> dict:
@@ -107,22 +127,23 @@ def _chain_arm(path: Path) -> dict:
     retry_s = 0.0
     pages_with_text = None
     if evidence["pdf_type"] == "text_based" and not markdown and evidence["page_count"] > 0:
-        text, lite_s, pages_with_text, chars = _liteparse_retry(path)
+        result, lite_s = _measured(_liteparse_retry, path)
+        text, pages_with_text, chars = result[0], result[2], result[3]
         if chars > 0:
             markdown = text
             tier = "liteparse"
             retry_s = lite_s
             evidence["pages_needing_ocr"] = 0
         else:
-            text2, pdf_s, _n = _pypdf_retry(path)
-            if text2:
-                markdown = text2
+            result, pdf_s = _measured(_pypdf_retry, path)
+            if result[0]:
+                markdown = result[0]
                 tier = "pypdf"
                 retry_s = pdf_s
                 evidence["pages_needing_ocr"] = 0
     return {
-        "classify_seconds": round(classify_s, 3),
-        "retry_seconds": round(retry_s, 3),
+        "classify_seconds": classify_s,
+        "retry_seconds": retry_s,
         "fallback_tier": tier,
         "characters": len(markdown),
         "pages_with_text": pages_with_text,
@@ -131,24 +152,52 @@ def _chain_arm(path: Path) -> dict:
 
 
 def _shipped_arm(path: Path) -> dict:
-    """Production adapter as committed: guard retries with pypdf only."""
+    """Historical pypdf-only guard, mirrored script-locally.
+
+    Reproduces the shipped guard exactly (commit 928f030): pdf-inspector
+    classify, then a single pypdf retry on the silent-empty
+    contradiction with the same evidence correction. The pypdf retry is
+    timed directly and repeated — the speed gate compares medians.
+    """
     started = time.perf_counter()
-    doc = PdfInspectorReader().load_data(path)[0]
-    total_s = time.perf_counter() - started
-    meta = doc.metadata
-    return {
-        "total_seconds": round(total_s, 3),
-        "characters": len(doc.text),
-        "fallback_backend": meta.get("extraction_fallback_backend"),
-        "routed_to_ocr": _route(
-            {
-                "pdf_type": meta.get("pdf_type", ""),
-                "pdf_confidence": meta.get("pdf_confidence", 1.0),
-                "pages_needing_ocr": meta.get("pages_needing_ocr", 0),
-                "page_count": meta.get("page_count", 0),
-            }
-        ),
+    raw = pdf_inspector.process_pdf(str(path))
+    classify_s = time.perf_counter() - started
+    markdown = raw.markdown or ""
+    evidence = {
+        "pdf_type": raw.pdf_type,
+        "pdf_confidence": raw.confidence,
+        "page_count": raw.page_count,
+        "pages_needing_ocr": len(raw.pages_needing_ocr or []),
     }
+    backend = None
+    retry_s = 0.0
+    if evidence["pdf_type"] == "text_based" and not markdown and evidence["page_count"] > 0:
+        result, retry_s = _measured(_pypdf_retry, path)
+        if result[0]:
+            markdown = result[0]
+            backend = "pypdf"
+            evidence["pages_needing_ocr"] = 0
+    return {
+        "classify_seconds": classify_s,
+        "retry_seconds": retry_s,
+        "total_seconds": classify_s + retry_s,
+        "characters": len(markdown),
+        "fallback_backend": backend,
+        "pdf_type": raw.pdf_type,
+        "page_count": raw.page_count,
+        "routed_to_ocr": _route(evidence),
+    }
+
+
+def _round(value: object) -> object:
+    """Round every float leaf to three decimals for serialisation."""
+    if isinstance(value, float):
+        return round(value, 3)
+    if isinstance(value, dict):
+        return {k: _round(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_round(v) for v in value]
+    return value
 
 
 def main() -> None:
@@ -159,18 +208,16 @@ def main() -> None:
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         shipped = _shipped_arm(path)
         chain = _chain_arm(path)
+        chain["pdf_type"] = shipped["pdf_type"]
         rows.append(
             {
                 "doc_id": entry["doc_id"],
                 "split": entry["split"],
-                "page_count": None,
+                "page_count": shipped["page_count"],
                 "shipped": shipped,
                 "chain": chain,
             }
         )
-        raw = pdf_inspector.process_pdf(str(path))
-        rows[-1]["page_count"] = raw.page_count
-        rows[-1]["chain"]["pdf_type"] = raw.pdf_type
         public.append({"doc_id": entry["doc_id"], "sha256": digest, "split": entry["split"]})
         print(
             f"{entry['doc_id']}: shipped={shipped['characters']} chars "
@@ -188,9 +235,11 @@ def main() -> None:
             r["chain"]["fallback_tier"] == "liteparse" and r["chain"]["characters"] > 0
             for r in pathological
         ),
+        # H2: the liteparse retry must not be slower than the pypdf retry
+        # the shipped guard would have spent — median of three direct
+        # measurements on the same document.
         "speed": all(
-            r["chain"]["retry_seconds"]
-            <= r["shipped"]["total_seconds"] - r["chain"]["classify_seconds"] + 1e9
+            r["chain"]["retry_seconds"] <= r["shipped"]["retry_seconds"] + 1e-9
             for r in pathological
         ),
         "routing": (
@@ -208,7 +257,9 @@ def main() -> None:
         "all_pass": all(gates.values()),
         "collection": public,
     }
-    (EXP_DIR / "output/chain_results.json").write_text(json.dumps(rows, indent=2))
+    (EXP_DIR / "output/chain_results.json").write_text(
+        json.dumps([_round(r) for r in rows], indent=2)
+    )
     (EXP_DIR / "output/eval_results.summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(gates, indent=2))
     print("ALL PASS" if summary["all_pass"] else "GATE FAILURE")

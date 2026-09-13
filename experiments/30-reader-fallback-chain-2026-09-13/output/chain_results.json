@@ -4,14 +4,18 @@
     "split": "pathological",
     "page_count": 136,
     "shipped": {
-      "total_seconds": 15.721,
+      "classify_seconds": 1.54,
+      "retry_seconds": 11.521,
+      "total_seconds": 13.061,
       "characters": 219549,
       "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 136,
       "routed_to_ocr": false
     },
     "chain": {
-      "classify_seconds": 1.506,
-      "retry_seconds": 0.31,
+      "classify_seconds": 1.623,
+      "retry_seconds": 0.204,
       "fallback_tier": "liteparse",
       "characters": 183330,
       "pages_with_text": 121,
@@ -24,14 +28,18 @@
     "split": "pathological",
     "page_count": 68,
     "shipped": {
-      "total_seconds": 7.059,
+      "classify_seconds": 0.625,
+      "retry_seconds": 5.404,
+      "total_seconds": 6.029,
       "characters": 78693,
       "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 68,
       "routed_to_ocr": false
     },
     "chain": {
-      "classify_seconds": 0.747,
-      "retry_seconds": 0.098,
+      "classify_seconds": 0.629,
+      "retry_seconds": 0.071,
       "fallback_tier": "liteparse",
       "characters": 76849,
       "pages_with_text": 66,
@@ -44,14 +52,18 @@
     "split": "pathological",
     "page_count": 17,
     "shipped": {
-      "total_seconds": 0.422,
+      "classify_seconds": 0.025,
+      "retry_seconds": 0.312,
+      "total_seconds": 0.337,
       "characters": 44948,
       "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 17,
       "routed_to_ocr": false
     },
     "chain": {
-      "classify_seconds": 0.031,
-      "retry_seconds": 0.075,
+      "classify_seconds": 0.025,
+      "retry_seconds": 0.046,
       "fallback_tier": "liteparse",
       "characters": 44277,
       "pages_with_text": 17,
@@ -64,9 +76,13 @@
     "split": "control",
     "page_count": 23,
     "shipped": {
+      "classify_seconds": 0.002,
+      "retry_seconds": 0.0,
       "total_seconds": 0.002,
       "characters": 0,
       "fallback_backend": null,
+      "pdf_type": "scanned",
+      "page_count": 23,
       "routed_to_ocr": true
     },
     "chain": {
@@ -84,13 +100,17 @@
     "split": "control",
     "page_count": 26,
     "shipped": {
-      "total_seconds": 0.109,
+      "classify_seconds": 0.103,
+      "retry_seconds": 0.0,
+      "total_seconds": 0.103,
       "characters": 93126,
       "fallback_backend": null,
+      "pdf_type": "text_based",
+      "page_count": 26,
       "routed_to_ocr": false
     },
     "chain": {
-      "classify_seconds": 0.102,
+      "classify_seconds": 0.081,
       "retry_seconds": 0.0,
       "fallback_tier": null,
       "characters": 93126,

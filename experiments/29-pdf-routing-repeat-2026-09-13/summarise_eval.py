@@ -31,6 +31,7 @@ EXP_DIR = Path(__file__).resolve().parent
 PLAN_PATH = EXP_DIR / "plan.json"
 LABELS_PATH = EXP_DIR / "labels.json"
 OUT_PATH = EXP_DIR / "output/classifications.json"
+PUBLIC_COLLECTION = EXP_DIR / "output/collection.public.json"
 SUMMARY_PATH = EXP_DIR / "output/eval_results.summary.json"
 
 WARM_WORST_SECONDS_PER_PAGE = 106.4
@@ -102,10 +103,33 @@ def main() -> None:
             "held_out": _policy_table(rows, labels, key, "held_out"),
         }
 
-    held_out_unlabelled = [
-        r["doc_id"] for r in rows if r["split"] == "held_out" and r["doc_id"] not in labels
-    ]
-    gates_evaluable = summary["labels_frozen"] and not held_out_unlabelled
+    held_out_expected = {
+        d["doc_id"]
+        for d in json.loads(PUBLIC_COLLECTION.read_text(encoding="utf-8"))["documents"]
+        if d["split"] == "held_out"
+    }
+    held_out_rows = {r["doc_id"] for r in rows if r["split"] == "held_out"}
+    held_out_failed = {e["doc_id"] for e in state.get("errors", [])}
+    held_out_unlabelled = sorted(doc_id for doc_id in held_out_expected if doc_id not in labels)
+    held_out_missing = sorted(held_out_expected - held_out_rows - held_out_failed)
+    summary["held_out_coverage"] = {
+        "expected": sorted(held_out_expected),
+        "successful_rows": sorted(held_out_rows),
+        "parse_failures": sorted(held_out_failed),
+        "missing_rows": held_out_missing,
+        "unlabelled": held_out_unlabelled,
+    }
+    gates_evaluable = (
+        summary["labels_frozen"]
+        and not held_out_unlabelled
+        and not held_out_missing
+        and not held_out_failed
+    )
+    # The recall gate needs at least one held-out needs_ocr=true label to
+    # mean anything; without one, observed=0 is arithmetic, not evidence.
+    recall_testable = any(
+        labels.get(doc_id, {}).get("needs_ocr") is True for doc_id in held_out_expected
+    )
 
     for gate in plan.get("validity_gates", []):
         metric = gate["metric"]
@@ -118,7 +142,9 @@ def main() -> None:
         else:
             observed = "unknown-metric"
         verdict = "not_evaluable"
-        if gates_evaluable and isinstance(observed, (int, float)):
+        if metric == "missed_needs_ocr_count" and not recall_testable:
+            pass  # no positive recall cases in held-out: verdict stays not_evaluable
+        elif gates_evaluable and isinstance(observed, (int, float)):
             ok = {
                 "==": observed == gate["threshold"],
                 ">": observed > gate["threshold"],
@@ -136,10 +162,7 @@ def main() -> None:
         )
 
     needs_ocr_held_out = [
-        doc_id
-        for doc_id, label in labels.items()
-        if label.get("needs_ocr") is True
-        and any(r["doc_id"] == doc_id and r["split"] == "held_out" for r in rows)
+        doc_id for doc_id in held_out_expected if labels.get(doc_id, {}).get("needs_ocr") is True
     ]
     lo, hi = _wilson95(
         len(needs_ocr_held_out), summary["policies"]["candidate"]["held_out"]["labelled"]
@@ -151,7 +174,8 @@ def main() -> None:
 
     if not gates_evaluable:
         summary["gates_note"] = (
-            "Gates not evaluated: labels not frozen or held-out documents unlabelled."
+            "Gates not evaluated: labels not frozen, or held-out documents "
+            "unlabelled, missing a successful row, or failed to parse."
         )
 
     SUMMARY_PATH.write_text(json.dumps(summary, indent=2), encoding="utf-8")

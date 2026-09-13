@@ -3,7 +3,7 @@
 **Date:** 2026-09-13
 **Status:** Accepted (evidence: Experiment 30, all four gates PASS)
 **Deciders:** Dr Muhammad Aizat Bin Md Hawari
-**Change:** implementation pending (OpenSpec change modifying the shipped guard)
+**Change:** implemented and shipped (`src/omrg/integrations/pdf/pdf_inspector.py` carries the chain)
 **Related:** [ADR-050](050-configure-pdf-inspector-as-default-reader.md) (pdf-inspector default), [ADR-020](020-use-liteparse-as-pdf-reader.md) (liteparse adapter), [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) (routing default), TDR-024 (both failure mechanisms)
 
 ## Context
@@ -24,15 +24,16 @@ findings dated 2026-09-13 extend that picture:
    wrong 0/3.
 2. **liteparse reads every failure class** — GlyphLessFont and
    WinAnsi-without-`/ToUnicode` — faster than pypdf, omitting
-   textless pages and carrying page provenance.
+   textless pages.
 
 Experiment 30 (`experiments/30-reader-fallback-chain-2026-09-13`)
 compared the shipped pypdf-only retry against a tiered chain on five
 documents. All four frozen gates passed: recovery (3/3 silent-empty
-docs rescued by the liteparse tier), speed (liteparse retry 0.10–0.36 s
-vs pypdf ~0.5–16 s), routing (pathological → fast path, Kerr → OCR,
-healthy control untouched), and blank-page omission (121 of 136 pages
-carried text on the 136-page IA scan).
+docs rescued by the liteparse tier), speed (liteparse retry median
+0.05–0.20 s vs pypdf 0.31–11.5 s, direct measurement), routing
+(pathological → fast path, Kerr → OCR, healthy control untouched), and
+blank-page omission (121 of 136 pages carried text on the 136-page IA
+scan).
 
 ## Decision
 
@@ -47,7 +48,10 @@ chain**:
 2. **liteparse is the first fallback tier.** On the contradiction
    trigger (`text_based` + empty Markdown + `page_count > 0`), retry
    with liteparse: fastest rescue (~45× on the largest observed file),
-   textless pages omitted, page provenance preserved.
+   textless pages omitted. The joined fallback text does **not** carry
+   per-page provenance — liteparse's `page`/`page_label` metadata is
+   dropped when the tier's documents are joined into the single
+   output document.
 3. **pypdf is the last fallback tier.** When liteparse is absent or
    yields no text, pypdf retries — the always-available registered
    plain-text reader, matching the shipped guard's coverage.
@@ -74,8 +78,8 @@ the shipped guard — Experiment 30 measured no divergence.
 ## Consequences
 
 - The `pdf-reader` spec requirement added by change
-  `pdf-reader-extraction-fallback` must be modified to name the chain
-  (implementation change pending).
+  `pdf-reader-extraction-fallback` now names the chain
+  (`openspec/specs/pdf-reader/spec.md`, updated).
 - Environments without liteparse behave exactly as today (pypdf tier).
 - Downstream chunking sees slightly fewer characters from rescued IA
   scans (textless pages omitted); token-level content equivalence was

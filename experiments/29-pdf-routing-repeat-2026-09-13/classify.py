@@ -68,6 +68,22 @@ ROUTING_SOURCES = (
     "src/omrg/integrations/pdf/ocr_policy.py",
 )
 
+#: sha256 of the gate implementation approved at freeze. The baseline
+#: arms replay the LIVE ``ocr_required_by_gate`` with only the
+#: unconditional type-set taken from the pinned revision, so a later
+#: clean commit that changed the gate's semantics would silently
+#: re-baseline every arm. Preflight refuses to run under a gate whose
+#: source differs from the one this study measured; re-preregister the
+#: study to re-pin.
+GATE_SOURCE_SHA256 = {
+    "src/omrg/integrations/pdf/ocr_routing.py": (
+        "d03250d525317326d28476c2d39e62ab13cb18cbbd7161be424dbacad2e2205c"
+    ),
+    "src/omrg/integrations/pdf/ocr_policy.py": (
+        "d1f7beb028ba70ce9a98a21036a131664c403e99034c5d6a0d4820271765f726"
+    ),
+}
+
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(EXP_DIR.parent))
 
@@ -266,6 +282,14 @@ def _preflight(plan: dict, documents: list[dict]) -> dict:
             failures.append(
                 f"policy {name}: unconditional_types {sorted(declared)} do not "
                 f"match {origin} ({sorted(actual)})"
+            )
+
+    for rel, expected in GATE_SOURCE_SHA256.items():
+        live_hash = hashlib.sha256((PROJECT_ROOT / rel).read_bytes()).hexdigest()
+        if live_hash != expected:
+            failures.append(
+                f"gate source {rel}: sha256 differs from the freeze-approved "
+                "pin — a changed gate cannot silently re-baseline the arms"
             )
 
     if failures:

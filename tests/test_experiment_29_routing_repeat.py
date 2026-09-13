@@ -153,14 +153,13 @@ class TestPinnedBaseline:
             ), name
 
     def test_tampered_plan_fails_baseline_check(self, classify, tmp_path):
-        """A plan claiming the wrong baseline set must fail verification."""
+        """A plan claiming the wrong baseline set must fail preflight."""
+        from _lib.preflight import PreflightError
+
         plan = json.loads(_PLAN_PATH.read_text())
         plan["policies"]["baseline_matched"]["unconditional_types"] = ["scanned"]
-        pinned = classify._unconditional_types_at(
-            plan["policies"]["baseline_matched"]["pinned_revision"],
-            plan["policies"]["baseline_matched"]["source_path"],
-        )
-        assert pinned != frozenset(plan["policies"]["baseline_matched"]["unconditional_types"])
+        with pytest.raises(PreflightError, match="baseline_matched"):
+            classify._preflight(plan, _documents(tmp_path))
 
 
 class TestRoutingReplay:

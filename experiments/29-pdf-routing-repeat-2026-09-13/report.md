@@ -3,8 +3,8 @@
 **ID**: `29-pdf-routing-repeat-2026-09-13`  
 **Date run**: 2026-09-13  
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: PASS — with one caveat spelled out in Discussion  
-**Verdict**: The OCR routing fix works. Enable `OCR_FALLBACK_ENABLED` — but only with the thresholds set.  
+**Status**: PASS — safety gate green; recall gate not_evaluable by construction; dev_003 label amended post-run (see Results)  
+**Verdict**: The OCR routing fix works. Enable `OCR_FALLBACK_ENABLED` with the promoted thresholds — the corpus no longer contains a case where a bare enable differs, so that risk is untested here, not cleared.  
 **Raw data**: [`output/classifications.json`](./output/classifications.json), [`output/eval_results.summary.json`](./output/eval_results.summary.json)  
 **Change**: `openspec/changes/repeat-pdf-routing-study`  
 **Protocol**: [protocol.md](protocol.md)
@@ -12,11 +12,13 @@
 ## Bottom line
 
 The fix works. The 991-page book that experiment 28 would have sent to
-~30 hours of pointless OCR now stays on the fast path, while the two
-documents that genuinely need OCR still get caught, and none of the 14
-held-out papers are wrongly routed. `OCR_FALLBACK_ENABLED` is safe to
-promote — provided the thresholds go with it. Flipping the switch bare
-silently misses the hardest case.
+~30 hours of pointless OCR now stays on the fast path, the one document
+that genuinely needs OCR still gets caught, and none of the 14 held-out
+papers are wrongly routed. `OCR_FALLBACK_ENABLED` is safe to promote.
+Sloman — once counted as the second needs-OCR case — is a reader
+failure, not an OCR case: its corrected label makes the candidate's
+route of it a false route caused by corrupted upstream evidence, which
+experiment 30's reader chain removes.
 
 ## What we tested and why
 
@@ -53,8 +55,8 @@ this to OCR?" — under different policy versions:
 | Gate | Rule | Measured | Pass? |
 | --- | --- | --- | :---: |
 | Safety | zero held-out documents wrongly routed | 0 | ✅ |
-| Recall | zero held-out needs-OCR documents missed | 0 | ✅ — vacuous, see Discussion |
-| Dev recall check | Kerr and Sloman must route under the candidate | both routed | ✅ |
+| Recall | zero held-out needs-OCR documents missed | no held-out needs-OCR document exists | not_evaluable — see Discussion |
+| Dev recall check | Kerr must route under the candidate | routed | ✅ |
 
 ### What each arm decided
 
@@ -62,17 +64,24 @@ this to OCR?" — under different policy versions:
 | --- | --- | --- | :-: | :-: | :-: | :-: |
 | dev_001 | The book — 991 pages, 10 flagged | no | **route** | **route** | fast | fast |
 | dev_002 | Kerr 1998 — scanned, 23 pages | yes | route | route | route | route |
-| dev_003 | Sloman 1971 — pipeline reads 0 chars | yes | route | route | route | **fast** |
+| dev_003 | Sloman 1971 — extractor failure, text layer intact | no¹ | route | route | route | **fast** |
 | hold_001–014 | 14 healthy born-digital papers | no | fast | fast | fast | fast |
+
+¹ Label amended 2026-09-13 after review: the independent assessment found
+usable text on all 17 pages, so under the frozen ground-truth rule Sloman
+does not need OCR — it is an extractor-recovery case (evaluated and fixed
+in experiment 30). Under the corrected label, the candidate's route of
+dev_003 was a false route caused by the corrupted upstream evidence, not
+a routing-gate error.
 
 ### Projected OCR cost
 
 | Arm | Pages sent to OCR | Projected time | Honest reading |
 | --- | ---: | --- | --- |
-| `baseline_exp28` | 1,031 | ~30.5 hours | 96% of it on a book that needed nothing |
+| `baseline_exp28` | 1,031 | ~30.5 hours | 96% of it on a book that needed nothing; Sloman routed on corrupted evidence |
 | `baseline_matched` | 1,031 | ~30.5 hours | same |
-| `candidate` | 40 | ~71 minutes | only the two genuinely-needy documents |
-| `enable_only` | 23 | ~41 minutes | cheapest — by missing Sloman entirely |
+| `candidate` | 40 | ~71 minutes | Kerr (the one true positive) plus Sloman's false route — an extractor-failure artefact, fixed upstream by the reader chain |
+| `enable_only` | 23 | ~41 minutes | Kerr only; correct on this corpus |
 
 ## Discussion
 
@@ -85,26 +94,23 @@ to "fast" between exactly those two arms. That is the cleanest possible
 proof that removing `mixed` from the unconditional list caused the
 change.
 
-**The held-out recall gate passed with nothing to prove.** No held-out
-document actually needs OCR, so "0 missed of 0" is arithmetic, not
-evidence — the Wilson 95% upper bound on held-out needs-OCR prevalence
-is ~21.5%, meaning up to one in five unseen documents could still need
-OCR without this collection showing it. The real catch-evidence lives in
-the dev set, which is why the frozen rules required Kerr and Sloman to
-route explicitly.
+**The held-out recall gate is not evaluable, by construction.** No
+held-out document actually needs OCR, so there is no positive case to
+miss — the gate reports `not_evaluable` rather than a vacuous pass. The
+Wilson 95% upper bound on held-out needs-OCR prevalence is ~21.5%,
+meaning up to one in five unseen documents could still need OCR without
+this collection showing it. The only catch-evidence in this corpus is
+Kerr in the dev set.
 
-**A bare enable is strictly worse.** With `OCR_FALLBACK_ENABLED=true`
-and thresholds left at the off position, Sloman gets missed entirely.
-It looks like protection while missing the exact case that needs it.
-Anyone flipping the switch later must set the thresholds too.
-
-**The Sloman surprise.** Sloman is not actually a scanned document —
-pypdf reads its text layer fine (about 2,944 characters per page);
-pdf-inspector simply fails on this particular file. Routing it is still
-correct, because the pipeline cannot read it either way, but the right
-long-term fix is probably a reader fallback, not OCR — that would
-recover the page in ~1 second instead of ~30 minutes of OCR. Flagged as
-a follow-up, not decided here.
+**Sloman was never an OCR case — it was a reader failure.** The
+independent assessment found usable text on every page (pypdf median
+2,944 chars/page); pdf-inspector simply could not extract it. Under the
+frozen ground-truth rule it is `needs_ocr=false`, and its route under
+the candidate was a false route produced by corrupted upstream evidence
+— exactly the failure mode experiment 30's reader chain removes (pypdf
+recovers it in ~0.3 s). After the label correction this corpus contains
+no document where the thresholds alone decide, so the bare-enable risk
+is disclosed as untested here rather than claimed demonstrated.
 
 **Limitations.** OCR costs are projections at the worst measured
 per-page cost (106.4 s); whether OCR actually recovers the text was not
@@ -116,19 +122,23 @@ the committed rule on this library, not universally.
 
 The experiment answered its question: the committed fix routes correctly
 on an operator-approved collection, with zero false routes on all 14
-held-out papers and both needy documents still caught.
+held-out papers and the one genuinely-needy document still caught. Its
+only dev-split false route was Sloman — an extractor-failure artefact,
+not a routing error — removed upstream by the reader chain.
 
-**What ships:** `OCR_FALLBACK_ENABLED` can be promoted — only together
-with the thresholds (0.5 confidence, 0.10 page fraction). The one thing
-the experiment warns against is enabling the switch bare: at the default
-0.0 sentinels it silently misses the hardest case.
+**What ships:** `OCR_FALLBACK_ENABLED` can be promoted with the promoted
+thresholds (0.5 confidence, 0.10 page fraction). The bare-enable risk is
+disclosed as untested on this corpus — after the label correction, no
+document here exercises the thresholds alone.
 
 **Not answered, by design:** whether OCR recovers the text (no real OCR
-authorised), and whether the result generalises beyond this library.
+authorised), whether the bare-enable risk materialises on corpora with
+threshold-decided documents, and whether the result generalises beyond
+this library.
 
 **Next actions:** archive the change, then a separate promotion decision
-for the enable flag + thresholds, and a follow-up on Sloman — a reader
-fallback would fix it in ~1 s instead of ~30 min of OCR.
+for the enable flag + thresholds. The Sloman follow-up — a reader
+fallback — was executed as experiment 30 and shipped as ADR-066.
 
 ## Artefacts
 
