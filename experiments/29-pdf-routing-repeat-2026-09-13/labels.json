@@ -1,0 +1,39 @@
+{
+  "frozen": true,
+  "frozen_date": "2026-09-13",
+  "method": "independent per-page assessment with pypdf (a different extractor from pdf-inspector): every page's extractable text was measured and image-only pages detected; all 17 documents, all pages — no sampling was needed at this collection size. The private per-page detail is output/.page_assessment.private.json (gitignored).",
+  "label_rule": "needs_ocr=true when the pipeline's extraction misses usable content at or above the approved 10% page tolerance; the pypdf cross-check distinguishes 'no text layer' from 'extractor failure'",
+  "labels": {
+    "dev_001": {
+      "needs_ocr": false,
+      "pages_without_usable_text": "3 of 991 (0.3%) — image pages; text layer healthy elsewhere (median 1,158 chars/page)",
+      "note": "the exp-28 false route; under the approved 10% tolerance it does not warrant OCR"
+    },
+    "dev_002": {
+      "needs_ocr": true,
+      "pages_without_usable_text": "23 of 23 (100%) — scanned image pages, no text layer",
+      "note": "Kerr 1998, HARKing; genuine scan"
+    },
+    "dev_003": {
+      "needs_ocr": true,
+      "pages_without_usable_text": "0 of 17 under pypdf — but pdf-inspector extracted zero characters on all 17 in experiment 28",
+      "note": "Sloman 1971: NOT a scan — a pdf-inspector extraction failure on a real text layer (pypdf median 2,944 chars/page). Labelled needs_ocr=true because the pipeline's own extractor misses all content; the fallback exists precisely for this failure mode."
+    },
+    "hold_001": {"needs_ocr": false, "pages_without_usable_text": "0 of 26", "note": "healthy born-digital paper (median 3,573 chars/page)"},
+    "hold_002": {"needs_ocr": false, "pages_without_usable_text": "0 of 15", "note": "healthy born-digital paper (median 3,303 chars/page)"},
+    "hold_003": {"needs_ocr": false, "pages_without_usable_text": "0 of 13", "note": "healthy born-digital paper (median 6,050 chars/page)"},
+    "hold_004": {"needs_ocr": false, "pages_without_usable_text": "0 of 26", "note": "healthy born-digital paper (median 6,577 chars/page)"},
+    "hold_005": {"needs_ocr": false, "pages_without_usable_text": "0 of 37", "note": "healthy born-digital paper (median 3,806 chars/page)"},
+    "hold_006": {"needs_ocr": false, "pages_without_usable_text": "0 of 12", "note": "healthy born-digital paper (median 4,238 chars/page)"},
+    "hold_007": {"needs_ocr": false, "pages_without_usable_text": "0 of 46", "note": "healthy born-digital paper (median 3,810 chars/page)"},
+    "hold_008": {"needs_ocr": false, "pages_without_usable_text": "0 of 17", "note": "healthy born-digital paper (median 3,684 chars/page)"},
+    "hold_009": {"needs_ocr": false, "pages_without_usable_text": "0 of 15", "note": "healthy born-digital paper (median 4,068 chars/page)"},
+    "hold_010": {"needs_ocr": false, "pages_without_usable_text": "0 of 13", "note": "healthy born-digital paper (median 4,584 chars/page)"},
+    "hold_011": {"needs_ocr": false, "pages_without_usable_text": "0 of 9", "note": "healthy born-digital paper (median 4,997 chars/page)"},
+    "hold_012": {"needs_ocr": false, "pages_without_usable_text": "0 of 19", "note": "healthy born-digital paper (median 3,583 chars/page)"},
+    "hold_013": {"needs_ocr": false, "pages_without_usable_text": "0 of 22", "note": "healthy born-digital paper (median 3,661 chars/page)"},
+    "hold_014": {"needs_ocr": false, "pages_without_usable_text": "0 of 13", "note": "healthy born-digital paper (median 6,005 chars/page)"}
+  },
+  "uncertain": [],
+  "coverage_disclosure": "all pages of all 17 documents assessed via the independent extractor; the held-out split contains no needs_ocr=true document, so held-out recall is untestable by construction — disclosed, not hidden"
+}

@@ -1,0 +1,135 @@
+{
+  "experiment_id": "29-pdf-routing-repeat",
+  "protocol_version": "1.0",
+  "status": "FROZEN",
+  "change_ref": "openspec/changes/repeat-pdf-routing-study",
+  "study_type": "preregistered policy comparison on an operator-approved collection",
+  "experimental_unit": "one approved PDF classified by pdf-inspector, with routing replayed under four policies",
+  "primary_metric": "false_routing_count (held-out, candidate policy)",
+  "manipulated_factors": ["routing policy"],
+  "policies": {
+    "baseline_exp28": {
+      "description": "historical policy exactly as experiment 28 evaluated it: pre-fix unconditional set plus its 0.5/0.5 thresholds, pinned at the pre-fix revision",
+      "pinned_revision": "afe151e",
+      "source_path": "src/omrg/integrations/pdf/ocr_routing.py",
+      "unconditional_types": ["image_based", "mixed", "scanned"],
+      "min_confidence": 0.5,
+      "page_fraction": 0.5
+    },
+    "baseline_matched": {
+      "description": "pre-fix unconditional set at the approved 0.5/0.10 thresholds; differs from candidate only in the unconditional set, isolating the 9bf4810 fix",
+      "pinned_revision": "afe151e",
+      "source_path": "src/omrg/integrations/pdf/ocr_routing.py",
+      "unconditional_types": ["image_based", "mixed", "scanned"],
+      "min_confidence": 0.5,
+      "page_fraction": 0.1
+    },
+    "candidate": {
+      "description": "committed post-fix policy (9bf4810) at the operator-approved 0.5/0.10 thresholds",
+      "unconditional_types": ["image_based", "scanned"],
+      "min_confidence": 0.5,
+      "page_fraction": 0.1
+    },
+    "enable_only": {
+      "description": "committed unconditional set with both thresholds at the 0.0 never-trigger sentinels — the behaviour when only OCR_FALLBACK_ENABLED is set",
+      "unconditional_types": ["image_based", "scanned"],
+      "min_confidence": 0.0,
+      "page_fraction": 0.0
+    }
+  },
+  "collection": {
+    "status": "APPROVED 2026-09-13",
+    "source": "explicit operator-approved path list only; no directory scan",
+    "membership": "3 development (the exp-28 book + the two known needs-OCR papers) + 14 held-out (the operator's Zotero 'RAG' collection PDFs)",
+    "held_out_disclosure": "all 14 held-out documents were inside experiment 28's corpus: their classification evidence predates this freeze, but none routed and none were individually examined during candidate design; their independent labels are new evidence. They test the safety gate only — no held-out document needs OCR, so held-out recall is reported as untested.",
+    "private_mapping": "output/.collection.private.json (gitignored)",
+    "public_manifest": "output/collection.public.json (doc_id, sha256, split only)"
+  },
+  "labels": {
+    "status": "APPROVED 2026-09-13",
+    "file": "labels.json",
+    "method": "independent page assessment via a second extractor (pypdf, distinct from pdf-inspector): per-page text density plus image-only detection; every page pdf-inspector flagged is checked, plus a sample of unflagged pages; uncertain cases recorded explicitly",
+    "split_rule": "development documents may guide the candidate; held-out outcomes are withheld from candidate design"
+  },
+  "routing_judgements": {
+    "status": "APPROVED 2026-09-13",
+    "missing_page_tolerance": "10% of pages lacking usable text warrants whole-document OCR (candidate page_fraction = 0.10)",
+    "whole_document_routing": "whole-file dispatch accepted — no page stitching exists; a document above tolerance is OCR'd in full",
+    "enable_only_zero_threshold": "a mixed PDF with thresholds at the 0.0 sentinels stays on the fast path — classification-only routing, matching the committed code"
+  },
+  "ocr_authorisation": {
+    "authorised": false,
+    "note": "classification and routing replay only; OCR cost is reported as a projection and recovery quality as unmeasured"
+  },
+  "ground_truth_definition": {
+    "label": "needs_ocr",
+    "rule": "independent page assessment in labels.json — never the classifier output and never aggregate character counts alone; a document is needs_ocr=true when the share of pages without usable text meets the 10% tolerance",
+    "specified_before_data": true
+  },
+  "cells": [
+    {"id": "development", "role": "regression checks; may guide the candidate"},
+    {"id": "held_out", "role": "independent validation; outcomes withheld during design"}
+  ],
+  "gate_freeze": {
+    "frozen_date": "2026-09-13",
+    "precedes_all_measurement": true,
+    "foreknowledge_of_data": "The experiment-28 documents are known: the book (991 pages, mixed, false-routed), the scanned Kerr 1998 paper and the zero-extract Sloman 1971 paper. All three are development evidence only. The 14 held-out documents' classification evidence predates this freeze but their outcomes did not guide the candidate and their labels are new.",
+    "baseline_evidence": {
+      "experiment_28": "experiments/28-pdf-classification-prevalence-2026-09-09/results.md — FAIL on both gates under the pre-fix policy",
+      "fix_commit": "9bf4810 — mixed removed from OCR_UNCONDITIONAL_TYPES",
+      "ocr_cost": "ocr-worker/SMOKE_RESULTS.md — 33.7 to 106.4 s per page warm"
+    }
+  },
+  "validity_gates": [
+    {
+      "kind": "safety",
+      "metric": "false_routing_count",
+      "definition": "held-out documents with needs_ocr == false that the candidate policy routes to OCR",
+      "scope": "held-out split only",
+      "comparator": "==",
+      "threshold": 0,
+      "basis": "same zero-tolerance principle as experiments 24 and 28: a false route costs 33.7-106.4 s per page against a ~1 s fast path"
+    },
+    {
+      "kind": "recall",
+      "metric": "missed_needs_ocr_count",
+      "definition": "held-out documents with needs_ocr == true that the candidate policy leaves on the fast path",
+      "scope": "held-out split only",
+      "comparator": "==",
+      "threshold": 0,
+      "basis": "a promoted default that misses genuinely textless documents preserves the gap it exists to close",
+      "known_limitation": "no held-out document is expected to carry needs_ocr=true, so this gate is expected to be untestable on held-out evidence; the development split carries the recall check (Kerr and Sloman must route)"
+    }
+  ],
+  "monitored_non_gating": [
+    {
+      "metric": "projected_ocr_wall_clock_seconds",
+      "definition": "routed pages x 106.4 s, labelled a projection — no real OCR is authorised",
+      "reason": "cost evidence for the promotion decision; never gated"
+    },
+    {
+      "metric": "classification_seconds",
+      "definition": "per-document elapsed classification time, measured",
+      "reason": "actual cost of the measurement itself"
+    },
+    {
+      "metric": "baseline_matched_vs_candidate_divergence",
+      "definition": "documents where routed_baseline_matched differs from routed_candidate",
+      "reason": "isolates what the 9bf4810 fix changes on real documents at the approved thresholds"
+    }
+  ],
+  "decision_rule": {
+    "specified_before_data": true,
+    "supports_promotion": "safety gate passes on held-out evidence AND both dev recall checks (Kerr, Sloman) route under the candidate",
+    "promote_nothing": "the safety gate fails, or a dev recall check misses",
+    "note": "promotion is a separate later decision informed by this study; this change never promotes a packaged default"
+  },
+  "preflight_assertions": [
+    {"manifest_field": "classifier.reader", "operator": "eq", "expected": "pdf_inspector"},
+    {"manifest_field": "collection.source", "operator": "eq", "expected": "operator_approved_list"},
+    {"manifest_field": "routing_code_clean", "operator": "eq", "expected": true},
+    {"manifest_field": "privacy.filenames_recorded", "operator": "eq", "expected": false},
+    {"manifest_field": "privacy.content_recorded", "operator": "eq", "expected": false},
+    {"manifest_field": "ocr.worker_started", "operator": "eq", "expected": false}
+  ]
+}
