@@ -72,6 +72,7 @@ Write technical documentation in ASD-STE100 Simplified Technical English where p
 12. **OpenSpec validation is a guardrail, not a constitution.** If a spec has factually wrong content (wrong default value, wrong scenario name, stale accepted-set), fix it. When `openspec validate --strict` then complains that a MODIFIED block "drops" scenarios from the baseline, the baseline spec itself is wrong — fix the baseline in `openspec/specs/` too. Do not work around the validator by keeping incorrect content and adding explanatory notes. The tool serves the spec, not the other way around.
 13. **Dependency floors are enforced by `tests/test_dependency_floors.py` and the `floors` CI job.** The test fails when a declared floor drifts more than one minor below its locked version (or sits above it). The `floors` job installs with `--resolution lowest-direct` and runs the fast suite. When raising a floor, update the exemption dict in the test if the gap is intentional (with a comment naming the reason). See ADR-042.
 14. **BM25 cache validity is durable where the store supports it.** `_get_or_build_index` resolves an explicitly tagged validity token: durable `(omrg_dataset_epoch, table.version)` from `get_data_version()` on Lance, else the tagged process-local generation counter. Cross-process writes therefore invalidate the server's BM25 cache. Chroma falls back to the local counter and warns once per collection naming the reduced guarantee; a transition between the two modes never compares equal.
+15. **Worktree removal destroys gitignored history.** Before `git worktree remove` on a merged branch, copy the preserve-class gitignored artefacts to the target worktree: experiment `output/`, `eval_results.json`, `ground-truth.json`, `corpus/`; `graphify-out/`; `.pi/hindsight*`; `.ua/`. Never copy `.env`. Drop regenerable caches (`.coverage`, `__pycache__`, `.venv`, `.ruff_cache`, `.pytest_cache`). Verify the copy before removal. Heavy experiment artefacts not in a GitHub Release should be uploaded to one first — the `.gitignore` "stored in GitHub Releases" comment is aspirational, not enforced.
 
 ## Hard Boundaries
 
@@ -100,7 +101,7 @@ OpenSpec (propose → implement → archive)
 
 **Documentation drift check**: when a default value changes, grep `docs/guides/` for the old value. This is a procedural partial, not automation — it depends on discipline and will sometimes be skipped, but it is strictly better than the previous state (nothing).
 
-**Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green.
+**Branch/PR**: `git switch -c feat/<change-id>` → `openspec validate --all --strict` + targeted tests → Conventional Commits → `gh pr create --base main` → merge when green. Before removing a merged worktree, follow Critical Gotcha #15 (copy gitignored history to the target worktree).
 
 ## Release Automation
 
