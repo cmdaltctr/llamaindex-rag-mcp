@@ -19,6 +19,14 @@ See [ADR-064](064-input-quality-promotion-decisions.md) for the full
 decision record. This ADR records the worker boundary, lifecycle, and
 protocol — not the OCR default, which lives in ADR-064.
 
+> **Update (2026-09-13):** the off-by-default disposition recorded here
+> (and in decision item 9 below) is superseded by
+> [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md) on
+> Experiment 29's evidence: the packaged default is now the promoted
+> gate — `OCR_FALLBACK_ENABLED=true` with `0.5` / `0.10` thresholds.
+> The worker boundary, lifecycle, and protocol decisions in this ADR
+> are unchanged.
+
 ## Context
 
 OMRG must extract usable text from scanned or structurally degraded PDFs.
