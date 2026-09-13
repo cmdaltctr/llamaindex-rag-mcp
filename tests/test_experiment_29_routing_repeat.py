@@ -136,23 +136,31 @@ class TestPinnedBaseline:
         assert live == frozenset({"scanned", "image_based"})
         assert "mixed" not in live
 
-    def test_plan_baseline_matches_pinned_revision(self, classify):
+    def test_plan_baselines_match_pinned_revision(self, classify):
         plan = json.loads(_PLAN_PATH.read_text())
-        baseline = plan["policies"]["baseline"]
-        pinned = classify._unconditional_types_at(
-            baseline["pinned_revision"], baseline["source_path"]
-        )
-        assert pinned == frozenset(baseline["unconditional_types"])
+        for name in ("baseline_exp28", "baseline_matched"):
+            baseline = plan["policies"][name]
+            pinned = classify._unconditional_types_at(
+                baseline["pinned_revision"], baseline["source_path"]
+            )
+            assert pinned == frozenset(baseline["unconditional_types"]), name
+
+    def test_plan_candidate_matches_committed_code(self, classify):
+        plan = json.loads(_PLAN_PATH.read_text())
+        for name in ("candidate", "enable_only"):
+            assert classify._live_unconditional_types() == frozenset(
+                plan["policies"][name]["unconditional_types"]
+            ), name
 
     def test_tampered_plan_fails_baseline_check(self, classify, tmp_path):
         """A plan claiming the wrong baseline set must fail verification."""
         plan = json.loads(_PLAN_PATH.read_text())
-        plan["policies"]["baseline"]["unconditional_types"] = ["scanned"]
+        plan["policies"]["baseline_matched"]["unconditional_types"] = ["scanned"]
         pinned = classify._unconditional_types_at(
-            plan["policies"]["baseline"]["pinned_revision"],
-            plan["policies"]["baseline"]["source_path"],
+            plan["policies"]["baseline_matched"]["pinned_revision"],
+            plan["policies"]["baseline_matched"]["source_path"],
         )
-        assert pinned != frozenset(plan["policies"]["baseline"]["unconditional_types"])
+        assert pinned != frozenset(plan["policies"]["baseline_matched"]["unconditional_types"])
 
 
 class TestRoutingReplay:
