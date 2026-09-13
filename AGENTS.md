@@ -10,6 +10,7 @@ uv run omrg                   # Start MCP server (stdio)
 uv run omrg ingest ./docs     # CLI ingest
 uv run pytest -m "not slow" -v   # Fast tests (no Ollama, no disk I/O)
 uv run pytest --cov=omrg      # Coverage
+./scripts/local_ci.sh         # PR-blocking CI jobs, run locally before pushing
 ```
 
 ## Last known good reference point
