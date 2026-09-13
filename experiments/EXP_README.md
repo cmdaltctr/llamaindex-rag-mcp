@@ -189,7 +189,7 @@ Experiment analysis scripts use [Jupytext](https://jupytext.readthedocs.io/) per
 
 1. `jupytext --to notebook analysis.py` → generate notebook
 2. Open in Jupyter, run all cells → plots appear inline
-3. Optionally `plt.savefig()` specific plots you want in `results.md`
+3. Optionally `plt.savefig()` specific plots you want in `report.md`
 4. Close notebook
 5. `jupytext --sync` → any code edits you made in Jupyter go back to `analysis.py`
 6. `git add analysis.py` → commit the code, not the outputs

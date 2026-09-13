@@ -4,7 +4,7 @@ Reads ``output/classifications.json`` (public rows) and the frozen
 ``labels.json`` (independent page assessment, doc_id keys only), evaluates
 the frozen validity gates from ``plan.json`` and writes
 ``output/eval_results.summary.json`` plus a Markdown block for
-``results.md``.
+``report.md``.
 
 Labelling rules from the change spec:
 

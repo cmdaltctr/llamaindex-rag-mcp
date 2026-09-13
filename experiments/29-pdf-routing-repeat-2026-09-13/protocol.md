@@ -214,5 +214,5 @@ recovery quality is reported as unmeasured.
 | `output/collection.public.json` | doc_id + sha256 + split manifest | ✅ |
 | `output/classifications.json` | per-document rows + run identity | ✅ |
 | `output/eval_results.summary.json` | gate checks, machine-readable | ✅ |
-| `results.md` | outcome, interpretation and conclusion (single document) | ✅ |
+| `report.md` | outcome, interpretation and conclusion (single document) | ✅ |
 | `output/.collection.private.json` etc. | private mappings | local only |
