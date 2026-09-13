@@ -40,13 +40,14 @@ class PdfInspectorReader:
             List with one LlamaIndex ``Document`` whose text is the
             extracted markdown. When pdf-inspector classifies the file
             ``text_based`` yet extracts nothing from a non-empty page
-            count, the document text is the pypdf retry's joined pages
-            instead (empty markdown still yields a document with empty
-            text so callers observe the classification).
+            count, the document text is the fallback chain's joined
+            pages instead — liteparse first, pypdf last (ADR-066); empty
+            markdown still yields a document with empty text so callers
+            observe the classification.
 
         Raises:
             ImportError: If ``pdf_inspector`` is not installed.
-            Exception: Whatever the pypdf retry raises — a file that
+            Exception: Whatever the final pypdf tier raises — a file that
                 opens in pdf-inspector but crashes pypdf is genuinely
                 broken input for the per-file error boundary.
         """
@@ -85,39 +86,74 @@ class PdfInspectorReader:
                 pages_needing_ocr_count,
             )
 
-        # Sloman guard (design D6): a ``text_based`` classification with
-        # an empty extraction on a non-empty document is a contradiction —
-        # the classifier saw a text layer the extractor failed to read
-        # (WinAnsi TrueType fonts with no /ToUnicode map; TDR-024). Retry
-        # once through the registered plain-text reader before emitting
-        # zero characters. Exceptions from the retry propagate (D3).
+        # Sloman guard (design D6, change pdf-reader-extraction-fallback):
+        # a ``text_based`` classification with an empty extraction on a
+        # non-empty document is a contradiction — the classifier saw a
+        # text layer the extractor failed to read (WinAnsi TrueType
+        # without /ToUnicode; IA GlyphLessFont; TDR-024). Retry through
+        # the tiered fallback chain — liteparse first (extraction-only,
+        # fastest rescue), pypdf last (always available) — before
+        # emitting zero characters (ADR-066; unqualified design numbers
+        # below are D1–D5 of change tiered-reader-fallback-chain).
         if result.pdf_type == "text_based" and markdown == "" and result.page_count > 0:
-            from .registry import get as _get_reader
+            from .registry import get as get_reader
 
-            recovered = _get_reader("pypdf")().load_data(file)
-            joined = "\n\n".join(doc.text for doc in recovered if doc.text and doc.text.strip())
-            if joined:
+            recovered = ""
+            fallback_backend: str | None = None
+            # Tier 1 — liteparse, constructed extraction-only (design
+            # D2: an operator enabling liteparse OCR must not turn the
+            # fallback chain into an OCR path); any failure hands over
+            # to pypdf (D3).
+            try:
+                candidate = "\n\n".join(
+                    doc.text
+                    for doc in get_reader("liteparse")(
+                        ocr_enabled=False, num_workers=None
+                    ).load_data(file)
+                    if doc.text and doc.text.strip()
+                )
+                if candidate:
+                    recovered = candidate
+                    fallback_backend = "liteparse"
+            except Exception:  # noqa: BLE001 - a tier failure must never block the next tier
+                logger.debug("liteparse fallback tier failed for %s; handing over", file.name)
+            # Tier 2 — pypdf: always available; its exceptions propagate
+            # to the per-file error boundary (D3) — a file that opens in
+            # pdf-inspector but crashes pypdf is genuinely broken input.
+            if fallback_backend is None:
+                candidate = "\n\n".join(
+                    doc.text
+                    for doc in get_reader("pypdf")().load_data(file)
+                    if doc.text and doc.text.strip()
+                )
+                if candidate:
+                    recovered = candidate
+                    fallback_backend = "pypdf"
+
+            if recovered:
                 logger.warning(
                     "pdf-inspector extracted no text from %s despite a "
                     "text_based classification (%d page(s) flagged); "
-                    "recovered %d characters via pypdf",
+                    "recovered %d characters via %s",
                     file.name,
                     pages_needing_ocr_count,
-                    len(joined),
+                    len(recovered),
+                    fallback_backend,
                 )
-                markdown = joined
-                # Evidence correction, not replacement (D4): the pages
-                # were flagged only by the failed extraction, so the
-                # scalar the OCR gate reads drops to zero while the
-                # original count survives under a diagnostic key.
+                markdown = recovered
+                # Evidence correction, not replacement (D4, change
+                # pdf-reader-extraction-fallback): the pages were
+                # flagged only by the failed extraction, so the scalar
+                # the OCR gate reads drops to zero while the original
+                # count survives under a diagnostic key.
                 metadata["pages_needing_ocr"] = 0
                 metadata["pages_needing_ocr_before_fallback"] = pages_needing_ocr_count
-                metadata["extraction_fallback_backend"] = "pypdf"
+                metadata["extraction_fallback_backend"] = fallback_backend
             else:
                 logger.warning(
                     "pdf-inspector extracted no text from %s despite a "
-                    "text_based classification, and the pypdf retry "
-                    "recovered nothing either — emitting the flagged "
+                    "text_based classification, and both fallback tiers "
+                    "recovered nothing — emitting the flagged "
                     "evidence unchanged for OCR routing",
                     file.name,
                 )

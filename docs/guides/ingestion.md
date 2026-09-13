@@ -399,18 +399,29 @@ they are stored and returned but never embedded and never sent to an LLM.
 
 Two further keys appear only when the extraction-fallback guard fired —
 pdf-inspector classified the file `text_based` yet extracted nothing, so
-the adapter retried with pypdf and recovered the text (TDR-024):
+the adapter retried through the tiered fallback chain and recovered the
+text (ADR-066, TDR-024):
 
-| Key                                 | Meaning                                              |
-| ----------------------------------- | ---------------------------------------------------- |
-| `extraction_fallback_backend`       | `pypdf` — which reader produced the recovered text.  |
-| `pages_needing_ocr_before_fallback` | The flagged count before the guard zeroed it.        |
+| Key                                 | Meaning                                                    |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `extraction_fallback_backend`       | `liteparse` or `pypdf` — the reader that produced the text. |
+| `pages_needing_ocr_before_fallback` | The flagged count before the guard zeroed it.              |
+
+The retry is tiered. pdf-inspector stays the primary classifier and
+extractor, because it alone emits the routing evidence the OCR gate
+reads. On the contradiction the adapter retries with liteparse first,
+in self-contained extraction-only mode: OCR is forced off whatever
+`LITEPARSE_OCR_ENABLED` says, and `num_workers=None` lets LiteParse
+choose automatically without requiring global settings. When liteparse
+is not installed, or its retry raises or yields no text, pypdf retries
+last. It is the always-available registered plain-text reader, which
+preserves the previous coverage.
 
 When recovery succeeds, `pages_needing_ocr` reads `0` — the pages were
 flagged only by the failed extraction — and the file takes the fast
-path. When the pypdf retry also finds no text, the original flagged
-count stands and neither key is stamped, so the OCR gate still sees the
-evidence. Both keys are parser telemetry and sit in
+path. When both tiers find no text, the original flagged count stands
+and neither key is stamped, so the OCR gate still sees the evidence.
+Both keys are parser telemetry and sit in
 `EXCLUDED_EMBED_METADATA_KEYS` alongside the OCR keys.
 
 ### Re-ingestion consequence

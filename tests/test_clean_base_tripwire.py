@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2891
+_BASE_EXECUTED = 2897
+# Re-baselined 2026-09-13 from 2891 (tiered-reader-fallback-chain): the
+# liteparse-first fallback chain adds 6 cases — contradiction rescue,
+# unavailable/failed-tier hand-over, extraction-only settings, bare
+# adapter use without global settings, and the preserved configured
+# LiteParse path.
 # Re-baselined 2026-09-13 from 2888 (promote-ocr-fallback-defaults):
 # two gate-level pins for the promoted packaged defaults
 # (test_packaged_defaults_carry_the_promoted_gate,

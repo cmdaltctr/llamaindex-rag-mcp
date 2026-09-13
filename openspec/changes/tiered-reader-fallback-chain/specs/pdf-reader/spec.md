@@ -2,7 +2,7 @@
 
 ### Requirement: pdf-inspector silent-empty extraction SHALL recover via a plain-text retry
 
-When the pdf-inspector reader classifies a PDF as `text_based` while its own Markdown extraction is empty and the page count is greater than zero, the adapter SHALL retry the file with the registered `liteparse` reader in extraction-only mode (OCR disabled regardless of operator settings), joining the per-page text into one document for the whole file, so a readable text layer is not silently discarded. When liteparse is unavailable or its retry yields no text, the adapter SHALL retry with the registered `pypdf` reader, preserving the same one-document contract.
+When the pdf-inspector reader classifies a PDF as `text_based` while its own Markdown extraction is empty and the page count is greater than zero, the adapter SHALL retry the file with the registered `liteparse` reader in extraction-only mode (OCR disabled regardless of operator settings), joining the per-page text into one document for the whole file, so a readable text layer is not silently discarded. The rescue tier SHALL receive concrete OCR and worker settings so it does not require default effective settings. When liteparse is unavailable or its retry yields no text, the adapter SHALL retry with the registered `pypdf` reader, preserving the same one-document contract.
 
 A successful retry SHALL correct the routing evidence it emits: the scalar `pages_needing_ocr` SHALL be set to zero, because the pages were flagged only by the failed extraction, and the pre-fallback flagged count SHALL be preserved under an additive diagnostic key. A retry chain that yields no text from either tier SHALL leave the original pdf-inspector result unchanged so the OCR routing gate still sees the flagged evidence. Diagnostics SHALL be additive, and `extraction_fallback_backend` SHALL name the tier that produced the text (`liteparse` or `pypdf`); diagnostics SHALL NOT claim the OCR worker or any other backend produced it.
 
@@ -12,6 +12,13 @@ A successful retry SHALL correct the routing evidence it emits: the scalar `page
 - **WHEN** the adapter emits its document
 - **THEN** the document text SHALL be the joined liteparse per-page extraction
 - **AND** the document SHALL carry an additive diagnostic naming liteparse as the fallback backend
+
+#### Scenario: Bare direct adapter use stays on liteparse
+
+- **GIVEN** no default effective settings were installed
+- **WHEN** the contradiction triggers and liteparse can recover text
+- **THEN** the liteparse tier SHALL run with OCR disabled and automatic worker selection
+- **AND** pypdf SHALL NOT be selected
 
 #### Scenario: liteparse unavailable falls through to pypdf
 

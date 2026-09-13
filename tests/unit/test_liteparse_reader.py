@@ -1,20 +1,49 @@
 """Tests for the LiteParse reader adapter.
 
-All tests are marked @pytest.mark.slow because they require the
-[pdf-liteparse] extra and the native PDFium binary. Default
-``pytest -m "not slow"`` skips them.
+The settings test uses a stubbed parser and runs in the fast suite. The
+real-parser tests are marked ``slow`` because they require the native
+PDFium binary.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 CORPUS_PDF = Path(__file__).resolve().parents[2] / (
     "experiments/11-liteparse-pdf-quality-2026-06-20/corpus/vaswani2017_attention.pdf"
 )
+
+
+def test_default_constructor_reads_effective_settings(monkeypatch, tmp_path, effective_settings):
+    """Normal LiteParse use still reads both injected parser settings."""
+    from omrg.core.settings import set_default_effective_settings
+    from omrg.integrations.pdf.liteparse import LiteParseReader
+
+    observed: list[tuple[bool, int | None, bool]] = []
+
+    class _StubLiteParse:
+        def __init__(self, *, ocr_enabled: bool, num_workers: int | None, quiet: bool) -> None:
+            observed.append((ocr_enabled, num_workers, quiet))
+
+        def parse(self, file):
+            item = SimpleNamespace(text="configured parse", x=0, y=0, width=1, height=1)
+            page = SimpleNamespace(page_num=1, text_items=[item])
+            return SimpleNamespace(pages=[page])
+
+    monkeypatch.setitem(sys.modules, "liteparse", SimpleNamespace(LiteParse=_StubLiteParse))
+    set_default_effective_settings(
+        effective_settings(liteparse_ocr_enabled=True, liteparse_num_workers=4)
+    )
+
+    documents = LiteParseReader().load_data(tmp_path / "configured.pdf")
+
+    assert observed == [(True, 4, True)]
+    assert documents[0].get_content() == "configured parse"
 
 
 @pytest.mark.slow

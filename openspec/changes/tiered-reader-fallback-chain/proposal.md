@@ -18,9 +18,10 @@ gate consumes, and its Markdown remains best on healthy PDFs (ADR-050).
   coverage in every environment.
 - The `extraction_fallback_backend` diagnostic now names the tier that
   produced the text (`liteparse` or `pypdf`).
-- The liteparse tier runs in extraction-only mode: `ocr_enabled=False`
-  is forced for the retry regardless of operator OCR settings — the
-  chain rescues text layers; OCR belongs to the routing seam.
+- The liteparse tier runs in self-contained extraction-only mode:
+  `ocr_enabled=False` and `num_workers=None` are supplied explicitly,
+  so the rescue works without global settings and operator OCR settings
+  cannot turn the chain into an OCR path.
 - Evidence-correction semantics are unchanged: a successful retry zeroes
   `pages_needing_ocr` and preserves the flagged count under
   `pages_needing_ocr_before_fallback`.

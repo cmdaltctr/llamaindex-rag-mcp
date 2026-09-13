@@ -39,12 +39,14 @@ gains no chain concept, `auto` resolution is untouched, and a
 registry-ordered chain would silently drag `pypdfium2` (not installed
 here, unmeasured on the failure classes) into a measured decision.
 
-**D2 — The liteparse tier forces `ocr_enabled=False`.** LiteParseReader
-reads `liteparse_ocr_enabled` from the default effective settings; an
-operator who enabled liteparse's own OCR must not turn the rescue tier
-into a slow OCR path. The retry constructs the parser explicitly with
-`ocr_enabled=False`, bypassing the global setting. OCR belongs to the
-routing seam (ADR-062/065), not the fallback chain.
+**D2 — The liteparse tier is self-contained and extraction-only.** The
+retry passes both values it needs: `ocr_enabled=False` and
+`num_workers=None` (LiteParse automatic worker selection). It therefore
+never reads default effective settings. This keeps bare direct-adapter
+scripts on the fast liteparse tier and prevents an operator's LiteParse
+OCR setting from turning the rescue into an OCR path. A normal
+`LiteParseReader()` still reads both values from injected defaults. OCR
+belongs to the routing seam (ADR-062/065), not the fallback chain.
 
 **D3 — Tier failure semantics.** A tier that raises (import or parse
 error) or yields zero text hands over to the next tier; only when the

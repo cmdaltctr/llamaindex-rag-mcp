@@ -392,7 +392,7 @@ def test_mixed_pdf_with_ocr_enabled_zero_thresholds_preserves_diagnostics(
 # ── Sloman guard: recovered text never reaches the worker ────────────────
 #
 # pdf-inspector can classify a file text_based while extracting nothing
-# (TDR-024). The adapter's pypdf retry recovers the text and corrects the
+# (TDR-024). The adapter's LiteParse-first retry corrects the
 # flagged-page evidence to zero BEFORE the seam reads it, so at the
 # promoted thresholds (0.5 confidence / 0.10 page fraction) the gate sees
 # a clean fast-path file instead of dispatching ~30 minutes of OCR onto
@@ -409,6 +409,23 @@ def _stub_inspector_contradiction(monkeypatch, *, page_count: int) -> None:
     result.page_count = page_count
     result.pages_needing_ocr = list(range(page_count))
     monkeypatch.setitem(sys.modules, "pdf_inspector", stub)
+
+
+def _stub_liteparse_pages(monkeypatch, page_texts: list[str]) -> None:
+    """Seed the registry cache so the adapter's LiteParse retry is stubbed."""
+    from llama_index.core import Document
+
+    from omrg.integrations.pdf import registry
+
+    class _StubLiteParseReader:
+        def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:
+            self.ocr_enabled = ocr_enabled
+            self.num_workers = num_workers
+
+        def load_data(self, file, *args, **kwargs):
+            return [Document(text=text) for text in page_texts]
+
+    monkeypatch.setitem(registry._cache, "liteparse", _StubLiteParseReader)
 
 
 def _stub_pypdf_pages(monkeypatch, page_texts: list[str]) -> None:
@@ -434,17 +451,18 @@ def _promoted_settings(effective_settings):
     )
 
 
-def test_recovered_text_takes_the_fast_path_at_promoted_thresholds(
+def test_liteparse_rescue_takes_the_fast_path_at_promoted_thresholds(
     effective_settings, monkeypatch
 ) -> None:
-    """A contradiction file whose pypdf retry recovers text never dispatches.
+    """A LiteParse rescue corrects the gate evidence before worker dispatch.
 
     Pre-guard this evidence (3/3 flagged at confidence 1.0) routes to the
-    worker under the promoted thresholds; post-guard the corrected scalar
-    keeps the file on pdf-inspector and the worker is never started.
+    worker under the promoted thresholds; the corrected scalar keeps the
+    file on pdf-inspector and the worker is never started.
     """
     _stub_inspector_contradiction(monkeypatch, page_count=3)
-    _stub_pypdf_pages(monkeypatch, ["recovered text"] * 3)
+    _stub_liteparse_pages(monkeypatch, ["liteparse rescue"] * 3)
+    _stub_pypdf_pages(monkeypatch, ["pypdf must not be selected"])
     client = _echo_client()
     try:
         reader = build_pdf_reader(
@@ -453,14 +471,14 @@ def test_recovered_text_takes_the_fast_path_at_promoted_thresholds(
         assert isinstance(reader, OcrRoutedPdfInspector)
         docs = reader.load_data(file=Path("/fake/sloman.pdf"))
         meta = docs[0].metadata
-        assert docs[0].get_content() == "recovered text\n\n" * 2 + "recovered text"
+        assert docs[0].get_content() == "liteparse rescue\n\n" * 2 + "liteparse rescue"
         assert meta["ocr_required"] is False
         assert meta["ocr_used"] is False
         assert meta["ocr_backend"] == OCR_BACKEND_FAST_PATH
         # Corrected evidence plus the additive fallback diagnostics.
         assert meta["pages_needing_ocr"] == 0
         assert meta["pages_needing_ocr_before_fallback"] == 3
-        assert meta["extraction_fallback_backend"] == "pypdf"
+        assert meta["extraction_fallback_backend"] == "liteparse"
         assert client.is_started is False
         assert client.process_generations == 0
     finally:
@@ -470,8 +488,9 @@ def test_recovered_text_takes_the_fast_path_at_promoted_thresholds(
 def test_failed_retry_still_routes_to_ocr_at_promoted_thresholds(
     effective_settings, monkeypatch
 ) -> None:
-    """When the pypdf retry also yields nothing, the flagged evidence routes."""
+    """When both retry tiers yield nothing, the flagged evidence routes."""
     _stub_inspector_contradiction(monkeypatch, page_count=3)
+    _stub_liteparse_pages(monkeypatch, ["", "", ""])
     _stub_pypdf_pages(monkeypatch, ["", "", ""])
     client = _echo_client()
     try:

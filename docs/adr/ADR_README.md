@@ -73,6 +73,7 @@ development of OMRG — Opinionated Modular RAG.
 | [064](./064-input-quality-promotion-decisions.md)            | Input-Quality Promotion Evidence and OCR Default Decision                                    | 2026-09-09 | Accepted — items 1–2 superseded by ADR-065 |
 | [065](./065-ocr-fallback-gate-promoted-to-packaged-default.md) | OCR Fallback Gate Promoted to Packaged Default                                             | 2026-09-13 | Accepted |
 | [066](./066-tiered-reader-fallback-chain.md)                 | Tiered Reader Fallback — pdf-inspector → liteparse → pypdf                                  | 2026-09-13 | Accepted |
+| [067](./067-self-contained-reader-fallback-settings.md)     | Self-Contained Reader Fallback Settings                                                     | 2026-09-13 | Accepted |
 
 ## Convention
 
