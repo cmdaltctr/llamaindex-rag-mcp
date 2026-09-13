@@ -65,7 +65,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2858
+_BASE_EXECUTED = 2879
+# Re-baselined 2026-09-13 from 2858 (repeat-pdf-routing-study): the
+# experiment 29 tooling suite adds 21 cases — collection discovery,
+# private-leak refusal, pinned-baseline verification, synthetic routing
+# replay, resume safety and the routing-code-clean guard.
 # Re-baselined 2026-09-10 from 2774 (repair-fast-suite-regressions): the
 # committed exp 26/27 verdict-validity suites add 38 cases (e5240d1) and
 # the mixed-PDF threshold-routing regression tests add 4 (9bf4810). Both
