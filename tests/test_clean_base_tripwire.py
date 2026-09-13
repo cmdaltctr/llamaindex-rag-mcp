@@ -65,7 +65,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2879
+_BASE_EXECUTED = 2888
+# Re-baselined 2026-09-13 from 2879 (pdf-reader-extraction-fallback):
+# the Sloman guard adds 9 cases — 7 adapter-level contradiction, retry,
+# evidence-correction and no-retry cases plus 2 seam-level routing cases
+# at the promoted 0.5/0.10 thresholds.
 # Re-baselined 2026-09-13 from 2858 (repeat-pdf-routing-study): the
 # experiment 29 tooling suite adds 21 cases — collection discovery,
 # private-leak refusal, pinned-baseline verification, synthetic routing

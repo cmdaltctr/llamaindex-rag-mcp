@@ -383,6 +383,22 @@ Read them together:
 metadata field. All four keys are in `EXCLUDED_EMBED_METADATA_KEYS`, so
 they are stored and returned but never embedded and never sent to an LLM.
 
+Two further keys appear only when the extraction-fallback guard fired —
+pdf-inspector classified the file `text_based` yet extracted nothing, so
+the adapter retried with pypdf and recovered the text (TDR-024):
+
+| Key                                 | Meaning                                              |
+| ----------------------------------- | ---------------------------------------------------- |
+| `extraction_fallback_backend`       | `pypdf` — which reader produced the recovered text.  |
+| `pages_needing_ocr_before_fallback` | The flagged count before the guard zeroed it.        |
+
+When recovery succeeds, `pages_needing_ocr` reads `0` — the pages were
+flagged only by the failed extraction — and the file takes the fast
+path. When the pypdf retry also finds no text, the original flagged
+count stands and neither key is stamped, so the OCR gate still sees the
+evidence. Both keys are parser telemetry and sit in
+`EXCLUDED_EMBED_METADATA_KEYS` alongside the OCR keys.
+
 ### Re-ingestion consequence
 
 The OCR routing configuration and the resolved worker fingerprint both
