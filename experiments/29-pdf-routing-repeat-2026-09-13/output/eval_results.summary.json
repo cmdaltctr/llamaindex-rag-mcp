@@ -1,0 +1,134 @@
+{
+  "experiment_id": "29-pdf-routing-repeat",
+  "labels_frozen": true,
+  "policies": {
+    "baseline_exp28": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 3,
+        "false_routes": [
+          "dev_001"
+        ],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 1031,
+        "projected_ocr_seconds": 109698.4
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "baseline_matched": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 3,
+        "false_routes": [
+          "dev_001"
+        ],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 1031,
+        "projected_ocr_seconds": 109698.4
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "candidate": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 2,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 40,
+        "projected_ocr_seconds": 4256.0
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "enable_only": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 1,
+        "false_routes": [],
+        "missed_needs_ocr": [
+          "dev_003"
+        ],
+        "uncertain_labels": [],
+        "routed_pages": 23,
+        "projected_ocr_seconds": 2447.2
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    }
+  },
+  "gates": [
+    {
+      "kind": "safety",
+      "metric": "false_routing_count",
+      "comparator": "==",
+      "threshold": 0,
+      "observed": 0,
+      "verdict": "pass"
+    },
+    {
+      "kind": "recall",
+      "metric": "missed_needs_ocr_count",
+      "comparator": "==",
+      "threshold": 0,
+      "observed": 0,
+      "verdict": "pass"
+    }
+  ],
+  "ocr_cost_basis": "projected",
+  "needs_ocr_prevalence_held_out": {
+    "count": 0,
+    "wilson95": [
+      0.0,
+      0.2153
+    ]
+  }
+}

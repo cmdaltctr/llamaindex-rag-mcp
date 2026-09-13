@@ -73,10 +73,10 @@ Updated during apply to record the operator's approvals. Each approval must be r
 
 | Item | Status | Action before proceeding |
 | ---- | ------ | ------------------------ |
-| Selected PDF collection | Pending | Obtain the explicit list or selection rule, including the book |
-| Independent page labels and hold-out | Pending | Agree coverage and reserve unseen outcomes |
-| Missing-page tolerance | Pending | Agree how much missing text warrants whole-document OCR |
-| Whole-document routing behaviour | Pending | Agree behaviour for documents above the tolerance |
-| Enable-only zero-threshold behaviour | Pending | Agree `mixed` behaviour when only the enable switch is set |
-| Real OCR measurement | Pending | Agree documents, runtime budget and timeout |
-| OCR default promotion | Out of scope here | Any promotion requires this study's evidence plus a separate later decision |
+| Selected PDF collection | Approved 2026-09-13 | 3 development (book, Kerr 1998, Sloman 1971) + 14 held-out (Zotero `RAG` collection PDFs, disclosed exp-28 members) |
+| Independent page labels and hold-out | Approved 2026-09-13 | pypdf per-page assessment, all pages of all 17 documents; labels frozen in `labels.json` |
+| Missing-page tolerance | Approved 2026-09-13 | 10% of pages without usable text warrants whole-document OCR (candidate `page_fraction=0.10`) |
+| Whole-document routing behaviour | Approved 2026-09-13 | Whole-file dispatch accepted; no page stitching exists |
+| Enable-only zero-threshold behaviour | Approved 2026-09-13 | `mixed` stays on the fast path at the 0.0 sentinels; measured `enable_only` arm confirms and reveals the Sloman miss |
+| Real OCR measurement | NOT authorised | Classification and replay only; OCR cost reported as projection, recovery quality unmeasured |
+| OCR default promotion | Out of scope here | Study returned PASS-with-disclosure on 2026-09-13; promotion is a separate later decision |

@@ -3,7 +3,7 @@
 **ID**: `29-pdf-routing-repeat-2026-09-13`
 **Date planned**: 2026-09-13
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent
-**Status**: READY TO RUN — approvals recorded 2026-09-13, gates frozen before measurement
+**Status**: PASS — gates evaluated 2026-09-13 (held-out recall vacuous, disclosed)
 **Relation**: OpenSpec change `repeat-pdf-routing-study`; experiments 23, 24, 28; ADR-064; fix commit `9bf4810`
 
 ## Why this experiment exists
