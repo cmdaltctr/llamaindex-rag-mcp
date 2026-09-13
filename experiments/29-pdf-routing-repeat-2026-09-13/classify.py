@@ -275,16 +275,25 @@ def _preflight(plan: dict, documents: list[dict]) -> dict:
 
 
 def _run_identity(manifest: dict) -> dict:
-    """Bind plan, labels, collection, policy spec and routing code."""
+    """Bind plan, labels, collection, policy spec and routing code.
+
+    The code map is keyed by repo-relative paths: absolute paths carry
+    the operator's home directory, which is a registered private string.
+    """
     from _lib.checkpoint_validity import run_identity
 
-    return run_identity(
+    identity = run_identity(
         plan_path=PLAN_PATH,
         gt_path=LABELS_PATH,
         corpus_manifest_path=PUBLIC_COLLECTION,
         runtime_manifest=manifest,
         code_paths=[PROJECT_ROOT / rel for rel in ROUTING_SOURCES] + [EXP_DIR / "classify.py"],
     )
+    identity["code"] = {
+        str(Path(path).relative_to(PROJECT_ROOT)): digest
+        for path, digest in identity["code"].items()
+    }
+    return identity
 
 
 def _load_checkpoint() -> dict:
