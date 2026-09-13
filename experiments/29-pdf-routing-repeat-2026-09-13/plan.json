@@ -131,5 +131,12 @@
     {"manifest_field": "privacy.filenames_recorded", "operator": "eq", "expected": false},
     {"manifest_field": "privacy.content_recorded", "operator": "eq", "expected": false},
     {"manifest_field": "ocr.worker_started", "operator": "eq", "expected": false}
+  ],
+  "amendments": [
+    {
+      "date": "2026-09-13",
+      "change": "labels.json dev_003 relabelled needs_ocr=false after PR-92 review: the independent page assessment found usable text on all 17 pages, so the original label made the evaluated extractor part of its own ground truth and contradicted ground_truth_definition. The dev recall check is therefore carried by dev_002 (Kerr) alone; dev_003's as-run route under the candidate is re-scored as a false route caused by corrupted upstream evidence (removed upstream by the experiment-30 reader chain).",
+      "disclosure": "post-run label amendment; the frozen text above retains the original intent for the record"
+    }
   ]
 }

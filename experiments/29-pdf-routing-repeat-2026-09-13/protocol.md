@@ -101,8 +101,16 @@ never go back.
 
 **Known asymmetry, disclosed**: no held-out document carries
 `needs_ocr=true`, so the recall gate is untestable on held-out evidence.
-The development split carries the recall check (Kerr and Sloman must
-route); the report states this limit plainly.
+The development split carries the recall check; the report states this
+limit plainly.
+
+**Post-run amendment (2026-09-13)**: this plan originally read "Kerr and
+Sloman must route" — the dev_003 (Sloman) label was corrected to
+`needs_ocr=false` after review, because the independent assessment found
+usable text on all 17 pages and the original label made the evaluated
+extractor part of its own ground truth. The dev recall check is carried
+by Kerr alone; Sloman is an extractor-recovery case evaluated in
+experiment 30.
 
 **Scope limit**: this is a selected collection, not a prevalence sample.
 Results are reported for this collection only; no claim about academic
