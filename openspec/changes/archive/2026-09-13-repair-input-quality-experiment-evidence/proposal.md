@@ -10,8 +10,8 @@ The session audit found unsafe experiment completion checks, unsupported conclus
 - Experiment 25 is not rerun (operator decision, task 3.7). Its historical PASS, tokenizer promotion and existing index stand unchanged. The offline estimate, spending-approval and budget-stop rebuild path is descoped and its scaffold removed. The gate principle (a paid rebuild needs a current estimate and explicit approval) stays recorded in the spec for any future rebuild.
 - Make experiment 26 and 27 reject incomplete, duplicate, mismatched or incompatible checkpoints before issuing a verdict. Correct their conclusions from the existing complete results.
 - Rewrite experiment 27's purpose in plain English. Ask whether the combination is still wanted before scheduling another paid run.
-- The repeat PDF routing study (approved corpus, independent page labels, held-out split, real OCR run) is deferred to a separate future change. It is new paid measurement, not evidence repair.
-- The concrete routing defect experiment 28 exposed is fixed: `mixed` PDFs route by the calibrated thresholds, not unconditionally (commit `9bf4810`). This changes no packaged default. Enabling OCR by default remains an operator decision, deferred to the future study.
+- The repeat PDF routing study (approved corpus, independent page labels, held-out split, real OCR run) moved to `repeat-pdf-routing-study` (2026-09-13). It is new paid measurement, not evidence repair.
+- The concrete routing defect experiment 28 exposed is fixed: `mixed` PDFs route by the calibrated thresholds, not unconditionally (commit `9bf4810`). This changes no packaged default. Enabling OCR by default remains an operator decision, deferred to `repeat-pdf-routing-study`.
 - The four previously uncommitted routing files are adopted as that bug fix, with regression tests. Schema 5 includes the unconditional routing types in source identity, even when OCR is off. A later ingestion attempt can reprocess existing sources; preserved experiment indexes must not be re-ingested.
 - Separate experiment verdicts from operator decisions. Record blocked work and tick tasks only after verification.
 - Push the existing ten commits only as a remote backup. First inspect committed content for secrets and private data, then preserve all uncommitted changes in a verified local backup. Do not create a pull request.
@@ -26,7 +26,7 @@ None.
 
 ### Modified Capabilities
 
-- `experiment-validity-gates`: Require complete identified measurements, safe checkpoint reuse, guarded paid rebuilds, approved PDF cohorts with independent labels, and explicit approval of decisions arising from results.
+- `experiment-validity-gates`: Require complete identified measurements, safe checkpoint reuse, guarded paid rebuilds, and explicit approval of decisions arising from results. The approved-cohort, independent-label and public-output-privacy gates moved to `repeat-pdf-routing-study` with the study itself (2026-09-13).
 
 ## Impact
 

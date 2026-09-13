@@ -34,7 +34,7 @@ Resuming an experiment SHALL validate its corpus, observation identifiers, plan,
 
 ### Requirement: Paid rebuilds require current estimates and approval
 
-An experiment rebuild SHALL preserve existing indexes and require an offline estimate of the actual prepared embedding requests. The estimate SHALL cover the declared corpus and effective configuration, report token counts and an explicit pricing basis, and distinguish estimated cost from billing. Paid execution SHALL require operator approval tied to that estimate, destination and spending limit. Missing, invalid or stale estimates SHALL block spending. The experiment 25 estimate SHALL display baseline and candidate token counts, their percentage difference and approximate monetary cost before requesting spending approval. The frozen 15% extra-token threshold SHALL evaluate experiment acceptance only. Exceeding that threshold SHALL NOT invalidate an otherwise valid estimate or block an approved build. A force option SHALL NOT bypass the estimate, approval or destination checks.
+An experiment rebuild SHALL preserve existing indexes and require an offline estimate of the actual prepared embedding requests. The estimate SHALL cover the declared corpus and effective configuration, report token counts and an explicit pricing basis, and distinguish estimated cost from billing. Paid execution SHALL require operator approval tied to that estimate, destination and spending limit. Missing, invalid or stale estimates SHALL block spending. A frozen acceptance threshold SHALL evaluate the measured result only; exceeding it SHALL NOT invalidate an otherwise valid estimate or block an approved build. A force option SHALL NOT bypass the estimate, approval or destination checks.
 
 #### Scenario: A forced rebuild has no approved estimate
 - **WHEN** the operator requests a forced rebuild without a valid approved estimate
@@ -50,44 +50,16 @@ An experiment rebuild SHALL preserve existing indexes and require an offline est
 - **THEN** the estimate SHALL be invalid
 - **AND** it SHALL NOT authorise a paid build
 
-#### Scenario: The candidate estimate exceeds the 15% threshold
-- **WHEN** a valid candidate estimate exceeds the baseline token count by more than 15%
+#### Scenario: The estimate exceeds a frozen acceptance threshold
+- **WHEN** a valid estimate exceeds the pre-registered token-increase threshold
 - **THEN** the builder SHALL display the estimated token increase and approximate cost and request spending approval
 - **AND** it SHALL permit the build when valid approval matches the estimate, destination and spending limit
-- **AND** the frozen 15% threshold SHALL remain unchanged for evaluating the measured experiment result
+- **AND** the frozen threshold SHALL remain unchanged for evaluating the measured experiment result
 
 #### Scenario: A rebuild is approved
 - **WHEN** a valid estimate and explicit approval match the requested build
 - **THEN** the builder SHALL use a separate approved output location
 - **AND** it SHALL leave the preserved historical index unchanged
-
-### Requirement: PDF routing evaluations use approved cohorts and independent labels
-
-A PDF routing evaluation SHALL record the operator-approved inclusion rule and selected documents before measurement. Ground-truth labels SHALL include an independent assessment of relevant page content, distinct from the classifier's output and aggregate character counts. Ambiguous cases SHALL be recorded explicitly. The protocol SHALL define how missing pages and whole-document routing are judged. Documents used to develop a candidate SHALL NOT count as independent held-out validation of that candidate.
-
-#### Scenario: The operator selects papers and a long book
-- **WHEN** the approved collection includes selected papers and a book as a stress case
-- **THEN** discovery SHALL be limited to that selection
-- **AND** reporting SHALL identify the collection composition without claiming it represents paper-only prevalence
-
-#### Scenario: A long document has some unreadable pages
-- **WHEN** aggregate character counts are high but relevant pages lack usable text
-- **THEN** the evaluation SHALL retain the independently assessed missing-page evidence
-- **AND** it SHALL apply the agreed routing judgement rather than infer correctness from the aggregate alone
-
-#### Scenario: A known failure motivates a new rule
-- **WHEN** a candidate was designed after examining a document
-- **THEN** a successful replay on that document SHALL be labelled a development regression check
-- **AND** independent validation SHALL use other approved documents whose outcomes were withheld during candidate design
-
-### Requirement: Public experiment failures preserve document privacy
-
-Public experiment records SHALL exclude private document names, paths and extracted text, including failure cases. Public error information SHALL use approved codes or classes. Detailed private diagnostics and identity mappings SHALL remain in ignored local storage. Privacy checks SHALL inspect serialised outputs rather than rely only on declarations of intended behaviour.
-
-#### Scenario: An exception includes a document path
-- **WHEN** document processing raises an exception containing private text or a path
-- **THEN** the public checkpoint SHALL contain only approved diagnostic fields
-- **AND** the private exception message SHALL NOT appear in public reports
 
 ### Requirement: Reports distinguish measurements from explanations and decisions
 

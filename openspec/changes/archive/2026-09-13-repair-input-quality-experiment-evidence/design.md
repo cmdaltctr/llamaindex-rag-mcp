@@ -41,7 +41,7 @@ Relevant evidence:
 - Create the approved remote backup without including or losing uncommitted work.
 - Refresh comparable coverage and security evidence without expanding repair scope.
 
-Scope amendment (2026-09-10): two original goals are removed here. "Restore a guarded rebuild option for experiment 25" is descoped by the operator's task 3.7 decision not to rerun experiment 25. "Evaluate routing on an operator-selected collection with independently checked pages" is deferred to a separate future change. Both are recorded as non-goals below.
+Scope amendment (2026-09-10): two original goals are removed here. "Restore a guarded rebuild option for experiment 25" is descoped by the operator's task 3.7 decision not to rerun experiment 25. "Evaluate routing on an operator-selected collection with independently checked pages" is deferred to a separate change. Both are recorded as non-goals below. The deferred study moved to `repeat-pdf-routing-study` on 2026-09-13.
 
 **Non-goals:**
 
@@ -53,7 +53,7 @@ Scope amendment (2026-09-10): two original goals are removed here. "Restore a gu
 - Repeat experiments 25–27 merely because their reporting needs correction.
 - Repair unrelated coverage debt or experiment 24 tooling in this change. Their audit findings remain unresolved and must not be described as fixed.
 - Rebuild experiment 25's index or restore its estimate-approval path (descoped 2026-09-10; the operator decided at task 3.7 not to rerun it).
-- Run the repeat PDF routing study in this change; it moves to a separate future change (deferred 2026-09-10).
+- Run the repeat PDF routing study in this change; it lives in `repeat-pdf-routing-study` (deferred 2026-09-10, moved 2026-09-13).
 
 ## Decisions
 
@@ -119,37 +119,13 @@ Ask whether another combined run serves a desired candidate. If the operator dec
 
 ### 6. Repeat experiment 28 as a routing study
 
-DEFERRED (2026-09-10): this study is new paid measurement, not evidence repair, and moves to its own future OpenSpec change (tasks 6.1–6.11). The concrete routing defect it targeted is already fixed by commit `9bf4810`, which routes `mixed` PDFs by the calibrated thresholds instead of unconditionally. The text below is retained as the design basis for that future change.
-
-Use a new sibling experiment directory with the next available identifier, chosen at apply time. Keep experiment 28's frozen plan and original output intact.
-
-The collection must include the previously identified book as a known development/stress case, plus explicitly approved documents. No automatic scan of Zotero, Downloads, Documents or Desktop is permitted. Ask the operator to supply or approve a path list or a precisely defined collection. Preserve content-digest-to-ID mappings privately and validate them before resume. Public records carry opaque IDs and safe counts only.
-
-Independent page assessment records whether important text is readable and whether extraction misses content. Check all flagged pages and an agreed sample of unflagged pages, with the inspection coverage disclosed. Label uncertain cases explicitly. Automated density is supporting evidence, never the sole truth label. Freeze annotations before scoring candidate outcomes where possible.
-
-Use the book to develop the rule and test the known regression. Choose separate held-out documents; prevent their outcomes from guiding the candidate. Do not call this convenience collection a prevalence estimate for all academic libraries.
-
-Before measurement, ask the operator to approve:
-
-- How much missing text warrants whole-document OCR, given that this change does not stitch selected pages.
-- What happens with mixed PDFs when only the enable switch is set.
-- Acceptable missed-page and unnecessary-routing outcomes, including ambiguous cases.
-- Whether the run classifies and replays routing only, or also runs OCR for selected documents.
-- The local runtime budget and timeout for any real OCR measurement.
-
-These are explicit approval checkpoints, not decisions delegated to the implementer. Apply can prepare the safe runner and label format before approval; it must stop before scanning or selecting a candidate.
-
-Freeze the approved candidate and acceptance criteria in a separate commit before held-out measurement. Compare the committed historical policy, pinned at the original revision, with the approved candidate. Never use the current dirty working tree as an unnamed baseline. Retain negative results and separate exploratory changes from held-out evidence.
-
-Record actual classification duration. Label fixture-based OCR projections, including both sides of slowdown ratios, as estimates. If real OCR is authorised, measure timeout/failure behaviour and extraction outcomes. A classification-only run cannot establish OCR completion time or recovered-text quality.
-
-Alternative rejected: rerunning the whole library with a different density threshold. That would repeat the population and labelling weaknesses.
+DEFERRED (2026-09-10), moved (2026-09-13): this study is new paid measurement, not evidence repair. It now lives in `openspec/changes/repeat-pdf-routing-study/`, which carries the full design basis, spec gates and tasks formerly held here (tasks 6.1–6.11). The concrete routing defect it targeted is already fixed by commit `9bf4810`, which routes `mixed` PDFs by the calibrated thresholds instead of unconditionally. Do not start the study under this change.
 
 ### 7. Adopt a routing change only through a later explicit amendment
 
-Disposition (2026-09-10): the four-file mixed patch was adopted as the standalone defect-fix commit `9bf4810` ("route mixed PDFs by threshold, not unconditionally") with regression tests, on design grounds. It changes no packaged default. The consolidation correction includes the unconditional routing types in source identity and advances schema 4 to 5. This invalidates prior identities even when OCR is off; only a later ingestion attempt can reprocess a source. Preserved experiment indexes must not be re-ingested. The broader OCR default-promotion decision (`OCR_FALLBACK_ENABLED`) stays deferred to the future study in decision 6. Any future default change still follows this section's amendment rule.
+Disposition (2026-09-10): the four-file mixed patch was adopted as the standalone defect-fix commit `9bf4810` ("route mixed PDFs by threshold, not unconditionally") with regression tests, on design grounds. It changes no packaged default. The consolidation correction includes the unconditional routing types in source identity and advances schema 4 to 5. This invalidates prior identities even when OCR is off; only a later ingestion attempt can reprocess a source. Preserved experiment indexes must not be re-ingested. The broader OCR default-promotion decision (`OCR_FALLBACK_ENABLED`) stays deferred to `repeat-pdf-routing-study`. Any future default change still follows this section's amendment rule.
 
-The settled defect fix is recorded above. For any further production rule, after the operator approves it, run `openspec-update-change` to add its exact PDF behaviour, scenarios and implementation tasks to this change and reconcile the original design. Then seek approval to apply that amended scope.
+The settled defect fix is recorded above. For any further production rule, after the operator approves it, run `openspec-update-change` on `repeat-pdf-routing-study` (or a later change if that one is archived) to add its exact PDF behaviour, scenarios and implementation tasks, and reconcile the design there. Then seek approval to apply that amended scope.
 
 If the existing mixed removal is selected, its adoption must cover enable-only behaviour, fixed test cases at zero and calibrated thresholds, reader diagnostics, whole-request failure handling and routing-policy identity. A policy change affecting extractor output must prevent stale `skipped_unchanged` results. Reconcile the ingestion guide, configuration guide, environment comments and ADR together.
 
@@ -190,12 +166,12 @@ Updated during apply to record the operator's approvals and their safeguards. Th
 | Experiment 25 paid rebuild           | Decided: not rerun (2026-09-10, task 3.7)                                      | Keep the unconditional refusal; remove the orphaned estimator scaffold                                    |
 | Experiment 26 repeat                 | No paid repeat authorised (2026-09-10)                                         | Record the formal purpose or close decision; no new tasks without an operator request                     |
 | Experiment 27 repeat                 | No paid repeat authorised (2026-09-10)                                         | Record the formal purpose or close decision; no new tasks without an operator request                     |
-| Selected PDF collection              | Deferred to the future routing study (2026-09-10)                              | Obtain the explicit list or selection, including the book, in that change                                 |
-| Independent page labels and hold-out | Deferred to the future routing study (2026-09-10)                              | Agree coverage and reserve unseen outcomes in that change                                                 |
-| Replacement routing rule             | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Keep the settled mixed/zero-threshold behaviour; approve any further policy change in the future study                    |
-| Real OCR measurement                 | Deferred to the future routing study (2026-09-10)                              | Agree documents, runtime budget and timeout in that change                                                |
+| Selected PDF collection              | Moved to `repeat-pdf-routing-study` (2026-09-13)                               | Obtain the explicit list or selection, including the book, in that change                                 |
+| Independent page labels and hold-out | Moved to `repeat-pdf-routing-study` (2026-09-13)                               | Agree coverage and reserve unseen outcomes in that change                                                 |
+| Replacement routing rule             | Defect fixed via `9bf4810`; policy deferral confirmed by operator (2026-09-10) | Keep the settled mixed/zero-threshold behaviour; approve any further policy change in `repeat-pdf-routing-study`          |
+| Real OCR measurement                 | Moved to `repeat-pdf-routing-study` (2026-09-13)                               | Agree documents, runtime budget and timeout in that change                                                |
 | Four-file mixed patch                | Adopted as defect-fix commit `9bf4810` (2026-09-10)                            | None here; broader default promotion remains deferred                                                     |
-| OCR default promotion                | Decided: stays off (2026-09-10)                                                | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the future preregistered routing study          |
+| OCR default promotion                | Decided: stays off (2026-09-10)                                                | Keep `OCR_FALLBACK_ENABLED=false`; any promotion requires the `repeat-pdf-routing-study` evidence         |
 
 ## Migration Plan
 
