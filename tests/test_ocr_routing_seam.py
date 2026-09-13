@@ -109,9 +109,18 @@ def test_complex_text_layout_stays_on_pdf_inspector(effective_settings) -> None:
 
 
 def test_fallback_disabled_returns_the_plain_reader(effective_settings) -> None:
-    """Without OCR_FALLBACK_ENABLED the factory composes no seam at all."""
-    reader = build_pdf_reader("pdf_inspector", effective_settings(pdf_reader="pdf_inspector"))
+    """With OCR_FALLBACK_ENABLED=false the factory composes no seam at all."""
+    reader = build_pdf_reader(
+        "pdf_inspector",
+        effective_settings(pdf_reader="pdf_inspector", ocr_fallback_enabled=False),
+    )
     assert type(reader) is PdfInspectorReader
+
+
+def test_packaged_default_composes_the_seam(effective_settings) -> None:
+    """The promoted default wraps pdf_inspector in the routing seam (ADR-065)."""
+    reader = build_pdf_reader("pdf_inspector", effective_settings(pdf_reader="pdf_inspector"))
+    assert isinstance(reader, OcrRoutedPdfInspector)
 
 
 # ── Tasks 2.3/2.4: scanned fixtures dispatch the whole PDF ────────────────

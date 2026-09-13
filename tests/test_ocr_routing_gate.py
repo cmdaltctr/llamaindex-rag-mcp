@@ -1,22 +1,67 @@
 """Gate-semantics unit tests for the OCR routing decision (task 1.8/2.3).
 
-Pure-function coverage of design D7.3: classification-only routing at
-the packaged 0.0/0.0 defaults, the confidence and fraction triggers as
-specified, and the calibrated-gate negative for a clean text-based
-PDF. Thresholds always arrive through the injected settings — never a
-module constant.
+Pure-function coverage of design D7.3: the promoted packaged defaults
+(enabled at 0.5 confidence / 0.10 page fraction — ADR-065, Experiment
+29), the disabled-sentinel semantics at explicit 0.0/0.0 thresholds,
+the confidence and fraction triggers as specified, and the
+calibrated-gate negative for a clean text-based PDF. Thresholds always
+arrive through the injected settings — never a module constant.
 """
 
 from __future__ import annotations
 
 from omrg.integrations.pdf.ocr_routing import OCR_UNCONDITIONAL_TYPES, ocr_required_by_gate
 
-# ── Classification-only routing at the packaged defaults ───────────────────
+# ── The promoted packaged default (ADR-065, Experiment 29) ─────────────────
 
 
-def test_text_based_never_routes_at_default_thresholds(effective_settings) -> None:
-    """0.0/0.0 means classification-only: low confidence alone is inert."""
+def test_packaged_defaults_carry_the_promoted_gate() -> None:
+    """Both mirrored models default to the Experiment-29 promoted gate.
+
+    The flag and both thresholds ship together (ADR-065): enabled at
+    0.5 minimum confidence and 0.10 flagged-page fraction. A bare
+    enable at the 0.0 sentinels is the configuration the study showed
+    silently misses threshold-flagged documents.
+    """
+    from omrg.config import Settings
+    from omrg.core.settings import EffectiveSettings
+
+    for model in (Settings, EffectiveSettings):
+        fields = model.model_fields
+        assert fields["ocr_fallback_enabled"].default is True
+        assert fields["ocr_fallback_min_confidence"].default == 0.5
+        assert fields["ocr_fallback_page_fraction"].default == 0.10
+
+
+def test_fully_flagged_text_based_routes_at_packaged_defaults(effective_settings) -> None:
+    """The promoted default catches the confidence-1.0 flagged signature.
+
+    A ``text_based`` classification at full confidence with every page
+    flagged for OCR routes via the 0.10 page-fraction trigger — the
+    document shape a bare enable at the 0.0 sentinels missed.
+    """
     settings = effective_settings()
+    assert (
+        ocr_required_by_gate(
+            pdf_type="text_based",
+            pdf_confidence=1.0,
+            pages_needing_ocr=3,
+            page_count=3,
+            settings=settings,
+        )
+        is True
+    )
+
+
+# ── Classification-only routing at the 0.0 sentinels ───────────────────────
+
+
+def test_text_based_never_routes_at_zero_thresholds(effective_settings) -> None:
+    """0.0/0.0 means classification-only: low confidence alone is inert."""
+    settings = effective_settings(
+        ocr_fallback_min_confidence=0.0,
+        ocr_fallback_page_fraction=0.0,
+    )
     assert (
         ocr_required_by_gate(
             pdf_type="text_based",
@@ -31,7 +76,7 @@ def test_text_based_never_routes_at_default_thresholds(effective_settings) -> No
 
 def test_zero_confidence_with_zero_threshold_does_not_route(effective_settings) -> None:
     """The 0.0 sentinel is disabled, not 'below everything'."""
-    settings = effective_settings()
+    settings = effective_settings(ocr_fallback_min_confidence=0.0)
     assert (
         ocr_required_by_gate(
             pdf_type="text_based",
@@ -46,7 +91,7 @@ def test_zero_confidence_with_zero_threshold_does_not_route(effective_settings) 
 
 def test_all_ocr_pages_with_zero_fraction_does_not_route(effective_settings) -> None:
     """The 0.0 fraction sentinel is disabled even when every page is flagged."""
-    settings = effective_settings()
+    settings = effective_settings(ocr_fallback_page_fraction=0.0)
     assert (
         ocr_required_by_gate(
             pdf_type="text_based",
@@ -149,8 +194,9 @@ def test_mixed_stays_on_fast_path_with_ocr_enabled_and_zero_thresholds(
     """Mixed PDF with OCR enabled and both thresholds at 0.0 stays on the fast path.
 
     The 0.0 sentinels are disabled, so a mixed classification routes by
-    neither the confidence nor the fraction trigger. This is the packaged
-    default behaviour: OCR is enabled but the thresholds are inert.
+    neither the confidence nor the fraction trigger — the bare-enable
+    configuration Experiment 29 showed silently misses
+    threshold-flagged documents.
     """
     settings = effective_settings(
         ocr_fallback_enabled=True,
@@ -380,7 +426,7 @@ def test_thresholds_come_from_injected_settings(effective_settings) -> None:
     scenario "Routing threshold is read from injected settings") — no
     hardcoded threshold can produce this pair of outcomes.
     """
-    strict_off = effective_settings()
+    packaged = effective_settings()
     strict_on = effective_settings(ocr_fallback_min_confidence=0.95)
     evidence = dict(
         pdf_type="text_based",
@@ -388,5 +434,5 @@ def test_thresholds_come_from_injected_settings(effective_settings) -> None:
         pages_needing_ocr=0,
         page_count=1,
     )
-    assert ocr_required_by_gate(settings=strict_off, **evidence) is False
+    assert ocr_required_by_gate(settings=packaged, **evidence) is False
     assert ocr_required_by_gate(settings=strict_on, **evidence) is True

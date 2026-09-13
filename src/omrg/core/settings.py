@@ -289,14 +289,14 @@ class EffectiveSettings(BaseModel):
     liteparse_ocr_enabled: bool = False
 
     # ── OCR routing gate (design D7.3, improve-rag-input-quality-5) ──
-    # The packaged default keeps the fallback OFF until the Stage 6
-    # promotion gates are met, so a fresh install never reroutes PDFs
-    # to the isolated worker however it is provisioned. The 0.0
-    # threshold defaults are the "never additionally triggered"
-    # sentinels: with them, routing is classification-only.
-    ocr_fallback_enabled: bool = False
-    ocr_fallback_min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    ocr_fallback_page_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
+    # The packaged default is the promoted gate validated by Experiment
+    # 29 (ADR-065): the fallback is enabled with the calibrated
+    # 0.5/0.10 thresholds. With no worker provisioned, OCR-required
+    # files degrade deterministically to the kept partial extraction
+    # plus an actionable warning; nothing is spawned or probed.
+    ocr_fallback_enabled: bool = True
+    ocr_fallback_min_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    ocr_fallback_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
 
     # ── OCR worker operation (design D2.1) ────────────────────────
     # Operational settings, deliberately separate from the calibrated

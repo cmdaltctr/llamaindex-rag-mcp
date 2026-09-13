@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2888
+_BASE_EXECUTED = 2891
+# Re-baselined 2026-09-13 from 2888 (promote-ocr-fallback-defaults):
+# two gate-level pins for the promoted packaged defaults
+# (test_packaged_defaults_carry_the_promoted_gate,
+# test_fully_flagged_text_based_routes_at_packaged_defaults) plus one
+# seam-composition pin (test_packaged_default_composes_the_seam).
 # Re-baselined 2026-09-13 from 2879 (pdf-reader-extraction-fallback):
 # the Sloman guard adds 9 cases — 7 adapter-level contradiction, retry,
 # evidence-correction and no-retry cases plus 2 seam-level routing cases

@@ -534,9 +534,9 @@ The calibrated routing gate — which PDFs deserve OCR:
 
 | Variable | Default | What it does |
 |---|---|---|
-| `OCR_FALLBACK_ENABLED` | `false` | Master switch. Off means no PDF reaches the worker |
-| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.0` | Confidence floor for text-based PDFs. `0.0` is the never-trigger sentinel |
-| `OCR_FALLBACK_PAGE_FRACTION` | `0.0` | Flagged-page proportion that triggers OCR. `0.0` is the never-trigger sentinel |
+| `OCR_FALLBACK_ENABLED` | `true` | Master switch. Off means no PDF reaches the worker |
+| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.5` | Confidence floor for text-based PDFs. `0.0` is the never-trigger sentinel |
+| `OCR_FALLBACK_PAGE_FRACTION` | `0.10` | Flagged-page proportion that triggers OCR. `0.0` is the never-trigger sentinel |
 
 Worker operation — how to reach the worker:
 
@@ -550,10 +550,15 @@ Both groups are top-level fields beside `PDF_READER`, resolved once at
 the composition root and injected. Keep them apart: the gate is
 calibrated evidence, the worker fields are machine configuration.
 
-Enabling the fallback without calibrated thresholds gives
-classification-only routing: `scanned`, `image_based` and `mixed` PDFs
-route, text-based PDFs never do. That is the safe state, not a broken
-one.
+The packaged default is the promoted gate validated by Experiment 29
+([ADR-065](../adr/065-ocr-fallback-gate-promoted-to-packaged-default.md)):
+enabled at `0.5` confidence and `0.10` page fraction, shipped together —
+enabling the flag while leaving the thresholds at `0.0` silently misses
+threshold-flagged documents. With no worker provisioned, an OCR-required
+PDF keeps its partial extraction and the batch continues with an
+actionable warning. Set `OCR_FALLBACK_ENABLED=false` to disable routing
+entirely, or set both thresholds to `0.0` for classification-only
+routing, in which only `scanned` and `image_based` PDFs route.
 
 Full behaviour — provisioning, lifecycle, protocol, degraded path and
 the four OCR metadata keys — is in

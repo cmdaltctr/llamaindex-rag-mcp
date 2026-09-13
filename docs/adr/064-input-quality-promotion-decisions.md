@@ -7,6 +7,12 @@
 **Change:** `improve-rag-input-quality-5`
 **Related:** [ADR-062](062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) (worker boundary, lifecycle, protocol), [ADR-063](063-model-token-aware-markdown-chunking.md) (tokenizer and chunker), [ADR-018](018-balanced-retrieval-defaults.md), [ADR-037](037-architecture-v2-conformance.md)
 
+> **Update (2026-09-13):** items 1–2 of the settled decision below —
+> `OCR_FALLBACK_ENABLED=false` and the `0.0` threshold sentinels — are
+> superseded by [ADR-065](065-ocr-fallback-gate-promoted-to-packaged-default.md)
+> on Experiment 29's evidence. Item 3 (`mixed` routes by the threshold
+> gate) and the evidence record stand.
+
 ## Recovery correction (2026-09-09)
 
 The earlier version incorrectly recorded the experiment 28 gate result as an

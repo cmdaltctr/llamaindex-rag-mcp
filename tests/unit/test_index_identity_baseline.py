@@ -171,10 +171,11 @@ def test_index_identity_payload_values_echo_configuration(monkeypatch: pytest.Mo
     # Direct callers that pass no OCR keyword arguments still get the
     # complete identity: routing falls back to the settings values and
     # the fingerprint contributes the stable unavailable payload.
+    # The routing values are the promoted packaged defaults (ADR-065).
     assert payload["ocr_routing"] == {
-        "enabled": False,
-        "min_confidence": 0.0,
-        "page_fraction": 0.0,
+        "enabled": True,
+        "min_confidence": 0.5,
+        "page_fraction": 0.10,
         "unconditional_types": ["image_based", "scanned"],
     }
     fingerprint = payload["ocr_worker_fingerprint"]
