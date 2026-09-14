@@ -25,7 +25,7 @@ architecture), see the [ADR index](../adr/).
 ## Index
 
 | ID  | Title                                                                                                                                               | Status                                                             | Date       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------- |
 | 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md)                                        | Accepted                                                           | 2026-06-28 |
 | 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                                                   | Superseded by [TDR-007](007-ci-quality-toolchain-consolidation.md) | 2026-06-28 |
 | 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md)                     | Accepted                                                           | 2026-06-28 |
@@ -41,7 +41,7 @@ architecture), see the [ADR index](../adr/).
 | 013 | [Narrow the ingestion write lock to the mutation section](013-narrow-ingestion-write-lock-to-mutation-section.md)                                   | Accepted                                                           | 2026-08-19 |
 | 014 | [Experiment-validity framework: runtime manifests, preflight aborts, and cell agreement](014-experiment-validity-framework.md)                      | Accepted                                                           | 2026-08-19 |
 | 015 | [Correct native squared L2 at the vector-store boundaries](015-correct-native-squared-l2-at-vector-store-boundaries.md)                             | Accepted                                                           | 2026-08-19 |
-| 016 | [Pin retrieval-quality floors to identity-bound measurements](016-retrieval-quality-floor-margin-and-determinism.md)                                | Proposed                                                           | 2026-08-29 |
+| 016 | [Pin retrieval-quality floors to identity-bound measurements](016-retrieval-quality-floor-margin-and-determinism.md)                                | Accepted                                                           | 2026-08-29 |
 | 017 | [Restore root logging state after MCP entry-point tests](017-restore-root-logging-after-mcp-entry-point-tests.md)                                   | Accepted                                                           | 2026-08-30 |
 | 018 | [`monkeypatch.setattr` on a submodule name is a silent no-op](018-monkeypatch-on-submodule-name-is-silent-no-op.md)                                 | Accepted                                                           | 2026-08-31 |
 | 019 | [Markdown formatter damages continuation lines in list items](019-markdown-formatter-damages-continuation-lines-in-lists.md)                        | Accepted                                                           | 2026-09-01 |
