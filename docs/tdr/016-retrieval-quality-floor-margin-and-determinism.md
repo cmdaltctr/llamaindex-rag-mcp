@@ -1,7 +1,7 @@
 # TDR-016: Pin retrieval-quality floors to identity-bound measurements
 
 **Date:** 2026-08-29
-**Status:** Proposed
+**Status:** Accepted
 **Deciders:** Repository maintainers
 **Supersedes:** None
 **Tags:** retrieval | testing | ci | ollama

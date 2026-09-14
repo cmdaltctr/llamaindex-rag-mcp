@@ -68,7 +68,7 @@ development of OMRG — Opinionated Modular RAG.
 | [059](./059-claim-verification-stage.md)                     | Claim Verification Is an Opt-In Cloud Judge                                                  | 2026-09-04 | Accepted |
 | [060](./060-omrg-is-a-framework-mcp-is-a-transport.md)       | omrg Is a Framework; MCP Is a Transport                                                      | 2026-09-08 | Accepted |
 | [061](./061-engine-scoped-embedding-provider.md)             | Engine-Scoped Embedding Provider                                                             | 2026-09-08 | Accepted |
-| [062](./062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) | Isolate PaddleOCR-VL in a Versioned OCR Worker                                             | 2026-09-07 | Proposed |
+| [062](./062-isolate-paddleocr-vl-in-a-versioned-ocr-worker.md) | Isolate PaddleOCR-VL in a Versioned OCR Worker                                             | 2026-09-07 | Accepted |
 | [063](./063-model-token-aware-markdown-chunking.md)          | Model-Token-Aware Markdown Chunking                                                          | 2026-09-07 | Proposed |
 | [064](./064-input-quality-promotion-decisions.md)            | Input-Quality Promotion Evidence and OCR Default Decision                                    | 2026-09-09 | Accepted — items 1–2 superseded by ADR-065 |
 | [065](./065-ocr-fallback-gate-promoted-to-packaged-default.md) | OCR Fallback Gate Promoted to Packaged Default                                             | 2026-09-13 | Accepted |
