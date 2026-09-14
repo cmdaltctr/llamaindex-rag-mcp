@@ -27,6 +27,26 @@ class LiteParseReader:
     OCR is disabled by default (``LITEPARSE_OCR_ENABLED``).
     """
 
+    def __init__(
+        self,
+        *,
+        ocr_enabled: bool | None = None,
+        num_workers: int | None = None,
+    ) -> None:
+        """Initialise with optional self-contained parser settings.
+
+        Args:
+            ocr_enabled: When ``None`` (the registry default), the reader
+                reads both parser settings from the default effective
+                settings. A concrete bool makes this instance
+                self-contained; the rescue tier passes ``False``.
+            num_workers: Worker count paired with a concrete
+                ``ocr_enabled`` value. ``None`` lets LiteParse choose
+                automatically without consulting global settings.
+        """
+        self._ocr_enabled_override = ocr_enabled
+        self._num_workers_override = num_workers
+
     def load_data(self, file: Path, *args: Any, **kwargs: Any) -> list:
         """Parse a PDF using LiteParse with bounding-box capture.
 
@@ -44,12 +64,19 @@ class LiteParseReader:
         from liteparse import LiteParse
         from llama_index.core import Document
 
-        from ...core.settings import get_default_effective_settings
+        if self._ocr_enabled_override is None:
+            from ...core.settings import get_default_effective_settings
 
-        defaults = get_default_effective_settings()
+            defaults = get_default_effective_settings()
+            ocr_enabled = defaults.liteparse_ocr_enabled
+            num_workers = defaults.liteparse_num_workers
+        else:
+            ocr_enabled = self._ocr_enabled_override
+            num_workers = self._num_workers_override
+
         parser = LiteParse(
-            ocr_enabled=defaults.liteparse_ocr_enabled,
-            num_workers=defaults.liteparse_num_workers,
+            ocr_enabled=ocr_enabled,
+            num_workers=num_workers,
             quiet=True,
         )
         result = parser.parse(str(file))

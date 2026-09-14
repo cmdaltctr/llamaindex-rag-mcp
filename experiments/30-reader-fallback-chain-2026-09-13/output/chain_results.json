@@ -1,0 +1,122 @@
+[
+  {
+    "doc_id": "p01_ia_prince",
+    "split": "pathological",
+    "page_count": 136,
+    "shipped": {
+      "classify_seconds": 1.54,
+      "retry_seconds": 11.521,
+      "total_seconds": 13.061,
+      "characters": 219549,
+      "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 136,
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 1.623,
+      "retry_seconds": 0.204,
+      "fallback_tier": "liteparse",
+      "characters": 183330,
+      "pages_with_text": 121,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "p02_ia_managing",
+    "split": "pathological",
+    "page_count": 68,
+    "shipped": {
+      "classify_seconds": 0.625,
+      "retry_seconds": 5.404,
+      "total_seconds": 6.029,
+      "characters": 78693,
+      "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 68,
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.629,
+      "retry_seconds": 0.071,
+      "fallback_tier": "liteparse",
+      "characters": 76849,
+      "pages_with_text": 66,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "p03_winansi_sloman",
+    "split": "pathological",
+    "page_count": 17,
+    "shipped": {
+      "classify_seconds": 0.025,
+      "retry_seconds": 0.312,
+      "total_seconds": 0.337,
+      "characters": 44948,
+      "fallback_backend": "pypdf",
+      "pdf_type": "text_based",
+      "page_count": 17,
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.025,
+      "retry_seconds": 0.046,
+      "fallback_tier": "liteparse",
+      "characters": 44277,
+      "pages_with_text": 17,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  },
+  {
+    "doc_id": "c01_scanned_kerr",
+    "split": "control",
+    "page_count": 23,
+    "shipped": {
+      "classify_seconds": 0.002,
+      "retry_seconds": 0.0,
+      "total_seconds": 0.002,
+      "characters": 0,
+      "fallback_backend": null,
+      "pdf_type": "scanned",
+      "page_count": 23,
+      "routed_to_ocr": true
+    },
+    "chain": {
+      "classify_seconds": 0.002,
+      "retry_seconds": 0.0,
+      "fallback_tier": null,
+      "characters": 0,
+      "pages_with_text": null,
+      "routed_to_ocr": true,
+      "pdf_type": "scanned"
+    }
+  },
+  {
+    "doc_id": "c02_healthy_graphrag",
+    "split": "control",
+    "page_count": 26,
+    "shipped": {
+      "classify_seconds": 0.103,
+      "retry_seconds": 0.0,
+      "total_seconds": 0.103,
+      "characters": 93126,
+      "fallback_backend": null,
+      "pdf_type": "text_based",
+      "page_count": 26,
+      "routed_to_ocr": false
+    },
+    "chain": {
+      "classify_seconds": 0.081,
+      "retry_seconds": 0.0,
+      "fallback_tier": null,
+      "characters": 93126,
+      "pages_with_text": null,
+      "routed_to_ocr": false,
+      "pdf_type": "text_based"
+    }
+  }
+]

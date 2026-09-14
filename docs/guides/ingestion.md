@@ -201,13 +201,21 @@ an image. A scanned page therefore comes back empty or nearly empty, and
 that content never reaches the index. The OCR fallback sends those PDFs
 to an isolated PaddleOCR-VL worker instead.
 
-**This is opt-in and stays off by default.** Two reasons, both measured.
+**Routing is on by default** at the promoted gate
+([ADR-065](../adr/065-ocr-fallback-gate-promoted-to-packaged-default.md)):
+enabled, with the calibrated `0.5` confidence and `0.10` page-fraction
+thresholds. Experiment 29 validated the gate on an operator-approved
+17-PDF collection — zero false routes on the held-out papers, both
+genuinely-needy documents caught.
 
-First, OCR is expensive: 34–106 seconds per page against roughly one
+OCR is still expensive: 34–106 seconds per page against roughly one
 second per file on the fast path. A 20-page scanned document costs
-twenty minutes.
+twenty minutes. The thresholds exist so that cost lands only on files
+that need it, and with no worker provisioned an OCR-required PDF
+degrades to its partial extraction plus an actionable warning rather
+than failing. Set `OCR_FALLBACK_ENABLED=false` to opt out entirely.
 
-Second, how much a corpus benefits is unresolved. On a library of 79 real
+The earlier prevalence concern is on record: on a library of 79 real
 academic PDFs, only 2 documents genuinely lacked a text layer — but with
 79 documents the 95% interval on that rate still runs from 0.7% to 8.8%,
 so "rare" is supported and "negligible" is not. See
@@ -244,8 +252,13 @@ file is dispatched together, with no page-level stitching. The 991-page
 document from experiment 28 motivated this fix; see
 [ADR-064](../adr/064-input-quality-promotion-decisions.md).
 
-OCR remains off by default. Keep `OCR_FALLBACK_ENABLED=false` with both
-thresholds at `0.0` until the operator explicitly enables OCR.
+OCR routing is on by default at the promoted gate (ADR-065, Experiment
+29): `OCR_FALLBACK_ENABLED=true`, `OCR_FALLBACK_MIN_CONFIDENCE=0.5`,
+`OCR_FALLBACK_PAGE_FRACTION=0.10`. The flag and both thresholds ship
+together — enabling the switch while leaving the thresholds at `0.0`
+silently misses threshold-flagged documents. With no worker
+provisioned, an OCR-required PDF keeps its partial extraction and the
+batch continues with an actionable warning.
 
 Layout complexity is not a rule. Multi-column and table-heavy PDFs stay
 on the fast path when their text extracts cleanly. Experiment 24
@@ -259,21 +272,22 @@ page-level stitching between the two readers.
 
 | Variable                      | Default | Meaning                                                          |
 | ----------------------------- | ------- | ---------------------------------------------------------------- |
-| `OCR_FALLBACK_ENABLED`        | `false` | Master switch. Off means no PDF ever reaches the worker.         |
-| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.0`   | Confidence floor for text-based PDFs. `0.0` never triggers.      |
-| `OCR_FALLBACK_PAGE_FRACTION`  | `0.0`   | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
+| `OCR_FALLBACK_ENABLED`        | `true`  | Master switch. Off means no PDF ever reaches the worker.         |
+| `OCR_FALLBACK_MIN_CONFIDENCE` | `0.5`   | Confidence floor for text-based PDFs. `0.0` never triggers.      |
+| `OCR_FALLBACK_PAGE_FRACTION`  | `0.10`  | Flagged-page proportion that triggers OCR. `0.0` never triggers. |
 | `OCR_WORKER_COMMAND`          | empty   | Command that starts the worker. Empty means unavailable.         |
 | `OCR_WORKER_ENV_DIR`          | empty   | Worker virtual-environment directory.                            |
 | `OCR_WORKER_REQUEST_TIMEOUT`  | `300.0` | Seconds to wait for one parse response.                          |
 
 Both `0.0` thresholds disable their conditions. With OCR enabled and both
-thresholds untouched, only `scanned` and `image_based` route to the worker.
+thresholds at `0.0`, only `scanned` and `image_based` route to the worker.
 Mixed PDFs remain on the fast path.
 
-The first three fields form the settled routing gate.
+The first three fields form the promoted routing gate.
 The last three are operational: how to reach the worker. Keep them separate.
-`0.5` / `0.5` are the values Experiment 23 calibrated on the committed
-calibration fixtures.
+`0.5` / `0.10` are the values Experiment 29 approved on the frozen plan's
+10% flagged-page tolerance; Experiment 23 calibrated `0.5` / `0.5` on the
+committed calibration fixtures.
 
 ### Routing identity and existing indexes
 
@@ -302,7 +316,7 @@ Then point OMRG at it:
 ```bash
 OCR_FALLBACK_ENABLED=true
 OCR_FALLBACK_MIN_CONFIDENCE=0.5
-OCR_FALLBACK_PAGE_FRACTION=0.5
+OCR_FALLBACK_PAGE_FRACTION=0.10
 OCR_WORKER_COMMAND="uv run python -m omrg_ocr_worker"
 OCR_WORKER_ENV_DIR=/absolute/path/to/ocr-worker
 ```
@@ -382,6 +396,33 @@ Read them together:
 `pdf-inspector` returns internally: no vector store accepts a list-valued
 metadata field. All four keys are in `EXCLUDED_EMBED_METADATA_KEYS`, so
 they are stored and returned but never embedded and never sent to an LLM.
+
+Two further keys appear only when the extraction-fallback guard fired —
+pdf-inspector classified the file `text_based` yet extracted nothing, so
+the adapter retried through the tiered fallback chain and recovered the
+text (ADR-066, TDR-024):
+
+| Key                                 | Meaning                                                    |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `extraction_fallback_backend`       | `liteparse` or `pypdf` — the reader that produced the text. |
+| `pages_needing_ocr_before_fallback` | The flagged count before the guard zeroed it.              |
+
+The retry is tiered. pdf-inspector stays the primary classifier and
+extractor, because it alone emits the routing evidence the OCR gate
+reads. On the contradiction the adapter retries with liteparse first,
+in self-contained extraction-only mode: OCR is forced off whatever
+`LITEPARSE_OCR_ENABLED` says, and `num_workers=None` lets LiteParse
+choose automatically without requiring global settings. When liteparse
+is not installed, or its retry raises or yields no text, pypdf retries
+last. It is the always-available registered plain-text reader, which
+preserves the previous coverage.
+
+When recovery succeeds, `pages_needing_ocr` reads `0` — the pages were
+flagged only by the failed extraction — and the file takes the fast
+path. When both tiers find no text, the original flagged count stands
+and neither key is stamped, so the OCR gate still sees the evidence.
+Both keys are parser telemetry and sit in
+`EXCLUDED_EMBED_METADATA_KEYS` alongside the OCR keys.
 
 ### Re-ingestion consequence
 

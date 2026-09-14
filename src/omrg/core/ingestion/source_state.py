@@ -66,6 +66,8 @@ EXCLUDED_EMBED_METADATA_KEYS = (
     "ocr_used",
     "ocr_backend",
     "pages_needing_ocr",
+    "pages_needing_ocr_before_fallback",
+    "extraction_fallback_backend",
     "page_count",
     "page",
     "page_label",
@@ -222,18 +224,14 @@ def build_index_identity(
             "llamacpp_classify_timeout_override": (
                 settings.metadata.llamacpp_classify_timeout_override
             ),
-            "ollama_classify_timeout_override": (
-                settings.metadata.ollama_classify_timeout_override
-            ),
+            "ollama_classify_timeout_override": settings.metadata.ollama_classify_timeout_override,
             "openrouter_classify_timeout_override": (
                 settings.metadata.openrouter_classify_timeout_override
             ),
             "llamacpp_pipeline_timeout_override": (
                 settings.metadata.llamacpp_pipeline_timeout_override
             ),
-            "ollama_pipeline_timeout_override": (
-                settings.metadata.ollama_pipeline_timeout_override
-            ),
+            "ollama_pipeline_timeout_override": settings.metadata.ollama_pipeline_timeout_override,
             "openrouter_pipeline_timeout_override": (
                 settings.metadata.openrouter_pipeline_timeout_override
             ),

@@ -1,0 +1,173 @@
+{
+  "experiment_id": "29-pdf-routing-repeat",
+  "labels_frozen": true,
+  "policies": {
+    "baseline_exp28": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 3,
+        "false_routes": [
+          "dev_001",
+          "dev_003"
+        ],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 1031,
+        "projected_ocr_seconds": 109698.4
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "baseline_matched": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 3,
+        "false_routes": [
+          "dev_001",
+          "dev_003"
+        ],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 1031,
+        "projected_ocr_seconds": 109698.4
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "candidate": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 2,
+        "false_routes": [
+          "dev_003"
+        ],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 40,
+        "projected_ocr_seconds": 4256.0
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    },
+    "enable_only": {
+      "development": {
+        "documents": 3,
+        "labelled": 3,
+        "unlabelled": [],
+        "routed": 1,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 23,
+        "projected_ocr_seconds": 2447.2
+      },
+      "held_out": {
+        "documents": 14,
+        "labelled": 14,
+        "unlabelled": [],
+        "routed": 0,
+        "false_routes": [],
+        "missed_needs_ocr": [],
+        "uncertain_labels": [],
+        "routed_pages": 0,
+        "projected_ocr_seconds": 0.0
+      }
+    }
+  },
+  "gates": [
+    {
+      "kind": "safety",
+      "metric": "false_routing_count",
+      "comparator": "==",
+      "threshold": 0,
+      "observed": 0,
+      "verdict": "pass"
+    },
+    {
+      "kind": "recall",
+      "metric": "missed_needs_ocr_count",
+      "comparator": "==",
+      "threshold": 0,
+      "observed": 0,
+      "verdict": "not_evaluable"
+    }
+  ],
+  "ocr_cost_basis": "projected",
+  "held_out_coverage": {
+    "expected": [
+      "hold_001",
+      "hold_002",
+      "hold_003",
+      "hold_004",
+      "hold_005",
+      "hold_006",
+      "hold_007",
+      "hold_008",
+      "hold_009",
+      "hold_010",
+      "hold_011",
+      "hold_012",
+      "hold_013",
+      "hold_014"
+    ],
+    "successful_rows": [
+      "hold_001",
+      "hold_002",
+      "hold_003",
+      "hold_004",
+      "hold_005",
+      "hold_006",
+      "hold_007",
+      "hold_008",
+      "hold_009",
+      "hold_010",
+      "hold_011",
+      "hold_012",
+      "hold_013",
+      "hold_014"
+    ],
+    "parse_failures": [],
+    "missing_rows": [],
+    "unlabelled": []
+  },
+  "needs_ocr_prevalence_held_out": {
+    "count": 0,
+    "wilson95": [
+      0.0,
+      0.2153
+    ]
+  }
+}

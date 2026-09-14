@@ -1,0 +1,7 @@
+# Private operator material — never commit (spec: public records carry
+# opaque identifiers only; identity mappings stay in ignored local storage)
+output/.collection.private.json
+output/.local_manifest.json
+output/.errors.private.json
+output/.approved-paths.private.txt
+output/.page_assessment.private.json

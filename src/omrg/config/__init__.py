@@ -187,14 +187,15 @@ class Settings(StorageValidationMixin, BaseSettings):
 
     # ── OCR routing gate (design D7.3, improve-rag-input-quality-5) ──
     # Top-level fields beside the PDF knobs, matching the shape the
-    # existing PDF settings already have. The packaged default keeps
-    # the fallback off until the Stage 6 promotion gates are met, and
-    # the 0.0 thresholds keep routing classification-only — enabling
-    # the fallback alone must not reroute text-based PDFs without
-    # calibrated values.
-    ocr_fallback_enabled: LegacyBool = False
-    ocr_fallback_min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    ocr_fallback_page_fraction: float = Field(default=0.0, ge=0.0, le=1.0)
+    # existing PDF settings already have. The packaged default is the
+    # promoted gate validated by Experiment 29 (ADR-065): enabled, with
+    # the calibrated 0.5/0.10 thresholds. The flag and both thresholds
+    # ship together — a bare enable at the 0.0 sentinels is the
+    # classification-only configuration the study showed silently misses
+    # threshold-flagged documents.
+    ocr_fallback_enabled: LegacyBool = True
+    ocr_fallback_min_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    ocr_fallback_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
 
     # ── OCR worker operation (task 2.6b) ──────────────────────────
     # Operational settings, separate from the calibrated gate above:

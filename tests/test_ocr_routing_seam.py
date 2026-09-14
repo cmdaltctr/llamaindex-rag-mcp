@@ -13,6 +13,7 @@ from __future__ import annotations
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -108,9 +109,18 @@ def test_complex_text_layout_stays_on_pdf_inspector(effective_settings) -> None:
 
 
 def test_fallback_disabled_returns_the_plain_reader(effective_settings) -> None:
-    """Without OCR_FALLBACK_ENABLED the factory composes no seam at all."""
-    reader = build_pdf_reader("pdf_inspector", effective_settings(pdf_reader="pdf_inspector"))
+    """With OCR_FALLBACK_ENABLED=false the factory composes no seam at all."""
+    reader = build_pdf_reader(
+        "pdf_inspector",
+        effective_settings(pdf_reader="pdf_inspector", ocr_fallback_enabled=False),
+    )
     assert type(reader) is PdfInspectorReader
+
+
+def test_packaged_default_composes_the_seam(effective_settings) -> None:
+    """The promoted default wraps pdf_inspector in the routing seam (ADR-065)."""
+    reader = build_pdf_reader("pdf_inspector", effective_settings(pdf_reader="pdf_inspector"))
+    assert isinstance(reader, OcrRoutedPdfInspector)
 
 
 # ── Tasks 2.3/2.4: scanned fixtures dispatch the whole PDF ────────────────
@@ -375,5 +385,128 @@ def test_mixed_pdf_with_ocr_enabled_zero_thresholds_preserves_diagnostics(
         assert "pages_needing_ocr" in meta
         assert meta["pages_needing_ocr"] == 3
         assert isinstance(meta["pages_needing_ocr"], int)
+    finally:
+        client.close()
+
+
+# ── Sloman guard: recovered text never reaches the worker ────────────────
+#
+# pdf-inspector can classify a file text_based while extracting nothing
+# (TDR-024). The adapter's LiteParse-first retry corrects the
+# flagged-page evidence to zero BEFORE the seam reads it, so at the
+# promoted thresholds (0.5 confidence / 0.10 page fraction) the gate sees
+# a clean fast-path file instead of dispatching ~30 minutes of OCR onto
+# text recovered in ~1 second.
+
+
+def _stub_inspector_contradiction(monkeypatch, *, page_count: int) -> None:
+    """Stub pdf_inspector to return the Sloman signature: text_based, empty."""
+    stub = MagicMock()
+    result = stub.process_pdf.return_value
+    result.markdown = ""
+    result.pdf_type = "text_based"
+    result.confidence = 1.0
+    result.page_count = page_count
+    result.pages_needing_ocr = list(range(page_count))
+    monkeypatch.setitem(sys.modules, "pdf_inspector", stub)
+
+
+def _stub_liteparse_pages(monkeypatch, page_texts: list[str]) -> None:
+    """Seed the registry cache so the adapter's LiteParse retry is stubbed."""
+    from llama_index.core import Document
+
+    from omrg.integrations.pdf import registry
+
+    class _StubLiteParseReader:
+        def __init__(self, *, ocr_enabled: bool = False, num_workers: int | None = None) -> None:
+            self.ocr_enabled = ocr_enabled
+            self.num_workers = num_workers
+
+        def load_data(self, file, *args, **kwargs):
+            return [Document(text=text) for text in page_texts]
+
+    monkeypatch.setitem(registry._cache, "liteparse", _StubLiteParseReader)
+
+
+def _stub_pypdf_pages(monkeypatch, page_texts: list[str]) -> None:
+    """Seed the registry cache so the adapter's pypdf retry is stubbed."""
+    from llama_index.core import Document
+
+    from omrg.integrations.pdf import registry
+
+    class _StubPypdfReader:
+        def load_data(self, file, *args, **kwargs):
+            return [Document(text=text) for text in page_texts]
+
+    monkeypatch.setitem(registry._cache, "pypdf", _StubPypdfReader)
+
+
+def _promoted_settings(effective_settings):
+    """The Experiment-29-promoted routing thresholds (0.5 / 0.10)."""
+    return effective_settings(
+        pdf_reader="pdf_inspector",
+        ocr_fallback_enabled=True,
+        ocr_fallback_min_confidence=0.5,
+        ocr_fallback_page_fraction=0.10,
+    )
+
+
+def test_liteparse_rescue_takes_the_fast_path_at_promoted_thresholds(
+    effective_settings, monkeypatch
+) -> None:
+    """A LiteParse rescue corrects the gate evidence before worker dispatch.
+
+    Pre-guard this evidence (3/3 flagged at confidence 1.0) routes to the
+    worker under the promoted thresholds; the corrected scalar keeps the
+    file on pdf-inspector and the worker is never started.
+    """
+    _stub_inspector_contradiction(monkeypatch, page_count=3)
+    _stub_liteparse_pages(monkeypatch, ["liteparse rescue"] * 3)
+    _stub_pypdf_pages(monkeypatch, ["pypdf must not be selected"])
+    client = _echo_client()
+    try:
+        reader = build_pdf_reader(
+            "pdf_inspector", _promoted_settings(effective_settings), ocr_client=client
+        )
+        assert isinstance(reader, OcrRoutedPdfInspector)
+        docs = reader.load_data(file=Path("/fake/sloman.pdf"))
+        meta = docs[0].metadata
+        assert docs[0].get_content() == "liteparse rescue\n\n" * 2 + "liteparse rescue"
+        assert meta["ocr_required"] is False
+        assert meta["ocr_used"] is False
+        assert meta["ocr_backend"] == OCR_BACKEND_FAST_PATH
+        # Corrected evidence plus the additive fallback diagnostics.
+        assert meta["pages_needing_ocr"] == 0
+        assert meta["pages_needing_ocr_before_fallback"] == 3
+        assert meta["extraction_fallback_backend"] == "liteparse"
+        assert client.is_started is False
+        assert client.process_generations == 0
+    finally:
+        client.close()
+
+
+def test_failed_retry_still_routes_to_ocr_at_promoted_thresholds(
+    effective_settings, monkeypatch
+) -> None:
+    """When both retry tiers yield nothing, the flagged evidence routes."""
+    _stub_inspector_contradiction(monkeypatch, page_count=3)
+    _stub_liteparse_pages(monkeypatch, ["", "", ""])
+    _stub_pypdf_pages(monkeypatch, ["", "", ""])
+    client = _echo_client()
+    try:
+        reader = build_pdf_reader(
+            "pdf_inspector", _promoted_settings(effective_settings), ocr_client=client
+        )
+        docs = reader.load_data(file=Path("/fake/sloman.pdf"))
+        meta = docs[0].metadata
+        assert meta["ocr_required"] is True
+        assert meta["ocr_used"] is True
+        assert meta["ocr_backend"] == OCR_BACKEND_WORKER_PATH
+        # Unchanged pdf-inspector evidence — no fallback diagnostics.
+        assert meta["pages_needing_ocr"] == 3
+        assert "pages_needing_ocr_before_fallback" not in meta
+        assert "extraction_fallback_backend" not in meta
+        assert client.is_started is True
+        assert client.process_generations == 1
     finally:
         client.close()

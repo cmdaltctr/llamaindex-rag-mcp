@@ -490,7 +490,13 @@ The threshold that selects the OCR fallback SHALL be a calibrated value carried 
 
 The gate SHALL be calibrated on a committed fixture set disjoint from the fixtures used to evaluate whether the OCR fallback improves retrieval. Calibration SHALL report routing behaviour — text-based PDFs the gate would route to OCR, and OCR-required PDFs it would leave on the fast path — and SHALL NOT be the same run that measures downstream retrieval quality.
 
-The packaged default SHALL keep the fallback off until the promotion gates are met, so "the OCR capability is available" in the routing requirement above means the worker probe succeeded **and** the operator enabled routing. `config/` SHALL NOT probe the worker, and no module SHALL read a settings singleton to obtain the gate.
+The packaged default SHALL be the promoted pair validated by the repeat routing study
+(`29-pdf-routing-repeat-2026-09-13`): routing enabled, `0.5` minimum
+confidence, `0.10` flagged-page fraction. The enable flag and both
+thresholds SHALL ship together — enabling routing while leaving
+thresholds at the `0.0` sentinels is the bare-enable configuration the
+study showed silently misses threshold-flagged documents, and packaged
+defaults SHALL NOT present it. `config/` SHALL NOT probe the worker, and no module SHALL read a settings singleton to obtain the gate.
 
 #### Scenario: Routing threshold is read from injected settings
 
@@ -505,11 +511,72 @@ The packaged default SHALL keep the fallback off until the promotion gates are m
 - **THEN** calibration SHALL use only the calibration fixtures
 - **AND** the evaluation fixtures SHALL remain unused until the Stage 5 ablation
 
-#### Scenario: Packaged default keeps the fallback off
+#### Scenario: Packaged default routes OCR-required PDFs
 
 - **GIVEN** a fresh installation whose operator has set no OCR routing configuration
 - **AND** the isolated OCR worker is provisioned and compatible
 - **WHEN** a scanned PDF is ingested
-- **THEN** the OCR fallback SHALL NOT be selected
-- **AND** the existing degraded `pdf-inspector` behaviour SHALL be preserved
-- **AND** enabling the fallback SHALL require an explicit operator setting until the promotion gates are met
+- **THEN** the OCR fallback SHALL be selected
+- **AND** a healthy text-based PDF SHALL stay on the fast path
+
+#### Scenario: Unprovisioned worker degrades deterministically
+
+- **GIVEN** a fresh installation with no OCR worker provisioned
+- **WHEN** an OCR-required PDF is ingested
+- **THEN** the file SHALL keep the partial pdf-inspector extraction with degraded diagnostics
+- **AND** the batch SHALL continue with an actionable warning naming the provisioning step
+
+### Requirement: pdf-inspector silent-empty extraction SHALL recover via a plain-text retry
+
+When the pdf-inspector reader classifies a PDF as `text_based` while its own Markdown extraction is empty and the page count is greater than zero, the adapter SHALL retry the file with the registered `liteparse` reader in extraction-only mode (OCR disabled regardless of operator settings), joining the per-page text into one document for the whole file, so a readable text layer is not silently discarded. The rescue tier SHALL receive concrete OCR and worker settings so it does not require default effective settings. When liteparse is unavailable or its retry yields no text, the adapter SHALL retry with the registered `pypdf` reader, preserving the same one-document contract.
+
+A successful retry SHALL correct the routing evidence it emits: the scalar `pages_needing_ocr` SHALL be set to zero, because the pages were flagged only by the failed extraction, and the pre-fallback flagged count SHALL be preserved under an additive diagnostic key. A retry chain that yields no text from either tier SHALL leave the original pdf-inspector result unchanged so the OCR routing gate still sees the flagged evidence. Diagnostics SHALL be additive, and `extraction_fallback_backend` SHALL name the tier that produced the text (`liteparse` or `pypdf`); diagnostics SHALL NOT claim the OCR worker or any other backend produced it.
+
+#### Scenario: Contradiction triggers the retry
+
+- **GIVEN** pdf-inspector returns `pdf_type=text_based`, non-zero `page_count`, and empty Markdown
+- **WHEN** the adapter emits its document
+- **THEN** the document text SHALL be the joined liteparse per-page extraction
+- **AND** the document SHALL carry an additive diagnostic naming liteparse as the fallback backend
+
+#### Scenario: Bare direct adapter use stays on liteparse
+
+- **GIVEN** no default effective settings were installed
+- **WHEN** the contradiction triggers and liteparse can recover text
+- **THEN** the liteparse tier SHALL run with OCR disabled and automatic worker selection
+- **AND** pypdf SHALL NOT be selected
+
+#### Scenario: liteparse unavailable falls through to pypdf
+
+- **GIVEN** the contradiction triggers and the liteparse package is not installed, or its retry raises or yields no text
+- **WHEN** the adapter emits its document
+- **THEN** the retry SHALL proceed with the registered pypdf reader
+- **AND** the diagnostic SHALL name pypdf as the fallback backend when it produces the text
+
+#### Scenario: Recovered text corrects the routing evidence
+
+- **GIVEN** a fallback tier recovers text from a file pdf-inspector flagged page-by-page
+- **WHEN** the OCR routing seam reads the emitted metadata
+- **THEN** `pages_needing_ocr` SHALL be zero
+- **AND** the original flagged count SHALL be preserved under a separate diagnostic key
+
+#### Scenario: Failed retry keeps the original evidence
+
+- **GIVEN** both fallback tiers yield no text
+- **WHEN** the adapter emits its document
+- **THEN** the emitted result SHALL be the unchanged pdf-inspector result with its original flagged count
+- **AND** the OCR routing decision SHALL be unchanged from a run without the guard
+
+#### Scenario: Normal extraction is untouched
+
+- **GIVEN** pdf-inspector returns non-empty Markdown for a `text_based` PDF
+- **WHEN** the adapter emits its document
+- **THEN** no retry SHALL occur
+- **AND** the metadata SHALL carry no fallback diagnostics
+
+#### Scenario: Scanned classifications are untouched
+
+- **GIVEN** pdf-inspector classifies a PDF as `scanned`, `image_based`, or another non-`text_based` type
+- **WHEN** the adapter emits its document
+- **THEN** no retry SHALL occur regardless of extraction emptiness
+- **AND** the OCR routing decision SHALL be unchanged

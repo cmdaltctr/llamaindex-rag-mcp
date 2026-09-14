@@ -49,6 +49,7 @@ architecture), see the [ADR index](../adr/).
 | 021 | [Release notes must ride a `BREAKING CHANGE` footer on an included commit type](021-release-notes-ride-breaking-change-footer-on-included-commit-type.md)| Accepted                                                           | 2026-09-01 |
 | 022 | [Token counting is contract-sensitive — three traps in the exp 25 pre-build gate](022-token-counting-is-contract-sensitive.md)                       | Accepted (extended by 023)                                          | 2026-09-08 |
 | 023 | [Reconstructed nodes are not stored nodes — deserialise `_node_content` for payload accounting](023-reconstructed-nodes-are-not-stored-nodes.md)     | Accepted                                                           | 2026-09-08 |
+| 024 | [pdf-inspector silently extracts nothing from WinAnsi TrueType PDFs without `/ToUnicode` — retry with pypdf in the adapter](024-pdf-inspector-silent-empty-extraction-on-legacy-winansi-fonts.md) | Accepted | 2026-09-13 |
 
 ## Status values
 

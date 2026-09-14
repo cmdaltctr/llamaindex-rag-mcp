@@ -1,0 +1,37 @@
+{
+  "experiment": "30-reader-fallback-chain-2026-09-13",
+  "gates": {
+    "recovery": true,
+    "speed": true,
+    "routing": true,
+    "blank_pages": true
+  },
+  "all_pass": true,
+  "collection": [
+    {
+      "doc_id": "p01_ia_prince",
+      "sha256": "c40a128ae28777973a5f494a59baa4b01ea7286c9453c8ce4078495fb5102965",
+      "split": "pathological"
+    },
+    {
+      "doc_id": "p02_ia_managing",
+      "sha256": "598df404b16a88f003884472b78a4761ebbeafabf01ec3b187f90ea03406d651",
+      "split": "pathological"
+    },
+    {
+      "doc_id": "p03_winansi_sloman",
+      "sha256": "d6aae96685bfc7a6f44dcdbb324c6f1e5d25af3671d0a29041b5877b9625cfbc",
+      "split": "pathological"
+    },
+    {
+      "doc_id": "c01_scanned_kerr",
+      "sha256": "8e5a79624bd105ec5f16e6ff9ee71206f57e25cab1f0db6d6e91a48a5cfde1eb",
+      "split": "control"
+    },
+    {
+      "doc_id": "c02_healthy_graphrag",
+      "sha256": "730f1a9f38d16689900969a3eeeb1b31e45eda1dcc1f37a043afa90aff76c867",
+      "split": "control"
+    }
+  ]
+}
