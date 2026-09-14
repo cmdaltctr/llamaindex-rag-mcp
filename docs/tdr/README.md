@@ -25,7 +25,7 @@ architecture), see the [ADR index](../adr/).
 ## Index
 
 | ID  | Title                                                                                                                                               | Status                                                             | Date       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------- |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
 | 001 | [Fix codebase map dead code and missing boundary validation](001-fix-codebase-map-dead-code-and-boundary.md)                                        | Accepted                                                           | 2026-06-28 |
 | 002 | [SonarCloud security gate via GitHub Actions](002-sonarcloud-security-gate-via-github-actions.md)                                                   | Superseded by [TDR-007](007-ci-quality-toolchain-consolidation.md) | 2026-06-28 |
 | 003 | [Suppress Jupyter warning by installing ipywidgets as dev dependency](003-suppress-jupyter-warning-by-installing-ipywidgets.md)                     | Accepted                                                           | 2026-06-28 |
