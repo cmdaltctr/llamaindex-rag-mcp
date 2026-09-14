@@ -459,6 +459,19 @@ token = { env = "GH_TOKEN" }
 
 [tool.pyright]
 include = ["src", "tests", "experiments"]
-exclude = ["**/.venv", "**/__pycache__", "**/.opencode"]
+exclude = [
+  "**/.venv",
+  "**/__pycache__",
+  "**/.opencode",
+  "**/node_modules",
+  "**/chroma_db",
+  "graphify-out",
+  "lancedb",
+  "models",
+  "experiments/**/output",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".import_linter_cache"
+]
 venvPath = "."
 venv = ".venv"
