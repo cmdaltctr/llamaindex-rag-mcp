@@ -115,10 +115,10 @@ would mix incompatible representations of the same source.
 ## Alternatives Considered
 
 | Option                                         | Rejected Because                                                                         |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Add Paddle packages to OMRG's main environment | Every installation would carry large native dependencies and a new import boundary risk. |
-| Send all PDFs to PaddleOCR-VL                  | Clean PDFs would lose the cheap pdf-inspector fast path.                                    |
-| Use an unversioned subprocess protocol         | OMRG could not safely identify incompatible worker output.                                  |
+| Send all PDFs to PaddleOCR-VL                  | Clean PDFs would lose the cheap pdf-inspector fast path.                                 |
+| Use an unversioned subprocess protocol         | OMRG could not safely identify incompatible worker output.                               |
 | Create a pipeline for every document           | Model initialisation would repeat for each OCR-required file.                            |
 
 ## Validation and Integration Notes
@@ -146,4 +146,4 @@ This ADR does not change or disposition those failures.
 - `openspec/changes/improve-rag-input-quality-5/design.md`
 - `openspec/changes/improve-rag-input-quality-5/tasks.md`
 - ADR-048: `docs/adr/048-bounded-failure-safe-ingestion.md`
-- ADR050: `docs/adr/050-configure-pdf-inspector-as-default-reader.md`
+- ADR-050: `docs/adr/050-configure-pdf-inspector-as-default-reader.md`
