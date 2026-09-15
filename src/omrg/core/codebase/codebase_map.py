@@ -219,7 +219,7 @@ def detect_file_types(path: str, settings: Any | None = None) -> FileInventory:
         try:
             entries = scan_with_magika(path, settings)
             logger.debug("Magika detected %d files", len(entries))
-        except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError) as exc:
             logger.warning("Magika scan failed (%s), falling back to suffix detection", exc)
             entries = scan_with_suffix(path, settings)
     else:
