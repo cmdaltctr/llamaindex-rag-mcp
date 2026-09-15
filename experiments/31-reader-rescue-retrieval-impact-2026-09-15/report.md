@@ -144,6 +144,16 @@ measured retrieval regression concentrated on Type B documents.
   comparison.
 - Embedding token counts were not exposed by the ingest result
   surface; chunk count and index size stand in as the cost proxies.
+- Content-type detection ran through the deterministic extension
+  fallback in every cell: `detect_file_types` reads the legacy global
+  `EffectiveSettings` (a dependency-injection mismatch in the Magika
+  integration) and raises in engine-constructed processes that skip
+  `ensure_runtime_setup`. The pipeline catches it at
+  `core/ingestion/pipeline.py:195-202` and routes by suffix. This is
+  not a PDF classification failure: all three cells routed identically,
+  and PDF chunk dispatch keys on the reader's declared `text_format`
+  (markdown), not the Magika label. It has no bearing on the measured
+  comparison; the defect itself warrants a separate fix.
 - Retrieval used one frozen configuration (`documents` profile, local
   0.6B embeddings). A different embedding model or reranker setting
   could shift absolute numbers; the paired design keeps the B-vs-C
