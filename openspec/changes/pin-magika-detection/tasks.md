@@ -36,16 +36,20 @@ fix in `3dd89f7`. Do not blindly restore either ancestor or use dirty
 
 ## 3. Real-corpus gate
 
-- [ ] 3.1 Before execution, freeze a real acceptance corpus of representative common PDF, Python, Markdown, and TXT paths. Predesignate deliberately misnamed and tiny-source diagnostic probes separately. Record both path sets before any output exists. Do not move or exclude an acceptance file after output is known.
-- [ ] 3.2 Run every path set through the same smoke and detector after implementation. Record command, executable, exact package and pin, elapsed detection, coverage, counts, mismatches, and diagnostic limitations. Each diagnostic mismatch remains non-zero and is recorded separately. The frozen acceptance corpus passes only on a complete, non-empty all-match result with zero exit. STOP AND REPORT the complete findings, then execute the Undo plan for any acceptance mismatch, fallback, error, empty input, or missing, extra, or duplicate path. Do not retry, ingest, or merge.
+- [x] 3.1 Before execution, freeze a real acceptance corpus of representative common PDF, Python, Markdown, and TXT paths. Predesignate deliberately misnamed and tiny-source diagnostic probes separately. Record both path sets before any output exists. Do not move or exclude an acceptance file after output is known.
+- [x] 3.2 Run every path set through the same smoke and detector after implementation. Record command, executable, exact package and pin, elapsed detection, coverage, counts, mismatches, and diagnostic limitations. Each diagnostic mismatch remains non-zero and is recorded separately. The frozen acceptance corpus passes only on a complete, non-empty all-match result with zero exit. STOP AND REPORT the complete findings, then execute the Undo plan for any acceptance mismatch, fallback, error, empty input, or missing, extra, or duplicate path. Do not retry, ingest, or merge.
 
 ## 4. Evidence, decision records, and guarded verification
 
 - [ ] 4.1 After gate pass, ask authorisation before fast-suite and `scripts/local_ci.sh` checks. Existing isolated fixtures and doubles may run. Operator corpora, re-ingest, external models, and production stores must not run. Run `openspec validate pin-magika-detection --strict`. Measure existing CI tripwire executed and skipped counts. Re-baseline measured counts only.
 - [ ] 4.2 After gate pass, load `s-adr` and create the success ADR. Cross-reference TDR-025. Record `magika`, retained executable override, narrow normalisation, failure behaviour, smoke evidence, fallback reality, short-source limits, and the verified ONNX-runtime and no-base-PyTorch rationale. Use elapsed detection from the smoke as the measured cost. Do not create a separate benchmark or claim isolated model-startup time.
 - [ ] 4.3 After gate pass, update TDR-025 and Experiment 31 limitations without rerunning experiments. Correct historical `google-magika` and taxonomy wording. Explain the packaged CLI base dependency, `MAGIKA_BINARY` override, and retained fallback. Record evidence and limitations.
-- [ ] 4.4 Confirm no collection, embedding, or store changed. Record this with gate evidence before acceptance.
+- [x] 4.4 Confirm no collection, embedding, or store changed. Record this with gate evidence before acceptance.
 
 ## 5. Undo plan
+
+Status note (2026-09-16): the acceptance gate passed (exit 0, 16/16
+all-match, `acceptance-corpus.md` run record), so the contingency
+below never triggered. It stays unchecked by design.
 
 - [ ] 5.1 If the implemented acceptance-corpus smoke fails, STOP AND REPORT, then execute option 2. Restore only pin-created dependency and lock changes, including the original worker's dependency delta, plus pin-created parser, tool, and test hunks from the recorded path-scoped baseline. Preserve documentation, the pre-existing `3dd89f7` settings fix, unrelated work, and red regression evidence. Ask approval only for destructive file deletion or package resynchronisation. Create a rejected ADR disposition despite the pass-gated success ADR task. Carry red regression evidence into TDR-025, then update Experiment 31 limitations and these artifacts. Keep success tasks incomplete and cancel them with an explanation. Never false-green, retry, ingest, or merge the failed feature.

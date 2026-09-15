@@ -51,8 +51,60 @@ Tiny probes contain 4 bytes (`x=1\n` / `ok\n`); the misnamed probe
 holds 469 bytes of substantial valid Python. Diagnostics run
 separately from the acceptance corpus and never gate it.
 
-## Run record (filled after task 3.2)
+## Run record (task 3.2, 2026-09-16)
 
-- Command, executable, package/pin, elapsed detection, coverage,
-  counts, mismatches, and diagnostic limitations live in the task 3.2
-  evidence appended below after the gate runs.
+Environment and transport:
+
+- Command: `.venv/bin/python scripts/magika_label_smoke.py --json
+  <16 frozen paths>` run from the repository root with `.venv/bin`
+  on `PATH` (the injected binary name `magika` resolves through
+  `shutil.which`).
+- Package: `magika==1.0.3` (importlib metadata; pyproject pin and
+  lock entry identical). The bundled CLI core self-reports
+  `magika 1.1.0 standard_v3_3` — the Rust core shipped inside the
+  1.0.3 wheel, recorded for provenance.
+- Executable: `<repo>/.venv/bin/magika` (base dependency of the
+  venv; no system Magika installed).
+
+Acceptance corpus result: **exit 0 — complete, non-empty all-match.**
+
+- Coverage: 16/16 frozen paths compared; path sets identical (no
+  missing, extra, or duplicate paths).
+- Labels: 0 of 16 would change. Observed pairs: `code/python` (4),
+  `document/markdown` (4, via the text/markdown alias),
+  `document/text` (3, via the text/txt alias), `document/pdf` (5).
+- Elapsed: 1.00 s for the whole invocation over 16 explicit files
+  (16 CLI model startups included; this is the measured whole-run
+  cost, not isolated per-file detection).
+
+Diagnostics (each run separately, same tool and detector):
+
+| Probe | Exit | Observed | Recorded limitation |
+|-------|------|----------|---------------------|
+| misnamed-python.txt | 1 (non-zero) | suffix `document/text`, Magika `code/python` | Designed: content detection wins on misnamed files; the identity shift is reported before any re-ingest. |
+| tiny-source.py | 1 (non-zero) | suffix `code/python`, Magika `document/text` (raw `text/txt`, low confidence on 4 bytes) | Short Python can lose its code label; never repaired by padding, retry, or suffix override. |
+| tiny-source.txt | 0 | `document/text` both scanners | Low-confidence generic text still aliases to the suffix label; recorded as a match, not a repair. |
+
+Gate incidents (recorded before the pass, corpus untouched):
+
+1. First invocation exited 2: the direct `python3` call had no venv
+   on `PATH`, so the binary check failed. Re-ran with the documented
+   transport.
+2. Second invocation exited 2 on `duplicate=['.']`: the smoke tool
+   keyed every direct-file entry as `.` — a tool defect fixed in
+   `00d6d46` (re-key to the operator path) with regression
+   `test_smoke_comparison_supports_multiple_explicit_file_paths`.
+   No acceptance labels were compared or recorded before that fix.
+
+No ingest, store, embedding, or collection operation ran during the
+gate. Task 5.1 (undo) was not triggered.
+
+## Task 4.4 — no collection, embedding, or store change
+
+`git diff --name-only adad033..HEAD` contains no path under the
+vector stores, embedding, or collection code (verified 2026-09-16;
+grep for `vectordb|store|embed|collection` over the full change set
+returns nothing). The only production modules touched are
+`integrations/magika.py` (parser and boundary), the
+`detect_file_types` fallback catch in `core/codebase/codebase_map.py`,
+and the binary-skip counter in `core/ingestion/pipeline.py`.
