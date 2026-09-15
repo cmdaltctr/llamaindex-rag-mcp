@@ -1,37 +1,40 @@
-# Proposal: Pin google-magika as the base content-type detector
+# Proposal: Pin Magika and correct content-detection parsing
 
 ## Why
 
-The architecture treats Magika as an optional external executable, so it
-was never pinned and — verified 2026-09-15 — has never been installed on
-any machine this project ran on. Every ingestion ever executed used the
-suffix fallback. Detection drives chunking dispatch (mislabelled code
-files lose AST splitting) and the early binary skip (junk files reach the
-reader as errors), so the optional-binary design silently disabled both
-powers that justified the integration (TDR-025 amendment). Pinning the
-official `google-magika` package makes the base install detect by
-content, not by filename.
+The installed official package is `magika==1.0.3`; `google-magika` does not
+exist on PyPI. The prior `0.6.3` and installed `1.0.3` CLI output use nested
+JSONL fields. The current parser
+reads `obj.output`, fabricates `unknown/unknown` with `is_text=true`, and
+therefore does not use the detected result. The current uncommitted state is
+`magika>=1.0.3` in `pyproject.toml`, a 1.0.3 lock entry, and three red tests.
+This planning session leaves those files untouched.
+
+Detection controls early binary skipping, code routing, and part of index
+identity. It must parse a successful result safely before the dependency
+becomes mandatory. This change does not ingest data or modify a store.
 
 ## What Changes
 
-- Add `google-magika` as a base dependency (`uv add google-magika`),
-  version-pinned in `pyproject.toml` and `uv.lock`.
-- No integration code change: the existing subprocess call resolves
-  `MAGIKA_BINARY=magika` to the venv's console script under
-  `uv run`; the suffix fallback remains for bare-environment runs.
-- Add a detection-only label-equivalence smoke tool that compares
-  suffix-map labels against Magika labels over operator-supplied paths.
-  It MUST NOT ingest, embed, or touch any collection — no
-  `ingest_path_async`, no store access. Label-string stability matters
-  because the unchanged-skip keys on the content-type label
-  (TDR-025 amendment): matching labels mean existing rows skip on next
-  re-ingest at zero cost; differing labels rebuild only the affected
-  files.
-- Record the dependency decision as an ADR (new base dependency;
-  onnxruntime-based, consistent with the no-torch rule) and update the
-  dependency-floors test if the new package requires a floor entry.
-- **No re-ingest is performed by this change.** Identity shifts affect
-  only future ingests, file by file, and only where the label differs.
+- Pin the official base dependency as `magika==1.0.3` in a later authorised
+  implementation session. Preserve the existing `MAGIKA_BINARY` subprocess
+  transport, settings injection, timeout, and suffix fallback contract.
+- Parse only `status == "ok"` records at `result.value.output`. Validate
+  non-empty string `group` and `label` fields plus boolean `is_text`. Ignore
+  blank JSONL lines. A failed status, non-JSON row, malformed successful
+  record, or invalid required field fails the whole scan and uses the existing
+  suffix fallback with a warning.
+- Normalise only safe boundary differences: non-document, non-code, and
+  non-text `is_text=false` groups become `binary`; `text/markdown` becomes
+  `document/markdown`; `text/txt` becomes `document/text`.
+- Add regressions and a detection-only smoke script. It compares path sets
+  from existing suffix and direct Magika scanners. It must fail on residual
+  label mismatch, missing, extra, or duplicate paths, empty input, or detector
+  failure. It must not copy the suffix table or add a directory walker.
+- Record implementation evidence after a passing real-corpus gate. TDR-025
+  remains authoritative for settings and identity. Its `google-magika` and
+  unverified-taxonomy wording is historical and superseded by this evidence
+  until a later TDR update.
 
 ## Capabilities
 
@@ -41,20 +44,20 @@ content, not by filename.
 
 ### Modified Capabilities
 
-- `type-aware-ingestion`: adds a requirement that the base install
-  performs content-based detection through the pinned Magika package,
-  with the label-equivalence smoke as the deployment guard.
+- `type-aware-ingestion`: requires a pinned Magika detector, validated JSONL
+  parsing, narrow label normalisation, and a fail-closed comparison gate.
 
 ## Impact
 
-- Code: `pyproject.toml`, `uv.lock`, new smoke script, floors test,
-  ADR. `integrations/magika.py` unchanged.
-- Dependencies: `google-magika` (pulls `onnxruntime`; no torch).
-  Startup cost: one subprocess per ingest operation, model load
-  roughly 1-2 s.
-- Index identity: files whose Magika label differs from their suffix
-  label rebuild on their NEXT re-ingest (correct staleness); identical
-  labels skip. Nothing re-ingests automatically.
-- CI: the base-suite tripwire executed/skipped counts shift with new
-  tests; magika-dependent tests that currently assert the fallback path
-  must be reviewed for environment assumptions.
+- Later implementation changes: `pyproject.toml`, `uv.lock`,
+  `integrations/magika.py`, the existing detector fallback catch in
+  `core/codebase/codebase_map.py`, focused regressions, one smoke script, and
+  decision records. No pipeline, extension-admission, graph, cache, or
+  store design changes are planned.
+- Index identity stays stable only where the previous explicit label and all
+  other identity inputs match the normalised label. `None` and `unknown`
+  labels can rebuild on a later explicit ingest. No backfill occurs.
+- The detector remains optional at runtime. Missing binary, non-zero exit,
+  timeout, and parser failure use the existing warned suffix fallback.
+- The planned smoke gate must pass before any acceptance or merge. It does
+  not authorise re-ingestion.
