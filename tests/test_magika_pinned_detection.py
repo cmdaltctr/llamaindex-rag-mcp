@@ -1,6 +1,6 @@
 """Base-install Magika detection and the detection-only smoke guard.
 
-pin-magika-detection: the base dependency set pins ``google-magika`` so
+pin-magika-detection: the base dependency set pins ``magika`` so
 a standard ``uv sync`` + ``uv run`` environment classifies files by
 content, not by filename. These tests assert the installed-detector
 path with no skip-if-absent guards — after this change the package is a
@@ -52,7 +52,7 @@ def test_base_install_detects_by_content(tmp_path: Path) -> None:
     cannot produce for that extension.
     """
     assert _is_magika_available(), (
-        "Magika CLI not on PATH: google-magika is a base dependency, so `uv sync` must provide it"
+        "Magika CLI not on PATH: magika is a base dependency, so `uv sync` must provide it"
     )
     probe = tmp_path / "probe.txt"
     probe.write_text(_PYTHON_SOURCE, encoding="utf-8")
@@ -80,6 +80,7 @@ def test_smoke_tool_imports_no_ingestion_store_or_embedding() -> None:
     tree = ast.parse(_SMOKE_TOOL.read_text(encoding="utf-8"))
 
     banned_roots = ("omrg.core.ingestion", "omrg.core.vectordb", "omrg.compose", "llama_index")
+    banned_symbols = {"build_codebase_map", "Engine"}
     imported: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -93,10 +94,32 @@ def test_smoke_tool_imports_no_ingestion_store_or_embedding() -> None:
         assert "ingest" not in module and "embed" not in module, (
             f"smoke tool imports banned module {module!r}"
         )
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            assert node.id not in banned_symbols, f"smoke tool references banned symbol {node.id!r}"
+        elif isinstance(node, ast.Attribute):
+            assert node.attr not in banned_symbols, (
+                f"smoke tool references banned symbol {node.attr!r}"
+            )
+        elif isinstance(node, ast.Call):
+            is_dynamic_import = (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "__import__"
+                or isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "importlib"
+                and node.func.attr == "import_module"
+            )
+            if is_dynamic_import and node.args and isinstance(node.args[0], ast.Constant):
+                module = node.args[0].value
+                if isinstance(module, str):
+                    assert not module.startswith(banned_roots), (
+                        f"smoke tool dynamically imports banned module {module!r}"
+                    )
 
 
-def test_smoke_tool_compares_labels_over_fixture_paths(tmp_path: Path) -> None:
-    """Running the tool over fixtures yields a label comparison and exit 0.
+def test_smoke_tool_reports_changed_label_for_mixed_fixture_paths(tmp_path: Path) -> None:
+    """A mixed fixture reports its changed label and fails the smoke gate.
 
     ``note.md`` is a common type: suffix map and Magika model must agree
     (a disagreement here is the taxonomy stop-gate firing).
@@ -118,7 +141,7 @@ def test_smoke_tool_compares_labels_over_fixture_paths(tmp_path: Path) -> None:
         timeout=120,
         cwd=_REPO_ROOT,
     )
-    assert proc.returncode == 0, f"smoke tool failed:\n{proc.stderr}"
+    assert proc.returncode != 0, "a changed label must fail the smoke gate"
 
     payload = json.loads(proc.stdout)
     files = {f["path"]: f for g in payload["groups"] for f in g["files"]}
