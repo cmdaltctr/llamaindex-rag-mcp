@@ -230,6 +230,7 @@ async def ingest_path_async(
     resolved_ocr_routing = ocr_routing_payload(resolved_settings)
     files_indexed = 0
     files_skipped_unchanged = 0
+    files_skipped_binary = 0
     chunks_created_total = 0
     chunks_removed_total = 0
     metadata_degraded_count = 0
@@ -250,6 +251,7 @@ async def ingest_path_async(
             content_type = content_type_map.get(rel_path)
 
             if content_type and content_type.startswith("binary"):
+                files_skipped_binary += 1
                 file_details.append(
                     make_file_detail(
                         file_name=file_path.name,
@@ -449,6 +451,7 @@ async def ingest_path_async(
     common = {
         "files_indexed": files_indexed,
         "files_skipped_unchanged": files_skipped_unchanged,
+        "files_skipped_binary": files_skipped_binary,
         "chunks_created": chunks_created_total,
         "chunks_removed": chunks_removed_total,
         "collection": collection_name,
@@ -458,7 +461,10 @@ async def ingest_path_async(
         "peak_rss_bytes": sample_peak_rss_bytes(),
     }
 
-    if files_indexed > 0 or files_skipped_unchanged > 0:
+    # A corpus of only binary files is a clean skip, not a failure: the
+    # detector classified every file as unreadable content, so no reader
+    # ran by design. Counting skips here keeps the overall status "ok".
+    if files_indexed > 0 or files_skipped_unchanged > 0 or files_skipped_binary > 0:
         result: dict = {"status": "ok", **common}
     else:
         result = {
