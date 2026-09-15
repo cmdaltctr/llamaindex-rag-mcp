@@ -17,3 +17,4 @@
 - [ ] 3.1 Run the new tests; confirm the regression test from 1.1 now passes.
 - [ ] 3.2 Run the fast suite (`uv run pytest -m "not slow"`) and `scripts/local_ci.sh` gates for the touched modules (ruff, import-linter, OpenSpec strict validation).
 - [ ] 3.3 Update `docs/guides/` only if any guide documents the Magika fallback path (grep for "Magika" and correct drift; none expected).
+- [ ] 3.4 Write the TDR (`s-tdr`, `docs/tdr/`): the mismatch (pipeline holds injected settings; `magika.py:_magika_binary` read the global), the silent extension-fallback behaviour, the blast radius (direct-Engine processes only; server unaffected), the index-identity staleness, and the fix evidence from 3.1. Cross-reference experiment 31's report and this change.
