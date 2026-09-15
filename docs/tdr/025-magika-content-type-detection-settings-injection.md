@@ -1,7 +1,7 @@
 # TDR-025: Content-type detection silently degraded to suffix routing in direct-Engine processes — settings now threaded through the detector
 
 **Date:** 2026-09-15
-**Status:** Accepted
+**Status:** Accepted (amended same day — verified consequence scope of detection below)
 **Deciders:** Aizat
 **Tags:** magika | ingestion | settings-injection | dependency-injection | codebase-map
 
@@ -98,6 +98,33 @@ ingestion path.
   reachable from an operation that already holds injected settings.
 - `detect_file_types` grows a new branch (a future detector) — thread
   `settings` into it at birth.
+
+### Amendment (2026-09-15): verified consequence scope of detection
+
+Two facts confirmed against source after the fix landed, sharpening what
+the silent degradation actually cost beyond label provenance:
+
+1. **Detection drives chunking dispatch, not just labels.** A
+   `code/<language>` content type routes through
+   `MAGIKA_LABEL_TO_TREESITTER` (`core/codebase/ast_extract.py:43-60`)
+   into the AST-aware CodeSplitter (`core/ingestion/chunker.py:57-79`);
+   a `binary/…` type skips the file before any reader runs
+   (`core/ingestion/pipeline.py:252-258`). The suffix map already labels
+   honest extensions (`.py` → `code/python`), so the degradation's real
+   cost was mislabelled files (code named `.txt` chunked as prose) and
+   junk files (binary renamed `.pdf` reaching the PDF reader as an
+   error instead of being skipped).
+2. **Skip semantics make label stability the deployment concern.** The
+   unchanged-skip keys on an identity built from the content hash,
+   settings, and the content-type label
+   (`core/ingestion/source_state.py:150-153`; skip branch at
+   `pipeline.py:327-330`). Identical labels mean identical identity —
+   re-ingest skips with zero cost. A label-string change (for example a
+   Magika taxonomy differing from the suffix map) rebuilds every
+   affected file. Whether google-magika emits the same `group/label`
+   strings as `_SUFFIX_MAP` is unverified until the package is
+   installed; the pin-magika-detection change includes a
+   detection-only label-equivalence smoke check for exactly this.
 
 ## References
 
