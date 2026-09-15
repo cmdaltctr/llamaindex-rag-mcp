@@ -14,6 +14,7 @@ import logging
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ...integrations.magika import _EXCLUDED_DIRS, FileEntry
 from ..settings import get_default_effective_settings
@@ -112,28 +113,29 @@ class FileInventory:
     mismatches: list[tuple[str, str, str]] = field(default_factory=list)
 
 
-def _is_magika_available() -> bool:
+def _is_magika_available(settings: Any | None = None) -> bool:
     """Check if the Magika CLI binary is on $PATH.
 
     Thin delegation to ``integrations.magika``, which owns the check. Resolve
     the attribute on the module rather than binding it at import so patches
     applied to the owning module take effect here — the previous arrangement
     inverted this and required ``integrations.magika`` to import *back* into
-    this module, creating the cycle removed in task 6.4.
+    this module, creating the cycle removed in task 6.4. *settings* injects
+    the binary name; ``None`` keeps the legacy global resolution.
     """
     from ...integrations import magika as _magika
 
-    return _magika._is_magika_available()
+    return _magika._is_magika_available(settings)
 
 
-def scan_with_magika(path: str) -> list[FileEntry]:
+def scan_with_magika(path: str, settings: Any | None = None) -> list[FileEntry]:
     """Scan a directory using the Magika CLI binary.
 
     Delegates to ``integrations.magika`` (extracted in Phase 5).
     """
     from ...integrations.magika import scan_with_magika as _scan
 
-    return _scan(path)
+    return _scan(path, settings)
 
 
 def _classify_suffix(suffix: str) -> tuple[str, str, bool]:
@@ -151,7 +153,7 @@ def _entry(path: str, suffix: str) -> FileEntry:
     return FileEntry(path=path, group=group, label=label, is_text=is_text, suffix=suffix)
 
 
-def scan_with_suffix(path: str) -> list[FileEntry]:
+def scan_with_suffix(path: str, settings: Any | None = None) -> list[FileEntry]:
     """Scan a directory — or a single file — using suffix mapping.
 
     Unknown extensions classify as ``("unknown", "unknown")``. A single
@@ -159,16 +161,19 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
     which is the key ``ingest_path_async`` looks up for direct file
     ingest. The directory walk cannot produce it: ``iterdir()`` on a
     file raises ``NotADirectoryError``, which the walk swallows.
+    *settings* injects the depth/count limits; ``None`` keeps the
+    legacy global resolution.
     """
     project_root = Path(path)
     entries: list[FileEntry] = []
+    effective = settings if settings is not None else get_default_effective_settings()
 
     if project_root.is_file():
         return [_entry(".", project_root.suffix.lower())]
 
     # Depth-limited traversal (replaces unbounded rglob).
     def _walk(directory: Path, current_depth: int) -> None:
-        if current_depth > get_default_effective_settings().codebase_map_max_depth:
+        if current_depth > effective.codebase_map_max_depth:
             return
         try:
             children = sorted(directory.iterdir())
@@ -191,12 +196,14 @@ def scan_with_suffix(path: str) -> list[FileEntry]:
     return entries
 
 
-def detect_file_types(path: str) -> FileInventory:
+def detect_file_types(path: str, settings: Any | None = None) -> FileInventory:
     """Detect file types in a project directory.
 
     Tries Magika CLI first, falls back to suffix-based detection if Magika
     is not installed. Detects mismatches between file extension and Magika's
-    content-type detection.
+    content-type detection. *settings* injects the binary name and the
+    depth/count limits (the ingestion pipeline passes its resolved
+    settings); ``None`` keeps the legacy global resolution.
 
     Args:
         path: Directory path to scan.
@@ -206,17 +213,18 @@ def detect_file_types(path: str) -> FileInventory:
         and mismatches.
     """
     inventory = FileInventory()
+    effective = settings if settings is not None else get_default_effective_settings()
 
-    if _is_magika_available():
+    if _is_magika_available(settings):
         try:
-            entries = scan_with_magika(path)
+            entries = scan_with_magika(path, settings)
             logger.debug("Magika detected %d files", len(entries))
         except (subprocess.CalledProcessError, FileNotFoundError) as exc:
             logger.warning("Magika scan failed (%s), falling back to suffix detection", exc)
-            entries = scan_with_suffix(path)
+            entries = scan_with_suffix(path, settings)
     else:
         logger.warning("Magika CLI not installed; using suffix-based detection")
-        entries = scan_with_suffix(path)
+        entries = scan_with_suffix(path, settings)
 
     # Build type counts and detect mismatches.
     for entry in entries:
@@ -233,62 +241,16 @@ def detect_file_types(path: str) -> FileInventory:
                 inventory.mismatches.append((entry.path, suffix_label, entry.label))
 
     # Enforce file count limit.
-    if len(entries) > get_default_effective_settings().codebase_map_max_files:
+    if len(entries) > effective.codebase_map_max_files:
         logger.warning(
             "File count %d exceeds CODEBASE_MAP_MAX_FILES=%d, truncating",
             len(entries),
-            get_default_effective_settings().codebase_map_max_files,
+            effective.codebase_map_max_files,
         )
-        entries = entries[: get_default_effective_settings().codebase_map_max_files]
+        entries = entries[: effective.codebase_map_max_files]
 
     inventory.entries = entries
     return inventory
-
-
-def format_inventory(inventory: FileInventory) -> str:
-    """Format a file inventory as compact text.
-
-    Produces a summary with type counts, glob patterns, binary warnings, and
-    mismatch warnings. Targeting ~200 tokens for this section.
-
-    Args:
-        inventory: The file inventory to format.
-
-    Returns:
-        Compact text representation of the inventory.
-    """
-    lines: list[str] = ["## File Types"]
-
-    # Sort by count descending.
-    sorted_types = sorted(inventory.type_counts.items(), key=lambda x: -x[1])
-    for type_key, count in sorted_types:
-        # Collect representative glob patterns for this type.
-        group, label = type_key.split("/", 1)
-        matching = [e for e in inventory.entries if e.group == group and e.label == label]
-        suffixes = sorted({e.suffix for e in matching if e.suffix})
-        glob_str = ", ".join(f"*{s}" for s in suffixes[:4])
-        lines.append(f"- {type_key}: {count} files ({glob_str})")
-
-    if inventory.binary_files:
-        lines.append("")
-        lines.append("### Binary files")
-        for f in inventory.binary_files[:10]:
-            # Find the label for this file.
-            entry = next((e for e in inventory.entries if e.path == f), None)
-            label = entry.label if entry else "unknown"
-            lines.append(f"- ⚠ BINARY: {f} ({label})")
-        if len(inventory.binary_files) > 10:
-            lines.append(f"- ... and {len(inventory.binary_files) - 10} more")
-
-    if inventory.mismatches:
-        lines.append("")
-        lines.append("### Type mismatches")
-        for path, _suffix_label, magika_label in inventory.mismatches[:10]:
-            lines.append(f"- ⚠ MISMATCH: {path} → detected as {magika_label}")
-        if len(inventory.mismatches) > 10:
-            lines.append(f"- ... and {len(inventory.mismatches) - 10} more")
-
-    return "\n".join(lines)
 
 
 # ── Graph assembly and map formatting (Section 5 tasks) ──────────────────
@@ -327,9 +289,8 @@ def build_codebase_map(path: str) -> CodebaseMap:
     Returns:
         A ``CodebaseMap`` with all components assembled.
     """
-    inventory = detect_file_types(path)
-
     effective = get_default_effective_settings()  # boundary resolves once; detectors take it
+    inventory = detect_file_types(path, settings=effective)
 
     code_files = [e for e in inventory.entries if e.group == "code" and e.is_text]
     code_communities: list[dict] = []
@@ -496,4 +457,4 @@ from .cache import (  # noqa: E402
     _load_cache,
     _save_cache,
 )
-from .format import format_codebase_map  # noqa: E402
+from .format import format_codebase_map, format_inventory  # noqa: E402,F401

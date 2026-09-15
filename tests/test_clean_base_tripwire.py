@@ -65,7 +65,11 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2897
+_BASE_EXECUTED = 2899
+# Re-baselined 2026-09-15 from 2897 (thread-settings-through-magika-detection):
+# the content-type detection fix adds 2 cases — the ingest-level regression
+# (injected settings, no process-global default, no extension-routing
+# fallback) and the _magika_binary unit pin.
 # Re-baselined 2026-09-13 from 2891 (tiered-reader-fallback-chain): the
 # liteparse-first fallback chain adds 6 cases — contradiction rescue,
 # unavailable/failed-tier hand-over, extraction-only settings, bare

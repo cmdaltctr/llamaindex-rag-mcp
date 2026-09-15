@@ -21,6 +21,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from ..core.settings import get_default_effective_settings
 
@@ -60,17 +61,30 @@ class FileEntry:
     suffix: str
 
 
-def _magika_binary() -> str:
-    """Return the configured Magika binary name."""
+def _magika_binary(settings: Any | None = None) -> str:
+    """Return the configured Magika binary name.
+
+    Args:
+        settings: Injected effective settings carrying ``magika_binary``.
+            ``None`` keeps the legacy process-global resolution for
+            entry points that resolve at their own boundary.
+
+    Raises:
+        RuntimeError: When *settings* is ``None`` and no process-global
+            default is installed (direct-Engine processes; the caller
+            should inject settings instead).
+    """
+    if settings is not None:
+        return settings.magika_binary
     return get_default_effective_settings().magika_binary
 
 
-def _is_magika_available() -> bool:
+def _is_magika_available(settings: Any | None = None) -> bool:
     """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(_magika_binary()) is not None
+    return shutil.which(_magika_binary(settings)) is not None
 
 
-def scan_with_magika(path: str) -> list:
+def scan_with_magika(path: str, settings: Any | None = None) -> list:
     """Scan a directory using the Magika CLI binary.
 
     Runs ``magika -r <path> --jsonl`` and parses each JSONL line to extract
@@ -78,6 +92,8 @@ def scan_with_magika(path: str) -> list:
 
     Args:
         path: Directory path to scan.
+        settings: Injected effective settings carrying ``magika_binary``;
+            ``None`` keeps the legacy process-global resolution.
 
     Returns:
         List of ``FileEntry`` objects for each detected file.
@@ -86,12 +102,12 @@ def scan_with_magika(path: str) -> list:
         FileNotFoundError: If the Magika binary is not on $PATH.
         subprocess.CalledProcessError: If the Magika process fails.
     """
-    if not _is_magika_available():
-        raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary()}")
+    if not _is_magika_available(settings):
+        raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary(settings)}")
 
     try:
         result = subprocess.run(  # noqa: S603
-            [_magika_binary(), "-r", path, "--jsonl"],
+            [_magika_binary(settings), "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
             check=True,

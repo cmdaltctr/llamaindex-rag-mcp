@@ -187,12 +187,16 @@ async def ingest_path_async(
     markdown_chunking = resolve_markdown_chunking(resolved_settings)
 
     # Type-aware ingestion: detect file types via Magika. Failure degrades to
-    # extension-based routing exactly as before.
+    # extension-based routing exactly as before. The operation's injected
+    # settings travel into the detector (settings-dependency-injection:
+    # content-type detection scenario) so direct-Engine processes — which
+    # install no process-global default — never lose detection to a
+    # settings lookup.
     from ..codebase.codebase_map import detect_file_types
 
     content_type_map: dict[str, str] = {}
     try:
-        inventory = detect_file_types(str(path_obj))
+        inventory = detect_file_types(str(path_obj), settings=resolved_settings)
         for entry in inventory.entries:
             content_type_map[entry.path] = f"{entry.group}/{entry.label}"
     except Exception as exc:
