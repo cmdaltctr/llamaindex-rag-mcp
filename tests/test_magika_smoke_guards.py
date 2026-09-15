@@ -285,15 +285,23 @@ def test_smoke_comparison_supports_multiple_explicit_file_paths(
 
     Direct-file scans key their single entry "." (the ingestion
     direct-file key). The tool re-keys it to the operator-supplied path
-    so one invocation over many explicit files stays distinct.
+    so one invocation over many explicit files stays distinct. The
+    scanner doubles are path-aware: a real direct-file scan returns
+    exactly one entry for the one file it was asked about.
     """
     tool = _load_smoke_tool()
     file_a = tmp_path / "note.md"
     file_b = tmp_path / "plain.txt"
     file_a.write_text("# note\n", encoding="utf-8")
     file_b.write_text("plain\n", encoding="utf-8")
-    matching = [".:document/markdown", ".:document/text"]
-    _patch_scanners(monkeypatch, tool, matching, matching)
+
+    def fake_scan(path: str, settings: object) -> list[FileEntry]:
+        if "note" in path:
+            return [FileEntry(".", "document", "markdown", True, ".md")]
+        return [FileEntry(".", "document", "text", True, ".txt")]
+
+    monkeypatch.setattr(tool, "scan_with_suffix", fake_scan)
+    monkeypatch.setattr(tool, "scan_with_magika", fake_scan)
 
     payload = tool.run_comparison([str(file_a), str(file_b)], object())
 
