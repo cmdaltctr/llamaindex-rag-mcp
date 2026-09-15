@@ -27,7 +27,26 @@ if _SRC.is_dir() and str(_SRC) not in sys.path:
 
 from omrg.core.codebase.codebase_map import scan_with_suffix  # noqa: E402
 from omrg.core.settings import EffectiveSettings  # noqa: E402
-from omrg.integrations.magika import scan_with_magika  # noqa: E402
+from omrg.integrations.magika import FileEntry, scan_with_magika  # noqa: E402
+
+
+def _rekey_direct_file(entry: Any, operator_path: str) -> Any:
+    """Re-key a direct-file scan entry (``"."``) to the operator path.
+
+    Direct-file scans key their single entry ``"."`` (the ingestion
+    direct-file contract). One invocation over several explicit files
+    must keep them distinct, so the tool relabels the key with the
+    path exactly as the operator supplied it.
+    """
+    if entry.path == ".":
+        return FileEntry(
+            path=operator_path,
+            group=entry.group,
+            label=entry.label,
+            is_text=entry.is_text,
+            suffix=entry.suffix,
+        )
+    return entry
 
 
 def _find_duplicates(paths: list[str]) -> set[str]:
@@ -45,7 +64,9 @@ def run_comparison(paths: list[str], settings: Any = None) -> dict[str, Any]:
     """Compare suffix and Magika labels over explicit operator paths.
 
     Args:
-        paths: Operator-supplied file or directory paths.
+        paths: Operator-supplied file or directory paths. Paths must
+            not overlap (a directory and a file inside it) because
+            their key formats cannot be reconciled without a walker.
         settings: Effective settings injected into both scanners.
 
     Returns:
@@ -67,8 +88,13 @@ def run_comparison(paths: list[str], settings: Any = None) -> dict[str, Any]:
     magika_entries: list = []
     for raw_path in paths:
         scan_path = str(raw_path)
-        suffix_entries.extend(scan_with_suffix(scan_path, settings))
-        magika_entries.extend(scan_with_magika(scan_path, settings))
+        suffix_scanned = scan_with_suffix(scan_path, settings)
+        magika_scanned = scan_with_magika(scan_path, settings)
+        if Path(scan_path).is_file():
+            suffix_scanned = [_rekey_direct_file(entry, scan_path) for entry in suffix_scanned]
+            magika_scanned = [_rekey_direct_file(entry, scan_path) for entry in magika_scanned]
+        suffix_entries.extend(suffix_scanned)
+        magika_entries.extend(magika_scanned)
 
     if not suffix_entries and not magika_entries:
         raise ValueError("Magika smoke input is empty: no files detected")

@@ -277,6 +277,32 @@ def test_smoke_comparison_matches_entries_by_path_not_scanner_order(
     assert tool.main(["--json", str(tmp_path)]) == 0
 
 
+def test_smoke_comparison_supports_multiple_explicit_file_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Task 3.2: two explicit files must not collide on the "." key.
+
+    Direct-file scans key their single entry "." (the ingestion
+    direct-file key). The tool re-keys it to the operator-supplied path
+    so one invocation over many explicit files stays distinct.
+    """
+    tool = _load_smoke_tool()
+    file_a = tmp_path / "note.md"
+    file_b = tmp_path / "plain.txt"
+    file_a.write_text("# note\n", encoding="utf-8")
+    file_b.write_text("plain\n", encoding="utf-8")
+    matching = [".:document/markdown", ".:document/text"]
+    _patch_scanners(monkeypatch, tool, matching, matching)
+
+    payload = tool.run_comparison([str(file_a), str(file_b)], object())
+
+    paths = sorted(record["path"] for group in payload["groups"] for record in group["files"])
+    assert paths == sorted([str(file_a), str(file_b)])
+    assert payload["total_files"] == 2
+    assert payload["would_change_count"] == 0
+
+
 def test_smoke_comparison_rejects_empty_input_and_detector_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
