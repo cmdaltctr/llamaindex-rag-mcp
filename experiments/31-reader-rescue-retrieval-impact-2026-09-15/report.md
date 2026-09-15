@@ -154,6 +154,14 @@ measured retrieval regression concentrated on Type B documents.
   and PDF chunk dispatch keys on the reader's declared `text_format`
   (markdown), not the Magika label. It has no bearing on the measured
   comparison; the defect itself warrants a separate fix.
+
+  **Update (2026-09-16):** `pin-magika-detection` and ADR-068 now use
+  the pinned Magika CLI in the base install. Validated parsing and
+  narrow alias normalisation make `document/markdown` and
+  `document/text` equal to the suffix labels used here. A future rerun
+  will route through content detection while keeping those labels
+  stable. The recorded Experiment 31 results remain valid as measured:
+  every cell used suffix-map labels end to end.
 - Retrieval used one frozen configuration (`documents` profile, local
   0.6B embeddings). A different embedding model or reranker setting
   could shift absolute numbers; the paired design keeps the B-vs-C

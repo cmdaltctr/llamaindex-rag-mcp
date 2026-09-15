@@ -121,10 +121,32 @@ the silent degradation actually cost beyond label provenance:
    `pipeline.py:327-330`). Identical labels mean identical identity —
    re-ingest skips with zero cost. A label-string change (for example a
    Magika taxonomy differing from the suffix map) rebuilds every
-   affected file. Whether google-magika emits the same `group/label`
-   strings as `_SUFFIX_MAP` is unverified until the package is
-   installed; the pin-magika-detection change includes a
-   detection-only label-equivalence smoke check for exactly this.
+   affected file.
+
+   **Superseded statement (2026-09-16):** “Whether google-magika emits
+   the same `group/label` strings as `_SUFFIX_MAP` is unverified until
+   the package is installed.” The official PyPI package is `magika`,
+   not `google-magika`. The nested `result.value.output` parser shape
+   and the accepted boundary normalisation are now verified below.
+
+### Update (2026-09-16): pinned Magika parser and gate
+
+`magika==1.0.3` is a packaged CLI base dependency. `MAGIKA_BINARY`
+remains the injected executable override. Missing binaries, non-zero
+exits, timeouts, and parser failures use the existing warned suffix
+fallback.
+
+The parser accepts only `result.status == "ok"` rows. It reads
+`result.value.output`, validates `group`, `label`, and `is_text`, and
+fails the complete scan for any invalid row. Normalisation remains
+narrow: `text/markdown` becomes `document/markdown`, `text/txt`
+becomes `document/text`, and only non-document, non-code, non-text
+`is_text=false` rows change group to `binary`.
+
+The frozen 16-file gate passed on 2026-09-16: 16/16 all-match and exit
+0. See `openspec/changes/pin-magika-detection/acceptance-corpus.md`
+and [ADR-068](../adr/068-pin-magika-content-detection.md). This TDR
+remains authoritative for settings injection and index identity.
 
 ## References
 
