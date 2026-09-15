@@ -1,0 +1,52 @@
+{
+  "experiment": "31-reader-rescue-retrieval-impact-2026-09-15",
+  "frozen_utc": "2026-09-15T19:00:37Z",
+  "files": {
+    "cells": {
+      "path": "cells.json",
+      "sha256": "191842a5fc686b63fc3c731971c7da8b0a468e791ba1622bb6088790992c4fad"
+    },
+    "matching_rule": {
+      "path": "matching.py",
+      "sha256": "1376144e9f526771478a8527a38414012a29c8d8cf05bb285994ca7f97d65ab2"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "721de6f7fea40fb3e2e6fb1a3b15bbc1230e88ee133e1e40ff02d1f286fb9355"
+    },
+    "qrels": {
+      "path": "queries/qrels.json",
+      "sha256": "8942385854dd56407955bd0772508f738eacfa1aba6353312ad403c9993b277b"
+    },
+    "corpus_manifest": {
+      "path": "corpus_manifest.json",
+      "sha256": "359f54bfdb8896241d03c1a808f0dcb0b0ff027d884227712c3ac1ef59aa3a4d"
+    }
+  },
+  "documents": {
+    "h01": "878eea13a353b24780ddf457c406473028c9103533729cbe26f3a706d46b0cfa",
+    "h02": "3d511ba813d2fa224f9eda5e30d502712142d6a5b4e84e1c5972391c5c594fa5",
+    "h03": "d302ec57e29bd04aa83c631bddd3cb3873d86c58ba2aeb0259a73822e716655d",
+    "h04": "ce8441a004a42a74dece008cff977965f87a22891d73813885d2c8990d6181aa",
+    "h05": "bff70e3c22b112f7ed4b1712af8f6e1db60b6bffb7848fdafdac4edcdb5ec2b3",
+    "h06": "25faf0665316737f941b001859640480bff83c529f565dc78c1e6a29e33975e3",
+    "h07": "1c350f0314bf10561a9c00966d26998fcd403da933f9bba9d8075ba84bd66a28",
+    "h08": "657a65bd7f58389098f233707b934247f1e5dfea29deb29e230d024d301837ab",
+    "d01": "15937a212278a97c9b29997af61dc69ee74c70d4fed2e4e3d0d6337ba57cffa1",
+    "d02": "3e26debea0ad8cd9b3b46f1e0056c18ada42158103d32e6fb0a7e9f5653aaf8c",
+    "d03": "a31f555d54bccbe33ec1099b0c4c0e8b1e042d1c11e4a02401aace3e9520f8c8",
+    "d04": "f33f4ae5eb0a2a9d3c89f85f32101b832c8cb7643a0c08333d035b91f30081cf",
+    "d05": "3f7d4fdeefa7e6ec28d160057cb196ef86b437692da2e4991c45040b909e7df2",
+    "d06": "9d49eb1f9d2de1fadd5ef18ab2fcbf4c4cf4dda90ed3cb636e58b4a1974b0940",
+    "d07": "3a73f4b5941a07b86a468268f1eaa39476455580d8134b779b9aec0361af6401",
+    "d08": "a028c7c76e0255e103e06f3255b844bd3612c891db6ab78dd409ab0b829dc795",
+    "d09": "21cc5ed797ca14a33eeec3ca71b1092abd78a48a11024af4c2c96cd8112d3fd7",
+    "d10": "e26c9ceedd97a31526f2073bad0cfc2e27de43c0778a29f4961cacae6386f3cb",
+    "d11": "1260496a4f23a3a0c08abb6049f9e068041e9609b2d58d1e76b30c961e9f5368",
+    "p01_ia_prince": "c40a128ae28777973a5f494a59baa4b01ea7286c9453c8ce4078495fb5102965",
+    "p02_ia_managing": "598df404b16a88f003884472b78a4761ebbeafabf01ec3b187f90ea03406d651",
+    "p03_winansi_sloman": "d6aae96685bfc7a6f44dcdbb324c6f1e5d25af3671d0a29041b5877b9625cfbc",
+    "c01_scanned_kerr": "8e5a79624bd105ec5f16e6ff9ee71206f57e25cab1f0db6d6e91a48a5cfde1eb",
+    "c02_healthy_graphrag": "730f1a9f38d16689900969a3eeeb1b31e45eda1dcc1f37a043afa90aff76c867"
+  }
+}

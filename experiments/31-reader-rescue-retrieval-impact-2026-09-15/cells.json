@@ -1,0 +1,116 @@
+{
+  "experiment": "31-reader-rescue-retrieval-impact-2026-09-15",
+  "frozen_utc": "2026-09-15T00:00:00Z",
+  "cells": [
+    {
+      "id": "inspector_only",
+      "label": "A",
+      "role": "sanity_check",
+      "reader_spec": "pdf-inspector extraction only; no rescue tier",
+      "reader_implementation": "script-local mirror (harness_readers.Exp31InspectorOnlyReader) mounted at runtime under the production registry name pdf_inspector (the Settings validator whitelists PDF_READER literals, so experiment names cannot travel through the environment)",
+      "registry_name": "pdf_inspector (runtime swap)",
+      "text_format": "markdown",
+      "expected_heldout_chunks": 0,
+      "measured": false
+    },
+    {
+      "id": "tiered_chain",
+      "label": "B",
+      "role": "candidate",
+      "reader_spec": "pdf-inspector -> liteparse (ocr_enabled=False) -> pypdf",
+      "reader_implementation": "production PdfInspectorReader unchanged (ADR-066 chain), registry name pdf_inspector",
+      "registry_name": "pdf_inspector",
+      "text_format": "markdown",
+      "measured": true
+    },
+    {
+      "id": "pypdf_guard",
+      "label": "C",
+      "role": "reference",
+      "reader_spec": "pdf-inspector -> pypdf (historical guard, commit 928f030)",
+      "reader_implementation": "script-local mirror (harness_readers.Exp31PypdfGuardReader) mounted at runtime under the production registry name pdf_inspector",
+      "registry_name": "pdf_inspector (runtime swap)",
+      "text_format": "markdown",
+      "measured": true
+    }
+  ],
+  "measured_comparison": ["tiered_chain", "pypdf_guard"],
+  "controlled_variables": {
+    "rag_profile": "documents",
+    "retrieval": {
+      "top_k": 10,
+      "rerank_enabled": true,
+      "hybrid_enabled": false,
+      "similarity_threshold": 0.0,
+      "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+      "rerank_backend": "onnx"
+    },
+    "chunking": {
+      "strategy_fallback": "markdown",
+      "chunk_size": 512,
+      "chunk_overlap": 100,
+      "markdown_chunk_size": 1024,
+      "markdown_heading_prepend": false,
+      "splitter_model": "Qwen/Qwen3-Embedding-4B",
+      "splitter_revision": "5cf2132abc99cad020ac570b19d031efec650f2b"
+    },
+    "embedding": {
+      "provider": "local",
+      "local_backend": "ollama",
+      "model": "qwen3-embedding:0.6b",
+      "base_url": "http://localhost:11434",
+      "embed_batch_size": 100,
+      "embed_concurrency": 4,
+      "norm_guard_enabled": true
+    },
+    "vector_store": {
+      "backend": "lancedb",
+      "uri": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/output/lancedb",
+      "collection_prefix": "exp31"
+    },
+    "metadata_extraction_mode": "disabled",
+    "ocr": {
+      "ocr_fallback_enabled": false,
+      "ocr_worker_command": "",
+      "liteparse_ocr_enabled": false,
+      "record_per_document": ["ocr_required", "ocr_used"]
+    },
+    "query_order": "frozen order of queries/qrels.json"
+  },
+  "matching_rule": {
+    "normalisation": [
+      "unicode NFKC",
+      "casefold",
+      "fold typographic quotes/apostrophes/dashes to ASCII",
+      "rejoin end-of-line hyphen splits and fold remaining intra-word hyphens (identically on span and target)",
+      "collapse whitespace runs to single spaces"
+    ],
+    "exact_stage": "normalised span is a substring of normalised target",
+    "fuzzy_stage": {
+      "applies_to": "spans with >= 8 word tokens",
+      "ngram_n": 8,
+      "threshold": 0.85,
+      "definition": "fraction of span word 8-grams present in target 8-gram set"
+    },
+    "short_spans": "exact stage only"
+  },
+  "metrics": {
+    "primary": [
+      "evidence_recoverability",
+      "evidence_recall@1",
+      "evidence_recall@3",
+      "evidence_recall@5",
+      "evidence_recall@10",
+      "mrr@10",
+      "no_hit_rate"
+    ],
+    "secondary": [
+      "extraction_latency_classify_seconds",
+      "extraction_latency_rescue_seconds_median3",
+      "chunk_count",
+      "embedding_tokens_if_exposed",
+      "index_size_bytes"
+    ],
+    "paired_bootstrap": "only when >= 20 measured queries"
+  }
+}

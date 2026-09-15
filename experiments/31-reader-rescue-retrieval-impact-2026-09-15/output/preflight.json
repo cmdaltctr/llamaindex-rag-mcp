@@ -1,0 +1,72 @@
+[
+  {
+    "check": "4.1a freeze intact",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.1b runtime manifests present",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.1c controlled variables identical; logical readers differ per cell",
+    "status": "PASS",
+    "detail": "readers={'A': 'inspector_only', 'B': 'pdf_inspector', 'C': 'pypdf_guard'}"
+  },
+  {
+    "check": "4.1d same measured document set in every cell",
+    "status": "PASS",
+    "detail": "A=19 B=19 C=19"
+  },
+  {
+    "check": "4.1e development documents excluded from indexes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.2a pathological docs: empty in A, rescued in B and C",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.2b healthy control extracts with no fallback tier",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.2c scanned control classified scanned in every cell",
+    "status": "PASS",
+    "detail": "['scanned', 'scanned', 'scanned']"
+  },
+  {
+    "check": "4.3 held-out PDFs produce zero chunks in Cell A",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.3b held-out PDFs extract zero characters in Cell A",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.4a no measured document used OCR (abort rule)",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.4b no measured document is OCR-routed in cells B or C",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.5a public artefacts carry no absolute paths",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "4.5b public rows carry no document text",
+    "status": "PASS",
+    "detail": ""
+  }
+]

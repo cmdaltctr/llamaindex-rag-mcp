@@ -1,0 +1,12 @@
+# Experiment 31 local artefacts — never commit private paths, extracted
+# document text, ground truth, or per-run raw results (house convention:
+# ground-truth and eval_results stay local; summaries are committed).
+output/.collection.private.json
+output/.extractions/
+output/.spanlab/
+output/eval_results.json
+output/eval_results_checkpoint.json
+output/lancedb/
+output/*.log
+queries/
+analysis.ipynb
