@@ -3563,7 +3563,7 @@ requires-dist = [
     { name = "llama-index-readers-file", specifier = ">=0.5.0" },
     { name = "llama-index-vector-stores-chroma", marker = "extra == 'chroma'", specifier = ">=0.5.0" },
     { name = "llama-index-vector-stores-lancedb", specifier = ">=0.5.0" },
-    { name = "magika", specifier = ">=1.0.3" },
+    { name = "magika", specifier = "==1.0.3" },
     { name = "mcp", extras = ["cli"], specifier = ">=2.0.0" },
     { name = "networkx", specifier = ">=3.2" },
     { name = "onnxruntime", specifier = ">=1.20.0" },
