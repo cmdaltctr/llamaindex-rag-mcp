@@ -1,40 +1,47 @@
-# Experiment 33: Full OMRG Document RAG Benchmark
+# Experiment 33: Local OMRG Profile Baselines
 
-> Status: DRAFT. Do not execute the measured benchmark until the open questions in `design.md` are resolved and approved.
+> Status: DRAFT. Run the two local baselines only after the subset identities, model identities, scoring rules, and local resource budget are frozen.
 
 ## Why
 
-OMRG has component-level evidence for OCR recovery, routing, token-aware chunking, query preparation, reader rescue, and retrieval choices. It does not yet have one full evaluation of the current document pipeline as a complete RAG system.
+OMRG needs one full evaluation of each main profile before larger cloud benchmarks or comparisons with other frameworks.
 
-The next major evidence step should establish a reproducible quality and cost baseline for current OMRG itself. Historical OMRG comparisons are out of scope. Framework comparisons against LlamaIndex, Haystack, or other systems can use this baseline later.
+The first baseline should stay small enough to run on the operator's Mac. The document and codebase runs should execute separately, not concurrently. This proves the evaluation harness, exposes bottlenecks, and establishes a reproducible local baseline before cloud deployment.
 
 ## What Changes
 
-- Draft Experiment 33 as a full current-system document RAG benchmark.
-- Exercise the current `documents` profile from raw PDF ingestion through retrieval, reranking, and grounded answering where the chosen benchmark supports answer scoring.
-- Freeze the final benchmark corpus, queries, qrels/gold answers, effective settings, model identities, and scoring rules before measured execution.
-- Measure retrieval quality as the primary diagnostic layer.
-- Measure parser evidence recovery, chunk coverage, OCR behaviour, ingestion cost, index size, and query latency.
-- Score answer correctness and grounding on an approved subset if the final protocol includes answer synthesis.
-- Keep external framework comparisons out of Experiment 33.
-- Do not change production defaults from this draft.
+- Split Experiment 33 into two sequential local baselines:
+  - **33A — Documents:** a small frozen FinanceBench subset through the current `documents` profile.
+  - **33B — Codebase:** a small frozen RepoProbe subset through the current `codebase` profile.
+- Run 33A and 33B one at a time on the Mac.
+- Keep retrieval metrics as the primary quality evidence.
+- Add lightweight experiment observability with structured per-stage JSONL traces.
+- Record reader/OCR path, chunking, embedding, retrieval, reranking, answer generation, latency, token use, errors, and degradation where applicable.
+- Add RAGAS as an optional evaluation-only layer for answer/context quality where the benchmark supports it.
+- Keep RAGAS and observability tooling out of the base OMRG runtime dependency path.
+- Stop local scale-up when the agreed Mac resource/runtime budget is exceeded. Larger runs move to a later cloud proposal.
+- Keep LlamaIndex, Haystack, and other framework comparisons out of Experiment 33.
+- Do not change production defaults from this experiment.
 
-## Candidate Benchmark Corpus
+## Local Benchmark Choice
 
-The current shortlist is intentionally not final:
+### 33A — Documents
 
-- MMLongBench-Doc-V2;
-- FinanceBench;
-- a reproducible QASPER PDF subset;
-- an OMRG pathology set covering known parser/OCR failure classes.
+Use a small frozen **FinanceBench** subset. The initial target is 30–50 questions across multiple source PDFs, with a mix of prose, numerical, and table-backed evidence.
 
-The final mix, licences, download procedure, sample size, and weighting remain open decisions.
+### 33B — Codebase
+
+Use a small frozen **RepoProbe** subset. The initial target is two pinned repositories with approximately 10–20 questions total. Exact repositories and question IDs must be frozen before measured execution.
+
+The subset sizes may be reduced during protocol freeze if the Mac resource budget requires it. They must not be changed after measured scoring starts.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `document-rag-evaluation`: defines the reproducibility and measurement contract for a full current OMRG document-RAG benchmark.
+- `document-rag-evaluation`: defines the local FinanceBench document-profile evaluation contract.
+- `codebase-rag-evaluation`: defines the local RepoProbe codebase-profile evaluation contract.
+- `evaluation-observability`: defines shared benchmark tracing, RAGAS isolation, and reproducibility requirements.
 
 ### Modified Capabilities
 
@@ -42,6 +49,7 @@ The final mix, licences, download procedure, sample size, and weighting remain o
 
 ## Impact
 
-- Draft-only experiment governance until the protocol is approved.
-- No production code, public API, or packaged default changes.
-- The resulting baseline can later support controlled comparisons with LlamaIndex, Haystack, or other frameworks.
+- Experiment/evaluation artefacts only.
+- No production API or packaged default changes.
+- Optional evaluation dependencies must remain outside the base install.
+- The local baselines become the reference point for the later cloud-scale benchmark and later framework comparisons.

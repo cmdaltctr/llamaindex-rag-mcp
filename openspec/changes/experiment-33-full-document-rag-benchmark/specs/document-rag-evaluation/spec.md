@@ -2,55 +2,46 @@
 
 ## ADDED Requirements
 
-### Requirement: Full document evaluation exercises the current pipeline
+### Requirement: Document baseline uses a frozen FinanceBench subset
 
-The primary benchmark SHALL exercise the current OMRG `documents` profile from raw source ingestion through retrieval and reranking, with grounded answering when the approved protocol includes answer scoring.
+Experiment 33A SHALL evaluate the current OMRG `documents` profile on a small frozen FinanceBench subset using the source PDFs.
 
-#### Scenario: A benchmark bypasses raw PDF ingestion
-- **WHEN** a candidate run starts from pre-extracted benchmark text instead of the approved source PDF
-- **THEN** it SHALL NOT count as the primary full-pipeline result
-- **AND** it MAY be reported only as a separate diagnostic run
+#### Scenario: A run starts from pre-extracted benchmark text
+- **WHEN** the run bypasses the approved source PDF
+- **THEN** it SHALL NOT count as the primary 33A result
+- **AND** it MAY be reported only as a diagnostic run
 
-### Requirement: Stage-level evidence is retained
+### Requirement: Document evaluation exercises the current production path
 
-The benchmark SHALL record enough stage-level evidence to distinguish parsing, chunking, retrieval, reranking, and answer-stage failures.
+The 33A run SHALL use the current document ingestion, reader/OCR routing, chunking, embedding, vector store, retrieval, reranking, and answer path defined by the frozen profile.
+
+#### Scenario: A benchmark-only setting changes the production path
+- **WHEN** a setting is changed only to improve measured benchmark scores
+- **THEN** the run SHALL be labelled exploratory
+- **AND** it SHALL NOT replace the frozen baseline
+
+### Requirement: Document failures are attributable by stage
+
+The harness SHALL distinguish source evidence recovery, chunk preservation, retrieval/reranking, and answer-stage failures.
 
 #### Scenario: Gold evidence is absent after parsing
 - **WHEN** source-grounded evidence is not present in the extracted representation
-- **THEN** the failure SHALL be attributed to evidence recovery before retrieval scoring is interpreted
-- **AND** the report SHALL NOT describe the miss as a pure embedding or ranking failure
+- **THEN** the failure SHALL be attributed before retrieval
+- **AND** the report SHALL NOT describe it as a pure ranking failure
 
-### Requirement: Benchmark identity is frozen before measured execution
+### Requirement: Document retrieval metrics remain primary
 
-The final protocol SHALL freeze corpus membership, file hashes, queries, qrels or gold answers, scoring code, effective settings, model identities, and repository/dependency provenance before measured execution.
+The primary 33A result SHALL report Evidence Recall@1/@3/@5/@10, MRR@10, no-hit rate, and nDCG@10 where the qrels support it.
 
-#### Scenario: A benchmark document changes after freeze
-- **WHEN** a source hash differs from the frozen manifest
-- **THEN** the measured run SHALL abort or create a distinct benchmark revision
+#### Scenario: RAGAS answer scores improve while retrieval degrades
+- **WHEN** secondary answer metrics improve but primary retrieval metrics worsen
+- **THEN** the report SHALL present both outcomes
+- **AND** it SHALL NOT hide the retrieval regression behind the secondary score
 
-### Requirement: Measured test data is not used for tuning
+### Requirement: FinanceBench subset identity is frozen
 
-Production settings SHALL NOT be tuned using measured test outcomes from the same benchmark revision.
+The measured subset SHALL freeze question IDs, source PDF identities, file hashes, query order, and scoring inputs before execution.
 
-#### Scenario: A retrieval setting is changed after inspecting test scores
-- **WHEN** a setting is changed because of measured test-set results
-- **THEN** the resulting run SHALL be labelled exploratory
-- **AND** a new held-out revision SHALL be required for confirmatory evidence
-
-### Requirement: External framework comparison is out of scope
-
-Experiment 33 SHALL establish a current OMRG baseline without claiming superiority over LlamaIndex, Haystack, LangChain, or historical OMRG.
-
-#### Scenario: Future comparison uses the Experiment 33 corpus
-- **WHEN** another framework is evaluated later
-- **THEN** that comparison SHALL be governed by a separate proposal
-- **AND** Experiment 33 SHALL remain the OMRG baseline record
-
-### Requirement: Draft status blocks measured execution
-
-The measured benchmark SHALL NOT run while the proposal is marked draft and its open protocol questions remain unresolved.
-
-#### Scenario: Corpus and scoring choices are still open
-- **WHEN** the benchmark corpus, model identity, or scoring rules are not frozen
-- **THEN** only exploratory harness work MAY proceed
-- **AND** no result SHALL be reported as the Experiment 33 baseline
+#### Scenario: The subset changes after scoring starts
+- **WHEN** a question or source PDF is added, removed, or replaced
+- **THEN** the run SHALL use a new benchmark revision

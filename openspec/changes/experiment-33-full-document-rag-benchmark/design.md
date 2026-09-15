@@ -1,92 +1,182 @@
-# Design: Experiment 33 Full OMRG Document RAG Benchmark
+# Design: Experiment 33 Local OMRG Profile Baselines
 
 ## Status
 
-DRAFT. The benchmark must not begin measured execution until the open questions are resolved and the protocol is frozen.
+DRAFT. Measured execution must not begin until both local subsets and the evaluation protocol are frozen.
 
 ## Context
 
-OMRG now has evidence for individual stages but no single benchmark that exercises the current document path as one system. Experiment 33 should become the reference baseline for current OMRG before external framework comparisons are attempted.
+OMRG has strong component-level evidence but needs a complete baseline for each primary profile. A large benchmark is premature while the evaluation harness, observability, answer scoring, and cloud deployment path are still being established.
+
+Experiment 33 therefore starts with two small local benchmarks that run sequentially on the operator's Mac.
 
 ## Goals
 
-- Evaluate the current OMRG document pipeline end to end on realistic PDFs.
-- Separate ingestion/parser failures from chunking, retrieval, reranking, and answer-stage failures.
-- Record quality, latency, and resource/cost signals in one reproducible run.
-- Produce a baseline suitable for later comparison with other RAG frameworks.
+- Evaluate the current `documents` profile end to end on a small real document benchmark.
+- Evaluate the current `codebase` profile end to end on a small repository-understanding benchmark.
+- Capture stage-level observability so failures can be attributed to the correct pipeline stage.
+- Add optional RAGAS evaluation without coupling RAGAS to production OMRG.
+- Establish a reproducible local baseline before cloud scale-up.
 
 ## Non-Goals
 
 - Do not compare against historical OMRG.
-- Do not compare against LlamaIndex, Haystack, or LangChain in Experiment 33.
-- Do not tune production defaults on the measured test set.
-- Do not change embedding models, rerankers, OCR thresholds, or chunking settings during held-out scoring.
+- Do not compare against LlamaIndex, Haystack, LangChain, or other frameworks.
+- Do not run a large benchmark locally.
+- Do not tune production defaults on the measured subsets.
+- Do not add RAGAS, OpenTelemetry, or other evaluation tooling to the base runtime dependency path.
 
-## Pipeline Under Test
+## Execution Order
 
-The primary arm should use the current `documents` profile and current production-capable configuration:
+Run the two baselines separately:
 
-`raw PDF -> PDF reader/routing -> reader rescue or OCR when required -> Markdown interface -> token-aware chunking -> embedding -> LanceDB -> retrieval -> reranker -> grounded answer`
+```text
+33A FinanceBench / documents
+        ↓ complete + report
+33B RepoProbe / codebase
+        ↓ complete + report
+cloud-scale benchmark later
+```
 
-The exact provider/model identities must be frozen in the final protocol and recorded in every runtime manifest.
+The two measured runs must not execute concurrently on the Mac.
 
-## Measurement Layers
+## 33A — Document Profile
 
-### Layer 1: source evidence recovery
+### Corpus
 
-Determine whether gold evidence is present in the reader/OCR output before chunking.
+Use a frozen FinanceBench subset. Initial target: 30–50 questions across multiple source PDFs. The subset should include prose, numerical, and table-backed evidence.
 
-### Layer 2: chunk preservation
+### Pipeline
 
-Determine whether recovered gold evidence survives chunking in retrievable chunks.
+```text
+raw PDF
+  -> PDF reader/routing
+  -> reader rescue or OCR when required
+  -> Markdown interface
+  -> token-aware chunking
+  -> embedding
+  -> LanceDB
+  -> documents-profile retrieval
+  -> reranker
+  -> grounded answer
+```
 
-### Layer 3: retrieval and reranking
+### Primary metrics
 
-Measure Evidence Recall@1, @3, @5, and @10, MRR@10, nDCG@10 where qrels support it, and no-hit rate.
+- Evidence Recall@1, @3, @5, and @10
+- MRR@10
+- nDCG@10 when the qrels support it
+- no-hit rate
 
-### Layer 4: grounded answer
+### Diagnostic metrics
 
-If included in the final protocol, score answer correctness and grounding/citation faithfulness on datasets with usable gold answers. The judge/model and scoring method remain open decisions.
+- source evidence recoverability after parsing/OCR
+- evidence preservation after chunking
+- ingestion time
+- OCR work and failures
+- chunk count
+- embedding tokens
+- index size
+- query latency
 
-### Layer 5: operational measurements
+## 33B — Codebase Profile
 
-Record ingestion wall time, OCR work, embedding request tokens, chunk count, index size, and query latency including p50/p95 where sample size supports it.
+### Corpus
 
-## Candidate Corpus
+Use a frozen RepoProbe subset. Initial target: two pinned repositories and approximately 10–20 questions total. Freeze repository commit SHAs and question IDs before measured execution.
 
-Current candidates:
+### Pipeline
 
-1. MMLongBench-Doc-V2 for long and visually complex PDFs.
-2. FinanceBench for reports, tables, and numerical evidence.
-3. A reproducible QASPER PDF subset for academic papers.
-4. An OMRG pathology set for scans, mixed PDFs, legacy font failures, and known extraction pathologies.
+```text
+pinned repository
+  -> current codebase ingestion/chunking
+  -> embedding/indexing
+  -> dense + BM25
+  -> RRF
+  -> codebase-profile results
+  -> grounded answer when included by protocol
+```
 
-This list is a draft. The final benchmark must define exact versions, source URLs, licences, file hashes, inclusion rules, and weighting before execution.
+The measured run must use the current `codebase` profile as shipped. It must not enable the document reranker merely to improve benchmark scores.
+
+### Primary metrics
+
+Use the benchmark's source-grounded repository evidence to measure retrieval success. Report Recall@K/MRR-style metrics when the released labels support them. Also report exact benchmark answer scoring where the benchmark provides an authoritative scorer.
+
+### Diagnostic metrics
+
+- indexing time
+- chunk count
+- embedding tokens
+- index size
+- dense/BM25/RRF contribution where observable
+- query latency
+- retrieval misses by repository/question class
+
+## Shared Observability
+
+The experiment harness should emit a structured JSONL trace for each query and major stage. Keep this outside the production protocol channel.
+
+Minimum trace fields:
+
+- benchmark revision and run ID
+- profile and dataset/query ID
+- repository/file identity without leaking private content
+- effective settings and model/provider identities
+- selected reader/OCR route where applicable
+- chunk counts
+- retrieved source/chunk IDs and scores
+- reranker input/output ranking where applicable
+- stage durations
+- embedding/request token counts where available
+- answer-stage model identity
+- error/degraded status
+
+This local schema should be simple enough to map to OpenTelemetry later when OMRG moves to cloud deployment. Experiment 33 does not require an OpenTelemetry dependency.
+
+## RAGAS
+
+RAGAS is a secondary evaluation layer, not the primary retrieval metric.
+
+Where the benchmark supports answer/reference evaluation, the harness may report selected RAGAS metrics such as context precision, context recall, faithfulness, and answer correctness. The exact RAGAS version, metric set, judge/provider, and model identity must be frozen before measured use.
+
+RAGAS must be installed only in an evaluation/dev environment or optional evaluation extra. It must not become a base OMRG dependency.
+
+If a RAGAS metric requires a paid cloud judge, the operator must approve the provider and budget before execution.
+
+## Local Resource Gate
+
+Before measured execution, record an agreed local envelope for:
+
+- maximum wall time per baseline;
+- maximum acceptable memory pressure;
+- maximum paid-provider spend, if any.
+
+If a smoke run shows that the frozen subset cannot complete inside that envelope, reduce the subset before freeze or stop and move the larger benchmark to a later cloud proposal. Do not silently change the subset after measured scoring starts.
 
 ## Validity Controls
 
-- Freeze corpus, queries, qrels/gold answers, scoring code, and query order before measured execution.
+- Freeze exact FinanceBench question IDs and source PDF hashes.
+- Freeze exact RepoProbe repository identities, commit SHAs, and question IDs.
 - Freeze effective OMRG settings and all model/provider identities.
+- Freeze scoring code and metric definitions.
 - Record repository SHA and dependency-lock hashes.
-- Record index-shaping identities separately from query-time identities.
-- Do not tune on the measured test partition.
-- Preserve failures and missing outputs; do not silently drop difficult documents or queries.
-- Publish enough non-sensitive artefact identity to reproduce the run.
+- Preserve failed documents, repositories, and queries in denominators.
+- Do not tune on measured outcomes.
+- Run 33A and 33B sequentially.
 
 ## Draft Open Questions
 
-1. Which corpus combination is the primary benchmark, and how are datasets weighted?
-2. Is QASPER included in the first run or deferred?
-3. What is the minimum pathology-set composition without overfitting to known failures?
-4. Which embedding provider/model is the reference configuration for the first baseline?
-5. Is grounded-answer scoring mandatory in Experiment 33 or a secondary subset?
-6. Which answer-quality metric or judge is acceptable if answer scoring is included?
-7. What practical success gates, if any, should be frozen before the first baseline?
-8. What runtime and paid-provider budget is acceptable?
-9. Should worker-less graceful degradation be a secondary operational arm or a separate experiment?
+1. Which exact FinanceBench questions and PDFs make up the 33A subset?
+2. Which two RepoProbe repositories and question IDs make up 33B?
+3. Which embedding provider/model is the local reference configuration?
+4. Is grounded-answer scoring mandatory for both profiles or secondary?
+5. Which RAGAS metrics and judge configuration are acceptable?
+6. What Mac wall-time/memory budget defines the local ceiling?
+7. At what scale should the follow-up move to cloud deployment?
 
 ## Decision Rule
 
-Experiment 33 establishes a baseline. It does not need to prove superiority over another system.
+Experiment 33 establishes two local OMRG baselines. It does not need to prove superiority over another framework.
 
-The final report should state where OMRG is strong, where evidence is lost, and which bottleneck deserves the next experiment. Any production change requires its own proposal and evidence path.
+The report should identify quality, failure stage, latency, and resource bottlenecks. Larger benchmark runs and external framework comparisons belong in later proposals.
