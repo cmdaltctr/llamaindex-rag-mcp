@@ -41,9 +41,9 @@ fix in `3dd89f7`. Do not blindly restore either ancestor or use dirty
 
 ## 4. Evidence, decision records, and guarded verification
 
-- [ ] 4.1 After gate pass, ask authorisation before fast-suite and `scripts/local_ci.sh` checks. Existing isolated fixtures and doubles may run. Operator corpora, re-ingest, external models, and production stores must not run. Run `openspec validate pin-magika-detection --strict`. Measure existing CI tripwire executed and skipped counts. Re-baseline measured counts only.
-- [ ] 4.2 After gate pass, load `s-adr` and create the success ADR. Cross-reference TDR-025. Record `magika`, retained executable override, narrow normalisation, failure behaviour, smoke evidence, fallback reality, short-source limits, and the verified ONNX-runtime and no-base-PyTorch rationale. Use elapsed detection from the smoke as the measured cost. Do not create a separate benchmark or claim isolated model-startup time.
-- [ ] 4.3 After gate pass, update TDR-025 and Experiment 31 limitations without rerunning experiments. Correct historical `google-magika` and taxonomy wording. Explain the packaged CLI base dependency, `MAGIKA_BINARY` override, and retained fallback. Record evidence and limitations.
+- [x] 4.1 After gate pass, ask authorisation before fast-suite and `scripts/local_ci.sh` checks. Existing isolated fixtures and doubles may run. Operator corpora, re-ingest, external models, and production stores must not run. Run `openspec validate pin-magika-detection --strict`. Measure existing CI tripwire executed and skipped counts. Re-baseline measured counts only.
+- [x] 4.2 After gate pass, load `s-adr` and create the success ADR. Cross-reference TDR-025. Record `magika`, retained executable override, narrow normalisation, failure behaviour, smoke evidence, fallback reality, short-source limits, and the verified ONNX-runtime and no-base-PyTorch rationale. Use elapsed detection from the smoke as the measured cost. Do not create a separate benchmark or claim isolated model-startup time.
+- [x] 4.3 After gate pass, update TDR-025 and Experiment 31 limitations without rerunning experiments. Correct historical `google-magika` and taxonomy wording. Explain the packaged CLI base dependency, `MAGIKA_BINARY` override, and retained fallback. Record evidence and limitations.
 - [x] 4.4 Confirm no collection, embedding, or store changed. Record this with gate evidence before acceptance.
 
 ## 5. Undo plan
