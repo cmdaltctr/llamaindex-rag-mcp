@@ -277,14 +277,25 @@ class TestMagikaParsing:
             json.dumps(
                 {
                     "path": str(tmp_path / "app.py"),
-                    "output": {"group": "code", "label": "python", "is_text": True},
+                    "result": {
+                        "status": "ok",
+                        "value": {"output": {"group": "code", "label": "python", "is_text": True}},
+                    },
                 }
             )
             + "\n"
             + json.dumps(
                 {
                     "path": str(tmp_path / "README.md"),
-                    "output": {"group": "document", "label": "markdown", "is_text": True},
+                    "result": {
+                        "status": "ok",
+                        "value": {
+                            # Raw 1.0.3 shape: markdown arrives in the
+                            # text group and the boundary normalises the
+                            # alias to document/markdown.
+                            "output": {"group": "text", "label": "markdown", "is_text": True}
+                        },
+                    },
                 }
             )
             + "\n"
@@ -312,7 +323,18 @@ class TestMagikaParsing:
             json.dumps(
                 {
                     "path": str(tmp_path / "app.bin"),
-                    "output": {"group": "executable", "label": "elf", "is_text": False},
+                    "result": {
+                        "status": "ok",
+                        "value": {
+                            # Non-readable group outside document/code/
+                            # text: the boundary normalises it to binary.
+                            "output": {
+                                "group": "executable",
+                                "label": "elf",
+                                "is_text": False,
+                            }
+                        },
+                    },
                 }
             )
             + "\n"

@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2899
+_BASE_EXECUTED = 2927
+# Re-baselined at pin-magika-detection (2026-09-16): the pinned detector
+# added 28 regressions (3 base-install/smoke subprocess, 13 parser and
+# boundary, 12 smoke-guard and comparison cases), measured 2923 executed
+# in this environment (historical ground truth absent: -4; cached Qwen
+# tokenizer present: -0). No skips were added or removed.
 # Re-baselined 2026-09-15 from 2897 (thread-settings-through-magika-detection):
 # the content-type detection fix adds 2 cases — the ingest-level regression
 # (injected settings, no process-global default, no extension-routing
