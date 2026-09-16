@@ -152,3 +152,47 @@ async def test_binary_transition_removes_previously_indexed_rows(
     assert second["files_skipped_binary"] == 1
     assert second["chunks_removed"] == first["chunks_created"]
     assert list(store.iter_documents("magika_binary_transition")) == []
+
+
+@pytest.mark.asyncio
+async def test_binary_transition_cleanup_failure_fails_the_file(
+    tmp_path: Path,
+    effective_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed stale-row removal must fail the file, not report a clean skip.
+
+    Covers the writer's error return path (`remove_source_rows_or_error`
+    false branch) and the pipeline's per-file failure reporting when the
+    binary skip cannot clean previously indexed rows.
+    """
+    from omrg.core.ingestion import writer
+
+    def _fail_removal(*args: object, **kwargs: object) -> dict:
+        return {
+            "status": "error",
+            "message": "injected removal failure",
+            "chunks_removed": 0,
+            "collection": "magika_binary_cleanup_failure",
+        }
+
+    monkeypatch.setattr(writer, "remove_document", _fail_removal)
+    source = tmp_path / "stuck.txt"
+    source.write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(range(64)))
+    callbacks: list[tuple] = []
+
+    result = await ingest_path_async(
+        str(source),
+        collection_name="magika_binary_cleanup_failure",
+        effective_settings=effective_settings(),
+        store=LanceVectorStore(uri=str(tmp_path / "lancedb")),
+        embed_model=_UnitNormMockEmbedding(embed_dim=8),
+        progress_callback=lambda *args: callbacks.append(args),
+    )
+
+    assert result["status"] == "error", result
+    assert result["files_skipped_binary"] == 0
+    detail = next(d for d in result["file_details"] if d["file"] == "stuck.txt")
+    assert detail["status"] == "failed"
+    assert "injected removal failure" in detail["error"]
+    assert callbacks, "the failure path must still report read progress"
