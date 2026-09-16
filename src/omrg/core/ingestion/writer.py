@@ -236,6 +236,27 @@ def remove_document(
     }
 
 
+def remove_source_rows_or_error(
+    file_path: str,
+    collection_name: str,
+    store: VectorStore,
+) -> tuple[bool, str, int]:
+    """Remove one source's rows for a binary skip, treating a missing collection as clean.
+
+    A source re-ingested after its bytes became binary must not keep its
+    previously indexed rows searchable behind an ``ok`` skip. This wraps
+    :func:`remove_document` so the caller gets a tri-part verdict instead
+    of branching on the error-dict shapes: ``cleaned`` false means the
+    removal genuinely failed and carries ``message``; true means the rows
+    are gone (``removed`` counts them; a missing collection is zero).
+    """
+    removal = remove_document(file_path, collection_name, store)
+    removed = removal.get("chunks_removed", 0) or 0
+    if removal.get("status") != "ok" and "does not exist" not in removal.get("message", ""):
+        return False, removal.get("message") or str(removal), removed
+    return True, "", removed
+
+
 def remove_by_metadata(
     metadata_filter: dict,
     collection_name: str = "documents",

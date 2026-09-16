@@ -68,10 +68,19 @@ def _assert_static_tool_safe(path: Path) -> None:
                 and node.func.value.id == "importlib"
                 and node.func.attr == "import_module"
             )
-            if dynamic_import and node.args and isinstance(node.args[0], ast.Constant):
-                module = node.args[0].value
-                if isinstance(module, str):
-                    assert_module_allowed(module)
+            if dynamic_import:
+                # Fail closed: a computed (non-literal) import target cannot
+                # be statically vetted, so reject it outright.
+                if (
+                    node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                ):
+                    assert_module_allowed(node.args[0].value)
+                else:
+                    raise AssertionError(
+                        "smoke tool uses a dynamic import whose target is not a static string"
+                    )
 
 
 def _payload_entries(paths: list[str]) -> list[FileEntry]:
@@ -118,6 +127,68 @@ def test_static_guard_rejects_dynamic_forbidden_import(tmp_path: Path) -> None:
     )
     with pytest.raises(AssertionError, match="banned module"):
         _assert_static_tool_safe(mutated)
+
+
+def test_static_guard_rejects_computed_dynamic_import(tmp_path: Path) -> None:
+    """A dynamic import with a non-literal target fails closed.
+
+    Guards that only inspect literal module arguments let a computed
+    forbidden import pass static inspection, so any dynamic import whose
+    target cannot be resolved statically must fail.
+    """
+    assert _SMOKE_TOOL.exists(), f"smoke tool missing: {_SMOKE_TOOL}"
+    mutated = tmp_path / "computed_import_smoke.py"
+    mutated.write_text(
+        _SMOKE_TOOL.read_text(encoding="utf-8")
+        + "\nimport importlib\nname = 'omrg.core.ingestion'\n"
+        "importlib.import_module(name)\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="not a static string"):
+        _assert_static_tool_safe(mutated)
+
+
+def test_duplicate_path_spellings_fail_before_scanning(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two spellings of one file must fail validation, not double-count.
+
+    ``file.py`` and ``./file.py`` re-key to distinct direct-file keys, so
+    the downstream path-set comparison cannot catch them; validation on
+    resolved paths must reject the input before any scanner runs.
+    """
+    tool = _load_smoke_tool()
+    monkeypatch.setattr(
+        tool,
+        "scan_with_suffix",
+        lambda path, settings: pytest.fail("scanner must not run for invalid input"),
+    )
+    monkeypatch.setattr(
+        tool,
+        "scan_with_magika",
+        lambda path, settings: pytest.fail("scanner must not run for invalid input"),
+    )
+    with pytest.raises(ValueError, match="overlap"):
+        tool.run_comparison(["file.py", "./file.py"])
+
+
+def test_file_inside_supplied_directory_fails(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A file nested in a supplied directory must fail validation upfront."""
+    tool = _load_smoke_tool()
+    monkeypatch.setattr(
+        tool,
+        "scan_with_suffix",
+        lambda path, settings: pytest.fail("scanner must not run for invalid input"),
+    )
+    monkeypatch.setattr(
+        tool,
+        "scan_with_magika",
+        lambda path, settings: pytest.fail("scanner must not run for invalid input"),
+    )
+    inner = tmp_path / "inner.py"
+    inner.write_text("x = 1\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="inside another supplied directory"):
+        tool.run_comparison([str(tmp_path), str(inner)])
 
 
 def _run_with_import_blocker(path: Path) -> subprocess.CompletedProcess[str]:

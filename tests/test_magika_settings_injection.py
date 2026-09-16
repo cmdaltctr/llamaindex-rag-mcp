@@ -108,3 +108,47 @@ def test_magika_binary_reads_injected_settings_not_the_global(
     monkeypatch.setattr(magika_module, "get_default_effective_settings", _raise)
     stub = types.SimpleNamespace(magika_binary="injected-magika-probe")
     assert magika_module._magika_binary(settings=stub) == "injected-magika-probe"
+
+
+@pytest.mark.asyncio
+async def test_binary_transition_removes_previously_indexed_rows(
+    tmp_path: Path,
+    effective_settings,
+) -> None:
+    """A source whose bytes turn binary must lose its old rows on re-ingest.
+
+    Regression for the PR review finding: the binary skip must not report
+    ``ok`` while leaving a previous text version searchable. The skip has
+    to remove the old rows through the writer's source identity and carry
+    the count in ``chunks_removed``.
+    """
+    store = LanceVectorStore(uri=str(tmp_path / "lancedb"))
+    source = tmp_path / "transition.txt"
+    source.write_text("text version sentinel " * 80, encoding="utf-8")
+    settings = effective_settings()
+
+    first = await ingest_path_async(
+        str(source),
+        collection_name="magika_binary_transition",
+        effective_settings=settings,
+        store=store,
+        embed_model=_UnitNormMockEmbedding(embed_dim=8),
+    )
+    assert first["status"] == "ok", first
+    assert first["chunks_created"] > 0
+
+    # Same path, now binary bytes behind the still-supported `.txt` gate.
+    source.write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 4)
+
+    second = await ingest_path_async(
+        str(source),
+        collection_name="magika_binary_transition",
+        effective_settings=settings,
+        store=store,
+        embed_model=_UnitNormMockEmbedding(embed_dim=8),
+    )
+
+    assert second["status"] == "ok", second
+    assert second["files_skipped_binary"] == 1
+    assert second["chunks_removed"] == first["chunks_created"]
+    assert list(store.iter_documents("magika_binary_transition")) == []

@@ -125,7 +125,7 @@
     {
       "source": "src/omrg/core/ingestion/pipeline.py",
       "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file01.pdf",
-      "sha256": "26e46d76ca898f9cf7e3ce27991b3ae3c86ef7f10b3557b2225763cb0f797e42",
+      "sha256": "b4a57dc3a23f41c7fcd499285647e6d96c1c8a0925c31245a228007ad2341741",
       "expected_magika_label": "code/python"
     },
     {

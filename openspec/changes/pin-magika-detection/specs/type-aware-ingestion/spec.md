@@ -63,6 +63,13 @@ suffix-or-reader-format rule.
 - **THEN** the integration boundary SHALL classify it under `binary/*`
 - **AND** it SHALL be skipped before any reader runs
 
+#### Scenario: A binary transition removes the previously indexed rows
+- **GIVEN** a source is indexed and searchable, and its bytes later change so Magika classifies it under `binary/*`
+- **WHEN** it is re-ingested into the same collection
+- **THEN** the rows of the previous version SHALL be removed through the writer's source identity
+- **AND** the skip SHALL report success with the removed count in `chunks_removed`
+- **AND** a removal failure SHALL report that file as failed instead of a successful skip
+
 #### Scenario: Readable documents remain readable
 - **GIVEN** a valid PDF or Office result with `group=document` and `is_text=false`
 - **WHEN** it passes through the integration boundary

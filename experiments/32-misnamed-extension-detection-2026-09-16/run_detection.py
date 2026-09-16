@@ -17,8 +17,13 @@ from pathlib import Path
 
 EXP = Path(__file__).resolve().parent
 REPO = EXP.parent.parent
-SMOKE = REPO / "scripts/magika_label_smoke.py"
 OUT = EXP / "output"
+
+
+def _relative(path: Path) -> str:
+    """Repo-relative POSIX spelling, so committed evidence carries no workstation paths."""
+    return path.resolve().relative_to(REPO).as_posix()
+
 
 # Baseline text uses the exact pin-gate files, passed explicitly so
 # the path set matches the gate record.
@@ -46,38 +51,59 @@ BASELINE_PDF_DIRS = [
 ]
 
 SETS: dict[str, list[str]] = {
-    "baseline_pdf": [str(p) for p in BASELINE_PDF_DIRS],
-    "baseline_text": [str(p) for p in BASELINE_TEXT_FILES],
-    "swap_pdf_names": [str(EXP / "output/work/swap_pdf_names")],
-    "swap_text_to_pdf": [str(EXP / "output/work/swap_text_to_pdf")],
+    "baseline_pdf": [_relative(p) for p in BASELINE_PDF_DIRS],
+    "baseline_text": [_relative(p) for p in BASELINE_TEXT_FILES],
+    "swap_pdf_names": [_relative(EXP / "output/work/swap_pdf_names")],
+    "swap_text_to_pdf": [_relative(EXP / "output/work/swap_text_to_pdf")],
 }
 
+SMOKE_REL = "scripts/magika_label_smoke.py"
+TIMEOUT_SECONDS = 300
+TIMEOUT_EXIT = 124
 
-def run_set(name: str, paths: list[str]) -> None:
+
+def run_set(name: str, rel_paths: list[str]) -> None:
     env = {**os.environ, "PATH": f"{REPO / '.venv/bin'}:{os.environ['PATH']}"}
     started = time.perf_counter()
-    proc = subprocess.run(  # noqa: S603 — fixed smoke-tool invocation
-        [sys.executable, str(SMOKE), "--json", *paths],
-        capture_output=True,
-        text=True,
-        timeout=300,
-        cwd=REPO,
-        env=env,
-    )
+    try:
+        proc = subprocess.run(  # noqa: S603 — fixed smoke-tool invocation
+            [sys.executable, str(REPO / SMOKE_REL), "--json", *rel_paths],
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_SECONDS,
+            cwd=REPO,
+            env=env,
+        )
+        stdout, stderr = proc.stdout, proc.stderr
+        exit_code = proc.returncode
+        timed_out = False
+    except subprocess.TimeoutExpired as exc:
+        # A timeout must still produce a result file so later sets run and
+        # the gate sees the failed set instead of a missing one.
+        stdout = exc.stdout or ""
+        stderr = exc.stderr or ""
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode(errors="replace")
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode(errors="replace")
+        stderr = f"{stderr}\nsmoke exceeded {TIMEOUT_SECONDS}s timeout".strip()
+        exit_code = TIMEOUT_EXIT
+        timed_out = True
     elapsed = round(time.perf_counter() - started, 3)
     result = {
         "set": name,
-        "command": [str(SMOKE), "--json", *paths],
-        "exit_code": proc.returncode,
+        "command": ["python", SMOKE_REL, "--json", *rel_paths],
+        "exit_code": exit_code,
+        "timed_out": timed_out,
         "elapsed_seconds": elapsed,
-        "payload": json.loads(proc.stdout) if proc.stdout.strip() else None,
-        "stderr": proc.stderr.strip(),
+        "payload": json.loads(stdout) if stdout.strip() else None,
+        "stderr": stderr.strip(),
     }
     target = OUT / f"{name}.json"
     tmp = target.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(result, indent=2), encoding="utf-8")
     tmp.replace(target)
-    print(f"{name}: exit={proc.returncode} elapsed={elapsed}s", flush=True)
+    print(f"{name}: exit={exit_code} elapsed={elapsed}s timeout={timed_out}", flush=True)
 
 
 def main() -> None:

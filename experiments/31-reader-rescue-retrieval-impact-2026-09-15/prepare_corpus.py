@@ -13,7 +13,7 @@ Experiment 30 pathological/control set, local Zotero storage) so no private
 path is ever embedded in a committed file (task 4.5).
 
 Usage:
-    uv run python prepare_corpus.py --development /abs/p1.pdf /abs/p2.pdf ...
+    uv run python prepare_corpus.py --development p01=/abs/p1.pdf p02=/abs/p2.pdf ...
 """
 
 from __future__ import annotations

@@ -251,15 +251,34 @@ async def ingest_path_async(
             content_type = content_type_map.get(rel_path)
 
             if content_type and content_type.startswith("binary"):
+                # A re-ingested source now classified binary must not keep old rows searchable.
+                from .writer import remove_source_rows_or_error
+
+                cleaned, message, removed_count = remove_source_rows_or_error(
+                    str(file_path), collection_name, resolved_store
+                )
+                if not cleaned:
+                    errors.append(f"{file_path.name}: binary-skip cleanup failed: {message}")
+                    failure_types.append("store_write")
+                    file_details.append(
+                        make_file_detail(file_name=file_path.name, status="failed", error=message)
+                    )
+                    logger.warning(
+                        "FAIL %s - binary-skip cleanup failed: %s", file_path.name, message
+                    )
+                    if progress_callback:
+                        progress_callback("read", index + 1, len(files_to_index))
+                    continue
+                chunks_removed_total += removed_count
                 files_skipped_binary += 1
                 file_details.append(
-                    make_file_detail(
-                        file_name=file_path.name,
-                        status="skipped",
-                        chunks=0,
-                    )
+                    make_file_detail(file_name=file_path.name, status="skipped", chunks=0)
                 )
-                logger.info("SKIP %s - binary file skipped", file_path.name)
+                logger.info(
+                    "SKIP %s - binary file skipped (removed %d stale chunk(s))",
+                    file_path.name,
+                    removed_count,
+                )
                 if progress_callback:
                     progress_callback("read", index + 1, len(files_to_index))
                 continue

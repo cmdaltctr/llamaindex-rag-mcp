@@ -74,6 +74,15 @@ def main() -> int:
     recorded = json.loads(FROZEN.read_text(encoding="utf-8"))
     current = _build()
     mismatches: list[str] = []
+    # Reject label-set drift in both directions: a FROZEN_FILES entry added
+    # after the freeze would otherwise pass without a recorded digest, and a
+    # removed entry is caught again below with a clearer message.
+    added = sorted(set(current["files"]) - set(recorded["files"]))
+    removed = sorted(set(recorded["files"]) - set(current["files"]))
+    if added:
+        mismatches.append(f"file labels added since freeze: {added}")
+    if removed:
+        mismatches.append(f"file labels removed since freeze: {removed}")
     for label, entry in recorded["files"].items():
         now = current["files"].get(label)
         if now is None or now["sha256"] != entry["sha256"]:

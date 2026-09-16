@@ -1,47 +1,49 @@
 {
   "set": "baseline_text",
   "command": [
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "python",
+    "scripts/magika_label_smoke.py",
     "--json",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/compose.py",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/core/ingestion/pipeline.py",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/integrations/magika.py",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/core/codebase/codebase_map.py",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/README.md",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/AGENTS.md",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/docs/guides/architecture.md",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/docs/guides/ingestion.md",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/20-citation-faithfulness-2026-09-02/corpus/source-01-aurora.txt",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/20-citation-faithfulness-2026-09-02/corpus/source-02-birch.txt",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/19-lancedb-lifecycle-qualification-2026-08-21/fixtures/corpus_replacement/bravo_harbour.txt"
+    "src/omrg/compose.py",
+    "src/omrg/core/ingestion/pipeline.py",
+    "src/omrg/integrations/magika.py",
+    "src/omrg/core/codebase/codebase_map.py",
+    "README.md",
+    "AGENTS.md",
+    "docs/guides/architecture.md",
+    "docs/guides/ingestion.md",
+    "experiments/20-citation-faithfulness-2026-09-02/corpus/source-01-aurora.txt",
+    "experiments/20-citation-faithfulness-2026-09-02/corpus/source-02-birch.txt",
+    "experiments/19-lancedb-lifecycle-qualification-2026-08-21/fixtures/corpus_replacement/bravo_harbour.txt"
   ],
   "exit_code": 0,
-  "elapsed_seconds": 0.877,
+  "timed_out": false,
+  "elapsed_seconds": 0.86,
   "payload": {
     "groups": [
       {
         "group": "code",
         "files": [
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/compose.py",
+            "path": "src/omrg/compose.py",
             "suffix_label": "code/python",
             "magika_label": "code/python",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/core/codebase/codebase_map.py",
+            "path": "src/omrg/core/codebase/codebase_map.py",
             "suffix_label": "code/python",
             "magika_label": "code/python",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/core/ingestion/pipeline.py",
+            "path": "src/omrg/core/ingestion/pipeline.py",
             "suffix_label": "code/python",
             "magika_label": "code/python",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/src/omrg/integrations/magika.py",
+            "path": "src/omrg/integrations/magika.py",
             "suffix_label": "code/python",
             "magika_label": "code/python",
             "would_change": false
@@ -52,43 +54,43 @@
         "group": "document",
         "files": [
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/AGENTS.md",
+            "path": "AGENTS.md",
             "suffix_label": "document/markdown",
             "magika_label": "document/markdown",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/README.md",
+            "path": "README.md",
             "suffix_label": "document/markdown",
             "magika_label": "document/markdown",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/docs/guides/architecture.md",
+            "path": "docs/guides/architecture.md",
             "suffix_label": "document/markdown",
             "magika_label": "document/markdown",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/docs/guides/ingestion.md",
+            "path": "docs/guides/ingestion.md",
             "suffix_label": "document/markdown",
             "magika_label": "document/markdown",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/19-lancedb-lifecycle-qualification-2026-08-21/fixtures/corpus_replacement/bravo_harbour.txt",
+            "path": "experiments/19-lancedb-lifecycle-qualification-2026-08-21/fixtures/corpus_replacement/bravo_harbour.txt",
             "suffix_label": "document/text",
             "magika_label": "document/text",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/20-citation-faithfulness-2026-09-02/corpus/source-01-aurora.txt",
+            "path": "experiments/20-citation-faithfulness-2026-09-02/corpus/source-01-aurora.txt",
             "suffix_label": "document/text",
             "magika_label": "document/text",
             "would_change": false
           },
           {
-            "path": "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/20-citation-faithfulness-2026-09-02/corpus/source-02-birch.txt",
+            "path": "experiments/20-citation-faithfulness-2026-09-02/corpus/source-02-birch.txt",
             "suffix_label": "document/text",
             "magika_label": "document/text",
             "would_change": false

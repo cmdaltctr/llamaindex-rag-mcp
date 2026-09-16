@@ -32,9 +32,9 @@
     }
   },
   "elapsed_seconds": {
-    "baseline_pdf": 0.439,
-    "baseline_text": 0.877,
-    "swap_pdf_names": 0.236,
-    "swap_text_to_pdf": 0.215
+    "baseline_pdf": 0.419,
+    "baseline_text": 0.86,
+    "swap_pdf_names": 0.28,
+    "swap_text_to_pdf": 0.243
   }
 }

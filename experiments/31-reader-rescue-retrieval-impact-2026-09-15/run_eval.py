@@ -137,6 +137,9 @@ def main() -> int:
     if any(
         current["files"].get(label, {}).get("sha256") != entry["sha256"]
         for label, entry in recorded["files"].items()
+    ) or any(
+        current["documents"].get(doc_id) != digest
+        for doc_id, digest in recorded["documents"].items()
     ):
         print("FROZEN INPUTS CHANGED — refusing to run", file=sys.stderr)
         return 1

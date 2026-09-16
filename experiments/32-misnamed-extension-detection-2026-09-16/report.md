@@ -39,10 +39,10 @@ no embedding, no store writes, originals untouched.
 
 | Set | n | Magika labels | Suffix-map labels | Exit | Elapsed |
 | --- | --- | --- | --- | --- | --- |
-| `baseline_pdf` | 19 | `document/pdf` x19 | same | 0 | 0.44 s |
-| `baseline_text` | 11 | `code/python` x4, `document/markdown` x4, `document/text` x3 | same | 0 | 0.88 s |
-| `swap_pdf_names` | 19 | `document/pdf` x19 | `code/python` x7, `document/markdown` x6, `document/text` x6 | 1 | 0.24 s |
-| `swap_text_to_pdf` | 11 | content labels unchanged | `document/pdf` x11 | 1 | 0.22 s |
+| `baseline_pdf` | 19 | `document/pdf` x19 | same | 0 | 0.42 s |
+| `baseline_text` | 11 | `code/python` x4, `document/markdown` x4, `document/text` x3 | same | 0 | 0.86 s |
+| `swap_pdf_names` | 19 | `document/pdf` x19 | `code/python` x7, `document/markdown` x6, `document/text` x6 | 1 | 0.28 s |
+| `swap_text_to_pdf` | 11 | content labels unchanged | `document/pdf` x11 | 1 | 0.24 s |
 
 Sample rows from `output/swap_*.json`:
 

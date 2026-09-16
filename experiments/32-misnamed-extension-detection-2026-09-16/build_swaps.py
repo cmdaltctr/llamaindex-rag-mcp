@@ -69,6 +69,14 @@ def populate(target: Path, source: Path, new_name: str, expected: str) -> dict:
 
 
 def main() -> None:
+    # Regenerate from scratch: leftover copies from an earlier list or
+    # naming scheme would otherwise sit outside swap_manifest.json and a
+    # later directory scan would count them.
+    for name in ("swap_pdf_names", "swap_text_to_pdf"):
+        target = WORK / name
+        if target.exists():
+            shutil.rmtree(target)
+
     records: dict[str, list[dict]] = {"swap_pdf_names": [], "swap_text_to_pdf": []}
 
     for index, source in enumerate(PDF_SOURCES):

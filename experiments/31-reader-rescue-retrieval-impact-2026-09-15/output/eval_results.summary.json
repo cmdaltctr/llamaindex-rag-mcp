@@ -353,6 +353,7 @@
     }
   ],
   "gates": {
+    "cells_complete": true,
     "cell_A_zero_by_construction": true,
     "candidate_rescues_evidence": true,
     "reference_rescues_evidence": true,

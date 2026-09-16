@@ -29,7 +29,7 @@ A rescue resets the `pages_needing_ocr` count to zero. Without a rescue, the fla
 
 Use `pdf-inspector` extraction only, through a script-local mirror. Do not invoke LiteParse or pypdf rescue when extraction is empty.
 
-Every measured PDF must produce zero chunks in this cell. Cell A verifies the harness and the trigger. It is not a measured comparison, because its retrieval score is zero by construction.
+Every held-out PDF must produce zero chunks in this cell. Cell A verifies the harness and the trigger. It is not a measured comparison, because its retrieval score is zero by construction. Healthy distractors keep their chunks in this cell; only the silent-empty held-out set must stay empty.
 
 ### Cell B: candidate
 

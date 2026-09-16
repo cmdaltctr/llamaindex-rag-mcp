@@ -1,12 +1,14 @@
 {
   "set": "swap_text_to_pdf",
   "command": [
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "python",
+    "scripts/magika_label_smoke.py",
     "--json",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf"
+    "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf"
   ],
   "exit_code": 1,
-  "elapsed_seconds": 0.215,
+  "timed_out": false,
+  "elapsed_seconds": 0.243,
   "payload": {
     "groups": [
       {

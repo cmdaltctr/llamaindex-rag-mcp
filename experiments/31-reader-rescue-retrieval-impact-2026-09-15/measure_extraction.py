@@ -84,11 +84,19 @@ def _measure(reader_cls: object, path: Path, repeats: int = 3) -> dict:
     return {"docs": first, "seconds_median": statistics.median(times)}
 
 
+def _positive_int(value: str) -> int:
+    """Argparse type: reject --repeats below 1 (median of an empty list raises)."""
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be 1 or greater")
+    return number
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cell", choices=sorted(CELL_READERS), action="append")
     parser.add_argument("--splits", default="heldout,distractor,development")
-    parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--repeats", type=_positive_int, default=3)
     args = parser.parse_args()
     cells = args.cell or sorted(CELL_READERS)
     splits = set(args.splits.split(","))

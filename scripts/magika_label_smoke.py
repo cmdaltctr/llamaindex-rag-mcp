@@ -60,6 +60,29 @@ def _find_duplicates(paths: list[str]) -> set[str]:
     return duplicated
 
 
+def _validate_operator_paths(paths: list[str]) -> None:
+    """Reject duplicate and overlapping operator paths before any scan.
+
+    Two spellings of one file (``file.py`` and ``./file.py``) re-key to
+    distinct direct-file keys, and a file inside a supplied directory is
+    scanned twice, so both would corrupt the totals while the two scanner
+    path sets still agree — the downstream duplicate check cannot catch
+    them. Resolution happens here; the raw spelling stays for display.
+    """
+    resolved: list[tuple[str, Path]] = [(raw, Path(raw).resolve()) for raw in paths]
+    seen: dict[Path, str] = {}
+    for raw, path in resolved:
+        if path in seen:
+            raise ValueError(
+                f"Magika smoke paths overlap: {seen[path]!r} and {raw!r} both resolve to {path}"
+            )
+        seen[path] = raw
+    directories = [path for path in seen if path.is_dir()]
+    for raw, path in resolved:
+        if path.is_file() and any(path == d or d in path.parents for d in directories):
+            raise ValueError(f"Magika smoke path {raw!r} lies inside another supplied directory")
+
+
 def run_comparison(paths: list[str], settings: Any = None) -> dict[str, Any]:
     """Compare suffix and Magika labels over explicit operator paths.
 
@@ -83,6 +106,10 @@ def run_comparison(paths: list[str], settings: Any = None) -> dict[str, Any]:
     """
     if not paths:
         raise ValueError("Magika smoke input is empty: no operator paths given")
+
+    # Overlap and duplicate-spelling rejection happens before any scan so
+    # the totals can never double-count one physical file.
+    _validate_operator_paths(paths)
 
     suffix_entries: list = []
     magika_entries: list = []

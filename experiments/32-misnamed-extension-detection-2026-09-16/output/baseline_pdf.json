@@ -1,13 +1,15 @@
 {
   "set": "baseline_pdf",
   "command": [
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "python",
+    "scripts/magika_label_smoke.py",
     "--json",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout",
-    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors"
+    "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout",
+    "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors"
   ],
   "exit_code": 0,
-  "elapsed_seconds": 0.439,
+  "timed_out": false,
+  "elapsed_seconds": 0.419,
   "payload": {
     "groups": [
       {

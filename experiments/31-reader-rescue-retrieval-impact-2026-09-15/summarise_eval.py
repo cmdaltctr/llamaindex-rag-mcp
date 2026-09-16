@@ -190,7 +190,16 @@ def main() -> int:
     )
 
     b, c, a = cells["B"], cells["C"], cells["A"]
+    # Completeness prerequisite (CodeRabbit exp-31 review): a cell whose
+    # queries all errored would score None metrics, and `or 0` would let the
+    # zero-by-construction and rescue gates pass vacuously. Every measured
+    # cell must have the full 24 poppler-labelled queries with zero errors.
+    expected_queries = 24
     gates = {
+        "cells_complete": all(
+            cells[cell]["queries"] == expected_queries and cells[cell]["errors"] == 0
+            for cell in ("A", "B", "C")
+        ),
         "cell_A_zero_by_construction": (a.get("evidence_recall@10") or 0) == 0
         and (a.get("evidence_recoverability") or 0) == 0,
         "candidate_rescues_evidence": b["evidence_recoverability"] is not None

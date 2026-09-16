@@ -110,11 +110,20 @@ def test_smoke_tool_imports_no_ingestion_store_or_embedding() -> None:
                 and node.func.value.id == "importlib"
                 and node.func.attr == "import_module"
             )
-            if is_dynamic_import and node.args and isinstance(node.args[0], ast.Constant):
-                module = node.args[0].value
-                if isinstance(module, str):
-                    assert not module.startswith(banned_roots), (
-                        f"smoke tool dynamically imports banned module {module!r}"
+            if is_dynamic_import:
+                # Fail closed: a computed (non-literal) import target cannot
+                # be statically vetted, so reject it outright.
+                if (
+                    node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                ):
+                    assert not node.args[0].value.startswith(banned_roots), (
+                        f"smoke tool dynamically imports banned module {node.args[0].value!r}"
+                    )
+                else:
+                    raise AssertionError(
+                        "smoke tool uses a dynamic import whose target is not a static string"
                     )
 
 
