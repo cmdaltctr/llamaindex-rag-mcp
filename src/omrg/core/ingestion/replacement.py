@@ -36,6 +36,11 @@ from .source_state import (
 
 logger = logging.getLogger(__name__)
 
+# LanceDB rejects a filter whose ``$in`` list exceeds 100 entries, so a
+# stale cleanup with more IDs than this must issue multiple delete calls,
+# each within the cap. Shorter lists are safe on every backend.
+STALE_DELETE_ID_BATCH_LIMIT = 100
+
 
 @dataclass(frozen=True)
 class WriteTimings:
@@ -320,7 +325,13 @@ async def replace_source_nodes_async(
                     source_attempt=source_attempt,
                 )
                 if stale_ids:
-                    resolved_store.delete_ids(collection_name, stale_ids)
+                    # One call per slice: stores cap the IDs a single delete
+                    # accepts (LanceDB: 100 per ``$in`` list).
+                    for start in range(0, len(stale_ids), STALE_DELETE_ID_BATCH_LIMIT):
+                        resolved_store.delete_ids(
+                            collection_name,
+                            stale_ids[start : start + STALE_DELETE_ID_BATCH_LIMIT],
+                        )
             except Exception as exc:
                 raise IngestionStageError(
                     "stale_cleanup",
