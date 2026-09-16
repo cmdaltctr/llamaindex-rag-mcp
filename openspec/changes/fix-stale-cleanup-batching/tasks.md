@@ -17,4 +17,4 @@
 
 ## 4. Close-out
 
-- [ ] 4.1 Commit the tests and fix with a Conventional Commit message on the current feature line.
+- [x] 4.1 Commit the tests and fix with a Conventional Commit message on the current feature line. (`ba338b0`)
