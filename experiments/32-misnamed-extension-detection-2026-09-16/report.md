@@ -1,57 +1,96 @@
-# Experiment 32: Does Magika spot the real file type when the name lies?
+# Experiment 32: Content detection when file extensions lie
 
-**ID:** 32-misnamed-extension-detection-2026-09-16
-**Date:** 16 September 2026
-**Status:** PASS, all 5 checks passed
-**Feeds proof into:** ADR-068, the decision record that says why we use Magika
+**ID:** `32-misnamed-extension-detection-2026-09-16`
+**Date:** 2026-09-16
+**Status:** PASS (gates G1 to G5)
+**Evidence for:** ADR-068 — Magika content-type detection (`magika==1.0.3`, CLI transport)
 
-## The question
+## Question
 
-When you add a file, the system must work out its type: PDF, program code, Markdown, or plain text. A wrong guess sends the file to the wrong reader, and the stored text comes out broken.
+Ingestion routes every file by `content_type` before any reader runs. Production
+gets that label from Magika 1.0.3, run as a CLI subprocess, with the JSONL
+output (`result.value.output.group/label`) parsed and normalised at the
+boundary. The alternative is suffix routing: trust the file extension. The two
+disagree exactly when a file name lies about its bytes, and then suffix routing
+misroutes. A PDF named `notes.py` lands in the AST code splitter and produces
+garbage chunks; a Python file named `report.pdf` lands in a PDF reader and
+produces nothing.
 
-The system uses a tool called Magika to name the type. Magika reads the file's contents, not its name. Most systems guess from the file ending, like `.pdf` or `.py`. This experiment asked one thing: does Magika still get the type right when the file name lies?
+This experiment tested whether the pinned detector keeps the correct
+`content_type` label on every file when the extension contradicts the bytes.
 
-## What I did
+## Method
 
-1. Took 19 real PDFs from experiment 31. Eight are damaged files that show no readable words; the other eleven are healthy.
-2. Took 11 text files from this project: Python code, Markdown notes, plain notes.
-3. Copied every file. The originals were never touched.
-4. Renamed the PDF copies to `.py`, `.md`, or `.txt`.
-5. Renamed the text copies to `.pdf`.
-6. Asked Magika to name each copy's type.
+Corpus, drawn from frozen earlier work:
 
-Nothing was added to any document store. No search ran. This was a naming test only.
+- 19 PDFs from experiment 31: 8 silent-empty documents (6 IA GlyphLessFont
+  scans, 2 ACL WinAnsi without `/ToUnicode` maps) plus 11 healthy distractors.
+- 11 text and code files from the pin-gate acceptance corpus: 4 Python
+  (`.py`), 4 Markdown (`.md`), 3 plain text (`.txt`).
 
-## The result
+Procedure: `build_swaps.py` made byte-identical copies (sha256 per file in
+`output/swap_manifest.json`). PDF copies received a rotating lying extension
+(`.py`, `.md`, `.txt`, index modulo 3). Text copies were renamed `.pdf`.
+Detection ran through `scripts/magika_label_smoke.py`, the same detection
+surface production calls (`detect_file_types`). Detection only: no ingestion,
+no embedding, no store writes, originals untouched.
 
-| Set | Files | Outcome |
-| --- | ----- | ------- |
-| PDFs with honest names | 19 | All 19 named correctly |
-| Text files with honest names | 11 | All 11 named correctly |
-| PDFs renamed to look like code or notes | 19 | All 19 still named PDF, which is correct |
-| Text files renamed to look like PDFs | 11 | All 11 still named by their real type, which is correct |
+## Results
 
-The raw output shows exit code 1 for the two renamed sets. That is not a crash. It is the mismatch flag: the name-based guess and Magika's answer differ. Here that is the wanted result. It proves Magika read the contents and ignored the lying name.
+| Set | n | Magika labels | Suffix-map labels | Exit | Elapsed |
+| --- | --- | --- | --- | --- | --- |
+| `baseline_pdf` | 19 | `document/pdf` x19 | same | 0 | 0.44 s |
+| `baseline_text` | 11 | `code/python` x4, `document/markdown` x4, `document/text` x3 | same | 0 | 0.88 s |
+| `swap_pdf_names` | 19 | `document/pdf` x19 | `code/python` x7, `document/markdown` x6, `document/text` x6 | 1 | 0.24 s |
+| `swap_text_to_pdf` | 11 | content labels unchanged | `document/pdf` x11 | 1 | 0.22 s |
 
-Each check took under one second. No crash, no timeout, no fallback to name guessing.
+Sample rows from `output/swap_*.json`:
 
-## Why this matters
+```
+doc00.py   suffix_label=code/python       magika_label=document/pdf
+doc01.md   suffix_label=document/markdown magika_label=document/pdf
+file00.pdf suffix_label=document/pdf      magika_label=code/python
+```
 
-A name-based system would send a PDF named `notes.py` to the code reader. The wrong reader produces broken stored text. Magika stops that before it starts, because the file goes to the right reader based on what is inside it.
+Exit 1 on the swap sets is the smoke tool's mismatch flag: it fires when the
+suffix map and Magika disagree (`would_change` on every swapped file). Here
+every mismatch is the suffix map being wrong, never the detector.
 
-The damaged PDFs matter most. The part of a PDF that holds readable words is broken in them, but the outer container is a normal PDF. Magika named them correctly anyway. So even damaged files reach the PDF readers.
+Gate outcomes (`output/summary.json`): G1 `baseline_pdf_all_match` PASS;
+G2 `baseline_text_all_match` PASS; G3 `renamed_pdfs_stay_document_pdf` PASS;
+G4 `renamed_text_keeps_content_label` PASS; G5 `no_detector_failure` PASS
+(zero fallbacks, zero timeouts, zero detector errors).
 
-## Honest limits
+## Interpretation
 
-1. This tested naming only. No files were stored and no search ran.
-2. Very short files can fool the detector. We knew this already; ADR-068 records it.
-3. The files came from this project's earlier work. Other kinds, like images or zip files, were not tested.
+Detection is extension-independent at this corpus scale: 30 of 30 misnamed
+copies kept content-correct labels while the suffix map was wrong on all 30.
 
-## Where the proof lives
+The 8 silent-empty PDFs kept `document/pdf` under lying names. Their text
+layer is unreadable, but the container structure is valid PDF, and the
+detector reads container signatures. So routing to the PDF reader chain
+survives even for damaged files; what those readers then do with the broken
+text layer is experiment 31's subject, not this one.
 
-- `protocol.md`: the plan and expected answers, written before the run
-- `build_swaps.py`: makes the renamed copies
-- `run_detection.py`: runs the naming checks
-- `summarise_eval.py`: judges pass or fail
-- `analysis.py`: prints the result tables
-- `output/`: raw results for every file
+Downstream, the label is what ingestion dispatches on: `group == "code"`
+routes to tree-sitter AST splitting, document groups route to the backend
+chain. With content detection pinned, a lying extension cannot steer a file
+into the wrong reader.
+
+## Limits
+
+1. Detection only. This proves the label, not chunk quality; routing
+   correctness follows from the label contract already covered by ingestion
+   tests.
+2. Known weakness carried from the pin gate: very short files can lose a
+   `code/*` label. ADR-068 records this.
+3. Corpus bound: 19 PDFs and 11 repository text files. Images, archives, and
+   office formats were not exercised.
+
+## Artefacts
+
+- `protocol.md` — hypothesis, corpus, and gates, written before the run
+- `build_swaps.py`, `output/swap_manifest.json` — sha256-checked renamed copies
+- `run_detection.py`, `output/<set>.json` — per-set payloads, exits, timings
+- `summarise_eval.py`, `output/summary.json` — gate evaluation
+- `analysis.py` — pandas label tables (Jupytext percent format)
