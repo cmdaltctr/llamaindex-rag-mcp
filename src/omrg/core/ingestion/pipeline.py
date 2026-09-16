@@ -35,6 +35,7 @@ from .source_state import (
     canonical_source_path,
     is_complete_current_version,
 )
+from .writer import remove_source_rows_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -187,12 +188,16 @@ async def ingest_path_async(
     markdown_chunking = resolve_markdown_chunking(resolved_settings)
 
     # Type-aware ingestion: detect file types via Magika. Failure degrades to
-    # extension-based routing exactly as before.
+    # extension-based routing exactly as before. The operation's injected
+    # settings travel into the detector (settings-dependency-injection:
+    # content-type detection scenario) so direct-Engine processes — which
+    # install no process-global default — never lose detection to a
+    # settings lookup.
     from ..codebase.codebase_map import detect_file_types
 
     content_type_map: dict[str, str] = {}
     try:
-        inventory = detect_file_types(str(path_obj))
+        inventory = detect_file_types(str(path_obj), settings=resolved_settings)
         for entry in inventory.entries:
             content_type_map[entry.path] = f"{entry.group}/{entry.label}"
     except Exception as exc:
@@ -226,6 +231,7 @@ async def ingest_path_async(
     resolved_ocr_routing = ocr_routing_payload(resolved_settings)
     files_indexed = 0
     files_skipped_unchanged = 0
+    files_skipped_binary = 0
     chunks_created_total = 0
     chunks_removed_total = 0
     metadata_degraded_count = 0
@@ -246,14 +252,32 @@ async def ingest_path_async(
             content_type = content_type_map.get(rel_path)
 
             if content_type and content_type.startswith("binary"):
-                file_details.append(
-                    make_file_detail(
-                        file_name=file_path.name,
-                        status="skipped",
-                        chunks=0,
-                    )
+                # A re-ingested source now classified binary must not keep old rows searchable.
+                cleaned, message, removed_count = remove_source_rows_or_error(
+                    str(file_path), collection_name, resolved_store
                 )
-                logger.info("SKIP %s - binary file skipped", file_path.name)
+                if not cleaned:
+                    errors.append(f"{file_path.name}: binary-skip cleanup failed: {message}")
+                    failure_types.append("store_write")
+                    file_details.append(
+                        make_file_detail(
+                            file_name=file_path.name, status="failed", chunks=0, error=message
+                        )
+                    )
+                    logger.warning("FAIL %s - binary cleanup failed: %s", file_path.name, message)
+                    if progress_callback:
+                        progress_callback("read", index + 1, len(files_to_index))
+                    continue
+                chunks_removed_total += removed_count
+                files_skipped_binary += 1
+                file_details.append(
+                    make_file_detail(file_name=file_path.name, status="skipped", chunks=0)
+                )
+                logger.info(
+                    "SKIP %s - binary file skipped (removed %d stale chunk(s))",
+                    file_path.name,
+                    removed_count,
+                )
                 if progress_callback:
                     progress_callback("read", index + 1, len(files_to_index))
                 continue
@@ -445,6 +469,7 @@ async def ingest_path_async(
     common = {
         "files_indexed": files_indexed,
         "files_skipped_unchanged": files_skipped_unchanged,
+        "files_skipped_binary": files_skipped_binary,
         "chunks_created": chunks_created_total,
         "chunks_removed": chunks_removed_total,
         "collection": collection_name,
@@ -454,7 +479,10 @@ async def ingest_path_async(
         "peak_rss_bytes": sample_peak_rss_bytes(),
     }
 
-    if files_indexed > 0 or files_skipped_unchanged > 0:
+    # A corpus of only binary files is a clean skip, not a failure: the
+    # detector classified every file as unreadable content, so no reader
+    # ran by design. Counting skips here keeps the overall status "ok".
+    if files_indexed > 0 or files_skipped_unchanged > 0 or files_skipped_binary > 0:
         result: dict = {"status": "ok", **common}
     else:
         result = {

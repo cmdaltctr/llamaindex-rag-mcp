@@ -50,6 +50,7 @@ architecture), see the [ADR index](../adr/).
 | 022 | [Token counting is contract-sensitive — three traps in the exp 25 pre-build gate](022-token-counting-is-contract-sensitive.md)                       | Accepted (extended by 023)                                          | 2026-09-08 |
 | 023 | [Reconstructed nodes are not stored nodes — deserialise `_node_content` for payload accounting](023-reconstructed-nodes-are-not-stored-nodes.md)     | Accepted                                                           | 2026-09-08 |
 | 024 | [pdf-inspector silently extracts nothing from WinAnsi TrueType PDFs without `/ToUnicode` — retry with pypdf in the adapter](024-pdf-inspector-silent-empty-extraction-on-legacy-winansi-fonts.md) | Accepted | 2026-09-13 |
+| 025 | [Content-type detection silently degraded to suffix routing in direct-Engine processes — settings now threaded through the detector](025-magika-content-type-detection-settings-injection.md) | Accepted | 2026-09-15 |
 
 ## Status values
 

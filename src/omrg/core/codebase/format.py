@@ -10,9 +10,55 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from .codebase_map import CodebaseMap
+    from .codebase_map import CodebaseMap, FileInventory
 
 logger = logging.getLogger(__name__)
+
+
+def format_inventory(inventory: FileInventory) -> str:
+    """Format a file inventory as compact text.
+
+    Produces a summary with type counts, glob patterns, binary warnings, and
+    mismatch warnings. Targeting ~200 tokens for this section.
+
+    Args:
+        inventory: The file inventory to format.
+
+    Returns:
+        Compact text representation of the inventory.
+    """
+    lines: list[str] = ["## File Types"]
+
+    # Sort by count descending.
+    sorted_types = sorted(inventory.type_counts.items(), key=lambda x: -x[1])
+    for type_key, count in sorted_types:
+        # Collect representative glob patterns for this type.
+        group, label = type_key.split("/", 1)
+        matching = [e for e in inventory.entries if e.group == group and e.label == label]
+        suffixes = sorted({e.suffix for e in matching if e.suffix})
+        glob_str = ", ".join(f"*{s}" for s in suffixes[:4])
+        lines.append(f"- {type_key}: {count} files ({glob_str})")
+
+    if inventory.binary_files:
+        lines.append("")
+        lines.append("### Binary files")
+        for f in inventory.binary_files[:10]:
+            # Find the label for this file.
+            entry = next((e for e in inventory.entries if e.path == f), None)
+            label = entry.label if entry else "unknown"
+            lines.append(f"- ⚠ BINARY: {f} ({label})")
+        if len(inventory.binary_files) > 10:
+            lines.append(f"- ... and {len(inventory.binary_files) - 10} more")
+
+    if inventory.mismatches:
+        lines.append("")
+        lines.append("### Type mismatches")
+        for path, _suffix_label, magika_label in inventory.mismatches[:10]:
+            lines.append(f"- ⚠ MISMATCH: {path} → detected as {magika_label}")
+        if len(inventory.mismatches) > 10:
+            lines.append(f"- ... and {len(inventory.mismatches) - 10} more")
+
+    return "\n".join(lines)
 
 
 def format_codebase_map(codebase_map: CodebaseMap) -> str:
@@ -28,8 +74,6 @@ def format_codebase_map(codebase_map: CodebaseMap) -> str:
     Returns:
         Compact text representation targeting 500–800 tokens.
     """
-    from .codebase_map import format_inventory
-
     sections: list[str] = []
 
     # File Types section

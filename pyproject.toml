@@ -70,6 +70,7 @@ dependencies = [
     # add-grounded-answer-synthesis-3). Floor == fixed release.
     "pypdf>=6.16.1",
     "semantic-text-splitter>=0.32.0",
+    "magika==1.0.3",
 ]
 
 [project.optional-dependencies]

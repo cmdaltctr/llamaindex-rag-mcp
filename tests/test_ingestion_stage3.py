@@ -284,8 +284,8 @@ async def test_partial_store_write_preserves_old_version_and_recovers(
     source.write_text("new store sentinel " * 150, encoding="utf-8")
     original_write = store.write_nodes
 
-    def partial_then_fail(nodes, collection_name):
-        original_write(nodes[:1], collection_name)
+    def partial_then_fail(nodes, collection_name, embed_model=None):
+        original_write(nodes[:1], collection_name, embed_model=embed_model)
         raise RuntimeError("injected partial store write")
 
     monkeypatch.setattr(store, "write_nodes", partial_then_fail)
@@ -314,6 +314,44 @@ async def test_partial_store_write_preserves_old_version_and_recovers(
     assert texts_after_recovery
     assert all("old store sentinel" not in text for text in texts_after_recovery)
     assert any("new store sentinel" in text for text in texts_after_recovery)
+
+
+@pytest.mark.asyncio
+async def test_replacement_over_one_hundred_rows_removes_all_stale_rows(
+    tmp_path: Path,
+) -> None:
+    """Stale cleanup deletes in batches when a version exceeds the store's ID cap.
+
+    LanceDB rejects one delete call whose ID list exceeds 100 entries, so a
+    source with more than 100 rows must be cleaned in multiple calls. The
+    corpus size is asserted, not assumed, so the premise cannot silently rot.
+    """
+    store = get_default_store()
+    source = tmp_path / "hundred-plus.txt"
+    source.write_text("old batch sentinel " * 2500, encoding="utf-8")
+    first = await ingest_path_async(
+        str(source),
+        chunk_size=64,
+        chunk_overlap=8,
+        collection_name=_COLLECTION,
+    )
+    assert first["status"] == "ok"
+    assert first["chunks_created"] > 100
+
+    source.write_text("new batch sentinel " * 2400, encoding="utf-8")
+    second = await ingest_path_async(
+        str(source),
+        chunk_size=64,
+        chunk_overlap=8,
+        collection_name=_COLLECTION,
+    )
+
+    assert second["status"] == "ok"
+    assert second["chunks_removed"] == first["chunks_created"]
+    texts = _source_texts(store, source)
+    assert texts
+    assert all("old batch sentinel" not in text for text in texts)
+    assert any("new batch sentinel" in text for text in texts)
 
 
 @pytest.mark.asyncio

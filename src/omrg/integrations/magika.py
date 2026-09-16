@@ -21,6 +21,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from ..core.settings import get_default_effective_settings
 
@@ -60,38 +61,137 @@ class FileEntry:
     suffix: str
 
 
-def _magika_binary() -> str:
-    """Return the configured Magika binary name."""
+def _magika_binary(settings: Any | None = None) -> str:
+    """Return the configured Magika binary name.
+
+    Args:
+        settings: Injected effective settings carrying ``magika_binary``.
+            ``None`` keeps the legacy process-global resolution for
+            entry points that resolve at their own boundary.
+
+    Raises:
+        RuntimeError: When *settings* is ``None`` and no process-global
+            default is installed (direct-Engine processes; the caller
+            should inject settings instead).
+    """
+    if settings is not None:
+        return settings.magika_binary
     return get_default_effective_settings().magika_binary
 
 
-def _is_magika_available() -> bool:
+def _is_magika_available(settings: Any | None = None) -> bool:
     """Check if the Magika CLI binary is on $PATH."""
-    return shutil.which(_magika_binary()) is not None
+    return shutil.which(_magika_binary(settings)) is not None
 
 
-def scan_with_magika(path: str) -> list:
+# Groups that stay readable even when the model marks ``is_text`` false
+# (PDF documents; taxonomy rows such as Ada or BRF). Everything else
+# with ``is_text=false`` is treated as binary at this boundary.
+_READABLE_GROUPS = frozenset({"document", "code", "text"})
+
+
+def _normalise_detected(group: str, label: str, is_text: bool) -> tuple[str, str]:
+    """Apply the OMRG boundary rules to one validated Magika label.
+
+    Binary boundary: a non-readable group outside ``document``, ``code``,
+    and ``text`` becomes ``binary`` so the pipeline's existing
+    ``content_type.startswith("binary")`` skip fires. The label and
+    ``is_text`` are preserved, and readable false-text groups keep their
+    group so documents such as PDF stay reachable by readers.
+
+    Alias normalisation: only the two confirmed readable aliases
+    ``text/markdown -> document/markdown`` and ``text/txt ->
+    document/text`` are mapped, keeping suffix-map identity stable
+    without a taxonomy framework.
+    """
+    if not is_text and group not in _READABLE_GROUPS:
+        return "binary", label
+    if is_text and group == "text":
+        if label == "markdown":
+            return "document", "markdown"
+        if label == "txt":
+            return "document", "text"
+    return group, label
+
+
+def _parse_magika_row(line: str) -> tuple[str, str, str, bool]:
+    """Validate one Magika CLI JSONL row and return its entry fields.
+
+    The Magika CLI emits one JSON object per line. A successful row nests
+    the public label at ``result.value.output``; the sibling ``dl`` field
+    holds raw model details that must never be read as the label.
+
+    Returns:
+        ``(path, group, label, is_text)`` with boundary normalisation
+        already applied.
+
+    Raises:
+        ValueError: The row is not JSON, the status is not ``ok``, the
+            successful envelope is malformed, or a required field is
+            invalid (``group``/``label`` must be non-empty strings,
+            ``is_text`` a boolean). One bad row invalidates the whole
+            scan so production falls back to suffix detection instead
+            of reporting partial results.
+    """
+    try:
+        obj = json.loads(line)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Magika returned a non-JSON row: {line[:80]!r}") from exc
+
+    result = obj.get("result") if isinstance(obj, dict) else None
+    if not isinstance(result, dict) or result.get("status") != "ok":
+        raise ValueError(f"Magika row status is not 'ok': {line[:80]!r}")
+
+    value = result.get("value")
+    output = value.get("output") if isinstance(value, dict) else None
+    if not isinstance(output, dict):
+        raise ValueError(f"Magika 'ok' row lacks result.value.output: {line[:80]!r}")
+
+    group = output.get("group")
+    label = output.get("label")
+    is_text = output.get("is_text")
+    if not isinstance(group, str) or not group:
+        raise ValueError(f"Magika row has an invalid group: {line[:80]!r}")
+    if not isinstance(label, str) or not label:
+        raise ValueError(f"Magika row has an invalid label: {line[:80]!r}")
+    if not isinstance(is_text, bool):
+        raise ValueError(f"Magika row has a non-boolean is_text: {line[:80]!r}")
+
+    file_path = obj.get("path", "")
+    normalised_group, normalised_label = _normalise_detected(group, label, is_text)
+    return file_path, normalised_group, normalised_label, is_text
+
+
+def scan_with_magika(path: str, settings: Any | None = None) -> list:
     """Scan a directory using the Magika CLI binary.
 
-    Runs ``magika -r <path> --jsonl`` and parses each JSONL line to extract
-    ``output.group``, ``output.label``, ``output.is_text``, and ``path``.
+    Runs ``magika -r <path> --jsonl`` and parses each JSONL line. Only
+    rows with ``result.status == "ok"`` are accepted; the label is read
+    from ``result.value.output`` and boundary-normalised. Any invalid
+    row fails the whole scan with ``ValueError`` so the caller falls
+    back to suffix detection instead of trusting partial results.
 
     Args:
         path: Directory path to scan.
+        settings: Injected effective settings carrying ``magika_binary``;
+            ``None`` keeps the legacy process-global resolution.
 
     Returns:
         List of ``FileEntry`` objects for each detected file.
 
     Raises:
-        FileNotFoundError: If the Magika binary is not on $PATH.
+        FileNotFoundError: If the Magika binary is not on $PATH or the
+            scan times out.
         subprocess.CalledProcessError: If the Magika process fails.
+        ValueError: If any CLI row is invalid (non-JSON, non-``ok``
+            status, malformed envelope, or bad required field).
     """
-    if not _is_magika_available():
-        raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary()}")
+    if not _is_magika_available(settings):
+        raise FileNotFoundError(f"Magika CLI binary not found: {_magika_binary(settings)}")
 
     try:
         result = subprocess.run(  # noqa: S603
-            [_magika_binary(), "-r", path, "--jsonl"],
+            [_magika_binary(settings), "-r", path, "--jsonl"],
             capture_output=True,
             text=True,
             check=True,
@@ -103,20 +203,11 @@ def scan_with_magika(path: str) -> list:
 
     entries: list[FileEntry] = []
     project_root = Path(path)
-    for line in result.stdout.strip().splitlines():
-        if not line:
-            continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError:
-            logger.debug("Skipping unparseable Magika line: %s", line[:80])
-            continue
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue  # Blank JSONL lines are inert, not detector failures.
 
-        file_path = obj.get("path", "")
-        output = obj.get("output", {})
-        group = output.get("group", "unknown")
-        label = output.get("label", "unknown")
-        is_text = output.get("is_text", True)
+        file_path, group, label, is_text = _parse_magika_row(line)
 
         if any(part in _EXCLUDED_DIRS for part in Path(file_path).parts):
             continue

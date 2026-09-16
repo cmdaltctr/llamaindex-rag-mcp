@@ -1,0 +1,363 @@
+{
+  "experiment": "31-reader-rescue-retrieval-impact-2026-09-15",
+  "cells": {
+    "A": {
+      "role": "sanity_check",
+      "queries": 24,
+      "errors": 0,
+      "evidence_recoverability": 0.0,
+      "evidence_recall@1": 0.0,
+      "evidence_recall@3": 0.0,
+      "evidence_recall@5": 0.0,
+      "evidence_recall@10": 0.0,
+      "mrr@10": 0.0,
+      "no_hit_rate": 1.0,
+      "secondary": {
+        "extraction": {
+          "heldout_classify_seconds_median": 3.224,
+          "heldout_reader_seconds_median": 3.277,
+          "heldout_characters_total": 0,
+          "distractor_characters_total": 7820313,
+          "rescued_documents": 0
+        },
+        "index": {
+          "total_chunks": 2737,
+          "index_size_bytes": 26019109,
+          "embedding_tokens": null,
+          "source_commit": "081ac9b32920ff1671aa7a47fadbe2b6ec7a024e",
+          "lockfile_sha256": "51ca3e37fc38db371a4d42335d4edbad6b82d926e4e2fe2a640316231afb5a33"
+        }
+      }
+    },
+    "B": {
+      "role": "candidate",
+      "queries": 24,
+      "errors": 0,
+      "evidence_recoverability": 0.7917,
+      "evidence_recall@1": 0.5417,
+      "evidence_recall@3": 0.5417,
+      "evidence_recall@5": 0.5833,
+      "evidence_recall@10": 0.5833,
+      "mrr@10": 0.5521,
+      "no_hit_rate": 0.4167,
+      "secondary": {
+        "extraction": {
+          "heldout_classify_seconds_median": 3.656,
+          "heldout_reader_seconds_median": 3.939,
+          "heldout_characters_total": 4421347,
+          "distractor_characters_total": 7820313,
+          "rescued_documents": 8
+        },
+        "index": {
+          "total_chunks": 4404,
+          "index_size_bytes": 41057834,
+          "embedding_tokens": null,
+          "source_commit": "081ac9b32920ff1671aa7a47fadbe2b6ec7a024e",
+          "lockfile_sha256": "51ca3e37fc38db371a4d42335d4edbad6b82d926e4e2fe2a640316231afb5a33"
+        }
+      }
+    },
+    "C": {
+      "role": "reference",
+      "queries": 24,
+      "errors": 0,
+      "evidence_recoverability": 1.0,
+      "evidence_recall@1": 0.625,
+      "evidence_recall@3": 0.75,
+      "evidence_recall@5": 0.7917,
+      "evidence_recall@10": 0.7917,
+      "mrr@10": 0.6979,
+      "no_hit_rate": 0.2083,
+      "secondary": {
+        "extraction": {
+          "heldout_classify_seconds_median": 3.234,
+          "heldout_reader_seconds_median": 28.666,
+          "heldout_characters_total": 5050211,
+          "distractor_characters_total": 7820313,
+          "rescued_documents": 8
+        },
+        "index": {
+          "total_chunks": 5041,
+          "index_size_bytes": 44809273,
+          "embedding_tokens": null,
+          "source_commit": "081ac9b32920ff1671aa7a47fadbe2b6ec7a024e",
+          "lockfile_sha256": "51ca3e37fc38db371a4d42335d4edbad6b82d926e4e2fe2a640316231afb5a33"
+        }
+      }
+    }
+  },
+  "paired_B_vs_C": {
+    "paired_queries": 24,
+    "mean_hit@10_delta_B_minus_C": -0.2083,
+    "mean_rrr_delta_B_minus_C": -0.1458,
+    "disagreements": [
+      "q16",
+      "q19",
+      "q22",
+      "q23",
+      "q24"
+    ],
+    "bootstrap": {
+      "resamples": 10000,
+      "seed": 31,
+      "hit@10_delta": {
+        "ci95_low": -0.375,
+        "ci95_high": -0.0833
+      },
+      "rr_delta": {
+        "ci95_low": -0.3229,
+        "ci95_high": 0.0208
+      }
+    }
+  },
+  "per_query_paired_B_vs_C": [
+    {
+      "query_id": "q01",
+      "doc_id": "h01",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": false,
+      "b_rr": 0.0,
+      "c_rr": 0.0
+    },
+    {
+      "query_id": "q02",
+      "doc_id": "h01",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": false,
+      "b_rr": 0.0,
+      "c_rr": 0.0
+    },
+    {
+      "query_id": "q03",
+      "doc_id": "h01",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": false,
+      "b_rr": 0.0,
+      "c_rr": 0.0
+    },
+    {
+      "query_id": "q04",
+      "doc_id": "h02",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q05",
+      "doc_id": "h02",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 0.25,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q06",
+      "doc_id": "h02",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q07",
+      "doc_id": "h03",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": false,
+      "b_rr": 0.0,
+      "c_rr": 0.0
+    },
+    {
+      "query_id": "q08",
+      "doc_id": "h03",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q09",
+      "doc_id": "h03",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q10",
+      "doc_id": "h04",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q11",
+      "doc_id": "h04",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q12",
+      "doc_id": "h04",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q13",
+      "doc_id": "h05",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q14",
+      "doc_id": "h05",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q15",
+      "doc_id": "h05",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 0.25
+    },
+    {
+      "query_id": "q16",
+      "doc_id": "h06",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": true,
+      "b_rr": 0.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q17",
+      "doc_id": "h06",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q18",
+      "doc_id": "h06",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 0.5
+    },
+    {
+      "query_id": "q19",
+      "doc_id": "h07",
+      "b_recovered": false,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": true,
+      "b_rr": 0.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q20",
+      "doc_id": "h07",
+      "b_recovered": true,
+      "c_recovered": true,
+      "b_hit": true,
+      "c_hit": true,
+      "b_rr": 1.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q21",
+      "doc_id": "h07",
+      "b_recovered": false,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": false,
+      "b_rr": 0.0,
+      "c_rr": 0.0
+    },
+    {
+      "query_id": "q22",
+      "doc_id": "h08",
+      "b_recovered": false,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": true,
+      "b_rr": 0.0,
+      "c_rr": 1.0
+    },
+    {
+      "query_id": "q23",
+      "doc_id": "h08",
+      "b_recovered": false,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": true,
+      "b_rr": 0.0,
+      "c_rr": 0.5
+    },
+    {
+      "query_id": "q24",
+      "doc_id": "h08",
+      "b_recovered": false,
+      "c_recovered": true,
+      "b_hit": false,
+      "c_hit": true,
+      "b_rr": 0.0,
+      "c_rr": 0.5
+    }
+  ],
+  "gates": {
+    "cells_complete": true,
+    "cell_A_zero_by_construction": true,
+    "candidate_rescues_evidence": true,
+    "reference_rescues_evidence": true,
+    "candidate_not_materially_worse": false
+  },
+  "all_gates_pass": false
+}

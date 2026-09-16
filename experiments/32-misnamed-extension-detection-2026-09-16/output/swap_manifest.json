@@ -1,0 +1,186 @@
+{
+  "swap_pdf_names": [
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/J90-1001.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc00.py",
+      "sha256": "1c350f0314bf10561a9c00966d26998fcd403da933f9bba9d8075ba84bd66a28",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/P89-1001.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc01.md",
+      "sha256": "657a65bd7f58389098f233707b934247f1e5dfea29deb29e230d024d301837ab",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/frenchinheartam00finlgoog.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc02.txt",
+      "sha256": "3d511ba813d2fa224f9eda5e30d502712142d6a5b4e84e1c5972391c5c594fa5",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/gri_33125011167869.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc03.py",
+      "sha256": "878eea13a353b24780ddf457c406473028c9103533729cbe26f3a706d46b0cfa",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/introductiontoe02turngoog.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc04.md",
+      "sha256": "d302ec57e29bd04aa83c631bddd3cb3873d86c58ba2aeb0259a73822e716655d",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/introductiontohi00jackuoft.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc05.txt",
+      "sha256": "ce8441a004a42a74dece008cff977965f87a22891d73813885d2c8990d6181aa",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/introductiontolo00howarich.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc06.py",
+      "sha256": "bff70e3c22b112f7ed4b1712af8f6e1db60b6bffb7848fdafdac4edcdb5ec2b3",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout/jacobeanletterwr00chamuoft.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc07.md",
+      "sha256": "25faf0665316737f941b001859640480bff83c529f565dc78c1e6a29e33975e3",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/1312613f-e01a-499a-b0d0-7289d5b9013d.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc08.txt",
+      "sha256": "15937a212278a97c9b29997af61dc69ee74c70d4fed2e4e3d0d6337ba57cffa1",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/19c8c38c-9262-4f37-891a-18f767dbf61c.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc09.py",
+      "sha256": "3e26debea0ad8cd9b3b46f1e0056c18ada42158103d32e6fb0a7e9f5653aaf8c",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/2925acef-56cf-4459-9a2f-cbf42625006f.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc10.md",
+      "sha256": "a31f555d54bccbe33ec1099b0c4c0e8b1e042d1c11e4a02401aace3e9520f8c8",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/2de0dafa-1843-47cc-a55f-0e557fa87cf9.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc11.txt",
+      "sha256": "f33f4ae5eb0a2a9d3c89f85f32101b832c8cb7643a0c08333d035b91f30081cf",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/32e99c61-2352-4a88-bb9a-bd81f113ba1e.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc12.py",
+      "sha256": "3f7d4fdeefa7e6ec28d160057cb196ef86b437692da2e4991c45040b909e7df2",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/6ed799de-77a5-44fd-80aa-5a9940b3a44c.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc13.md",
+      "sha256": "9d49eb1f9d2de1fadd5ef18ab2fcbf4c4cf4dda90ed3cb636e58b4a1974b0940",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/BusinessEthics-OP.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc14.txt",
+      "sha256": "3a73f4b5941a07b86a468268f1eaa39476455580d8134b779b9aec0361af6401",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/business-law-i-essentials-draft.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc15.py",
+      "sha256": "a028c7c76e0255e103e06f3255b844bd3612c891db6ab78dd409ab0b829dc795",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/china-dreams.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc16.md",
+      "sha256": "21cc5ed797ca14a33eeec3ca71b1092abd78a48a11024af4c2c96cd8112d3fd7",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/e76e054c-617d-4004-b68d-54739205df8d.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc17.txt",
+      "sha256": "e26c9ceedd97a31526f2073bad0cfc2e27de43c0778a29f4961cacae6386f3cb",
+      "expected_magika_label": "document/pdf"
+    },
+    {
+      "source": "experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors/on-the-frontiers-of-history.pdf",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names/doc18.py",
+      "sha256": "1260496a4f23a3a0c08abb6049f9e068041e9609b2d58d1e76b30c961e9f5368",
+      "expected_magika_label": "document/pdf"
+    }
+  ],
+  "swap_text_to_pdf": [
+    {
+      "source": "src/omrg/compose.py",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file00.pdf",
+      "sha256": "10a5588a1bb6a0741aa55de84475fc94e6efa45b3a8ecc138b750e9232337d9f",
+      "expected_magika_label": "code/python"
+    },
+    {
+      "source": "src/omrg/core/ingestion/pipeline.py",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file01.pdf",
+      "sha256": "b4a57dc3a23f41c7fcd499285647e6d96c1c8a0925c31245a228007ad2341741",
+      "expected_magika_label": "code/python"
+    },
+    {
+      "source": "src/omrg/integrations/magika.py",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file02.pdf",
+      "sha256": "db0ef6b2108656eb36bbd57bea7b6d845a8376f1d3e3e679bb9c9d4576dfc47b",
+      "expected_magika_label": "code/python"
+    },
+    {
+      "source": "src/omrg/core/codebase/codebase_map.py",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file03.pdf",
+      "sha256": "3b2788b87d429b834551c28f1bbbadb952876c9905506211f74bab2fcdf934b8",
+      "expected_magika_label": "code/python"
+    },
+    {
+      "source": "README.md",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file04.pdf",
+      "sha256": "ea3ff6b0f269b4668f74834884125c889e86fd3a14555f29e0feebb04b301330",
+      "expected_magika_label": "document/markdown"
+    },
+    {
+      "source": "AGENTS.md",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file05.pdf",
+      "sha256": "237ffc0a334df8eb9811bb4833e632714250a0cbbad8b5b4647fc6229659e190",
+      "expected_magika_label": "document/markdown"
+    },
+    {
+      "source": "docs/guides/architecture.md",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file06.pdf",
+      "sha256": "c6f56bb9054a7b26ba5938eb907b427e8ea4753b3a48e6ce12ef5f26b6aabecc",
+      "expected_magika_label": "document/markdown"
+    },
+    {
+      "source": "docs/guides/ingestion.md",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file07.pdf",
+      "sha256": "b05ed1c61fa87e5c6044e38733ce7ab6957cd7a59fa81bc4e9409fb052b7479f",
+      "expected_magika_label": "document/markdown"
+    },
+    {
+      "source": "experiments/20-citation-faithfulness-2026-09-02/corpus/source-01-aurora.txt",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file08.pdf",
+      "sha256": "dbf1d29024a0c0503802973978bd7bbd6536bf7d8b45dd18ab12ffaa311e8662",
+      "expected_magika_label": "document/text"
+    },
+    {
+      "source": "experiments/20-citation-faithfulness-2026-09-02/corpus/source-02-birch.txt",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file09.pdf",
+      "sha256": "3e85b281cdf1d6f500abed17199f0c34434feff20f8357ff702e8778292dc0f0",
+      "expected_magika_label": "document/text"
+    },
+    {
+      "source": "experiments/19-lancedb-lifecycle-qualification-2026-08-21/fixtures/corpus_replacement/bravo_harbour.txt",
+      "copy": "experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf/file10.pdf",
+      "sha256": "34670abc4c32124da428e56465a114964265ea7bddd34a3073603f7a0c1a1065",
+      "expected_magika_label": "document/text"
+    }
+  ]
+}

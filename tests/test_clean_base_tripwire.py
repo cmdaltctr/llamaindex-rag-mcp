@@ -65,7 +65,23 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2897
+_BASE_EXECUTED = 2933
+# Re-baselined at fix-stale-cleanup-batching (2026-09-16): the batched
+# stale-deletion regression adds 1 case (2927 -> 2928).
+# Re-baselined for the PR-94 CodeRabbit remediation (2026-09-16): four
+# new cases — computed-dynamic-import guard, duplicate-path-spelling and
+# file-inside-directory smoke validation, and the binary-transition row
+# removal regression (2928 -> 2932); the codecov patch follow-up adds the
+# binary-cleanup failure-path case (2932 -> 2933).
+# Re-baselined at pin-magika-detection (2026-09-16): the pinned detector
+# added 28 regressions (3 base-install/smoke subprocess, 13 parser and
+# boundary, 12 smoke-guard and comparison cases), measured 2923 executed
+# in this environment (historical ground truth absent: -4; cached Qwen
+# tokenizer present: -0). No skips were added or removed.
+# Re-baselined 2026-09-15 from 2897 (thread-settings-through-magika-detection):
+# the content-type detection fix adds 2 cases — the ingest-level regression
+# (injected settings, no process-global default, no extension-routing
+# fallback) and the _magika_binary unit pin.
 # Re-baselined 2026-09-13 from 2891 (tiered-reader-fallback-chain): the
 # liteparse-first fallback chain adds 6 cases — contradiction rescue,
 # unavailable/failed-tier hand-over, extraction-only settings, bare
