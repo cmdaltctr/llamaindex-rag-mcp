@@ -65,7 +65,9 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2927
+_BASE_EXECUTED = 2928
+# Re-baselined at fix-stale-cleanup-batching (2026-09-16): the batched
+# stale-deletion regression adds 1 case (2927 -> 2928).
 # Re-baselined at pin-magika-detection (2026-09-16): the pinned detector
 # added 28 regressions (3 base-install/smoke subprocess, 13 parser and
 # boundary, 12 smoke-guard and comparison cases), measured 2923 executed
