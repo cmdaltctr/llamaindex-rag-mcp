@@ -1,83 +1,57 @@
-# Experiment: Misnamed-extension content detection
+# Experiment 32: Does Magika spot the real file type when the name lies?
 
-**ID**: `32-misnamed-extension-detection-2026-09-16`
-**Date**: 2026-09-16
-**Operator**: AI agent (for Dr Muhammad Aizat Bin Md Hawari)
-**Status**: PASS
-**Verdict**: Content-based detection ignores lying extensions — ADR-068 claim holds at corpus scale.
-**Change**: `pin-magika-detection`; evidence for ADR-068 (verification section).
+**ID:** 32-misnamed-extension-detection-2026-09-16
+**Date:** 16 September 2026
+**Status:** PASS, all 5 checks passed
+**Feeds proof into:** ADR-068, the decision record that says why we use Magika
 
----
+## The question
 
-## Bottom line
+When you add a file, the system must work out its type: PDF, program code, Markdown, or plain text. A wrong guess sends the file to the wrong reader, and the stored text comes out broken.
 
-Every one of the 30 misnamed copies kept its content-true Magika
-label. All 19 real PDFs renamed to `.py`, `.md`, or `.txt` still
-detected as `document/pdf`. All 11 Python, Markdown, and text files
-renamed to `.pdf` kept `code/python`, `document/markdown`, or
-`document/text`. The two true-named baselines matched end to end.
-The suffix fallback map was wrong for every misnamed file, which is
-the exact failure Magika removes.
+The system uses a tool called Magika to name the type. Magika reads the file's contents, not its name. Most systems guess from the file ending, like `.pdf` or `.py`. This experiment asked one thing: does Magika still get the type right when the file name lies?
 
-## Context
+## What I did
 
-ADR-068 pinned `magika==1.0.3` and fixed the CLI result parser. Its
-misnamed-file evidence was two ad-hoc probes. This experiment scales
-that evidence to the full Experiment 31 corpus (8 held-out
-silent-empty PDFs: 6 IA GlyphLessFont, 2 ACL WinAnsi; 11 healthy
-distractors) plus the pin gate's 11 text and code files.
+1. Took 19 real PDFs from experiment 31. Eight are damaged files that show no readable words; the other eleven are healthy.
+2. Took 11 text files from this project: Python code, Markdown notes, plain notes.
+3. Copied every file. The originals were never touched.
+4. Renamed the PDF copies to `.py`, `.md`, or `.txt`.
+5. Renamed the text copies to `.pdf`.
+6. Asked Magika to name each copy's type.
 
-## Results
+Nothing was added to any document store. No search ran. This was a naming test only.
 
-| Set | Files | Smoke exit | Result |
-| --- | ----- | ---------- | ------ |
-| baseline_pdf (true names) | 19 | 0 | 19/19 all-match |
-| baseline_text (true names) | 11 | 0 | 11/11 all-match |
-| swap_pdf_names (PDFs as `.py`/`.md`/`.txt`) | 19 | 1 | every Magika label `document/pdf`; suffix map wrong on all 19 |
-| swap_text_to_pdf (text/code as `.pdf`) | 11 | 1 | every Magika label content-true; suffix map said `document/pdf` on all 11 |
+## The result
 
-Gates G1 to G5 all PASS (see `output/summary.json`). Whole-run
-detection cost per set: 0.44 s, 0.88 s, 0.24 s, 0.22 s. Exit 1 on
-the swap sets is the smoke tool reporting the label shift, not a
-detection failure. No fallback, timeout, or detector error occurred.
+| Set | Files | Outcome |
+| --- | ----- | ------- |
+| PDFs with honest names | 19 | All 19 named correctly |
+| Text files with honest names | 11 | All 11 named correctly |
+| PDFs renamed to look like code or notes | 19 | All 19 still named PDF, which is correct |
+| Text files renamed to look like PDFs | 11 | All 11 still named by their real type, which is correct |
 
-Sample rows (from `output/swap_*.json`):
+The raw output shows exit code 1 for the two renamed sets. That is not a crash. It is the mismatch flag: the name-based guess and Magika's answer differ. Here that is the wanted result. It proves Magika read the contents and ignored the lying name.
 
-```
-doc00.py   suffix=code/python       magika=document/pdf
-doc01.md   suffix=document/markdown magika=document/pdf
-file00.pdf suffix=document/pdf      magika=code/python
-```
+Each check took under one second. No crash, no timeout, no fallback to name guessing.
 
-At ingestion this means the renamed PDFs would skip the PDF readers
-only if their content were binary (it is not: `document/pdf` stays
-readable), and the text files behind `.pdf` names route to the AST
-splitter or Markdown parser instead of a PDF reader.
+## Why this matters
 
-## Discussion
+A name-based system would send a PDF named `notes.py` to the code reader. The wrong reader produces broken stored text. Magika stops that before it starts, because the file goes to the right reader based on what is inside it.
 
-The pathological PDFs matter most: the six IA GlyphLessFont and two
-ACL WinAnsi files that motivated Experiment 31 are structurally
-normal PDFs, so the detector reads their container, not their broken
-text layers. All eight kept `document/pdf` under lying names. The
-result is bounded by the same limits ADR-068 records: very short
-files can lose their code label (pin-gate tiny-source diagnostic),
-and no ingest or retrieval was run here — routing correctness at
-ingestion follows from the label, not measured in this experiment.
+The damaged PDFs matter most. The part of a PDF that holds readable words is broken in them, but the outer container is a normal PDF. Magika named them correctly anyway. So even damaged files reach the PDF readers.
 
-## Conclusion
+## Honest limits
 
-Detection under the pin is extension-independent on this corpus.
-ADR-068's verification section now cites this experiment. Nothing in
-production changed; no rerun of Experiment 31 was made or is needed.
+1. This tested naming only. No files were stored and no search ran.
+2. Very short files can fool the detector. We knew this already; ADR-068 records it.
+3. The files came from this project's earlier work. Other kinds, like images or zip files, were not tested.
 
-## Artefacts
+## Where the proof lives
 
-- `protocol.md` — gates and predesignated ground truth (written
-  before any run)
-- `build_swaps.py`, `output/swap_manifest.json` — deterministic
-  copies with sha256 and expected labels
-- `run_detection.py`, `output/<set>.json` — per-set payloads, exit
-  codes, elapsed times
-- `summarise_eval.py`, `output/summary.json` — gate evaluation
-- `analysis.py` — pandas label tables (Jupytext percent format)
+- `protocol.md`: the plan and expected answers, written before the run
+- `build_swaps.py`: makes the renamed copies
+- `run_detection.py`: runs the naming checks
+- `summarise_eval.py`: judges pass or fail
+- `analysis.py`: prints the result tables
+- `output/`: raw results for every file
