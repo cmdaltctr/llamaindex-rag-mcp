@@ -1,0 +1,88 @@
+{
+  "set": "swap_text_to_pdf",
+  "command": [
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "--json",
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_text_to_pdf"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 0.215,
+  "payload": {
+    "groups": [
+      {
+        "group": "document",
+        "files": [
+          {
+            "path": "file00.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "code/python",
+            "would_change": true
+          },
+          {
+            "path": "file01.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "code/python",
+            "would_change": true
+          },
+          {
+            "path": "file02.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "code/python",
+            "would_change": true
+          },
+          {
+            "path": "file03.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "code/python",
+            "would_change": true
+          },
+          {
+            "path": "file04.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/markdown",
+            "would_change": true
+          },
+          {
+            "path": "file05.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/markdown",
+            "would_change": true
+          },
+          {
+            "path": "file06.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/markdown",
+            "would_change": true
+          },
+          {
+            "path": "file07.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/markdown",
+            "would_change": true
+          },
+          {
+            "path": "file08.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/text",
+            "would_change": true
+          },
+          {
+            "path": "file09.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/text",
+            "would_change": true
+          },
+          {
+            "path": "file10.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/text",
+            "would_change": true
+          }
+        ]
+      }
+    ],
+    "total_files": 11,
+    "would_change_count": 11
+  },
+  "stderr": "magika_label_smoke: 11 of 11 labels differ from the suffix map"
+}

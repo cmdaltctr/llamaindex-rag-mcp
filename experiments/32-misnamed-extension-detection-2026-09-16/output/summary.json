@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "gates": {
+    "G1_baseline_pdf_all_match": {
+      "exit": 0,
+      "passed": true
+    },
+    "G2_baseline_text_all_match": {
+      "exit": 0,
+      "passed": true
+    },
+    "G3_renamed_pdfs_stay_document_pdf": {
+      "exit": 1,
+      "total": 19,
+      "wrong_labels": [],
+      "passed": true
+    },
+    "G4_renamed_text_keeps_content_label": {
+      "exit": 1,
+      "total": 11,
+      "wrong_labels": {},
+      "passed": true
+    },
+    "G5_no_detector_failure": {
+      "exits": {
+        "baseline_pdf": 0,
+        "baseline_text": 0,
+        "swap_pdf_names": 1,
+        "swap_text_to_pdf": 1
+      },
+      "passed": true
+    }
+  },
+  "elapsed_seconds": {
+    "baseline_pdf": 0.439,
+    "baseline_text": 0.877,
+    "swap_pdf_names": 0.236,
+    "swap_text_to_pdf": 0.215
+  }
+}

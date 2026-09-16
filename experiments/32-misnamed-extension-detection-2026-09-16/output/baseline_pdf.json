@@ -1,0 +1,137 @@
+{
+  "set": "baseline_pdf",
+  "command": [
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "--json",
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/heldout",
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/31-reader-rescue-retrieval-impact-2026-09-15/corpus/distractors"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 0.439,
+  "payload": {
+    "groups": [
+      {
+        "group": "document",
+        "files": [
+          {
+            "path": "1312613f-e01a-499a-b0d0-7289d5b9013d.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "19c8c38c-9262-4f37-891a-18f767dbf61c.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "2925acef-56cf-4459-9a2f-cbf42625006f.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "2de0dafa-1843-47cc-a55f-0e557fa87cf9.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "32e99c61-2352-4a88-bb9a-bd81f113ba1e.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "6ed799de-77a5-44fd-80aa-5a9940b3a44c.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "BusinessEthics-OP.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "J90-1001.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "P89-1001.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "business-law-i-essentials-draft.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "china-dreams.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "e76e054c-617d-4004-b68d-54739205df8d.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "frenchinheartam00finlgoog.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "gri_33125011167869.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "introductiontoe02turngoog.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "introductiontohi00jackuoft.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "introductiontolo00howarich.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "jacobeanletterwr00chamuoft.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          },
+          {
+            "path": "on-the-frontiers-of-history.pdf",
+            "suffix_label": "document/pdf",
+            "magika_label": "document/pdf",
+            "would_change": false
+          }
+        ]
+      }
+    ],
+    "total_files": 19,
+    "would_change_count": 0
+  },
+  "stderr": ""
+}

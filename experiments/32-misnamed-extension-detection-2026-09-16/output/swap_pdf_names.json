@@ -1,0 +1,141 @@
+{
+  "set": "swap_pdf_names",
+  "command": [
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/scripts/magika_label_smoke.py",
+    "--json",
+    "/Users/aizat/Development/PROJECTS/llamaindex-rag-mcp-v3-exp31/experiments/32-misnamed-extension-detection-2026-09-16/output/work/swap_pdf_names"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 0.236,
+  "payload": {
+    "groups": [
+      {
+        "group": "code",
+        "files": [
+          {
+            "path": "doc00.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc03.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc06.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc09.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc12.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc15.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc18.py",
+            "suffix_label": "code/python",
+            "magika_label": "document/pdf",
+            "would_change": true
+          }
+        ]
+      },
+      {
+        "group": "document",
+        "files": [
+          {
+            "path": "doc01.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc02.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc04.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc05.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc07.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc08.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc10.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc11.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc13.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc14.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc16.md",
+            "suffix_label": "document/markdown",
+            "magika_label": "document/pdf",
+            "would_change": true
+          },
+          {
+            "path": "doc17.txt",
+            "suffix_label": "document/text",
+            "magika_label": "document/pdf",
+            "would_change": true
+          }
+        ]
+      }
+    ],
+    "total_files": 19,
+    "would_change_count": 19
+  },
+  "stderr": "magika_label_smoke: 19 of 19 labels differ from the suffix map"
+}

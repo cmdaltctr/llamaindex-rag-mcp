@@ -100,12 +100,18 @@ It is provenance, not a separate dependency.
 - The smoke tool rejects detector errors, empty input, invalid records, and
   missing, extra, or duplicate paths. Its guards prevent forbidden imports.
 - No collection, embedding, store, or ingest operation ran during the gate.
+- Experiment 32 (`experiments/32-misnamed-extension-detection-2026-09-16/`,
+  PASS 5/5 gates) scaled the misnamed-file evidence to corpus size: all 19
+  Experiment 31 PDFs renamed to `.py`/`.md`/`.txt` still detected as
+  `document/pdf`, and all 11 text or code files renamed to `.pdf` kept their
+  content-true labels. Detection-only; no ingest ran.
 
 ## References
 
 - `openspec/changes/pin-magika-detection/proposal.md`
 - `openspec/changes/pin-magika-detection/design.md`
 - `openspec/changes/pin-magika-detection/acceptance-corpus.md`
+- `experiments/32-misnamed-extension-detection-2026-09-16/report.md`
 - [TDR-025](../tdr/025-magika-content-type-detection-settings-injection.md)
 - `src/omrg/integrations/magika.py`
 - `scripts/magika_label_smoke.py`
