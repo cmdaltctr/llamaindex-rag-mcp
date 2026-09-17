@@ -53,8 +53,12 @@ def write_page() -> None:
     for entry in (e for e in _entries(spot) if _needs_recheck(e)):
         key = f"{entry['doc_id']}:{entry['page']}"
         stem = f".pages/{entry['doc_id']}/p{entry['page']:03d}"
-        layer_path = EXP_DIR / "output" / f"{stem}.pypdf.txt"
-        layer = layer_path.read_text(encoding="utf-8")[:3000] if layer_path.exists() else ""
+        layers = []
+        for name, title in (("pdftotext", "poppler pdftotext"), ("pypdf", "pypdf")):
+            path = EXP_DIR / "output" / f"{stem}.{name}.txt"
+            text = path.read_text(encoding="utf-8")[:3000] if path.exists() else ""
+            layers.append(f"=== {title} ===\n{text.strip() or '(empty)'}")
+        layer = "\n\n".join(layers)
         radios = "<br>".join(
             f'<label><input type="radio" name="{key}" value="{value}"> {html.escape(text)}</label>'
             for value, (text, _) in ANSWERS.items()
@@ -75,8 +79,10 @@ img{{width:48%;border:1px solid #999}}
 pre{{width:50%;max-height:720px;overflow:auto;white-space:pre-wrap;background:#f5f5f5;padding:8px}}
 #bar{{position:sticky;top:0;background:#fff;padding:8px 0;border-bottom:2px solid #333}}
 </style></head><body>
-<div id="bar"><b>Is the body text in the right panel?</b> Ignore layout, equations
-rendering, figures, tables structure and headings: only whether the words are there.
+<div id="bar"><b>Is the body text in the right panel?</b> Answer yes if the words are in
+EITHER text layer. The right panel is label evidence from two independent extractors
+(poppler and pypdf), NOT the pipeline output (pdf-inspector, then LiteParse, then pypdf).
+Ignore layout, equation rendering, figures, table structure and headings.
 <br><button onclick="save()">Download answers</button>
 <span id="count"></span> <span id="saved"></span></div>
 {"".join(cards)}
