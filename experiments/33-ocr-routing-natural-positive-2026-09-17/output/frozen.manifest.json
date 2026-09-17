@@ -4,11 +4,11 @@
   "files": {
     "protocol": {
       "path": "protocol.md",
-      "sha256": "bc7f35dbe1e143035cdefec3a0a43be34e8e5176e7806767b5be84f453fda16b"
+      "sha256": "985b3d283a65d200e32d0dff7715c2bac21ca9b4913dc578f77f15f188629425"
     },
     "plan": {
       "path": "plan.json",
-      "sha256": "7ef6c39271be5de34d2ac2ee5274cd04d5dc3ae146b2a7ac03d9365dfaa368a3"
+      "sha256": "93742f13493f4e1a55e7ca3edc9fb971b95d600ec3c31e7e657cea7bfc04ebf6"
     },
     "dev_exclusions": {
       "path": "dev_exclusions.json",
@@ -68,5 +68,16 @@
     "rf06": "b385f878b7788c245f1d41c06dd8b9d592d8620899eeed4d98289341fa99dfb9",
     "rf07": "0a5b8762d151659545b6bd8775462236559c017ffb1b306d8fb3c283cf8ac215",
     "rf08": "28d8d1e72d77fc8fbe36ab5a28c9d027aee7620ffb6c7d0c64575e3beb9bfb32"
-  }
+  },
+  "redigested": [
+    {
+      "utc": "2026-09-17",
+      "reason": "protocol.md status line updated post-Stage A; plan.json amended to record this re-digest",
+      "superseded": {
+        "protocol": "bc7f35dbe1e143035cdefec3a0a43be34e8e5176e7806767b5be84f453fda16b",
+        "plan": "7ef6c39271be5de34d2ac2ee5274cd04d5dc3ae146b2a7ac03d9365dfaa368a3"
+      },
+      "note": "frozen_utc, labels, spot_check, sources and all document digests unchanged"
+    }
+  ]
 }

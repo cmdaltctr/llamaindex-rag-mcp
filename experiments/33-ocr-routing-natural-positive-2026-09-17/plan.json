@@ -1,7 +1,7 @@
 {
   "experiment_id": "33-ocr-routing-natural-positive",
   "protocol_version": "1.0",
-  "status": "PROTOCOL FROZEN — corpus not yet frozen",
+  "status": "PROTOCOL FROZEN \u2014 corpus not yet frozen",
   "change_ref": "openspec/changes/experiment-33-ocr-routing-natural-positive",
   "study_type": "preregistered measurement of the shipped OCR routing gate on a stratified natural corpus",
   "experimental_unit": "one natural open-licence PDF read once through the shipped local reader path with ocr_client=None",
@@ -50,7 +50,7 @@
     "sourcing_log_location_deviation": "tasks.md 2.8 names corpus/SOURCING.md, but experiments/**/corpus/ is gitignored; the log lives at the experiment root so it is committed",
     "selection_independence": "pdf-inspector MUST NOT be run on candidates for born_digital, mixed, image_only_scan or scan_with_text_layer before the Stage A run; selection uses provenance, poppler and the labelling tooling only",
     "reader_failure_selection_disclosure": "reader_failure candidates are selected by raw pdf_inspector.process_pdf returning text_based with empty markdown, as in Experiment 31; this is inherent to the stratum definition",
-    "development_exclusions": "dev_exclusions.json — every SHA-256 from Experiments 29, 30 and 31; a candidate matching any digest is rejected from held-out",
+    "development_exclusions": "dev_exclusions.json \u2014 every SHA-256 from Experiments 29, 30 and 31; a candidate matching any digest is rejected from held-out",
     "split": "every accepted natural document is held_out; synthetic documents are a separate stratum and never held_out"
   },
   "labels": {
@@ -71,7 +71,7 @@
       "poppler pdftotext (per page, -layout)",
       "pypdf page.extract_text()"
     ],
-    "text_layer_independence": "pdf-inspector is never a label extractor; pypdf is also fallback tier 2 of the measured path, which is disclosed — a text layer that any independent extractor reads is a usable text layer",
+    "text_layer_independence": "pdf-inspector is never a label extractor; pypdf is also fallback tier 2 of the measured path, which is disclosed \u2014 a text layer that any independent extractor reads is a usable text layer",
     "reference_transcription": {
       "provider": "OpenRouter",
       "model": "google/gemini-3.8-flash (pinned in label_pages.py; response model id recorded per page)",
@@ -102,7 +102,7 @@
     "tolerance_basis": "the 10% missing-page tolerance approved in the Experiment 29 decision register; it equals the gate threshold by operator judgement, and it is disclosed",
     "character_count_rule": "character count alone never decides a label",
     "spot_check": "operator reviews every unrecoverable page, every page in an ambiguous document, and a seeded (seed 33) 10% random sample of the remaining pages against the rendered image; agreement is recorded in spot_check.json",
-    "freeze_condition": "labels are frozen only when operator disagreement on the random sample is at most 10%; above that, the page rule is revised and the spot check repeated — allowed because no routing output exists yet",
+    "freeze_condition": "labels are frozen only when operator disagreement on the random sample is at most 10%; above that, the page rule is revised and the spot check repeated \u2014 allowed because no routing output exists yet",
     "body_text_amendment": {
       "label": "page and document label decided by BODY text: running text, headings, captions, footnotes, table cells, headers and footers",
       "label_all_text": "the original all-visible-text label, kept for a page-level routing arm",
@@ -138,7 +138,7 @@
   },
   "stages": {
     "A": "routing only, ocr_client=None, no OCR worker, no model load, no network",
-    "B": "real OCR — NOT authorised; requires a separate decision-register entry naming subset, timeout and runtime budget"
+    "B": "real OCR \u2014 NOT authorised; requires a separate decision-register entry naming subset, timeout and runtime budget"
   },
   "ocr_authorisation": {
     "authorised": false,
@@ -156,7 +156,7 @@
       "false_positive_count": "usable documents with ocr_required == true",
       "false_positive_rate": "false positives / usable documents",
       "unnecessary_ocr_pages": "pages labelled usable in routed documents",
-      "projected_ocr_seconds": "routed pages x 33.7 s (best) and x 106.4 s (worst) — PROJECTION (ocr-worker/SMOKE_RESULTS.md)",
+      "projected_ocr_seconds": "routed pages x 33.7 s (best) and x 106.4 s (worst) \u2014 PROJECTION (ocr-worker/SMOKE_RESULTS.md)",
       "by_stratum": "confusion counts per stratum",
       "ambiguous_sensitivity": "primary counts recomputed with ambiguous documents as needs_ocr and as usable",
       "unrecoverable_routes": "routing decision per unrecoverable document, outside every denominator",
@@ -280,6 +280,13 @@
       "change": "final labels take the operator presence verdict where one exists and the body-text rule elsewhere; the agreement gate is replaced by a disclosure",
       "reason": "Exercise 2 still disagreed at 20.2%, dominated by equation loss on pages whose words are present; no threshold or maths-symbol revision reproduced the operator judgement (best validation 82.5% and 80.9%)",
       "operator_decision": "approved 2026-09-17"
+    },
+    {
+      "date": "2026-09-17",
+      "stage": "after Stage A and the report, before the task 6.7 local OCR measurement",
+      "change": "the freeze manifest re-records the digests of protocol.md and plan.json only. protocol.md changed by one line (its Status field, PLANNED -> FAIL (Stage A), commit 6f20d49); plan.json changes by this amendment. frozen_utc, the labels, spot check, sources and all 40 document digests are untouched and still verify against the original freeze.",
+      "reason": "freeze.py --check blocked local_ocr.py on prose drift. No measured input moved: labels.json, spot_check.json, sources.json and every corpus document match the 2026-09-17T20:34:44Z freeze. Both superseded digests are kept in the manifest under 'redigested' so the audit trail is complete.",
+      "approved_by": "operator, 2026-09-17"
     }
   ],
   "decision_register": [

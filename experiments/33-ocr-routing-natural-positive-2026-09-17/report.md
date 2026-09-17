@@ -3,9 +3,9 @@
 **ID**: `33-ocr-routing-natural-positive-2026-09-17`  
 **Date run**: 2026-09-17  
 **Operator**: Dr Muhammad Aizat Bin Md Hawari with AI agent  
-**Status**: FAIL (Stage A) — the shipped gate misses 8 of 18 documents that need OCR  
+**Status**: FAIL (Stage A) — the shipped gate misses 8 of 18 documents that need OCR. Task 6.7 (local OCR tier) measured  
 **Verdict**: The packaged gate does not detect most natural OCR need. The full-scan candidate helps slightly (recall 0.556 → 0.611) and costs 49 extra OCR pages; recalibration belongs in a separate proposal  
-**Raw data**: [`output/arm_sampled_baseline/eval_results.summary.json`](./output/arm_sampled_baseline/eval_results.summary.json), [`output/arm_full_scan_candidate/eval_results.summary.json`](./output/arm_full_scan_candidate/eval_results.summary.json), [`output/arm_comparison.json`](./output/arm_comparison.json), [`output/page_evidence.json`](./output/page_evidence.json)  
+**Raw data**: [`output/arm_sampled_baseline/eval_results.summary.json`](./output/arm_sampled_baseline/eval_results.summary.json), [`output/arm_full_scan_candidate/eval_results.summary.json`](./output/arm_full_scan_candidate/eval_results.summary.json), [`output/arm_comparison.json`](./output/arm_comparison.json), [`output/page_evidence.json`](./output/page_evidence.json), [`output/local_ocr/summary.json`](./output/local_ocr/summary.json)  
 **Change**: `openspec/changes/experiment-33-ocr-routing-natural-positive`; relates to `full-page-ocr-evidence` (PR #95, TDR-026) and `page-level-ocr-routing`  
 **Protocol**: [protocol.md](protocol.md)
 
@@ -112,6 +112,67 @@ decides.
 | `rf06` | 0.236 | `liteparse` |
 | `rf07` | 0.469 | `liteparse` |
 
+### Local OCR tier (task 6.7, evidence gate 1 for `page-level-ocr-routing`)
+
+pdf-inspector 1.17.0 selective OCR in `force` mode (PP-OCRv6 Small on ONNX
+Runtime, CPU, local only) ran on every natural page whose frozen body or
+all-text label is `needs_ocr`: 464 pages across 28 documents, 731 s wall clock,
+no error and no document over the 900 s soft limit. Routing was never
+consulted. Scores are token recall against the reference transcription.
+
+| Measurement | Value |
+| --- | ---: |
+| Pages measured | 464 (399 with body label `needs_ocr`, 65 figure-only) |
+| Body recall ≥ 0.8 | 0.311 |
+| Body recall < 0.5 | 0.516 |
+| Pages with no text at all | 0.003 |
+| `hosted_recommended` share | 0.015 |
+| Seconds per page | 1.58 mean, 0.75 median |
+
+The aggregate hides a bimodal split. Local OCR either reads a page well or does
+not read it at all, and which happens is decided by the writing system and the
+typography, not by page quality:
+
+| Class | Pages | Median recall | ≥ 0.8 | < 0.5 |
+| --- | ---: | ---: | ---: | ---: |
+| Modern Latin-script print | 144 | 0.977 | 0.840 | 0.111 |
+| Early-modern Latin book (`io06`) | 66 | 0.609 | 0.015 | 0.197 |
+| Handwriting (`rf06`, `rf07`) | 60 | 0.310 | 0.033 | 0.800 |
+| Non-Latin script (`io01`, `io02` Arabic, `io03` Arabic, `io07` Hindi) | 129 | 0.000 | 0.000 | 1.000 |
+
+Every one of the 129 Devanagari and Arabic pages scored 0.000: the packaged
+model has no recogniser for those scripts.
+
+**Confidence calibration.** The confidence score separates well
+(AUC 0.949 over all 399 pages, 0.935 within the modern-print class). Raising
+the cut trades worker cost against pages kept wrong:
+
+| Confidence cut | Escalation share | Kept pages, recall ≥ 0.8 | Kept pages, recall < 0.5 |
+| ---: | ---: | ---: | ---: |
+| 0.5 | 0.015 | 0.316 | 0.509 |
+| 0.6 | 0.160 | 0.370 | 0.424 |
+| 0.7 | 0.381 | 0.502 | 0.219 |
+| 0.8 | 0.469 | 0.571 | 0.113 |
+| 0.9 | 0.597 | 0.652 | 0.025 |
+
+Per document, a cut of 0.8 escalates the classes the model cannot read —
+`io01` 1.00, `io03` 1.00, `io07` 1.00, `io02` 0.94, `tl01` 0.92 (figure pages),
+`rf07` 0.65, `rf06` 0.63 — and leaves the modern-print documents almost
+untouched (`io04`, `mx01`–`mx07`, `bd04`, `bd07`, `tl07`, `tl08` all at 0.00).
+It has one systematic blind spot: `io06`, the early-modern Latin book, carries
+median confidence 0.922 with median recall 0.609, so a 0.8 cut escalates only
+8% of it. Confident, fluent, and half wrong is the one failure this signal does
+not catch, and it matches the operator's "old-book spelling" note.
+
+`pages_recommending_hosted` is close to useless on natural documents: it fired
+on 6 pages, all genuinely bad, but 206 pages scored below 0.5 recall. It is a
+precise signal with 3% recall; the confidence cut has to do the work.
+
+**Cost.** 0.75 s median per page, with one outlier: `io04`, the dense 1889
+newspaper, at 7.11 s per page. Against the Experiment 24 hosted rates
+(33.7–106.4 s per page), local OCR is 20 to 140 times faster per page on this
+corpus.
+
 ## Discussion
 
 1. **Three mechanisms, not one.** The misses split cleanly. `tl02` is a
@@ -173,9 +234,19 @@ of the problem. Two changes address the measured causes:
    `rf06` and `rf07` show the current rule hides scans behind junk text; this
    needs its own proposal with a quality signal.
 
+3. **Give the local OCR tier an escalation rule that keys on script and
+   typography, not confidence alone.** Task 6.7 measured the tier: on modern
+   Latin-script print it reads 84% of pages at recall ≥ 0.8 for 0.75 s a page,
+   and on Devanagari and Arabic it reads nothing at all. A 0.8 confidence cut
+   escalates the unreadable classes almost perfectly and leaves the readable
+   ones alone, but it misses `io06`, where the model is confident and half
+   wrong on early-modern typography.
+
 Page-level OCR routing (`page-level-ocr-routing`) remains the structural
 answer to both the cost trade-off and the understanding needs the operator
-recorded; its evidence gate is task 6.7 of this experiment.
+recorded. Its evidence gate 1 is task 6.7 of this experiment, now measured: the
+tier is worth building for the documents it can read, and the change needs an
+escalation rule that admits the documents it cannot.
 
 ## Artefacts
 
@@ -187,6 +258,7 @@ recorded; its evidence gate is task 6.7 of this experiment.
 | `output/page_evidence.json` | Per-page match scores, labels, `label_source` |
 | `labels.json`, `spot_check.json` | Frozen labels; operator verdicts, notes and agreement |
 | `output/frozen.manifest.json` | Freeze digests for corpus, labels and protocol |
+| `output/local_ocr/pages.json`, `output/local_ocr/summary.json` | Per-page local OCR rows (recall, confidence, provenance, timing) and the task 6.7 summary |
 | `output/probe/`, `probe.json` | Exploratory page-fraction boundary probe and position sweep |
 | `synthetic.json` | Synthetic degraded set for Stage B (CER reference) |
 | `SOURCING.md`, `sources.json` | Corpus provenance, licences and hashes |
