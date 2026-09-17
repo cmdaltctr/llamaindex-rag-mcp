@@ -121,8 +121,9 @@ routing output never decide a label.
 1. Render the page with poppler `pdftoppm`: 150 dpi, 1600 px long side, PNG.
 2. Extract the text layer with poppler `pdftotext -layout` and with pypdf.
 3. Get a reference transcription of the page image from a vision model via
-   OpenRouter. Temperature 0. Output is JSON with
-   `legibility` (`legible`, `illegible`, `no_text`) and `transcription`.
+   OpenRouter (`google/gemini-3.8-flash`, pinned). Temperature 0. Output is
+   JSON with `legibility` (`legible`, `illegible`, `no_text`) and
+   `transcription`. Mathematics is written as plain Unicode, never LaTeX.
 
 pypdf is also fallback tier 2 of the measured path. A text layer that any
 independent extractor reads is a usable text layer, so this is disclosed and
@@ -130,8 +131,9 @@ accepted.
 
 ### Match score
 
-Normalise text with NFKC and lowercase. Split on non-word characters. Drop
-tokens shorter than 2 characters. `R` is the multiset token recall of the
+Normalise text with NFKC and lowercase. Remove LaTeX command sequences
+(backslash followed by letters). Split on non-word characters and underscores.
+Drop tokens shorter than 2 characters. `R` is the multiset token recall of the
 text layer against the reference transcription. `R_best` is the higher `R`
 of the two extractors.
 
@@ -140,8 +142,8 @@ of the two extractors.
 | Condition (first match wins) | Page label |
 | --- | --- |
 | `legibility == illegible` | `unrecoverable` |
-| Reference has fewer than 10 tokens | `usable` (no text) |
 | Call failed after 3 attempts, or output truncated | `ambiguous` |
+| Reference has fewer than 10 tokens | `usable` (no text) |
 | `R_best >= 0.80` | `usable` |
 | `R_best < 0.50` | `needs_ocr` |
 | Otherwise | `ambiguous` |
@@ -174,6 +176,11 @@ is disclosed.
 If disagreement is above 10%, revise the page rule and repeat the spot check.
 This is allowed because no routing output exists yet. Record the revision in
 `plan.json` amendments.
+
+**Amendment (2026-09-17, before any label):** a 20-page probe showed LaTeX
+mathematics in the reference transcription. The prompt and token rule above
+were amended, and the probe pages regenerated. The page-rule order was also
+corrected so a failed call is `ambiguous`, never `usable`. See `plan.json` amendments.
 
 ## Measurements (task 1.3)
 

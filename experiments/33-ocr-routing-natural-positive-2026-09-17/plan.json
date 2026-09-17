@@ -6,20 +6,24 @@
   "study_type": "preregistered measurement of the shipped OCR routing gate on a stratified natural corpus",
   "experimental_unit": "one natural open-licence PDF read once through the shipped local reader path with ocr_client=None",
   "primary_metric": "routing recall and false-negative count on natural held-out documents labelled needs_ocr",
-
   "measured_policy": {
     "description": "the packaged policy exactly as shipped; nothing is replayed or reimplemented",
     "ocr_fallback_enabled": true,
     "ocr_fallback_min_confidence": 0.5,
     "ocr_fallback_page_fraction": 0.1,
-    "unconditional_types": ["image_based", "scanned"],
+    "unconditional_types": [
+      "image_based",
+      "scanned"
+    ],
     "reader": "pdf_inspector",
-    "reader_fallback_chain": ["liteparse", "pypdf"],
+    "reader_fallback_chain": [
+      "liteparse",
+      "pypdf"
+    ],
     "code_path": "omrg.core.ingestion.backends.local.read_documents -> integrations.pdf.build_pdf_reader -> OcrRoutedPdfInspector(PdfInspectorReader)",
     "ocr_client": null,
     "basis": "ADR-065 (packaged gate), ADR-066 (reader fallback chain), TDR-024 (evidence correction)"
   },
-
   "strata": {
     "born_digital": "PDF produced from a digital source; expected to stay on the fast path",
     "mixed": "mostly born-digital PDF containing some scanned or image-only pages",
@@ -28,12 +32,19 @@
     "reader_failure": "usable text layer that pdf-inspector extracts as empty (TDR-024 Type A GlyphLessFont or Type B WinAnsi without /ToUnicode)",
     "stratum_role": "a stratum is assigned from provenance at sourcing; routing correctness is judged against the independent label, never against the stratum"
   },
-
   "corpus_rules": {
     "target_per_stratum": 8,
     "unrecoverable_target": "at least 3 unrecoverable pages or documents across the corpus",
     "max_pages_per_document": 100,
-    "licences_allowed": ["public domain", "CC0", "CC BY", "CC BY-SA", "CC BY-NC", "CC BY-NC-SA", "US government work"],
+    "licences_allowed": [
+      "public domain",
+      "CC0",
+      "CC BY",
+      "CC BY-SA",
+      "CC BY-NC",
+      "CC BY-NC-SA",
+      "US government work"
+    ],
     "licence_note": "non-commercial licences follow the Experiment 31 precedent; PDFs are never committed (experiments/**/*.pdf is gitignored)",
     "sourcing_log": "sources.json (committed) and SOURCING.md (committed, generated from sources.json)",
     "sourcing_log_location_deviation": "tasks.md 2.8 names corpus/SOURCING.md, but experiments/**/corpus/ is gitignored; the log lives at the experiment root so it is committed",
@@ -42,29 +53,42 @@
     "development_exclusions": "dev_exclusions.json — every SHA-256 from Experiments 29, 30 and 31; a candidate matching any digest is rejected from held-out",
     "split": "every accepted natural document is held_out; synthetic documents are a separate stratum and never held_out"
   },
-
   "labels": {
     "status": "RULE FROZEN — labels not yet produced",
-    "files": {"page_evidence": "output/page_evidence.json", "labels": "labels.json", "spot_check": "spot_check.json"},
-    "page_labels": ["usable", "needs_ocr", "unrecoverable", "ambiguous"],
+    "files": {
+      "page_evidence": "output/page_evidence.json",
+      "labels": "labels.json",
+      "spot_check": "spot_check.json"
+    },
+    "page_labels": [
+      "usable",
+      "needs_ocr",
+      "unrecoverable",
+      "ambiguous"
+    ],
     "rendering": "poppler pdftoppm, 150 dpi, scaled to 1600 px long side, PNG",
-    "text_layer_extractors": ["poppler pdftotext (per page, -layout)", "pypdf page.extract_text()"],
+    "text_layer_extractors": [
+      "poppler pdftotext (per page, -layout)",
+      "pypdf page.extract_text()"
+    ],
     "text_layer_independence": "pdf-inspector is never a label extractor; pypdf is also fallback tier 2 of the measured path, which is disclosed — a text layer that any independent extractor reads is a usable text layer",
     "reference_transcription": {
       "provider": "OpenRouter",
-      "model": "pinned in label_pages.py before the first call; the response model id is recorded per page",
+      "model": "google/gemini-3.8-flash (pinned in label_pages.py; response model id recorded per page)",
       "temperature": 0,
-      "max_output_tokens": 4096,
+      "max_output_tokens": 8192,
       "output": "JSON {legibility: legible|illegible|no_text, transcription: string}",
       "truncated_output": "finish_reason length -> page is ambiguous",
-      "failed_call": "three attempts; still failing -> page is ambiguous with label_error recorded"
+      "failed_call": "three attempts; still failing -> page is ambiguous with label_error recorded",
+      "reasoning": "effort low, reasoning text excluded",
+      "prompt_rule": "transcribe readable text verbatim in the original script; mathematical notation as plain Unicode characters, never LaTeX"
     },
-    "token_rule": "NFKC, lowercase, split on non-word characters, drop tokens shorter than 2 characters",
+    "token_rule": "NFKC, lowercase, remove LaTeX command sequences (backslash followed by letters), split on non-word characters and underscores, drop tokens shorter than 2 characters",
     "match_score": "R = multiset token recall of the text layer against the reference transcription; R_best = max over the two extractors",
     "page_rule": [
       "legibility == illegible -> unrecoverable",
-      "reference has fewer than 10 tokens and legibility != illegible -> usable (no_text)",
       "label_error or truncated -> ambiguous",
+      "reference has fewer than 10 tokens -> usable (no_text)",
       "R_best >= 0.80 -> usable",
       "R_best < 0.50 -> needs_ocr",
       "0.50 <= R_best < 0.80 -> ambiguous"
@@ -80,17 +104,14 @@
     "spot_check": "operator reviews every unrecoverable page, every page in an ambiguous document, and a seeded (seed 33) 10% random sample of the remaining pages against the rendered image; agreement is recorded in spot_check.json",
     "freeze_condition": "labels are frozen only when operator disagreement on the random sample is at most 10%; above that, the page rule is revised and the spot check repeated — allowed because no routing output exists yet"
   },
-
   "stages": {
     "A": "routing only, ocr_client=None, no OCR worker, no model load, no network",
     "B": "real OCR — NOT authorised; requires a separate decision-register entry naming subset, timeout and runtime budget"
   },
-
   "ocr_authorisation": {
     "authorised": false,
     "note": "Stage A only. OCR cost is reported as a projection; recovery quality is unmeasured."
   },
-
   "measurements": {
     "population": "natural held-out documents whose document label is needs_ocr or usable",
     "primary": {
@@ -109,9 +130,11 @@
       "unrecoverable_routes": "routing decision per unrecoverable document, outside every denominator",
       "reader_quality_loss": "fast-path documents whose extracted-text token recall against the reference transcription of legible pages is below 0.80; attributed to extraction_fallback_backend when set, else to pdf_inspector; never counted as an OCR false negative"
     },
-    "monitored": ["read_seconds per document", "content-type detection label and detector path"]
+    "monitored": [
+      "read_seconds per document",
+      "content-type detection label and detector path"
+    ]
   },
-
   "decision_rule": {
     "specified_before_data": true,
     "incomplete": "zero natural held-out needs_ocr documents -> held-out recall is NOT claimed; result INCOMPLETE for the primary safety question",
@@ -119,21 +142,78 @@
     "false_positive_trigger": "false_positive_count >= 1 on born_digital -> report as a material finding and recommend a separate calibration proposal",
     "thresholds": "0.5 and 0.10 are never changed by this experiment"
   },
-
   "preflight_assertions": [
-    {"manifest_field": "settings.ocr_fallback_enabled", "operator": "eq", "expected": true},
-    {"manifest_field": "settings.ocr_fallback_min_confidence", "operator": "eq", "expected": 0.5},
-    {"manifest_field": "settings.ocr_fallback_page_fraction", "operator": "eq", "expected": 0.1},
-    {"manifest_field": "settings.pdf_reader", "operator": "eq", "expected": "pdf_inspector"},
-    {"manifest_field": "policy.unconditional_types", "operator": "eq", "expected": ["image_based", "scanned"]},
-    {"manifest_field": "policy.routing_code_clean", "operator": "eq", "expected": true},
-    {"manifest_field": "policy.seam_class", "operator": "eq", "expected": "OcrRoutedPdfInspector"},
-    {"manifest_field": "ocr.client_injected", "operator": "eq", "expected": false},
-    {"manifest_field": "ocr.worker_started", "operator": "eq", "expected": false},
-    {"manifest_field": "freeze.verified", "operator": "eq", "expected": true},
-    {"manifest_field": "labels.frozen", "operator": "eq", "expected": true},
-    {"manifest_field": "secrets.recorded", "operator": "eq", "expected": false}
+    {
+      "manifest_field": "settings.ocr_fallback_enabled",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "settings.ocr_fallback_min_confidence",
+      "operator": "eq",
+      "expected": 0.5
+    },
+    {
+      "manifest_field": "settings.ocr_fallback_page_fraction",
+      "operator": "eq",
+      "expected": 0.1
+    },
+    {
+      "manifest_field": "settings.pdf_reader",
+      "operator": "eq",
+      "expected": "pdf_inspector"
+    },
+    {
+      "manifest_field": "policy.unconditional_types",
+      "operator": "eq",
+      "expected": [
+        "image_based",
+        "scanned"
+      ]
+    },
+    {
+      "manifest_field": "policy.routing_code_clean",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "policy.seam_class",
+      "operator": "eq",
+      "expected": "OcrRoutedPdfInspector"
+    },
+    {
+      "manifest_field": "ocr.client_injected",
+      "operator": "eq",
+      "expected": false
+    },
+    {
+      "manifest_field": "ocr.worker_started",
+      "operator": "eq",
+      "expected": false
+    },
+    {
+      "manifest_field": "freeze.verified",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "labels.frozen",
+      "operator": "eq",
+      "expected": true
+    },
+    {
+      "manifest_field": "secrets.recorded",
+      "operator": "eq",
+      "expected": false
+    }
   ],
-
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-09-17",
+      "stage": "before any label or routing output; after a 20-page cost probe",
+      "change": "reference model pinned to google/gemini-3.8-flash; max_output_tokens 4096 -> 8192 (dense patent and newspaper pages); prompt asks for plain-Unicode mathematics; token rule strips LaTeX command sequences and splits on underscores; page rule order corrected so a failed or truncated call is ambiguous before the no-text rule (a failed call has zero reference tokens and would otherwise be labelled usable)",
+      "reason": "the probe scored a born-digital arXiv page (bd07 p34) at R_best 0.45 because the reference transcription wrote mathematics as LaTeX (\\mathcal, \\frac, i_m), which no text layer contains; left unfixed, born-digital mathematics pages would be mislabelled needs_ocr",
+      "disclosure": "the 20 probe transcripts were discarded and regenerated under the amended prompt; the probe cost ($0.06) is reported"
+    }
+  ]
 }
