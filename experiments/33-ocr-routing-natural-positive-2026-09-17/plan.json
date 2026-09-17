@@ -109,6 +109,22 @@
       "figure_text": "text inside figures, charts, diagrams, drawings, photographs, stamps and signatures; measured apart as figure_tokens_missing, never decides label",
       "split_pass": "second OpenRouter pass (same pinned model, SPLIT_PROMPT in label_pages.py) on every page whose all-text label is needs_ocr or ambiguous; pages labelled usable or unrecoverable keep one label for both",
       "spot_check": "operator judges body text only"
+    },
+    "validation_exercises": {
+      "exercise_1_spot_check": {
+        "pages": 277,
+        "hypothesis": "automatic answer key matches human judgement with <=10% disagreement on the random sample",
+        "result": "FAILED 2026-09-17: 41.5% random, 36.1% required",
+        "diagnosis": "construct mismatch, not a broken rule: 62 of 121 operator needs_ocr pages carried >=80% of body words; operator notes name equations, figures, columns, tables, headings/footnotes, old-book spelling and non-Latin scripts",
+        "consequence": "operator verdicts kept as understanding_label with notes; never score routing"
+      },
+      "exercise_2_presence_recheck": {
+        "pages": 105,
+        "hypothesis": "restricted to 'are the words there?', the operator agrees with the rule on >=90% of the random sample",
+        "pass": "answer key frozen; routing graded against it",
+        "fail": "the rule is wrong: revise the 0.80/0.50 cut-offs or the token matching and re-answer the same pages",
+        "evidence_shown": "both answer-key text layers (poppler, pypdf), stated as not the pipeline output"
+      }
     }
   },
   "stages": {

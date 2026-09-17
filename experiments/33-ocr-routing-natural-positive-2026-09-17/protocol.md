@@ -178,6 +178,39 @@ charts, drawings, photographs, stamps and signatures).
 - `figure_tokens_missing` reports figure text the text layer lacks. It never
   decides a label.
 
+### Label validation exercises
+
+Label validation is preregistered in two exercises. Each has its own
+hypothesis and its own consequence.
+
+**Exercise 1 — spot check (277 pages: 183 required, 94 random)**
+
+- Hypothesis: the automatic answer key matches human judgement, with 10% or
+  less disagreement on the random sample.
+- Result (2026-09-17): **failed**, 41.5% disagreement on the random sample and
+  36.1% on the required pages.
+- Diagnosis: not a broken rule, a different question. 62 of the operator's 121
+  `needs_ocr` pages already carried 80% or more of the body words. The
+  operator's notes name the real problem: equations and scientific notation,
+  figures and charts, two- and three-column layout, tables, headings,
+  footnotes and sidebars, old-book spelling, and non-Latin scripts.
+- Consequence: the operator verdicts are kept as `understanding_label` with
+  their notes, reported alongside the results and never used to score
+  routing.
+
+**Exercise 2 — presence re-check (the 105 disagreeing pages)**
+
+- Hypothesis: asked only "are the words there?", the operator agrees with the
+  rule on 90% or more of the random sample.
+- What it tests: whether the Exercise 1 diagnosis is right, and whether the
+  rule is a sound text-present detector.
+- If it passes: the answer key is trusted and frozen, and routing is graded
+  against it. Exercise 1 stands as the separate needs-understanding finding.
+- If it fails: the rule itself is wrong. The rule is revised (the 0.80 and
+  0.50 cut-offs, or the token matching) and the same pages are re-answered.
+- The re-check shows both answer-key text layers (poppler and pypdf) and
+  states that they are not the pipeline output.
+
 ### Operator spot check and label freeze
 
 1. Judge body text only. Review every `unrecoverable` page against its image.
