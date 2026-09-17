@@ -8,14 +8,14 @@
 
 ## 2. Build the natural corpus
 
-- [ ] 2.1 Select born-digital negative PDFs.
-- [ ] 2.2 Select mixed PDFs with independently assessed OCR-needed and healthy pages.
-- [ ] 2.3 Select image-only scanned/image-based positive PDFs.
-- [ ] 2.4 Select scanned PDFs with an existing OCR text layer, covering faithful and junk text layers.
-- [ ] 2.5 Select reader-failure PDFs (usable text layer that `pdf-inspector` cannot read) and label them apart from scanned positives.
+- [x] 2.1 Select born-digital negative PDFs.
+- [x] 2.2 Select mixed PDFs with independently assessed OCR-needed and healthy pages.
+- [x] 2.3 Select image-only scanned/image-based positive PDFs.
+- [x] 2.4 Select scanned PDFs with an existing OCR text layer, covering faithful and junk text layers.
+- [x] 2.5 Select reader-failure PDFs (usable text layer that `pdf-inspector` cannot read) and label them apart from scanned positives.
 - [ ] 2.6 Select unrecoverable examples (pure noise, photographed page at an angle).
-- [ ] 2.7 Separate prior development documents (Experiment 29 dev set, Experiment 30 and 31 corpora) from independent held-out documents.
-- [ ] 2.8 Log title, source URL, licence, page count, and SHA-256 per document in `corpus/SOURCING.md`.
+- [x] 2.7 Separate prior development documents (Experiment 29 dev set, Experiment 30 and 31 corpora) from independent held-out documents.
+- [x] 2.8 Log title, source URL, licence, page count, and SHA-256 per document in `corpus/SOURCING.md`.
 - [ ] 2.9 Hash and freeze corpus membership and labels.
 
 ## 3. Implement the routing harness
