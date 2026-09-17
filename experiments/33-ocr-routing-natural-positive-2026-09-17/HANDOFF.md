@@ -13,15 +13,15 @@ merge decision. Everything below is committed; nothing depends on chat history.
 
 Do not open a third worktree without asking the operator.
 
-`feat/full-page-ocr-evidence` closes in queue item 1 and its worktree is
-removed.
+`feat/full-page-ocr-evidence` closed on 2026-09-18: merged as `1e0a4b0`,
+worktree and local branch removed.
 
 ## Queue
 
-1. **Merge PR #95** (`feat/full-page-ocr-evidence`). TDR-026 is Accepted with
-   the Stage A numbers (`3b29bd0`); the OpenSpec change is archived and its
-   pdf-reader delta synced into the main spec (`6ef9344`). Remaining: squash
-   merge to `v3`, carry the data forward, remove the worktree.
+1. ~~**Merge PR #95**~~ **Done 2026-09-18.** Squash-merged to `v3` as
+   `1e0a4b0`, carrying the code fix, TDR-026 as Accepted with the Stage A
+   numbers, the `pdf-reader` delta synced into the main spec, and the archived
+   change. Worktree and local branch removed; see the movement log.
 2. **LiteParse join-order fix**, its own OpenSpec change on
    `feat/page-level-ocr-routing`. Scope and evidence gate below.
 3. **`page-level-ocr-routing` tasks 3 to 6**, same branch. Already
@@ -151,7 +151,7 @@ Heavy artefacts should go to a GitHub Release before the final removal, per the
 
 | Date | From | To | What |
 | --- | --- | --- | --- |
-| | | | |
+| 2026-09-18 | `feat/full-page-ocr-evidence` | — | Nothing carried. Its only preserve-class artefact was `graphify-out/` (40 files, 2,448,366 bytes), which is derived from the working tree and regenerates with `graphify update .`. The destination held its own graph of its own branch (21 files, 1,281,171 bytes, `graph.json` sha `d60cd498…` against the source's `52cd415c…`), so copying would have overwritten a live graph with a stale one. Operator decided not to copy. No `.pi`, `.ua`, experiment `output/` or `corpus/`, `eval_results.json`, `ground-truth.json` or `.env` existed there. Worktree removed after PR #95 merged as `1e0a4b0` |
 
 ## Guardrails
 
