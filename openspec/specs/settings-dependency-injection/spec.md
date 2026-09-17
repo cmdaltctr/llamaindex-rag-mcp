@@ -81,6 +81,18 @@ collection.
   settings
 - **AND** the factory SHALL perform no settings lookup of its own
 
+#### Scenario: Content-type detection receives the injected settings
+
+- **WHEN** `ingest_path_async()` runs in a process that constructed its
+  `Engine` directly and installed no process-global default
+  (`get_default_effective_settings()` would raise)
+- **THEN** content-type detection MUST proceed using the operation's injected
+  `EffectiveSettings`
+- **AND** it MUST NOT raise, log, or otherwise fall back to extension-based
+  routing because of a settings lookup
+- **AND** a populated `content_type` MUST participate in the file's index
+  identity exactly as it does in processes that installed the global
+
 ### Requirement: No settings singleton outside the composition root
 
 The resolved `Settings` singleton SHALL NOT be instantiated at module import
