@@ -7,7 +7,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -16,8 +16,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "I don't see which part is the heading etc. No \"# Title\" for H1. I hope the detailed json have this."
   },
   {
    "doc_id": "mx01",
@@ -25,7 +25,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -34,7 +34,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -43,7 +43,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -52,7 +52,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -61,8 +61,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "The foot note line should be detected as footnote, not part of the paragraphs"
   },
   {
    "doc_id": "mx01",
@@ -70,8 +70,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "Again the extracted content shows no indication of what is header h1 and h2. "
   },
   {
    "doc_id": "mx01",
@@ -79,8 +79,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "it extracts the words of everything else, but not the words written inside the figure (image) extracted"
   },
   {
    "doc_id": "mx01",
@@ -88,7 +88,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -97,8 +97,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "\"14Defense Contract Management Agency\" the \"14\" is the number of footnote! NOT 14 Defense"
   },
   {
    "doc_id": "mx01",
@@ -106,8 +106,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "the Left: sidebar heading / summary heading needs a separation from the main body if possible"
   },
   {
    "doc_id": "mx01",
@@ -115,7 +115,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -124,7 +124,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -133,7 +133,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -142,8 +142,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "again the footnote \"16The Army...\". The 16 is the footnote number, a superscript"
   },
   {
    "doc_id": "mx01",
@@ -151,7 +151,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -160,8 +160,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "Left: sidebar heading / summary heading needs its own paragraph so we know."
   },
   {
    "doc_id": "mx01",
@@ -169,7 +169,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -178,7 +178,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -187,8 +187,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "before the footnote, there is a line, i think we should have that"
   },
   {
    "doc_id": "mx01",
@@ -196,7 +196,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -205,8 +205,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "the footnote number issue needs to be solve or at least treated as footnote number"
   },
   {
    "doc_id": "mx01",
@@ -214,7 +214,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -223,7 +223,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -232,7 +232,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -241,7 +241,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -250,7 +250,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -259,7 +259,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -268,7 +268,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -277,8 +277,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "it needs separation of concern we know there is a \"Left: sidebar heading / summary heading\""
   },
   {
    "doc_id": "mx03",
@@ -286,7 +286,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -295,7 +295,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -304,7 +304,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -313,7 +313,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -322,7 +322,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -331,7 +331,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -340,7 +340,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -349,7 +349,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -358,7 +358,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -367,7 +367,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -376,7 +376,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -385,7 +385,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -394,7 +394,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -403,7 +403,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -412,7 +412,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -421,7 +421,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -430,7 +430,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -439,7 +439,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -448,7 +448,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -457,7 +457,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -466,7 +466,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -475,7 +475,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -484,7 +484,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -493,7 +493,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -502,7 +502,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -511,7 +511,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -520,7 +520,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -529,7 +529,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -538,7 +538,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -547,7 +547,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -556,7 +556,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -565,7 +565,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -574,7 +574,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -583,7 +583,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -592,7 +592,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -601,7 +601,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -610,7 +610,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -619,7 +619,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -628,7 +628,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -637,7 +637,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -646,7 +646,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -655,7 +655,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -664,7 +664,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -673,7 +673,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -682,7 +682,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -691,7 +691,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -700,7 +700,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -709,7 +709,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -718,7 +718,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -727,7 +727,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -736,7 +736,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -745,7 +745,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -754,7 +754,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -763,7 +763,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -772,7 +772,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -781,7 +781,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -790,7 +790,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -799,7 +799,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -808,7 +808,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -817,7 +817,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -826,7 +826,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -835,7 +835,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -844,7 +844,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -853,7 +853,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -862,7 +862,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -871,7 +871,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "ambiguous",
    "note": null
   },
   {
@@ -880,7 +880,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -889,7 +889,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "ambiguous",
    "note": null
   },
   {
@@ -898,7 +898,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -907,7 +907,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -916,7 +916,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -925,7 +925,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -934,7 +934,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -943,7 +943,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -952,7 +952,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -961,7 +961,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -970,7 +970,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -979,7 +979,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -988,7 +988,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -997,7 +997,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1006,7 +1006,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1015,7 +1015,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1024,7 +1024,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1033,7 +1033,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "ambiguous",
    "note": null
   },
   {
@@ -1042,7 +1042,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1051,8 +1051,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "like all the rest of old documents that need ocr, this one does not honor the paragraphs. but usable"
   },
   {
    "doc_id": "tl02",
@@ -1060,7 +1060,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "ambiguous",
    "note": null
   },
   {
@@ -1069,8 +1069,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "the equation needs ocr"
   },
   {
    "doc_id": "tl02",
@@ -1078,7 +1078,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1087,7 +1087,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1096,7 +1096,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1105,7 +1105,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1114,7 +1114,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1123,7 +1123,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1132,7 +1132,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1141,7 +1141,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1150,7 +1150,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1159,8 +1159,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1168,8 +1168,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1177,8 +1177,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1186,8 +1186,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1195,8 +1195,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1204,8 +1204,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1213,8 +1213,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1222,8 +1222,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1231,8 +1231,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1240,8 +1240,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1249,8 +1249,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1258,8 +1258,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1267,8 +1267,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl02",
@@ -1276,7 +1276,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1285,7 +1285,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1294,8 +1294,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "usable but need better support for two-columns extraction"
   },
   {
    "doc_id": "tl02",
@@ -1303,7 +1303,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1312,8 +1312,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs to be sent to llm to make sense of the figure?"
   },
   {
    "doc_id": "tl07",
@@ -1321,8 +1321,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "ambiguous",
+   "note": "extracted something, needs supports for two columns extraction"
   },
   {
    "doc_id": "tl07",
@@ -1330,8 +1330,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "ambiguous",
+   "note": "extracted something, needs supports for two columns extraction"
   },
   {
    "doc_id": "rf05",
@@ -1339,7 +1339,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1348,7 +1348,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1357,8 +1357,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1366,8 +1366,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1375,8 +1375,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1384,8 +1384,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1393,8 +1393,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1402,8 +1402,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1411,8 +1411,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1420,8 +1420,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1429,7 +1429,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1438,7 +1438,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1447,7 +1447,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1456,8 +1456,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1465,8 +1465,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1474,7 +1474,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1483,7 +1483,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1492,8 +1492,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1501,7 +1501,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1510,7 +1510,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1519,8 +1519,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1528,8 +1528,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the words, to get the nearest match"
   },
   {
    "doc_id": "rf05",
@@ -1537,7 +1537,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1546,7 +1546,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1555,8 +1555,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match"
   },
   {
    "doc_id": "rf07",
@@ -1564,8 +1564,8 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "unrecoverable",
+   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match"
   },
   {
    "doc_id": "rf07",
@@ -1573,7 +1573,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1582,7 +1582,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1591,7 +1591,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1600,7 +1600,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1609,7 +1609,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1618,7 +1618,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1627,7 +1627,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1636,7 +1636,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1645,7 +1645,7 @@
    "reason": "unrecoverable page or page of an ambiguous document",
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   }
  ],
@@ -1656,8 +1656,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs better support for two columns"
   },
   {
    "doc_id": "bd02",
@@ -1665,8 +1665,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs better support for two columns"
   },
   {
    "doc_id": "bd03",
@@ -1674,8 +1674,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names"
   },
   {
    "doc_id": "bd04",
@@ -1683,8 +1683,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd04",
@@ -1692,8 +1692,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd04",
@@ -1701,8 +1701,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd04",
@@ -1710,8 +1710,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd04",
@@ -1719,8 +1719,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd04",
@@ -1728,8 +1728,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
   },
   {
    "doc_id": "bd05",
@@ -1737,7 +1737,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1746,7 +1746,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1755,8 +1755,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
   },
   {
    "doc_id": "bd07",
@@ -1764,8 +1764,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
   },
   {
    "doc_id": "bd07",
@@ -1773,7 +1773,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -1782,8 +1782,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
   },
   {
    "doc_id": "io01",
@@ -1791,8 +1791,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io01",
@@ -1800,8 +1800,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io01",
@@ -1809,8 +1809,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io01",
@@ -1818,8 +1818,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io02",
@@ -1827,8 +1827,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io03",
@@ -1836,8 +1836,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for the language and its alphabets"
   },
   {
    "doc_id": "io04",
@@ -1845,8 +1845,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for dual column and images needs llm maybe "
   },
   {
    "doc_id": "io04",
@@ -1854,8 +1854,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for dual column and images needs llm maybe "
   },
   {
    "doc_id": "io04",
@@ -1863,8 +1863,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for dual/triple column and images needs llm maybe "
   },
   {
    "doc_id": "io04",
@@ -1872,8 +1872,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for dual/triple column and images needs llm maybe "
   },
   {
    "doc_id": "io06",
@@ -1881,8 +1881,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1890,8 +1890,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1899,8 +1899,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1908,7 +1908,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1917,8 +1917,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1926,8 +1926,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1935,8 +1935,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io06",
@@ -1944,7 +1944,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1953,7 +1953,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -1962,8 +1962,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io07",
@@ -1971,8 +1971,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "io07",
@@ -1980,8 +1980,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs support for language"
   },
   {
    "doc_id": "mx02",
@@ -1989,7 +1989,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -1998,7 +1998,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2007,7 +2007,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2016,8 +2016,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "ambiguous",
+   "note": "words extracted well, but needs llm to make sense of the image"
   },
   {
    "doc_id": "mx04",
@@ -2025,7 +2025,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2034,7 +2034,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2043,8 +2043,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted well, but needs llm to make sense of the image"
   },
   {
    "doc_id": "mx05",
@@ -2052,7 +2052,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2061,8 +2061,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "words extracted well, but needs llm to make sense of the image"
   },
   {
    "doc_id": "mx07",
@@ -2070,7 +2070,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2079,7 +2079,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2088,7 +2088,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2097,7 +2097,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2106,7 +2106,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2115,7 +2115,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2124,7 +2124,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2133,7 +2133,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2142,7 +2142,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2151,7 +2151,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2160,7 +2160,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2169,7 +2169,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2178,7 +2178,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2187,7 +2187,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2196,8 +2196,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "support for scientifc letters and figures needs toe understood by llm"
   },
   {
    "doc_id": "rf03",
@@ -2205,8 +2205,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "support for scientifc letters and figures needs toe understood by llm"
   },
   {
    "doc_id": "rf04",
@@ -2214,8 +2214,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs dual column support"
   },
   {
    "doc_id": "rf04",
@@ -2223,8 +2223,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs dual column and table support"
   },
   {
    "doc_id": "rf06",
@@ -2232,7 +2232,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2241,7 +2241,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2250,7 +2250,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2259,7 +2259,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2268,7 +2268,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2277,7 +2277,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2286,7 +2286,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2295,7 +2295,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2304,7 +2304,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2313,7 +2313,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2322,7 +2322,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2331,7 +2331,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2340,7 +2340,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "unrecoverable",
    "note": null
   },
   {
@@ -2349,7 +2349,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2358,7 +2358,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2367,7 +2367,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2376,7 +2376,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2385,7 +2385,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2394,7 +2394,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
+   "operator_label": "needs_ocr",
    "note": null
   },
   {
@@ -2403,8 +2403,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure"
   },
   {
    "doc_id": "tl01",
@@ -2412,8 +2412,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "ambiguous",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure"
   },
   {
    "doc_id": "tl01",
@@ -2421,8 +2421,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure"
   },
   {
    "doc_id": "tl01",
@@ -2430,8 +2430,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure"
   },
   {
    "doc_id": "tl01",
@@ -2439,8 +2439,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm help to make sense of the figure"
   },
   {
    "doc_id": "tl01",
@@ -2448,8 +2448,9 @@
    "reason": "seeded 10% sample",
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": null,
+   "note_redacted": "unrelated pasted text removed 2026-09-17"
   },
   {
    "doc_id": "tl03",
@@ -2457,7 +2458,7 @@
    "reason": "seeded 10% sample",
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
-   "operator_label": null,
+   "operator_label": "usable",
    "note": null
   },
   {
@@ -2466,8 +2467,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "usable",
+   "note": "needs table extraction support"
   },
   {
    "doc_id": "tl03",
@@ -2475,8 +2476,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "usable",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support for figure"
   },
   {
    "doc_id": "tl03",
@@ -2484,8 +2485,8 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support for figure"
   },
   {
    "doc_id": "tl03",
@@ -2493,8 +2494,17 @@
    "reason": "seeded 10% sample",
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
-   "operator_label": null,
-   "note": null
+   "operator_label": "needs_ocr",
+   "note": "needs llm support for figure"
   }
- ]
+ ],
+ "agreement": {
+  "random_sample_reviewed": 94,
+  "random_sample_total": 94,
+  "random_sample_disagreements": 39,
+  "disagreement_share": 0.4149,
+  "required_reviewed": 183,
+  "required_total": 183,
+  "freeze_allowed": false
+ }
 }

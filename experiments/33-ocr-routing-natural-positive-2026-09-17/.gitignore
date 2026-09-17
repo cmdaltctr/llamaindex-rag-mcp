@@ -12,3 +12,5 @@ output/.synthetic/
 output/.transcripts_split/
 output/.local_ocr_text/
 output/.pdfi_models/
+output/recheck.html
+output/download_verdicts/

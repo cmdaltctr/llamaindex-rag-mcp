@@ -240,6 +240,14 @@
       "change": "labels use body text; all-visible-text labels kept as label_all_text; figure text measured apart; spot check regenerated to judge body text",
       "reason": "the all-text rule labelled born-digital pages with charts and patent drawing sheets needs_ocr (bd02 p5-p6, tl06-tl08 p1), so whole-document routing would be scored against chart labels it cannot cheaply recover",
       "operator_decision": "approved 2026-09-17 (collect both, body text decides)"
+    },
+    {
+      "date": "2026-09-17",
+      "stage": "after the operator spot check, before label freeze or any natural routing output",
+      "change": "two labels: presence_label (is the body text in the text layer; decides the freeze gate and routing scoring) and understanding_label (operator's first verdict: is the extraction good enough for an LLM to understand the page; reported alongside, never scores routing). The 105 pages where the first verdict disagreed with the rule get one narrow presence question (recheck_page.py). Pages with no body text answer 'no_body_text' and take presence usable.",
+      "reason": "first spot check disagreement 41.5% (random) was a construct mismatch: 62 of 121 operator needs_ocr pages already had >=80% of body words in the text layer; operator notes flagged equations, scientific notation, figures, multi-column layout, tables, headings and footnotes, old-book spelling and non-Latin scripts",
+      "adr_note": "operator observations must be stated prominently in the Experiment 33 ADR",
+      "operator_decision": "approved 2026-09-17"
     }
   ],
   "decision_register": [
