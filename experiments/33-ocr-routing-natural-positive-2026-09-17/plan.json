@@ -102,7 +102,14 @@
     "tolerance_basis": "the 10% missing-page tolerance approved in the Experiment 29 decision register; it equals the gate threshold by operator judgement, and it is disclosed",
     "character_count_rule": "character count alone never decides a label",
     "spot_check": "operator reviews every unrecoverable page, every page in an ambiguous document, and a seeded (seed 33) 10% random sample of the remaining pages against the rendered image; agreement is recorded in spot_check.json",
-    "freeze_condition": "labels are frozen only when operator disagreement on the random sample is at most 10%; above that, the page rule is revised and the spot check repeated — allowed because no routing output exists yet"
+    "freeze_condition": "labels are frozen only when operator disagreement on the random sample is at most 10%; above that, the page rule is revised and the spot check repeated — allowed because no routing output exists yet",
+    "body_text_amendment": {
+      "label": "page and document label decided by BODY text: running text, headings, captions, footnotes, table cells, headers and footers",
+      "label_all_text": "the original all-visible-text label, kept for a page-level routing arm",
+      "figure_text": "text inside figures, charts, diagrams, drawings, photographs, stamps and signatures; measured apart as figure_tokens_missing, never decides label",
+      "split_pass": "second OpenRouter pass (same pinned model, SPLIT_PROMPT in label_pages.py) on every page whose all-text label is needs_ocr or ambiguous; pages labelled usable or unrecoverable keep one label for both",
+      "spot_check": "operator judges body text only"
+    }
   },
   "stages": {
     "A": "routing only, ocr_client=None, no OCR worker, no model load, no network",
@@ -226,6 +233,13 @@
       "change": "Stage A measures two arms: sampled_baseline (preregistered gate at 5bac71e) and full_scan_candidate (change full-page-ocr-evidence at 7280766). Measurements, labels, corpus and decision rule are unchanged and applied to each arm.",
       "reason": "the probe showed pdf-inspector counts OCR pages from an 8-page sample, so scanned pages outside the sample never reach the gate; the candidate fix also flags illustration pages in healthy books (TDR-026), so its merge waits for both effects measured on natural documents",
       "operator_decision": "approved 2026-09-17"
+    },
+    {
+      "date": "2026-09-17",
+      "stage": "after labels were produced, before any spot-check verdict, label freeze or natural routing output",
+      "change": "labels use body text; all-visible-text labels kept as label_all_text; figure text measured apart; spot check regenerated to judge body text",
+      "reason": "the all-text rule labelled born-digital pages with charts and patent drawing sheets needs_ocr (bd02 p5-p6, tl06-tl08 p1), so whole-document routing would be scored against chart labels it cannot cheaply recover",
+      "operator_decision": "approved 2026-09-17 (collect both, body text decides)"
     }
   ],
   "decision_register": [
@@ -241,6 +255,17 @@
       "item": "task 5.4 page-fraction boundary probe",
       "decision": "APPROVED by operator",
       "scope": "synthetic documents only, run through the Stage A harness, reported as exploratory; never held-out evidence; thresholds unchanged"
+    },
+    {
+      "date": "2026-09-17",
+      "item": "local OCR tier measurement (task 6.7)",
+      "decision": "APPROVED by operator ('propose + measure')",
+      "subset": "natural pages whose frozen body label or all-text label is needs_ocr",
+      "engine": "pdf-inspector 1.17.0 process_pdf_with_ocr, mode force, PP-OCRv6 Small on ONNX Runtime, CPU, local only",
+      "timeout": "900 s soft limit per document (flagged, not killed)",
+      "runtime_budget": "3600 s wall clock, resumable",
+      "precondition": "labels frozen and freeze verified",
+      "purpose": "evidence gate 1 for OpenSpec change page-level-ocr-routing; PaddleOCR-VL Stage B stays unauthorised"
     }
   ],
   "arms": {

@@ -9,3 +9,6 @@ output/*.log
 analysis.ipynb
 output/spot_check.html
 output/.synthetic/
+output/.transcripts_split/
+output/.local_ocr_text/
+output/.pdfi_models/

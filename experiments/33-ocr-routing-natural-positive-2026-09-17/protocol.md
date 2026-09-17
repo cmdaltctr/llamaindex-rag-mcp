@@ -164,9 +164,23 @@ The 10% tolerance is the missing-page tolerance approved in the Experiment 29
 decision register. It equals the gate threshold by operator judgement. This
 is disclosed.
 
+### Body-text amendment (2026-09-17, before the spot check)
+
+The all-text rule labelled chart pages in born-digital papers and patent
+drawing sheets `needs_ocr`. Whole-document routing would then be scored
+against chart labels. A second pass with the same pinned model splits each
+`needs_ocr` or `ambiguous` page into **body text** (running text, headings,
+captions, footnotes, table cells) and **figure text** (text inside figures,
+charts, drawings, photographs, stamps and signatures).
+
+- `label` (page and document) is decided by body text.
+- `label_all_text` keeps the original rule for a page-level routing arm.
+- `figure_tokens_missing` reports figure text the text layer lacks. It never
+  decides a label.
+
 ### Operator spot check and label freeze
 
-1. Review every `unrecoverable` page against its image.
+1. Judge body text only. Review every `unrecoverable` page against its image.
 2. Review every page of every `ambiguous` document.
 3. Review a seeded (seed 33) 10% random sample of the remaining pages.
 4. Record each verdict in `spot_check.json`.
@@ -241,6 +255,17 @@ sources match the pinned hashes in `plan.json` `arms`. Every measurement and
 the decision rule apply to each arm. `output/arm_comparison.json` lists the
 documents whose route differs. The merge decision for the fix follows this
 comparison.
+
+## Local OCR tier measurement (task 6.7, approved 2026-09-17)
+
+Evidence for OpenSpec change `page-level-ocr-routing`. After the label freeze,
+`local_ocr.py` runs pdf-inspector selective OCR (PP-OCRv6 Small, ONNX Runtime,
+CPU) in `force` mode on every natural page whose body or all-text label is
+`needs_ocr`. It never uses pdf-inspector's routing. It reports token recall
+against the reference transcription, confidence calibration, escalation share
+at confidence cuts 0.5 to 0.9, the hosted-recommended share and seconds per
+page. Budget: 3600 s wall clock, 900 s soft limit per document. PaddleOCR-VL
+Stage B stays unauthorised.
 
 ## Stages (task 3.4)
 

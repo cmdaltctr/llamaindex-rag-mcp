@@ -1,0 +1,2500 @@
+{
+ "instructions": "For each page, open output/.pages/<doc_id>/p<NNN>.png and the two .txt text layers beside it. Set operator_label to usable, needs_ocr, unrecoverable or ambiguous by the protocol definitions, judging BODY text only (text inside figures, charts, drawings, photographs, stamps and signatures does not count). Disagreement on the random_sample entries must be 10% or less before labels.json is frozen.",
+ "required": [
+  {
+   "doc_id": "mx01",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 4,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 5,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 6,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 7,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 8,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 9,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 10,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 11,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 12,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 13,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 14,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 15,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 16,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 17,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 18,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 19,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 20,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 21,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 22,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 23,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 25,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 26,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 27,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 28,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx01",
+   "page": 29,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 4,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 5,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 6,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 7,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 8,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 9,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 10,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 11,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 12,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 13,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 14,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 15,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 16,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 17,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 18,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 19,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 20,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 21,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 22,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 23,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 25,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 26,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 27,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 28,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 29,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 30,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 31,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 32,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 33,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 34,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 35,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 36,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx03",
+   "page": 37,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 4,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 5,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 6,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 7,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 8,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 9,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 10,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 11,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 12,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 13,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 14,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 15,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 16,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 17,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 18,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 19,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 20,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 21,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 22,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 23,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 25,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 26,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 27,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 28,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx06",
+   "page": 29,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io05",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 4,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 5,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 6,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 7,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 8,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 9,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 10,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 11,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 12,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 13,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 14,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 15,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 16,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 17,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 18,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 19,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 20,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 21,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 22,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 23,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 25,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 26,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 27,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 28,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 29,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 30,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 31,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 32,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 33,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 34,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 35,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 36,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 37,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 38,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 39,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 40,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 41,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 42,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 43,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 44,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 45,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 46,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 47,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 48,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl02",
+   "page": 49,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl07",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl07",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl07",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 1,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 2,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 3,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 4,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 5,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 6,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 7,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 8,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 9,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 10,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 11,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 12,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 13,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 14,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 15,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 16,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 17,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 18,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 19,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 20,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 21,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 22,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 23,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf05",
+   "page": 25,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 24,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 28,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 30,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 34,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 40,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 42,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 44,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 46,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 48,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 54,
+   "reason": "unrecoverable page or page of an ambiguous document",
+   "rule_label": "unrecoverable",
+   "all_text_label": "unrecoverable",
+   "operator_label": null,
+   "note": null
+  }
+ ],
+ "random_sample": [
+  {
+   "doc_id": "bd01",
+   "page": 4,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd02",
+   "page": 1,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd03",
+   "page": 16,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 11,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 15,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 16,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 22,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 25,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd04",
+   "page": 30,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd05",
+   "page": 22,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd06",
+   "page": 9,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd07",
+   "page": 8,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd07",
+   "page": 10,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd07",
+   "page": 14,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "bd07",
+   "page": 40,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io01",
+   "page": 23,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io01",
+   "page": 29,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io01",
+   "page": 40,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io01",
+   "page": 41,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io02",
+   "page": 16,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io03",
+   "page": 5,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io04",
+   "page": 16,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io04",
+   "page": 20,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io04",
+   "page": 33,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io04",
+   "page": 52,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 28,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 30,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 46,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 53,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 63,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 68,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 75,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io06",
+   "page": 78,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io07",
+   "page": 5,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io07",
+   "page": 28,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io07",
+   "page": 33,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "io07",
+   "page": 44,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx02",
+   "page": 4,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx04",
+   "page": 3,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx04",
+   "page": 4,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx04",
+   "page": 11,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx04",
+   "page": 21,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx04",
+   "page": 32,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx05",
+   "page": 18,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx05",
+   "page": 28,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx05",
+   "page": 31,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 5,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 8,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 9,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 13,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 14,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 17,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 34,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 37,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx07",
+   "page": 42,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx08",
+   "page": 4,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx08",
+   "page": 6,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx08",
+   "page": 7,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx08",
+   "page": 8,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "mx08",
+   "page": 9,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf02",
+   "page": 7,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf03",
+   "page": 6,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf04",
+   "page": 4,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf04",
+   "page": 6,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf06",
+   "page": 14,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf06",
+   "page": 19,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf06",
+   "page": 58,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf06",
+   "page": 65,
+   "reason": "seeded 10% sample",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf06",
+   "page": 67,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 2,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 8,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 22,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 27,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 29,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 47,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 49,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf07",
+   "page": 52,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf08",
+   "page": 1,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf08",
+   "page": 10,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf08",
+   "page": 16,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "rf08",
+   "page": 20,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 14,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 23,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 34,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 39,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 42,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 59,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 61,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl01",
+   "page": 66,
+   "reason": "seeded 10% sample",
+   "rule_label": "needs_ocr",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl03",
+   "page": 1,
+   "reason": "seeded 10% sample",
+   "rule_label": "ambiguous",
+   "all_text_label": "ambiguous",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl03",
+   "page": 5,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl03",
+   "page": 9,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "usable",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl03",
+   "page": 11,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  },
+  {
+   "doc_id": "tl03",
+   "page": 15,
+   "reason": "seeded 10% sample",
+   "rule_label": "usable",
+   "all_text_label": "needs_ocr",
+   "operator_label": null,
+   "note": null
+  }
+ ]
+}

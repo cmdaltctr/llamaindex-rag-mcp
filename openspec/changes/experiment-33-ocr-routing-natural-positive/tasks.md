@@ -48,6 +48,7 @@
 - [ ] 6.4 Measure evidence recoverability, Recall@K, MRR@10, elapsed OCR time, and failures.
 - [ ] 6.5 Measure CER on synthetic documents against the source PDF text.
 - [ ] 6.6 Record unrecoverable-page outcomes: failure reported or text emitted.
+- [ ] 6.7 Measure the local OCR tier (pdf-inspector selective OCR, force mode) on natural pages labelled needs_ocr: token recall, confidence calibration, escalation share, seconds per page; evidence gate for change page-level-ocr-routing.
 
 ## 7. Report and close
 

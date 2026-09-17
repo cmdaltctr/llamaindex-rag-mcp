@@ -40,6 +40,8 @@ EXP_DIR = Path(__file__).resolve().parent
 SOURCES = EXP_DIR / "sources.json"
 PAGES_DIR = EXP_DIR / "output" / ".pages"
 TRANSCRIPTS_DIR = EXP_DIR / "output" / ".transcripts"
+SPLIT_DIR = EXP_DIR / "output" / ".transcripts_split"
+EVIDENCE = EXP_DIR / "output" / "page_evidence.json"
 
 #: Pinned before the first call (plan.json labels.reference_transcription).
 MODEL = "google/gemini-3.8-flash"
@@ -65,6 +67,24 @@ PROMPT = (
     "text that cannot be read (for example heavy noise, blur, damage or an extreme "
     'angle); then leave transcription empty. Otherwise use "legible": if only part of '
     "the page is unreadable, transcribe the readable part."
+)
+
+#: Amendment 2026-09-17 (split pass): body text and figure text apart, so
+#: whole-document routing is scored on body text and page-level routing
+#: can be scored on either.
+SPLIT_PROMPT = (
+    "Transcribe all readable text on this page image exactly as it appears, in the "
+    "original language and script. Do not translate, summarise or correct. Write "
+    "mathematical notation as plain Unicode characters, never LaTeX. Split the text into "
+    "two fields. body_text: running text in reading order, including headings, captions, "
+    "footnotes, table cells, headers and footers. figure_text: text that appears inside "
+    "figures, charts, diagrams, drawings, photographs, stamps or signatures (for example "
+    "axis labels, legend entries, flowchart boxes, drawing reference numbers). Return only "
+    'JSON of the form {"legibility": "legible" | "illegible" | "no_text", "body_text": '
+    '"...", "figure_text": "..."}. Use "no_text" when the page carries no text. Use '
+    '"illegible" when the page carries text that cannot be read; then leave both fields '
+    'empty. Otherwise use "legible": if only part of the page is unreadable, transcribe '
+    "the readable part."
 )
 
 
@@ -114,7 +134,7 @@ def _text_layers(pdf: Path, page: int, out_base: Path, reader) -> None:
         pypdf_path.write_text(text, encoding="utf-8")
 
 
-def _call_model(png: Path, api_key: str) -> dict:
+def _call_model(png: Path, api_key: str, prompt: str = PROMPT) -> dict:
     image = base64.b64encode(png.read_bytes()).decode("ascii")
     body = {
         "model": MODEL,
@@ -127,7 +147,7 @@ def _call_model(png: Path, api_key: str) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": PROMPT},
+                    {"type": "text", "text": prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}},
                 ],
             }
@@ -142,12 +162,12 @@ def _call_model(png: Path, api_key: str) -> dict:
         return json.loads(response.read())
 
 
-def _transcribe(png: Path, api_key: str) -> dict:
-    record: dict = {"model_requested": MODEL, "attempts": 0}
+def _transcribe(png: Path, api_key: str, split: bool = False) -> dict:
+    record: dict = {"model_requested": MODEL, "attempts": 0, "split": split}
     for attempt in range(1, ATTEMPTS + 1):
         record["attempts"] = attempt
         try:
-            payload = _call_model(png, api_key)
+            payload = _call_model(png, api_key, SPLIT_PROMPT if split else PROMPT)
             choice = payload["choices"][0]
             content = choice["message"]["content"] or ""
             parsed = json.loads(content.strip().removeprefix("```json").removesuffix("```"))
@@ -157,6 +177,8 @@ def _transcribe(png: Path, api_key: str) -> dict:
                 usage=payload.get("usage"),
                 legibility=parsed.get("legibility"),
                 transcription=parsed.get("transcription") or "",
+                body_text=parsed.get("body_text") or "",
+                figure_text=parsed.get("figure_text") or "",
                 label_error=None,
             )
             if record["legibility"] not in {"legible", "illegible", "no_text"}:
@@ -188,15 +210,15 @@ def _work_items(documents: list[dict], probe: int | None) -> list[tuple[dict, in
     return chosen
 
 
-def _process(doc: dict, page: int, api_key: str, readers: dict) -> dict:
+def _process(doc: dict, page: int, api_key: str, readers: dict, split: bool = False) -> dict:
     pdf = EXP_DIR / doc["local_path"]
     page_dir = PAGES_DIR / doc["doc_id"]
     page_dir.mkdir(parents=True, exist_ok=True)
     base = page_dir / f"p{page:03d}"
     png = _render(pdf, page, base)
     _text_layers(pdf, page, base, readers[doc["doc_id"]])
-    out = TRANSCRIPTS_DIR / doc["doc_id"] / f"p{page:03d}.json"
-    record = _transcribe(png, api_key)
+    out = (SPLIT_DIR if split else TRANSCRIPTS_DIR) / doc["doc_id"] / f"p{page:03d}.json"
+    record = _transcribe(png, api_key, split)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -209,6 +231,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--probe", type=int, help="seeded page sample size for the cost probe")
     parser.add_argument("--workers", type=int, default=6)
+    parser.add_argument(
+        "--split",
+        action="store_true",
+        help="body/figure pass on pages labelled needs_ocr or ambiguous (page_evidence.json)",
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -219,10 +246,20 @@ def main() -> int:
     from pypdf import PdfReader
 
     documents = json.loads(SOURCES.read_text(encoding="utf-8"))["documents"]
+    out_dir = SPLIT_DIR if args.split else TRANSCRIPTS_DIR
+    candidates = _work_items(documents, args.probe)
+    if args.split:
+        by_id = {d["doc_id"]: d for d in documents}
+        pages = json.loads(EVIDENCE.read_text(encoding="utf-8"))["pages"]
+        candidates = [
+            (by_id[p["doc_id"]], p["page"])
+            for p in pages
+            if p["label"] in {"needs_ocr", "ambiguous"}
+        ]
     items = [
         (doc, page)
-        for doc, page in _work_items(documents, args.probe)
-        if not (TRANSCRIPTS_DIR / doc["doc_id"] / f"p{page:03d}.json").exists()
+        for doc, page in candidates
+        if not (out_dir / doc["doc_id"] / f"p{page:03d}.json").exists()
     ]
     readers = {
         doc["doc_id"]: PdfReader(str(EXP_DIR / doc["local_path"]))
@@ -235,7 +272,8 @@ def main() -> int:
     done = 0
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         futures = {
-            pool.submit(_process, doc, page, api_key, readers): (doc, page) for doc, page in items
+            pool.submit(_process, doc, page, api_key, readers, args.split): (doc, page)
+            for doc, page in items
         }
         for future in as_completed(futures):
             doc, page = futures[future]

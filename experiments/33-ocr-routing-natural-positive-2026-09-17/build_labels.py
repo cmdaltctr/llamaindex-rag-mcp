@@ -30,6 +30,7 @@ EXP_DIR = Path(__file__).resolve().parent
 SOURCES = EXP_DIR / "sources.json"
 PAGES_DIR = EXP_DIR / "output" / ".pages"
 TRANSCRIPTS_DIR = EXP_DIR / "output" / ".transcripts"
+SPLIT_DIR = EXP_DIR / "output" / ".transcripts_split"
 EVIDENCE = EXP_DIR / "output" / "page_evidence.json"
 LABELS = EXP_DIR / "labels.json"
 SPOT_CHECK = EXP_DIR / "spot_check.json"
@@ -93,6 +94,33 @@ def _evidence(doc: dict, page: int) -> dict:
     r_poppler = recall((page_dir / f"{stem}.pdftotext.txt").read_text("utf-8"), reference)
     r_pypdf = recall((page_dir / f"{stem}.pypdf.txt").read_text("utf-8"), reference)
     r_best = max(r_poppler, r_pypdf)
+    label_all_text = page_label(record, reference, r_best)
+    body = {"label": label_all_text, "r_best": round(r_best, 4), "reference_tokens": len(reference)}
+    figure_tokens = figure_missing = None
+    split_path = SPLIT_DIR / doc["doc_id"] / f"{stem}.json"
+    if split_path.exists():
+        # Amendment 2026-09-17: body text decides the label; figure text is
+        # measured apart as text at risk inside figures.
+        split = json.loads(split_path.read_text("utf-8"))
+        body_ref = tokens(split.get("body_text") or "")
+        layers = [
+            (page_dir / f"{stem}.{name}.txt").read_text("utf-8") for name in ("pdftotext", "pypdf")
+        ]
+        body_r = max(recall(layer, body_ref) for layer in layers)
+        body = {
+            "label": page_label(split, body_ref, body_r),
+            "r_best": round(body_r, 4),
+            "reference_tokens": len(body_ref),
+        }
+        figure_ref = tokens(split.get("figure_text") or "")
+        figure_tokens = len(figure_ref)
+        figure_missing = round(
+            (1 - max(recall(layer, figure_ref) for layer in layers)) * len(figure_ref)
+        )
+    elif label_all_text in {"needs_ocr", "ambiguous"}:
+        raise SystemExit(
+            f"{doc['doc_id']} p{page}: split transcript missing; run label_pages.py --split"
+        )
     return {
         "doc_id": doc["doc_id"],
         "page": page,
@@ -106,7 +134,12 @@ def _evidence(doc: dict, page: int) -> dict:
         "r_best": round(r_best, 4),
         "pypdf_error": (page_dir / f"{stem}.pypdf.error").exists(),
         "cost_usd": (record.get("usage") or {}).get("cost"),
-        "label": page_label(record, reference, r_best),
+        "label_all_text": label_all_text,
+        "body_r_best": body["r_best"],
+        "body_reference_tokens": body["reference_tokens"],
+        "figure_tokens": figure_tokens,
+        "figure_tokens_missing": figure_missing,
+        "label": body["label"],
     }
 
 
@@ -131,6 +164,7 @@ def _spot_check(rows: list[dict], doc_labels: dict[str, str]) -> dict:
             "page": row["page"],
             "reason": reason,
             "rule_label": row["label"],
+            "all_text_label": row["label_all_text"],
             "operator_label": None,
             "note": None,
         }
@@ -139,7 +173,9 @@ def _spot_check(rows: list[dict], doc_labels: dict[str, str]) -> dict:
         "instructions": (
             "For each page, open output/.pages/<doc_id>/p<NNN>.png and the two .txt text "
             "layers beside it. Set operator_label to usable, needs_ocr, unrecoverable or "
-            "ambiguous by the protocol definitions. Disagreement on the random_sample "
+            "ambiguous by the protocol definitions, judging BODY text only (text inside "
+            "figures, charts, drawings, photographs, stamps and signatures does not count). "
+            "Disagreement on the random_sample "
             "entries must be 10% or less before labels.json is frozen."
         ),
         "required": [
@@ -170,6 +206,7 @@ def main() -> int:
     for doc in documents:
         doc_rows = [r for r in rows if r["doc_id"] == doc["doc_id"]]
         counts = Counter(r["label"] for r in doc_rows)
+        counts_all = Counter(r["label_all_text"] for r in doc_rows)
         labels[doc["doc_id"]] = {
             "stratum": doc["stratum"],
             "pages": doc["page_count"],
@@ -178,6 +215,8 @@ def main() -> int:
             },
             "needs_ocr_share": round(counts["needs_ocr"] / doc["page_count"], 4),
             "label": document_label(counts, doc["page_count"]),
+            "label_all_text": document_label(counts_all, doc["page_count"]),
+            "figure_tokens_missing": sum(r["figure_tokens_missing"] or 0 for r in doc_rows),
         }
 
     _write(EVIDENCE, {"rule": "plan.json labels", "pages": rows})
@@ -189,7 +228,10 @@ def main() -> int:
         LABELS,
         {
             "frozen": False,
-            "rule": "plan.json labels.page_rule and labels.document_rule",
+            "rule": (
+                "plan.json labels; label: body text (amendment 2026-09-17); "
+                "label_all_text: all visible text"
+            ),
             "total_cost_usd": round(sum(r["cost_usd"] or 0.0 for r in rows), 4),
             "documents": labels,
         },
