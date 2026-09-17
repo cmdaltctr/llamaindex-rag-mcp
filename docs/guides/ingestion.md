@@ -397,6 +397,12 @@ Read them together:
 metadata field. All four keys are in `EXCLUDED_EMBED_METADATA_KEYS`, so
 they are stored and returned but never embedded and never sent to an LLM.
 
+pdf-inspector decides which pages need OCR from a sample of at most 8
+pages. For a `text_based` PDF longer than 8 pages, the adapter scans every
+page (`extract_pages_markdown`) so `pages_needing_ocr` also counts scanned
+pages outside the sample. The full scan can also count illustration pages
+in healthy books (TDR-026).
+
 Two further keys appear only when the extraction-fallback guard fired —
 pdf-inspector classified the file `text_based` yet extracted nothing, so
 the adapter retried through the tiered fallback chain and recovered the
