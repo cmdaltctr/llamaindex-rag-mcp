@@ -20,5 +20,5 @@
 
 ## 4. Close
 
-- [ ] 4.1 Run `./scripts/local_ci.sh` and `openspec validate --all --strict`.
+- [x] 4.1 Run `./scripts/local_ci.sh` and `openspec validate --all --strict`.
 - [ ] 4.2 Open a PR to `v3`.
