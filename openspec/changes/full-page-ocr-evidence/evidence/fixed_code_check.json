@@ -1,0 +1,231 @@
+{
+ "pdf_inspector_version": "1.17.0",
+ "probe": [
+  {
+   "doc_id": "pb00",
+   "image_pages": 0,
+   "pages": 20,
+   "pdf_type": "text_based",
+   "pages_needing_ocr": 0,
+   "expected_route": false,
+   "fixed_route_by_fraction_or_type": false
+  },
+  {
+   "doc_id": "pb01",
+   "image_pages": 1,
+   "pages": 20,
+   "pdf_type": "mixed",
+   "pages_needing_ocr": 1,
+   "expected_route": false,
+   "fixed_route_by_fraction_or_type": false
+  },
+  {
+   "doc_id": "pb05",
+   "image_pages": 2,
+   "pages": 21,
+   "pdf_type": "text_based",
+   "pages_needing_ocr": 2,
+   "expected_route": false,
+   "fixed_route_by_fraction_or_type": false
+  },
+  {
+   "doc_id": "pb02",
+   "image_pages": 2,
+   "pages": 20,
+   "pdf_type": "mixed",
+   "pages_needing_ocr": 2,
+   "expected_route": true,
+   "fixed_route_by_fraction_or_type": true
+  },
+  {
+   "doc_id": "pb03",
+   "image_pages": 3,
+   "pages": 20,
+   "pdf_type": "text_based",
+   "pages_needing_ocr": 3,
+   "expected_route": true,
+   "fixed_route_by_fraction_or_type": true
+  },
+  {
+   "doc_id": "pb04",
+   "image_pages": 4,
+   "pages": 20,
+   "pdf_type": "mixed",
+   "pages_needing_ocr": 4,
+   "expected_route": true,
+   "fixed_route_by_fraction_or_type": true
+  }
+ ],
+ "position_sweep_detected": {
+  "20": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20
+  ],
+  "27": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27
+  ]
+ },
+ "cost_median_of_3": [
+  {
+   "file_sha8": "15937a21",
+   "pages": 504,
+   "pdf_type": "text_based",
+   "process_pdf_s": 1.57,
+   "full_scan_s": 1.406,
+   "sampled_flagged": 0,
+   "full_flagged": 20
+  },
+  {
+   "file_sha8": "3e26debe",
+   "pages": 476,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.839,
+   "full_scan_s": 0.851,
+   "sampled_flagged": 0,
+   "full_flagged": 18
+  },
+  {
+   "file_sha8": "a31f555d",
+   "pages": 254,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.629,
+   "full_scan_s": 0.617,
+   "sampled_flagged": 0,
+   "full_flagged": 4
+  },
+  {
+   "file_sha8": "f33f4ae5",
+   "pages": 228,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.446,
+   "full_scan_s": 0.44,
+   "sampled_flagged": 0,
+   "full_flagged": 12
+  },
+  {
+   "file_sha8": "3f7d4fde",
+   "pages": 262,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.475,
+   "full_scan_s": 0.468,
+   "sampled_flagged": 0,
+   "full_flagged": 10
+  },
+  {
+   "file_sha8": "9d49eb1f",
+   "pages": 224,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.55,
+   "full_scan_s": 0.546,
+   "sampled_flagged": 0,
+   "full_flagged": 9
+  },
+  {
+   "file_sha8": "3a73f4b5",
+   "pages": 377,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.925,
+   "full_scan_s": 0.901,
+   "sampled_flagged": 0,
+   "full_flagged": 2
+  },
+  {
+   "file_sha8": "a028c7c7",
+   "pages": 285,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.338,
+   "full_scan_s": 0.336,
+   "sampled_flagged": 0,
+   "full_flagged": 6
+  },
+  {
+   "file_sha8": "21cc5ed7",
+   "pages": 328,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.939,
+   "full_scan_s": 1.009,
+   "sampled_flagged": 0,
+   "full_flagged": 61
+  },
+  {
+   "file_sha8": "e26c9cee",
+   "pages": 372,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.82,
+   "full_scan_s": 0.895,
+   "sampled_flagged": 0,
+   "full_flagged": 12
+  },
+  {
+   "file_sha8": "1260496a",
+   "pages": 246,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.445,
+   "full_scan_s": 0.456,
+   "sampled_flagged": 3,
+   "full_flagged": 10
+  },
+  {
+   "file_sha8": "dab76033",
+   "pages": 27,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.175,
+   "full_scan_s": 0.179,
+   "sampled_flagged": 0,
+   "full_flagged": 0
+  },
+  {
+   "file_sha8": "4954f216",
+   "pages": 13,
+   "pdf_type": "text_based",
+   "process_pdf_s": 0.1,
+   "full_scan_s": 0.104,
+   "sampled_flagged": 0,
+   "full_flagged": 0
+  }
+ ]
+}
