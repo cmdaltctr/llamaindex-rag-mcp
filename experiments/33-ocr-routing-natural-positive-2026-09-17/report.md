@@ -173,6 +173,69 @@ newspaper, at 7.11 s per page. Against the Experiment 24 hosted rates
 (33.7–106.4 s per page), local OCR is 20 to 140 times faster per page on this
 corpus.
 
+### Reader comparison on the operator-reviewed pages (extraction quality)
+
+The operator's spot check judged pypdf's text. This measurement scores all
+three readers of the ADR-066 chain on the same 87 reviewed pages, against the
+same reference transcription, on two scores: token recall (did the words
+survive) and reading order (longest common subsequence against the reference
+token stream, divided by its length — did they arrive in reading order).
+Source: `output/reader_comparison.json`, produced by `compare_readers.py`.
+
+| Reader | Median recall | Median order | Pages with no text |
+| --- | ---: | ---: | ---: |
+| `pdf_inspector` | 0.683 | 0.683 | 19 of 41 |
+| `liteparse` | 0.991 | 0.982 | 2 of 41 |
+| `pypdf` | 0.990 | 0.964 | 2 of 41 |
+
+Counted over the 41 reviewed pages the labels call `usable`, where the fast
+path is expected to work.
+
+**pdf-inspector reads well or not at all.** On the 22 `usable` pages where it
+produced text it ties pypdf on recall and equals or beats it on order, never
+worse, with a median order gap of 0.000 against pypdf's 0.021. On the other 19
+(46.3% of the reviewed `usable` pages, all from the seeded random sample) it
+returned nothing. Those split three ways: 7 pages in documents that route to
+OCR regardless (`io06` `scanned`, `mx08` `image_based`); 7 pages in documents
+the ADR-066 chain rescued whole (`rf02`, `rf03`, `rf04`, `rf08`, all to
+liteparse); and 5 pages in `tl01` and `tl03`, which pass the document-level
+silent-empty check and lose those pages with no signal anywhere.
+
+**The column loss is in liteparse's join, not in OCR.** Liteparse keeps
+almost every word and then emits it out of order on multi-column pages. On the
+operator's column pages it scores recall 0.98 with order 0.53, where pypdf
+scores 0.98 and 0.98:
+
+| Page | Operator note | `pdf_inspector` | `liteparse` | `pypdf` |
+| --- | --- | ---: | ---: | ---: |
+| `bd01` p4 | needs better support for two columns | 0.98 / 0.98 | 1.00 / 0.53 | 0.99 / 0.98 |
+| `bd02` p1 | needs better support for two columns | 0.97 / 0.84 | 0.98 / 0.67 | 0.96 / 0.60 |
+| `rf04` p4 | needs dual column support | — | 0.98 / 0.53 | 0.98 / 0.98 |
+| `rf04` p6 | needs dual column and table support | — | 0.98 / 0.53 | 0.98 / 0.97 |
+| `tl03` p5 | needs table extraction support | — | 0.76 / 0.74 | 0.94 / 0.85 |
+
+Recall / order. An em dash means the reader produced no text for that page.
+
+`rf04` is rescued to liteparse, so liteparse's 0.53 is what ships — worse than
+the pypdf text the operator judged. The liteparse adapter already labels each
+page `single`, `left` or `right` from its text-item x positions, but the join
+(`"\n".join(item.text for item in page.text_items)`) ignores that label.
+
+**A column-aware sort is a candidate, not an answer.** Re-joining liteparse's
+own text items by (column, y, x) lifts order on true two-column pages and
+damages everything else, recall unchanged throughout:
+
+| Page | Shipped order | Sorted by (y, x) | Sorted by (column, y, x) |
+| --- | ---: | ---: | ---: |
+| `rf04` p4 | 0.53 | 0.53 | **0.93** |
+| `rf04` p6 | 0.53 | 0.53 | **0.96** |
+| `bd01` p4 | 0.53 | 0.53 | **0.95** |
+| `bd02` p1 (front page with sidebar) | 0.67 | 0.63 | 0.52 |
+| `tl03` p5 (table) | 0.74 | 0.71 | 0.40 |
+
+The 45% split that fixes a two-column body breaks a journal front page and a
+table. A layout detector and its own experiment decide this, not a guess.
+
 ## Discussion
 
 1. **Three mechanisms, not one.** The misses split cleanly. `tl02` is a
@@ -259,6 +322,7 @@ escalation rule that admits the documents it cannot.
 | `labels.json`, `spot_check.json` | Frozen labels; operator verdicts, notes and agreement |
 | `output/frozen.manifest.json` | Freeze digests for corpus, labels and protocol |
 | `output/local_ocr/pages.json`, `output/local_ocr/summary.json` | Per-page local OCR rows (recall, confidence, provenance, timing) and the task 6.7 summary |
+| `output/reader_comparison.json` | pdf-inspector, liteparse and pypdf recall and reading order on the 87 operator-reviewed pages |
 | `output/probe/`, `probe.json` | Exploratory page-fraction boundary probe and position sweep |
 | `synthetic.json` | Synthetic degraded set for Stage B (CER reference) |
 | `SOURCING.md`, `sources.json` | Corpus provenance, licences and hashes |
