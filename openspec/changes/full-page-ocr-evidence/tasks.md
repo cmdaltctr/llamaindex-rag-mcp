@@ -15,8 +15,8 @@
 
 - [x] 3.1 Measure extra read time on Experiment 33 natural text_based PDFs over 8 pages.
 - [x] 3.2 Re-run the Experiment 33 boundary probe and position sweep on the fixed code.
-- [ ] 3.3 Write TDR-026 (cause, evidence, fix, cost, reindex note).
-- [ ] 3.4 Update `docs/guides/ingestion.md` for complete `pages_needing_ocr` evidence.
+- [x] 3.3 Write TDR-026 (cause, evidence, fix, cost, reindex note).
+- [x] 3.4 Update `docs/guides/ingestion.md` for complete `pages_needing_ocr` evidence.
 
 ## 4. Close
 
