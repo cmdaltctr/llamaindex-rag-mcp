@@ -20,14 +20,17 @@ The packaged OCR gate currently routes unconditional scanned/image-based PDFs an
 
 ## Corpus Design
 
-Use a frozen stratified corpus with four classes:
+Use a frozen stratified natural corpus with five classes:
 
 1. Born-digital PDFs that should stay on the fast path.
 2. Mixed PDFs where only some pages genuinely need OCR.
-3. Scanned or image-based PDFs that genuinely require OCR.
-4. Reader-failure PDFs: a usable text layer exists, but `pdf-inspector` cannot read it (TDR-024; IA GlyphLessFont, WinAnsi without `/ToUnicode`).
+3. Image-only scanned or image-based PDFs that genuinely require OCR.
+4. Scanned PDFs with an existing OCR text layer (for example Archive.org, Google Books, Chronicling America). `pdf-inspector` can classify these as `text_based`, so they are the likeliest natural false negative when the text layer is poor.
+5. Reader-failure PDFs: a usable text layer exists, but `pdf-inspector` cannot read it (TDR-024; IA GlyphLessFont, WinAnsi without `/ToUnicode`).
 
-Include naturally occurring cases near the current routing boundary when available. Do not manufacture the evaluation set only to match the existing thresholds.
+Include naturally occurring cases near the current routing boundary when available. Do not manufacture the held-out evaluation set only to match the existing thresholds.
+
+Source natural documents from open-licence PDFs. Log title, source URL, licence, page count, and SHA-256 for each document in `corpus/SOURCING.md`, as in Experiment 31.
 
 Documents used to design prior routing candidates may be retained as development/regression cases but must not be presented as independent held-out validation. This includes the Experiment 29 development set, the Experiment 30 corpus, and the Experiment 31 corpus.
 
@@ -35,11 +38,30 @@ Documents used to design prior routing candidates may be retained as development
 
 Ground-truth OCR need must come from direct assessment of page content and extractability, not from `pdf-inspector` classification alone.
 
+Page labels are `usable`, `needs_ocr`, `unrecoverable`, and `ambiguous`.
+
+A text layer is `usable` only when it matches the rendered page image under a usability rule frozen before held-out scoring. Character count alone never decides usability. A junk OCR text layer is `needs_ocr`.
+
+`unrecoverable` marks content that no reader or OCR engine can be expected to recover, for example pure noise or a photograph of a page at an angle. Unrecoverable documents are excluded from routing recall and precision denominators and reported separately.
+
 Ambiguous cases must be labelled and reported explicitly.
 
 The routing target is document-level. The shipped seam dispatches the whole PDF and does not stitch pages, so routing correctness is scored per document. Page-level labels measure unnecessary OCR pages and evidence at risk in mixed PDFs.
 
 Reader-failure PDFs are scored apart from scanned or image-based positives. When the reader fallback chain recovers the text, the fast path is the correct route. Text lost by a reader tier (for example the LiteParse WinAnsi loss in Experiment 31) is reported as reader-quality loss, not as an OCR false negative.
+
+## Synthetic Degraded Set
+
+A separate synthetic set supports Stage B, where known ground-truth text is needed.
+
+- Render clean born-digital PDFs to page images.
+- Apply skew of 0.5 to 2 degrees, Gaussian noise, JPEG quality 40 to 60, and a slight blur; re-wrap the images as PDF.
+- Record degradation parameters, random seed, and source SHA-256 per document.
+- Keep the source PDF text as the CER reference.
+- Optional tier: the operator prints and re-scans a small subset to capture real scan artefacts.
+- Optional boundary probe: synthetic mixed documents with a controlled share of image pages, run through the Stage A harness and reported as exploratory.
+
+Synthetic documents are labelled `synthetic` and never contribute to natural held-out measurements.
 
 ## Measured Stages
 
@@ -74,7 +96,9 @@ When Stage B is authorised:
 - gold-evidence recoverability;
 - Evidence Recall@1, @3, @5, and @10;
 - MRR@10;
-- OCR elapsed time and failure rate.
+- OCR elapsed time and failure rate;
+- CER on synthetic documents against the source PDF text;
+- unrecoverable-page outcome: failure reported, or text emitted (emitted text is never counted as recovery).
 
 ## Validity Controls
 
@@ -82,6 +106,7 @@ When Stage B is authorised:
 - Evaluate the current packaged policy exactly as shipped: `OCR_FALLBACK_ENABLED=true`, `0.5` confidence, `0.10` page fraction, unconditional `scanned`/`image_based` (ADR-065), and the reader fallback chain (ADR-066).
 - Record the routing-policy revision and effective settings in the manifest.
 - Keep development and held-out documents disjoint.
+- Keep synthetic documents out of natural held-out scoring.
 - Preserve missing-worker, timeout, and failed-OCR outcomes instead of converting them into successful measurements.
 
 ## Decision Rule
