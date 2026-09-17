@@ -1,0 +1,216 @@
+{
+  "description": "Synthetic degraded scans for Stage B CER and evidence recovery. Never counted as natural held-out evidence (spec: synthetic degraded documents are reported apart).",
+  "recipe": {
+    "render": "pdftoppm -r 200 -png",
+    "degrade": "magick -colorspace Gray -rotate <skew> -attenuate <n> +noise Gaussian -blur 0x<sigma> -quality <q> (JPEG)",
+    "rewrap": "magick <jpegs> -density 200 out.pdf (image-only, no text layer)",
+    "ranges": {
+      "skew_degrees": "\u00b10.5-2.0",
+      "noise_attenuate": "0.2-0.6",
+      "blur_sigma": "0.3-0.8",
+      "jpeg_quality": "40-60"
+    },
+    "reference_text": "pdftotext -layout on the clean source page",
+    "tools": {
+      "imagemagick": "Version: ImageMagick 7.1.2-27 Q16-HDRI aarch64 e4c2b403b:20260705 https://imagemagick.org",
+      "poppler": "pdftotext version 26.07.0"
+    }
+  },
+  "print_and_rescan_tier": "not built (optional task 5.3; needs the operator)",
+  "documents": [
+    {
+      "doc_id": "sy01",
+      "stratum": "synthetic",
+      "split": "synthetic (never held_out)",
+      "source": {
+        "arxiv_id": "2401.00632",
+        "url": "https://arxiv.org/abs/2401.00632",
+        "licence": "http://creativecommons.org/licenses/by/4.0/",
+        "sha256": "4954f2161fb7a31c74361cda1c2cc5ae2990f511660d40de348d768bbc4653da",
+        "pages_used": 10
+      },
+      "seed": 33,
+      "local_path": "corpus/synthetic/sy01.pdf",
+      "sha256": "85edd76e80516447ab06a790563d09f43b2de1bb379bb6ba35073e552cac558c",
+      "pages": [
+        {
+          "page": 1,
+          "skew_degrees": -1.448,
+          "noise_attenuate": 0.527,
+          "blur_sigma": 0.439,
+          "jpeg_quality": 60,
+          "reference_sha256": "cb9bec1b140326ec8ec504556ca87bf4814566f646bd763151e76ee6b36f0b59"
+        },
+        {
+          "page": 2,
+          "skew_degrees": -1.969,
+          "noise_attenuate": 0.562,
+          "blur_sigma": 0.772,
+          "jpeg_quality": 50,
+          "reference_sha256": "534c5e4f3a8694d701a4a5c340e0e728d4a0d6df8b5ffd31fe10ecaf57ef5193"
+        },
+        {
+          "page": 3,
+          "skew_degrees": 1.168,
+          "noise_attenuate": 0.577,
+          "blur_sigma": 0.618,
+          "jpeg_quality": 49,
+          "reference_sha256": "7292df9961a2c96708e3be962850f7fc98fff7abde9e63f7d48f655fcbd34c74"
+        },
+        {
+          "page": 4,
+          "skew_degrees": 0.964,
+          "noise_attenuate": 0.398,
+          "blur_sigma": 0.326,
+          "jpeg_quality": 59,
+          "reference_sha256": "8d342b98a1960a63805a9b9429c9105cefbcdb18f7a4f03a60f90f8734e7b964"
+        },
+        {
+          "page": 5,
+          "skew_degrees": 1.723,
+          "noise_attenuate": 0.312,
+          "blur_sigma": 0.46,
+          "jpeg_quality": 47,
+          "reference_sha256": "36670d69c1021fb531f9c61ab50b942d4ad7ee219bdfb3a35eb54c5cce8fabe6"
+        },
+        {
+          "page": 6,
+          "skew_degrees": -1.797,
+          "noise_attenuate": 0.328,
+          "blur_sigma": 0.744,
+          "jpeg_quality": 46,
+          "reference_sha256": "00558fef905f81803b752d0df2f0cff25d7855865357bf1bd214597113fca911"
+        },
+        {
+          "page": 7,
+          "skew_degrees": -1.625,
+          "noise_attenuate": 0.249,
+          "blur_sigma": 0.461,
+          "jpeg_quality": 47,
+          "reference_sha256": "a78c8682afe3a4e4adb9bfd13827da3698e83bb2fec54021f6711e0e45fd30dd"
+        },
+        {
+          "page": 8,
+          "skew_degrees": 0.98,
+          "noise_attenuate": 0.342,
+          "blur_sigma": 0.629,
+          "jpeg_quality": 57,
+          "reference_sha256": "a39215ce44a16952a6e53d59198467239edc071fc7eaf529e459bab1778d396c"
+        },
+        {
+          "page": 9,
+          "skew_degrees": 1.084,
+          "noise_attenuate": 0.475,
+          "blur_sigma": 0.74,
+          "jpeg_quality": 51,
+          "reference_sha256": "3ccbfa878d7dc06a88b2fa234142d204fa9e63922833d568690d1ed2dc3e6169"
+        },
+        {
+          "page": 10,
+          "skew_degrees": -0.595,
+          "noise_attenuate": 0.237,
+          "blur_sigma": 0.704,
+          "jpeg_quality": 40,
+          "reference_sha256": "a730b8005b2f343aae243cf1228792b35b70611bda22b5419b7b22ac85fc3984"
+        }
+      ]
+    },
+    {
+      "doc_id": "sy02",
+      "stratum": "synthetic",
+      "split": "synthetic (never held_out)",
+      "source": {
+        "arxiv_id": "2308.13049",
+        "url": "https://arxiv.org/abs/2308.13049",
+        "licence": "http://creativecommons.org/licenses/by/4.0/",
+        "sha256": "dab76033d6320c17839b86efb779eb80bb17b740228835226f9e487f951dffd9",
+        "pages_used": 10
+      },
+      "seed": 34,
+      "local_path": "corpus/synthetic/sy02.pdf",
+      "sha256": "0ee03c208241b04e020c3ca70d908c33ed33642a97f5afc1a62755f5c2b7b1e1",
+      "pages": [
+        {
+          "page": 1,
+          "skew_degrees": 1.379,
+          "noise_attenuate": 0.537,
+          "blur_sigma": 0.749,
+          "jpeg_quality": 52,
+          "reference_sha256": "43ffbba0e6ad66ca1c6552a478d28ca6824a46d9863e02fcc5c755c409d497a6"
+        },
+        {
+          "page": 2,
+          "skew_degrees": 1.932,
+          "noise_attenuate": 0.226,
+          "blur_sigma": 0.778,
+          "jpeg_quality": 50,
+          "reference_sha256": "7123b3a27446387bdc3abb2199f0f80384eac9cf4f97dca5675e775eb1073d1b"
+        },
+        {
+          "page": 3,
+          "skew_degrees": -1.376,
+          "noise_attenuate": 0.529,
+          "blur_sigma": 0.348,
+          "jpeg_quality": 51,
+          "reference_sha256": "9acf96040cbd26928905010ccaa3b72a516513119cf396a5c33a8c89a8c9e7cc"
+        },
+        {
+          "page": 4,
+          "skew_degrees": -1.665,
+          "noise_attenuate": 0.501,
+          "blur_sigma": 0.343,
+          "jpeg_quality": 41,
+          "reference_sha256": "7c1f5652413d015932635f7d90347e38ecbf05d3bd49a888c76ee5009446e44a"
+        },
+        {
+          "page": 5,
+          "skew_degrees": 0.883,
+          "noise_attenuate": 0.421,
+          "blur_sigma": 0.719,
+          "jpeg_quality": 52,
+          "reference_sha256": "18ae7939eed6309b6ec38327cae4f634badbbc329dbf83b0ddf41247c529301c"
+        },
+        {
+          "page": 6,
+          "skew_degrees": -1.383,
+          "noise_attenuate": 0.455,
+          "blur_sigma": 0.446,
+          "jpeg_quality": 50,
+          "reference_sha256": "d857a39d03ecd4cdce13428f39f8ad1bbf36251be3a620229b3523e28696989b"
+        },
+        {
+          "page": 7,
+          "skew_degrees": -0.809,
+          "noise_attenuate": 0.414,
+          "blur_sigma": 0.604,
+          "jpeg_quality": 58,
+          "reference_sha256": "d310d4b5ec39ba7d332c5ddca3b8b9572a6596e08c2d7bb2aae5c6a25b243147"
+        },
+        {
+          "page": 8,
+          "skew_degrees": 1.315,
+          "noise_attenuate": 0.294,
+          "blur_sigma": 0.642,
+          "jpeg_quality": 43,
+          "reference_sha256": "8140ab988b9b201b34be09018b46aecf6c18b06e2c579409871f0147f6ebb7b3"
+        },
+        {
+          "page": 9,
+          "skew_degrees": -1.717,
+          "noise_attenuate": 0.312,
+          "blur_sigma": 0.359,
+          "jpeg_quality": 49,
+          "reference_sha256": "95575d57168133ca9990589647580efd2785aad591f57d2c32734bcd93e505c1"
+        },
+        {
+          "page": 10,
+          "skew_degrees": -1.687,
+          "noise_attenuate": 0.362,
+          "blur_sigma": 0.688,
+          "jpeg_quality": 50,
+          "reference_sha256": "c4bb14d86df4ada7647d24cec9c8bda46254d5b338a0d7d7b4dc9e6296f1b21c"
+        }
+      ]
+    }
+  ]
+}

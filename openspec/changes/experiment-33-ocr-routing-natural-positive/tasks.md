@@ -34,8 +34,8 @@
 
 ## 5. Build the synthetic degraded set
 
-- [ ] 5.1 Select clean born-digital source PDFs and extract their reference text.
-- [ ] 5.2 Render, degrade (skew 0.5 to 2 degrees, Gaussian noise, JPEG quality 40 to 60, slight blur), and re-wrap as PDF; record parameters, seed, and source SHA-256.
+- [x] 5.1 Select clean born-digital source PDFs and extract their reference text.
+- [x] 5.2 Render, degrade (skew 0.5 to 2 degrees, Gaussian noise, JPEG quality 40 to 60, slight blur), and re-wrap as PDF; record parameters, seed, and source SHA-256.
 - [ ] 5.3 Optional: operator prints and re-scans a small subset.
 - [ ] 5.4 Optional: run a page-fraction boundary probe through the Stage A harness and report it as exploratory.
 

@@ -8,3 +8,4 @@ output/*.tmp
 output/*.log
 analysis.ipynb
 output/spot_check.html
+output/.synthetic/
