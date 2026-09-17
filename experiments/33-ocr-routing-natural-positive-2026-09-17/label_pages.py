@@ -46,6 +46,13 @@ MODEL = "google/gemini-3.8-flash"
 MAX_OUTPUT_TOKENS = 8192
 ATTEMPTS = 3
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+#: Account-level HTTP failures (bad key, no credit): stop the run, record nothing.
+ACCOUNT_ERRORS = {401, 402, 403}
+
+
+class AccountError(RuntimeError):
+    """OpenRouter refused the account, not the page."""
+
 
 PROMPT = (
     "Transcribe all readable text on this page image exactly as it appears, in reading "
@@ -156,6 +163,9 @@ def _transcribe(png: Path, api_key: str) -> dict:
                 raise ValueError(f"unexpected legibility {record['legibility']!r}")
             return record
         except (urllib.error.URLError, TimeoutError, KeyError, ValueError) as exc:
+            if isinstance(exc, urllib.error.HTTPError) and exc.code in ACCOUNT_ERRORS:
+                # No credit or a bad key says nothing about the page: never record it.
+                raise AccountError(f"OpenRouter HTTP {exc.code}") from exc
             # json.JSONDecodeError is a ValueError; truncated JSON lands here too.
             record["label_error"] = type(exc).__name__
             if isinstance(exc, urllib.error.HTTPError):
@@ -229,7 +239,13 @@ def main() -> int:
         }
         for future in as_completed(futures):
             doc, page = futures[future]
-            record = future.result()
+            try:
+                record = future.result()
+            except AccountError as exc:
+                for pending in futures:
+                    pending.cancel()
+                print(f"[label] STOPPED: {exc}; rerun after fixing the account", flush=True)
+                return 1
             done += 1
             cost += float((record.get("usage") or {}).get("cost") or 0.0)
             errors += bool(record.get("label_error"))
