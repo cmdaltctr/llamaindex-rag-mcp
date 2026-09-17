@@ -1,7 +1,7 @@
 # TDR-026: pdf-inspector counts OCR pages from an 8-page sample — complete the evidence with a full page scan
 
 **Date:** 2026-09-17
-**Status:** Proposed (merge decision waits for Experiment 33 Stage A, which measures both arms)
+**Status:** Accepted (Experiment 33 Stage A measured both arms on natural documents; see "Experiment 33 Stage A result")
 **Deciders:** Aizat
 **Tags:** pdf | ingestion | pdf-inspector | ocr-routing
 
@@ -45,12 +45,41 @@ if result.pdf_type == "text_based" and result.page_count > PDF_INSPECTOR_SAMPLED
 
 **Negative**
 
-- **False-alarm risk.** The full scan also flags illustration and photo pages in healthy books. Experiment 31's 11 born-digital distractors went from 0 flagged pages to 2 to 61. One 328-page book reached 61 pages (18.6%, 60 tagged `scanned`), which would route a healthy book to OCR (3 to 10 hours projected). For this reason the change is not merged until Experiment 33 measures both effects on natural documents.
+- **False-alarm risk, measured and not observed here.** The full scan also flags illustration and photo pages in healthy books. Experiment 31's 11 born-digital distractors went from 0 flagged pages to 2 to 61. One 328-page book reached 61 pages (18.6%, 60 tagged `scanned`), which would route a healthy book to OCR (3 to 10 hours projected). Experiment 33 Stage A tested this on 40 natural documents and the effect did not appear: the false-positive count stayed at 1 in both arms, and the same document (`mx08`) causes it through its `image_based` classification, not through page evidence. The risk stands for illustrated books, which that corpus caps at 100 pages.
 - Already indexed unchanged PDFs keep their old route until re-ingested.
 
 **Neutral**
 
 - Short PDFs (8 pages or fewer) and `scanned`, `image_based` and `mixed` results take the same path as before.
+
+## Experiment 33 Stage A result
+
+Both arms ran on the same frozen corpus of 40 natural open-licence PDFs (1,123
+pages, 18 documents labelled `needs_ocr`, 22 `usable`) with the same labels and
+scoring. The only difference is this change.
+
+| Measurement | Sampled evidence (`5bac71e`) | Full scan (this change, `7280766`) |
+| --- | ---: | ---: |
+| `routing_recall` | 0.556 (10/18) | 0.611 (11/18) |
+| `false_negative_count` | 8 | 7 |
+| `false_positive_count` | 1 (`mx08`) | 1 (`mx08`) |
+| `routing_precision` | 0.909 | 0.917 |
+| `unnecessary_ocr_pages` | 121 | 137 |
+| Routed documents / pages | 11 / 395 | 12 / 444 |
+| Read time, all 40 documents | 9.27 s | 9.51 s |
+
+The change catches `tl02`, a 49-page NASA technical note scanned with a broken
+OCR layer, whose 33 affected pages all fell outside the 8-page sample. It adds
+no false alarm, 49 OCR pages and 0.24 s of read time across the whole corpus.
+The 16 extra `unnecessary_ocr_pages` all sit inside documents that genuinely
+need OCR.
+
+The 7 remaining false negatives are not sampling failures and this change does
+not address them: four are detection failures where a scanned page carries a
+header line or junk OCR text, two are rescue failures where a low-quality
+LiteParse rescue zeroed the evidence, and one is a born-digital mathematics
+paper that loses only its equations. See
+`experiments/33-ocr-routing-natural-positive-2026-09-17/report.md`.
 
 ## Alternatives Considered
 
@@ -74,13 +103,14 @@ if result.pdf_type == "text_based" and result.page_count > PDF_INSPECTOR_SAMPLED
 
 ## Revisit Triggers
 
-- Experiment 33 Stage A reports its two arms (merge or rework decision).
+- ~~Experiment 33 Stage A reports its two arms (merge or rework decision).~~ Fired 2026-09-17: merge.
 - pdf-inspector exposes a scan-strategy option, or changes its default sample.
 - Illustrated born-digital documents are over-routed in production.
 
 ## References
 
 - `experiments/33-ocr-routing-natural-positive-2026-09-17/output/probe/` (probe, position sweep)
+- `experiments/33-ocr-routing-natural-positive-2026-09-17/report.md` and `output/arm_comparison.json` (Stage A, both arms)
 - `openspec/changes/full-page-ocr-evidence/` (proposal, spec delta, `evidence/fixed_code_check.json`)
 - ADR-064, ADR-065, ADR-066; TDR-024
 - Experiment 29 (`experiments/29-pdf-routing-repeat-2026-09-13`), Experiment 31 distractor corpus

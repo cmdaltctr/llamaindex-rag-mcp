@@ -22,3 +22,4 @@
 
 - [x] 4.1 Run `./scripts/local_ci.sh` and `openspec validate --all --strict`.
 - [x] 4.2 Open a PR to `v3`.
+- [x] 4.3 Wait for the Experiment 33 Stage A verdict, then set TDR-026 to Accepted with the measured numbers (recall 0.556 → 0.611, no new false positive).
