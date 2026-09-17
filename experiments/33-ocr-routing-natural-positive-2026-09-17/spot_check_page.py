@@ -76,20 +76,41 @@ pre{{width:50%;max-height:720px;overflow:auto;white-space:pre-wrap;background:#f
 #bar{{position:sticky;top:0;background:#fff;padding:8px 0;border-bottom:2px solid #333}}
 </style></head><body>
 <div id="bar"><b>Experiment 33 spot check</b> — {html.escape(spot["instructions"])}
-<br><button onclick="save()">Download verdicts</button> <span id="count"></span></div>
+<br><button onclick="save()">Download verdicts</button>
+<label>Import verdicts
+<input type="file" accept=".json" onchange="importFile(this.files[0])"></label>
+<span id="count"></span> <span id="saved"></span></div>
 {cards}
 <script>
 function collect(){{
   return [...document.querySelectorAll('section')].map(s=>({{
     key:s.dataset.key, group:s.dataset.group,
     operator_label:s.querySelector('select').value||null,
-    note:s.querySelector('input').value||null}}));
+    note:s.querySelector('input[name=note]').value||null}}));
+}}
+const STORE='exp33-spot-check-verdicts';
+function apply(verdicts){{
+  const byKey=Object.fromEntries(verdicts.map(v=>[v.key,v]));
+  document.querySelectorAll('section').forEach(s=>{{
+    const v=byKey[s.dataset.key]; if(!v) return;
+    if(v.operator_label) s.querySelector('select').value=v.operator_label;
+    if(v.note) s.querySelector('input[name=note]').value=v.note;
+  }});
 }}
 function update(){{
   const v=collect(); document.getElementById('count').textContent=
     v.filter(x=>x.operator_label).length+' of '+v.length+' reviewed';
+  try {{ localStorage.setItem(STORE, JSON.stringify(v));
+    document.getElementById('saved').textContent='(autosaved in this browser)'; }}
+  catch(e) {{ document.getElementById('saved').textContent=
+    '(autosave unavailable: download often)'; }}
 }}
-document.addEventListener('change',update); update();
+function importFile(file){{
+  if(!file) return;
+  file.text().then(t=>{{ apply(JSON.parse(t)); update(); }});
+}}
+try {{ const kept=localStorage.getItem(STORE); if(kept) apply(JSON.parse(kept)); }} catch(e) {{}}
+document.addEventListener('change',update); document.addEventListener('input',update); update();
 function save(){{
   const blob=new Blob([JSON.stringify(collect(),null,1)],{{type:'application/json'}});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
