@@ -3,7 +3,7 @@
 # transcriptions and extracted text are derived document content: keep local.
 output/.pages/
 output/.transcripts/
-output/.extractions/
+output/**/.extractions/
 output/*.tmp
 output/*.log
 analysis.ipynb
