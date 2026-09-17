@@ -13,10 +13,10 @@
 - [x] 2.3 Select image-only scanned/image-based positive PDFs.
 - [x] 2.4 Select scanned PDFs with an existing OCR text layer, covering faithful and junk text layers.
 - [x] 2.5 Select reader-failure PDFs (usable text layer that `pdf-inspector` cannot read) and label them apart from scanned positives.
-- [ ] 2.6 Select unrecoverable examples (pure noise, photographed page at an angle).
+- [x] 2.6 Select unrecoverable examples (pure noise, photographed page at an angle).
 - [x] 2.7 Separate prior development documents (Experiment 29 dev set, Experiment 30 and 31 corpora) from independent held-out documents.
 - [x] 2.8 Log title, source URL, licence, page count, and SHA-256 per document in `corpus/SOURCING.md`.
-- [ ] 2.9 Hash and freeze corpus membership and labels.
+- [x] 2.9 Hash and freeze corpus membership and labels.
 
 ## 3. Implement the routing harness
 
@@ -27,11 +27,11 @@
 
 ## 4. Run Stage A: routing only
 
-- [ ] 4.1 Run the current packaged policy on the frozen natural held-out corpus.
-- [ ] 4.2 Report routing recall, precision, false negatives, false positives, and unnecessary projected OCR work.
-- [ ] 4.3 Report outcomes by born-digital, mixed, image-only scanned, scanned-with-text-layer, and reader-failure class; report reader-quality loss apart from OCR false negatives.
-- [ ] 4.4 Report routing decisions for unrecoverable documents separately, outside recall and precision denominators.
-- [ ] 4.5 Run both routing arms (`sampled_baseline`, `full_scan_candidate`) and report the documents whose route differs; the `full-page-ocr-evidence` merge decision follows this comparison.
+- [x] 4.1 Run the current packaged policy on the frozen natural held-out corpus.
+- [x] 4.2 Report routing recall, precision, false negatives, false positives, and unnecessary projected OCR work.
+- [x] 4.3 Report outcomes by born-digital, mixed, image-only scanned, scanned-with-text-layer, and reader-failure class; report reader-quality loss apart from OCR false negatives.
+- [x] 4.4 Report routing decisions for unrecoverable documents separately, outside recall and precision denominators.
+- [x] 4.5 Run both routing arms (`sampled_baseline`, `full_scan_candidate`) and report the documents whose route differs; the `full-page-ocr-evidence` merge decision follows this comparison.
 
 ## 5. Build the synthetic degraded set
 

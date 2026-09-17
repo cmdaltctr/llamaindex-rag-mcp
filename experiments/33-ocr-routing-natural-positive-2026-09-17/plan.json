@@ -54,7 +54,7 @@
     "split": "every accepted natural document is held_out; synthetic documents are a separate stratum and never held_out"
   },
   "labels": {
-    "status": "RULE FROZEN — labels not yet produced",
+    "status": "FROZEN 2026-09-17",
     "files": {
       "page_evidence": "output/page_evidence.json",
       "labels": "labels.json",
@@ -123,8 +123,17 @@
         "hypothesis": "restricted to 'are the words there?', the operator agrees with the rule on >=90% of the random sample",
         "pass": "answer key frozen; routing graded against it",
         "fail": "the rule is wrong: revise the 0.80/0.50 cut-offs or the token matching and re-answer the same pages",
-        "evidence_shown": "both answer-key text layers (poppler, pypdf), stated as not the pipeline output"
+        "evidence_shown": "both answer-key text layers (poppler, pypdf), stated as not the pipeline output",
+        "result": "FAILED 2026-09-17: 20.2% disagreement on the random sample (19 of 94), down from 41.5%",
+        "cause_analysis": "10 of 19 are pages where both text layers hold 85-100% of the body words but the equations are destroyed (bd04, bd07, tl03); 7 are borderline garbled scans (word recall 0.46-0.79); 2 are pages where the operator found text the rule missed",
+        "rule_revision_attempted": "a maths-symbol recall signal calibrated on the required pages reached 88.4% there but 80.9% on the random sample, the same as the word-only rule, so no revision is adopted"
       }
+    },
+    "ground_truth_resolution": {
+      "decision": "operator presence verdicts override the rule on the 277 reviewed pages; the remaining 846 pages keep the body-text rule",
+      "gate_replacement": "the 10% agreement gate is replaced by this statement: human labels beat the rule where they exist, and the rule is known to miss equation loss on unreviewed pages",
+      "recorded_per_page": "page_evidence.json carries label_source (operator or rule) and rule_label beside the final label",
+      "operator_decision": "approved 2026-09-17"
     }
   },
   "stages": {
@@ -263,6 +272,13 @@
       "change": "two labels: presence_label (is the body text in the text layer; decides the freeze gate and routing scoring) and understanding_label (operator's first verdict: is the extraction good enough for an LLM to understand the page; reported alongside, never scores routing). The 105 pages where the first verdict disagreed with the rule get one narrow presence question (recheck_page.py). Pages with no body text answer 'no_body_text' and take presence usable.",
       "reason": "first spot check disagreement 41.5% (random) was a construct mismatch: 62 of 121 operator needs_ocr pages already had >=80% of body words in the text layer; operator notes flagged equations, scientific notation, figures, multi-column layout, tables, headings and footnotes, old-book spelling and non-Latin scripts",
       "adr_note": "operator observations must be stated prominently in the Experiment 33 ADR",
+      "operator_decision": "approved 2026-09-17"
+    },
+    {
+      "date": "2026-09-17",
+      "stage": "after the presence re-check, before the label freeze and any natural routing output",
+      "change": "final labels take the operator presence verdict where one exists and the body-text rule elsewhere; the agreement gate is replaced by a disclosure",
+      "reason": "Exercise 2 still disagreed at 20.2%, dominated by equation loss on pages whose words are present; no threshold or maths-symbol revision reproduced the operator judgement (best validation 82.5% and 80.9%)",
       "operator_decision": "approved 2026-09-17"
     }
   ],

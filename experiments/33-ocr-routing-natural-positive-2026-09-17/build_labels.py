@@ -188,6 +188,18 @@ def _spot_check(rows: list[dict], doc_labels: dict[str, str]) -> dict:
     }
 
 
+def _operator_labels() -> dict[tuple[str, int], str]:
+    """Presence labels the operator gave; they override the rule (amendment 3)."""
+    if not SPOT_CHECK.exists():
+        return {}
+    spot = json.loads(SPOT_CHECK.read_text(encoding="utf-8"))
+    return {
+        (entry["doc_id"], entry["page"]): entry["presence_label"]
+        for entry in spot["required"] + spot["random_sample"]
+        if entry.get("presence_label")
+    }
+
+
 def main() -> int:
     """Build page evidence, document labels and the spot-check list."""
     documents = json.loads(SOURCES.read_text(encoding="utf-8"))["documents"]
@@ -202,6 +214,13 @@ def main() -> int:
         return 1
 
     rows = [_evidence(d, p) for d in documents for p in range(1, d["page_count"] + 1)]
+    operator = _operator_labels()
+    for row in rows:
+        given = operator.get((row["doc_id"], row["page"]))
+        row["rule_label"] = row["label"]
+        row["label_source"] = "operator" if given else "rule"
+        if given:
+            row["label"] = given
     labels: dict[str, dict] = {}
     for doc in documents:
         doc_rows = [r for r in rows if r["doc_id"] == doc["doc_id"]]
@@ -217,6 +236,10 @@ def main() -> int:
             "label": document_label(counts, doc["page_count"]),
             "label_all_text": document_label(counts_all, doc["page_count"]),
             "figure_tokens_missing": sum(r["figure_tokens_missing"] or 0 for r in doc_rows),
+            "operator_labelled_pages": sum(1 for r in doc_rows if r["label_source"] == "operator"),
+            "rule_label": document_label(
+                Counter(r["rule_label"] for r in doc_rows), doc["page_count"]
+            ),
         }
 
     _write(EVIDENCE, {"rule": "plan.json labels", "pages": rows})
@@ -229,8 +252,9 @@ def main() -> int:
         {
             "frozen": False,
             "rule": (
-                "plan.json labels; label: body text (amendment 2026-09-17); "
-                "label_all_text: all visible text"
+                "plan.json labels; label: operator presence verdict where reviewed, "
+                "else the body-text rule (amendments 2026-09-17); "
+                "label_all_text: all visible text by rule"
             ),
             "total_cost_usd": round(sum(r["cost_usd"] or 0.0 for r in rows), 4),
             "documents": labels,

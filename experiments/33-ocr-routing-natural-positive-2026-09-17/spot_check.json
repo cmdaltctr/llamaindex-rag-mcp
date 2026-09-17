@@ -8,7 +8,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -17,7 +20,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "I don't see which part is the heading etc. No \"# Title\" for H1. I hope the detailed json have this."
+   "note": "I don't see which part is the heading etc. No \"# Title\" for H1. I hope the detailed json have this.",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -26,7 +32,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -35,7 +44,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -44,7 +56,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -53,7 +68,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -62,7 +80,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "The foot note line should be detected as footnote, not part of the paragraphs"
+   "note": "The foot note line should be detected as footnote, not part of the paragraphs",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -71,7 +92,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "Again the extracted content shows no indication of what is header h1 and h2. "
+   "note": "Again the extracted content shows no indication of what is header h1 and h2. ",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -80,7 +104,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "it extracts the words of everything else, but not the words written inside the figure (image) extracted"
+   "note": "it extracts the words of everything else, but not the words written inside the figure (image) extracted",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -89,7 +116,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -98,7 +128,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "\"14Defense Contract Management Agency\" the \"14\" is the number of footnote! NOT 14 Defense"
+   "note": "\"14Defense Contract Management Agency\" the \"14\" is the number of footnote! NOT 14 Defense",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -107,7 +140,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "the Left: sidebar heading / summary heading needs a separation from the main body if possible"
+   "note": "the Left: sidebar heading / summary heading needs a separation from the main body if possible",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -116,7 +152,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -125,7 +164,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -134,7 +176,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -143,7 +188,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "again the footnote \"16The Army...\". The 16 is the footnote number, a superscript"
+   "note": "again the footnote \"16The Army...\". The 16 is the footnote number, a superscript",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -152,7 +200,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -161,7 +212,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "Left: sidebar heading / summary heading needs its own paragraph so we know."
+   "note": "Left: sidebar heading / summary heading needs its own paragraph so we know.",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -170,7 +224,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -179,7 +236,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -188,7 +248,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "before the footnote, there is a line, i think we should have that"
+   "note": "before the footnote, there is a line, i think we should have that",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -197,7 +260,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -206,7 +272,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "the footnote number issue needs to be solve or at least treated as footnote number"
+   "note": "the footnote number issue needs to be solve or at least treated as footnote number",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -215,7 +284,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -224,7 +296,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -233,7 +308,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx01",
@@ -242,7 +320,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx01",
@@ -251,7 +332,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx01",
@@ -260,7 +344,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -269,7 +356,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -278,7 +368,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "it needs separation of concern we know there is a \"Left: sidebar heading / summary heading\""
+   "note": "it needs separation of concern we know there is a \"Left: sidebar heading / summary heading\"",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -287,7 +380,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -296,7 +392,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -305,7 +404,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -314,7 +416,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -323,7 +428,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -332,7 +440,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -341,7 +452,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -350,7 +464,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -359,7 +476,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -368,7 +488,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -377,7 +500,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -386,7 +512,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -395,7 +524,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -404,7 +536,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -413,7 +548,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -422,7 +560,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -431,7 +572,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -440,7 +584,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -449,7 +596,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -458,7 +608,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -467,7 +620,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -476,7 +632,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -485,7 +644,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -494,7 +656,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -503,7 +668,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -512,7 +680,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -521,7 +692,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -530,7 +704,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -539,7 +716,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -548,7 +728,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -557,7 +740,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -566,7 +752,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx03",
@@ -575,7 +764,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx03",
@@ -584,7 +776,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx03",
@@ -593,7 +788,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -602,7 +800,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -611,7 +812,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -620,7 +824,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -629,7 +836,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -638,7 +848,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -647,7 +860,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -656,7 +872,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -665,7 +884,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -674,7 +896,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -683,7 +908,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -692,7 +920,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -701,7 +932,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -710,7 +944,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -719,7 +956,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -728,7 +968,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -737,7 +980,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -746,7 +992,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -755,7 +1004,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -764,7 +1016,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -773,7 +1028,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -782,7 +1040,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -791,7 +1052,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -800,7 +1064,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -809,7 +1076,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -818,7 +1088,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -827,7 +1100,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx06",
@@ -836,7 +1112,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx06",
@@ -845,7 +1124,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx06",
@@ -854,7 +1136,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "io05",
@@ -863,7 +1148,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "tl02",
@@ -872,7 +1160,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "ambiguous",
-   "note": null
+   "note": null,
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -881,7 +1172,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -890,7 +1184,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": null
+   "note": null,
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -899,7 +1196,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -908,7 +1208,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -917,7 +1220,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -926,7 +1232,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -935,7 +1244,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -944,7 +1256,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -953,7 +1268,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -962,7 +1280,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -971,7 +1292,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -980,7 +1304,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -989,7 +1316,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -998,7 +1328,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1007,7 +1340,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1016,7 +1352,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1025,7 +1364,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1034,7 +1376,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": null
+   "note": null,
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1043,7 +1388,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1052,7 +1400,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "like all the rest of old documents that need ocr, this one does not honor the paragraphs. but usable"
+   "note": "like all the rest of old documents that need ocr, this one does not honor the paragraphs. but usable",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1061,7 +1412,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": null
+   "note": null,
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1070,7 +1424,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "the equation needs ocr"
+   "note": "the equation needs ocr",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1079,7 +1436,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1088,7 +1448,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1097,7 +1460,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1106,7 +1472,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1115,7 +1484,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1124,7 +1496,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1133,7 +1508,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1142,7 +1520,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1151,7 +1532,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1160,7 +1544,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1169,7 +1556,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1178,7 +1568,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1187,7 +1580,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1196,7 +1592,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1205,7 +1604,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1214,7 +1616,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1223,7 +1628,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1232,7 +1640,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1241,7 +1652,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1250,7 +1664,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1259,7 +1676,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1268,7 +1688,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl02",
@@ -1277,7 +1700,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1286,7 +1712,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1295,7 +1724,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "usable but need better support for two-columns extraction"
+   "note": "usable but need better support for two-columns extraction",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl02",
@@ -1304,7 +1736,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl07",
@@ -1313,7 +1748,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs to be sent to llm to make sense of the figure?"
+   "note": "needs to be sent to llm to make sense of the figure?",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl07",
@@ -1322,7 +1760,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": "extracted something, needs supports for two columns extraction"
+   "note": "extracted something, needs supports for two columns extraction",
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl07",
@@ -1331,7 +1772,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": "extracted something, needs supports for two columns extraction"
+   "note": "extracted something, needs supports for two columns extraction",
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1340,7 +1784,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1349,7 +1796,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1358,7 +1808,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "usable",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "usable",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1367,7 +1820,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1376,7 +1832,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1385,7 +1844,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1394,7 +1856,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1403,7 +1868,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1412,7 +1880,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1421,7 +1892,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1430,7 +1904,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1439,7 +1916,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1448,7 +1928,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1457,7 +1940,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1466,7 +1952,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1475,7 +1964,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1484,7 +1976,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1493,7 +1988,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1502,7 +2000,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1511,7 +2012,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1520,7 +2024,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1529,7 +2036,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the words, to get the nearest match"
+   "note": "needs llm support to make sense of some of the words, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1538,7 +2048,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1547,7 +2060,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf05",
@@ -1556,7 +2072,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match"
+   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf07",
@@ -1565,7 +2084,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match"
+   "note": "needs llm support to make sense of some of the image/colour, to get the nearest match",
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1574,7 +2096,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1583,7 +2108,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1592,7 +2120,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1601,7 +2132,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1610,7 +2144,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1619,7 +2156,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1628,7 +2168,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1637,7 +2180,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   },
   {
    "doc_id": "rf07",
@@ -1646,7 +2192,10 @@
    "rule_label": "unrecoverable",
    "all_text_label": "unrecoverable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": null,
+   "presence_label": "unrecoverable"
   }
  ],
  "random_sample": [
@@ -1657,7 +2206,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs better support for two columns"
+   "note": "needs better support for two columns",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd02",
@@ -1666,7 +2218,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs better support for two columns"
+   "note": "needs better support for two columns",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd03",
@@ -1675,7 +2230,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names"
+   "note": "words extracted is okay, but need support for scientific words like chemical names",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd04",
@@ -1684,7 +2242,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd04",
@@ -1693,7 +2254,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd04",
@@ -1702,7 +2266,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd04",
@@ -1711,7 +2278,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd04",
@@ -1720,7 +2290,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd04",
@@ -1729,7 +2302,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd05",
@@ -1738,7 +2314,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd06",
@@ -1747,7 +2326,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd07",
@@ -1756,7 +2338,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd07",
@@ -1765,7 +2350,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "bd07",
@@ -1774,7 +2362,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "bd07",
@@ -1783,7 +2374,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly"
+   "note": "words extracted is okay, but need support for scientific words like chemical names, equations. Images needs llm possibly",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io01",
@@ -1792,7 +2386,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io01",
@@ -1801,7 +2398,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io01",
@@ -1810,7 +2410,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io01",
@@ -1819,7 +2422,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io02",
@@ -1828,7 +2434,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io03",
@@ -1837,7 +2446,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for the language and its alphabets"
+   "note": "needs support for the language and its alphabets",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io04",
@@ -1846,7 +2458,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for dual column and images needs llm maybe "
+   "note": "needs support for dual column and images needs llm maybe ",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io04",
@@ -1855,7 +2470,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for dual column and images needs llm maybe "
+   "note": "needs support for dual column and images needs llm maybe ",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io04",
@@ -1864,7 +2482,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for dual/triple column and images needs llm maybe "
+   "note": "needs support for dual/triple column and images needs llm maybe ",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io04",
@@ -1873,7 +2494,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for dual/triple column and images needs llm maybe "
+   "note": "needs support for dual/triple column and images needs llm maybe ",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1882,7 +2506,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1891,7 +2518,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1900,7 +2530,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1909,7 +2542,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "io06",
@@ -1918,7 +2554,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1927,7 +2566,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1936,7 +2578,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io06",
@@ -1945,7 +2590,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "io07",
@@ -1954,7 +2602,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "io07",
@@ -1963,7 +2614,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io07",
@@ -1972,7 +2626,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "io07",
@@ -1981,7 +2638,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs support for language"
+   "note": "needs support for language",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx02",
@@ -1990,7 +2650,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx04",
@@ -1999,7 +2662,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx04",
@@ -2008,7 +2674,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx04",
@@ -2017,7 +2686,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "ambiguous",
-   "note": "words extracted well, but needs llm to make sense of the image"
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "understanding_label": "ambiguous",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx04",
@@ -2026,7 +2698,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx04",
@@ -2035,7 +2710,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx05",
@@ -2044,7 +2722,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "words extracted well, but needs llm to make sense of the image"
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx05",
@@ -2053,7 +2734,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx05",
@@ -2062,7 +2746,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "words extracted well, but needs llm to make sense of the image"
+   "note": "words extracted well, but needs llm to make sense of the image",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2071,7 +2758,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2080,7 +2770,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2089,7 +2782,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2098,7 +2794,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2107,7 +2806,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2116,7 +2818,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2125,7 +2830,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2134,7 +2842,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx07",
@@ -2143,7 +2854,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "mx08",
@@ -2152,7 +2866,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx08",
@@ -2161,7 +2878,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx08",
@@ -2170,7 +2890,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx08",
@@ -2179,7 +2902,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "mx08",
@@ -2188,7 +2914,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf02",
@@ -2197,7 +2926,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "support for scientifc letters and figures needs toe understood by llm"
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf03",
@@ -2206,7 +2938,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "support for scientifc letters and figures needs toe understood by llm"
+   "note": "support for scientifc letters and figures needs toe understood by llm",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf04",
@@ -2215,7 +2950,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs dual column support"
+   "note": "needs dual column support",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf04",
@@ -2224,7 +2962,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs dual column and table support"
+   "note": "needs dual column and table support",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf06",
@@ -2233,7 +2974,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf06",
@@ -2242,7 +2986,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf06",
@@ -2251,7 +2998,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf06",
@@ -2260,7 +3010,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf06",
@@ -2269,7 +3022,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf07",
@@ -2278,7 +3034,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf07",
@@ -2287,7 +3046,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf07",
@@ -2296,7 +3058,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf07",
@@ -2305,7 +3070,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf07",
@@ -2314,7 +3082,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf07",
@@ -2323,7 +3094,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf07",
@@ -2332,7 +3106,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf07",
@@ -2341,7 +3118,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "unrecoverable",
-   "note": null
+   "note": null,
+   "understanding_label": "unrecoverable",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf08",
@@ -2350,7 +3130,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "rf08",
@@ -2359,7 +3142,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf08",
@@ -2368,7 +3154,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "rf08",
@@ -2377,7 +3166,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl01",
@@ -2386,7 +3178,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl01",
@@ -2395,7 +3190,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": null
+   "note": null,
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl01",
@@ -2404,7 +3202,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm help to make sense of the figure"
+   "note": "needs llm help to make sense of the figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl01",
@@ -2413,7 +3214,10 @@
    "rule_label": "usable",
    "all_text_label": "ambiguous",
    "operator_label": "needs_ocr",
-   "note": "needs llm help to make sense of the figure"
+   "note": "needs llm help to make sense of the figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl01",
@@ -2422,7 +3226,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm help to make sense of the figure"
+   "note": "needs llm help to make sense of the figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "no_body_text",
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl01",
@@ -2431,7 +3238,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm help to make sense of the figure"
+   "note": "needs llm help to make sense of the figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl01",
@@ -2440,7 +3250,10 @@
    "rule_label": "needs_ocr",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm help to make sense of the figure"
+   "note": "needs llm help to make sense of the figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl01",
@@ -2450,7 +3263,10 @@
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
    "note": null,
-   "note_redacted": "unrelated pasted text removed 2026-09-17"
+   "note_redacted": "unrelated pasted text removed 2026-09-17",
+   "understanding_label": "needs_ocr",
+   "presence_answer": null,
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl03",
@@ -2459,7 +3275,10 @@
    "rule_label": "ambiguous",
    "all_text_label": "ambiguous",
    "operator_label": "usable",
-   "note": null
+   "note": null,
+   "understanding_label": "usable",
+   "presence_answer": "text_present",
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl03",
@@ -2468,7 +3287,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "usable",
-   "note": "needs table extraction support"
+   "note": "needs table extraction support",
+   "understanding_label": "usable",
+   "presence_answer": null,
+   "presence_label": "usable"
   },
   {
    "doc_id": "tl03",
@@ -2477,7 +3299,10 @@
    "rule_label": "usable",
    "all_text_label": "usable",
    "operator_label": "needs_ocr",
-   "note": "needs llm support for figure"
+   "note": "needs llm support for figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl03",
@@ -2486,7 +3311,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm support for figure"
+   "note": "needs llm support for figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   },
   {
    "doc_id": "tl03",
@@ -2495,7 +3323,10 @@
    "rule_label": "usable",
    "all_text_label": "needs_ocr",
    "operator_label": "needs_ocr",
-   "note": "needs llm support for figure"
+   "note": "needs llm support for figure",
+   "understanding_label": "needs_ocr",
+   "presence_answer": "text_missing",
+   "presence_label": "needs_ocr"
   }
  ],
  "agreement": {
@@ -2504,6 +3335,15 @@
   "random_sample_disagreements": 39,
   "disagreement_share": 0.4149,
   "required_reviewed": 183,
+  "required_total": 183,
+  "freeze_allowed": false
+ },
+ "presence_agreement": {
+  "random_sample_answered": 94,
+  "random_sample_total": 94,
+  "random_sample_disagreements": 19,
+  "disagreement_share": 0.2021,
+  "required_answered": 183,
   "required_total": 183,
   "freeze_allowed": false
  }

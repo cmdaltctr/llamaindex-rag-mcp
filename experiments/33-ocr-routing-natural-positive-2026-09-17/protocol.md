@@ -210,6 +210,20 @@ hypothesis and its own consequence.
   0.50 cut-offs, or the token matching) and the same pages are re-answered.
 - The re-check shows both answer-key text layers (poppler and pypdf) and
   states that they are not the pipeline output.
+- Result (2026-09-17): **failed**, 20.2% disagreement (19 of 94). Cause: 10
+  pages hold 85-100% of their body words but lose their equations (bd04,
+  bd07, tl03); 7 are borderline garbled scans; 2 are pages where the operator
+  found text the rule missed. A maths-symbol revision reached 88.4% on the
+  calibration pages but 80.9% on the random sample, no better than the
+  word-only rule, so no revision was adopted.
+
+**Ground-truth resolution (approved 2026-09-17)**
+
+Final labels take the operator presence verdict on the 277 reviewed pages and
+the body-text rule on the remaining 846. The 10% agreement gate is replaced by
+this disclosure: human labels beat the rule where they exist, and the rule is
+known to miss equation loss on unreviewed pages. `page_evidence.json` records
+`label_source` (`operator` or `rule`) and `rule_label` beside every label.
 
 ### Operator spot check and label freeze
 
