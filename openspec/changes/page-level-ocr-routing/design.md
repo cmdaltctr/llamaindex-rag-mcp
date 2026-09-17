@@ -29,8 +29,8 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 
 1. **Opt-in unit.** `OCR__ROUTING_UNIT` in the OCR settings block, values `document` (default) and `page`, validated at startup.
 2. **Page evidence.** `page` mode takes per-page `needs_ocr` from a full scan. No sampled evidence and no page-fraction threshold: every flagged page is handled.
-3. **Tier 1: local OCR.** pdf-inspector selective OCR on flagged pages only, CPU, in-process, GIL released. Model directory and offline mode come from settings; no network in offline mode.
-4. **Tier 2: escalation.** A page escalates when local OCR returns no text, confidence below `OCR__LOCAL_MIN_CONFIDENCE` (calibrated by Experiment 33, not guessed), or `hosted_recommended`. Escalated pages go to the PaddleOCR-VL worker in one request with a page list (protocol 1.1, optional `pages`).
+3. **Tier 1: local OCR, behind a support pre-check.** pdf-inspector selective OCR on flagged pages only, CPU, in-process, GIL released. Model directory and offline mode come from settings; no network in offline mode. A flagged page whose script or typography falls outside the supported set (modern Latin-script print, per Experiment 33 task 6.7) skips the local tier and escalates directly, because the packaged model returns nothing on Devanagari and Arabic and little on handwriting.
+4. **Tier 2: escalation.** A page escalates when the support pre-check rejects it, local OCR returns no text, confidence falls below `OCR__LOCAL_MIN_CONFIDENCE` (0.8, from the Experiment 33 task 6.7 calibration table), or `hosted_recommended` is set. `hosted_recommended` stays a trigger although it is weak on natural documents: it fired on 6 of the 206 pages that scored below 0.5 recall. Escalated pages go to the PaddleOCR-VL worker in one request with a page list (protocol 1.1, optional `pages`).
 5. **Merge.** Pages are joined in page order. Each page keeps the text of the highest tier that produced usable text. Metadata carries scalar counts (`ocr_pages_native`, `ocr_pages_local`, `ocr_pages_worker`, `ocr_pages_unresolved`); readers with page provenance also emit per-page `source`. New keys join `EXCLUDED_EMBED_METADATA_KEYS`.
 6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier.
 7. **Identity.** The routing unit, local OCR model identity and the worker fingerprint join the source index identity, so switching units re-ingests affected sources.
@@ -39,9 +39,84 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 ## Risks
 
 - PDFium binary compatibility and packaging (ADR required).
-- Local OCR quality on natural scans is unproven; escalation rate decides the real cost.
+- Early-modern typography is read confidently and half wrongly: `io06` scored median recall 0.609 at median confidence 0.922, so the 0.8 cut escalates only 8% of it. Accepted named risk; task 2.3 calibrates it with its own evidence rather than a guessed heuristic.
+- 11.3% of pages kept at the 0.8 cut fall below recall 0.8. Task 6.1 decides whether that is acceptable for retrieval.
+- Escalation is 46.9% of `needs_ocr` pages on the Experiment 33 corpus, so the tier halves worker cost rather than removing it.
 - Mixed-engine Markdown can differ in heading style across pages.
 - Worker protocol change touches the twin protocol copy and its byte-for-byte test.
+
+## Evidence gate 1 result (Experiment 33 task 6.7, 2026-09-17)
+
+pdf-inspector 1.17.0 `process_pdf_with_ocr` in `force` mode (PP-OCRv6 Small,
+ONNX Runtime, CPU) on 464 natural pages the frozen Experiment 33 labels mark
+`needs_ocr`, across 28 documents. 731 s wall clock, no error, no document over
+the 900 s soft limit. Token recall against a vision-model reference
+transcription. Source: `experiments/33-ocr-routing-natural-positive-2026-09-17/output/local_ocr/summary.json`.
+
+| Measurement | Value |
+| --- | ---: |
+| Pages measured | 464 (399 body `needs_ocr`, 65 figure-only) |
+| Body recall ≥ 0.8 | 0.311 |
+| Body recall < 0.5 | 0.516 |
+| Pages with no text | 0.003 |
+| `hosted_recommended` | 0.015 |
+| Seconds per page | 1.58 mean, 0.75 median |
+
+The aggregate is bimodal. What decides the outcome is the writing system and
+the typography, not page quality:
+
+| Class | Pages | Median recall | ≥ 0.8 |
+| --- | ---: | ---: | ---: |
+| Modern Latin-script print | 144 | 0.977 | 0.840 |
+| Early-modern Latin book (`io06`) | 66 | 0.609 | 0.015 |
+| Handwriting (`rf06`, `rf07`) | 60 | 0.310 | 0.033 |
+| Devanagari and Arabic (`io01`, `io02`, `io03`, `io07`) | 129 | 0.000 | 0.000 |
+
+Confidence calibration for decision 4 and task 2.2:
+
+| Cut | Escalation share | Kept, recall ≥ 0.8 | Kept, recall < 0.5 |
+| ---: | ---: | ---: | ---: |
+| 0.5 | 0.015 | 0.316 | 0.509 |
+| 0.6 | 0.160 | 0.370 | 0.424 |
+| 0.7 | 0.381 | 0.502 | 0.219 |
+| 0.8 | 0.469 | 0.571 | 0.113 |
+| 0.9 | 0.597 | 0.652 | 0.025 |
+
+Confidence separates readable from unreadable pages well (AUC 0.949 over the
+399 body pages). A 0.8 cut escalates `io01` 1.00, `io03` 1.00, `io07` 1.00,
+`io02` 0.94, `tl01` 0.92, `rf07` 0.65 and `rf06` 0.63, and leaves every
+modern-print document at 0.00. It has one blind spot: `io06` escalates at 0.08
+while reading at median recall 0.609, because the model is confident and half
+wrong on early-modern typography.
+
+`pages_recommending_hosted` fired on 6 pages, all genuinely bad, out of 206
+pages below 0.5 recall. It is precise and nearly deaf; the confidence cut has
+to carry decision 4.
+
+## Evidence gate 1 verdict (task 1.2, operator decision 2026-09-17)
+
+**REWORK.** Evidence gate 1 half-passes. Local OCR is viable for modern
+Latin-script print (84% of pages at recall ≥ 0.8, 0.75 s median) and unusable
+for non-Latin scripts (129 pages, recall 0.000) and handwriting (0.310).
+Confidence separates the two (AUC 0.949).
+
+Conditions before implementation:
+
+1. Add a pre-check before the local tier: pages whose script or typography is
+   outside the supported set skip local OCR and escalate directly. The
+   supported set is named from the task 6.7 per-class table: modern
+   Latin-script print. Devanagari, Arabic and handwriting are outside it.
+2. `OCR__LOCAL_MIN_CONFIDENCE = 0.8` (escalation 46.9%, wrongly kept 11.3%).
+3. The `io06` blind spot is an accepted, named risk: early-modern Latin type
+   reads at confidence 0.922 with recall 0.609, so a confidence cut keeps it.
+   Do not invent a typography heuristic without measurement; it is a
+   calibration task with its own evidence (task 2.3).
+4. Keep `hosted_recommended` as an escalation trigger, noting it is weak here
+   (fired on 6 of 206 pages below 0.5 recall).
+5. Residual: 11.3% of kept pages fall below recall 0.8. The retrieval
+   experiment in task 6.1 decides whether that is acceptable.
+
+Tasks 3 to 6 proceed under these conditions.
 
 ## Evidence gates
 
