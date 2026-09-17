@@ -4,16 +4,16 @@
 
 ### Requirement: Document baseline uses a frozen FinanceBench subset
 
-Experiment 33A SHALL evaluate the current OMRG `documents` profile on a small frozen FinanceBench subset using the source PDFs.
+Experiment 34A SHALL evaluate the current OMRG `documents` profile on a small frozen FinanceBench subset using the source PDFs.
 
 #### Scenario: A run starts from pre-extracted benchmark text
 - **WHEN** the run bypasses the approved source PDF
-- **THEN** it SHALL NOT count as the primary 33A result
+- **THEN** it SHALL NOT count as the primary 34A result
 - **AND** it MAY be reported only as a diagnostic run
 
 ### Requirement: Document evaluation exercises the current production path
 
-The 33A run SHALL use the current document ingestion, reader/OCR routing, chunking, embedding, vector store, retrieval, reranking, and answer path defined by the frozen profile.
+The 34A run SHALL use the current document ingestion, reader/OCR routing, chunking, embedding, vector store, retrieval, reranking, and answer path defined by the frozen profile.
 
 #### Scenario: A benchmark-only setting changes the production path
 - **WHEN** a setting is changed only to improve measured benchmark scores
@@ -31,7 +31,7 @@ The harness SHALL distinguish source evidence recovery, chunk preservation, retr
 
 ### Requirement: Document retrieval metrics remain primary
 
-The primary 33A result SHALL report Evidence Recall@1/@3/@5/@10, MRR@10, no-hit rate, and nDCG@10 where the qrels support it.
+The primary 34A result SHALL report Evidence Recall@1/@3/@5/@10, MRR@10, no-hit rate, and nDCG@10 where the qrels support it.
 
 #### Scenario: RAGAS answer scores improve while retrieval degrades
 - **WHEN** secondary answer metrics improve but primary retrieval metrics worsen

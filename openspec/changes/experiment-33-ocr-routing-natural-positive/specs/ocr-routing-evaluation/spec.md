@@ -28,6 +28,16 @@ The experiment SHALL report OCR-required documents that remain on the fast path 
 - **WHEN** the current policy keeps a genuinely OCR-required PDF on the fast path
 - **THEN** the result SHALL record a false negative
 - **AND** the report SHALL identify the lost or at-risk evidence separately from false-positive cost
+- **AND** text lost by a reader fallback tier on a correctly routed PDF SHALL be reported as reader-quality loss, not as an OCR false negative
+
+### Requirement: Routing is observed on the shipped reader path
+
+The experiment SHALL score the routing decision made after the `pdf-inspector` reader fallback chain has run, not a replay of raw classifier output. Routing correctness SHALL be scored per document.
+
+#### Scenario: A reader-failure PDF is rescued
+- **WHEN** a `text_based` PDF extracts no text and the reader fallback chain recovers it
+- **THEN** the gate SHALL be scored on the corrected `pages_needing_ocr` evidence
+- **AND** a fast-path route SHALL count as correct, not as a false negative
 
 ### Requirement: Real OCR requires separate authorisation
 
@@ -40,7 +50,7 @@ Routing evaluation SHALL NOT perform real OCR without the repository's required 
 
 ### Requirement: Current thresholds stay fixed during measurement
 
-Experiment 32 SHALL evaluate the packaged routing policy without changing the `0.5` confidence threshold or `0.10` page-fraction threshold during held-out scoring.
+Experiment 33 SHALL evaluate the packaged routing policy without changing the `0.5` confidence threshold or `0.10` page-fraction threshold during held-out scoring.
 
 #### Scenario: A new threshold appears promising
 - **WHEN** exploratory analysis suggests another threshold

@@ -1,4 +1,4 @@
-# Experiment 33: Local OMRG Profile Baselines
+# Experiment 34: Local OMRG Profile Baselines
 
 > Status: DRAFT. Run the two local baselines only after the subset identities, model identities, scoring rules, and local resource budget are frozen.
 
@@ -10,26 +10,26 @@ The first baseline should stay small enough to run on the operator's Mac. The do
 
 ## What Changes
 
-- Split Experiment 33 into two sequential local baselines:
-  - **33A — Documents:** a small frozen FinanceBench subset through the current `documents` profile.
-  - **33B — Codebase:** a small frozen RepoProbe subset through the current `codebase` profile.
-- Run 33A and 33B one at a time on the Mac.
+- Split Experiment 34 into two sequential local baselines:
+  - **34A — Documents:** a small frozen FinanceBench subset through the current `documents` profile.
+  - **34B — Codebase:** a small frozen RepoProbe subset through the current `codebase` profile.
+- Run 34A and 34B one at a time on the Mac.
 - Keep retrieval metrics as the primary quality evidence.
 - Add lightweight experiment observability with structured per-stage JSONL traces.
 - Record reader/OCR path, chunking, embedding, retrieval, reranking, answer generation, latency, token use, errors, and degradation where applicable.
 - Add RAGAS as an optional evaluation-only layer for answer/context quality where the benchmark supports it.
 - Keep RAGAS and observability tooling out of the base OMRG runtime dependency path.
 - Stop local scale-up when the agreed Mac resource/runtime budget is exceeded. Larger runs move to a later cloud proposal.
-- Keep LlamaIndex, Haystack, and other framework comparisons out of Experiment 33.
+- Keep LlamaIndex, Haystack, and other framework comparisons out of Experiment 34.
 - Do not change production defaults from this experiment.
 
 ## Local Benchmark Choice
 
-### 33A — Documents
+### 34A — Documents
 
 Use a small frozen **FinanceBench** subset. The initial target is 30–50 questions across multiple source PDFs, with a mix of prose, numerical, and table-backed evidence.
 
-### 33B — Codebase
+### 34B — Codebase
 
 Use a small frozen **RepoProbe** subset. The initial target is two pinned repositories with approximately 10–20 questions total. Exact repositories and question IDs must be frozen before measured execution.
 

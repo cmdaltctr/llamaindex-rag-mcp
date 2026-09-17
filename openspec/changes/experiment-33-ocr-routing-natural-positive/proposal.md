@@ -1,4 +1,4 @@
-# Experiment 32: OCR Routing Natural-Positive Study
+# Experiment 33: OCR Routing Natural-Positive Study
 
 ## Why
 
@@ -8,8 +8,9 @@ OMRG needs a separate study containing genuine OCR-required PDFs and genuine non
 
 ## What Changes
 
-- Add Experiment 32 under `experiments/32-ocr-routing-natural-positive-<date>/` when execution is approved.
-- Freeze a stratified corpus containing born-digital, mixed, and scanned/image-based PDFs.
+- Add Experiment 33 under `experiments/33-ocr-routing-natural-positive-<date>/` when execution is approved.
+- Freeze a stratified corpus containing born-digital, mixed, scanned/image-based, and reader-failure PDFs.
+- Score routing per document on the shipped reader path, after the reader fallback chain has run.
 - Label OCR need independently from the classifier and routing output.
 - Evaluate the current packaged routing policy without changing its thresholds.
 - Make OCR-required false negatives the primary safety outcome.
