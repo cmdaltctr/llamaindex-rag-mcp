@@ -1,0 +1,9 @@
+# Experiment 33 local artefacts. PDFs are already ignored repo-wide
+# (experiments/**/*.pdf, experiments/**/corpus/). Page renders, raw
+# transcriptions and extracted text are derived document content: keep local.
+output/.pages/
+output/.transcripts/
+output/.extractions/
+output/*.tmp
+output/*.log
+analysis.ipynb

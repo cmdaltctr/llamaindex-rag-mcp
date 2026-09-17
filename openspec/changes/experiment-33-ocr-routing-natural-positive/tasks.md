@@ -2,9 +2,9 @@
 
 ## 1. Freeze the protocol
 
-- [ ] 1.1 Define document-level routing labels and page-level labels (`usable`, `needs_ocr`, `unrecoverable`, `ambiguous`); freeze the text-layer usability rule judged against the rendered page image; score routing per document, use page labels for unnecessary OCR pages and at-risk evidence.
-- [ ] 1.2 Freeze the shipped policy as the measured candidate: `OCR_FALLBACK_ENABLED=true`, `0.5` / `0.10` thresholds, unconditional `scanned`/`image_based`, and the reader fallback chain.
-- [ ] 1.3 Define primary routing-recall and false-negative measurements before held-out scoring.
+- [x] 1.1 Define document-level routing labels and page-level labels (`usable`, `needs_ocr`, `unrecoverable`, `ambiguous`); freeze the text-layer usability rule judged against the rendered page image; score routing per document, use page labels for unnecessary OCR pages and at-risk evidence.
+- [x] 1.2 Freeze the shipped policy as the measured candidate: `OCR_FALLBACK_ENABLED=true`, `0.5` / `0.10` thresholds, unconditional `scanned`/`image_based`, and the reader fallback chain.
+- [x] 1.3 Define primary routing-recall and false-negative measurements before held-out scoring.
 
 ## 2. Build the natural corpus
 
@@ -20,10 +20,10 @@
 
 ## 3. Implement the routing harness
 
-- [ ] 3.1 Add `experiments/33-ocr-routing-natural-positive-<date>/` using repository templates.
-- [ ] 3.2 Run `OcrRoutedPdfInspector` with `ocr_client=None` and record classifier outputs, confidence, page counts, post-chain `pages_needing_ocr`, `pages_needing_ocr_before_fallback`, `extraction_fallback_backend`, and the stamped `ocr_required`.
-- [ ] 3.3 Emit secret-free runtime manifests, policy identity, and the content-type detection path (Magika version or suffix fallback).
-- [ ] 3.4 Keep Stage A routing-only execution separate from Stage B real OCR execution.
+- [x] 3.1 Add `experiments/33-ocr-routing-natural-positive-<date>/` using repository templates.
+- [x] 3.2 Run `OcrRoutedPdfInspector` with `ocr_client=None` and record classifier outputs, confidence, page counts, post-chain `pages_needing_ocr`, `pages_needing_ocr_before_fallback`, `extraction_fallback_backend`, and the stamped `ocr_required`.
+- [x] 3.3 Emit secret-free runtime manifests, policy identity, and the content-type detection path (Magika version or suffix fallback).
+- [x] 3.4 Keep Stage A routing-only execution separate from Stage B real OCR execution.
 
 ## 4. Run Stage A: routing only
 
