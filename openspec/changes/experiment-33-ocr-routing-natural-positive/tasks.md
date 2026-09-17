@@ -31,6 +31,7 @@
 - [ ] 4.2 Report routing recall, precision, false negatives, false positives, and unnecessary projected OCR work.
 - [ ] 4.3 Report outcomes by born-digital, mixed, image-only scanned, scanned-with-text-layer, and reader-failure class; report reader-quality loss apart from OCR false negatives.
 - [ ] 4.4 Report routing decisions for unrecoverable documents separately, outside recall and precision denominators.
+- [ ] 4.5 Run both routing arms (`sampled_baseline`, `full_scan_candidate`) and report the documents whose route differs; the `full-page-ocr-evidence` merge decision follows this comparison.
 
 ## 5. Build the synthetic degraded set
 

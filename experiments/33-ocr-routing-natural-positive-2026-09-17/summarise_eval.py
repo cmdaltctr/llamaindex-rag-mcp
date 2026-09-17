@@ -2,7 +2,8 @@
 
 Scores ``output/routing.json`` against the frozen ``labels.json`` exactly as
 ``plan.json`` ``measurements`` defines, and applies the preregistered
-decision rule. Writes ``output/eval_results.summary.json``.
+decision rule. Writes ``output/arm_<arm>/eval_results.summary.json`` per arm and
+``output/arm_comparison.json`` when both arms have run.
 
 Reader-quality loss needs the local fast-path extractions and reference
 transcriptions (gitignored); only scores reach the summary.
@@ -24,7 +25,8 @@ sys.path.insert(0, str(EXP_DIR))
 from build_labels import TRANSCRIPTS_DIR, recall, tokens  # noqa: E402
 
 OUT_DIR = EXP_DIR / "output"
-SUMMARY = OUT_DIR / "eval_results.summary.json"
+ARMS = ("sampled_baseline", "full_scan_candidate")
+COMPARISON = OUT_DIR / "arm_comparison.json"
 BEST_SECONDS_PER_PAGE = 33.7
 WORST_SECONDS_PER_PAGE = 106.4
 READER_LOSS_BELOW = 0.80
@@ -77,13 +79,13 @@ def _reference_tokens(doc_id: str) -> list[str]:
     return reference
 
 
-def reader_quality(rows: list[dict]) -> list[dict]:
+def reader_quality(rows: list[dict], arm_dir: Path) -> list[dict]:
     """Token recall of every fast-path extraction against the legible reference."""
     results = []
     for row in rows:
         if row["ocr_required"]:
             continue
-        extraction = OUT_DIR / ".extractions" / f"{row['doc_id']}.txt"
+        extraction = arm_dir / ".extractions" / f"{row['doc_id']}.txt"
         reference = _reference_tokens(row["doc_id"])
         score = recall(extraction.read_text(encoding="utf-8"), reference) if reference else None
         results.append(
@@ -98,13 +100,14 @@ def reader_quality(rows: list[dict]) -> list[dict]:
     return results
 
 
-def main() -> int:
-    """Compute the Stage A summary and the preregistered decision."""
+def summarise_arm(arm: str) -> dict | None:
+    """Compute one arm's Stage A summary and preregistered decision."""
+    arm_dir = OUT_DIR / f"arm_{arm}"
     labels = json.loads((EXP_DIR / "labels.json").read_text(encoding="utf-8"))
     if not labels.get("frozen"):
         print("labels.json is not frozen; refusing to score", file=sys.stderr)
-        return 1
-    routing = json.loads((OUT_DIR / "routing.json").read_text(encoding="utf-8"))
+        return None
+    routing = json.loads((arm_dir / "routing.json").read_text(encoding="utf-8"))
     evidence = json.loads((OUT_DIR / "page_evidence.json").read_text(encoding="utf-8"))["pages"]
 
     documents = labels["documents"]
@@ -207,12 +210,68 @@ def main() -> int:
             for r in rows
             if label_of[r["doc_id"]] == "unrecoverable"
         ],
-        "reader_quality": reader_quality(rows),
+        "arm": arm,
+        "reader_quality": reader_quality(rows, arm_dir),
         "read_seconds_total": round(sum(r["read_seconds"] for r in rows), 2),
         "run_identity": routing.get("run_identity"),
     }
-    SUMMARY.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({k: summary[k] for k in ("verdict", "triggers_fired", "primary")}, indent=2))
+    (arm_dir / "eval_results.summary.json").write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {k: summary[k] for k in ("arm", "verdict", "triggers_fired", "primary")}, indent=2
+        )
+    )
+    return summary
+
+
+def arm_divergence(label_of: dict[str, str]) -> list[dict]:
+    """Documents whose route differs between the two arms, with their labels."""
+    routes = {}
+    for arm in ARMS:
+        rows = json.loads((OUT_DIR / f"arm_{arm}" / "routing.json").read_text(encoding="utf-8"))
+        routes[arm] = {r["doc_id"]: r for r in rows["rows"]}
+    divergent = []
+    for doc_id, base in routes[ARMS[0]].items():
+        candidate = routes[ARMS[1]][doc_id]
+        if base.get("ocr_required") != candidate.get("ocr_required"):
+            divergent.append(
+                {
+                    "doc_id": doc_id,
+                    "stratum": base["stratum"],
+                    "label": label_of[doc_id],
+                    ARMS[0]: {k: base.get(k) for k in ("ocr_required", "pages_needing_ocr")},
+                    ARMS[1]: {k: candidate.get(k) for k in ("ocr_required", "pages_needing_ocr")},
+                }
+            )
+    return divergent
+
+
+def main() -> int:
+    """Summarise every arm with routing output, then compare the arms."""
+    summaries = {}
+    for arm in ARMS:
+        if (OUT_DIR / f"arm_{arm}" / "routing.json").exists():
+            summary = summarise_arm(arm)
+            if summary is None:
+                return 1
+            summaries[arm] = summary
+    if len(summaries) < len(ARMS):
+        print(f"arms with routing output: {sorted(summaries)}; comparison skipped", file=sys.stderr)
+        return 0 if summaries else 1
+    labels = json.loads((EXP_DIR / "labels.json").read_text(encoding="utf-8"))["documents"]
+    comparison = {
+        "arms": {
+            arm: {k: s["primary"][k] for k in ("routing_recall", "false_negative_count")}
+            | {"false_positive_count": s["secondary"]["false_positive_count"]}
+            | {"routed_pages": s["secondary"]["routed_pages"]}
+            for arm, s in summaries.items()
+        },
+        "arm_divergence": arm_divergence({k: v["label"] for k, v in labels.items()}),
+    }
+    COMPARISON.write_text(json.dumps(comparison, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(comparison["arms"], indent=2))
     return 0
 
 

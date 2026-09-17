@@ -22,7 +22,8 @@ Outputs:
 - ``output/.extractions/<doc_id>.txt``: fast-path text for the
   reader-quality measurement (gitignored).
 
-    uv run python experiments/33-ocr-routing-natural-positive-2026-09-17/route.py
+    uv run python experiments/33-ocr-routing-natural-positive-2026-09-17/route.py \
+        --arm sampled_baseline --code-root ../llamaindex-rag-mcp-exp33-arm-baseline
     uv run python .../route.py --smoke tests/fixtures/smoke_text.pdf --smoke-out /tmp/x
     uv run python .../route.py --probe    # exploratory boundary probe, output/probe/
 """
@@ -46,6 +47,10 @@ LABELS_PATH = EXP_DIR / "labels.json"
 SOURCES_PATH = EXP_DIR / "sources.json"
 NATURAL_DIR = EXP_DIR / "corpus" / "natural"
 
+#: Repository whose ``src/`` is measured. ``--code-root`` points it at a
+#: detached worktree for a pinned arm (plan.json ``arms``); ``omrg`` must
+#: not be imported before ``main`` sets it.
+CODE_ROOT = PROJECT_ROOT
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(EXP_DIR.parent))
 sys.path.insert(0, str(EXP_DIR))
@@ -70,7 +75,7 @@ def _git(*args: str) -> str:
         ["git", *args],  # noqa: S607 - PATH resolution is intended
         capture_output=True,
         text=True,
-        cwd=PROJECT_ROOT,
+        cwd=CODE_ROOT,
         check=False,
     )
     return result.stdout.strip() if result.returncode == 0 else ""
@@ -115,7 +120,10 @@ def _detection(directory: Path, effective) -> dict:
     return {"path": path, "magika_version": magika_version, "labels": labels}
 
 
-def _runtime_manifest(effective, reader, detection: dict, freeze_ok: bool) -> dict:
+def _runtime_manifest(
+    effective, reader, detection: dict, freeze_ok: bool, arm: str | None = None
+) -> dict:
+    import omrg
     from omrg.integrations.pdf.ocr_policy import OCR_UNCONDITIONAL_TYPES
 
     labels = json.loads(LABELS_PATH.read_text(encoding="utf-8")) if LABELS_PATH.exists() else {}
@@ -134,7 +142,11 @@ def _runtime_manifest(effective, reader, detection: dict, freeze_ok: bool) -> di
             "seam_class": type(reader).__name__,
             "git_commit": _git("rev-parse", "HEAD"),
             "routing_code_clean": not _git("status", "--porcelain", "--", *POLICY_SOURCES),
-            "source_sha256": {rel: _sha256(PROJECT_ROOT / rel) for rel in POLICY_SOURCES},
+            "source_sha256": {rel: _sha256(CODE_ROOT / rel) for rel in POLICY_SOURCES},
+            "arm": arm,
+            "omrg_loaded_from_code_root": Path(omrg.__file__)
+            .resolve()
+            .is_relative_to(CODE_ROOT.resolve() / "src"),
         },
         "packages": _versions(),
         "detection": {"path": detection["path"], "magika_version": detection["magika_version"]},
@@ -162,6 +174,12 @@ def _preflight(plan: dict, manifest: dict, *, smoke: bool) -> None:
     if smoke:
         assertions = [a for a in assertions if a["manifest_field"] not in FREEZE_ONLY_FIELDS]
     failures = evaluate_assertions(manifest, assertions)
+    arm = manifest["policy"]["arm"]
+    if arm is not None:
+        expected = plan["arms"][arm]["source_sha256"]
+        for rel, digest in expected.items():
+            if manifest["policy"]["source_sha256"].get(rel) != digest:
+                failures.append(f"arm {arm}: {rel} differs from the pinned arm source")
     if failures:
         raise PreflightError("; ".join(failures))
     print(f"[preflight] {len(assertions)} assertions passed", flush=True)
@@ -225,11 +243,21 @@ def main() -> int:
     parser.add_argument(
         "--probe", action="store_true", help="exploratory boundary probe (probe.json); no freeze"
     )
+    parser.add_argument("--arm", help="measured arm from plan.json arms (natural runs)")
+    parser.add_argument("--code-root", type=Path, help="checkout whose src/ is measured")
     args = parser.parse_args()
     smoke = bool(args.smoke) or args.probe
+    if not smoke and (args.arm is None or args.code_root is None):
+        parser.error("natural runs need --arm (plan.json arms) and --code-root")
+    global CODE_ROOT
+    if args.code_root is not None:
+        if "omrg" in sys.modules:
+            raise SystemExit("omrg was imported before --code-root took effect")
+        CODE_ROOT = args.code_root.resolve()
+        sys.path.insert(0, str(CODE_ROOT / "src"))
     if args.smoke and not args.smoke_out:
         parser.error("--smoke needs --smoke-out (smoke runs never write to output/)")
-    out_dir = EXP_DIR / "output"
+    out_dir = EXP_DIR / "output" / f"arm_{args.arm}"
     if args.smoke:
         out_dir = args.smoke_out
     elif args.probe:
@@ -259,7 +287,7 @@ def main() -> int:
     elif args.probe:
         detection_dir = EXP_DIR / "corpus" / "probe"
     detection = _detection(detection_dir, effective)
-    manifest = _runtime_manifest(effective, reader, detection, freeze_ok)
+    manifest = _runtime_manifest(effective, reader, detection, freeze_ok, args.arm)
     _preflight(plan, manifest, smoke=smoke)
     _save_atomic(out_dir / "runtime_manifest.json", manifest)
 

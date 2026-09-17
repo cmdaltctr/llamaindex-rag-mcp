@@ -205,6 +205,11 @@
       "manifest_field": "secrets.recorded",
       "operator": "eq",
       "expected": false
+    },
+    {
+      "manifest_field": "policy.omrg_loaded_from_code_root",
+      "operator": "eq",
+      "expected": true
     }
   ],
   "amendments": [
@@ -214,6 +219,13 @@
       "change": "reference model pinned to google/gemini-3.8-flash; max_output_tokens 4096 -> 8192 (dense patent and newspaper pages); prompt asks for plain-Unicode mathematics; token rule strips LaTeX command sequences and splits on underscores; page rule order corrected so a failed or truncated call is ambiguous before the no-text rule (a failed call has zero reference tokens and would otherwise be labelled usable)",
       "reason": "the probe scored a born-digital arXiv page (bd07 p34) at R_best 0.45 because the reference transcription wrote mathematics as LaTeX (\\mathcal, \\frac, i_m), which no text layer contains; left unfixed, born-digital mathematics pages would be mislabelled needs_ocr",
       "disclosure": "the 20 probe transcripts were discarded and regenerated under the amended prompt; the probe cost ($0.06) is reported"
+    },
+    {
+      "date": "2026-09-17",
+      "stage": "before any natural routing output; after the synthetic boundary probe (task 5.4)",
+      "change": "Stage A measures two arms: sampled_baseline (preregistered gate at 5bac71e) and full_scan_candidate (change full-page-ocr-evidence at 7280766). Measurements, labels, corpus and decision rule are unchanged and applied to each arm.",
+      "reason": "the probe showed pdf-inspector counts OCR pages from an 8-page sample, so scanned pages outside the sample never reach the gate; the candidate fix also flags illustration pages in healthy books (TDR-026), so its merge waits for both effects measured on natural documents",
+      "operator_decision": "approved 2026-09-17"
     }
   ],
   "decision_register": [
@@ -230,5 +242,32 @@
       "decision": "APPROVED by operator",
       "scope": "synthetic documents only, run through the Stage A harness, reported as exploratory; never held-out evidence; thresholds unchanged"
     }
-  ]
+  ],
+  "arms": {
+    "sampled_baseline": {
+      "description": "the gate as preregistered: pdf-inspector OCR evidence from its 8-page detection sample",
+      "commit": "5bac71e",
+      "source_sha256": {
+        "src/omrg/integrations/pdf/ocr_routing.py": "d03250d525317326d28476c2d39e62ab13cb18cbbd7161be424dbacad2e2205c",
+        "src/omrg/integrations/pdf/ocr_policy.py": "d1f7beb028ba70ce9a98a21036a131664c403e99034c5d6a0d4820271765f726",
+        "src/omrg/integrations/pdf/pdf_inspector.py": "e624f139247d041e4c78bd0cad5ea341487d9699b9e8dae18cb881a4eb9d2500",
+        "src/omrg/integrations/pdf/factory.py": "041f0887feb294cd9f6734bf8b1e12c95cc7c10911f449e971eaaf0fab28317c",
+        "src/omrg/core/ingestion/backends/local.py": "d267a01f81468a94dc1138e4671f79f44f436e6edfed0df121a61183d3064a6b"
+      }
+    },
+    "full_scan_candidate": {
+      "description": "change full-page-ocr-evidence (TDR-026): text_based PDFs over 8 pages count OCR pages from a full page scan; not merged, decision waits for this comparison",
+      "commit": "7280766",
+      "branch": "feat/full-page-ocr-evidence",
+      "source_sha256": {
+        "src/omrg/integrations/pdf/ocr_routing.py": "d03250d525317326d28476c2d39e62ab13cb18cbbd7161be424dbacad2e2205c",
+        "src/omrg/integrations/pdf/ocr_policy.py": "d1f7beb028ba70ce9a98a21036a131664c403e99034c5d6a0d4820271765f726",
+        "src/omrg/integrations/pdf/pdf_inspector.py": "01fe3df737361b8cfd13ec5422e7a13c10a8a8b01ddb22265e93f31920f05f57",
+        "src/omrg/integrations/pdf/factory.py": "041f0887feb294cd9f6734bf8b1e12c95cc7c10911f449e971eaaf0fab28317c",
+        "src/omrg/core/ingestion/backends/local.py": "d267a01f81468a94dc1138e4671f79f44f436e6edfed0df121a61183d3064a6b"
+      }
+    },
+    "execution": "each arm runs route.py from this worktree with --code-root pointing at a detached worktree of the arm commit (git worktree add --detach); same frozen corpus, labels and scoring; outputs in output/arm_<name>/",
+    "reporting": "every primary and secondary measurement is reported per arm; arm_divergence lists documents whose route differs, with their labels"
+  }
 }

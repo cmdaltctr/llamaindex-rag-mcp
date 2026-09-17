@@ -214,6 +214,34 @@ The population is natural held-out documents labelled `needs_ocr` or
 - Content-type detection label and detector path (Magika version or suffix
   fallback).
 
+## Measured arms (amendment 2026-09-17, before any natural routing output)
+
+The boundary probe (task 5.4) showed that pdf-inspector counts OCR pages from
+an 8-page sample. Change `full-page-ocr-evidence` (TDR-026) completes that
+evidence, but it can also flag illustration pages in healthy books. Stage A
+therefore measures two arms on the same frozen corpus, labels and scoring:
+
+| Arm | Code | What it measures |
+| --- | --- | --- |
+| `sampled_baseline` | `5bac71e` (preregistered gate) | The gate as shipped |
+| `full_scan_candidate` | `7280766` on `feat/full-page-ocr-evidence` | The gate with complete OCR evidence |
+
+Each arm runs from a detached worktree of its commit:
+
+```bash
+git worktree add --detach ../llamaindex-rag-mcp-exp33-arm-baseline 5bac71e
+git worktree add --detach ../llamaindex-rag-mcp-exp33-arm-candidate 7280766
+uv run python $EXP/route.py --arm sampled_baseline --code-root ../llamaindex-rag-mcp-exp33-arm-baseline
+uv run python $EXP/route.py --arm full_scan_candidate --code-root ../llamaindex-rag-mcp-exp33-arm-candidate
+uv run python $EXP/summarise_eval.py
+```
+
+Preflight checks that `omrg` loads from the arm checkout and that its policy
+sources match the pinned hashes in `plan.json` `arms`. Every measurement and
+the decision rule apply to each arm. `output/arm_comparison.json` lists the
+documents whose route differs. The merge decision for the fix follows this
+comparison.
+
 ## Stages (task 3.4)
 
 | Stage | Scope | Authorised |
@@ -255,8 +283,7 @@ uv run python $EXP/build_labels.py
 # 3. Operator spot check -> spot_check.json, then freeze
 uv run python $EXP/freeze.py
 # 4. Stage A
-uv run python $EXP/route.py
-uv run python $EXP/summarise_eval.py
+# 4. Stage A: both arms (see Measured arms)
 ```
 
 ## Artefacts expected
