@@ -24,6 +24,7 @@ Outputs:
 
     uv run python experiments/33-ocr-routing-natural-positive-2026-09-17/route.py
     uv run python .../route.py --smoke tests/fixtures/smoke_text.pdf --smoke-out /tmp/x
+    uv run python .../route.py --probe    # exploratory boundary probe, output/probe/
 """
 
 from __future__ import annotations
@@ -204,7 +205,9 @@ def _save_atomic(path: Path, payload: object) -> None:
     tmp.replace(path)
 
 
-def _documents(smoke: list[str] | None) -> list[dict]:
+def _documents(smoke: list[str] | None, *, probe: bool = False) -> list[dict]:
+    if probe:
+        return json.loads((EXP_DIR / "probe.json").read_text(encoding="utf-8"))["documents"]
     if smoke:
         return [
             {"doc_id": f"smoke_{i:02d}", "stratum": "smoke", "local_path": str(Path(p).resolve())}
@@ -219,11 +222,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", nargs="+", help="harness check on these PDFs; no freeze")
     parser.add_argument("--smoke-out", type=Path, help="output directory for --smoke")
+    parser.add_argument(
+        "--probe", action="store_true", help="exploratory boundary probe (probe.json); no freeze"
+    )
     args = parser.parse_args()
-    smoke = bool(args.smoke)
-    if smoke and not args.smoke_out:
+    smoke = bool(args.smoke) or args.probe
+    if args.smoke and not args.smoke_out:
         parser.error("--smoke needs --smoke-out (smoke runs never write to output/)")
-    out_dir = args.smoke_out if smoke else EXP_DIR / "output"
+    out_dir = EXP_DIR / "output"
+    if args.smoke:
+        out_dir = args.smoke_out
+    elif args.probe:
+        out_dir = EXP_DIR / "output" / "probe"
 
     from omrg.compose import settings_to_effective
     from omrg.config import Settings
@@ -242,8 +252,12 @@ def main() -> int:
             raise SystemExit("freeze check failed: " + "; ".join(drift))
         freeze_ok = True
 
-    documents = _documents(args.smoke)
-    detection_dir = Path(documents[0]["local_path"]).parent if smoke else NATURAL_DIR
+    documents = _documents(args.smoke, probe=args.probe)
+    detection_dir = NATURAL_DIR
+    if args.smoke:
+        detection_dir = Path(documents[0]["local_path"]).parent
+    elif args.probe:
+        detection_dir = EXP_DIR / "corpus" / "probe"
     detection = _detection(detection_dir, effective)
     manifest = _runtime_manifest(effective, reader, detection, freeze_ok)
     _preflight(plan, manifest, smoke=smoke)

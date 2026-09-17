@@ -1,0 +1,84 @@
+{
+  "label": "EXPLORATORY \u2014 synthetic boundary probe, not held-out evidence",
+  "all_match": false,
+  "cells": [
+    {
+      "doc_id": "pb00",
+      "image_share": 0.0,
+      "image_pages": 0,
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "flagged_matches_image_pages": true,
+      "expected_route": false,
+      "ocr_required": false,
+      "matches_expectation": true,
+      "error_class": null
+    },
+    {
+      "doc_id": "pb01",
+      "image_share": 0.05,
+      "image_pages": 1,
+      "pdf_type": "mixed",
+      "pdf_confidence": 0.7625000476837158,
+      "pages_needing_ocr": 1,
+      "flagged_matches_image_pages": true,
+      "expected_route": false,
+      "ocr_required": false,
+      "matches_expectation": true,
+      "error_class": null
+    },
+    {
+      "doc_id": "pb05",
+      "image_share": 0.0952,
+      "image_pages": 2,
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "flagged_matches_image_pages": false,
+      "expected_route": false,
+      "ocr_required": false,
+      "matches_expectation": true,
+      "error_class": null
+    },
+    {
+      "doc_id": "pb02",
+      "image_share": 0.1,
+      "image_pages": 2,
+      "pdf_type": "mixed",
+      "pdf_confidence": 0.7250000238418579,
+      "pages_needing_ocr": 2,
+      "flagged_matches_image_pages": true,
+      "expected_route": true,
+      "ocr_required": true,
+      "matches_expectation": true,
+      "error_class": null
+    },
+    {
+      "doc_id": "pb03",
+      "image_share": 0.15,
+      "image_pages": 3,
+      "pdf_type": "text_based",
+      "pdf_confidence": 1.0,
+      "pages_needing_ocr": 0,
+      "flagged_matches_image_pages": false,
+      "expected_route": true,
+      "ocr_required": false,
+      "matches_expectation": false,
+      "error_class": null
+    },
+    {
+      "doc_id": "pb04",
+      "image_share": 0.2,
+      "image_pages": 4,
+      "pdf_type": "mixed",
+      "pdf_confidence": 0.7250000238418579,
+      "pages_needing_ocr": 4,
+      "flagged_matches_image_pages": true,
+      "expected_route": true,
+      "ocr_required": true,
+      "matches_expectation": true,
+      "error_class": null
+    }
+  ]
+}

@@ -215,5 +215,20 @@
       "reason": "the probe scored a born-digital arXiv page (bd07 p34) at R_best 0.45 because the reference transcription wrote mathematics as LaTeX (\\mathcal, \\frac, i_m), which no text layer contains; left unfixed, born-digital mathematics pages would be mislabelled needs_ocr",
       "disclosure": "the 20 probe transcripts were discarded and regenerated under the amended prompt; the probe cost ($0.06) is reported"
     }
+  ],
+  "decision_register": [
+    {
+      "date": "2026-09-17",
+      "item": "task 5.3 print-and-rescan tier",
+      "decision": "SKIPPED by operator",
+      "consequence": "real physical scan artefacts (page curl, uneven lighting, bleed-through, paper texture) are not tested; the report states this limit",
+      "follow_up": "record in the Experiment 33 ADR"
+    },
+    {
+      "date": "2026-09-17",
+      "item": "task 5.4 page-fraction boundary probe",
+      "decision": "APPROVED by operator",
+      "scope": "synthetic documents only, run through the Stage A harness, reported as exploratory; never held-out evidence; thresholds unchanged"
+    }
   ]
 }

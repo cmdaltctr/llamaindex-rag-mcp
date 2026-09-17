@@ -1,0 +1,167 @@
+{
+  "description": "Exploratory page-fraction boundary probe. Synthetic; never held-out evidence; thresholds unchanged.",
+  "source": {
+    "arxiv_id": "2308.13049",
+    "licence": "http://creativecommons.org/licenses/by/4.0/",
+    "sha256": "dab76033d6320c17839b86efb779eb80bb17b740228835226f9e487f951dffd9"
+  },
+  "seed": 3354,
+  "page_fraction_threshold": 0.1,
+  "documents": [
+    {
+      "doc_id": "pb00",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb00.pdf",
+      "sha256": "b6060a5425ce53d007b4622ef89941440e6c44049968c4936c5a95924217242f",
+      "pages": 20,
+      "image_pages": 0,
+      "image_share": 0.0,
+      "expected_route_if_only_image_pages_flagged": false,
+      "replaced_pages": []
+    },
+    {
+      "doc_id": "pb01",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb01.pdf",
+      "sha256": "10dec82207c0a97e454096796079e4a3f0bb4b26e03be6662d232a61feaa1d7e",
+      "pages": 20,
+      "image_pages": 1,
+      "image_share": 0.05,
+      "expected_route_if_only_image_pages_flagged": false,
+      "replaced_pages": [
+        {
+          "page": 5,
+          "skew_degrees": -1.737,
+          "noise_attenuate": 0.262,
+          "blur_sigma": 0.702,
+          "jpeg_quality": 59
+        }
+      ]
+    },
+    {
+      "doc_id": "pb05",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb05.pdf",
+      "sha256": "f0999ea3857de93fe88cae44108d6257fd34cb56bf64af57b1bd5b1932c6a97c",
+      "pages": 21,
+      "image_pages": 2,
+      "image_share": 0.0952,
+      "expected_route_if_only_image_pages_flagged": false,
+      "replaced_pages": [
+        {
+          "page": 12,
+          "skew_degrees": 0.931,
+          "noise_attenuate": 0.482,
+          "blur_sigma": 0.393,
+          "jpeg_quality": 47
+        },
+        {
+          "page": 14,
+          "skew_degrees": 1.619,
+          "noise_attenuate": 0.478,
+          "blur_sigma": 0.365,
+          "jpeg_quality": 41
+        }
+      ]
+    },
+    {
+      "doc_id": "pb02",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb02.pdf",
+      "sha256": "f0df86c8a2ad86607bf59abc66c1034807af27c5d8ec6e8c7b70edb3f675fb41",
+      "pages": 20,
+      "image_pages": 2,
+      "image_share": 0.1,
+      "expected_route_if_only_image_pages_flagged": true,
+      "replaced_pages": [
+        {
+          "page": 5,
+          "skew_degrees": -1.588,
+          "noise_attenuate": 0.315,
+          "blur_sigma": 0.769,
+          "jpeg_quality": 41
+        },
+        {
+          "page": 20,
+          "skew_degrees": -1.016,
+          "noise_attenuate": 0.242,
+          "blur_sigma": 0.781,
+          "jpeg_quality": 46
+        }
+      ]
+    },
+    {
+      "doc_id": "pb03",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb03.pdf",
+      "sha256": "13e4ccc24201091bbb6152bfafba65f4809a39d804b4dccc3a203395a6c0d6a1",
+      "pages": 20,
+      "image_pages": 3,
+      "image_share": 0.15,
+      "expected_route_if_only_image_pages_flagged": true,
+      "replaced_pages": [
+        {
+          "page": 2,
+          "skew_degrees": -1.456,
+          "noise_attenuate": 0.533,
+          "blur_sigma": 0.439,
+          "jpeg_quality": 45
+        },
+        {
+          "page": 10,
+          "skew_degrees": 1.688,
+          "noise_attenuate": 0.587,
+          "blur_sigma": 0.407,
+          "jpeg_quality": 46
+        },
+        {
+          "page": 14,
+          "skew_degrees": 1.32,
+          "noise_attenuate": 0.389,
+          "blur_sigma": 0.506,
+          "jpeg_quality": 49
+        }
+      ]
+    },
+    {
+      "doc_id": "pb04",
+      "stratum": "synthetic_probe",
+      "local_path": "corpus/probe/pb04.pdf",
+      "sha256": "1af1a789efa0effdf7f70f90a90a820f0415ec6f4e35f636f22738bb581a22e8",
+      "pages": 20,
+      "image_pages": 4,
+      "image_share": 0.2,
+      "expected_route_if_only_image_pages_flagged": true,
+      "replaced_pages": [
+        {
+          "page": 9,
+          "skew_degrees": 1.321,
+          "noise_attenuate": 0.451,
+          "blur_sigma": 0.422,
+          "jpeg_quality": 54
+        },
+        {
+          "page": 10,
+          "skew_degrees": -1.615,
+          "noise_attenuate": 0.549,
+          "blur_sigma": 0.704,
+          "jpeg_quality": 58
+        },
+        {
+          "page": 11,
+          "skew_degrees": -1.998,
+          "noise_attenuate": 0.387,
+          "blur_sigma": 0.35,
+          "jpeg_quality": 47
+        },
+        {
+          "page": 17,
+          "skew_degrees": -1.543,
+          "noise_attenuate": 0.243,
+          "blur_sigma": 0.57,
+          "jpeg_quality": 50
+        }
+      ]
+    }
+  ]
+}
