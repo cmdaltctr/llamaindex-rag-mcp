@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2941
+_BASE_EXECUTED = 2948
+# Re-baselined at liteparse-reading-order (2026-09-18): the layout classifier
+# adds 7 cases — two-column join order and its multi_column label, a full-width
+# running head over two columns, single-column and table pages keeping library
+# order, a sidebar failing the balance condition, and content preservation
+# (2941 -> 2948).
 # Re-baselined at fix-stale-cleanup-batching (2026-09-16): the batched
 # stale-deletion regression adds 1 case (2927 -> 2928).
 # Re-baselined for the PR-94 CodeRabbit remediation (2026-09-16): four

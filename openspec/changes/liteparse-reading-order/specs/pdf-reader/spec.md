@@ -2,9 +2,9 @@
 
 ### Requirement: LiteParse adapter SHALL emit multi-column pages in reading order
 
-The LiteParse adapter SHALL classify each page's layout from its own text items before joining them into text. A page classified `multi_column` SHALL be joined column by column: every item of the first column in vertical order, then every item of the next column. A page not classified `multi_column` SHALL keep the order the library returned, so single-column pages, tables and layouts the classifier does not recognise are unchanged.
+The LiteParse adapter SHALL classify each page's layout from its own text items before joining them into text. A page classified `multi_column` SHALL be joined column by column: every item of the first column in vertical order, then every item of the next column. A page not classified `multi_column` SHALL keep the order the library returned, so single-column pages, tables and layouts the classifier does not recognise are unchanged, and SHALL keep the `column` label the adapter emits today.
 
-Classification SHALL depend only on the geometry of the page's own text items and SHALL NOT read the document, the file name or any setting. It SHALL require a vertical gutter: a band of the page's horizontal extent that the page's own non-full-width items leave essentially uncovered, whose centre lies in the middle third of that extent, with text on both sides of comparable quantity, each side spanning most of the page's vertical text extent. A page that fails any of those conditions SHALL be `single`.
+Classification SHALL depend only on the geometry of the page's own text items and SHALL NOT read the document, the file name or any setting. It SHALL require a vertical gutter: a band of the page's horizontal extent that the page's own non-full-width items leave essentially uncovered, whose centre lies in the middle third of that extent, with text on both sides of comparable quantity, each side spanning most of the page's vertical text extent. A page that fails any of those conditions SHALL keep the library order and SHALL NOT be labelled `multi_column`.
 
 Reordering SHALL NOT add, drop or alter any item, so the emitted token content of a page is unchanged.
 
@@ -24,7 +24,8 @@ Reordering SHALL NOT add, drop or alter any item, so the emitted token content o
 
 - **GIVEN** a page whose items are laid out in rows across the page with no qualifying gutter
 - **WHEN** the adapter emits its Document
-- **THEN** the page SHALL be classified `single` and its order SHALL be unchanged
+- **THEN** the item order SHALL be unchanged
+- **AND** the page SHALL NOT be labelled `multi_column`
 
 #### Scenario: Reordering preserves content
 

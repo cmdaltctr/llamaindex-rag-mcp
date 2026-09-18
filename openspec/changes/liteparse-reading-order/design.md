@@ -105,7 +105,31 @@ frozen reference transcriptions, with `--code-root` pointing at this checkout:
 3. Token recall unchanged, within ±0.01 per page.
 4. Scores reported per page class: single, multi-column, table.
 
-The prototype of the rule in decision 2 met all four: multi-column median order
-0.529 → 0.952, both guard pages classified `single` and unchanged, no page's
-recall changed at all, and no order regression on any of the 87 pages. The
-measurement against the shipped adapter replaces those prototype numbers.
+Measured against this adapter by
+`experiments/33-ocr-routing-natural-positive-2026-09-17/reading_order.py`, over
+the 65 reviewed pages that have liteparse items and a reference transcription
+(the other 22 have no text to order):
+
+| Page class | Pages | Median order before | Median order after | Median recall before | Median recall after |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `multi_column` | 6 | 0.5309 | **0.9613** | 0.977 | 0.977 |
+| `single` | 59 | 0.9409 | 0.9409 | 0.9679 | 0.9679 |
+
+| Gate | Result |
+| --- | --- |
+| Multi-column order ≥ 0.90 | 0.9613 |
+| `bd02` p1 no regression | classified `single`, 0.6703 unchanged |
+| `tl03` p5 no regression | classified `single`, 0.7401 unchanged |
+| Recall within ±0.01 | no page changed; item multiset preserved on every page |
+| Order regressions | none, on any page |
+
+Per multi-column page: `rf03` p6 0.53 → 0.98, `rf04` p6 0.53 → 0.97, `bd01` p4
+0.53 → 0.97, `rf02` p7 0.66 → 0.95, `rf04` p4 0.53 → 0.94, and `rf06` p65
+0.44 → 0.69, a handwritten record whose recall is 0.72 before order is
+considered.
+
+Decision 2's single-gutter condition earned itself during implementation: a
+regular four-column table has a qualifying gutter at its centre, so an
+earlier one-gutter-anywhere rule reordered it. Requiring exactly one gutter
+leaves tables alone, and also stops the rule reordering `tl01` p59, a figure
+page that gains nothing from it. Raw data: `output/reading_order.json`.

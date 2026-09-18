@@ -65,12 +65,12 @@ class TestLiteParseReader:
             meta = doc.metadata
             assert meta.get("pdf_reader") == "liteparse"
             assert "page" in meta
-            assert meta.get("column") in ("left", "right", "single")
+            assert meta.get("column") in ("left", "right", "single", "multi_column")
             assert "section_bbox" in meta
             assert meta.get("bbox_schema_version") == 1
 
     def test_two_column_pdf_produces_column_metadata(self):
-        """Two-column academic PDF should produce left/right column labels."""
+        """A two-column academic PDF should be recognised and labelled multi_column."""
         if not CORPUS_PDF.exists():
             pytest.skip("Corpus PDF not available")
 
@@ -80,8 +80,7 @@ class TestLiteParseReader:
         documents = reader.load_data(file=CORPUS_PDF)
 
         columns = {doc.metadata.get("column") for doc in documents}
-        # At least some pages should have left or right column labels
-        assert columns & {"left", "right"}, f"Expected column labels but got: {columns}"
+        assert "multi_column" in columns, f"Expected a multi_column page but got: {columns}"
 
     def test_section_bbox_is_json_string(self):
         """section_bbox must be a JSON-encoded string (ChromaDB scalar requirement)."""
@@ -98,3 +97,109 @@ class TestLiteParseReader:
             assert isinstance(bbox_str, str), "section_bbox must be a string"
             bbox = json.loads(bbox_str)
             assert len(bbox) == 4, "section_bbox must have 4 coordinates"
+
+
+def _item(text: str, x: float, y: float, width: float, height: float = 1.0):
+    """Return one LiteParse-shaped text item."""
+    return SimpleNamespace(text=text, x=x, y=y, width=width, height=height)
+
+
+def _two_column_items() -> list[SimpleNamespace]:
+    """Return a two-column page: a 6% gutter at the centre, 12 lines a side.
+
+    Emitted in interleaved order, the way LiteParse returns them, so a correct
+    join has to reorder.
+    """
+    items: list[SimpleNamespace] = []
+    for row in range(12):
+        y = 10.0 + row * 10
+        items.append(_item(f"left {row}", x=0.0, y=y, width=44.0))
+        items.append(_item(f"right {row}", x=56.0, y=y, width=44.0))
+    return items
+
+
+def _read(monkeypatch, tmp_path, pages):
+    """Load documents from a stubbed LiteParse returning *pages*."""
+    from omrg.integrations.pdf.liteparse import LiteParseReader
+
+    class _StubLiteParse:
+        def __init__(self, **_kwargs) -> None:
+            pass
+
+        def parse(self, file):
+            return SimpleNamespace(pages=pages)
+
+    monkeypatch.setitem(sys.modules, "liteparse", SimpleNamespace(LiteParse=_StubLiteParse))
+    return LiteParseReader(ocr_enabled=False, num_workers=1).load_data(tmp_path / "stub.pdf")
+
+
+def test_two_column_page_is_joined_column_by_column(monkeypatch, tmp_path):
+    """Every left-column line precedes every right-column line."""
+    page = SimpleNamespace(page_num=1, text_items=_two_column_items())
+
+    lines = _read(monkeypatch, tmp_path, [page])[0].get_content().splitlines()
+
+    assert lines == [f"left {row}" for row in range(12)] + [f"right {row}" for row in range(12)]
+
+
+def test_two_column_page_is_labelled_multi_column(monkeypatch, tmp_path):
+    """A reordered page says so in its metadata."""
+    page = SimpleNamespace(page_num=1, text_items=_two_column_items())
+
+    assert _read(monkeypatch, tmp_path, [page])[0].metadata["column"] == "multi_column"
+
+
+def test_full_width_heading_does_not_hide_the_gutter(monkeypatch, tmp_path):
+    """A running head spanning both columns is dropped before the gutter test."""
+    items = [_item("RUNNING HEAD", x=0.0, y=0.0, width=100.0), *_two_column_items()]
+    page = SimpleNamespace(page_num=1, text_items=items)
+
+    documents = _read(monkeypatch, tmp_path, [page])
+
+    assert documents[0].metadata["column"] == "multi_column"
+    assert "RUNNING HEAD" in documents[0].get_content()
+
+
+def test_single_column_page_keeps_library_order(monkeypatch, tmp_path):
+    """A page with no gutter is emitted exactly as LiteParse returned it."""
+    items = [_item(f"line {row}", x=0.0, y=10.0 * row, width=100.0) for row in range(12)]
+    page = SimpleNamespace(page_num=1, text_items=items)
+
+    documents = _read(monkeypatch, tmp_path, [page])
+
+    assert documents[0].get_content().splitlines() == [f"line {row}" for row in range(12)]
+    assert documents[0].metadata["column"] == "single"
+
+
+def test_table_page_keeps_library_order(monkeypatch, tmp_path):
+    """Row-structured cells have no qualifying gutter, so the order is untouched."""
+    items = []
+    for row in range(8):
+        y = 10.0 + row * 10
+        for col, x in enumerate((0.0, 26.0, 52.0, 78.0)):
+            items.append(_item(f"r{row}c{col}", x=x, y=y, width=22.0))
+    page = SimpleNamespace(page_num=1, text_items=items)
+
+    documents = _read(monkeypatch, tmp_path, [page])
+
+    assert documents[0].get_content().splitlines() == [item.text for item in items]
+    assert documents[0].metadata["column"] != "multi_column"
+
+
+def test_sidebar_does_not_qualify_as_a_second_column(monkeypatch, tmp_path):
+    """A narrow sidebar beside a body column fails the balance condition."""
+    items = [_item(f"body {row}", x=0.0, y=10.0 + row * 10, width=68.0) for row in range(12)]
+    items += [_item(f"note {row}", x=74.0, y=10.0 + row * 40, width=26.0) for row in range(3)]
+    page = SimpleNamespace(page_num=1, text_items=items)
+
+    assert _read(monkeypatch, tmp_path, [page])[0].metadata["column"] != "multi_column"
+
+
+def test_reordering_preserves_content(monkeypatch, tmp_path):
+    """Reordering never adds, drops or alters an item."""
+    items = _two_column_items()
+    page = SimpleNamespace(page_num=1, text_items=items)
+
+    emitted = _read(monkeypatch, tmp_path, [page])[0].get_content().splitlines()
+
+    assert sorted(emitted) == sorted(item.text for item in items)

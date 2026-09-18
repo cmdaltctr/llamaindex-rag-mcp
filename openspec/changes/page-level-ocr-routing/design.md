@@ -29,8 +29,29 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 
 1. **Opt-in unit.** `OCR__ROUTING_UNIT` in the OCR settings block, values `document` (default) and `page`, validated at startup.
 2. **Page evidence.** `page` mode takes per-page `needs_ocr` from a full scan. No sampled evidence and no page-fraction threshold: every flagged page is handled.
-3. **Tier 1: local OCR, behind a support pre-check.** pdf-inspector selective OCR on flagged pages only, CPU, in-process, GIL released. Model directory and offline mode come from settings; no network in offline mode. A flagged page whose script or typography falls outside the supported set (modern Latin-script print, per Experiment 33 task 6.7) skips the local tier and escalates directly, because the packaged model returns nothing on Devanagari and Arabic and little on handwriting.
-4. **Tier 2: escalation.** A page escalates when the support pre-check rejects it, local OCR returns no text, confidence falls below `OCR__LOCAL_MIN_CONFIDENCE` (0.8, from the Experiment 33 task 6.7 calibration table), or `hosted_recommended` is set. `hosted_recommended` stays a trigger although it is weak on natural documents: it fired on 6 of the 206 pages that scored below 0.5 recall. Escalated pages go to the PaddleOCR-VL worker in one request with a page list (protocol 1.1, optional `pages`).
+3. **Tier 1: local OCR.** pdf-inspector selective OCR on flagged pages only, CPU, in-process, GIL released. Model directory and offline mode come from settings; no network in offline mode. Every flagged page is tried locally first: at 0.75 s median per page against 34 to 106 s hosted, trying and escalating costs less than any attempt to predict failure would save.
+4. **Tier 2: escalation, decided after the attempt.** A page escalates when any of these holds:
+
+   - local OCR returns empty or whitespace-only text;
+   - `ocr_confidence` is below `OCR__LOCAL_MIN_CONFIDENCE` (0.8);
+   - `hosted_recommended` is set.
+
+   Experiment 33 task 6.7 supports each term. Empty output catches the classes
+   the packaged model cannot read at all: all 129 Devanagari and Arabic pages
+   scored recall 0.000. The 0.8 confidence cut escalates 46.9% of `needs_ocr`
+   pages and leaves 11.3% of kept pages below 0.5 recall. `hosted_recommended`
+   is weak on natural documents — it fired on 6 of the 206 pages below 0.5
+   recall — and is kept because it costs nothing and fired on no page that
+   scored recall ≥ 0.8 (n=124); all six pages it flagged scored 0.000.
+
+   **No script or typography signal is used, because none was measured.** A
+   pre-check would have to judge a page before OCR runs, when the page is still
+   an image; task 6.7 measured which documents fail, not a signal that predicts
+   it beforehand. Escalating after the attempt reaches the same pages on
+   evidence that exists.
+
+   Escalated pages go to the PaddleOCR-VL worker in one request with a page
+   list (protocol 1.1, optional `pages`).
 5. **Merge.** Pages are joined in page order. Each page keeps the text of the highest tier that produced usable text. Metadata carries scalar counts (`ocr_pages_native`, `ocr_pages_local`, `ocr_pages_worker`, `ocr_pages_unresolved`); readers with page provenance also emit per-page `source`. New keys join `EXCLUDED_EMBED_METADATA_KEYS`.
 6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier.
 7. **Identity.** The routing unit, local OCR model identity and the worker fingerprint join the source index identity, so switching units re-ingests affected sources.
@@ -39,8 +60,8 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 ## Risks
 
 - PDFium binary compatibility and packaging (ADR required).
-- Early-modern typography is read confidently and half wrongly: `io06` scored median recall 0.609 at median confidence 0.922, so the 0.8 cut escalates only 8% of it. Accepted named risk; task 2.3 calibrates it with its own evidence rather than a guessed heuristic.
-- 11.3% of pages kept at the 0.8 cut fall below recall 0.8. Task 6.1 decides whether that is acceptable for retrieval.
+- The `io06` blind spot is accepted and named: early-modern Latin type reads at median confidence 0.922 and median recall 0.609, so the 0.8 cut keeps it. No measured signal separates confident-but-wrong typography; task 2.3 is where that evidence would come from.
+- Residual: 11.3% of pages kept at the 0.8 cut fall below recall 0.8. Task 6.1 judges whether that is acceptable for retrieval.
 - Escalation is 46.9% of `needs_ocr` pages on the Experiment 33 corpus, so the tier halves worker cost rather than removing it.
 - Mixed-engine Markdown can differ in heading style across pages.
 - Worker protocol change touches the twin protocol copy and its byte-for-byte test.
@@ -117,6 +138,12 @@ Conditions before implementation:
    experiment in task 6.1 decides whether that is acceptable.
 
 Tasks 3 to 6 proceed under these conditions.
+
+**Amendment, 2026-09-18 (operator).** Condition 1 above called for a script and
+typography pre-check. It is dropped. The failures it aimed at announce
+themselves after the attempt — empty output covers the 129 unreadable pages —
+and a pre-check would need a signal nobody has measured. Decision 4's
+post-check rule replaces it. Conditions 2 to 5 stand unchanged.
 
 ## Evidence gates
 

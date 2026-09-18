@@ -64,7 +64,7 @@ With the `document` routing unit (the default), the system SHALL route the whole
 
 ### Requirement: Page-level OCR routing SHALL OCR only pages that need it
 
-When `OCR__ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier, unless a support pre-check rejects the page. The pre-check SHALL reject a page whose script or typography falls outside the local model's supported set, and a rejected page SHALL skip the local tier and escalate directly. A page SHALL escalate to the PaddleOCR-VL worker only when the pre-check rejects it, or the local tier returns no text, reports confidence below the configured minimum, or recommends hosted OCR. The worker SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages. The default routing unit SHALL remain `document`.
+When `OCR__ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier. A page SHALL escalate to the PaddleOCR-VL worker only when the local tier returns no text or only whitespace, reports confidence below the configured minimum, or recommends hosted OCR. The worker SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages. The default routing unit SHALL remain `document`.
 
 #### Scenario: Only flagged pages are OCRed
 
@@ -73,12 +73,11 @@ When `OCR__ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL d
 - **THEN** the 17 other pages SHALL keep native Markdown
 - **AND** only the 3 flagged pages SHALL be processed by the local OCR tier
 
-#### Scenario: Unsupported script skips the local tier
+#### Scenario: A page the local tier cannot read escalates
 
-- **GIVEN** the `page` routing unit and a flagged page whose script is outside the local model's supported set
+- **GIVEN** the `page` routing unit and a flagged page the local tier returns no text for
 - **WHEN** the PDF is ingested
-- **THEN** the local OCR tier SHALL NOT be run for that page
-- **AND** that page SHALL be sent to the worker
+- **THEN** that page SHALL be sent to the worker
 - **AND** the metadata SHALL count it as a worker page
 
 #### Scenario: Unreadable local OCR pages escalate alone
