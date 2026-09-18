@@ -18,6 +18,16 @@ worktree and local branch removed.
 
 ## Queue
 
+0. ~~**PR #96 opened 2026-09-18**~~ — `feat/page-level-ocr-routing` →
+   `v3`, covering BOTH changes (the LiteParse join-order fix and
+   page-level-ocr-routing, all 14+ commits through `6655483`). Both
+   changes' task lists are complete; `openspec validate --all --strict`
+   (57 passed) and `./scripts/local_ci.sh` (passed at `f24b593`; later
+   commits are OpenSpec checkbox updates only) are green. ADR-069
+   (`docs/adr/069-page-level-ocr-routing-and-the-pdfium-runtime.md`) is
+   **Proposed** on that branch — the operator accepts or amends it at PR
+   review. After merge: archive both changes on `v3`, then this
+   worktree's own queue resumes below.
 1. ~~**Merge PR #95**~~ **Done 2026-09-18.** Squash-merged to `v3` as
    `1e0a4b0`, carrying the code fix, TDR-026 as Accepted with the Stage A
    numbers, the `pdf-reader` delta synced into the main spec, and the archived
