@@ -133,20 +133,27 @@ Committed:
 | `38d6bad` | **implement** the liteparse layout classifier and join |
 | `d8d7025` | **implement** the OCR routing unit and local tier settings, and the index identity |
 
-**Uncommitted, and substantial.** The next session must not assume a clean
-tree. `git status` shows five new files and eight modified ones:
+`04b2df6` **committed all of it** — tasks 4.1, 4.5a and 4.5b, the three file
+splits, the inventory registration and the tripwire re-baseline. The tree is
+clean. New modules: `integrations/pdf/page_routing.py`,
+`core/ingestion/embed_exclusions.py`, `compose_settings.py`, plus
+`tests/unit/test_page_evidence.py` and `tests/unit/test_page_merge.py`.
 
-- new: `src/omrg/integrations/pdf/page_routing.py` (task 4.1 `page_evidence`,
-  task 4.5 `merge_pages`), `src/omrg/core/ingestion/embed_exclusions.py`,
-  `src/omrg/compose_settings.py`, `tests/unit/test_page_evidence.py`,
-  `tests/unit/test_page_merge.py`;
-- modified: both changes' `tasks.md`, the page-level `design.md` and spec
-  delta, `config/__init__.py`, `core/settings.py`, `core/ingestion/source_state.py`,
-  `compose.py`, and four test files.
+Verified green at `04b2df6`: full fast suite **2984 passed, 135 skipped, 0
+failed**; `openspec validate --all --strict` 57 passed; ruff clean.
 
-Everything above passes `openspec validate --all --strict` (57 items),
-`tests/unit` and the identity suite (313 passed), and ruff. Commit it before
-starting new work.
+**The full fast suite found four failures first, all of them new modules that
+were not registered where the project requires.** Targeted suites do not catch
+these; `./scripts/local_ci.sh` does. Run it before believing a change is done:
+
+| Failure | Cause | Fix applied |
+| --- | --- | --- |
+| `test_no_global_settings_reads` | `compose_settings.py` calls `get_settings`, and the allowlist named only the three older composition-root files | added to `_PERMITTED_PATHS` |
+| `test_strategy_registration_inventory` (×2) | `integrations/pdf/page_routing.py` absent from the `docs/guides/architecture.md` integration inventory | row added, marker count 19 → 20 |
+| `test_clean_base_tripwire` | the pinned executed count moved again with the new tests | re-baselined 2948 → 2983 (effective 2979) from the reported count |
+
+A new integration module needs an inventory row and a marker bump. A new
+composition-root file needs an allowlist entry. Neither is optional.
 
 ### Task 6.7 and the reader comparison are committed here
 
@@ -200,6 +207,10 @@ transcripts and extractions remain gitignored and exist nowhere else.
    new modules above. Run `tests/test_file_size_ceiling.py` **before**
    committing, not after — this session committed a violation in `d8d7025`
    and had to repair it.
+3a. Read the **pytest summary line**, not the ruff line, before calling a suite
+   green. A combined `ruff && pytest` command ends with ruff's
+   `All checks passed!` on screen while pytest's own result sits above it. This
+   session reported a green suite that had four failures.
 4. Splitting `settings_to_effective` into `compose_settings.py` moved the
    patch target: four test files now patch
    `omrg.compose_settings.get_settings` (CLAUDE.md gotcha 8b).
