@@ -176,14 +176,21 @@ def test_document_unit_payload_is_unchanged() -> None:
     }
 
 
-def test_document_unit_identity_does_not_move() -> None:
+def test_document_unit_identity_does_not_move(monkeypatch) -> None:
     """A document-unit install keeps its identity, so nothing reindexes.
 
-    The routing unit defaults to ``document``, so adding it to the payload
-    must be invisible here: an install that never opts in has no reason to
-    reprocess a corpus. The right-hand side is built from the pre-change
-    payload, so this fails the moment the conditional leaks a key into the
-    default.
+    Both halves of the payload are exercised, because either could move it.
+    The left-hand side runs against the exclusion set as it stands today,
+    grown by the page-routing keys; the right-hand side runs against the
+    set as it stood before them, with the pre-change routing payload. They
+    must agree: a corpus indexed before page routing existed has no reason
+    to reprocess for keys its install can never emit.
+
+    This is why the earlier version of this test was too weak — it held the
+    exclusion set constant on both sides, so registering a page-unit key in
+    ``EXCLUDED_EMBED_METADATA_KEYS`` without listing it in
+    ``PAGE_ROUTING_ONLY_EMBED_KEYS`` passed unnoticed while every install's
+    identity moved.
 
     Do not replace this with a recorded digest. ``build_index_identity``
     hashes the *ambient* embedding model, and conftest swaps in a mock, so
@@ -191,14 +198,59 @@ def test_document_unit_identity_does_not_move() -> None:
     digest would pin the mock rather than the configuration, and break
     whenever the harness changed its embedder.
     """
+    from omrg.core.ingestion import embed_exclusions, source_state
     from omrg.core.ingestion.source_state import build_index_identity
     from omrg.core.settings import EffectiveSettings
 
     settings = EffectiveSettings()
+    grown = build_index_identity(settings, **_IDENTITY_KWARGS)
 
-    assert build_index_identity(settings, **_IDENTITY_KWARGS) == build_index_identity(
+    before = tuple(
+        key
+        for key in source_state.EXCLUDED_EMBED_METADATA_KEYS
+        if key not in embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
+    )
+    monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", before)
+    pre_change = build_index_identity(
         settings, ocr_routing=_PRE_CHANGE_ROUTING_PAYLOAD, **_IDENTITY_KWARGS
     )
+
+    assert grown == pre_change
+
+
+def test_page_unit_identity_includes_the_page_routing_keys(monkeypatch) -> None:
+    """On a page-unit install the same keys must move the identity.
+
+    This is the other half of the rule. Subtracting them everywhere would
+    hide a real change in embedded text, which is the failure the exclusion
+    set is hashed to prevent.
+    """
+    from omrg.core.ingestion import embed_exclusions, source_state
+    from omrg.core.ingestion.source_state import build_index_identity
+    from omrg.core.settings import EffectiveSettings
+
+    settings = EffectiveSettings(ocr_routing_unit="page")
+    with_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
+
+    before = tuple(
+        key
+        for key in source_state.EXCLUDED_EMBED_METADATA_KEYS
+        if key not in embed_exclusions.PAGE_ROUTING_ONLY_EMBED_KEYS
+    )
+    monkeypatch.setattr(source_state, "EXCLUDED_EMBED_METADATA_KEYS", before)
+    without_keys = build_index_identity(settings, **_IDENTITY_KWARGS)
+
+    assert with_keys != without_keys
+
+
+def test_unit_scoped_keys_are_a_subset_of_the_exclusion_set() -> None:
+    """A unit-scoped key that is not excluded would reach the embedding model."""
+    from omrg.core.ingestion.embed_exclusions import (
+        EXCLUDED_EMBED_METADATA_KEYS,
+        PAGE_ROUTING_ONLY_EMBED_KEYS,
+    )
+
+    assert PAGE_ROUTING_ONLY_EMBED_KEYS <= set(EXCLUDED_EMBED_METADATA_KEYS)
 
 
 def test_page_unit_identity_differs_from_document_unit() -> None:

@@ -66,7 +66,56 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 
    Escalated pages go to the PaddleOCR-VL worker in one request with a page
    list (protocol 1.1, optional `pages`).
-5. **Merge.** Pages are joined in page order. Each page keeps the text of the highest tier that produced usable text. Metadata carries scalar counts (`ocr_pages_native`, `ocr_pages_local`, `ocr_pages_worker`, `ocr_pages_unresolved`); readers with page provenance also emit per-page `source`. New keys join `EXCLUDED_EMBED_METADATA_KEYS`.
+5. **Merge.** One document per file, as today: the unit changes which engine
+   reads each page, not how many documents a PDF becomes. Pages join in page
+   order with a blank line between them, so a heading at the top of page 2 does
+   not fuse into page 1's last paragraph and the chunker's Markdown routing
+   still sees the headings it expects. Each page contributes the text of the
+   highest tier that produced any, and contributes once.
+
+   Metadata carries four scalar counts — `ocr_pages_native`, `ocr_pages_local`,
+   `ocr_pages_worker`, `ocr_pages_unresolved` — which sum to `page_count`. They
+   join `EXCLUDED_EMBED_METADATA_KEYS`, so they never reach embedding text.
+   Vector-store metadata values must be scalars in both backends and nothing
+   sanitises them on the way in, which is why `pages_needing_ocr` is already a
+   count rather than the page list.
+
+   **Correction to the original decision:** it said readers with page
+   provenance would also emit a per-page `source`. This path emits one document
+   per file, so there is no per-page metadata row to carry it, and a list would
+   break the scalar rule. On this path the four counts are the provenance. A
+   per-page `source` becomes possible only if a later change splits this reader
+   into one document per page.
+
+   An unresolved page contributes whatever native text it had, which for a
+   scanned page is usually nothing. No marker is inserted: a string like
+   `[page 4: OCR unavailable]` would enter retrieval text and be retrieved. The
+   count and a warning carry that signal instead.
+
+5a. **The four existing diagnostics under the page unit.** They stay scalars,
+   keep their document-unit meaning, and none of them may tell an existing
+   consumer something false.
+
+   | Key | Document unit | Page unit |
+   | --- | --- | --- |
+   | `ocr_required` | the gate selected OCR for this PDF | at least one page was flagged |
+   | `ocr_used` | the worker produced the text | OCR produced the text of at least one page, local or worker |
+   | `ocr_backend` | `pdf_inspector` or `paddleocr_vl` | the one backend that produced all the text, or `mixed` |
+   | `pages_needing_ocr` | count of flagged pages | unchanged — the same count, from a complete scan rather than an 8-page sample |
+
+   `ocr_backend` is the only one that needs a new value. Three tiers may each
+   produce part of one document, and one string cannot name three. Emitting the
+   **highest tier used** would be false: a 200-page document where the worker
+   read one page would report `paddleocr_vl`, and a consumer filtering on that
+   to find worker-parsed documents would collect documents the worker barely
+   touched. `mixed` says exactly what is true — more than one backend produced
+   this text — and sends the reader to the counts, which answer precisely.
+
+   The values are therefore `pdf_inspector` (every page native),
+   `pdf_inspector_ocr` (pdf-inspector's own selective OCR produced all the OCR
+   text and no page came from the worker), `paddleocr_vl` (every page from the
+   worker) and `mixed` (more than one of those produced text). A document-unit
+   run can still only emit the first and third, exactly as today.
 6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier.
 7. **Identity.** The routing unit, the local tier's escalation threshold, the
    resolved local OCR model identity and the worker fingerprint join the source

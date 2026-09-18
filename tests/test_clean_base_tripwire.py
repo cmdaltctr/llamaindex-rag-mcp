@@ -65,7 +65,12 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2948
+_BASE_EXECUTED = 2983
+# Re-baselined at page-level-ocr-routing (2026-09-18): the routing unit and its
+# index-identity scoping add 35 cases — per-page evidence (5), the page merge
+# (12), the never-shipped-alias tripwire (6), the unit-scoped exclusion keys and
+# their emitted-document guard (9), and the routing-unit settings (3)
+# (2948 -> 2983).
 # Re-baselined at liteparse-reading-order (2026-09-18): the layout classifier
 # adds 7 cases — two-column join order and its multi_column label, a full-width
 # running head over two columns, single-column and table pages keeping library

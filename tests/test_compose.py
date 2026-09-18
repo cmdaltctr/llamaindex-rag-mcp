@@ -786,7 +786,7 @@ def test_settings_to_effective_none_delegates_to_get_settings() -> None:
     from omrg.core.settings import EffectiveSettings
 
     controlled = _settings(embed_model="controlled-embed-model")
-    with patch("omrg.compose.get_settings", return_value=controlled) as mock_gs:
+    with patch("omrg.compose_settings.get_settings", return_value=controlled) as mock_gs:
         result = settings_to_effective(None)
     mock_gs.assert_called_once()
     assert isinstance(result, EffectiveSettings)

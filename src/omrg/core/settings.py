@@ -15,6 +15,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+#: Valid ``OCR_ROUTING_UNIT`` values; ``page`` is opt-in.
+OCR_ROUTING_UNITS = ("document", "page")
+
 
 class ChunkingBlock(BaseModel):
     """Chunking knobs carried in :attr:`EffectiveSettings.chunking`."""
@@ -302,7 +305,7 @@ class EffectiveSettings(BaseModel):
     # "document" is the shipped whole-PDF behaviour; "page" is opt-in and
     # routes page by page. The local minimum confidence comes from
     # Experiment 33 task 6.7.
-    ocr_routing_unit: str = "document"
+    ocr_routing_unit: str = "document"  # see OCR_ROUTING_UNITS
     ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     ocr_local_offline: bool = False
     ocr_local_model_directory: str = ""
