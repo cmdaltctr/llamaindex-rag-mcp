@@ -4,7 +4,8 @@
 gate passed on all four conditions (multi-column reading order 0.5309 → 0.9613,
 both guard pages unchanged, no recall change, no regression on any page).
 `openspec validate --all --strict` (57 passed) and `./scripts/local_ci.sh`
-(`== local CI passed ==`) are green at `f24b593`. Only the PR step remains.
+(`== local CI passed ==`) are green at `f24b593`. PR #96 carries this change
+to `v3`.
 
 ## 1. Tests first
 
@@ -16,7 +17,7 @@ both guard pages unchanged, no recall change, no regression on any page).
 
 - [x] 2.1 Add the layout classifier to `integrations/pdf/liteparse.py` as a pure function over a page's text items, returning the class and the gutter centre, with the thresholds from design decision 2.
 - [x] 2.2 Use the classification when joining page text, and set `column="multi_column"` on a reordered page.
-- [ ] 2.3 Run the reader tests, then the fast suite with coverage. Reader tests green (8). Full fast suite running; it already surfaced the clean-base tripwire, re-baselined 2941 → 2948 for the 7 new tests.
+- [x] 2.3 Run the reader tests, then the fast suite with coverage. Reader tests green (8); the full fast suite with coverage green (the clean-base tripwire surfaced once, re-baselined 2941 → 2948 for the 7 new tests, and the suite stayed green through every later commit on this branch).
 
 ## 3. Evidence
 

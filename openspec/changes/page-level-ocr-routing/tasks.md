@@ -3,8 +3,9 @@
 **Progress 2026-09-18:** 17 of 17 done, 3 deferred by their own terms.
 The change is code- and docs-complete: the page unit is wired end to
 end with every degradation path, the ADR is written (2.1), and both
-guides cover the flat names and the runtime (6.2). What remains belongs
-to the branch's PR to `v3`.
+guides cover the flat names and the runtime (6.2). PR #96 carries this
+change to `v3`; the deferred items (2.3, 6.1, 6.3) belong to future
+changes with their own evidence.
 
 ## 1. Evidence gate (before implementation)
 
