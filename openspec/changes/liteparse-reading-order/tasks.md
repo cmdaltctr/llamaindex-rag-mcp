@@ -1,9 +1,10 @@
 # Tasks: LiteParse reading order
 
-**Progress 2026-09-18:** 8 of 11 done. Implemented and measured; the evidence
+**Progress 2026-09-18:** 9 of 11 done. Implemented and measured; the evidence
 gate passed on all four conditions (multi-column reading order 0.5309 → 0.9613,
-both guard pages unchanged, no recall change, no regression on any page). Only
-the close-out steps remain.
+both guard pages unchanged, no recall change, no regression on any page).
+`openspec validate --all --strict` (57 passed) and `./scripts/local_ci.sh`
+(`== local CI passed ==`) are green at `f24b593`. Only the PR step remains.
 
 ## 1. Tests first
 
@@ -25,5 +26,5 @@ the close-out steps remain.
 
 ## 4. Close
 
-- [ ] 4.1 Run `openspec validate --all --strict` and `./scripts/local_ci.sh`.
+- [x] 4.1 Run `openspec validate --all --strict` and `./scripts/local_ci.sh`. Green at `f24b593`: 57 OpenSpec items passed, local CI passed end to end (ruff, format, import-linter, OpenSpec, OpenAPI, torch-free, fast suite, advisory pyright).
 - [ ] 4.2 Include this change in the branch's PR to `v3`.
