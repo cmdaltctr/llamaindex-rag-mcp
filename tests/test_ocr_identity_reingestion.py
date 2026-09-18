@@ -138,6 +138,117 @@ def test_routing_payload_echoes_the_three_gate_values(effective_settings) -> Non
     }
 
 
+# ── Routing unit in the index identity (change page-level-ocr-routing) ───
+
+#: The routing payload as it stood before the routing unit joined it. The
+#: document-unit identity is pinned against this rather than against a
+#: recorded hash: ``build_index_identity`` hashes the *ambient* embedding
+#: model, which conftest replaces with a mock, so a literal digest would
+#: encode the test harness and break whenever that mock changed. Passing
+#: this payload through ``ocr_routing=`` bypasses the new code, so the
+#: comparison asks exactly the question that matters — does an install on
+#: the default still hash what it hashed before?
+_PRE_CHANGE_ROUTING_PAYLOAD = {
+    "enabled": True,
+    "min_confidence": 0.5,
+    "page_fraction": 0.10,
+    "unconditional_types": ["image_based", "scanned"],
+}
+
+_IDENTITY_KWARGS = {
+    "content_type": "application/pdf",
+    "chunk_size": 512,
+    "chunk_overlap": 100,
+}
+
+
+def test_document_unit_payload_is_unchanged() -> None:
+    """The default emits exactly the four keys it emitted before this change."""
+    from omrg.core.settings import EffectiveSettings
+
+    payload = ocr_routing_payload(EffectiveSettings())
+
+    assert set(payload) == {
+        "enabled",
+        "min_confidence",
+        "page_fraction",
+        "unconditional_types",
+    }
+
+
+def test_document_unit_identity_does_not_move() -> None:
+    """A document-unit install keeps its identity, so nothing reindexes.
+
+    The routing unit defaults to ``document``, so adding it to the payload
+    must be invisible here: an install that never opts in has no reason to
+    reprocess a corpus. The right-hand side is built from the pre-change
+    payload, so this fails the moment the conditional leaks a key into the
+    default.
+
+    Do not replace this with a recorded digest. ``build_index_identity``
+    hashes the *ambient* embedding model, and conftest swaps in a mock, so
+    the same settings hash differently inside and outside pytest: a literal
+    digest would pin the mock rather than the configuration, and break
+    whenever the harness changed its embedder.
+    """
+    from omrg.core.ingestion.source_state import build_index_identity
+    from omrg.core.settings import EffectiveSettings
+
+    settings = EffectiveSettings()
+
+    assert build_index_identity(settings, **_IDENTITY_KWARGS) == build_index_identity(
+        settings, ocr_routing=_PRE_CHANGE_ROUTING_PAYLOAD, **_IDENTITY_KWARGS
+    )
+
+
+def test_page_unit_identity_differs_from_document_unit() -> None:
+    """Opting into page routing reindexes: a different engine reads the pages."""
+    from omrg.core.ingestion.source_state import build_index_identity
+    from omrg.core.settings import EffectiveSettings
+
+    document = build_index_identity(EffectiveSettings(), **_IDENTITY_KWARGS)
+    page = build_index_identity(EffectiveSettings(ocr_routing_unit="page"), **_IDENTITY_KWARGS)
+
+    assert page != document
+
+
+def test_page_unit_identity_ignores_the_model_directory() -> None:
+    """Where the model lives is not what the pages say.
+
+    Moving a model cache must not reindex a corpus. Only inputs that change
+    the emitted text belong in the identity.
+    """
+    from omrg.core.ingestion.source_state import build_index_identity
+    from omrg.core.settings import EffectiveSettings
+
+    here = build_index_identity(
+        EffectiveSettings(ocr_routing_unit="page", ocr_local_model_directory="/models/a"),
+        **_IDENTITY_KWARGS,
+    )
+    there = build_index_identity(
+        EffectiveSettings(ocr_routing_unit="page", ocr_local_model_directory="/models/b"),
+        **_IDENTITY_KWARGS,
+    )
+
+    assert here == there
+
+
+def test_page_unit_identity_follows_the_escalation_threshold() -> None:
+    """The threshold decides which pages the worker rereads, so it must count."""
+    from omrg.core.ingestion.source_state import build_index_identity
+    from omrg.core.settings import EffectiveSettings
+
+    default_cut = build_index_identity(
+        EffectiveSettings(ocr_routing_unit="page"), **_IDENTITY_KWARGS
+    )
+    raised_cut = build_index_identity(
+        EffectiveSettings(ocr_routing_unit="page", ocr_local_min_confidence=0.9),
+        **_IDENTITY_KWARGS,
+    )
+
+    assert raised_cut != default_cut
+
+
 # ── Scenario: degraded extraction recovers when OCR becomes available ─────
 
 

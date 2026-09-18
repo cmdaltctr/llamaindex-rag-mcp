@@ -64,7 +64,7 @@ With the `document` routing unit (the default), the system SHALL route the whole
 
 ### Requirement: Page-level OCR routing SHALL OCR only pages that need it
 
-When `OCR__ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier. A page SHALL escalate to the PaddleOCR-VL worker only when the local tier returns no text or only whitespace, reports confidence below the configured minimum, or recommends hosted OCR. The worker SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages. The default routing unit SHALL remain `document`.
+When `OCR_ROUTING_UNIT=page` and OCR is enabled, the pdf-inspector path SHALL decide OCR need per page from a scan of every page. Pages that do not need OCR SHALL keep native pdf-inspector Markdown. Pages that need OCR SHALL be processed by the local OCR tier. A page SHALL escalate to the PaddleOCR-VL worker only when the local tier returns no text or only whitespace, reports confidence below the configured minimum, or recommends hosted OCR. The worker SHALL receive only escalated pages. The emitted document SHALL join pages in page order and SHALL carry scalar counts of native, local-OCR, worker and unresolved pages. The default routing unit SHALL remain `document`.
 
 #### Scenario: Only flagged pages are OCRed
 

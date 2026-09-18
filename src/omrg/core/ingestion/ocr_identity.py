@@ -13,6 +13,17 @@ Design D8 contract implemented here:
   ``min_confidence``, ``page_fraction``) and the unconditional routing
   types enter the payload as resolved data, never re-read from the
   environment;
+- the identity carries what changes the emitted text — the routing unit
+  and the local tier's escalation threshold — and not where files live or
+  how they are fetched. A model directory is a filesystem location, so the
+  same model under a different path would reindex for nothing. Offline
+  mode decides whether a download may happen; its only route to different
+  text is whether the model resolves, which the resolved model identity
+  records directly (change page-level-ocr-routing, task 4.2);
+- the routing-unit keys are present only when the unit is not
+  ``document``, so an install on the default emits the payload it emits
+  today and no source reindexes. Absence of ``routing_unit`` means
+  ``document``: no other configuration emits that key;
 - the resolved worker fingerprint enters as ONE canonical,
   transient-free payload. An unavailable worker contributes the stable
   ``UNAVAILABLE_OCR_WORKER_FINGERPRINT`` shape — the field is never
@@ -62,19 +73,28 @@ def ocr_routing_payload(settings: Any) -> dict[str, Any]:
     Returns:
         A JSON-ready dict with the three calibrated gate values that
         decide routing (design D7.3) plus the unconditional routing
-        types. The operational worker settings (command, environment,
+        types, and — only when the routing unit is not ``document`` —
+        that unit and the local tier's escalation threshold. The
+        operational worker settings (command, environment,
         timeout) are deliberately absent: they shape dispatch, never
         chunk text. The unconditional types are included because
         changing which ``pdf_type`` values bypass the thresholds changes
         the routing decision for affected PDFs, and the index identity
         must reflect that to prevent stale ``skipped_unchanged`` results.
     """
-    return {
+    payload = {
         "enabled": settings.ocr_fallback_enabled,
         "min_confidence": settings.ocr_fallback_min_confidence,
         "page_fraction": settings.ocr_fallback_page_fraction,
         "unconditional_types": sorted(OCR_UNCONDITIONAL_TYPES),
     }
+    # Added only off the default, so a document-unit install keeps the
+    # identity it has today and nothing reindexes. Switching to "page"
+    # changes which engine reads which page, so its sources must reindex.
+    if getattr(settings, "ocr_routing_unit", "document") != "document":
+        payload["routing_unit"] = settings.ocr_routing_unit
+        payload["local_tier"] = {"min_confidence": settings.ocr_local_min_confidence}
+    return payload
 
 
 def ocr_fingerprint_payload(fingerprint: Any) -> dict[str, Any]:

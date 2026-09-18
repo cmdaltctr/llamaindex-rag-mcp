@@ -6,7 +6,7 @@ Experiment 33 showed pdf-inspector 1.17 already provides the building blocks. `p
 
 ## What Changes
 
-- Add an opt-in OCR routing unit: `OCR__ROUTING_UNIT=document` (default, today's behaviour) or `page`.
+- Add an opt-in OCR routing unit: `OCR_ROUTING_UNIT=document` (default, today's behaviour) or `page`.
 - In `page` mode, keep native pdf-inspector Markdown for pages that do not need OCR.
 - OCR flagged pages locally with pdf-inspector's selective OCR (PP-OCRv6 Small, ONNX Runtime, no PyTorch).
 - Escalate only pages the local engine cannot read (low confidence, empty output, or hosted recommended) to the PaddleOCR-VL worker, which gains an optional page list.

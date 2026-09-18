@@ -298,6 +298,15 @@ class EffectiveSettings(BaseModel):
     ocr_fallback_min_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     ocr_fallback_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
 
+    # ── OCR routing unit and local tier (change page-level-ocr-routing) ──
+    # "document" is the shipped whole-PDF behaviour; "page" is opt-in and
+    # routes page by page. The local minimum confidence comes from
+    # Experiment 33 task 6.7.
+    ocr_routing_unit: str = "document"
+    ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    ocr_local_offline: bool = False
+    ocr_local_model_directory: str = ""
+
     # ── OCR worker operation (design D2.1) ────────────────────────
     # Operational settings, deliberately separate from the calibrated
     # routing gate above (task 2.6b): command, environment location

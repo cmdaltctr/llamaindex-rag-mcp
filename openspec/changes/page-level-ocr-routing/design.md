@@ -27,13 +27,27 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 
 ## Decisions
 
-1. **Opt-in unit.** `OCR__ROUTING_UNIT` in the OCR settings block, values `document` (default) and `page`, validated at startup.
+1. **Opt-in unit.** `OCR_ROUTING_UNIT`, values `document` (default) and `page`, validated at startup.
+
+   The name is flat, one underscore, like every OCR and PDF setting beside it.
+   `pydantic-settings` resolves its `__` delimiter only into nested blocks, and
+   the OCR settings are flat top-level fields, so a nested spelling would match
+   nothing and be discarded in silence. The nested spellings this change's own
+   planning documents used first are listed in `config/legacy.py` under
+   never-shipped aliases, so anyone who writes one gets an error naming the flat
+   replacement.
+
+   An invalid value raises rather than warning and falling back, unlike
+   `PDF_READER` and `RAG_PROFILE`. Those two resolve `auto` as a capability
+   policy, where falling back to a working backend is the point. A typo in a
+   two-value enum is a configuration error, and the unit feeds the index
+   identity, so a fallback would index a corpus under a unit nobody chose.
 2. **Page evidence.** `page` mode takes per-page `needs_ocr` from a full scan. No sampled evidence and no page-fraction threshold: every flagged page is handled.
 3. **Tier 1: local OCR.** pdf-inspector selective OCR on flagged pages only, CPU, in-process, GIL released. Model directory and offline mode come from settings; no network in offline mode. Every flagged page is tried locally first: at 0.75 s median per page against 34 to 106 s hosted, trying and escalating costs less than any attempt to predict failure would save.
 4. **Tier 2: escalation, decided after the attempt.** A page escalates when any of these holds:
 
    - local OCR returns empty or whitespace-only text;
-   - `ocr_confidence` is below `OCR__LOCAL_MIN_CONFIDENCE` (0.8);
+   - `ocr_confidence` is below `OCR_LOCAL_MIN_CONFIDENCE` (0.8);
    - `hosted_recommended` is set.
 
    Experiment 33 task 6.7 supports each term. Empty output catches the classes
@@ -54,7 +68,34 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
    list (protocol 1.1, optional `pages`).
 5. **Merge.** Pages are joined in page order. Each page keeps the text of the highest tier that produced usable text. Metadata carries scalar counts (`ocr_pages_native`, `ocr_pages_local`, `ocr_pages_worker`, `ocr_pages_unresolved`); readers with page provenance also emit per-page `source`. New keys join `EXCLUDED_EMBED_METADATA_KEYS`.
 6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier.
-7. **Identity.** The routing unit, local OCR model identity and the worker fingerprint join the source index identity, so switching units re-ingests affected sources.
+7. **Identity.** The routing unit, the local tier's escalation threshold, the
+   resolved local OCR model identity and the worker fingerprint join the source
+   index identity, so switching units re-ingests affected sources.
+
+   The rule for what belongs there: the identity carries **what changes the
+   emitted text**, and not where files live or how they are fetched. The
+   routing unit changes which engine reads which page. The escalation threshold
+   changes which pages the worker rereads. A model's identity changes what it
+   reads them as. A model *directory* is a filesystem location, so including it
+   would reindex a corpus for moving a cache; offline mode decides only whether
+   a download may happen, and its one route to different text — whether the
+   model resolves at all — is what the resolved model identity records. Neither
+   is in the payload.
+
+   They are added **conditionally**, only when the unit is not `document`, so
+   an install on the default hashes exactly what it hashes today and nothing
+   reindexes. `_INDEX_IDENTITY_SCHEMA` stays at 5 for the same reason: bumping
+   it would reprocess every corpus, including those that never opt in. The cost
+   is a payload whose shape varies by configuration, which is harder to read
+   than a fixed one; the absence of `routing_unit` unambiguously means
+   `document`, because no other configuration emits that key.
+
+   Task 3.2 adds the unit and the threshold. The **resolved model identity
+   arrives in task 4.2**, where the model is actually resolved: at
+   identity-build time nothing has loaded it, and pdf-inspector reports
+   `ocr_model.name@revision` only after OCR runs. That addition moves the
+   page-unit identity a second time, which is correct and affects only installs
+   that have opted in.
 8. **Heading consistency.** Merged pages keep per-page Markdown; the chunker's Markdown routing is unchanged. A retrieval experiment checks chunk quality before any default change.
 
 ## Risks
@@ -127,7 +168,7 @@ Conditions before implementation:
    outside the supported set skip local OCR and escalate directly. The
    supported set is named from the task 6.7 per-class table: modern
    Latin-script print. Devanagari, Arabic and handwriting are outside it.
-2. `OCR__LOCAL_MIN_CONFIDENCE = 0.8` (escalation 46.9%, wrongly kept 11.3%).
+2. `OCR_LOCAL_MIN_CONFIDENCE = 0.8` (escalation 46.9%, wrongly kept 11.3%).
 3. The `io06` blind spot is an accepted, named risk: early-modern Latin type
    reads at confidence 0.922 with recall 0.609, so a confidence cut keeps it.
    Do not invent a typography heuristic without measurement; it is a

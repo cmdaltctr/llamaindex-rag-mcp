@@ -40,6 +40,10 @@ from .storage import StorageValidationMixin, source_keys  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
+#: Valid values for ``OCR_ROUTING_UNIT``. ``document`` routes a whole PDF to
+#: the worker (the shipped behaviour); ``page`` routes page by page.
+OCR_ROUTING_UNITS = ("document", "page")
+
 _METADATA_EXTRACTION_MODES = (
     "disabled",
     "keyword",
@@ -197,6 +201,20 @@ class Settings(StorageValidationMixin, BaseSettings):
     ocr_fallback_min_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     ocr_fallback_page_fraction: float = Field(default=0.10, ge=0.0, le=1.0)
 
+    # ── OCR routing unit and local tier (change page-level-ocr-routing) ──
+    # Flat top-level names, matching the OCR gate above rather than the
+    # nested blocks: the nested delimiter binds only to nested blocks, so
+    # a nested spelling here would be discarded in silence (see
+    # config/legacy.py, never-shipped aliases).
+    # The unit stays "document" — today's whole-PDF routing — until the
+    # retrieval evidence for "page" exists. The local minimum confidence
+    # is Experiment 33 task 6.7's calibration: at 0.8 the tier escalates
+    # 46.9% of flagged pages and keeps 11.3% below 0.5 token recall.
+    ocr_routing_unit: str = "document"
+    ocr_local_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    ocr_local_offline: LegacyBool = False
+    ocr_local_model_directory: str = ""
+
     # ── OCR worker operation (task 2.6b) ──────────────────────────
     # Operational settings, separate from the calibrated gate above:
     # how to reach the worker, not which PDFs deserve it. Empty
@@ -337,6 +355,19 @@ class Settings(StorageValidationMixin, BaseSettings):
             logger.warning("Unknown PDF_READER=%r; falling back to auto", self.pdf_reader)
             object.__setattr__(self, "pdf_reader", "auto")
 
+        # OCR routing unit — raises rather than warning and falling back,
+        # unlike PDF_READER and RAG_PROFILE above: a typo in a two-value
+        # enum is a configuration error, and the unit feeds the index
+        # identity, so a fallback would index a corpus under a unit nobody
+        # chose.
+        if self.ocr_routing_unit not in OCR_ROUTING_UNITS:
+            raise ValueError(
+                f"Unknown OCR_ROUTING_UNIT={self.ocr_routing_unit!r}. "
+                f"Valid units: {', '.join(sorted(OCR_ROUTING_UNITS))}. "
+                "The default 'document' routes a whole PDF to the worker; "
+                "'page' routes page by page and is opt-in."
+            )
+
         # Profile selection (Phase 4).  Unknown values fall back to
         # "documents" with a warning rather than raising — the profile
         # system degrades gracefully to the document-grounding default.
@@ -472,6 +503,7 @@ _settings: Settings | None = None
 # after the task 8.7 split.
 
 from .legacy import (  # noqa: E402, F401
+    _NEVER_SHIPPED_ALIASES,
     _RETIRED_ENV_VARS,
     check_legacy_env_vars,
 )

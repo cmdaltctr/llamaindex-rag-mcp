@@ -8,19 +8,19 @@
 ## 2. Decisions
 
 - [ ] 2.1 Write an ADR for page-level routing and the PDFium shared-library dependency (source, version pin, packaging, licence).
-- [ ] 2.2 Set `OCR__LOCAL_MIN_CONFIDENCE` to `0.8` from the Experiment 33 task 6.7 calibration table (escalation 46.9%, wrongly kept 11.3%).
+- [ ] 2.2 Set `OCR_LOCAL_MIN_CONFIDENCE` to `0.8` from the Experiment 33 task 6.7 calibration table (escalation 46.9%, wrongly kept 11.3%).
 - [ ] 2.3 DEFERRED — io06 calibration. Waits on evidence that any signal separates confident-but-wrong early-modern typography; none is measured.
 
 ## 3. Configuration and identity
 
-- [ ] 3.1 Add `OCR__ROUTING_UNIT` (`document` default, `page`) and local OCR settings (model directory, offline, minimum confidence) with startup validation.
-- [ ] 3.2 Add the routing unit and local OCR model identity to the source index identity.
+- [x] 3.1 Add `OCR_ROUTING_UNIT` (`document` default, `page`) and local OCR settings (model directory, offline, minimum confidence) with startup validation.
+- [x] 3.2 Add the routing unit and local OCR model identity to the source index identity.
 
 ## 4. Page routing
 
 - [ ] 4.1 Per-page OCR evidence from a full page scan in `page` mode.
 - [ ] 4.2 Local OCR tier via pdf-inspector selective OCR on every flagged page.
-- [ ] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR__LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal.
+- [ ] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR_LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal.
 - [ ] 4.3 Worker protocol 1.1 with optional `pages` in both protocol copies; keep 1.0 compatible.
 - [ ] 4.4 Escalate unreadable local pages to the worker in one request.
 - [ ] 4.5 Merge pages in order; emit scalar page-source counts and per-page provenance where supported; register new metadata keys.
