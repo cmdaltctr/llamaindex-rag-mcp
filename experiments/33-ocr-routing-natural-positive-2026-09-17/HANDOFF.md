@@ -208,6 +208,69 @@ transcripts and extractions remain gitignored and exist nowhere else.
    tests moves it again; read the real count from the failure message rather
    than guessing.
 
+## Map: where things live and where they go
+
+```
+                         ┌──────────────────────────────┐
+                         │            main              │  releases only
+                         └──────────────▲───────────────┘
+                                        │
+                         ┌──────────────┴───────────────┐
+                         │             v3               │  everything lands here
+                         │   (integration branch)       │
+                         └───▲───────────────────▲──────┘
+                             │  PR              │  PR
+        ┌────────────────────┴──────┐   ┌───────┴───────────────────────┐
+        │ feat/page-level-ocr-      │   │ feat/experiment-33-ocr-       │
+        │ routing          [CODE]   │   │ routing-natural-positive      │
+        │                           │   │                    [DATA]     │
+        │ 1. liteparse column fix   │   │ frozen corpus, page images,   │
+        │    (done, 38d6bad)        │   │ transcriptions, labels,       │
+        │ 2. page-level routing     │   │ Stage A results, report, ADR  │
+        │    3.1 settings    done   │   │                               │
+        │    3.2 fingerprint done   │   │ runs every measurement, using │
+        │    4.1 page evidence      │   │ --code-root to borrow the     │
+        │    4.5 merge  <-- HERE    │   │ code from the other worktree  │
+        │    4.6 fallbacks          │   │                               │
+        │    5.x tests, 6.2 docs    │   │                               │
+        └───────────┬───────────────┘   └───────────▲───────────────────┘
+                    │                               │
+                    └───── numbers only ────────────┘
+                     (measured there, quoted here)
+
+closed: feat/full-page-ocr-evidence, merged to v3 as 1e0a4b0
+```
+
+Two pull requests, both into `v3`, never into each other:
+
+1. `feat/page-level-ocr-routing` -> `v3`: the LiteParse fix plus page-level
+   routing, once tasks 4.5 to 6.2 are done.
+2. `feat/experiment-33-...` -> `v3`: protocol, labels, report and ADR, last.
+
+Order of work, with the reason each step waits:
+
+```
+ [1] finish page-level tasks 4.5, 4.6, 5.x, 6.2      (code worktree)
+      |
+ [2] measure the liteparse evidence gate             (data worktree,
+      |   two-column order >= 0.90, no regression     --code-root at [1])
+      |
+ [3] one PR to v3 for both changes                   (code worktree)
+      |
+ [4] add the results to report.md, write the ADR     (data worktree)
+      |
+ [5] PR to v3, archive the change, carry the
+      gitignored data to v3, remove the worktree     (data worktree)
+      |
+ [6] later, own branch: rescue-quality signal so a junk
+     liteparse rescue counts as OCR-required (rf06, rf07)
+```
+
+Why it looks like ping-pong: the code lives in one worktree and the only copy
+of the measurement data lives in the other. Code work happens in the code
+worktree; anything that produces a number happens in the data worktree. Nothing
+else crosses between them.
+
 ## Data carry-over (CLAUDE.md Critical Gotcha #15)
 
 Gitignored data moves forward by hand, before any worktree is removed:
