@@ -22,6 +22,9 @@ worktree and local branch removed.
    `1e0a4b0`, carrying the code fix, TDR-026 as Accepted with the Stage A
    numbers, the `pdf-reader` delta synced into the main spec, and the archived
    change. Worktree and local branch removed; see the movement log.
+1a. ~~**LiteParse join-order fix**~~ **Implemented and measured 2026-09-18**,
+   8 of 11 tasks. Only close-out remains: the fast suite with coverage,
+   `./scripts/local_ci.sh`, and the PR. See "Session state" below.
 2. **LiteParse join-order fix**, its own OpenSpec change on
    `feat/page-level-ocr-routing`. Scope and evidence gate below.
 3. **`page-level-ocr-routing` tasks 3 to 6**, same branch. Already
@@ -115,6 +118,95 @@ and order 0.683 with no text at all on 19 of 41; `liteparse` 0.991 and 0.982;
 `pypdf` 0.990 and 0.964. Where pdf-inspector produces text it ties pypdf on
 recall and equals or beats it on order. LiteParse keeps the words and loses the
 order on multi-column pages, which is queue item 2.
+
+## Session state, 2026-09-18
+
+### Branch `feat/page-level-ocr-routing`, rebased on `v3` at `1e0a4b0`
+
+Committed:
+
+| SHA | What |
+| --- | --- |
+| `378e26b` | propose page-level OCR routing (planning only) |
+| `c4a6d20` | record the evidence gate 1 REWORK verdict |
+| `12025fd` | propose the liteparse reading-order fix |
+| `38d6bad` | **implement** the liteparse layout classifier and join |
+| `d8d7025` | **implement** the OCR routing unit and local tier settings, and the index identity |
+
+**Uncommitted, and substantial.** The next session must not assume a clean
+tree. `git status` shows five new files and eight modified ones:
+
+- new: `src/omrg/integrations/pdf/page_routing.py` (task 4.1 `page_evidence`,
+  task 4.5 `merge_pages`), `src/omrg/core/ingestion/embed_exclusions.py`,
+  `src/omrg/compose_settings.py`, `tests/unit/test_page_evidence.py`,
+  `tests/unit/test_page_merge.py`;
+- modified: both changes' `tasks.md`, the page-level `design.md` and spec
+  delta, `config/__init__.py`, `core/settings.py`, `core/ingestion/source_state.py`,
+  `compose.py`, and four test files.
+
+Everything above passes `openspec validate --all --strict` (57 items),
+`tests/unit` and the identity suite (313 passed), and ruff. Commit it before
+starting new work.
+
+### Task 6.7 and the reader comparison are committed here
+
+This worktree is at `6b70b4f`. `output/local_ocr/`, `output/reader_comparison.json`
+and `output/reading_order.json` are committed; the corpus, page images,
+transcripts and extractions remain gitignored and exist nowhere else.
+
+### Decisions taken this session, with their reasons
+
+1. **Flat env names.** `OCR_ROUTING_UNIT`, `OCR_LOCAL_MIN_CONFIDENCE`,
+   `OCR_LOCAL_OFFLINE`, `OCR_LOCAL_MODEL_DIRECTORY`. `pydantic-settings`
+   resolves its `__` delimiter only into nested blocks, and the OCR settings
+   are flat top-level fields, so the nested spellings the planning documents
+   used first would have been discarded in silence. Those four nested
+   spellings are listed in `config/legacy.py` under a new
+   `_NEVER_SHIPPED_ALIASES` group with its own message and lifetime rule.
+2. **An unknown routing unit raises**, unlike `PDF_READER` and `RAG_PROFILE`,
+   which warn and fall back because `auto` resolution is a capability policy.
+   The unit feeds the index identity, so a fallback would index a corpus under
+   a unit nobody chose.
+3. **No script or typography pre-check.** Dropped on the operator's decision.
+   The failures announce themselves after the attempt — all 129 Devanagari and
+   Arabic pages returned recall 0.000, which empty output catches — and a
+   pre-check would need a signal nobody has measured. Task 4.2a is a
+   post-check: empty or whitespace output, confidence below 0.8, or
+   `hosted_recommended`.
+4. **Unit-scoped exclusion keys.** The four page-source counts stay in the one
+   central `EXCLUDED_EMBED_METADATA_KEYS`, and `build_index_identity`
+   subtracts them when the routing payload says `document`. A document-unit
+   install therefore keeps digest
+   `3b04467b572e122e25ad04fe7e5175c97e4c055ee0c9eba31c22ad4faaba4550` and does
+   not reindex; a page-unit install gets `c51d08f1…` and does.
+   `_INDEX_IDENTITY_SCHEMA` stays at 5.
+5. **Merge shape.** One document per file, pages joined in page order with a
+   blank line, four scalar counts summing to `page_count`, unresolved pages
+   keeping native text with no marker, and `ocr_backend` taking a new value
+   `mixed` when more than one backend produced text.
+
+### Traps found, do not rediscover them
+
+1. `pdf_inspector.extract_pages_markdown` numbers pages from **0**;
+   `process_pdf_with_ocr` numbers them from **1**, and so do the labels.
+   `page_routing.page_evidence` normalises to 1-based. Task 6.7 was verified
+   unaffected against `mx02` pages 15 to 17.
+2. `build_index_identity` hashes the **ambient** embedding model, which
+   conftest replaces with a mock. A recorded digest in a test would pin the
+   mock, not the configuration. Compare against a payload passed through
+   `ocr_routing=` instead.
+3. The 500-line ceiling is strict and three files sat on it. `source_state.py`,
+   `compose.py` and `config/__init__.py` were split or trimmed to fit; see the
+   new modules above. Run `tests/test_file_size_ceiling.py` **before**
+   committing, not after — this session committed a violation in `d8d7025`
+   and had to repair it.
+4. Splitting `settings_to_effective` into `compose_settings.py` moved the
+   patch target: four test files now patch
+   `omrg.compose_settings.get_settings` (CLAUDE.md gotcha 8b).
+5. `tests/test_clean_base_tripwire.py` pins the base suite's executed count.
+   It was re-baselined 2941 → 2948 for the 7 new liteparse reader tests. Adding
+   tests moves it again; read the real count from the failure message rather
+   than guessing.
 
 ## Data carry-over (CLAUDE.md Critical Gotcha #15)
 
