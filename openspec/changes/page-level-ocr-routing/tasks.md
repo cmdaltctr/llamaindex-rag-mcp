@@ -1,11 +1,10 @@
 # Tasks: page-level OCR routing
 
-**Progress 2026-09-18:** 10 of 17 done, 3 deferred by their own terms. The
-local OCR tier (4.2), its post-check escalation (4.2a) and worker protocol
-1.1 (4.3) are in; the resolved model identity is joined into the identity
-payload under the page unit. The merge is built and tested as a pure
-function but is not yet wired into the reader, so 4.5 stays open. Next:
-4.4 (the escalation request in the reader), then 4.5c wiring and 4.6.
+**Progress 2026-09-18:** 15 of 17 done, 3 deferred by their own terms. The
+page unit is wired end to end: evidence, local tier, one-request
+escalation, merge, and every degradation path (4.4, 4.5c, 4.6), with the
+spec-scenario tests (5.1) and the document-unit regression (5.3) green.
+Remaining: 2.1 (the ADR) and 6.2 (the two guide updates).
 
 ## 1. Evidence gate (before implementation)
 
@@ -29,18 +28,18 @@ function but is not yet wired into the reader, so 4.5 stays open. Next:
 - [x] 4.2 Local OCR tier via pdf-inspector selective OCR on every flagged page.
 - [x] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR_LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal. The resolved local model identity (`name@revision`) joins the identity payload via the blank-page resolution probe, still conditional on the page unit; this moves the page-unit digest a second time and leaves the document-unit digest unchanged.
 - [x] 4.3 Worker protocol 1.1 with optional `pages` in both protocol copies; keep 1.0 compatible. The success envelope also gains optional `pages_markdown`, parallel to the requested pages, so the merge can place worker text per page; the wire rules are recorded in design decision 4.
-- [ ] 4.4 Escalate unreadable local pages to the worker in one request.
-- [ ] 4.5 Merge pages in order; emit scalar page-source counts and per-page provenance where supported; register new metadata keys.
+- [x] 4.4 Escalate unreadable local pages to the worker in one request, carrying `pages` and attributing the reply per page via `pages_markdown`.
+- [x] 4.5 Merge pages in order; emit scalar page-source counts and per-page provenance where supported; register new metadata keys.
   - [x] 4.5a `page_routing.merge_pages`: page-order join, four counts summing to `page_count`, `ocr_backend` including `mixed`. 12 tests.
   - [x] 4.5b Register the four count keys in `EXCLUDED_EMBED_METADATA_KEYS`, scoped in the index identity so a document-unit install does not reindex. 4 tests plus the emitted-document guard.
-  - [ ] 4.5c Wire the merge into the reader, so a `page`-unit ingest actually emits it. Blocked on 4.2 to 4.4.
-- [ ] 4.6 Per-page degradation for missing worker, PDFium or ONNX Runtime.
+  - [x] 4.5c Wire the merge into the reader, so a `page`-unit ingest actually emits it. The counts are the provenance on this one-document-per-file path (design 5); an ADR-066 rescue of last resort keeps the wrapped reader's text with all-native counts.
+- [x] 4.6 Per-page degradation for missing worker, PDFium or ONNX Runtime. Unified rule in design 6: an escalated page counts worker only on non-empty worker text; otherwise it keeps the best available text and counts unresolved. Post-dispatch failure stays a file failure.
 
 ## 5. Tests
 
-- [ ] 5.1 Unit tests for every spec scenario with stubbed pdf-inspector and worker.
+- [x] 5.1 Unit tests for every spec scenario with stubbed pdf-inspector and worker. `tests/unit/test_page_unit_seam.py`: all nine scenarios of the page-routing requirement plus the all-local backend, the numbering trap end to end, and the rescue fallback.
 - [x] 5.2 Protocol twin byte-for-byte test for 1.1. Landed with task 4.3's commit: byte-identical encoding of pages requests and `pages_markdown` successes on both copies, plus the twinned `validation.py` agreement test.
-- [ ] 5.3 Document-unit regression: default behaviour unchanged.
+- [x] 5.3 Document-unit regression: default behaviour unchanged. The seam keeps whole-PDF dispatch, takes no page scan, and emits none of the page-source counts.
 
 ## 6. Validation and docs
 

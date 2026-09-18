@@ -65,7 +65,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3066
+_BASE_EXECUTED = 3077
+# Re-baselined at page-level-ocr-routing tasks 4.4/4.5c/4.6 (2026-09-18):
+# the page unit wired into the reader seam adds 11 cases — only flagged
+# pages OCRed, the all-local backend, one-request escalation, the
+# per-page attribution degradations, missing worker and missing local
+# runtime, post-dispatch failure, the ADR-066 rescue fallback, and the
+# document-unit regression (3066 -> 3077).
 # Re-baselined at page-level-ocr-routing task 4.3 (2026-09-18): worker
 # protocol 1.1 adds 61 cases — the twinned validation module, the pages
 # request and pages_markdown response round trips and validation matrix

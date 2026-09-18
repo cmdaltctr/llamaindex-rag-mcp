@@ -135,7 +135,7 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
    text and no page came from the worker), `paddleocr_vl` (every page from the
    worker) and `mixed` (more than one of those produced text). A document-unit
    run can still only emit the first and third, exactly as today.
-6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier.
+6. **Degradation.** Worker unavailable: keep tier 1 text and count unresolved pages. Local runtime or PDFium unavailable: keep native text for flagged pages, count them unresolved, warn once per operation. Never fail the file for a missing optional tier. The unified rule these reduce to: an escalated page counts worker only when the worker returned non-empty text for it; anything else — worker missing before dispatch, a response that cannot be attributed per page, or an empty per-page entry — keeps the best available text (local, then native) and counts unresolved. A worker failure AFTER a complete request was flushed stays a file failure, the same post-dispatch boundary the document unit applies. When page routing produces no text on any page yet the wrapped reader's ADR-066 fallback chain recovered the document, the rescued text is emitted with all-native counts, the whole-document claim the document unit makes for a rescued file.
 7. **Identity.** The routing unit, the local tier's escalation threshold, the
    resolved local OCR model identity and the worker fingerprint join the source
    index identity, so switching units re-ingests affected sources.
