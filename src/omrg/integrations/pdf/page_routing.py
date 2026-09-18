@@ -2,7 +2,9 @@
 
 ``OCR_ROUTING_UNIT=page`` routes a PDF page by page instead of whole. This
 module holds that unit's logic, so the document unit's seam in
-``ocr_routing.py`` stays the shape it has always been.
+``ocr_routing.py`` stays the shape it has always been: per-page evidence
+from a full scan, the local OCR tier with its post-check escalation
+(tasks 4.2 and 4.2a), and the merge back into one document.
 
 Page numbering is the trap here. pdf-inspector numbers
 ``extract_pages_markdown`` pages from **0** and ``process_pdf_with_ocr``
@@ -13,8 +15,15 @@ page that gets read.
 
 from __future__ import annotations
 
+import logging
+import os
+import tempfile
+import threading
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 #: Page sources, in tier order. ``unresolved`` means no tier produced text.
 PAGE_SOURCE_NATIVE = "native"
@@ -100,6 +109,209 @@ def page_evidence(file: Path) -> list[PageEvidence]:
         )
         for page in scan.pages
     ]
+
+
+@dataclass(frozen=True)
+class LocalOcrPage:
+    """One flagged page after the local OCR tier, with its escalation verdict.
+
+    Attributes:
+        page: 1-based page number.
+        text: The page's local OCR Markdown, possibly empty.
+        confidence: The engine's reported OCR confidence, ``None`` when it
+            reported none.
+        model: The resolved local model identity (``name@revision``),
+            ``None`` when the engine named no model.
+        escalates: Whether the post-check sends this page to the worker.
+        reasons: Every escalation condition that fired, in check order.
+    """
+
+    page: int
+    text: str
+    confidence: float | None
+    model: str | None
+    escalates: bool
+    reasons: tuple[str, ...]
+
+
+def _model_identity(provenance: Any) -> str | None:
+    """Return ``name@revision`` from a page's provenance, or ``None``."""
+    model = getattr(provenance, "ocr_model", None)
+    if model is None:
+        return None
+    return f"{model.name}@{model.revision}"
+
+
+def local_ocr(file: Path, pages: list[int], *, settings: Any) -> list[LocalOcrPage]:
+    """OCR every flagged page locally with pdf-inspector's selective OCR.
+
+    Tier 1 of the ``page`` unit (design decision 3): ``force`` mode with the
+    1-based page list, so the library re-routes nothing — exactly the call
+    Experiment 33 task 6.7 measured. The model directory and offline mode
+    come from the injected settings; an empty directory means the library's
+    default cache.
+
+    The engine's own ``minimum_confidence`` and
+    ``hosted_recommendation_confidence`` parameters stay at their library
+    defaults: the experiment measured those defaults and applies the cut in
+    the post-check below. Feeding our threshold into the engine would run
+    unmeasured behaviour.
+
+    Args:
+        file: Path to the PDF file.
+        pages: 1-based page numbers to OCR. Uniqueness and order are the
+            caller's to guarantee; the evidence scan emits sorted uniques.
+        settings: Injected settings carrying ``ocr_local_model_directory``,
+            ``ocr_local_offline`` and ``ocr_local_min_confidence``.
+
+    Returns:
+        One :class:`LocalOcrPage` per requested page, in page order.
+
+    Raises:
+        ImportError: If ``pdf_inspector`` is not installed.
+        Exception: Whatever the engine raises. Degradation for a missing
+            runtime is the caller's (task 4.6); the tier reports.
+    """
+    if not pages:
+        return []
+    try:
+        import pdf_inspector
+    except ImportError as exc:  # pragma: no cover - mirrors the adapter's message
+        raise ImportError("pdf_inspector is not installed. Install with: uv sync") from exc
+
+    result = pdf_inspector.process_pdf_with_ocr(
+        str(file),
+        mode="force",
+        page_numbers=sorted(pages),
+        model_directory=(settings.ocr_local_model_directory or None),
+        offline=bool(settings.ocr_local_offline),
+    )
+    by_number = {page.page_number: page for page in result.pages}
+    minimum = settings.ocr_local_min_confidence
+    outcomes: list[LocalOcrPage] = []
+    for number in sorted(pages):
+        page = by_number.get(number)
+        provenance = getattr(page, "provenance", None) if page is not None else None
+        text = (getattr(page, "markdown", "") or "") if page is not None else ""
+        confidence = getattr(provenance, "ocr_confidence", None)
+        # Post-check escalation (design decision 4), decided AFTER the
+        # attempt: a pre-check would need a signal nobody has measured.
+        reasons: list[str] = []
+        if page is None:
+            reasons.append("missing_page")
+        if not text.strip():
+            reasons.append("empty_text")
+        # ``None`` escalates with the below-threshold pages: an unreported
+        # confidence cannot vouch for the text, and the experiment's
+        # calibration treated it as zero.
+        if confidence is None or confidence < minimum:
+            reasons.append("low_confidence")
+        if bool(getattr(provenance, "hosted_recommended", False)):
+            reasons.append("hosted_recommended")
+        outcomes.append(
+            LocalOcrPage(
+                page=number,
+                text=text,
+                confidence=confidence,
+                model=_model_identity(provenance),
+                escalates=bool(reasons),
+                reasons=tuple(reasons),
+            )
+        )
+    return outcomes
+
+
+# ── The local model resolution probe (task 4.2, identity) ─────────────────
+
+_RESOLUTION_LOCK = threading.Lock()
+#: Process-wide cache of the resolved local model identity. A non-empty
+#: dict means a probe has run this process; ``{"identity": None}`` records
+#: an unresolved runtime as deliberately as a resolved one, so a missing
+#: PDFium does not re-probe on every operation.
+_local_model_resolution: dict[str, str | None] = {}
+
+
+def reset_local_model_resolution() -> None:
+    """Clear the cached local model resolution.
+
+    Test seam, matching the reranker's ``reset_model_cache`` contract: the
+    cache is process state, and a test that stubs the engine needs to start
+    from a blank slate and leave one behind.
+    """
+    with _RESOLUTION_LOCK:
+        _local_model_resolution.clear()
+
+
+def resolve_local_model_identity(settings: Any) -> str | None:
+    """Resolve the local OCR model's ``name@revision``, once per process.
+
+    pdf-inspector reports the identity only in per-page provenance after
+    OCR runs, and an empty page list skips the model entirely, so the
+    resolution is a one-page ``force`` attempt on a generated blank PDF.
+    The blank page costs one render and no recognition work; its
+    provenance still names the model. The probe applies the same model
+    directory and offline settings as the tier, so it resolves the model
+    the tier would use.
+
+    Any failure resolves to ``None`` with one warning: a missing runtime is
+    a stable unresolved state, and the index identity then omits the model
+    until the runtime appears, reindexing exactly when the emitted text
+    would change. Lock-guarded because ingest operations run on worker
+    threads.
+
+    Args:
+        settings: Injected settings carrying ``ocr_local_model_directory``
+            and ``ocr_local_offline``.
+
+    Returns:
+        The resolved ``name@revision``, or ``None`` when unresolvable.
+    """
+    with _RESOLUTION_LOCK:
+        if _local_model_resolution:
+            return _local_model_resolution["identity"]
+        identity = _probe_local_model_identity(settings)
+        _local_model_resolution["identity"] = identity
+        return identity
+
+
+def _probe_local_model_identity(settings: Any) -> str | None:
+    """Run the one-page blank probe and read the model identity it reports."""
+    path: str | None = None
+    try:
+        import pdf_inspector
+        from pypdf import PdfWriter
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            path = handle.name
+        writer = PdfWriter()
+        writer.add_blank_page(width=200, height=200)
+        writer.write(path)
+        result = pdf_inspector.process_pdf_with_ocr(
+            path,
+            mode="force",
+            page_numbers=[1],
+            model_directory=(settings.ocr_local_model_directory or None),
+            offline=bool(settings.ocr_local_offline),
+        )
+        for page in result.pages:
+            identity = _model_identity(getattr(page, "provenance", None))
+            if identity is not None:
+                return identity
+        return None
+    except Exception as exc:  # noqa: BLE001 - an unresolvable runtime is a None, not a failure
+        logger.warning(
+            "Local OCR model identity unresolved (%s: %s); the index identity "
+            "omits the model until the local OCR runtime is available",
+            type(exc).__name__,
+            exc,
+        )
+        return None
+    finally:
+        if path is not None:
+            try:
+                os.unlink(path)
+            except OSError:  # pragma: no cover - best-effort temp cleanup
+                pass
 
 
 @dataclass(frozen=True)

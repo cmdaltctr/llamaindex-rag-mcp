@@ -1,10 +1,11 @@
 # Tasks: page-level OCR routing
 
-**Progress 2026-09-18:** 5 of 17 done, 3 deferred by their own terms. Settings,
-index identity and per-page evidence are in. Task 4.5's merge is built and
-tested as a pure function but is not yet wired into the reader, so it stays
-open. Next: 4.2 (local tier), then 4.3/4.4 (worker protocol 1.1 and
-escalation), then 4.5's wiring and 4.6.
+**Progress 2026-09-18:** 8 of 17 done, 3 deferred by their own terms. The
+local OCR tier (4.2) and its post-check escalation (4.2a) are in, with the
+resolved model identity joined into the identity payload under the page
+unit. The merge is built and tested as a pure function but is not yet wired
+into the reader, so 4.5 stays open. Next: 4.3/4.4 (worker protocol 1.1 and
+escalation), then 4.5c wiring and 4.6.
 
 ## 1. Evidence gate (before implementation)
 
@@ -25,8 +26,8 @@ escalation), then 4.5's wiring and 4.6.
 ## 4. Page routing
 
 - [x] 4.1 Per-page OCR evidence from a full page scan in `page` mode. `page_routing.page_evidence`, 1-based, raises on a failed scan (the page unit has no sampled evidence to fall back to). 5 tests.
-- [ ] 4.2 Local OCR tier via pdf-inspector selective OCR on every flagged page.
-- [ ] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR_LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal.
+- [x] 4.2 Local OCR tier via pdf-inspector selective OCR on every flagged page.
+- [x] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR_LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal. The resolved local model identity (`name@revision`) joins the identity payload via the blank-page resolution probe, still conditional on the page unit; this moves the page-unit digest a second time and leaves the document-unit digest unchanged.
 - [ ] 4.3 Worker protocol 1.1 with optional `pages` in both protocol copies; keep 1.0 compatible.
 - [ ] 4.4 Escalate unreadable local pages to the worker in one request.
 - [ ] 4.5 Merge pages in order; emit scalar page-source counts and per-page provenance where supported; register new metadata keys.

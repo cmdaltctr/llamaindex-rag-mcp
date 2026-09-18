@@ -65,7 +65,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 2983
+_BASE_EXECUTED = 3005
+# Re-baselined at page-level-ocr-routing task 4.2 (2026-09-18): the local OCR
+# tier and its post-check escalation add 22 cases — the force-mode tier call
+# and its settings mapping, the escalation matrix (empty, whitespace,
+# below-cut, missing-confidence, missing-page, hosted, accumulating
+# reasons, the injected cut), the resolved model identity probe and its
+# cache, and the identity-payload scoping (2983 -> 3005).
 # Re-baselined at page-level-ocr-routing (2026-09-18): the routing unit and its
 # index-identity scoping add 35 cases — per-page evidence (5), the page merge
 # (12), the never-shipped-alias tripwire (6), the unit-scoped exclusion keys and
