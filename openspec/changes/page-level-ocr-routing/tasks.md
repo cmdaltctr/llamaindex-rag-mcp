@@ -1,10 +1,10 @@
 # Tasks: page-level OCR routing
 
-**Progress 2026-09-18:** 15 of 17 done, 3 deferred by their own terms. The
-page unit is wired end to end: evidence, local tier, one-request
-escalation, merge, and every degradation path (4.4, 4.5c, 4.6), with the
-spec-scenario tests (5.1) and the document-unit regression (5.3) green.
-Remaining: 2.1 (the ADR) and 6.2 (the two guide updates).
+**Progress 2026-09-18:** 17 of 17 done, 3 deferred by their own terms.
+The change is code- and docs-complete: the page unit is wired end to
+end with every degradation path, the ADR is written (2.1), and both
+guides cover the flat names and the runtime (6.2). What remains belongs
+to the branch's PR to `v3`.
 
 ## 1. Evidence gate (before implementation)
 
@@ -13,7 +13,7 @@ Remaining: 2.1 (the ADR) and 6.2 (the two guide updates).
 
 ## 2. Decisions
 
-- [ ] 2.1 Write an ADR for page-level routing and the PDFium shared-library dependency (source, version pin, packaging, licence).
+- [x] 2.1 Write an ADR for page-level routing and the PDFium shared-library dependency (source, version pin, packaging, licence). `docs/adr/069-page-level-ocr-routing-and-the-pdfium-runtime.md`, Proposed pending PR review; the index row is added.
 - [x] 2.2 Set `OCR_LOCAL_MIN_CONFIDENCE` to `0.8` from the Experiment 33 task 6.7 calibration table (escalation 46.9%, wrongly kept 11.3%).
 - [ ] 2.3 DEFERRED — io06 calibration. Waits on evidence that any signal separates confident-but-wrong early-modern typography; none is measured.
 
@@ -44,5 +44,5 @@ Remaining: 2.1 (the ADR) and 6.2 (the two guide updates).
 ## 6. Validation and docs
 
 - [ ] 6.1 DEFERRED — retrieval experiment (`page` vs `document`). Waits on a mixed-document corpus; it gates a future default change, not this one.
-- [ ] 6.2 Update `docs/guides/ingestion.md` and `docs/guides/configuration.md`. Must cover the flat `OCR_ROUTING_UNIT` and `OCR_LOCAL_*` names and why they are flat.
+- [x] 6.2 Update `docs/guides/ingestion.md` and `docs/guides/configuration.md`. Both cover the flat `OCR_ROUTING_UNIT` and `OCR_LOCAL_*` names, why they are flat (the `__` delimiter resolves only into nested blocks; never-shipped aliases trapped in `config/legacy.py`), the runtime variables, the counts, the degradation, and the identity consequences. `.env.example` carries the commented entries.
 - [ ] 6.3 DEFERRED — default change. Waits on task 6.1; belongs in its own proposal by this change's own terms. If `page` ever becomes the default, empty `PAGE_ROUTING_ONLY_EMBED_KEYS` and bump `_INDEX_IDENTITY_SCHEMA` in the same change: from then on every install can emit those keys, so subtracting them would hide a real change in embedded text.
