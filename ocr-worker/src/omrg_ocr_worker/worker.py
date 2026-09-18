@@ -25,6 +25,7 @@ from typing import Any
 
 from .protocol import (
     PROTOCOL_VERSION,
+    SUPPORTED_PROTOCOL_VERSIONS,
     ParseFailure,
     ParseRequest,
     ParseSuccess,
@@ -79,7 +80,9 @@ def parse_document(request: ParseRequest) -> ParseSuccess:
     pdf_path = Path(request.pdf_path)
     if not pdf_path.is_file():
         raise WorkerParseError("invalid_pdf_path", f"no readable PDF at {request.pdf_path}")
-    return _run_document_pipeline(pdf_path, request.id)
+    return _run_document_pipeline(
+        pdf_path, request.id, pages=request.pages, protocol_version=request.protocol_version
+    )
 
 
 #: Process-wide pipeline singleton (design D2.2): the long-lived worker
@@ -140,16 +143,32 @@ def _load_pipeline() -> Any:
     return _PIPELINE_SINGLETON
 
 
-def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
-    """Invoke the full PaddleOCR-VL document pipeline inside the worker env.
+def _run_document_pipeline(
+    pdf_path: Path,
+    request_id: str,
+    *,
+    pages: tuple[int, ...] | None = None,
+    protocol_version: str = PROTOCOL_VERSION,
+) -> ParseSuccess:
+    """Invoke the PaddleOCR-VL document pipeline inside the worker env.
 
     The pipeline is loaded once per worker process (design D2.2) and
     performs layout analysis, reading-order handling, recognition, and
     Markdown assembly before the worker creates its protocol envelope.
 
+    A page-listed request (protocol 1.1) parses only those pages —
+    ``page_num`` selects them, and the response carries per-page
+    Markdown parallel to the list, so a page-routing client can place
+    each page's text at its own position. The page count reports pages
+    processed, which under a page list is the list's length.
+
     Args:
         pdf_path: The validated PDF path from the request.
         request_id: Correlation identifier for the terminal response.
+        pages: 1-based page numbers to parse, or ``None`` for the whole
+            document.
+        protocol_version: The version the request spoke; the response
+            answers in it (the rolling-upgrade rule).
 
     Returns:
         The assembled success envelope with pipeline metadata.
@@ -161,7 +180,10 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
     pipeline = _load_pipeline()
 
     try:
-        page_results = list(pipeline.predict(input=str(pdf_path)))
+        predict_kwargs: dict[str, Any] = {"input": str(pdf_path)}
+        if pages is not None:
+            predict_kwargs["page_num"] = list(pages)
+        page_results = list(pipeline.predict(**predict_kwargs))
         if not page_results:
             raise WorkerParseError("empty_pipeline_result", "PaddleOCR-VL returned no page results")
         structured_results = list(
@@ -173,6 +195,20 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
             )
         )
         markdown = _save_markdown_results(structured_results)
+        pages_markdown = None
+        if pages is not None:
+            # A second assembly pass over the same results, without
+            # concatenation, yields each page's Markdown on its own.
+            # Re-prediction is the expensive part and is not repeated.
+            per_page_results = list(
+                pipeline.restructure_pages(
+                    page_results,
+                    merge_tables=True,
+                    relevel_titles=True,
+                    concatenate_pages=False,
+                )
+            )
+            pages_markdown = _per_page_markdown(per_page_results, len(pages))
     except WorkerParseError:
         raise
     except Exception as exc:  # noqa: BLE001 - convert backend failures to protocol errors
@@ -191,7 +227,31 @@ def _run_document_pipeline(pdf_path: Path, request_id: str) -> ParseSuccess:
             "model": "PaddleOCR-VL",
             "model_revision": "1.6",
         },
+        pages_markdown=pages_markdown,
+        protocol_version=protocol_version,
     )
+
+
+def _per_page_markdown(results: list[Any], expected: int) -> list[str]:
+    """Return one Markdown string per result, padding shortfalls with "".
+
+    A page the pipeline produced no Markdown for keeps its slot, so the
+    list stays parallel to the requested pages the client holds.
+    """
+    pages: list[str] = []
+    for result in results:
+        with tempfile.TemporaryDirectory(prefix=".ocr-output-page-", dir=WORKER_DIR) as page_dir:
+            output_path = Path(page_dir)
+            result.save_to_markdown(save_path=str(output_path))
+            markdown_files = sorted(output_path.rglob("*.md"))
+            pages.append(
+                "\n\n".join(
+                    path.read_text(encoding="utf-8").strip() for path in markdown_files
+                ).strip()
+            )
+    while len(pages) < expected:
+        pages.append("")
+    return pages[:expected]
 
 
 def _save_markdown_results(results: list[Any]) -> str:
@@ -290,7 +350,23 @@ def _respond_to_recoverable_line(line: str, error: ProtocolError) -> bool:
     request_id = payload.get("id")
     if not isinstance(request_id, str) or not request_id:
         return False
-    _write_response(make_failure(request_id, "invalid_request", f"{error.code}: {error.message}"))
+    # Answer in the version the broken line claimed, when that version
+    # is one this endpoint speaks, so an old client can still read the
+    # error; anything else gets this endpoint's own version.
+    claimed = payload.get("protocol_version")
+    version = (
+        claimed
+        if isinstance(claimed, str) and claimed in SUPPORTED_PROTOCOL_VERSIONS
+        else PROTOCOL_VERSION
+    )
+    _write_response(
+        make_failure(
+            request_id,
+            "invalid_request",
+            f"{error.code}: {error.message}",
+            protocol_version=version,
+        )
+    )
     return True
 
 

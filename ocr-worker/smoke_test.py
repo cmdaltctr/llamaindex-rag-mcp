@@ -67,7 +67,9 @@ PADDLE_DISTRIBUTIONS: tuple[str, ...] = ("paddleocr", "paddlex", "paddlepaddle")
 # under test (they mirror
 # src/omrg/integrations/ocr_worker/protocol.py and
 # ocr-worker/src/omrg_ocr_worker/protocol.py).
-EXPECTED_PROTOCOL_VERSION = "1.0"
+EXPECTED_PROTOCOL_VERSION = "1.1"
+#: The version that introduced the page-list fields (protocol 1.1).
+PAGES_PROTOCOL_VERSION = "1.1"
 EXPECTED_OUTPUT_SCHEMA_ID = "omrg.ocr.parse_output"
 EXPECTED_OUTPUT_SCHEMA_VERSION = "1"
 REQUEST_TYPE_PARSE = "parse"
@@ -302,7 +304,9 @@ def _validate_fingerprint(payload: dict[str, Any]) -> None:
         )
 
 
-def _validate_parse_response(line: str, pdf_path: str) -> str:
+def _validate_parse_response(
+    line: str, pdf_path: str, *, expected_id: str = SMOKE_REQUEST_ID, pages: list[int] | None = None
+) -> str:
     """Validate ONE response line and return the extracted Markdown.
 
     Checks the full framing contract: one line, correlated id, declared
@@ -314,10 +318,10 @@ def _validate_parse_response(line: str, pdf_path: str) -> str:
         response = json.loads(line)
     except json.JSONDecodeError as exc:
         raise SmokeTestError(f"parse response is not one JSON line: {exc}") from exc
-    if response.get("id") != SMOKE_REQUEST_ID:
+    if response.get("id") != expected_id:
         raise SmokeTestError(
             f"parse response id {response.get('id')!r} does not correlate "
-            f"with request {SMOKE_REQUEST_ID!r}"
+            f"with request {expected_id!r}"
         )
     if response.get("protocol_version") != EXPECTED_PROTOCOL_VERSION:
         raise SmokeTestError(
@@ -346,6 +350,15 @@ def _validate_parse_response(line: str, pdf_path: str) -> str:
             f"parse response output_schema {schema!r} does not declare "
             f"{EXPECTED_OUTPUT_SCHEMA_ID!r}/{EXPECTED_OUTPUT_SCHEMA_VERSION!r}"
         )
+    if pages is not None:
+        pages_markdown = response.get("pages_markdown")
+        if not isinstance(pages_markdown, list) or len(pages_markdown) != len(pages):
+            raise SmokeTestError(
+                f"page-listed response pages_markdown {pages_markdown!r} is not a list "
+                f"parallel to the requested pages {pages!r}"
+            )
+        if not all(isinstance(entry, str) for entry in pages_markdown):
+            raise SmokeTestError("page-listed response pages_markdown entries must be strings")
     return markdown
 
 
@@ -444,6 +457,53 @@ def _run_provisioned(plan: dict[str, Any]) -> int:
         print(f"parse response line: {line}", file=sys.stderr)
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+    # Protocol 1.1 page-listed parse: the only place the worker's
+    # Paddle-side page forwarding meets a real pipeline (task 4.3's
+    # smoke gate; the pytest suite stubs the parse seam).
+    pages_request_id = SMOKE_REQUEST_ID + "-pages"
+    pages_request = json.dumps(
+        {
+            "id": pages_request_id,
+            "pages": [1],
+            "protocol_version": PAGES_PROTOCOL_VERSION,
+            "type": REQUEST_TYPE_PARSE,
+            "pdf_path": plan["fixture"],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    try:
+        pages_parse = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            plan["parse_command"],
+            input=pages_request + "\n",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=WORKER_DIR,
+            env=environment,
+            timeout=1800,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print("error: page-listed parse timed out after 1800 seconds", file=sys.stderr)
+        return 1
+    pages_lines = [entry for entry in pages_parse.stdout.splitlines() if entry.strip()]
+    if pages_parse.returncode != 0 or len(pages_lines) != 1:
+        print(f"worker exit status: {pages_parse.returncode}", file=sys.stderr)
+        print(f"worker stdout: {pages_parse.stdout!r}", file=sys.stderr)
+        print("error: page-listed parse did not emit exactly one response line", file=sys.stderr)
+        return 1
+    try:
+        json.loads(pages_lines[0])
+        _validate_parse_response(
+            pages_lines[0], plan["fixture"], expected_id=pages_request_id, pages=[1]
+        )
+    except (json.JSONDecodeError, SmokeTestError) as exc:
+        print(f"page-listed response line: {pages_lines[0]}", file=sys.stderr)
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print("page-listed parse response valid; pages_markdown parallel to the request")
 
     evidence_name = plan["python_version"].replace(".", "-")
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

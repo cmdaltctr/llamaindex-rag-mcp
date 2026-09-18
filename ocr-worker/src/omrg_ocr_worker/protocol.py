@@ -4,24 +4,64 @@ One JSON object per line, UTF-8, newline-terminated. Standard output
 carries protocol messages only; every other byte belongs on standard
 error (design D2.3 of change improve-rag-input-quality-5).
 
-This is the WORKER-owned copy. OMRG keeps an independent twin at
-``src/omrg/integrations/ocr_worker/protocol.py``; the duplication is
-deliberate so neither project imports the other. Tests prove the two
-copies agree byte-for-byte on the wire.
+Protocol 1.1 (change page-level-ocr-routing, task 4.3) adds exactly one
+payload feature: an optional ``pages`` list on the parse request, with
+an optional ``pages_markdown`` list on the success response, parallel
+to the requested pages, so a page-routing client can place worker text
+at each page's position in the merged document. The wire rules:
+
+- a request that carries ``pages`` speaks protocol 1.1;
+- a request without ``pages`` speaks 1.0, the minimum version that
+  expresses it, so a worker still on 1.0 keeps serving plain requests
+  during a rolling upgrade;
+- both endpoints accept 1.0 and 1.1 envelopes, and answer in the
+  version the request spoke;
+- a 1.0 envelope may not carry ``pages`` or ``pages_markdown`` — those
+  fields did not exist in 1.0.
+
+This is the WORKER-owned copy. The OMRG project keeps an independent
+twin at ``src/omrg/integrations/ocr_worker/protocol.py``; the duplication
+is deliberate so neither project imports the other. Tests prove the
+two copies agree byte-for-byte on the wire.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from .validation import _METADATA_REQUIRED_KEYS as _METADATA_OWNED_KEYS
+from .validation import (
+    ERR_INVALID_FIELD,
+    ERR_MISMATCHED_ID,
+    ERR_NON_TERMINAL_TYPE,
+    ERR_UNKNOWN_TYPE,
+    OUTPUT_SCHEMA_ID,
+    OUTPUT_SCHEMA_VERSION,
+    ProtocolError,
+    _decode_metadata,
+    _load_object,
+    _normalise_pages,
+    _normalise_pages_markdown,
+    _require_exact_keys,
+    _require_keys,
+    _require_non_empty_str,
+    _require_protocol_version,
+)
+
 # ── Protocol identity ──────────────────────────────────────────────────────
 
-PROTOCOL_VERSION = "1.0"
-OUTPUT_SCHEMA_ID = "omrg.ocr.parse_output"
-OUTPUT_SCHEMA_VERSION = "1"
+PROTOCOL_VERSION = "1.1"
+#: Every version this endpoint accepts on the wire. 1.0 stays valid so a
+#: deployment can upgrade the OMRG side and the worker side separately:
+#: plain requests keep flowing until the worker catches up.
+SUPPORTED_PROTOCOL_VERSIONS = ("1.0", "1.1")
+#: The version that introduced the ``pages`` request field and the
+#: ``pages_markdown`` response field. An envelope speaking an earlier
+#: version may not carry either field.
+PAGES_PROTOCOL_VERSION = "1.1"
 
 REQUEST_TYPE_PARSE = "parse"
 RESPONSE_TYPE_PARSE_RESULT = "parse_result"
@@ -29,37 +69,10 @@ RESPONSE_TYPE_PARSE_ERROR = "parse_error"
 
 MAX_ERROR_MESSAGE_LENGTH = 2000
 
-# ── Protocol violation codes ───────────────────────────────────────────────
-
-ERR_INVALID_JSON = "invalid_json"
-ERR_UNSUPPORTED_PROTOCOL_VERSION = "unsupported_protocol_version"
-ERR_MISSING_FIELD = "missing_field"
-ERR_INVALID_FIELD = "invalid_field"
-ERR_UNEXPECTED_FIELD = "unexpected_field"
-ERR_NON_TERMINAL_TYPE = "non_terminal_type"
-ERR_UNKNOWN_TYPE = "unknown_type"
-ERR_MISMATCHED_ID = "mismatched_id"
-ERR_OUTPUT_SCHEMA_MISMATCH = "output_schema_mismatch"
-
 _REQUEST_KEYS = frozenset({"id", "protocol_version", "type", "pdf_path"})
 _SUCCESS_KEYS = frozenset({"id", "protocol_version", "type", "ok", "markdown", "metadata"})
 _FAILURE_KEYS = frozenset({"id", "protocol_version", "type", "ok", "error"})
 _ERROR_KEYS = frozenset({"code", "message"})
-_METADATA_REQUIRED_KEYS = frozenset({"ocr_backend", "page_count", "output_schema"})
-
-
-class ProtocolError(Exception):
-    """A JSON Lines protocol violation detected while decoding a line.
-
-    Attributes:
-        code: Stable machine-readable violation code (``ERR_*``).
-        message: Human-readable description of the violation.
-    """
-
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(f"{code}: {message}")
-        self.code = code
-        self.message = message
 
 
 @dataclass(frozen=True)
@@ -69,13 +82,18 @@ class ParseRequest:
     Attributes:
         id: Correlation identifier echoed on the terminal response.
         pdf_path: Path of the PDF the worker must parse.
+        pages: 1-based page numbers to parse, in strictly increasing
+            order. ``None`` parses the whole document. Present only on
+            a 1.1 envelope: a page-listed request is the one payload
+            feature 1.1 added.
         protocol_version: Wire protocol version of the envelope.
         type: Envelope type discriminator.
     """
 
     id: str
     pdf_path: str
-    protocol_version: str = PROTOCOL_VERSION
+    pages: tuple[int, ...] | None = None
+    protocol_version: str = "1.0"
     type: str = REQUEST_TYPE_PARSE
 
 
@@ -102,6 +120,10 @@ class ParseSuccess:
         markdown: Structured Markdown emitted by the document pipeline.
         metadata: Diagnostics including ``ocr_backend``,
             ``page_count``, and the ``output_schema`` identity.
+        pages_markdown: Per-page Markdown, parallel to the requested
+            ``pages``, present only when the request carried a page
+            list. Lets a page-routing client merge worker text in page
+            order; absent means the whole document was parsed.
         protocol_version: Wire protocol version of the envelope.
         type: Envelope type discriminator.
     """
@@ -109,6 +131,7 @@ class ParseSuccess:
     id: str
     markdown: str
     metadata: dict[str, Any]
+    pages_markdown: tuple[str, ...] | None = None
     protocol_version: str = PROTOCOL_VERSION
     type: str = RESPONSE_TYPE_PARSE_RESULT
 
@@ -136,24 +159,44 @@ ParseResponse = ParseSuccess | ParseFailure
 # ── Envelope factories ─────────────────────────────────────────────────────
 
 
-def make_request(request_id: str, pdf_path: str) -> ParseRequest:
+def make_request(
+    request_id: str, pdf_path: str, *, pages: Sequence[int] | None = None
+) -> ParseRequest:
     """Build a parse request envelope.
+
+    The version is the minimum that expresses the payload: ``pages``
+    requires 1.1, anything else is fully expressible in 1.0, and
+    speaking 1.0 keeps an un-upgraded worker serving the request
+    during a rolling upgrade.
 
     Args:
         request_id: Correlation identifier, non-empty.
         pdf_path: Path of the PDF to parse, non-empty.
+        pages: 1-based page numbers to parse, in strictly increasing
+            order. ``None`` or omitted parses the whole document.
 
     Returns:
         The request envelope.
 
     Raises:
-        ValueError: If either argument is empty.
+        ValueError: If an argument is empty, or ``pages`` is not a
+            non-empty, strictly increasing sequence of positive
+            integers.
     """
     if not request_id:
         raise ValueError("request_id must be a non-empty string")
     if not pdf_path:
         raise ValueError("pdf_path must be a non-empty string")
-    return ParseRequest(id=request_id, pdf_path=pdf_path)
+    pages_tuple = None
+    if pages is not None:
+        try:
+            pages_tuple = _normalise_pages(list(pages))
+        except ValueError as exc:
+            raise ValueError(f"pages: {exc}") from exc
+    version = PAGES_PROTOCOL_VERSION if pages_tuple is not None else "1.0"
+    return ParseRequest(
+        id=request_id, pdf_path=pdf_path, pages=pages_tuple, protocol_version=version
+    )
 
 
 def make_success(
@@ -163,6 +206,8 @@ def make_success(
     ocr_backend: str,
     page_count: int,
     extra_metadata: Mapping[str, Any] | None = None,
+    pages_markdown: Sequence[str] | None = None,
+    protocol_version: str = PROTOCOL_VERSION,
 ) -> ParseSuccess:
     """Build a terminal success envelope carrying the output-schema identity.
 
@@ -173,16 +218,34 @@ def make_success(
         page_count: Number of pages the pipeline processed.
         extra_metadata: Additive diagnostic keys merged into metadata.
             The three protocol-owned keys cannot be overridden.
+        pages_markdown: Per-page Markdown, parallel to the requested
+            pages. Only valid on a 1.1 envelope; the worker passes the
+            request's version so a plain 1.0 request is answered in 1.0.
+        protocol_version: Wire version of the envelope; the worker
+            passes the version the request spoke.
 
     Returns:
         The success envelope.
 
     Raises:
         ValueError: If ``extra_metadata`` collides with a protocol-owned
-            metadata key.
+            metadata key, or ``pages_markdown`` is empty or not a
+            sequence of strings, or it is set on a version earlier than
+            the pages protocol version.
     """
+    if pages_markdown is not None:
+        if protocol_version != PAGES_PROTOCOL_VERSION:
+            raise ValueError(
+                f"pages_markdown requires protocol {PAGES_PROTOCOL_VERSION!r}; "
+                f"got {protocol_version!r}"
+            )
+        pages_tuple = tuple(pages_markdown)
+        if not pages_tuple:
+            raise ValueError("pages_markdown must be a non-empty sequence of strings")
+    else:
+        pages_tuple = None
     metadata: dict[str, Any] = dict(extra_metadata) if extra_metadata else {}
-    collisions = sorted(_METADATA_REQUIRED_KEYS & metadata.keys())
+    collisions = sorted(_METADATA_OWNED_KEYS & metadata.keys())
     if collisions:
         raise ValueError(f"extra_metadata overrides protocol-owned keys: {', '.join(collisions)}")
     metadata["ocr_backend"] = ocr_backend
@@ -191,10 +254,18 @@ def make_success(
         "id": OUTPUT_SCHEMA_ID,
         "version": OUTPUT_SCHEMA_VERSION,
     }
-    return ParseSuccess(id=request_id, markdown=markdown, metadata=metadata)
+    return ParseSuccess(
+        id=request_id,
+        markdown=markdown,
+        metadata=metadata,
+        pages_markdown=pages_tuple,
+        protocol_version=protocol_version,
+    )
 
 
-def make_failure(request_id: str, code: str, message: str) -> ParseFailure:
+def make_failure(
+    request_id: str, code: str, message: str, *, protocol_version: str = PROTOCOL_VERSION
+) -> ParseFailure:
     """Build a terminal error envelope with a bounded single-line message.
 
     The message is whitespace-collapsed and truncated so one response
@@ -205,6 +276,8 @@ def make_failure(request_id: str, code: str, message: str) -> ParseFailure:
         request_id: Correlation identifier copied from the request.
         code: Stable machine-readable error code.
         message: Error description; it is bounded on the way in.
+        protocol_version: Wire version of the envelope; the worker
+            passes the version the request spoke.
 
     Returns:
         The error envelope.
@@ -212,6 +285,7 @@ def make_failure(request_id: str, code: str, message: str) -> ParseFailure:
     return ParseFailure(
         id=request_id,
         error=ErrorInfo(code=code, message=_bound_message(message)),
+        protocol_version=protocol_version,
     )
 
 
@@ -224,6 +298,9 @@ def _bound_message(message: str) -> str:
 
 
 # ── Encoding ───────────────────────────────────────────────────────────────
+# Page-list normalisation lives in the validation twin module: it is
+# decoder validation, shared by the factories above for builder-side
+# rejection of what the wire would refuse anyway.
 
 
 def encode_line(envelope: ParseRequest | ParseResponse) -> str:
@@ -248,6 +325,8 @@ def encode_line(envelope: ParseRequest | ParseResponse) -> str:
             "protocol_version": envelope.protocol_version,
             "type": envelope.type,
         }
+        if envelope.pages is not None:
+            payload["pages"] = list(envelope.pages)
     elif isinstance(envelope, ParseSuccess):
         payload = {
             "id": envelope.id,
@@ -257,6 +336,8 @@ def encode_line(envelope: ParseRequest | ParseResponse) -> str:
             "protocol_version": envelope.protocol_version,
             "type": envelope.type,
         }
+        if envelope.pages_markdown is not None:
+            payload["pages_markdown"] = list(envelope.pages_markdown)
     elif isinstance(envelope, ParseFailure):
         payload = {
             "error": {"code": envelope.error.code, "message": envelope.error.message},
@@ -283,14 +364,19 @@ def decode_request_line(line: str) -> ParseRequest:
         The parsed request envelope.
 
     Raises:
-        ProtocolError: On non-JSON input, wrong protocol version, a
-            non-``parse`` type, or missing, extra, or invalidly-typed
-            fields.
+        ProtocolError: On non-JSON input, an unsupported protocol
+            version, a non-``parse`` type, missing, extra, or
+            invalidly-typed fields, or an invalid ``pages`` list on a
+            1.1 envelope.
     """
     payload = _load_object(line)
     context = "request"
-    _require_exact_keys(payload, _REQUEST_KEYS, context)
-    _require_protocol_version(payload, context)
+    # Which optional fields the version permits must be settled before
+    # the exact-key check: a 1.0 envelope carrying ``pages`` never
+    # defined it and must fail as an unexpected field.
+    carries_pages = payload.get("protocol_version") == PAGES_PROTOCOL_VERSION
+    _require_keys(payload, _REQUEST_KEYS, {"pages"} if carries_pages else frozenset(), context)
+    _require_protocol_version(payload, context, supported=SUPPORTED_PROTOCOL_VERSIONS)
     envelope_type = payload["type"]
     if envelope_type in (RESPONSE_TYPE_PARSE_RESULT, RESPONSE_TYPE_PARSE_ERROR):
         raise ProtocolError(
@@ -299,9 +385,17 @@ def decode_request_line(line: str) -> ParseRequest:
         )
     if envelope_type != REQUEST_TYPE_PARSE:
         raise ProtocolError(ERR_UNKNOWN_TYPE, f"unknown request type: {envelope_type!r}")
+    pages: tuple[int, ...] | None = None
+    if "pages" in payload:
+        try:
+            pages = _normalise_pages(payload["pages"])
+        except ValueError as exc:
+            raise ProtocolError(ERR_INVALID_FIELD, f"{context}.pages {exc}") from exc
     return ParseRequest(
         id=_require_non_empty_str(payload, "id", context),
         pdf_path=_require_non_empty_str(payload, "pdf_path", context),
+        pages=pages,
+        protocol_version=payload["protocol_version"],
     )
 
 
@@ -319,10 +413,11 @@ def decode_response_line(
         The terminal success or failure envelope.
 
     Raises:
-        ProtocolError: On non-JSON input, wrong protocol version, an
-            unknown or non-terminal type, a contradicted ``ok`` flag,
-            an output-schema mismatch, missing, extra, or invalidly
-            typed fields, or a mismatched request identifier.
+        ProtocolError: On non-JSON input, an unsupported protocol
+            version, an unknown or non-terminal type, a contradicted
+            ``ok`` flag, an output-schema mismatch, missing, extra, or
+            invalidly-typed fields, a mismatched request identifier, or
+            an invalid ``pages_markdown`` list on a 1.1 envelope.
     """
     payload = _load_object(line)
     context = "response"
@@ -333,9 +428,13 @@ def decode_response_line(
                 ERR_NON_TERMINAL_TYPE, "request-type envelope on the response stream"
             )
         raise ProtocolError(ERR_UNKNOWN_TYPE, f"unknown response type: {envelope_type!r}")
-    expected_keys = _SUCCESS_KEYS if envelope_type == RESPONSE_TYPE_PARSE_RESULT else _FAILURE_KEYS
-    _require_exact_keys(payload, expected_keys, context)
-    _require_protocol_version(payload, context)
+    version = payload.get("protocol_version")
+    if envelope_type == RESPONSE_TYPE_PARSE_RESULT:
+        optional = {"pages_markdown"} if version == PAGES_PROTOCOL_VERSION else frozenset()
+        _require_keys(payload, _SUCCESS_KEYS, optional, context)
+    else:
+        _require_exact_keys(payload, _FAILURE_KEYS, context)
+    _require_protocol_version(payload, context, supported=SUPPORTED_PROTOCOL_VERSIONS)
     request_id = _require_non_empty_str(payload, "id", context)
     if expected_id is not None and request_id != expected_id:
         raise ProtocolError(
@@ -356,10 +455,18 @@ def _decode_success(payload: dict[str, Any], context: str, request_id: str) -> P
     markdown = payload["markdown"]
     if not isinstance(markdown, str):
         raise ProtocolError(ERR_INVALID_FIELD, f"{context}.markdown must be a string")
+    pages_markdown: tuple[str, ...] | None = None
+    if "pages_markdown" in payload:
+        try:
+            pages_markdown = _normalise_pages_markdown(payload["pages_markdown"])
+        except ValueError as exc:
+            raise ProtocolError(ERR_INVALID_FIELD, f"{context}.pages_markdown {exc}") from exc
     return ParseSuccess(
         id=request_id,
         markdown=markdown,
         metadata=_decode_metadata(payload["metadata"], context),
+        pages_markdown=pages_markdown,
+        protocol_version=payload["protocol_version"],
     )
 
 
@@ -380,86 +487,14 @@ def _decode_failure(payload: dict[str, Any], context: str, request_id: str) -> P
     message = error["message"]
     if not isinstance(message, str):
         raise ProtocolError(ERR_INVALID_FIELD, f"{context}.error.message must be a string")
-    return ParseFailure(id=request_id, error=ErrorInfo(code=code, message=message))
+    return ParseFailure(
+        id=request_id,
+        error=ErrorInfo(code=code, message=message),
+        protocol_version=payload["protocol_version"],
+    )
 
 
-def _decode_metadata(raw: Any, context: str) -> dict[str, Any]:
-    """Decode and validate the metadata object of a success envelope.
-
-    The three protocol-owned keys are mandatory; additive diagnostic
-    keys are preserved untouched.
-    """
-    if not isinstance(raw, dict):
-        raise ProtocolError(ERR_INVALID_FIELD, f"{context}.metadata must be an object")
-    missing = sorted(_METADATA_REQUIRED_KEYS - raw.keys())
-    if missing:
-        raise ProtocolError(
-            ERR_MISSING_FIELD, f"{context}.metadata is missing fields: {', '.join(missing)}"
-        )
-    backend = raw["ocr_backend"]
-    if not isinstance(backend, str) or not backend:
-        raise ProtocolError(
-            ERR_INVALID_FIELD, f"{context}.metadata.ocr_backend must be a non-empty string"
-        )
-    page_count = raw["page_count"]
-    if isinstance(page_count, bool) or not isinstance(page_count, int) or page_count < 0:
-        raise ProtocolError(
-            ERR_INVALID_FIELD,
-            f"{context}.metadata.page_count must be a non-negative integer",
-        )
-    schema = raw["output_schema"]
-    if not isinstance(schema, dict):
-        raise ProtocolError(
-            ERR_INVALID_FIELD, f"{context}.metadata.output_schema must be an object"
-        )
-    if schema.get("id") != OUTPUT_SCHEMA_ID or schema.get("version") != OUTPUT_SCHEMA_VERSION:
-        raise ProtocolError(
-            ERR_OUTPUT_SCHEMA_MISMATCH,
-            f"output schema {schema.get('id')!r}/{schema.get('version')!r} does not "
-            f"match {OUTPUT_SCHEMA_ID!r}/{OUTPUT_SCHEMA_VERSION!r}",
-        )
-    return dict(raw)
-
-
-def _load_object(line: str) -> dict[str, Any]:
-    """Parse one line as a JSON object or raise a protocol error."""
-    text = line.strip()
-    if not text:
-        raise ProtocolError(ERR_INVALID_JSON, "line is empty")
-    try:
-        parsed = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ProtocolError(ERR_INVALID_JSON, f"line is not valid JSON: {exc.msg}") from exc
-    if not isinstance(parsed, dict):
-        raise ProtocolError(ERR_INVALID_JSON, "line is not a JSON object")
-    return parsed
-
-
-def _require_exact_keys(payload: dict[str, Any], expected: frozenset[str], context: str) -> None:
-    """Reject payloads with missing or unexpected envelope fields."""
-    missing = sorted(expected - payload.keys())
-    if missing:
-        raise ProtocolError(ERR_MISSING_FIELD, f"{context} is missing fields: {', '.join(missing)}")
-    extra = sorted(payload.keys() - expected)
-    if extra:
-        raise ProtocolError(
-            ERR_UNEXPECTED_FIELD, f"{context} has unexpected fields: {', '.join(extra)}"
-        )
-
-
-def _require_non_empty_str(payload: dict[str, Any], key: str, context: str) -> str:
-    """Return ``payload[key]`` if it is a non-empty string."""
-    value = payload[key]
-    if not isinstance(value, str) or not value:
-        raise ProtocolError(ERR_INVALID_FIELD, f"{context}.{key} must be a non-empty string")
-    return value
-
-
-def _require_protocol_version(payload: dict[str, Any], context: str) -> None:
-    """Reject envelopes speaking any other protocol version."""
-    version = payload["protocol_version"]
-    if version != PROTOCOL_VERSION:
-        raise ProtocolError(
-            ERR_UNSUPPORTED_PROTOCOL_VERSION,
-            f"{context}.protocol_version is {version!r}; this endpoint speaks {PROTOCOL_VERSION!r}",
-        )
+# Every public name re-exported from the validation twin module stays
+# importable from here: ``ProtocolError``, the ``ERR_*`` codes and the
+# output-schema identity were this module's public surface before the
+# split, and no importer should have to know the split happened.

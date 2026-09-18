@@ -15,6 +15,7 @@ import subprocess
 import sys
 import types
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -45,14 +46,35 @@ def small_pdf(tmp_path: Path) -> Path:
 
 
 def test_round_trip_returns_correlated_success(small_pdf: Path) -> None:
-    """One request in, one correlated terminal success line out."""
+    """One request in, one correlated terminal success line out.
+
+    A plain request speaks the minimum version that expresses it (1.0),
+    and the worker answers in that version.
+    """
     with OcrWorkerClient(_stub_command("echo")) as client:
         result = client.parse(str(small_pdf))
     assert isinstance(result, omrg_protocol.ParseSuccess)
     assert str(small_pdf) in result.markdown
     assert result.metadata["ocr_backend"] == "stub-worker"
     assert result.metadata["page_count"] == 1
-    assert result.protocol_version == omrg_protocol.PROTOCOL_VERSION
+    assert result.protocol_version == "1.0"
+
+
+def test_pages_request_reaches_the_wire_and_returns_per_page_markdown(
+    small_pdf: Path,
+) -> None:
+    """A page-listed parse speaks 1.1 and carries the list on the wire.
+
+    The stub worker reflects the received page list into its metadata and
+    answers with per-page Markdown, so this observes the actual wire bytes.
+    """
+    with OcrWorkerClient(_stub_command("echo")) as client:
+        result = client.parse(str(small_pdf), pages=[2, 5])
+    assert isinstance(result, omrg_protocol.ParseSuccess)
+    assert result.protocol_version == "1.1"
+    assert result.metadata["stub_request_pages"] == [2, 5]
+    assert result.pages_markdown == ("# Stub page 2", "# Stub page 5")
+    assert result.markdown == "# Stub page 2\n\n# Stub page 5"
 
 
 def test_client_starts_lazily_and_is_reusable(small_pdf: Path) -> None:
@@ -361,6 +383,86 @@ def test_worker_subprocess_rejects_wrong_version_request(small_pdf: Path) -> Non
     assert isinstance(decoded, omrg_protocol.ParseFailure)
     assert decoded.error.code == "invalid_request"
     assert "unsupported_protocol_version" in decoded.error.message
+
+
+def test_worker_loop_pages_request_reaches_the_seam_and_answers_per_page(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path
+) -> None:
+    """A 1.1 page-listed request carries its pages into the parse seam.
+
+    The stubbed seam asserts what the loop handed it and answers with
+    per-page Markdown; the decoded response must carry both the echoed
+    version and the parallel page list.
+    """
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    seen: dict[str, Any] = {}
+
+    def fake_parse(request):
+        seen["pages"] = request.pages
+        seen["version"] = request.protocol_version
+        return worker_protocol.make_success(
+            request.id,
+            "# P2\n\n# P5",
+            ocr_backend=worker.WORKER_BACKEND,
+            page_count=2,
+            pages_markdown=["# P2", "# P5"],
+            protocol_version=request.protocol_version,
+        )
+
+    monkeypatch.setattr(worker, "parse_document", fake_parse)
+    request = omrg_protocol.make_request("req-loop-pages", str(small_pdf), pages=[2, 5])
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    assert seen["pages"] == (2, 5)
+    assert seen["version"] == "1.1"
+    lines = stdout.getvalue().splitlines()
+    assert len(lines) == 1
+    decoded = omrg_protocol.decode_response_line(lines[0], expected_id="req-loop-pages")
+    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    assert decoded.protocol_version == "1.1"
+    assert decoded.pages_markdown == ("# P2", "# P5")
+
+
+def test_worker_loop_answers_a_1_0_request_in_1_0(
+    monkeypatch: pytest.MonkeyPatch, small_pdf: Path
+) -> None:
+    """The rolling-upgrade rule: a plain 1.0 request is answered in 1.0."""
+    worker = _load_worker_module(monkeypatch)
+    import omrg_ocr_worker.protocol as worker_protocol
+
+    def fake_parse(request):
+        return worker_protocol.make_success(
+            request.id,
+            "# P",
+            ocr_backend=worker.WORKER_BACKEND,
+            page_count=1,
+            protocol_version=request.protocol_version,
+        )
+
+    monkeypatch.setattr(worker, "parse_document", fake_parse)
+    request = omrg_protocol.make_request("req-loop-10", str(small_pdf))
+    assert request.protocol_version == "1.0"
+    stdin = io.StringIO(omrg_protocol.encode_line(request) + "\n")
+    stdout = io.StringIO()
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", stdout)
+
+    exit_code = worker.main()
+
+    assert exit_code == 0
+    decoded = omrg_protocol.decode_response_line(
+        stdout.getvalue().splitlines()[0], expected_id="req-loop-10"
+    )
+    assert isinstance(decoded, omrg_protocol.ParseSuccess)
+    assert decoded.protocol_version == "1.0"
 
 
 def test_worker_subprocess_exits_on_uncorrelatable_line() -> None:

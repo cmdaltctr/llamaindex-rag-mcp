@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Sequence
 from typing import Any
 
 from .client import OcrWorkerClient, OcrWorkerError
@@ -110,14 +111,18 @@ class ManagedOcrClient:
 
     # ── Dispatch ────────────────────────────────────────────────────
 
-    def parse(self, pdf_path: str) -> ParseSuccess:
-        """Dispatch one whole-PDF parse request to the worker.
+    def parse(self, pdf_path: str, *, pages: Sequence[int] | None = None) -> ParseSuccess:
+        """Dispatch one parse request to the worker, optionally page-listed.
 
         Args:
             pdf_path: Path of the PDF the worker must parse.
+            pages: 1-based page numbers to parse (protocol 1.1, change
+                page-level-ocr-routing task 4.3). ``None`` parses the
+                whole document and speaks protocol 1.0.
 
         Returns:
-            The terminal success envelope with structured Markdown.
+            The terminal success envelope with structured Markdown;
+            ``pages_markdown`` is parallel to *pages* when it was given.
 
         Raises:
             RuntimeError: When the owner has closed this client.
@@ -136,7 +141,7 @@ class ManagedOcrClient:
             )
         client = self._ensure_client()
         try:
-            return client.parse(pdf_path)
+            return client.parse(pdf_path, pages=pages)
         except OcrWorkerError as exc:
             if exc.code in _FATAL_OCR_WORKER_CODES:
                 self._drop_client(client)

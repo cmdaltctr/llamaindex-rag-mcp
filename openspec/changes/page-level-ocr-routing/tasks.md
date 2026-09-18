@@ -1,11 +1,11 @@
 # Tasks: page-level OCR routing
 
-**Progress 2026-09-18:** 8 of 17 done, 3 deferred by their own terms. The
-local OCR tier (4.2) and its post-check escalation (4.2a) are in, with the
-resolved model identity joined into the identity payload under the page
-unit. The merge is built and tested as a pure function but is not yet wired
-into the reader, so 4.5 stays open. Next: 4.3/4.4 (worker protocol 1.1 and
-escalation), then 4.5c wiring and 4.6.
+**Progress 2026-09-18:** 9 of 17 done, 3 deferred by their own terms. The
+local OCR tier (4.2), its post-check escalation (4.2a) and worker protocol
+1.1 (4.3) are in; the resolved model identity is joined into the identity
+payload under the page unit. The merge is built and tested as a pure
+function but is not yet wired into the reader, so 4.5 stays open. Next:
+4.4 (the escalation request in the reader), then 4.5c wiring and 4.6.
 
 ## 1. Evidence gate (before implementation)
 
@@ -28,7 +28,7 @@ escalation), then 4.5c wiring and 4.6.
 - [x] 4.1 Per-page OCR evidence from a full page scan in `page` mode. `page_routing.page_evidence`, 1-based, raises on a failed scan (the page unit has no sampled evidence to fall back to). 5 tests.
 - [x] 4.2 Local OCR tier via pdf-inspector selective OCR on every flagged page.
 - [x] 4.2a Post-check escalation: a page escalates on empty or whitespace-only local output, confidence below `OCR_LOCAL_MIN_CONFIDENCE`, or `hosted_recommended`. No pre-check; no script or typography signal. The resolved local model identity (`name@revision`) joins the identity payload via the blank-page resolution probe, still conditional on the page unit; this moves the page-unit digest a second time and leaves the document-unit digest unchanged.
-- [ ] 4.3 Worker protocol 1.1 with optional `pages` in both protocol copies; keep 1.0 compatible.
+- [x] 4.3 Worker protocol 1.1 with optional `pages` in both protocol copies; keep 1.0 compatible. The success envelope also gains optional `pages_markdown`, parallel to the requested pages, so the merge can place worker text per page; the wire rules are recorded in design decision 4.
 - [ ] 4.4 Escalate unreadable local pages to the worker in one request.
 - [ ] 4.5 Merge pages in order; emit scalar page-source counts and per-page provenance where supported; register new metadata keys.
   - [x] 4.5a `page_routing.merge_pages`: page-order join, four counts summing to `page_count`, `ocr_backend` including `mixed`. 12 tests.

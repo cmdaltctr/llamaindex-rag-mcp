@@ -65,7 +65,13 @@ _CHROMA_DISTS = ("chromadb", "llama-index-vector-stores-chroma")
 _OPENAI_LIKE_ADAPTER_CASES = 9
 # Reference counts assume historical ground truth and the Qwen tokenizer cache
 # are present, and the optional OpenAI-like adapter is absent.
-_BASE_EXECUTED = 3005
+_BASE_EXECUTED = 3066
+# Re-baselined at page-level-ocr-routing task 4.3 (2026-09-18): worker
+# protocol 1.1 adds 61 cases — the twinned validation module, the pages
+# request and pages_markdown response round trips and validation matrix
+# on both copies, the minimum-version rule, the fingerprint supported-set
+# acceptance, the client pages wire test, and the worker loop's version
+# echo and per-page answer (3005 -> 3066).
 # Re-baselined at page-level-ocr-routing task 4.2 (2026-09-18): the local OCR
 # tier and its post-check escalation add 22 cases — the force-mode tier call
 # and its settings mapping, the escalation matrix (empty, whitespace,

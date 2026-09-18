@@ -66,6 +66,25 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 
    Escalated pages go to the PaddleOCR-VL worker in one request with a page
    list (protocol 1.1, optional `pages`).
+
+   **The 1.1 wire rules (task 4.3).** A request carrying `pages` speaks 1.1;
+   a request without it speaks 1.0, the minimum version that expresses the
+   payload, so a worker still on 1.0 keeps serving plain requests during a
+   rolling upgrade. Both endpoints accept 1.0 and 1.1 and answer in the
+   version the request spoke. The success envelope gains an optional
+   `pages_markdown` list, parallel to the requested pages: one document per
+   page is the merge's shape, so the client must be able to place each
+   page's worker text at its own position, and a single merged blob could
+   not do that for non-contiguous escalated pages. `pages` and
+   `pages_markdown` are absent from 1.0 envelopes; the output schema stays
+   at `omrg.ocr.parse_output` version 1, because the `markdown` field's
+   meaning is unchanged and the per-page list is additive. The worker
+   builds it with a second, non-concatenating assembly pass over the same
+   page results — re-prediction, the expensive part, is never repeated.
+   The Paddle-side page forwarding (`predict(page_num=...)`) is validated
+   only by the operator-gated `--provision` smoke test, which task 4.3
+   extends with a page-listed request; the pytest suite stubs the parse
+   seam and cannot reach it.
 5. **Merge.** One document per file, as today: the unit changes which engine
    reads each page, not how many documents a PDF becomes. Pages join in page
    order with a blank line between them, so a heading at the top of page 2 does
@@ -150,6 +169,12 @@ pdf-inspector 1.17.0 facts (Experiment 33, synthetic probe files only):
 ## Risks
 
 - PDFium binary compatibility and packaging (ADR required).
+- Fingerprint rolling compatibility: the probe accepts a worker speaking
+  1.0 or 1.1 and records which, so an OMRG-side upgrade alone strands no
+  provisioned worker and moves no index identity. A worker upgraded from
+  1.0 to 1.1 changes its own reported version and re-fingerprints once —
+  reingesting on a real worker change is the fingerprint working as
+  designed, and no document-unit install reindexes from this change alone.
 - The `io06` blind spot is accepted and named: early-modern Latin type reads at median confidence 0.922 and median recall 0.609, so the 0.8 cut keeps it. No measured signal separates confident-but-wrong typography; task 2.3 is where that evidence would come from.
 - Residual: 11.3% of pages kept at the 0.8 cut fall below recall 0.8. Task 6.1 judges whether that is acceptable for retrieval.
 - Escalation is 46.9% of `needs_ocr` pages on the Experiment 33 corpus, so the tier halves worker cost rather than removing it.
