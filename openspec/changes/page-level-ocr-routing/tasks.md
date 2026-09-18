@@ -1,6 +1,6 @@
 # Tasks: page-level OCR routing
 
-**Progress 2026-09-18:** 9 of 17 done, 3 deferred by their own terms. The
+**Progress 2026-09-18:** 10 of 17 done, 3 deferred by their own terms. The
 local OCR tier (4.2), its post-check escalation (4.2a) and worker protocol
 1.1 (4.3) are in; the resolved model identity is joined into the identity
 payload under the page unit. The merge is built and tested as a pure
@@ -39,7 +39,7 @@ function but is not yet wired into the reader, so 4.5 stays open. Next:
 ## 5. Tests
 
 - [ ] 5.1 Unit tests for every spec scenario with stubbed pdf-inspector and worker.
-- [ ] 5.2 Protocol twin byte-for-byte test for 1.1.
+- [x] 5.2 Protocol twin byte-for-byte test for 1.1. Landed with task 4.3's commit: byte-identical encoding of pages requests and `pages_markdown` successes on both copies, plus the twinned `validation.py` agreement test.
 - [ ] 5.3 Document-unit regression: default behaviour unchanged.
 
 ## 6. Validation and docs
