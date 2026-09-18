@@ -71,6 +71,7 @@ MAX_ERROR_MESSAGE_LENGTH = 2000
 
 _REQUEST_KEYS = frozenset({"id", "protocol_version", "type", "pdf_path"})
 _SUCCESS_KEYS = frozenset({"id", "protocol_version", "type", "ok", "markdown", "metadata"})
+_PAGES_MARKDOWN_KEYS = frozenset({"pages_markdown"})
 _FAILURE_KEYS = frozenset({"id", "protocol_version", "type", "ok", "error"})
 _ERROR_KEYS = frozenset({"code", "message"})
 
@@ -371,11 +372,12 @@ def decode_request_line(line: str) -> ParseRequest:
     """
     payload = _load_object(line)
     context = "request"
-    # Which optional fields the version permits must be settled before
-    # the exact-key check: a 1.0 envelope carrying ``pages`` never
-    # defined it and must fail as an unexpected field.
+    # Optional keys depend on the version: a 1.0 envelope carrying one
+    # must fail as an unexpected field.
     carries_pages = payload.get("protocol_version") == PAGES_PROTOCOL_VERSION
-    _require_keys(payload, _REQUEST_KEYS, {"pages"} if carries_pages else frozenset(), context)
+    _require_keys(
+        payload, _REQUEST_KEYS, frozenset(("pages",)) if carries_pages else frozenset(), context
+    )
     _require_protocol_version(payload, context, supported=SUPPORTED_PROTOCOL_VERSIONS)
     envelope_type = payload["type"]
     if envelope_type in (RESPONSE_TYPE_PARSE_RESULT, RESPONSE_TYPE_PARSE_ERROR):
@@ -430,7 +432,7 @@ def decode_response_line(
         raise ProtocolError(ERR_UNKNOWN_TYPE, f"unknown response type: {envelope_type!r}")
     version = payload.get("protocol_version")
     if envelope_type == RESPONSE_TYPE_PARSE_RESULT:
-        optional = {"pages_markdown"} if version == PAGES_PROTOCOL_VERSION else frozenset()
+        optional = _PAGES_MARKDOWN_KEYS if version == PAGES_PROTOCOL_VERSION else frozenset()
         _require_keys(payload, _SUCCESS_KEYS, optional, context)
     else:
         _require_exact_keys(payload, _FAILURE_KEYS, context)
@@ -494,7 +496,5 @@ def _decode_failure(payload: dict[str, Any], context: str, request_id: str) -> P
     )
 
 
-# Every public name re-exported from the validation twin module stays
-# importable from here: ``ProtocolError``, the ``ERR_*`` codes and the
-# output-schema identity were this module's public surface before the
-# split, and no importer should have to know the split happened.
+# Names re-exported from the validation twin stay importable from here;
+# no importer should have to know the split happened.
