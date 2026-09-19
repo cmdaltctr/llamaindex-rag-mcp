@@ -1,0 +1,1982 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Experiment 34 — worker sample review</title>
+<style>
+ body{font-family:system-ui;margin:0;padding:1rem;background:#f6f6f6}
+ h1{font-size:1.3rem} h3{margin:0 0 .5rem;font-size:1.05rem;display:flex;gap:.6rem;align-items:center}
+ .role{font-size:.75rem;padding:.1rem .5rem;border-radius:1rem;color:#fff}
+ .role.problem{background:#b3392c}.role.control{background:#2c7ab3}
+ .issue{font-size:.8rem;color:#555}
+ .page{background:#fff;border:1px solid #ddd;border-radius:8px;padding:1rem;margin:1rem 0}
+ .panes{display:flex;gap:1rem;align-items:flex-start}
+ .pane{flex:1;min-width:0}
+ .pane img{width:100%;border:1px solid #ccc}
+ .pane h4{margin:.2rem 0 .4rem;font-size:.85rem;color:#444}
+ .md{max-height:70vh;overflow:auto;border:1px solid #eee;padding:.5rem;background:#fafafa}
+ .md p{margin:.15rem 0;font-size:.85rem}
+ details summary{cursor:pointer;font-size:.8rem;color:#555;margin-top:.4rem}
+ pre{white-space:pre-wrap;font-size:.75rem;max-height:40vh;overflow:auto}
+ .checks{display:flex;flex-wrap:wrap;gap:1rem;margin-top:.8rem;border-top:1px solid #eee;padding-top:.8rem}
+ .checks label{font-size:.85rem;display:flex;gap:.4rem;align-items:center}
+ .checks select,.checks textarea{font:inherit}
+ .note{flex-basis:100%} .note textarea{flex:1}
+ .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:.6rem 1rem;display:flex;gap:1rem;align-items:center;z-index:9}
+ .status{font-size:.75rem;color:#2c7a4b}
+</style></head><body>
+<div class="bar"><strong>Experiment 34 — worker sample review</strong>
+ <button id="save">Save verdicts (download JSON)</button>
+ <button id="wipe">Clear all choices</button>
+ <span id="progress"></span></div>
+<h1 style="margin-left:1rem">PaddleOCR-VL on the three named issues, plus a clean control. Left: original. Right: worker Markdown.</h1>
+
+<section class="page" data-doc="bd01" data-page="1">
+  <h3>bd01 — page 1
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd01-1"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd01/p001.png" alt="bd01 page 1"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd01" data-page="4">
+  <h3>bd01 — page 4
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd01-4"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd01/p004.png" alt="bd01 page 4"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd01" data-page="5">
+  <h3>bd01 — page 5
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd01-5"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd01/p005.png" alt="bd01 page 5"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd01" data-page="6">
+  <h3>bd01 — page 6
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd01-6"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd01/p006.png" alt="bd01 page 6"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd02" data-page="1">
+  <h3>bd02 — page 1
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd02-1"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd02/p001.png" alt="bd02 page 1"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd02" data-page="2">
+  <h3>bd02 — page 2
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd02-2"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd02/p002.png" alt="bd02 page 2"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd02" data-page="6">
+  <h3>bd02 — page 6
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd02-6"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd02/p006.png" alt="bd02 page 6"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd02" data-page="8">
+  <h3>bd02 — page 8
+    <span class="role problem">problem</span>
+    <span class="issue">Two column (worker vs fixed LiteParse)</span>
+    <span class="status" id="status-bd02-8"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd02/p008.png" alt="bd02 page 8"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="1">
+  <h3>bd03 — page 1
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-1"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p001.png" alt="bd03 page 1"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="2">
+  <h3>bd03 — page 2
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-2"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p002.png" alt="bd03 page 2"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="10">
+  <h3>bd03 — page 10
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-10"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p010.png" alt="bd03 page 10"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="15">
+  <h3>bd03 — page 15
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-15"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p015.png" alt="bd03 page 15"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="21">
+  <h3>bd03 — page 21
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-21"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p021.png" alt="bd03 page 21"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="bd03" data-page="23">
+  <h3>bd03 — page 23
+    <span class="role control">control</span>
+    <span class="issue">Clean control</span>
+    <span class="status" id="status-bd03-23"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/bd03/p023.png" alt="bd03 page 23"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="1">
+  <h3>io04 — page 1
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-1"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p001.png" alt="io04 page 1"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="4">
+  <h3>io04 — page 4
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-4"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p004.png" alt="io04 page 4"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="16">
+  <h3>io04 — page 16
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-16"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p016.png" alt="io04 page 16"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="17">
+  <h3>io04 — page 17
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-17"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p017.png" alt="io04 page 17"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="18">
+  <h3>io04 — page 18
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-18"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p018.png" alt="io04 page 18"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="20">
+  <h3>io04 — page 20
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-20"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p020.png" alt="io04 page 20"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="33">
+  <h3>io04 — page 33
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-33"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p033.png" alt="io04 page 33"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="42">
+  <h3>io04 — page 42
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-42"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p042.png" alt="io04 page 42"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="44">
+  <h3>io04 — page 44
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-44"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p044.png" alt="io04 page 44"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="47">
+  <h3>io04 — page 47
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-47"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p047.png" alt="io04 page 47"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="49">
+  <h3>io04 — page 49
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-49"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p049.png" alt="io04 page 49"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io04" data-page="52">
+  <h3>io04 — page 52
+    <span class="role problem">problem</span>
+    <span class="issue">Triple column with images</span>
+    <span class="status" id="status-io04-52"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io04/p052.png" alt="io04 page 52"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="16">
+  <h3>io06 — page 16
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-16"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p016.png" alt="io06 page 16"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="28">
+  <h3>io06 — page 28
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-28"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p028.png" alt="io06 page 28"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="30">
+  <h3>io06 — page 30
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-30"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p030.png" alt="io06 page 30"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="45">
+  <h3>io06 — page 45
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-45"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p045.png" alt="io06 page 45"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="46">
+  <h3>io06 — page 46
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-46"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p046.png" alt="io06 page 46"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="53">
+  <h3>io06 — page 53
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-53"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p053.png" alt="io06 page 53"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="62">
+  <h3>io06 — page 62
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-62"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p062.png" alt="io06 page 62"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="63">
+  <h3>io06 — page 63
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-63"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p063.png" alt="io06 page 63"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="65">
+  <h3>io06 — page 65
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-65"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p065.png" alt="io06 page 65"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="68">
+  <h3>io06 — page 68
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-68"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p068.png" alt="io06 page 68"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="75">
+  <h3>io06 — page 75
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-75"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p075.png" alt="io06 page 75"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="io06" data-page="78">
+  <h3>io06 — page 78
+    <span class="role problem">problem</span>
+    <span class="issue">Old book: language/typography + structure</span>
+    <span class="status" id="status-io06-78"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/io06/p078.png" alt="io06 page 78"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="tl03" data-page="2">
+  <h3>tl03 — page 2
+    <span class="role problem">problem</span>
+    <span class="issue">Tables</span>
+    <span class="status" id="status-tl03-2"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/tl03/p002.png" alt="tl03 page 2"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="tl03" data-page="3">
+  <h3>tl03 — page 3
+    <span class="role problem">problem</span>
+    <span class="issue">Tables</span>
+    <span class="status" id="status-tl03-3"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/tl03/p003.png" alt="tl03 page 3"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="tl03" data-page="5">
+  <h3>tl03 — page 5
+    <span class="role problem">problem</span>
+    <span class="issue">Tables</span>
+    <span class="status" id="status-tl03-5"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/tl03/p005.png" alt="tl03 page 5"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+
+<section class="page" data-doc="tl03" data-page="8">
+  <h3>tl03 — page 8
+    <span class="role problem">problem</span>
+    <span class="issue">Tables</span>
+    <span class="status" id="status-tl03-8"></span>
+  </h3>
+  <div class="panes">
+    <div class="pane"><h4>Original</h4><img loading="lazy" src="pages/tl03/p008.png" alt="tl03 page 8"></div>
+    <div class="pane"><h4>Worker Markdown (rendered)</h4><div class="md"><p>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</p></div>
+      <details><summary>raw markdown</summary><pre>PENDING — the worker run has not reached this page yet. Re-run make_review.py as the run progresses to fill it in.</pre></details>
+    </div>
+  </div>
+  
+<div class="checks">
+  <label>Text accuracy:
+    <select data-k="accuracy">
+      <option value="">—</option><option>all correct</option><option>most correct</option>
+      <option>some correct</option><option>mostly wrong</option>
+    </select>
+  </label>
+  <label>Column order:
+    <select data-k="columns">
+      <option value="">—</option><option>correct</option><option>wrong</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Headings/structure:
+    <select data-k="headings">
+      <option value="">—</option><option>preserved</option><option>lost/garbled</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Table:
+    <select data-k="table">
+      <option value="">—</option><option>readable</option><option>broken</option><option>n/a</option>
+    </select>
+  </label>
+  <label>Ready for an LLM:
+    <select data-k="llm">
+      <option value="">—</option><option>yes</option><option>no</option>
+    </select>
+  </label>
+  <label class="note">Note: <textarea data-k="note" rows="2"></textarea></label>
+</div>
+
+</section>
+
+<script>
+const KEY='exp34_review_verdicts_v1';
+const state=JSON.parse(localStorage.getItem(KEY)||'{}');
+function keyOf(sec){return sec.dataset.doc+'/'+sec.dataset.page}
+function refresh(){let n=0;for(const s of document.querySelectorAll('.page')){
+  const k=keyOf(s),v=state[k]||{};let filled=false;
+  for(const el of s.querySelectorAll('[data-k]')){el.value=v[el.dataset.k]||'';if(el.value)filled=true}
+  const st=s.querySelector('.status');st.textContent=filled?'reviewed':'';
+  if(filled)n++}
+  document.getElementById('progress').textContent=n+' / '+document.querySelectorAll('.page').length+' reviewed';}
+document.addEventListener('change',e=>{const el=e.target.closest('[data-k]');if(!el)return;
+  const sec=el.closest('.page');const k=keyOf(sec);state[k]=state[k]||{};
+  if(el.value)state[k][el.dataset.k]=el.value;else delete state[k][el.dataset.k];
+  if(!Object.keys(state[k]).length)delete state[k];
+  localStorage.setItem(KEY,JSON.stringify(state));refresh();});
+document.getElementById('save').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='review_verdicts.json';a.click();};
+document.getElementById('wipe').onclick=()=>{if(confirm('Clear all choices?')){localStorage.removeItem(KEY);location.reload()}};
+refresh();
+</script></body></html>

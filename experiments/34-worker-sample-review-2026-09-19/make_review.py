@@ -119,7 +119,10 @@ def main() -> int:
         md = (
             md_file.read_text(encoding="utf-8")
             if md_file.exists()
-            else "(worker produced no output for this page)"
+            else (
+                "PENDING — the worker run has not reached this page yet. "
+                "Re-run make_review.py as the run progresses to fill it in."
+            )
         )
         dst = OUT_PAGES / doc / f"p{page:03d}.png"
         if not dst.exists():

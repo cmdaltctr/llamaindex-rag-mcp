@@ -71,6 +71,13 @@ def main() -> int:
             resp = json.loads(line)
             pages = len(resp.get("pages_markdown") or [])
             head = (resp.get("pages_markdown") or [""])[0][:120].replace("\n", " ")
+            # Persist what we paid for: probe markdown lands in the same
+            # layout the review generator reads, so no compute is wasted.
+            out_dir = Path(__file__).resolve().parent / "output" / "worker"
+            for page, text in zip(req["pages"], resp.get("pages_markdown") or [], strict=False):
+                doc_dir = out_dir / Path(req["pdf_path"]).stem
+                doc_dir.mkdir(parents=True, exist_ok=True)
+                (doc_dir / f"p{page:03d}.md").write_text(text, encoding="utf-8")
             print(
                 f"{req['id']}: ok={resp['ok']} pages={pages} elapsed={elapsed:.1f}s | {head}",
                 flush=True,
