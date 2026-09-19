@@ -108,12 +108,25 @@ def _mini_markdown(text: str) -> str:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--only", help="render only these doc:page pairs, e.g. 'io06:28,io06:53'")
+    parser.add_argument("--out", default="review.html", help="output file name under output/")
+    args = parser.parse_args()
+
     sample = json.loads((EXP_DIR / "sample.json").read_text(encoding="utf-8"))
     exp33 = Path(sample["exp33_dir"])
     images_src = exp33 / "output" / ".pages"
 
+    only = None
+    if args.only:
+        only = {tuple(item.strip().partition(":")[::2]) for item in args.only.split(",")}
+
     sections: list[str] = []
     for row in sorted(sample["pages"], key=lambda r: (r["doc_id"], r["page"])):
+        if only is not None and (row["doc_id"], str(row["page"])) not in only:
+            continue
         doc, page = row["doc_id"], row["page"]
         md_file = EXP_DIR / "output" / "worker" / doc / f"p{page:03d}.md"
         md = (
@@ -144,8 +157,9 @@ def main() -> int:
         )
 
     REVIEW.parent.mkdir(parents=True, exist_ok=True)
-    REVIEW.write_text(HTML_HEAD + "\n".join(sections) + HTML_TAIL, encoding="utf-8")
-    print(f"wrote {REVIEW} ({len(sections)} pages)")
+    out_path = EXP_DIR / "output" / args.out
+    out_path.write_text(HTML_HEAD + "\n".join(sections) + HTML_TAIL, encoding="utf-8")
+    print(f"wrote {out_path} ({len(sections)} pages)")
     return 0
 
 

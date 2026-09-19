@@ -31,6 +31,10 @@ STATE = EXP_DIR / "output" / "worker_state.json"
 
 REQUEST_TIMEOUT_S = 900.0
 WALL_CAP_S = 2 * 60 * 60
+#: Measured 2026-09-19: one dense io06 page took 69 min cold on this
+#: machine. A page-listed request gets this many seconds per page (floor
+#: REQUEST_TIMEOUT_S) so multi-page requests are not aborted mid-flight.
+SECONDS_PER_PAGE_S = 65 * 60
 
 
 def _write_state(state: dict) -> None:
@@ -48,6 +52,12 @@ def _worker_command() -> list[str]:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--only", help="restrict the run, e.g. 'io06:28,io06:53' (doc:page pairs)")
+    args = parser.parse_args()
+
     sample = json.loads((EXP_DIR / "sample.json").read_text(encoding="utf-8"))
     exp33 = Path(sample["exp33_dir"])
     sources = {
@@ -57,6 +67,13 @@ def main() -> int:
     by_doc: dict[str, list[int]] = {}
     for row in sample["pages"]:
         by_doc.setdefault(row["doc_id"], []).append(row["page"])
+    if args.only:
+        only: dict[str, list[int]] = {}
+        for item in args.only.split(","):
+            doc, _, page = item.partition(":")
+            only.setdefault(doc.strip(), []).append(int(page))
+        by_doc = {doc: sorted(set(by_doc.get(doc, [])) & set(pages)) for doc, pages in only.items()}
+        by_doc = {doc: pages for doc, pages in by_doc.items() if pages}
     for pages in by_doc.values():
         pages.sort()
 
@@ -78,7 +95,11 @@ def main() -> int:
             pdf = exp33 / sources[doc_id]["local_path"]
             record: dict = {"pages": pages, "seconds": None, "error": None}
             try:
-                result = client.parse(str(pdf), pages=pages)
+                result = client.parse(
+                    str(pdf),
+                    pages=pages,
+                    timeout=max(REQUEST_TIMEOUT_S, SECONDS_PER_PAGE_S * len(pages)),
+                )
                 texts = list(result.pages_markdown or [])
                 if len(texts) != len(pages):
                     raise RuntimeError(
